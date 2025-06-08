@@ -1,14 +1,13 @@
-package com.github.javydreamercsw.taskmanagement.service;
+package com.github.javydreamercsw.management.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.javydreamercsw.TestcontainersConfiguration;
-import com.github.javydreamercsw.taskmanagement.domain.Task;
-import com.github.javydreamercsw.taskmanagement.domain.TaskRepository;
+import com.github.javydreamercsw.management.domain.card.Card;
+import com.github.javydreamercsw.management.domain.card.CardRepository;
+import com.github.javydreamercsw.management.service.card.CardService;
 import jakarta.validation.ValidationException;
-import java.time.Clock;
-import java.time.LocalDate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,38 +20,29 @@ import org.springframework.transaction.annotation.Transactional;
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-class TaskServiceIT {
+class CardServiceIT {
 
-  @Autowired TaskService taskService;
+  @Autowired CardService cardService;
 
-  @Autowired TaskRepository taskRepository;
-
-  @Autowired Clock clock;
+  @Autowired CardRepository cardRepository;
 
   @AfterEach
   void cleanUp() {
-    taskRepository.deleteAll();
+    cardRepository.deleteAll();
   }
 
   @Test
   public void tasks_are_stored_in_the_database_with_the_current_timestamp() {
-    var now = clock.instant();
-    var due = LocalDate.of(2025, 2, 7);
-    taskService.createTask("Do this", due);
-    assertThat(taskService.list(PageRequest.ofSize(1)))
+    cardService.createCard("Do this");
+    assertThat(cardService.list(PageRequest.ofSize(1)))
         .singleElement()
-        .matches(
-            task ->
-                task.getDescription().equals("Do this")
-                    && due.equals(task.getDueDate())
-                    && task.getCreationDate().isAfter(now));
+        .matches(card -> card.getName().equals("Do this"));
   }
 
   @Test
   public void tasks_are_validated_before_they_are_stored() {
-    assertThatThrownBy(
-            () -> taskService.createTask("X".repeat(Task.DESCRIPTION_MAX_LENGTH + 1), null))
+    assertThatThrownBy(() -> cardService.createCard("X".repeat(Card.DESCRIPTION_MAX_LENGTH + 1)))
         .isInstanceOf(ValidationException.class);
-    assertThat(taskRepository.count()).isEqualTo(0);
+    assertThat(cardRepository.count()).isEqualTo(0);
   }
 }

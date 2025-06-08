@@ -9,6 +9,6 @@
  * package.
  */
 @NullMarked
-package com.github.javydreamercsw.taskmanagement.ui.view;
+package com.github.javydreamercsw.management.ui.view;
 
 import org.jspecify.annotations.NullMarked;

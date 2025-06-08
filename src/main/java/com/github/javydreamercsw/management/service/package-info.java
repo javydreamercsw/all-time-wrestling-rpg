@@ -6,6 +6,6 @@
  * well.
  */
 @NullMarked
-package com.github.javydreamercsw.taskmanagement.service;
+package com.github.javydreamercsw.management.service;
 
 import org.jspecify.annotations.NullMarked;
