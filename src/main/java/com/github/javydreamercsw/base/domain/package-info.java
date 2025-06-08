@@ -1,6 +1,4 @@
-/**
- * This package contains reusable domain classes.
- */
+/** This package contains reusable domain classes. */
 @NullMarked
 package com.github.javydreamercsw.base.domain;
 
