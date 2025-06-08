@@ -8,6 +8,6 @@
  * base.domain} package.
  */
 @NullMarked
-package com.github.javydreamercsw.taskmanagement.domain;
+package com.github.javydreamercsw.management.domain;
 
 import org.jspecify.annotations.NullMarked;
