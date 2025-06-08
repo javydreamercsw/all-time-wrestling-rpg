@@ -8,6 +8,7 @@ import com.github.javydreamercsw.management.service.card.CardService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
@@ -26,7 +27,7 @@ import java.time.Clock;
 
 @Route("card-list")
 @PageTitle("Card List")
-@Menu(order = 0, icon = "vaadin:clipboard-check", title = "Card List")
+@Menu(order = 1, icon = "vaadin:clipboard-check", title = "Card List")
 @PermitAll // When security is enabled, allow all authenticated users
 public class CardListView extends Main {
 
@@ -57,13 +58,23 @@ public class CardListView extends Main {
     editor.setBinder(binder);
 
     // Editor fields
+    TextField nameField = new TextField();
     TextField damageField = new TextField();
     TextField targetField = new TextField();
     TextField momentumField = new TextField();
     TextField staminaField = new TextField();
     Checkbox signatureField = new Checkbox();
     Checkbox finisherField = new Checkbox();
+    ComboBox<String> typeField = new ComboBox<>();
+    typeField.setItems("Strike", "Grapple", "Aerial", "Throw");
+    typeField.setPlaceholder("Select type");
+
+    ComboBox<String> setField = new ComboBox<>();
+    setField.setPlaceholder("Select set");
+
     cardGrid.setItems(query -> cardService.list(toSpringPageRequest(query)).stream());
+    cardGrid.addColumn(Card::getName).setHeader("Name").setEditorComponent(nameField);
+    cardGrid.addColumn(Card::getType).setHeader("Type").setEditorComponent(typeField);
     cardGrid.addColumn(Card::getDamage).setHeader("Damage").setEditorComponent(damageField);
     cardGrid.addColumn(Card::getTarget).setHeader("Target").setEditorComponent(targetField);
     cardGrid.addColumn(Card::getMomentum).setHeader("Momentum").setEditorComponent(momentumField);
@@ -91,6 +102,8 @@ public class CardListView extends Main {
     cardGrid.setSizeFull();
 
     // Bind editor fields
+    binder.forField(nameField).bind("name");
+    binder.forField(typeField).bind("type");
     binder
         .forField(damageField)
         .withConverter(new StringToIntegerConverter("Must be a number"))
