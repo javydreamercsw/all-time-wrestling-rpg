@@ -4,13 +4,10 @@ import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRe
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.card.Card;
-import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.service.card.CardService;
-import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
@@ -29,20 +26,18 @@ import java.time.Clock;
 
 @Route("card-list")
 @PageTitle("Card List")
-@Menu(order = 2, icon = "vaadin:credit-card", title = "Card List")
+@Menu(order = 0, icon = "vaadin:clipboard-check", title = "Card List")
 @PermitAll // When security is enabled, allow all authenticated users
 public class CardListView extends Main {
 
   private final CardService cardService;
-  private final CardSetService cardSetService;
 
   final TextField name;
   final Button createBtn;
   final Grid<Card> cardGrid;
 
-  public CardListView(CardService cardService, CardSetService cardSetService, Clock clock) {
+  public CardListView(CardService cardService, Clock clock) {
     this.cardService = cardService;
-    this.cardSetService = cardSetService;
 
     name = new TextField();
     name.setPlaceholder("What do you want the card name to be?");
@@ -62,86 +57,25 @@ public class CardListView extends Main {
     editor.setBinder(binder);
 
     // Editor fields
-    TextField nameField = new TextField();
     TextField damageField = new TextField();
     TextField targetField = new TextField();
     TextField momentumField = new TextField();
     TextField staminaField = new TextField();
     Checkbox signatureField = new Checkbox();
     Checkbox finisherField = new Checkbox();
-    Checkbox tauntField = new Checkbox();
-    Checkbox recoverField = new Checkbox();
-    Checkbox pinField = new Checkbox();
-    ComboBox<String> typeField = new ComboBox<>();
-    typeField.setItems("Strike", "Grapple", "Aerial", "Throw");
-    typeField.setPlaceholder("Select type");
-
-    ComboBox<CardSet> setField = new ComboBox<>();
-    setField.setPlaceholder("Select set");
-    setField.setItems(cardSetService.findAll());
-    setField.setItemLabelGenerator(CardSet::getName);
-
     cardGrid.setItems(query -> cardService.list(toSpringPageRequest(query)).stream());
-    cardGrid
-        .addColumn(Card::getName)
-        .setHeader("Name")
-        .setEditorComponent(nameField)
-        .setSortable(true);
-    cardGrid
-        .addColumn(card -> card.getSet() != null ? card.getSet().getName() : "")
-        .setHeader("Set")
-        .setEditorComponent(setField)
-        .setSortable(true);
-    cardGrid
-        .addColumn(Card::getType)
-        .setHeader("Type")
-        .setEditorComponent(typeField)
-        .setSortable(true);
-    cardGrid
-        .addColumn(Card::getDamage)
-        .setHeader("Damage")
-        .setEditorComponent(damageField)
-        .setSortable(true);
-    cardGrid
-        .addColumn(Card::getTarget)
-        .setHeader("Target")
-        .setEditorComponent(targetField)
-        .setSortable(true);
-    cardGrid
-        .addColumn(Card::getMomentum)
-        .setHeader("Momentum")
-        .setEditorComponent(momentumField)
-        .setSortable(true);
-    cardGrid
-        .addColumn(Card::getStamina)
-        .setHeader("Stamina")
-        .setEditorComponent(staminaField)
-        .setSortable(true);
+    cardGrid.addColumn(Card::getDamage).setHeader("Damage").setEditorComponent(damageField);
+    cardGrid.addColumn(Card::getTarget).setHeader("Target").setEditorComponent(targetField);
+    cardGrid.addColumn(Card::getMomentum).setHeader("Momentum").setEditorComponent(momentumField);
+    cardGrid.addColumn(Card::getStamina).setHeader("Stamina").setEditorComponent(staminaField);
     cardGrid
         .addColumn(Card::getSignature)
         .setHeader("Is Signature?")
-        .setEditorComponent(signatureField)
-        .setSortable(true);
+        .setEditorComponent(signatureField);
     cardGrid
         .addColumn(Card::getFinisher)
         .setHeader("Is Finisher?")
-        .setEditorComponent(finisherField)
-        .setSortable(true);
-    cardGrid
-        .addColumn(Card::getTaunt)
-        .setHeader("Is Taunt?")
-        .setEditorComponent(tauntField)
-        .setSortable(true);
-    cardGrid
-        .addColumn(Card::getRecover)
-        .setHeader("Is Recover?")
-        .setEditorComponent(recoverField)
-        .setSortable(true);
-    cardGrid
-        .addColumn(Card::getPin)
-        .setHeader("Is Pin?")
-        .setEditorComponent(pinField)
-        .setSortable(true);
+        .setEditorComponent(finisherField);
     cardGrid.addColumn(Card::getCreationDate).setHeader("Creation Date");
     cardGrid
         .addComponentColumn(
@@ -157,9 +91,6 @@ public class CardListView extends Main {
     cardGrid.setSizeFull();
 
     // Bind editor fields
-    binder.forField(nameField).bind("name");
-    binder.forField(setField).bind("set");
-    binder.forField(typeField).bind("type");
     binder
         .forField(damageField)
         .withConverter(new StringToIntegerConverter("Must be a number"))
@@ -178,9 +109,6 @@ public class CardListView extends Main {
         .bind("stamina");
     binder.forField(signatureField).bind("signature");
     binder.forField(finisherField).bind("finisher");
-    binder.forField(tauntField).bind("taunt");
-    binder.forField(recoverField).bind("recover");
-    binder.forField(pinField).bind("pin");
 
     setSizeFull();
     addClassNames(
