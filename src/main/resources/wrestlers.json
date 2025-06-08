@@ -1,0 +1,29 @@
+[ {
+  "name" : "Rob Van Dam",
+  "deckSize" : 16,
+  "startingHealth" : 15,
+  "lowHealth" : 4,
+  "startingStamina" : 16,
+  "lowStamina" : 2
+}, {
+  "name" : "Rey Jaguar",
+  "deckSize" : 15,
+  "startingHealth" : 13,
+  "lowHealth" : 2,
+  "startingStamina" : 17,
+  "lowStamina" : 2
+}, {
+  "name" : "Kurt Angle",
+  "deckSize" : 15,
+  "startingHealth" : 16,
+  "lowHealth" : 4,
+  "startingStamina" : 16,
+  "lowStamina" : 2
+}, {
+  "name" : "Oda Tsurugi",
+  "deckSize" : 15,
+  "startingHealth" : 16,
+  "lowHealth" : 4,
+  "startingStamina" : 16,
+  "lowStamina" : 4
+} ]

@@ -1,0 +1,12 @@
+[ {
+  "name" : "Springboard Thrust Kick",
+  "type" : "Strike",
+  "damage" : 3,
+  "stamina" : 1,
+  "target" : 4,
+  "momentum" : 2,
+  "signature" : true,
+  "finisher" : false,
+  "number" : 5,
+  "set" : "RVD"
+} ]
