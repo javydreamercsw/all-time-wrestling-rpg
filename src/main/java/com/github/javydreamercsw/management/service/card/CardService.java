@@ -32,11 +32,24 @@ public class CardService {
     card.setStamina(1);
     card.setSignature(false);
     card.setFinisher(false);
-    card.setCreationDate(clock.instant());
-    cardRepository.saveAndFlush(card);
+    card.setType("TBD");
+    save(card);
   }
 
   public List<Card> list(Pageable pageable) {
     return cardRepository.findAllBy(pageable).toList();
+  }
+
+  public long count() {
+    return cardRepository.count();
+  }
+
+  public Card save(@NonNull Card card) {
+    card.setCreationDate(clock.instant());
+    return cardRepository.saveAndFlush(card);
+  }
+
+  public List<Card> findAll() {
+    return cardRepository.findAll();
   }
 }

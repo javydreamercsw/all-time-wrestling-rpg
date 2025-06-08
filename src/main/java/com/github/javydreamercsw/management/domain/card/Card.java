@@ -20,6 +20,12 @@ public class Card extends AbstractEntity<Long> {
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;
 
+  @Column(name = "type", nullable = false)
+  @Size(max = DESCRIPTION_MAX_LENGTH) private String type;
+
+  @Column(name = "set", nullable = false)
+  @Size(max = 3) private String set;
+
   @Column(name = "target", nullable = false)
   private Integer target;
 
@@ -31,6 +37,9 @@ public class Card extends AbstractEntity<Long> {
 
   @Column(name = "momentum", nullable = false)
   private Integer momentum;
+
+  @Column(name = "number", nullable = false)
+  private Integer number;
 
   @Column(name = "signature", nullable = false)
   private Boolean signature;
@@ -52,6 +61,22 @@ public class Card extends AbstractEntity<Long> {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public String getSet() {
+    return set;
+  }
+
+  public void setSet(String set) {
+    this.set = set;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public void setType(String type) {
+    this.type = type;
   }
 
   public Integer getTarget() {
@@ -108,5 +133,13 @@ public class Card extends AbstractEntity<Long> {
 
   public Instant getCreationDate() {
     return creationDate;
+  }
+
+  public Integer getNumber() {
+    return number;
+  }
+
+  public void setNumber(Integer number) {
+    this.number = number;
   }
 }

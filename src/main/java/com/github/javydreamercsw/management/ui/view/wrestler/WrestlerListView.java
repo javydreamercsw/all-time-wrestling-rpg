@@ -26,7 +26,7 @@ import java.time.Clock;
 
 @Route("wrestler-list")
 @PageTitle("Wrestler List")
-@Menu(order = 0, icon = "vaadin:user", title = "Wrestler List")
+@Menu(order = 0, icon = "vaadin:clipboard-check", title = "Wrestler List")
 @PermitAll // When security is enabled, allow all authenticated users
 public class WrestlerListView extends Main {
 
@@ -64,36 +64,27 @@ public class WrestlerListView extends Main {
     TextField startingStaminaField = new TextField();
     TextField lowStaminaField = new TextField();
     wrestlerGrid.setItems(query -> wrestlerService.list(toSpringPageRequest(query)).stream());
-    wrestlerGrid
-        .addColumn(Wrestler::getName)
-        .setHeader("Name")
-        .setEditorComponent(nameField)
-        .setSortable(true);
+    wrestlerGrid.addColumn(Wrestler::getName).setHeader("Name").setEditorComponent(nameField);
     wrestlerGrid
         .addColumn(Wrestler::getDeckSize)
         .setHeader("Deck Size")
-        .setEditorComponent(deckSizeField)
-        .setSortable(true);
+        .setEditorComponent(deckSizeField);
     wrestlerGrid
         .addColumn(Wrestler::getStartingHealth)
         .setHeader("Starting Health")
-        .setEditorComponent(startingHealthField)
-        .setSortable(true);
+        .setEditorComponent(startingHealthField);
     wrestlerGrid
         .addColumn(Wrestler::getLowHealth)
         .setHeader("Low Health")
-        .setEditorComponent(lowHealthField)
-        .setSortable(true);
+        .setEditorComponent(lowHealthField);
     wrestlerGrid
         .addColumn(Wrestler::getStartingStamina)
         .setHeader("Starting Stamina")
-        .setEditorComponent(startingStaminaField)
-        .setSortable(true);
+        .setEditorComponent(startingStaminaField);
     wrestlerGrid
         .addColumn(Wrestler::getLowStamina)
         .setHeader("Low Stamina")
-        .setEditorComponent(lowStaminaField)
-        .setSortable(true);
+        .setEditorComponent(lowStaminaField);
     wrestlerGrid.addColumn(Wrestler::getCreationDate).setHeader("Creation Date");
     wrestlerGrid
         .addComponentColumn(

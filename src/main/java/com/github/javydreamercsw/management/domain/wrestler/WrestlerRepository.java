@@ -1,6 +1,5 @@
 package com.github.javydreamercsw.management.domain.wrestler;
 
-import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,8 +10,4 @@ public interface WrestlerRepository
 
   // If you don't need a total row count, Slice is better than Page.
   Page<Wrestler> findAllBy(Pageable pageable);
-
-  Optional<Wrestler> findByName(String name);
-
-  Optional<Wrestler> findByExternalId(String externalId);
 }
