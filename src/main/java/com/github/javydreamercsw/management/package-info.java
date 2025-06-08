@@ -10,5 +10,5 @@
  * <p>If your application is very small, you may not need dedicated feature packages. In that case,
  * move the subpackages directly to the application package.
  */
-package com.github.javydreamercsw.taskmanagement;
+package com.github.javydreamercsw.management;
 // TODO Remove this package once you have added real features
