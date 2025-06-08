@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificationExecutor<Task> {
 
-    // If you don't need a total row count, Slice is better than Page.
-    Slice<Task> findAllBy(Pageable pageable);
+  // If you don't need a total row count, Slice is better than Page.
+  Slice<Task> findAllBy(Pageable pageable);
 }

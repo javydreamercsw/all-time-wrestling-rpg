@@ -1,6 +1,4 @@
-/**
- * This package contains reusable UI components.
- */
+/** This package contains reusable UI components. */
 @NullMarked
 package com.github.javydreamercsw.base.ui.component;
 
