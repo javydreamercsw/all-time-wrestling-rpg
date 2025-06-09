@@ -23,8 +23,9 @@ public class Card extends AbstractEntity<Long> {
   @Column(name = "type", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String type;
 
-  @Column(name = "set", nullable = false)
-  @Size(max = 3) private String set;
+  @ManyToOne(fetch = FetchType.EAGER, optional = false)
+  @JoinColumn(name = "set_id", nullable = false)
+  private CardSet set;
 
   @Column(name = "target", nullable = false)
   private Integer target;
@@ -63,11 +64,11 @@ public class Card extends AbstractEntity<Long> {
     this.name = name;
   }
 
-  public String getSet() {
+  public CardSet getSet() {
     return set;
   }
 
-  public void setSet(String set) {
+  public void setSet(CardSet set) {
     this.set = set;
   }
 
