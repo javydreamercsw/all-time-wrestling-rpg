@@ -79,24 +79,50 @@ public class CardListView extends Main {
     setField.setItemLabelGenerator(CardSet::getName);
 
     cardGrid.setItems(query -> cardService.list(toSpringPageRequest(query)).stream());
-    cardGrid.addColumn(Card::getName).setHeader("Name").setEditorComponent(nameField);
+    cardGrid
+        .addColumn(Card::getName)
+        .setHeader("Name")
+        .setEditorComponent(nameField)
+        .setSortable(true);
     cardGrid
         .addColumn(card -> card.getSet() != null ? card.getSet().getName() : "")
         .setHeader("Set")
         .setEditorComponent(setField);
-    cardGrid.addColumn(Card::getType).setHeader("Type").setEditorComponent(typeField);
-    cardGrid.addColumn(Card::getDamage).setHeader("Damage").setEditorComponent(damageField);
-    cardGrid.addColumn(Card::getTarget).setHeader("Target").setEditorComponent(targetField);
-    cardGrid.addColumn(Card::getMomentum).setHeader("Momentum").setEditorComponent(momentumField);
-    cardGrid.addColumn(Card::getStamina).setHeader("Stamina").setEditorComponent(staminaField);
+    cardGrid
+        .addColumn(Card::getType)
+        .setHeader("Type")
+        .setEditorComponent(typeField)
+        .setSortable(true);
+    cardGrid
+        .addColumn(Card::getDamage)
+        .setHeader("Damage")
+        .setEditorComponent(damageField)
+        .setSortable(true);
+    cardGrid
+        .addColumn(Card::getTarget)
+        .setHeader("Target")
+        .setEditorComponent(targetField)
+        .setSortable(true);
+    cardGrid
+        .addColumn(Card::getMomentum)
+        .setHeader("Momentum")
+        .setEditorComponent(momentumField)
+        .setSortable(true);
+    cardGrid
+        .addColumn(Card::getStamina)
+        .setHeader("Stamina")
+        .setEditorComponent(staminaField)
+        .setSortable(true);
     cardGrid
         .addColumn(Card::getSignature)
         .setHeader("Is Signature?")
-        .setEditorComponent(signatureField);
+        .setEditorComponent(signatureField)
+        .setSortable(true);
     cardGrid
         .addColumn(Card::getFinisher)
         .setHeader("Is Finisher?")
-        .setEditorComponent(finisherField);
+        .setEditorComponent(finisherField)
+        .setSortable(true);
     cardGrid.addColumn(Card::getCreationDate).setHeader("Creation Date");
     cardGrid
         .addComponentColumn(

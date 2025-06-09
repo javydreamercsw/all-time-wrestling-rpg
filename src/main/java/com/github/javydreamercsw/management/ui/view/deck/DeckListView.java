@@ -39,7 +39,18 @@ public class DeckListView extends VerticalLayout {
 
     Grid<Deck> deckGrid = new Grid<>(Deck.class, false);
     deckGrid.addColumn(Deck::getId).setHeader("Deck ID");
-    deckGrid.addColumn(deck -> deck.getWrestler().getName()).setHeader("Wrestler");
+    deckGrid
+        .addColumn(deck -> deck.getWrestler().getName())
+        .setHeader("Wrestler")
+        .setSortable(true);
+    deckGrid
+        .addComponentColumn(
+            deck -> {
+              Button viewBtn = new Button("View");
+              viewBtn.addClickListener(e -> openDeckView(deck));
+              return viewBtn;
+            })
+        .setHeader("View");
     deckGrid
         .addComponentColumn(
             deck -> {
@@ -60,8 +71,8 @@ public class DeckListView extends VerticalLayout {
 
     VerticalLayout layout = new VerticalLayout();
     Grid<DeckCard> cardGrid = new Grid<>(DeckCard.class, false);
-    cardGrid.addColumn(dc -> dc.getCard().getName()).setHeader("Card");
-    cardGrid.addColumn(DeckCard::getAmount).setHeader("Amount");
+    cardGrid.addColumn(dc -> dc.getCard().getName()).setHeader("Card").setSortable(true);
+    cardGrid.addColumn(DeckCard::getAmount).setHeader("Amount").setSortable(true);
 
     // Editor for amount
     Binder<DeckCard> binder = new Binder<>(DeckCard.class);
@@ -178,5 +189,27 @@ public class DeckListView extends VerticalLayout {
 
     editDialog.add(layout);
     editDialog.open();
+  }
+
+  private void openDeckView(Deck deck) {
+    Dialog viewDialog = new Dialog();
+    viewDialog.setWidth("1000px");
+    viewDialog.setHeaderTitle("Deck Details");
+
+    VerticalLayout layout = new VerticalLayout();
+    layout.add("Wrestler: " + deck.getWrestler().getName());
+
+    Grid<DeckCard> cardGrid = new Grid<>(DeckCard.class, false);
+    cardGrid.addColumn(dc -> dc.getCard().getName()).setHeader("Card").setSortable(true);
+    cardGrid.addColumn(DeckCard::getAmount).setHeader("Amount").setSortable(true);
+    cardGrid.setItems(deck.getCards());
+
+    layout.add(cardGrid);
+
+    Button closeBtn = new Button("Close", e -> viewDialog.close());
+    layout.add(closeBtn);
+
+    viewDialog.add(layout);
+    viewDialog.open();
   }
 }
