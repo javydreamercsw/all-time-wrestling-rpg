@@ -64,27 +64,36 @@ public class WrestlerListView extends Main {
     TextField startingStaminaField = new TextField();
     TextField lowStaminaField = new TextField();
     wrestlerGrid.setItems(query -> wrestlerService.list(toSpringPageRequest(query)).stream());
-    wrestlerGrid.addColumn(Wrestler::getName).setHeader("Name").setEditorComponent(nameField);
+    wrestlerGrid
+        .addColumn(Wrestler::getName)
+        .setHeader("Name")
+        .setEditorComponent(nameField)
+        .setSortable(true);
     wrestlerGrid
         .addColumn(Wrestler::getDeckSize)
         .setHeader("Deck Size")
-        .setEditorComponent(deckSizeField);
+        .setEditorComponent(deckSizeField)
+        .setSortable(true);
     wrestlerGrid
         .addColumn(Wrestler::getStartingHealth)
         .setHeader("Starting Health")
-        .setEditorComponent(startingHealthField);
+        .setEditorComponent(startingHealthField)
+        .setSortable(true);
     wrestlerGrid
         .addColumn(Wrestler::getLowHealth)
         .setHeader("Low Health")
-        .setEditorComponent(lowHealthField);
+        .setEditorComponent(lowHealthField)
+        .setSortable(true);
     wrestlerGrid
         .addColumn(Wrestler::getStartingStamina)
         .setHeader("Starting Stamina")
-        .setEditorComponent(startingStaminaField);
+        .setEditorComponent(startingStaminaField)
+        .setSortable(true);
     wrestlerGrid
         .addColumn(Wrestler::getLowStamina)
         .setHeader("Low Stamina")
-        .setEditorComponent(lowStaminaField);
+        .setEditorComponent(lowStaminaField)
+        .setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getCreationDate).setHeader("Creation Date");
     wrestlerGrid
         .addComponentColumn(
