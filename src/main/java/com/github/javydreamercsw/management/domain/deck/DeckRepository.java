@@ -6,7 +6,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.transaction.annotation.Transactional;
 
 public interface DeckRepository extends JpaRepository<Deck, Long>, JpaSpecificationExecutor<Deck> {
 
@@ -14,7 +13,4 @@ public interface DeckRepository extends JpaRepository<Deck, Long>, JpaSpecificat
   Page<Deck> findAllBy(Pageable pageable);
 
   List<Deck> findByWrestler(Wrestler wrestler);
-
-  @Transactional
-  void deleteByWrestler(Wrestler wrestler);
 }

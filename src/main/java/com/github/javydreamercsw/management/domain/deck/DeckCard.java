@@ -10,14 +10,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "deck_card")
-@Getter
-@Setter
 public class DeckCard extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,5 +33,33 @@ public class DeckCard extends AbstractEntity<Long> {
   @Override
   public @Nullable Long getId() {
     return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public Deck getDeck() {
+    return deck;
+  }
+
+  public void setDeck(Deck deck) {
+    this.deck = deck;
+  }
+
+  public Card getCard() {
+    return card;
+  }
+
+  public void setCard(Card card) {
+    this.card = card;
+  }
+
+  public int getAmount() {
+    return amount;
+  }
+
+  public void setAmount(int amount) {
+    this.amount = amount;
   }
 }

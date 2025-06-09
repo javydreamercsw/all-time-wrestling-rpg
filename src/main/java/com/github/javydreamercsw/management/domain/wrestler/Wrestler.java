@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
 public class Wrestler extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "card_id")
+  @Column(name = "wrestler_id")
   private Long id;
 
   @Column(name = "name", nullable = false)
