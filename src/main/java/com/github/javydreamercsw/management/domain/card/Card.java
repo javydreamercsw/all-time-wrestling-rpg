@@ -7,7 +7,7 @@ import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 
 @Entity
-@Table(name = "card")
+@Table(name = "card", uniqueConstraints = @UniqueConstraint(columnNames = {"set_id", "number"}))
 public class Card extends AbstractEntity<Long> {
 
   public static final int DESCRIPTION_MAX_LENGTH = 255;
