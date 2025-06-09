@@ -4,7 +4,9 @@ import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRe
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.card.Card;
+import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.service.card.CardService;
+import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -32,13 +34,15 @@ import java.time.Clock;
 public class CardListView extends Main {
 
   private final CardService cardService;
+  private final CardSetService cardSetService;
 
   final TextField name;
   final Button createBtn;
   final Grid<Card> cardGrid;
 
-  public CardListView(CardService cardService, Clock clock) {
+  public CardListView(CardService cardService, CardSetService cardSetService, Clock clock) {
     this.cardService = cardService;
+    this.cardSetService = cardSetService;
 
     name = new TextField();
     name.setPlaceholder("What do you want the card name to be?");
@@ -69,11 +73,17 @@ public class CardListView extends Main {
     typeField.setItems("Strike", "Grapple", "Aerial", "Throw");
     typeField.setPlaceholder("Select type");
 
-    ComboBox<String> setField = new ComboBox<>();
+    ComboBox<CardSet> setField = new ComboBox<>();
     setField.setPlaceholder("Select set");
+    setField.setItems(cardSetService.findAll());
+    setField.setItemLabelGenerator(CardSet::getName);
 
     cardGrid.setItems(query -> cardService.list(toSpringPageRequest(query)).stream());
     cardGrid.addColumn(Card::getName).setHeader("Name").setEditorComponent(nameField);
+    cardGrid
+        .addColumn(card -> card.getSet() != null ? card.getSet().getName() : "")
+        .setHeader("Set")
+        .setEditorComponent(setField);
     cardGrid.addColumn(Card::getType).setHeader("Type").setEditorComponent(typeField);
     cardGrid.addColumn(Card::getDamage).setHeader("Damage").setEditorComponent(damageField);
     cardGrid.addColumn(Card::getTarget).setHeader("Target").setEditorComponent(targetField);
@@ -103,6 +113,7 @@ public class CardListView extends Main {
 
     // Bind editor fields
     binder.forField(nameField).bind("name");
+    binder.forField(setField).bind("set");
     binder.forField(typeField).bind("type");
     binder
         .forField(damageField)
