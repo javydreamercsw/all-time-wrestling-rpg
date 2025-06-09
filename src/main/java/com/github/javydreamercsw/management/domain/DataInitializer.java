@@ -146,7 +146,7 @@ public class DataInitializer {
             if (byWrestler.isEmpty()) {
               deck = deckService.createDeck(wrestler);
             } else {
-              deck = byWrestler.get(0);
+              continue; // Skip if a deck already exists for this wrestler
             }
             deck.setWrestler(wrestler);
             deck.getCards().forEach(deckCardService::delete);
