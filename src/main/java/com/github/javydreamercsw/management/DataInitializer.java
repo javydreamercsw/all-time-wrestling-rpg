@@ -1,15 +1,19 @@
-package com.github.javydreamercsw.management.domain;
+package com.github.javydreamercsw.management;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckCardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
+import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Map;
@@ -176,6 +180,54 @@ public class DataInitializer {
     };
   }
 
+  @Bean
+  @Order(5)
+  public ApplicationRunner syncShowTypesFromFile(ShowTypeService showTypeService) {
+    return args -> {
+      ClassPathResource resource = new ClassPathResource("show_types.json");
+      if (resource.exists()) {
+        ObjectMapper mapper = new ObjectMapper();
+        try (var is = resource.getInputStream()) {
+          var showTypesFromFile = mapper.readValue(is, new TypeReference<List<ShowType>>() {});
+          Map<String, ShowType> existing =
+              showTypeService.findAll().stream()
+                  .collect(Collectors.toMap(ShowType::getName, s -> s));
+          for (ShowType st : showTypesFromFile) {
+            ShowType existingType = existing.get(st.getName());
+            if (existingType == null) {
+              showTypeService.save(st);
+            }
+          }
+        }
+      }
+    };
+  }
+
+  @Bean
+  @Order(6)
+  public ApplicationRunner syncShowsFromFile(
+      ShowService showService, ShowTypeService showTypeService) {
+    return args -> {
+      ClassPathResource resource = new ClassPathResource("shows.json");
+      if (resource.exists()) {
+        ObjectMapper mapper = new ObjectMapper();
+        try (var is = resource.getInputStream()) {
+          var showsFromFile = mapper.readValue(is, new TypeReference<List<ShowDTO>>() {});
+          Map<Long, ShowType> showTypes =
+              showTypeService.findAll().stream().collect(Collectors.toMap(ShowType::getId, s -> s));
+          for (ShowDTO dto : showsFromFile) {
+            ShowType type = showTypes.get(dto.getShowType());
+            if (type == null) continue;
+            Show show = new Show();
+            show.setName(dto.getName());
+            show.setType(type);
+            showService.save(show);
+          }
+        }
+      }
+    };
+  }
+
   public static class CardDTO {
     private String name;
     private String type;
@@ -318,6 +370,28 @@ public class DataInitializer {
 
     public void setAmount(int amount) {
       this.amount = amount;
+    }
+  }
+
+  public static class ShowDTO {
+    private String name;
+    private String showType;
+
+    // getters and setters
+    public String getName() {
+      return name;
+    }
+
+    public void setName(String title) {
+      this.name = title;
+    }
+
+    public String getShowType() {
+      return showType;
+    }
+
+    public void setShowType(String type) {
+      this.showType = type;
     }
   }
 }

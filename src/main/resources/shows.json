@@ -1,0 +1,10 @@
+[ {
+  "name" : "Timeless",
+  "showType" : "Weekly"
+}, {
+  "name" : "Continuum",
+  "showType" : "Weekly"
+}, {
+  "name" : "Temporal Diversion",
+  "showType" : "PLE"
+} ]
