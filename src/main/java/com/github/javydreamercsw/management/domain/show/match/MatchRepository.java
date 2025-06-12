@@ -10,6 +10,4 @@ public interface MatchRepository
 
   // If you don't need a total row count, Slice is better than Page.
   Page<Match> findAllBy(Pageable pageable);
-
-  // List<Match> findByWrestler(Show show);
 }
