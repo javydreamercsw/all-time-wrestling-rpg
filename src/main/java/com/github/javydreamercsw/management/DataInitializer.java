@@ -36,6 +36,8 @@ public class DataInitializer {
     return args -> {
       ClassPathResource resource = new ClassPathResource("sets.json");
       if (resource.exists()) {
+        logger.info("Loading card sets from file: {}", resource.getPath());
+        // Load card sets from JSON file
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var setsFromFile = mapper.readValue(is, new TypeReference<List<CardSet>>() {});
@@ -47,8 +49,10 @@ public class DataInitializer {
             if (existingSet != null) {
               // Update fields
               cardSetService.save(existingSet);
+              logger.info("Updated existing card set: {}", existingSet.getName());
             } else {
               cardSetService.save(c);
+              logger.info("Saved new card set: {}", c.getName());
             }
           }
         }
@@ -63,6 +67,8 @@ public class DataInitializer {
     return args -> {
       ClassPathResource resource = new ClassPathResource("cards.json");
       if (resource.exists()) {
+        logger.info("Loading cards from file: {}", resource.getPath());
+        // Load cards from JSON file
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var cardsFromFile = mapper.readValue(is, new TypeReference<List<CardDTO>>() {});
@@ -84,6 +90,11 @@ public class DataInitializer {
             card.setSet(set);
             card.setType(dto.getType());
             cardService.save(card);
+            if (existing.containsKey(dto.getName())) {
+              logger.info("Updated existing card: {}", card.getName());
+            } else {
+              logger.info("Saved new card: {}", card.getName());
+            }
           }
         }
       }
@@ -96,6 +107,8 @@ public class DataInitializer {
     return args -> {
       ClassPathResource resource = new ClassPathResource("wrestlers.json");
       if (resource.exists()) {
+        logger.info("Loading wrestlers from file: {}", resource.getPath());
+        // Load wrestlers from JSON file
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var wrestlersFromFile = mapper.readValue(is, new TypeReference<List<Wrestler>>() {});
@@ -113,8 +126,10 @@ public class DataInitializer {
               existingWrestler.setStartingStamina(w.getStartingStamina());
               existingWrestler.setLowStamina(w.getLowStamina());
               wrestlerService.save(existingWrestler);
+              logger.info("Updated existing wrestler: {}", existingWrestler.getName());
             } else {
               wrestlerService.save(w);
+              logger.info("Saved new wrestler: {}", w.getName());
             }
           }
         }
@@ -132,6 +147,7 @@ public class DataInitializer {
     return args -> {
       ClassPathResource resource = new ClassPathResource("decks.json");
       if (resource.exists()) {
+        logger.info("Loading decks from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var decksFromFile = mapper.readValue(is, new TypeReference<List<DeckDTO>>() {});
@@ -174,6 +190,7 @@ public class DataInitializer {
               deck.addCard(card, cardDTO.getAmount());
             }
             deckService.save(deck);
+            logger.info("Saved deck for wrestler: {}", wrestler.getName());
           }
         }
       }
@@ -186,6 +203,7 @@ public class DataInitializer {
     return args -> {
       ClassPathResource resource = new ClassPathResource("show_types.json");
       if (resource.exists()) {
+        logger.info("Loading show types from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var showTypesFromFile = mapper.readValue(is, new TypeReference<List<ShowType>>() {});
@@ -196,6 +214,7 @@ public class DataInitializer {
             ShowType existingType = existing.get(st.getName());
             if (existingType == null) {
               showTypeService.save(st);
+              logger.info("Saved new show type: {}", st.getName());
             }
           }
         }
@@ -210,18 +229,26 @@ public class DataInitializer {
     return args -> {
       ClassPathResource resource = new ClassPathResource("shows.json");
       if (resource.exists()) {
+        logger.info("Loading shows from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var showsFromFile = mapper.readValue(is, new TypeReference<List<ShowDTO>>() {});
-          Map<Long, ShowType> showTypes =
-              showTypeService.findAll().stream().collect(Collectors.toMap(ShowType::getId, s -> s));
+          Map<String, ShowType> showTypes =
+              showTypeService.findAll().stream()
+                  .collect(Collectors.toMap(ShowType::getName, s -> s));
           for (ShowDTO dto : showsFromFile) {
             ShowType type = showTypes.get(dto.getShowType());
             if (type == null) continue;
-            Show show = new Show();
+            Show show = showService.findByName(dto.getName()).orElseGet(Show::new);
             show.setName(dto.getName());
+            show.setDescription(dto.getDescription());
             show.setType(type);
             showService.save(show);
+            logger.info(
+                "{} show: {} of type {}",
+                show.getId() == null ? "Saved new" : "Updated existing",
+                show.getName(),
+                type.getName());
           }
         }
       }
@@ -376,6 +403,7 @@ public class DataInitializer {
   public static class ShowDTO {
     private String name;
     private String showType;
+    private String description;
 
     // getters and setters
     public String getName() {
@@ -392,6 +420,14 @@ public class DataInitializer {
 
     public void setShowType(String type) {
       this.showType = type;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public void setDescription(String description) {
+      this.description = description;
     }
   }
 }

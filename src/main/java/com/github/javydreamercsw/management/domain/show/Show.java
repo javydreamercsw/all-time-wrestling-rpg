@@ -10,6 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -28,8 +29,9 @@ public class Show extends AbstractEntity<Long> {
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;
 
+  @Lob
   @Column(name = "description", nullable = false)
-  @Size(max = DESCRIPTION_MAX_LENGTH) private String description;
+  private String description;
 
   @ManyToOne(optional = false)
   @JoinColumn(name = "show_type_id", nullable = false)

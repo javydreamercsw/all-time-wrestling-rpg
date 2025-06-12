@@ -15,7 +15,7 @@ import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 
 @Entity
-@Table(name = "show", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
+@Table(name = "show_type", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 public class ShowType extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

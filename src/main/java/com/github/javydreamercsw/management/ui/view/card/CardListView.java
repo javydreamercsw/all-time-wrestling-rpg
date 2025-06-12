@@ -29,7 +29,7 @@ import java.time.Clock;
 
 @Route("card-list")
 @PageTitle("Card List")
-@Menu(order = 1, icon = "vaadin:clipboard-check", title = "Card List")
+@Menu(order = 2, icon = "vaadin:clipboard-check", title = "Card List")
 @PermitAll // When security is enabled, allow all authenticated users
 public class CardListView extends Main {
 
@@ -87,7 +87,8 @@ public class CardListView extends Main {
     cardGrid
         .addColumn(card -> card.getSet() != null ? card.getSet().getName() : "")
         .setHeader("Set")
-        .setEditorComponent(setField);
+        .setEditorComponent(setField)
+        .setSortable(true);
     cardGrid
         .addColumn(Card::getType)
         .setHeader("Type")
