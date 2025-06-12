@@ -1,10 +1,53 @@
 [ {
   "name" : "Timeless",
-  "showType" : "Weekly"
+  "showType" : "Weekly",
+  "description" : "> \"Where legends reign and history is made again.\"\n> \n\n### 🎙 Theme\n\n**Classic prestige and grand rivalries.** Timeless is your *flagship show*, focused on legacy, honor, and intergenerational conflict. This is where main-event feuds are born and wrestling tradition is sacred — even when it's broken."
 }, {
   "name" : "Continuum",
-  "showType" : "Weekly"
+  "showType" : "Weekly",
+  "description" : "> \"The future isn’t waiting — it’s fighting.\"\n> \n\n### 🎙 Theme\n\n**Innovation, rebellion, and raw momentum.** Continuum is chaotic, experimental, and edgy. It’s the proving ground for newer wrestlers and the home of the Intertemporal and Extreme divisions. Think of it as the *collision point of chaos and evolution*."
 }, {
   "name" : "Temporal Diversion",
-  "showType" : "PLE"
+  "showType" : "PLE",
+  "description" : "*\"When history is rewritten mid-match.\"*\n\n🗓 Ideal for: Unpredictable swerves, match rewinds, sudden stipulations\n\n💥 Feature Matches: Time-loop Match (restart on pinfall), Opponent Swap, Mystery Booking Gauntlet\n\n**Theme:** Alternate timelines & match rewinds"
+}, {
+  "name" : "Chrono Clash",
+  "showType" : "PLE",
+  "description" : "*\"Past and future collide in battles that shape the timeline.\"*\n\n🗓 Ideal for: Mid-season or big-feud blowoff show\n\n💥 Feature Matches: Intertemporal Title showcase, grudge matches, time-travel gimmicks (e.g. \"Anachronism Match\")\n\n**Theme:** Inter-era battles and altered time dynamics"
+}, {
+  "name" : "Paradox Slam",
+  "showType" : "PLE",
+  "description" : "*\"When the impossible steps into the ring.\"*\n\n🗓 Ideal for: Cross-generational clashes, dream matches\n\n💥 Feature Matches: Past vs Future Showcase, Mirror Matches, “Alternate Self” stipulations (players play alternate wrestler decks)\n\n**Theme:** Cross-era & surreal matchups"
+}, {
+  "name" : "Timeline Turmoil",
+  "showType" : "PLE",
+  "description" : "*\"The multiverse is unstable... and only one timeline survives.\"*\n\n🗓 Ideal for: Chaos-filled PPV, multiple contenders and factions colliding\n\n💥 Feature Matches: Fatal 4-Ways, Tag Turmoil, Stipulation Stack Match (every fall adds a new rule)\n\n**Theme:** Chaos, multi-person mayhem"
+}, {
+  "name" : "Legends Converge",
+  "showType" : "PLE",
+  "description" : "*\"Greatness isn't born — it's brought back.\"*\n\n🗓 Ideal for: Return of legendary wrestlers, Hall of Fame-style event\n\n💥 Feature Matches: Dream Matches, Special Guest appearances, Retired Wrestlers Return (even for 1 match)\n\n**Theme:** Hall of fame returns, dream matches"
+}, {
+  "name" : "Quantum Quarrel",
+  "showType" : "PLE",
+  "description" : "*\"Physics break. So do bones.\"*\n\n🗓 Ideal for: Midcard elevation, tech/mech-style themed wrestlers, strange stipulations\n\n💥 Feature Matches: Weapon-based matches, Clockwork Cage, “Phase-In” Match (invisible until hit)\n\n**Theme:** Time tech, glitches, instability"
+}, {
+  "name" : "Temporal Fallout",
+  "showType" : "PLE",
+  "description" : "*\"The future cracked. Now it fights back.\"*\n\n🗓 Ideal for: Late-season chaos\n\n💥 Feature Matches: Faction warfare, loser-leaves-the-era match, “Time Bomb Gauntlet”\n\n**Theme:** Time ruptures, chaos, and unstable reality"
+}, {
+  "name" : "Era of Champions",
+  "showType" : "PLE",
+  "description" : "*\"Only legends survive to define their age.\"*\n\n🗓 Ideal for: Title-focused PPV\n\n💥 Feature Matches: All titles on the line, Champion vs Champion, contender tournaments\n\n**Theme:** Prestige, honor, and every title on the line"
+}, {
+  "name" : "Infinity Burn",
+  "showType" : "PLE",
+  "description" : "*\"There's no going back — only glory or ash.\"*\n\n🗓 Ideal for: Extreme/Hardcore themed PPV\n\n💥 Feature Matches: Barbed Wire Deathmatch, Elimination Carnage, Extreme Title defense\n\n**Theme:** Violence, endurance, pain-for-glory"
+}, {
+  "name" : "Time Warp Takedown",
+  "showType" : "PLE",
+  "description" : "*\"One wrong step, and you're fighting your past.\"*\n\n🗓 Ideal for: Feud-ender PPV or first show of a new season\n\n💥 Feature Matches: Rivalry Blowoffs, Time Split Match (1 card from old deck allowed), Reset Matches (fans/heat reset post-match)\n\n**Theme:** Timeline resets, old rivals, hard resets"
+}, {
+  "name" : "All Time Rumble",
+  "showType" : "PLE",
+  "description" : "🗓 Ideal for: Annual Rumble-style event (think Royal Rumble)\n\n💥 Feature Match:\n\n*The All Time Rumble*\n\n– massive battle royal across eras. Winner gets guaranteed shot at the ATW World Title."
 } ]
