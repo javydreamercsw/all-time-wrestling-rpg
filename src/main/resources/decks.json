@@ -69,4 +69,67 @@
     "set" : "ATW",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Oda Tsurugi",
+  "cards" : [ {
+    "number" : 7,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 1,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "OT",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "OT",
+    "amount" : 1
+  } ]
 } ]
