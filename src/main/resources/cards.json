@@ -7,6 +7,7 @@
   "momentum" : 2,
   "signature" : true,
   "finisher" : false,
+  "pin" : false,
   "number" : 5,
   "set" : "RVD"
 }, {
@@ -18,6 +19,7 @@
   "momentum" : 6,
   "signature" : false,
   "finisher" : true,
+  "pin" : true,
   "number" : 9,
   "set" : "RVD"
 }, {
@@ -29,6 +31,7 @@
   "momentum" : 6,
   "signature" : true,
   "finisher" : false,
+  "pin" : true,
   "number" : 8,
   "set" : "RVD"
 }, {
@@ -117,6 +120,7 @@
   "momentum" : 2,
   "signature" : false,
   "finisher" : false,
+  "pin" : false,
   "number" : 16,
   "set" : "ATW"
 }, {
@@ -139,6 +143,7 @@
   "momentum" : 1,
   "signature" : false,
   "finisher" : false,
+  "pin" : false,
   "number" : 6,
   "set" : "ATW"
 }, {
@@ -150,6 +155,7 @@
   "momentum" : 1,
   "signature" : false,
   "finisher" : false,
+  "pin" : false,
   "number" : 15,
   "set" : "ATW"
 }, {
@@ -172,6 +178,7 @@
   "momentum" : 2,
   "signature" : true,
   "finisher" : false,
+  "pin" : false,
   "number" : 3,
   "set" : "RVD"
 }, {
@@ -183,6 +190,199 @@
   "momentum" : 2,
   "signature" : false,
   "finisher" : false,
+  "pin" : false,
   "number" : 18,
   "set" : "ATW"
+}, {
+  "name" : "Gotch Piledriver",
+  "type" : "Grapple",
+  "damage" : 6,
+  "stamina" : 2,
+  "target" : 6,
+  "momentum" : 3,
+  "signature" : false,
+  "finisher" : true,
+  "pin" : false,
+  "number" : 15,
+  "set" : "OT"
+}, {
+  "name" : "Octopus Stretch",
+  "type" : "Grapple",
+  "damage" : 3,
+  "stamina" : 3,
+  "target" : 3,
+  "momentum" : 3,
+  "signature" : true,
+  "finisher" : false,
+  "recover" : true,
+  "pin" : true,
+  "number" : 11,
+  "set" : "OT"
+}, {
+  "name" : "Punch",
+  "type" : "Strike",
+  "damage" : 1,
+  "stamina" : 1,
+  "target" : 2,
+  "momentum" : 1,
+  "signature" : false,
+  "finisher" : false,
+  "pin" : false,
+  "number" : 2,
+  "set" : "OT"
+}, {
+  "name" : "Guillotine Choke",
+  "type" : "Grapple",
+  "damage" : 3,
+  "stamina" : 2,
+  "target" : 4,
+  "momentum" : 2,
+  "signature" : true,
+  "finisher" : false,
+  "pin" : true,
+  "number" : 12,
+  "set" : "OT"
+}, {
+  "name" : "Rear Nacked Choke",
+  "type" : "Grapple",
+  "damage" : 5,
+  "stamina" : 2,
+  "target" : 5,
+  "momentum" : 3,
+  "signature" : true,
+  "finisher" : false,
+  "pin" : true,
+  "number" : 14,
+  "set" : "OT"
+}, {
+  "name" : "Side Scissors Kick",
+  "type" : "Strike",
+  "damage" : 1,
+  "stamina" : 1,
+  "target" : 2,
+  "momentum" : 1,
+  "signature" : false,
+  "finisher" : false,
+  "taunt" : true,
+  "pin" : false,
+  "number" : 3,
+  "set" : "OT"
+}, {
+  "name" : "Hay Maker",
+  "type" : "Strike",
+  "damage" : 2,
+  "stamina" : 1,
+  "target" : 2,
+  "momentum" : 2,
+  "signature" : false,
+  "finisher" : false,
+  "taunt" : true,
+  "pin" : false,
+  "number" : 5,
+  "set" : "OT"
+}, {
+  "name" : "Flying Knee",
+  "type" : "Strike",
+  "damage" : 2,
+  "stamina" : 1,
+  "target" : 3,
+  "momentum" : 1,
+  "signature" : false,
+  "finisher" : false,
+  "taunt" : false,
+  "pin" : false,
+  "number" : 8,
+  "set" : "OT"
+}, {
+  "name" : "Flying Sidekick",
+  "type" : "Strike",
+  "damage" : 3,
+  "stamina" : 1,
+  "target" : 3,
+  "momentum" : 2,
+  "signature" : false,
+  "finisher" : false,
+  "taunt" : true,
+  "pin" : false,
+  "number" : 10,
+  "set" : "OT"
+}, {
+  "name" : "Punch",
+  "type" : "Strike",
+  "damage" : 1,
+  "stamina" : 1,
+  "target" : 2,
+  "momentum" : 1,
+  "signature" : false,
+  "finisher" : false,
+  "taunt" : true,
+  "pin" : false,
+  "number" : 1,
+  "set" : "OT"
+}, {
+  "name" : "Flying Armbar",
+  "type" : "Grapple",
+  "damage" : 1,
+  "stamina" : 1,
+  "target" : 3,
+  "momentum" : 2,
+  "signature" : false,
+  "finisher" : false,
+  "taunt" : false,
+  "recover" : true,
+  "pin" : false,
+  "number" : 6,
+  "set" : "OT"
+}, {
+  "name" : "Cross",
+  "type" : "Strike",
+  "damage" : 1,
+  "stamina" : 1,
+  "target" : 2,
+  "momentum" : 1,
+  "signature" : false,
+  "finisher" : false,
+  "taunt" : false,
+  "pin" : false,
+  "number" : 4,
+  "set" : "OT"
+}, {
+  "name" : "Brainbuster",
+  "type" : "Throw",
+  "damage" : 4,
+  "stamina" : 2,
+  "target" : 4,
+  "momentum" : 2,
+  "signature" : true,
+  "finisher" : false,
+  "taunt" : true,
+  "pin" : false,
+  "number" : 13,
+  "set" : "OT"
+}, {
+  "name" : "Vertical Suplex",
+  "type" : "Throw",
+  "damage" : 2,
+  "stamina" : 2,
+  "target" : 3,
+  "momentum" : 2,
+  "signature" : false,
+  "finisher" : false,
+  "taunt" : false,
+  "pin" : false,
+  "number" : 9,
+  "set" : "OT"
+}, {
+  "name" : "Armbar",
+  "type" : "Grapple",
+  "damage" : 2,
+  "stamina" : 1,
+  "target" : 3,
+  "momentum" : 1,
+  "signature" : false,
+  "finisher" : false,
+  "taunt" : true,
+  "pin" : false,
+  "number" : 7,
+  "set" : "OT"
 } ]
