@@ -69,6 +69,9 @@ public class CardListView extends Main {
     TextField staminaField = new TextField();
     Checkbox signatureField = new Checkbox();
     Checkbox finisherField = new Checkbox();
+    Checkbox tauntField = new Checkbox();
+    Checkbox recoverField = new Checkbox();
+    Checkbox pinField = new Checkbox();
     ComboBox<String> typeField = new ComboBox<>();
     typeField.setItems("Strike", "Grapple", "Aerial", "Throw");
     typeField.setPlaceholder("Select type");
@@ -124,6 +127,21 @@ public class CardListView extends Main {
         .setHeader("Is Finisher?")
         .setEditorComponent(finisherField)
         .setSortable(true);
+    cardGrid
+        .addColumn(Card::getTaunt)
+        .setHeader("Is Taunt?")
+        .setEditorComponent(tauntField)
+        .setSortable(true);
+    cardGrid
+        .addColumn(Card::getRecover)
+        .setHeader("Is Recover?")
+        .setEditorComponent(recoverField)
+        .setSortable(true);
+    cardGrid
+        .addColumn(Card::getPin)
+        .setHeader("Is Pin?")
+        .setEditorComponent(pinField)
+        .setSortable(true);
     cardGrid.addColumn(Card::getCreationDate).setHeader("Creation Date");
     cardGrid
         .addComponentColumn(
@@ -160,6 +178,9 @@ public class CardListView extends Main {
         .bind("stamina");
     binder.forField(signatureField).bind("signature");
     binder.forField(finisherField).bind("finisher");
+    binder.forField(tauntField).bind("taunt");
+    binder.forField(recoverField).bind("recover");
+    binder.forField(pinField).bind("pin");
 
     setSizeFull();
     addClassNames(

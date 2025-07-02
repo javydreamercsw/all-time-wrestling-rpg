@@ -73,12 +73,17 @@ public class DataInitializer {
         try (var is = resource.getInputStream()) {
           var cardsFromFile = mapper.readValue(is, new TypeReference<List<CardDTO>>() {});
           Map<String, Card> existing =
-              cardService.findAll().stream().collect(Collectors.toMap(Card::getName, c -> c));
+              cardService.findAll().stream()
+                  .collect(
+                      Collectors.toMap(
+                          c -> c.getName() + "#" + c.getNumber(), // Unique key: name + number
+                          c -> c));
           Map<String, CardSet> sets =
               cardSetService.findAll().stream().collect(Collectors.toMap(CardSet::getName, s -> s));
           for (CardDTO dto : cardsFromFile) {
             CardSet set = sets.get(dto.getSet());
-            Card card = existing.getOrDefault(dto.getName(), new Card());
+            final String key = dto.getName() + "#" + dto.getNumber();
+            Card card = existing.getOrDefault(key, new Card());
             card.setName(dto.getName());
             card.setDamage(dto.getDamage());
             card.setFinisher(dto.isFinisher());
@@ -89,6 +94,9 @@ public class DataInitializer {
             card.setNumber(dto.getNumber());
             card.setSet(set);
             card.setType(dto.getType());
+            card.setTaunt(dto.isTaunt());
+            card.setPin(dto.isPin());
+            card.setRecover(dto.isRecover());
             cardService.save(card);
             if (existing.containsKey(dto.getName())) {
               logger.info("Updated existing card: {}", card.getName());
@@ -259,13 +267,40 @@ public class DataInitializer {
     private String name;
     private String type;
     private int damage;
-    private boolean finisher;
-    private boolean signature;
+    private boolean finisher = false;
+    private boolean signature = false;
+    private boolean pin = false;
+    private boolean taunt = false;
+    private boolean recover = false;
     private int stamina;
     private int momentum;
     private int target;
     private int number;
     private String set;
+
+    public boolean isPin() {
+      return pin;
+    }
+
+    public void setPin(boolean pin) {
+      this.pin = pin;
+    }
+
+    public boolean isTaunt() {
+      return taunt;
+    }
+
+    public void setTaunt(boolean taunt) {
+      this.taunt = taunt;
+    }
+
+    public boolean isRecover() {
+      return recover;
+    }
+
+    public void setRecover(boolean recover) {
+      this.recover = recover;
+    }
 
     public String getName() {
       return name;

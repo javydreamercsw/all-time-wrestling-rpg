@@ -43,10 +43,19 @@ public class Card extends AbstractEntity<Long> {
   private Integer number;
 
   @Column(name = "signature", nullable = false)
-  private Boolean signature;
+  private Boolean signature = false;
 
   @Column(name = "finisher", nullable = false)
-  private Boolean finisher;
+  private Boolean finisher = false;
+
+  @Column(name = "taunt", nullable = false)
+  private Boolean taunt = false;
+
+  @Column(name = "recover", nullable = false)
+  private Boolean recover = false;
+
+  @Column(name = "pin", nullable = false)
+  private Boolean pin = false;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
@@ -142,5 +151,29 @@ public class Card extends AbstractEntity<Long> {
 
   public void setNumber(Integer number) {
     this.number = number;
+  }
+
+  public Boolean getTaunt() {
+    return taunt;
+  }
+
+  public void setTaunt(Boolean taunt) {
+    this.taunt = taunt;
+  }
+
+  public Boolean getRecover() {
+    return recover;
+  }
+
+  public void setRecover(Boolean recover) {
+    this.recover = recover;
+  }
+
+  public Boolean getPin() {
+    return pin;
+  }
+
+  public void setPin(Boolean pin) {
+    this.pin = pin;
   }
 }
