@@ -16,10 +16,14 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import lombok.Getter;
+import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "show", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
+@Getter
+@Setter
 public class Show extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,37 +47,5 @@ public class Show extends AbstractEntity<Long> {
   @Override
   public @Nullable Long getId() {
     return id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public ShowType getType() {
-    return type;
-  }
-
-  public void setType(ShowType type) {
-    this.type = type;
-  }
-
-  public Instant getCreationDate() {
-    return creationDate;
-  }
-
-  public void setCreationDate(Instant creationDate) {
-    this.creationDate = creationDate;
   }
 }

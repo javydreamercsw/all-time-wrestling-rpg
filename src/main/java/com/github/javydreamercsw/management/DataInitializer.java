@@ -18,6 +18,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationRunner;
@@ -263,6 +264,7 @@ public class DataInitializer {
     };
   }
 
+  @Data
   public static class CardDTO {
     private String name;
     private String type;
@@ -277,162 +279,20 @@ public class DataInitializer {
     private int target;
     private int number;
     private String set;
-
-    public boolean isPin() {
-      return pin;
-    }
-
-    public void setPin(boolean pin) {
-      this.pin = pin;
-    }
-
-    public boolean isTaunt() {
-      return taunt;
-    }
-
-    public void setTaunt(boolean taunt) {
-      this.taunt = taunt;
-    }
-
-    public boolean isRecover() {
-      return recover;
-    }
-
-    public void setRecover(boolean recover) {
-      this.recover = recover;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public void setName(String name) {
-      this.name = name;
-    }
-
-    public String getType() {
-      return type;
-    }
-
-    public void setType(String type) {
-      this.type = type;
-    }
-
-    public int getDamage() {
-      return damage;
-    }
-
-    public void setNumber(int number) {
-      this.number = number;
-    }
-
-    public int getNumber() {
-      return number;
-    }
-
-    public void setDamage(int damage) {
-      this.damage = damage;
-    }
-
-    public boolean isFinisher() {
-      return finisher;
-    }
-
-    public void setFinisher(boolean finisher) {
-      this.finisher = finisher;
-    }
-
-    public boolean isSignature() {
-      return signature;
-    }
-
-    public void setSignature(boolean signature) {
-      this.signature = signature;
-    }
-
-    public int getStamina() {
-      return stamina;
-    }
-
-    public void setStamina(int stamina) {
-      this.stamina = stamina;
-    }
-
-    public int getMomentum() {
-      return momentum;
-    }
-
-    public void setMomentum(int momentum) {
-      this.momentum = momentum;
-    }
-
-    public int getTarget() {
-      return target;
-    }
-
-    public void setTarget(int target) {
-      this.target = target;
-    }
-
-    public String getSet() {
-      return set;
-    }
-
-    public void setSet(String set) {
-      this.set = set;
-    }
   }
 
   // DTOs for deserialization
+  @Data
   public static class DeckDTO {
     private String wrestler;
     private List<DeckCardDTO> cards;
-
-    public String getWrestler() {
-      return wrestler;
-    }
-
-    public void setWrestler(String wrestler) {
-      this.wrestler = wrestler;
-    }
-
-    public List<DeckCardDTO> getCards() {
-      return cards;
-    }
-
-    public void setCards(List<DeckCardDTO> cards) {
-      this.cards = cards;
-    }
   }
 
+  @Data
   public static class DeckCardDTO {
     private int number;
     private String set;
     private int amount;
-
-    public int getNumber() {
-      return number;
-    }
-
-    public void setNumber(int number) {
-      this.number = number;
-    }
-
-    public String getSet() {
-      return set;
-    }
-
-    public void setSet(String set) {
-      this.set = set;
-    }
-
-    public int getAmount() {
-      return amount;
-    }
-
-    public void setAmount(int amount) {
-      this.amount = amount;
-    }
   }
 
   public static class ShowDTO {

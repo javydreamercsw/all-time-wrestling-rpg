@@ -10,10 +10,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import lombok.Getter;
+import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "wrestler")
+@Getter
+@Setter
 public class Wrestler extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,61 +48,5 @@ public class Wrestler extends AbstractEntity<Long> {
   @Override
   public @Nullable Long getId() {
     return id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public void setCreationDate(Instant creationDate) {
-    this.creationDate = creationDate;
-  }
-
-  public Instant getCreationDate() {
-    return creationDate;
-  }
-
-  public Integer getStartingStamina() {
-    return startingStamina;
-  }
-
-  public void setStartingStamina(Integer startingStamina) {
-    this.startingStamina = startingStamina;
-  }
-
-  public Integer getLowStamina() {
-    return lowStamina;
-  }
-
-  public void setLowStamina(Integer lowStamina) {
-    this.lowStamina = lowStamina;
-  }
-
-  public Integer getStartingHealth() {
-    return startingHealth;
-  }
-
-  public void setStartingHealth(Integer startingHealth) {
-    this.startingHealth = startingHealth;
-  }
-
-  public Integer getLowHealth() {
-    return lowHealth;
-  }
-
-  public void setLowHealth(Integer lowHealth) {
-    this.lowHealth = lowHealth;
-  }
-
-  public Integer getDeckSize() {
-    return deckSize;
-  }
-
-  public void setDeckSize(Integer deckSize) {
-    this.deckSize = deckSize;
   }
 }
