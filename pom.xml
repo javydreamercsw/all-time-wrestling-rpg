@@ -19,7 +19,7 @@
   <properties>
     <archunit.version>1.4.1</archunit.version>
     <java.version>17</java.version>
-    <vaadin.version>24.7.6</vaadin.version>
+    <vaadin.version>24.8.6</vaadin.version>
   </properties>
 
   <dependencyManagement>
