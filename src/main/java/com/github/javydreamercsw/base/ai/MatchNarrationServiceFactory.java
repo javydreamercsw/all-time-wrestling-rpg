@@ -33,7 +33,7 @@ public class MatchNarrationServiceFactory {
       new ProviderPriority("Gemini", 1, 0.0, "FREE tier with excellent quality"),
       new ProviderPriority("Claude", 2, 0.25, "Claude Haiku - good quality, reasonable cost"),
       new ProviderPriority("OpenAI", 3, 0.50, "GPT-3.5 - good quality, moderate cost"),
-      new ProviderPriority("Mock", 99, 0.0, "Testing only")
+      new ProviderPriority("Mock", 10, 0.0, "Mock AI for testing and development")
     };
 
     for (ProviderPriority priority : priorityOrder) {
@@ -73,7 +73,7 @@ public class MatchNarrationServiceFactory {
   /**
    * Gets a specific match narration service by provider name.
    *
-   * @param providerName The name of the provider (e.g., "Gemini", "Claude", "OpenAI")
+   * @param providerName The name of the provider (e.g., "Gemini", "Claude", "OpenAI", "Mock")
    * @return The service if available, null otherwise
    */
   public MatchNarrationService getServiceByProvider(String providerName) {
@@ -83,6 +83,33 @@ public class MatchNarrationServiceFactory {
         .filter(MatchNarrationService::isAvailable)
         .findFirst()
         .orElse(null);
+  }
+
+  /**
+   * Gets the mock service for testing purposes. The mock service is always available and generates
+   * realistic narrations.
+   *
+   * @return The mock service, or null if not found
+   */
+  public MatchNarrationService getMockService() {
+    return getServiceByProvider("Mock");
+  }
+
+  /**
+   * Forces the use of mock service for testing, even if real AI providers are available. Useful for
+   * development and testing scenarios.
+   *
+   * @return The mock service
+   */
+  public MatchNarrationService getTestingService() {
+    MatchNarrationService mockService = getMockService();
+    if (mockService != null) {
+      log.info("Using Mock AI service for testing (forced selection)");
+      return mockService;
+    }
+
+    log.warn("Mock service not available, falling back to best available service");
+    return getBestAvailableService();
   }
 
   /**
@@ -120,13 +147,25 @@ public class MatchNarrationServiceFactory {
           "PAID",
           "Claude Haiku: $0.25/1K input, $1.25/1K output - good quality, reasonable cost");
     } else if (lowerName.contains("openai")) {
-      return new CostInfo(
-          3,
-          0.50,
-          "PAID",
-          "GPT-3.5: $0.50/1K input, $1.50/1K output - good quality, moderate cost");
+      if (lowerName.contains("gpt-4")) {
+        return new CostInfo(
+            5,
+            10.0,
+            "PREMIUM",
+            "GPT-4: $10/1K input, $30/1K output - excellent quality, expensive");
+      } else {
+        return new CostInfo(
+            3,
+            0.50,
+            "PAID",
+            "GPT-3.5: $0.50/1K input, $1.50/1K output - good quality, moderate cost");
+      }
     } else if (lowerName.contains("mock")) {
-      return new CostInfo(99, 0.0, "FREE", "Mock service for testing - no real AI");
+      return new CostInfo(
+          10,
+          0.0,
+          "FREE",
+          "Mock AI: Always available, realistic narrations, perfect for testing and development");
     } else {
       return new CostInfo(50, 999.0, "UNKNOWN", "Unknown provider pricing");
     }
@@ -151,9 +190,23 @@ public class MatchNarrationServiceFactory {
       return 0.0; // Free tier
     }
 
-    // Estimate output cost as 5x input cost (typical AI pricing model)
+    // Calculate costs based on provider-specific pricing models
     double inputCost = inputTokens * costInfo.costPer1KTokens();
-    double outputCost = outputTokens * (costInfo.costPer1KTokens() * 5);
+    double outputCost;
+
+    if (providerName.toLowerCase().contains("gpt-4")) {
+      // GPT-4: $10 input, $30 output (3x multiplier)
+      outputCost = outputTokens * (costInfo.costPer1KTokens() * 3);
+    } else if (providerName.toLowerCase().contains("openai")) {
+      // GPT-3.5: $0.50 input, $1.50 output (3x multiplier)
+      outputCost = outputTokens * (costInfo.costPer1KTokens() * 3);
+    } else if (providerName.toLowerCase().contains("claude")) {
+      // Claude: $0.25 input, $1.25 output (5x multiplier)
+      outputCost = outputTokens * (costInfo.costPer1KTokens() * 5);
+    } else {
+      // Default: 5x multiplier for other providers
+      outputCost = outputTokens * (costInfo.costPer1KTokens() * 5);
+    }
 
     return inputCost + outputCost;
   }

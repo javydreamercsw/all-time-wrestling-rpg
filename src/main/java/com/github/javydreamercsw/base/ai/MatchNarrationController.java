@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -110,6 +111,83 @@ public class MatchNarrationController {
 
     } catch (Exception e) {
       log.error("Error narrating match", e);
+      return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+    }
+  }
+
+  /** Test a specific AI provider by name. */
+  @PostMapping("/test/{provider}")
+  public ResponseEntity<Map<String, Object>> testSpecificProvider(@PathVariable String provider) {
+    MatchNarrationService service = serviceFactory.getServiceByProvider(provider);
+    if (service == null) {
+      return ResponseEntity.badRequest()
+          .body(Map.of("error", "Provider '" + provider + "' not available or not found"));
+    }
+
+    try {
+      MatchNarrationContext context = createSampleContext();
+      String narration = service.narrateMatch(context);
+      double estimatedCost = serviceFactory.getEstimatedMatchCost(service.getProviderName());
+
+      return ResponseEntity.ok(
+          Map.of(
+              "provider",
+              service.getProviderName(),
+              "narration",
+              narration,
+              "testProvider",
+              provider,
+              "estimatedCost",
+              estimatedCost,
+              "context",
+              Map.of(
+                  "matchType",
+                  context.getMatchType().getMatchType(),
+                  "wrestlers",
+                  context.getWrestlers().stream().map(WrestlerContext::getName).toList(),
+                  "outcome",
+                  context.getDeterminedOutcome())));
+
+    } catch (Exception e) {
+      log.error("Error testing provider: " + provider, e);
+      return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+    }
+  }
+
+  /** Create a sample match narration using mock AI for testing purposes. */
+  @PostMapping("/test")
+  public ResponseEntity<Map<String, Object>> createTestMatch() {
+    MatchNarrationService service = serviceFactory.getTestingService();
+    if (service == null) {
+      return ResponseEntity.badRequest().body(Map.of("error", "No testing service available"));
+    }
+
+    try {
+      MatchNarrationContext context = createSampleContext();
+      String narration = service.narrateMatch(context);
+      double estimatedCost = serviceFactory.getEstimatedMatchCost(service.getProviderName());
+
+      return ResponseEntity.ok(
+          Map.of(
+              "provider",
+              service.getProviderName(),
+              "narration",
+              narration,
+              "testMatch",
+              true,
+              "estimatedCost",
+              estimatedCost,
+              "context",
+              Map.of(
+                  "matchType",
+                  context.getMatchType().getMatchType(),
+                  "wrestlers",
+                  context.getWrestlers().stream().map(WrestlerContext::getName).toList(),
+                  "outcome",
+                  context.getDeterminedOutcome())));
+
+    } catch (Exception e) {
+      log.error("Error creating test match narration", e);
       return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
     }
   }
