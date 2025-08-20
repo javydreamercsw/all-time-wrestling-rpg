@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,11 +29,29 @@ public class MatchNarrationController {
 
   private final MatchNarrationServiceFactory serviceFactory;
   private final MatchNarrationConfig config;
+  private final Environment environment;
+
+  /**
+   * Gets the appropriate service based on the current environment. In test profile, always use the
+   * testing service to avoid costs.
+   */
+  private MatchNarrationService getAppropriateService() {
+    if (isTestProfile()) {
+      log.debug("Test profile detected, using testing service");
+      return serviceFactory.getTestingService();
+    }
+    return serviceFactory.getBestAvailableService();
+  }
+
+  /** Checks if the test profile is active. */
+  private boolean isTestProfile() {
+    return environment.acceptsProfiles("test");
+  }
 
   /** Get current AI provider limits and configuration. */
   @GetMapping("/limits")
   public ResponseEntity<Map<String, Object>> getLimits() {
-    MatchNarrationService currentService = serviceFactory.getBestAvailableService();
+    MatchNarrationService currentService = getAppropriateService();
 
     return ResponseEntity.ok(
         Map.of(
@@ -84,7 +103,7 @@ public class MatchNarrationController {
   public ResponseEntity<Map<String, Object>> narrateMatch(
       @RequestBody MatchNarrationContext context) {
 
-    MatchNarrationService service = serviceFactory.getBestAvailableService();
+    MatchNarrationService service = getAppropriateService();
     if (service == null) {
       return ResponseEntity.badRequest()
           .body(Map.of("error", "No match narration service available"));
@@ -196,7 +215,7 @@ public class MatchNarrationController {
   @PostMapping("/sample")
   public ResponseEntity<Map<String, Object>> createSampleMatch() {
 
-    MatchNarrationService service = serviceFactory.getBestAvailableService();
+    MatchNarrationService service = getAppropriateService();
     if (service == null) {
       return ResponseEntity.badRequest()
           .body(Map.of("error", "No match narration service available"));

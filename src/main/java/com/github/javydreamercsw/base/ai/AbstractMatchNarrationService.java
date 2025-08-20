@@ -26,7 +26,7 @@ public abstract class AbstractMatchNarrationService implements MatchNarrationSer
     prompt.append("MATCH SETUP:\n");
     prompt.append("Match Type: ").append(context.getMatchType().getMatchType()).append("\n");
     prompt.append("Stipulation: ").append(context.getMatchType().getStipulation()).append("\n");
-    if (!context.getMatchType().getRules().isEmpty()) {
+    if (context.getMatchType().getRules() != null && !context.getMatchType().getRules().isEmpty()) {
       prompt
           .append("Special Rules: ")
           .append(String.join(", ", context.getMatchType().getRules()))
