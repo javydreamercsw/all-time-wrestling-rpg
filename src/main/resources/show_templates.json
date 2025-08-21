@@ -1,0 +1,248 @@
+[ {
+  "name" : "All Time Rumble",
+  "description" : "🗓 Ideal for: Annual Rumble-style event (think Royal Rumble)\n💥 Feature Match:\n*The All Time Rumble*\n– massive battle royal across eras. Winner gets guaranteed shot at the ATW World Title.",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "3-4 hours",
+    "matchCount" : "8-12 matches",
+    "mainEvent" : "The All Time Rumble - massive battle royal across eras with guaranteed ATW World Title shot",
+    "specialFeatures" : [ "Cross-era battle royal", "Guaranteed title shot", "Era-spanning participants", "Royal Rumble style elimination", "Time period showcases" ],
+    "matchTypes" : [ "Battle Royal", "Cross-generational", "Elimination", "Era-spanning", "Title opportunity" ],
+    "storylineElements" : [ "Championship opportunities", "Era rivalries", "Elimination drama", "Title shot stakes", "Cross-time conflicts" ],
+    "production" : {
+      "venue" : "Large arena (15,000+ capacity)",
+      "pyrotechnics" : true,
+      "specialStaging" : "Royal Rumble inspired setup with era-themed entrances",
+      "commentary" : "High-energy rumble commentary with historical context"
+    }
+  }
+}, {
+  "name" : "Time Warp Takedown",
+  "description" : "*\"One wrong step, and you're fighting your past.\"*\n🗓 Ideal for: Feud-ender PPV or first show of a new season\n💥 Feature Matches: Rivalry Blowoffs, Time Split Match (1 card from old deck allowed), Reset Matches (fans/heat reset post-match)\n**Theme:** Timeline resets, old rivals, hard resets\n### 🎲 Match Generator",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "3-4 hours",
+    "matchCount" : "7-10 matches",
+    "mainEvent" : "Rivalry Blowoff with Timeline Reset mechanics",
+    "specialFeatures" : [ "Feud-ending matches", "Timeline resets", "Time Split matches", "Reset mechanics", "Old rival confrontations" ],
+    "matchTypes" : [ "Rivalry Blowoff", "Time Split", "Reset Match", "Feud-ender", "Timeline manipulation" ],
+    "storylineElements" : [ "Timeline resets", "Old rivalries", "Hard resets", "Past confrontations", "Season transitions" ],
+    "production" : {
+      "venue" : "Medium to large arena (12,000-18,000 capacity)",
+      "pyrotechnics" : true,
+      "specialStaging" : "Time warp effects and reset-themed visuals",
+      "commentary" : "Reset-focused commentary with rivalry history"
+    }
+  }
+}, {
+  "name" : "Infinity Burn",
+  "description" : "*\"There's no going back — only glory or ash.\"*\n🗓 Ideal for: Extreme/Hardcore themed PPV\n💥 Feature Matches: Barbed Wire Deathmatch, Elimination Carnage, Extreme Title defense\n**Theme:** Violence, endurance, pain-for-glory",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "3-4 hours",
+    "matchCount" : "6-9 matches",
+    "mainEvent" : "Extreme Title defense with hardcore stipulations",
+    "specialFeatures" : [ "Hardcore matches", "Extreme stipulations", "Barbed wire matches", "Elimination carnage", "Pain-for-glory theme" ],
+    "matchTypes" : [ "Barbed Wire Deathmatch", "Elimination Carnage", "Extreme Title", "Hardcore", "Violence-themed" ],
+    "storylineElements" : [ "Violence and endurance", "Pain-for-glory", "Extreme confrontations", "Hardcore rivalries", "Brutal competitions" ],
+    "production" : {
+      "venue" : "Medium arena (8,000-12,000 capacity) with specialized safety",
+      "pyrotechnics" : true,
+      "specialStaging" : "Extreme match environments and weapon displays",
+      "commentary" : "Extreme wrestling specialists and safety-focused commentary"
+    }
+  }
+}, {
+  "name" : "Era of Champions",
+  "description" : "*\"Only legends survive to define their age.\"*\n🗓 Ideal for: Title-focused PPV\n💥 Feature Matches: All titles on the line, Champion vs Champion, contender tournaments\n**Theme:** Prestige, honor, and every title on the line",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "4-5 hours",
+    "matchCount" : "8-12 matches",
+    "mainEvent" : "Champion vs Champion with all titles on the line",
+    "specialFeatures" : [ "All titles defended", "Champion vs Champion", "Contender tournaments", "Prestige matches", "Honor-focused competition" ],
+    "matchTypes" : [ "Championship", "Champion vs Champion", "Tournament", "Title defense", "Prestige match" ],
+    "storylineElements" : [ "Prestige and honor", "Championship focus", "Legend-defining moments", "Title implications", "Era-defining battles" ],
+    "production" : {
+      "venue" : "Large arena (15,000+ capacity) with championship staging",
+      "pyrotechnics" : true,
+      "specialStaging" : "Championship-focused setup with title displays",
+      "commentary" : "Championship-focused commentary with prestige emphasis"
+    }
+  }
+}, {
+  "name" : "Temporal Fallout",
+  "description" : "*\"When the timeline breaks, chaos reigns supreme.\"*\n🗓 Ideal for: Aftermath/consequence show following major timeline changes\n💥 Feature Matches: Consequence matches, Timeline Repair attempts, Chaos-driven booking\n**Theme:** Aftermath, consequences, and timeline chaos",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "3-4 hours",
+    "matchCount" : "7-10 matches",
+    "mainEvent" : "Timeline Repair match with chaos-driven consequences",
+    "specialFeatures" : [ "Consequence matches", "Timeline chaos", "Aftermath storylines", "Repair attempts", "Chaos-driven booking" ],
+    "matchTypes" : [ "Consequence", "Timeline Repair", "Chaos-driven", "Aftermath", "Fallout match" ],
+    "storylineElements" : [ "Timeline chaos", "Aftermath consequences", "Broken timelines", "Chaos reigns", "Repair attempts" ],
+    "production" : {
+      "venue" : "Medium arena (10,000-15,000 capacity) with chaotic staging",
+      "pyrotechnics" : true,
+      "specialStaging" : "Chaotic timeline effects and broken reality visuals",
+      "commentary" : "Chaos-focused commentary with timeline analysis"
+    }
+  }
+}, {
+  "name" : "Legends Converge",
+  "description" : "*\"When legends meet, history is rewritten.\"*\n🗓 Ideal for: Legend showcase and cross-generational dream matches\n💥 Feature Matches: Legend vs Legend, Cross-generational dream matches, Hall of Fame celebrations\n**Theme:** Legends, legacy, and cross-generational conflicts",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "4-5 hours",
+    "matchCount" : "8-12 matches",
+    "mainEvent" : "Legend vs Legend dream match with legacy implications",
+    "specialFeatures" : [ "Legend showcases", "Cross-generational matches", "Dream match opportunities", "Hall of Fame moments", "Legacy celebrations" ],
+    "matchTypes" : [ "Legend showcase", "Cross-generational", "Dream match", "Legacy match", "Hall of Fame" ],
+    "storylineElements" : [ "Legend confrontations", "Legacy preservation", "Cross-generational conflicts", "Historical significance", "Dream match realization" ],
+    "production" : {
+      "venue" : "Large arena (15,000+ capacity) with legend-focused staging",
+      "pyrotechnics" : true,
+      "specialStaging" : "Legend tribute displays and historical wrestling presentations",
+      "commentary" : "Legend-focused commentary with historical wrestling context"
+    }
+  }
+}, {
+  "name" : "Timeline Turmoil",
+  "description" : "*\"When timelines collide, only chaos survives.\"*\n🗓 Ideal for: Timeline conflict resolution and temporal chaos\n💥 Feature Matches: Timeline collision matches, Temporal chaos battles, Reality-warping conflicts\n**Theme:** Timeline collisions, temporal chaos, and reality disruption",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "3-4 hours",
+    "matchCount" : "7-10 matches",
+    "mainEvent" : "Timeline collision match with reality-warping consequences",
+    "specialFeatures" : [ "Timeline collisions", "Temporal chaos", "Reality disruption", "Timeline conflicts", "Chaos survival" ],
+    "matchTypes" : [ "Timeline collision", "Temporal chaos", "Reality-warping", "Timeline conflict", "Chaos battle" ],
+    "storylineElements" : [ "Timeline collisions", "Temporal turmoil", "Reality disruption", "Chaos survival", "Timeline resolution" ],
+    "production" : {
+      "venue" : "Medium arena (10,000-15,000 capacity) with timeline effects",
+      "pyrotechnics" : true,
+      "specialStaging" : "Timeline collision effects and temporal chaos visuals",
+      "commentary" : "Chaos-focused commentary with timeline conflict analysis"
+    }
+  }
+}, {
+  "name" : "Paradox Slam",
+  "description" : "*\"In paradox wrestling, contradictions become reality.\"*\n🗓 Ideal for: Paradox-themed matches and contradiction-based storylines\n💥 Feature Matches: Paradox matches, Contradiction-based conflicts, Logic-defying encounters\n**Theme:** Paradoxes, contradictions, and logic-defying wrestling",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "3-4 hours",
+    "matchCount" : "7-10 matches",
+    "mainEvent" : "Paradox Championship with contradiction-based mechanics",
+    "specialFeatures" : [ "Paradox mechanics", "Contradiction-based matches", "Logic-defying encounters", "Reality contradictions", "Paradox resolution" ],
+    "matchTypes" : [ "Paradox match", "Contradiction-based", "Logic-defying", "Reality-bending", "Paradox resolution" ],
+    "storylineElements" : [ "Paradox conflicts", "Contradiction storylines", "Logic-defying moments", "Reality contradictions", "Paradox wrestling" ],
+    "production" : {
+      "venue" : "Medium arena (10,000-15,000 capacity) with paradox effects",
+      "pyrotechnics" : true,
+      "specialStaging" : "Paradox effects and contradiction-themed visuals",
+      "commentary" : "Paradox-focused commentary with contradiction analysis"
+    }
+  }
+}, {
+  "name" : "Chrono Clash",
+  "description" : "*\"Past and future collide in battles that shape the timeline.\"*\n🗓 Ideal for: Mid-season or big-feud blowoff show\n💥 Feature Matches: Intertemporal Title showcase, grudge matches, time-travel gimmicks (e.g. \"Anachronism Match\")\n**Theme:** Inter-era battles and altered time dynamics",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "3-4 hours",
+    "matchCount" : "7-10 matches",
+    "mainEvent" : "Intertemporal Title showcase with time-travel gimmicks",
+    "specialFeatures" : [ "Inter-era battles", "Time-travel gimmicks", "Anachronism matches", "Altered time dynamics", "Timeline-shaping conflicts" ],
+    "matchTypes" : [ "Intertemporal Title", "Grudge", "Time-themed", "Era clash", "Timeline altering" ],
+    "storylineElements" : [ "Past and future collisions", "Timeline alterations", "Inter-era conflicts", "Time dynamics", "Temporal battles" ],
+    "production" : {
+      "venue" : "Medium to large arena (10,000-15,000 capacity)",
+      "pyrotechnics" : true,
+      "specialStaging" : "Time portal effects and era-collision visuals",
+      "commentary" : "Timeline-focused commentary with temporal conflict analysis"
+    }
+  }
+}, {
+  "name" : "Temporal Diversion",
+  "description" : "*\"When history is rewritten mid-match.\"*\n🗓 Ideal for: Unpredictable swerves, match rewinds, sudden stipulations\n💥 Feature Matches: Time-loop Match (restart on pinfall), Opponent Swap, Mystery Booking Gauntlet\n**Theme:** Alternate timelines & match rewinds\n### 🎲 Match Generator",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "3-4 hours",
+    "matchCount" : "7-10 matches",
+    "mainEvent" : "Time-loop Match with unpredictable rewinds",
+    "specialFeatures" : [ "Unpredictable swerves", "Match rewinds", "Time-loop mechanics", "Opponent swaps", "Mystery booking" ],
+    "matchTypes" : [ "Time-loop Match", "Opponent Swap", "Mystery Booking", "Rewind match", "Alternate timeline" ],
+    "storylineElements" : [ "History rewrites", "Alternate timelines", "Match rewinds", "Unpredictable swerves", "Timeline diversions" ],
+    "production" : {
+      "venue" : "Medium arena (10,000-15,000 capacity) with rewind effects",
+      "pyrotechnics" : true,
+      "specialStaging" : "Time-loop effects and rewind-themed visuals",
+      "commentary" : "Rewind-focused commentary with timeline diversion analysis"
+    }
+  }
+}, {
+  "name" : "Continuum",
+  "description" : "> \"The future isn't waiting — it's fighting.\"\n### 🎙 Theme\n**Innovation, rebellion, and raw momentum.** Continuum is chaotic, experimental, and edgy. It's the proving ground for newer wrestlers and the home of the Intertemporal and Extreme divisions. Think of it as the *collision point of chaos and evolution*.\n### 🏟 Environment Description\nThe show is set in a **high-tech warehouse-like venue** with glitching holograms, shifting neon lighting, and an unpredictable vibe. The stage seems to shift or pulse like it's phasing through realities.\nThe crowd is younger, rowdy, and emotionally reactive — \"cheer the rebel, boo the corporate.\"\n### 🎮 Storytelling Vibe\n• Factions dominate the show\n• Run-ins, drama cards, and weapon use are common\n• Sci-fi-style angles like \"time clones,\" \"memory wipes,\" or \"alternate universe wrestlers\"\n• Underhanded tactics are expected, not surprising\n### 🧠 Booking Flavor\n• Open the show with **chaotic energy** — brawls, unresolved drama, or surprise matches\n• Heavy use of **stipulation matches** or **Extreme Rules**\n• Heat-driven storylines, including rogue managers and faction wars\n• Tag matches and Intertemporal Title matches featured here",
+  "showTypeName" : "Weekly",
+  "content" : {
+    "format" : "Weekly Television Show",
+    "duration" : "2 hours",
+    "matchCount" : "4-6 matches",
+    "mainEvent" : "Intertemporal or Extreme Title matches with chaotic elements",
+    "specialFeatures" : [ "Chaotic energy", "Faction warfare", "Experimental matches", "Rebellion theme", "High-tech staging" ],
+    "matchTypes" : [ "Intertemporal Title", "Extreme Rules", "Faction warfare", "Stipulation match", "Chaotic encounter" ],
+    "storylineElements" : [ "Innovation and rebellion", "Faction dominance", "Chaotic evolution", "Underhanded tactics", "Sci-fi angles" ],
+    "production" : {
+      "venue" : "High-tech warehouse venue (5,000-8,000 capacity)",
+      "pyrotechnics" : true,
+      "specialStaging" : "Glitching holograms and shifting neon lighting with reality-phasing effects",
+      "commentary" : "Edgy, experimental commentary focusing on chaos and evolution"
+    }
+  }
+}, {
+  "name" : "Timeless",
+  "description" : "> \"Where legends reign and history is made again.\"\n### 🎙 Theme\n**Classic prestige and grand rivalries.** Timeless is your *flagship show*, focused on legacy, honor, and intergenerational conflict. This is where main-event feuds are born and wrestling tradition is sacred — even when it's broken.\n### 🏟 Environment Description\nThe arena has **golden spotlights**, **marble-like pillars**, and a **coliseum-inspired LED screen**. Commentators speak in a mix of reverence and hype, invoking historic feuds and past champions often.\nFans are older, louder, and more traditional — think \"ECW crowd meets Ric Flair fans.\"\n### 🎮 Storytelling Vibe\n• Long-running feuds and rematches\n• Grand promos, in-ring debates, and \"contract signings\"\n• Veterans and icons often appear here first\n• Face vs Heel storytelling is emphasized\n• Title pictures are established and elevated\n### 🧠 Booking Flavor\n• Start each show with a **\"Legacy Spotlight\"** (promo or segment recalling a past event)\n• Matches tend to have **clean finishes** or **classic interference** (e.g., someone costs the match, but doesn't brawl)\n• Great place for **World Title defenses** or contenders being decided",
+  "showTypeName" : "Weekly",
+  "content" : {
+    "format" : "Weekly Television Show",
+    "duration" : "2 hours",
+    "matchCount" : "4-6 matches",
+    "mainEvent" : "World Title defenses or main-event feuds with legacy implications",
+    "specialFeatures" : [ "Legacy spotlight", "Grand rivalries", "Classic prestige", "Traditional wrestling", "Honor-focused" ],
+    "matchTypes" : [ "World Title defense", "Legacy match", "Grand rivalry", "Classic encounter", "Prestige match" ],
+    "storylineElements" : [ "Classic prestige", "Grand rivalries", "Legacy honor", "Intergenerational conflict", "Wrestling tradition" ],
+    "production" : {
+      "venue" : "Traditional arena (8,000-12,000 capacity) with classic wrestling atmosphere",
+      "pyrotechnics" : true,
+      "specialStaging" : "Golden spotlights, marble-like pillars, and coliseum-inspired LED screens",
+      "commentary" : "Reverent and hype-focused commentary invoking historic feuds and past champions"
+    }
+  }
+}, {
+  "name" : "Quantum Quarrel",
+  "description" : "*\"In quantum wrestling, every possibility becomes reality.\"*\n🗓 Ideal for: Science fiction themed show with quantum mechanics\n💥 Feature Matches: Quantum matches, Probability-based outcomes, Multi-dimensional conflicts\n**Theme:** Quantum mechanics, probability, and multi-dimensional wrestling",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "3-4 hours",
+    "matchCount" : "7-10 matches",
+    "mainEvent" : "Quantum Championship with probability-based mechanics",
+    "specialFeatures" : [ "Quantum mechanics", "Probability outcomes", "Multi-dimensional conflicts", "Science fiction theme", "Reality-bending matches" ],
+    "matchTypes" : [ "Quantum match", "Probability-based", "Multi-dimensional", "Science fiction", "Reality-bending" ],
+    "storylineElements" : [ "Quantum mechanics", "Multiple realities", "Probability conflicts", "Science fiction", "Dimensional wrestling" ],
+    "production" : {
+      "venue" : "Medium arena (10,000-15,000 capacity) with quantum effects",
+      "pyrotechnics" : true,
+      "specialStaging" : "Quantum effects and multi-dimensional visuals",
+      "commentary" : "Science fiction commentary with quantum explanations"
+    }
+  }
+} ]

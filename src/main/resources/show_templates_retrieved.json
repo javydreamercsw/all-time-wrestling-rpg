@@ -1,0 +1,58 @@
+[ {
+  "name" : "All Time Rumble",
+  "description" : "Premium live event featuring the signature All Time Rumble match with wrestlers from all eras competing for championship opportunities",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "3-4 hours",
+    "matchCount" : "8-12 matches",
+    "mainEvent" : "All Time Rumble Match (30+ participants)",
+    "specialFeatures" : [ "Timed entries every 90 seconds", "Elimination by going over the top rope", "Winner receives championship opportunity", "Surprise entrants from different eras", "Cross-era storyline culminations" ],
+    "matchTypes" : [ "Rumble", "Championship", "Grudge", "Multi-person", "Title defense" ],
+    "storylineElements" : [ "Cross-era rivalries", "Championship implications", "Surprise returns", "Alliance formations and betrayals", "Era supremacy battles" ],
+    "production" : {
+      "venue" : "Large arena (15,000+ capacity)",
+      "pyrotechnics" : true,
+      "specialStaging" : "Rumble-specific entrance setup with multiple entry points",
+      "commentary" : "Full announce team with special guests and era historians"
+    }
+  }
+}, {
+  "name" : "Chrono Clash",
+  "description" : "Premium live event with time-themed matches and storylines featuring temporal conflicts",
+  "showTypeName" : "Premium Live Event (PLE)",
+  "content" : {
+    "format" : "Premium Live Event",
+    "duration" : "3-4 hours",
+    "matchCount" : "7-10 matches",
+    "mainEvent" : "Time-themed championship match with era-specific stipulations",
+    "specialFeatures" : [ "Matches representing different time periods", "Era-specific match stipulations", "Time travel storyline elements", "Historical wrestling style showcases", "Temporal anomaly match mechanics" ],
+    "matchTypes" : [ "Championship", "Era-specific", "Time-themed", "Grudge", "Historical" ],
+    "storylineElements" : [ "Time period conflicts", "Historical rivalries", "Temporal anomalies affecting matches", "Era representatives competing", "Timeline disruption consequences" ],
+    "production" : {
+      "venue" : "Medium to large arena (10,000-15,000 capacity)",
+      "pyrotechnics" : true,
+      "specialStaging" : "Time period themed decorations and era-specific entrances",
+      "commentary" : "Era-specific commentary styles and historical context"
+    }
+  }
+}, {
+  "name" : "Continuum",
+  "description" : "Weekly wrestling show featuring ongoing storylines and character development across all time periods",
+  "showTypeName" : "Weekly",
+  "content" : {
+    "format" : "Weekly Television Show",
+    "duration" : "2 hours",
+    "matchCount" : "4-6 matches",
+    "mainEvent" : "Featured match advancing major storylines",
+    "specialFeatures" : [ "Ongoing storyline development", "Character building segments", "Regular championship defenses", "Contender tournaments", "Cross-era interactions" ],
+    "matchTypes" : [ "Singles", "Tag Team", "Contender", "Storyline", "Development" ],
+    "storylineElements" : [ "Weekly character development", "Building toward premium events", "Rivalry escalation", "Championship contender establishment", "Era integration storylines" ],
+    "production" : {
+      "venue" : "Television studio or small arena (3,000-5,000 capacity)",
+      "pyrotechnics" : false,
+      "specialStaging" : "Standard weekly setup with era-themed elements",
+      "commentary" : "Regular announce team with rotating special guests"
+    }
+  }
+} ]

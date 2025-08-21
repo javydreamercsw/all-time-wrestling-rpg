@@ -17,6 +17,10 @@ spring:
       hibernate:
         format_sql: false
 
+  # Disable Flyway for tests - use JPA schema generation instead
+  flyway:
+    enabled: false
+
 # Match narration configuration for testing
 match-narration:
   ai:

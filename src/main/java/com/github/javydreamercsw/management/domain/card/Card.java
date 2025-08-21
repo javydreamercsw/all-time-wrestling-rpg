@@ -39,7 +39,7 @@ public class Card extends AbstractEntity<Long> {
   @Column(name = "momentum", nullable = false)
   private Integer momentum;
 
-  @Column(name = "number", nullable = false)
+  @Column(name = "number")
   private Integer number;
 
   @Column(name = "signature", nullable = false)
@@ -175,5 +175,14 @@ public class Card extends AbstractEntity<Long> {
 
   public void setPin(Boolean pin) {
     this.pin = pin;
+  }
+
+  /** Ensure default values before persisting. */
+  @PrePersist
+  @PreUpdate
+  private void ensureDefaults() {
+    if (number == null) {
+      number = 0;
+    }
   }
 }

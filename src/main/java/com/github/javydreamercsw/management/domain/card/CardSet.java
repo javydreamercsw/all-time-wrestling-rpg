@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
@@ -32,5 +33,29 @@ public class CardSet extends AbstractEntity<Long> {
   @Override
   public @Nullable Long getId() {
     return id;
+  }
+
+  /** Ensure default values before persisting. */
+  @PrePersist
+  private void ensureDefaults() {
+    if (creationDate == null) {
+      creationDate = Instant.now();
+    }
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public Instant getCreationDate() {
+    return creationDate;
+  }
+
+  public void setCreationDate(Instant creationDate) {
+    this.creationDate = creationDate;
   }
 }

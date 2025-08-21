@@ -6,13 +6,20 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.dto.MatchRuleDTO;
+import com.github.javydreamercsw.management.dto.MatchTypeDTO;
+import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckCardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
+import com.github.javydreamercsw.management.service.match.MatchRuleService;
+import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
@@ -24,12 +31,110 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 
 @Configuration
+@Profile("!test")
 public class DataInitializer {
   private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
+
+  @Bean
+  @Order(-1)
+  public ApplicationRunner loadMatchRulesFromFile(MatchRuleService matchRuleService) {
+    return args -> {
+      ClassPathResource resource = new ClassPathResource("match_rules.json");
+      if (resource.exists()) {
+        logger.info("Loading match rules from file: {}", resource.getPath());
+        ObjectMapper mapper = new ObjectMapper();
+        try (var is = resource.getInputStream()) {
+          var matchRulesFromFile = mapper.readValue(is, new TypeReference<List<MatchRuleDTO>>() {});
+
+          for (MatchRuleDTO dto : matchRulesFromFile) {
+            matchRuleService.createOrUpdateRule(
+                dto.getName(), dto.getDescription(), dto.isRequiresHighHeat());
+            logger.info(
+                "Loaded match rule: {} (High Heat: {})", dto.getName(), dto.isRequiresHighHeat());
+          }
+
+          logger.info("Match rule loading completed - {} rules loaded", matchRulesFromFile.size());
+        } catch (Exception e) {
+          logger.error("Error loading match rules from file", e);
+        }
+      } else {
+        logger.warn("Match rules file not found: {}", resource.getPath());
+      }
+    };
+  }
+
+  @Bean
+  @Order(1)
+  public ApplicationRunner loadShowTemplatesFromFile(ShowTemplateService showTemplateService) {
+    return args -> {
+      ClassPathResource resource = new ClassPathResource("show_templates.json");
+      if (resource.exists()) {
+        logger.info("Loading show templates from file: {}", resource.getPath());
+        ObjectMapper mapper = new ObjectMapper();
+        try (var is = resource.getInputStream()) {
+          var templatesFromFile =
+              mapper.readValue(is, new TypeReference<List<ShowTemplateDTO>>() {});
+
+          for (ShowTemplateDTO dto : templatesFromFile) {
+            var template =
+                showTemplateService.createOrUpdateTemplate(
+                    dto.getName(), dto.getDescription(), dto.getShowTypeName(), dto.getNotionUrl());
+            if (template != null) {
+              logger.info(
+                  "Loaded show template: {} (Type: {})", template.getName(), dto.getShowTypeName());
+            } else {
+              logger.warn(
+                  "Failed to load show template: {} - show type not found: {}",
+                  dto.getName(),
+                  dto.getShowTypeName());
+            }
+          }
+
+          logger.info(
+              "Show template loading completed - {} templates processed", templatesFromFile.size());
+        } catch (Exception e) {
+          logger.error("Error loading show templates from file", e);
+        }
+      } else {
+        logger.warn("Show templates file not found: {}", resource.getPath());
+      }
+    };
+  }
+
+  @Bean
+  @Order(0)
+  public ApplicationRunner loadMatchTypesFromFile(MatchTypeService matchTypeService) {
+    return args -> {
+      ClassPathResource resource = new ClassPathResource("match_types.json");
+      if (resource.exists()) {
+        logger.info("Loading match types from file: {}", resource.getPath());
+        ObjectMapper mapper = new ObjectMapper();
+        try (var is = resource.getInputStream()) {
+          var matchTypesFromFile = mapper.readValue(is, new TypeReference<List<MatchTypeDTO>>() {});
+
+          for (MatchTypeDTO dto : matchTypesFromFile) {
+            MatchType matchType =
+                matchTypeService.createOrUpdateMatchType(dto.getName(), dto.getDescription());
+            logger.info(
+                "Loaded match type: {} (Players: {})",
+                matchType.getName(),
+                dto.isUnlimited() ? "Unlimited" : dto.getPlayerAmount());
+          }
+
+          logger.info("Match type loading completed");
+        } catch (Exception e) {
+          logger.error("Error loading match types from file", e);
+        }
+      } else {
+        logger.warn("Match types file not found: {}", resource.getPath());
+      }
+    };
+  }
 
   @Bean
   @Order(1)
@@ -121,19 +226,42 @@ public class DataInitializer {
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var wrestlersFromFile = mapper.readValue(is, new TypeReference<List<Wrestler>>() {});
-          // Map existing wrestlers by name
+          // Map existing wrestlers by name (handle duplicates by keeping the first one)
           Map<String, Wrestler> existing =
               wrestlerService.findAll().stream()
-                  .collect(Collectors.toMap(Wrestler::getName, w -> w));
+                  .collect(
+                      Collectors.toMap(
+                          Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
           for (Wrestler w : wrestlersFromFile) {
             Wrestler existingWrestler = existing.get(w.getName());
             if (existingWrestler != null) {
-              // Update fields
+              // Update card game fields
               existingWrestler.setDeckSize(w.getDeckSize());
               existingWrestler.setStartingHealth(w.getStartingHealth());
               existingWrestler.setLowHealth(w.getLowHealth());
               existingWrestler.setStartingStamina(w.getStartingStamina());
               existingWrestler.setLowStamina(w.getLowStamina());
+
+              // Update ATW RPG fields if they exist in the JSON
+              if (w.getFans() != null) {
+                existingWrestler.setFans(w.getFans());
+              }
+              if (w.getIsPlayer() != null) {
+                existingWrestler.setIsPlayer(w.getIsPlayer());
+              }
+              if (w.getBumps() != null) {
+                existingWrestler.setBumps(w.getBumps());
+              }
+              if (w.getFaction() != null) {
+                existingWrestler.setFaction(w.getFaction());
+              }
+              if (w.getDescription() != null) {
+                existingWrestler.setDescription(w.getDescription());
+              }
+              if (w.getWrestlingStyle() != null) {
+                existingWrestler.setWrestlingStyle(w.getWrestlingStyle());
+              }
+
               wrestlerService.save(existingWrestler);
               logger.info("Updated existing wrestler: {}", existingWrestler.getName());
             } else {
@@ -162,7 +290,9 @@ public class DataInitializer {
           var decksFromFile = mapper.readValue(is, new TypeReference<List<DeckDTO>>() {});
           Map<String, Wrestler> wrestlers =
               wrestlerService.findAll().stream()
-                  .collect(Collectors.toMap(Wrestler::getName, w -> w));
+                  .collect(
+                      Collectors.toMap(
+                          Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
           List<Card> allCards = cardService.findAll();
           for (DeckDTO deckDTO : decksFromFile) {
             Wrestler wrestler = wrestlers.get(deckDTO.getWrestler());

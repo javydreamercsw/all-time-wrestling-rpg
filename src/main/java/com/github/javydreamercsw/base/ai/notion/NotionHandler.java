@@ -305,7 +305,7 @@ public class NotionHandler {
   }
 
   /** Helper method to extract values from formula properties based on their result type. */
-  private String getFormulaValue(PageProperty.Formula formula) {
+  private String getFormulaValue(@NonNull PageProperty.Formula formula) {
     if (formula == null) {
       return "null";
     }
@@ -330,7 +330,7 @@ public class NotionHandler {
    * @param databaseName The name of the database
    * @return The database ID, or null if not found
    */
-  public String getDatabaseId(String databaseName) {
+  public String getDatabaseId(@NonNull String databaseName) {
     log.debug("Looking up database ID for: '{}'", databaseName);
     String id = databaseMap.get(databaseName);
     if (id != null) {
@@ -574,10 +574,215 @@ public class NotionHandler {
     return getInstance().loadShow(showName);
   }
 
+  // ==================== SHOW TEMPLATE LOADING METHODS ====================
+
+  /**
+   * Loads a show template from the Notion database by name.
+   *
+   * @param templateName The name of the show template to load
+   * @return Optional containing the ShowTemplatePage object if found, empty otherwise
+   */
+  public Optional<ShowTemplatePage> loadShowTemplate(@NonNull String templateName) {
+    log.debug("Loading show template: '{}'", templateName);
+
+    String templateDbId = getDatabaseId("Show Templates");
+    if (templateDbId == null) {
+      log.warn("Show Templates database not found in workspace");
+      return Optional.empty();
+    }
+
+    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+      return loadEntityFromDatabase(
+          client,
+          templateDbId,
+          templateName,
+          "Show Template",
+          (page, name) -> mapPageToShowTemplatePage(page));
+    } catch (Exception e) {
+      log.error("Failed to load show template: {}", templateName, e);
+      return Optional.empty();
+    }
+  }
+
+  /** Static convenience method to load a show template. */
+  public static Optional<ShowTemplatePage> loadShowTemplateStatic(@NonNull String templateName) {
+    return getInstance().loadShowTemplate(templateName);
+  }
+
+  /**
+   * Retrieves show template data from Notion for all specified template names.
+   *
+   * @param templateNames List of template names to retrieve
+   * @return Map of template name to show template data
+   */
+  public Map<String, ShowTemplatePage> retrieveShowTemplateData(
+      @NonNull List<String> templateNames) {
+    log.info("Retrieving show template data for {} templates", templateNames.size());
+    Map<String, ShowTemplatePage> templateData = new HashMap<>();
+
+    for (String templateName : templateNames) {
+      log.info("Loading template: {}", templateName);
+      Optional<ShowTemplatePage> templatePageOpt = loadShowTemplate(templateName);
+
+      if (templatePageOpt.isPresent()) {
+        ShowTemplatePage templatePage = templatePageOpt.get();
+        templateData.put(templateName, templatePage);
+        log.info("Successfully loaded template: {}", templateName);
+
+        // Log the template data for inspection
+        logShowTemplateData(templateName, templatePage);
+      } else {
+        log.warn("Template '{}' not found in Notion database", templateName);
+      }
+    }
+
+    log.info("Retrieved {} out of {} templates", templateData.size(), templateNames.size());
+    return templateData;
+  }
+
+  /** Logs detailed information about a show template for inspection. */
+  private void logShowTemplateData(
+      @NonNull String templateName, @NonNull ShowTemplatePage templatePage) {
+    log.info("=== TEMPLATE DATA FOR {} ===", templateName);
+
+    if (templatePage.getProperties() != null) {
+      var props = templatePage.getProperties();
+
+      // Log all available properties
+      log.info("Available properties:");
+      if (props.getName() != null) log.info("  Name: {}", extractPropertyValue(props.getName()));
+      if (props.getDescription() != null)
+        log.info("  Description: {}", extractPropertyValue(props.getDescription()));
+      if (props.getShowType() != null)
+        log.info("  Show Type: {}", extractPropertyValue(props.getShowType()));
+      if (props.getFormat() != null)
+        log.info("  Format: {}", extractPropertyValue(props.getFormat()));
+      if (props.getDuration() != null)
+        log.info("  Duration: {}", extractPropertyValue(props.getDuration()));
+      if (props.getMatchCount() != null)
+        log.info("  Match Count: {}", extractPropertyValue(props.getMatchCount()));
+      if (props.getMainEvent() != null)
+        log.info("  Main Event: {}", extractPropertyValue(props.getMainEvent()));
+      if (props.getVenue() != null) log.info("  Venue: {}", extractPropertyValue(props.getVenue()));
+      if (props.getPyrotechnics() != null)
+        log.info("  Pyrotechnics: {}", extractPropertyValue(props.getPyrotechnics()));
+      if (props.getSpecialStaging() != null)
+        log.info("  Special Staging: {}", extractPropertyValue(props.getSpecialStaging()));
+      if (props.getCommentary() != null)
+        log.info("  Commentary: {}", extractPropertyValue(props.getCommentary()));
+      if (props.getSpecialFeatures() != null)
+        log.info("  Special Features: {}", extractPropertyValue(props.getSpecialFeatures()));
+      if (props.getMatchTypes() != null)
+        log.info("  Match Types: {}", extractPropertyValue(props.getMatchTypes()));
+      if (props.getStorylineElements() != null)
+        log.info("  Storyline Elements: {}", extractPropertyValue(props.getStorylineElements()));
+      if (props.getContent() != null)
+        log.info("  Content: {}", extractPropertyValue(props.getContent()));
+    }
+
+    // Log raw properties for complete data inspection
+    if (templatePage.getRawProperties() != null && !templatePage.getRawProperties().isEmpty()) {
+      log.info("Raw properties:");
+      templatePage
+          .getRawProperties()
+          .forEach(
+              (key, value) -> {
+                log.info("  {}: {}", key, value);
+              });
+    }
+
+    log.info("=== END TEMPLATE DATA FOR {} ===", templateName);
+  }
+
+  /** Helper method to extract string value from a property object. */
+  private String extractPropertyValue(Object property) {
+    if (property == null) return "null";
+    return property.toString();
+  }
+
+  /**
+   * Maps a Notion page to a ShowTemplatePage object. This method converts the raw Notion page data
+   * into our ShowTemplatePage structure.
+   */
+  private ShowTemplatePage mapPageToShowTemplatePage(Page page) {
+    ShowTemplatePage templatePage = new ShowTemplatePage();
+
+    // Set basic page properties
+    templatePage.setObject("page");
+    templatePage.setId(page.getId());
+    templatePage.setCreated_time(page.getCreatedTime());
+    templatePage.setLast_edited_time(page.getLastEditedTime());
+    templatePage.setArchived(page.getArchived());
+    templatePage.setIn_trash(page.getInTrash());
+    templatePage.setUrl(page.getUrl());
+    templatePage.setPublic_url(page.getPublicUrl());
+
+    // Set parent information
+    NotionPage.NotionParent parent = new NotionPage.NotionParent();
+    parent.setType("database_id");
+    parent.setDatabase_id(page.getParent().getDatabaseId());
+    templatePage.setParent(parent);
+
+    // Create and populate properties
+    ShowTemplatePage.NotionProperties properties = new ShowTemplatePage.NotionProperties();
+
+    // Map properties from the Notion page
+    Map<String, PageProperty> pageProperties = page.getProperties();
+    if (pageProperties != null) {
+      // Store raw properties for debugging - convert to Map<String, Object>
+      Map<String, Object> rawProperties = new HashMap<>();
+      pageProperties.forEach((key, value) -> rawProperties.put(key, value));
+      templatePage.setRawProperties(rawProperties);
+
+      // Map specific properties - these will be extracted based on actual Notion structure
+      properties.setName(createPropertyFromValue(pageProperties.get("Name")));
+      properties.setDescription(createPropertyFromValue(pageProperties.get("Description")));
+      properties.setShowType(createPropertyFromValue(pageProperties.get("Show Type")));
+      properties.setFormat(createPropertyFromValue(pageProperties.get("Format")));
+      properties.setDuration(createPropertyFromValue(pageProperties.get("Duration")));
+      properties.setMatchCount(createPropertyFromValue(pageProperties.get("Match Count")));
+      properties.setMainEvent(createPropertyFromValue(pageProperties.get("Main Event")));
+      properties.setVenue(createPropertyFromValue(pageProperties.get("Venue")));
+      properties.setPyrotechnics(createPropertyFromValue(pageProperties.get("Pyrotechnics")));
+      properties.setSpecialStaging(createPropertyFromValue(pageProperties.get("Special Staging")));
+      properties.setCommentary(createPropertyFromValue(pageProperties.get("Commentary")));
+      properties.setSpecialFeatures(
+          createPropertyFromValue(pageProperties.get("Special Features")));
+      properties.setMatchTypes(createPropertyFromValue(pageProperties.get("Match Types")));
+      properties.setStorylineElements(
+          createPropertyFromValue(pageProperties.get("Storyline Elements")));
+      properties.setContent(createPropertyFromValue(pageProperties.get("Content")));
+    }
+
+    templatePage.setProperties(properties);
+
+    log.debug(
+        "Mapped show template page: {} (ID: {})",
+        templatePage.getProperties().getName(),
+        templatePage.getId());
+
+    return templatePage;
+  }
+
+  /**
+   * Helper method to create a Property object from a raw value. This handles the conversion from
+   * Notion's property format to our Property objects.
+   */
+  private NotionPage.Property createPropertyFromValue(Object value) {
+    if (value == null) return null;
+
+    // This is a simplified implementation
+    // In practice, you'd need to handle different Notion property types
+    NotionPage.Property property = new NotionPage.Property();
+    // Set the appropriate fields based on the property type
+    // For now, just store the raw value
+    return property;
+  }
+
   // ==================== MATCH LOADING METHODS ====================
 
   /** Loads a match from the Notion database by name. */
-  public Optional<MatchPage> loadMatch(String matchName) {
+  public Optional<MatchPage> loadMatch(@NonNull String matchName) {
     log.debug("Loading match: '{}'", matchName);
 
     String matchDbId = getDatabaseId("Matches");
@@ -596,14 +801,14 @@ public class NotionHandler {
   }
 
   /** Static convenience method to load a match. */
-  public static Optional<MatchPage> loadMatchStatic(String matchName) {
+  public static Optional<MatchPage> loadMatchStatic(@NonNull String matchName) {
     return getInstance().loadMatch(matchName);
   }
 
   // ==================== HEAT LOADING METHODS ====================
 
   /** Loads a heat entry from the Notion database by name. */
-  public Optional<HeatPage> loadHeat(String heatName) {
+  public Optional<HeatPage> loadHeat(@NonNull String heatName) {
     log.debug("Loading heat: '{}'", heatName);
 
     String heatDbId = getDatabaseId("Heat");
@@ -621,14 +826,14 @@ public class NotionHandler {
   }
 
   /** Static convenience method to load a heat entry. */
-  public static Optional<HeatPage> loadHeatStatic(String heatName) {
+  public static Optional<HeatPage> loadHeatStatic(@NonNull String heatName) {
     return getInstance().loadHeat(heatName);
   }
 
   // ==================== TEAM LOADING METHODS ====================
 
   /** Loads a team from the Notion database by name. */
-  public Optional<TeamPage> loadTeam(String teamName) {
+  public Optional<TeamPage> loadTeam(@NonNull String teamName) {
     log.debug("Loading team: '{}'", teamName);
 
     String teamDbId = getDatabaseId("Teams");
@@ -646,14 +851,14 @@ public class NotionHandler {
   }
 
   /** Static convenience method to load a team. */
-  public static Optional<TeamPage> loadTeamStatic(String teamName) {
+  public static Optional<TeamPage> loadTeamStatic(@NonNull String teamName) {
     return getInstance().loadTeam(teamName);
   }
 
   // ==================== FACTION LOADING METHODS ====================
 
   /** Loads a faction from the Notion database by name. */
-  public Optional<FactionPage> loadFaction(String factionName) {
+  public Optional<FactionPage> loadFaction(@NonNull String factionName) {
     log.debug("Loading faction: '{}'", factionName);
 
     String factionDbId = getDatabaseId("Factions");
@@ -672,7 +877,7 @@ public class NotionHandler {
   }
 
   /** Static convenience method to load a faction. */
-  public static Optional<FactionPage> loadFactionStatic(String factionName) {
+  public static Optional<FactionPage> loadFactionStatic(@NonNull String factionName) {
     return getInstance().loadFaction(factionName);
   }
 
@@ -681,10 +886,10 @@ public class NotionHandler {
   /** Generic method to load any entity from a database by name. */
   private <T> Optional<T> loadEntityFromDatabase(
       @NonNull NotionClient client,
-      String databaseId,
-      String entityName,
-      String entityType,
-      java.util.function.BiFunction<Page, String, T> mapper) {
+      @NonNull String databaseId,
+      @NonNull String entityName,
+      @NonNull String entityType,
+      @NonNull java.util.function.BiFunction<Page, String, T> mapper) {
 
     PrintStream originalOut = System.out;
     try {
@@ -740,42 +945,42 @@ public class NotionHandler {
   // ==================== MAPPING METHODS ====================
 
   /** Maps a Notion page to a ShowPage object. */
-  private ShowPage mapPageToShowPage(Page pageData, String showName) {
+  private ShowPage mapPageToShowPage(@NonNull Page pageData, @NonNull String showName) {
     return mapPageToGenericEntity(
         pageData, showName, "Show", ShowPage::new, ShowPage.NotionParent::new);
   }
 
   /** Maps a Notion page to a MatchPage object. */
-  private MatchPage mapPageToMatchPage(Page pageData, String matchName) {
+  private MatchPage mapPageToMatchPage(@NonNull Page pageData, @NonNull String matchName) {
     return mapPageToGenericEntity(
         pageData, matchName, "Match", MatchPage::new, MatchPage.NotionParent::new);
   }
 
   /** Maps a Notion page to a HeatPage object. */
-  private HeatPage mapPageToHeatPage(Page pageData, String heatName) {
+  private HeatPage mapPageToHeatPage(@NonNull Page pageData, @NonNull String heatName) {
     return mapPageToGenericEntity(
         pageData, heatName, "Heat", HeatPage::new, HeatPage.NotionParent::new);
   }
 
   /** Maps a Notion page to a TeamPage object. */
-  private TeamPage mapPageToTeamPage(Page pageData, String teamName) {
+  private TeamPage mapPageToTeamPage(@NonNull Page pageData, @NonNull String teamName) {
     return mapPageToGenericEntity(
         pageData, teamName, "Team", TeamPage::new, TeamPage.NotionParent::new);
   }
 
   /** Maps a Notion page to a FactionPage object. */
-  private FactionPage mapPageToFactionPage(Page pageData, String factionName) {
+  private FactionPage mapPageToFactionPage(@NonNull Page pageData, @NonNull String factionName) {
     return mapPageToGenericEntity(
         pageData, factionName, "Faction", FactionPage::new, FactionPage.NotionParent::new);
   }
 
   /** Generic mapping method for all entity types. */
   private <T, P> T mapPageToGenericEntity(
-      Page pageData,
-      String entityName,
-      String entityType,
-      java.util.function.Supplier<T> entityConstructor,
-      java.util.function.Supplier<P> parentConstructor) {
+      @NonNull Page pageData,
+      @NonNull String entityName,
+      @NonNull String entityType,
+      @NonNull java.util.function.Supplier<T> entityConstructor,
+      @NonNull java.util.function.Supplier<P> parentConstructor) {
 
     log.debug("Mapping Notion page to {} object for: {}", entityType, entityName);
 
@@ -800,7 +1005,7 @@ public class NotionHandler {
   }
 
   /** Helper method to set basic page information using reflection. */
-  private void setBasicPageInfo(Object entityPage, Page pageData) {
+  private void setBasicPageInfo(@NonNull Object entityPage, @NonNull Page pageData) {
     try {
       entityPage.getClass().getMethod("setObject", String.class).invoke(entityPage, "page");
       entityPage.getClass().getMethod("setId", String.class).invoke(entityPage, pageData.getId());
@@ -828,7 +1033,7 @@ public class NotionHandler {
   }
 
   /** Helper method to set parent information. */
-  private void setParentInfo(Object parent, Page pageData) {
+  private void setParentInfo(@NonNull Object parent, @NonNull Page pageData) {
     try {
       parent.getClass().getMethod("setType", String.class).invoke(parent, "database_id");
       parent
@@ -841,7 +1046,7 @@ public class NotionHandler {
   }
 
   /** Helper method to set parent on entity page. */
-  private void setParent(Object entityPage, Object parent) {
+  private void setParent(@NonNull Object entityPage, @NonNull Object parent) {
     try {
       entityPage
           .getClass()
@@ -853,7 +1058,8 @@ public class NotionHandler {
   }
 
   /** Helper method to set raw properties on entity page. */
-  private void setRawProperties(Object entityPage, Map<String, Object> properties) {
+  private void setRawProperties(
+      @NonNull Object entityPage, @NonNull Map<String, Object> properties) {
     try {
       entityPage.getClass().getMethod("setRawProperties", Map.class).invoke(entityPage, properties);
       log.debug("Set {} raw properties on entity page", properties.size());
@@ -864,7 +1070,7 @@ public class NotionHandler {
 
   /** Helper method to extract and log properties. */
   private Map<String, Object> extractAndLogProperties(
-      Page pageData, String entityName, String entityType) {
+      @NonNull Page pageData, @NonNull String entityName, @NonNull String entityType) {
     try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
       Map<String, PageProperty> properties = pageData.getProperties();
       log.debug("Extracting {} properties for {}: {}", properties.size(), entityType, entityName);
@@ -895,7 +1101,7 @@ public class NotionHandler {
    * @param showPage The ShowPage object to extract matches from
    * @return The name of the first match, or null if no matches found
    */
-  public String extractFirstMatchFromShow(ShowPage showPage) {
+  public String extractFirstMatchFromShow(@NonNull ShowPage showPage) {
     log.debug("Extracting first match from show: {}", showPage.getId());
 
     try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
