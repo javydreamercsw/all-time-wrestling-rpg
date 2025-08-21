@@ -26,4 +26,39 @@
   "lowHealth" : 4,
   "startingStamina" : 16,
   "lowStamina" : 4
+}, {
+  "name" : "Andre the Giant",
+  "deckSize" : 15,
+  "startingHealth" : 20,
+  "lowHealth" : 3,
+  "startingStamina" : 11,
+  "lowStamina" : 2
+}, {
+  "name" : "Macho Man Randy Savage",
+  "deckSize" : 15,
+  "startingHealth" : 16,
+  "lowHealth" : 4,
+  "startingStamina" : 15,
+  "lowStamina" : 4
+}, {
+  "name" : "Jax Felix",
+  "deckSize" : 16,
+  "startingHealth" : 13,
+  "lowHealth" : 3,
+  "startingStamina" : 18,
+  "lowStamina" : 3
+}, {
+  "name" : "Mukundi Shumba",
+  "deckSize" : 15,
+  "startingHealth" : 18,
+  "lowHealth" : 4,
+  "startingStamina" : 13,
+  "lowStamina" : 4
+}, {
+  "name" : "The British Bulldog",
+  "deckSize" : 15,
+  "startingHealth" : 16,
+  "lowHealth" : 4,
+  "startingStamina" : 15,
+  "lowStamina" : 4
 } ]
