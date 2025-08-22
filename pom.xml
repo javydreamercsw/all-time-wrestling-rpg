@@ -64,6 +64,11 @@
       <groupId>com.vaadin</groupId>
       <artifactId>vaadin-spring-boot-starter</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.vaadin.stefan</groupId>
+      <artifactId>fullcalendar2</artifactId>
+      <version>6.3.1</version>
+    </dependency>
 
     <!-- Persistence -->
     <dependency>
@@ -123,6 +128,13 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <repositories>
+    <repository>
+      <id>vaadin-addons</id>
+      <url>https://maven.vaadin.com/vaadin-addons</url>
+    </repository>
+  </repositories>
 
   <build>
     <defaultGoal>spring-boot:run</defaultGoal>
@@ -258,6 +270,13 @@
             </includes>
             <excludes>
               <exclude>target/**</exclude>
+              <exclude>node_modules/**</exclude>
+              <exclude>tsconfig.json</exclude>
+              <exclude>**/tsconfig.json</exclude>
+              <exclude>package.json</exclude>
+              <exclude>package-lock.json</exclude>
+              <exclude>**/package.json</exclude>
+              <exclude>**/package-lock.json</exclude>
             </excludes>
             <jackson/>
           </json>

@@ -2,11 +2,14 @@ package com.github.javydreamercsw.management;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.MatchRuleDTO;
@@ -18,10 +21,12 @@ import com.github.javydreamercsw.management.service.deck.DeckCardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.match.MatchRuleService;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
+import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,6 +39,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.Pageable;
 
 @Configuration
 @Profile("!test")
@@ -364,32 +370,90 @@ public class DataInitializer {
   @Bean
   @Order(6)
   public ApplicationRunner syncShowsFromFile(
-      ShowService showService, ShowTypeService showTypeService) {
+      ShowService showService,
+      ShowTypeService showTypeService,
+      SeasonService seasonService,
+      ShowTemplateService showTemplateService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("shows.json");
       if (resource.exists()) {
         logger.info("Loading shows from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
         try (var is = resource.getInputStream()) {
           var showsFromFile = mapper.readValue(is, new TypeReference<List<ShowDTO>>() {});
+
+          // Cache lookups for performance
           Map<String, ShowType> showTypes =
               showTypeService.findAll().stream()
                   .collect(Collectors.toMap(ShowType::getName, s -> s));
+          Map<String, Season> seasons =
+              seasonService.getAllSeasons(Pageable.unpaged()).stream()
+                  .collect(Collectors.toMap(Season::getName, s -> s));
+          Map<String, ShowTemplate> templates =
+              showTemplateService.findAll().stream()
+                  .collect(Collectors.toMap(ShowTemplate::getName, t -> t));
+
           for (ShowDTO dto : showsFromFile) {
             ShowType type = showTypes.get(dto.getShowType());
-            if (type == null) continue;
+            if (type == null) {
+              logger.warn("Show type not found: {} for show: {}", dto.getShowType(), dto.getName());
+              continue;
+            }
+
             Show show = showService.findByName(dto.getName()).orElseGet(Show::new);
             show.setName(dto.getName());
             show.setDescription(dto.getDescription());
             show.setType(type);
+
+            // Set show date if provided
+            if (dto.getShowDate() != null && !dto.getShowDate().trim().isEmpty()) {
+              try {
+                show.setShowDate(LocalDate.parse(dto.getShowDate()));
+              } catch (Exception e) {
+                logger.warn(
+                    "Invalid date format for show {}: {}", dto.getName(), dto.getShowDate());
+              }
+            }
+
+            // Set season if provided
+            if (dto.getSeasonName() != null && !dto.getSeasonName().trim().isEmpty()) {
+              Season season = seasons.get(dto.getSeasonName());
+              if (season != null) {
+                show.setSeason(season);
+              } else {
+                logger.warn(
+                    "Season not found: {} for show: {}", dto.getSeasonName(), dto.getName());
+              }
+            }
+
+            // Set template if provided
+            if (dto.getTemplateName() != null && !dto.getTemplateName().trim().isEmpty()) {
+              ShowTemplate template = templates.get(dto.getTemplateName());
+              if (template != null) {
+                show.setTemplate(template);
+              } else {
+                logger.warn(
+                    "Template not found: {} for show: {}", dto.getTemplateName(), dto.getName());
+              }
+            }
+
             showService.save(show);
             logger.info(
-                "{} show: {} of type {}",
+                "{} show: {} (Date: {}, Season: {}, Template: {})",
                 show.getId() == null ? "Saved new" : "Updated existing",
                 show.getName(),
-                type.getName());
+                show.getShowDate(),
+                show.getSeason() != null ? show.getSeason().getName() : "None",
+                show.getTemplate() != null ? show.getTemplate().getName() : "None");
           }
+
+          logger.info("Show loading completed - {} shows processed", showsFromFile.size());
+        } catch (Exception e) {
+          logger.error("Error loading shows from file", e);
         }
+      } else {
+        logger.warn("Shows file not found: {}", resource.getPath());
       }
     };
   }
@@ -425,34 +489,13 @@ public class DataInitializer {
     private int amount;
   }
 
+  @Data
   public static class ShowDTO {
     private String name;
     private String showType;
     private String description;
-
-    // getters and setters
-    public String getName() {
-      return name;
-    }
-
-    public void setName(String title) {
-      this.name = title;
-    }
-
-    public String getShowType() {
-      return showType;
-    }
-
-    public void setShowType(String type) {
-      this.showType = type;
-    }
-
-    public String getDescription() {
-      return description;
-    }
-
-    public void setDescription(String description) {
-      this.description = description;
-    }
+    private String showDate; // ISO date format (YYYY-MM-DD)
+    private String seasonName; // Reference to season by name
+    private String templateName; // Reference to show template by name
   }
 }

@@ -18,7 +18,15 @@ public interface MatchResultRepository
   Page<MatchResult> findAllBy(Pageable pageable);
 
   /** Find all matches for a specific show. */
-  List<MatchResult> findByShow(Show show);
+  @Query(
+      """
+      SELECT mr FROM MatchResult mr
+      LEFT JOIN FETCH mr.participants p
+      LEFT JOIN FETCH p.wrestler
+      WHERE mr.show = :show
+      ORDER BY mr.matchDate DESC
+      """)
+  List<MatchResult> findByShow(@Param("show") Show show);
 
   /** Find all matches where a wrestler participated. */
   @Query(
