@@ -21,8 +21,20 @@ This project includes several security measures:
 
 ### Dependency Security
 - **OWASP Dependency Check**: Automated vulnerability scanning of dependencies
-- **GitHub Dependency Review**: PR-based dependency vulnerability detection
+- **GitHub Dependency Review**: PR-based dependency vulnerability detection (public repositories only)
 - **Regular Security Scans**: Weekly automated security scans via GitHub Actions
+
+### Repository-Specific Security Workflows
+
+#### Public Repositories
+- **Full dependency review**: License compliance + vulnerability scanning
+- **GitHub Advanced Security**: Complete security feature set
+- **SARIF integration**: Vulnerabilities appear in Security tab
+
+#### Private Repositories
+- **OWASP-only scanning**: Vulnerability detection without Advanced Security
+- **Manual license review**: License compliance through local tooling
+- **Artifact reports**: HTML/JSON reports uploaded as artifacts
 
 ### Running Security Scans Locally
 ```bash
@@ -31,12 +43,16 @@ mvn org.owasp:dependency-check-maven:check
 
 # Check for dependency updates
 mvn versions:display-dependency-updates
+
+# Generate detailed security report
+mvn org.owasp:dependency-check-maven:check -Dformats=HTML,JSON,SARIF
 ```
 
 ### Security Policies
 - Dependencies with CVSS score ≥ 7.0 will fail the build
-- Only approved open source licenses are allowed
+- Only approved open source licenses are allowed (enforced on public repos)
 - Regular dependency updates are encouraged
+- Weekly automated vulnerability scanning
 
 ## Getting Started
 

@@ -25,6 +25,7 @@ permissions:
 jobs:
   dependency-review:
     runs-on: ubuntu-latest
+    # Repository is public, dependency review should work
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
