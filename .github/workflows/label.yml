@@ -7,7 +7,7 @@
 name: 'Pull Request Labeler'
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -22,6 +22,38 @@ jobs:
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
+
+      - name: 'Create labeler config if missing'
+        run: |
+          if [ ! -f ".github/labeler.yml" ]; then
+            echo "Creating fallback labeler configuration..."
+            cat > .github/labeler.yml << 'EOF'
+          documentation:
+            - changed-files:
+              - any-glob-to-any-file: ['README.md', '*.md', 'docs/**/*']
+          frontend:
+            - changed-files:
+              - any-glob-to-any-file: ['src/main/java/**/ui/**/*', 'src/main/java/**/view/**/*']
+          backend:
+            - changed-files:
+              - any-glob-to-any-file: ['src/main/java/**/service/**/*', 'src/main/java/**/controller/**/*', 'src/main/java/**/repository/**/*']
+          database:
+            - changed-files:
+              - any-glob-to-any-file: ['src/main/java/**/domain/**/*', 'src/main/java/**/entity/**/*']
+          configuration:
+            - changed-files:
+              - any-glob-to-any-file: ['pom.xml', 'src/main/resources/*.yml', 'src/main/resources/*.properties']
+          tests:
+            - changed-files:
+              - any-glob-to-any-file: ['src/test/**/*', '**/*Test.java']
+          ci-cd:
+            - changed-files:
+              - any-glob-to-any-file: ['.github/**/*']
+          wrestling:
+            - changed-files:
+              - any-glob-to-any-file: ['src/main/java/**/wrestler/**/*', 'src/main/java/**/match/**/*', 'src/main/java/**/show/**/*']
+          EOF
+          fi
 
       - name: 'Apply labels'
         uses: actions/labeler@v5
