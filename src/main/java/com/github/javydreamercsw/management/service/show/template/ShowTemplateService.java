@@ -10,6 +10,7 @@ import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -165,5 +166,95 @@ public class ShowTemplateService {
     template.setNotionUrl(notionUrl);
 
     return showTemplateRepository.save(template);
+  }
+
+  /**
+   * Get paginated list of all show templates.
+   *
+   * @param pageable Pagination information
+   * @return Page of show templates
+   */
+  public Page<ShowTemplate> getAllTemplates(Pageable pageable) {
+    return showTemplateRepository.findAll(pageable);
+  }
+
+  /**
+   * Get show template by ID.
+   *
+   * @param id The ID of the show template
+   * @return Optional containing the show template if found
+   */
+  public Optional<ShowTemplate> getTemplateById(@NonNull Long id) {
+    return showTemplateRepository.findById(id);
+  }
+
+  /**
+   * Get templates by show type name.
+   *
+   * @param showTypeName The name of the show type
+   * @return List of templates for the specified show type
+   */
+  public List<ShowTemplate> getTemplatesByShowType(@NonNull String showTypeName) {
+    return showTemplateRepository.findByShowTypeName(showTypeName);
+  }
+
+  /**
+   * Update an existing show template.
+   *
+   * @param id The ID of the show template to update
+   * @param name New name for the show template
+   * @param description New description for the show template
+   * @param showTypeName New show type name
+   * @param notionUrl New Notion URL
+   * @return Optional containing the updated show template if found
+   */
+  @Transactional
+  public Optional<ShowTemplate> updateTemplate(
+      @NonNull Long id,
+      @NonNull String name,
+      String description,
+      @NonNull String showTypeName,
+      String notionUrl) {
+
+    Optional<ShowTemplate> templateOpt = showTemplateRepository.findById(id);
+    if (templateOpt.isEmpty()) {
+      log.warn("Show template not found with ID: {}", id);
+      return Optional.empty();
+    }
+
+    // Find show type
+    Optional<ShowType> showTypeOpt = showTypeRepository.findByName(showTypeName);
+    if (showTypeOpt.isEmpty()) {
+      log.warn("Show type not found: {}", showTypeName);
+      return Optional.empty();
+    }
+
+    ShowTemplate template = templateOpt.get();
+    template.setName(name);
+    template.setDescription(description);
+    template.setShowType(showTypeOpt.get());
+    template.setNotionUrl(notionUrl);
+
+    ShowTemplate savedTemplate = showTemplateRepository.save(template);
+    log.info("Updated show template: {}", name);
+    return Optional.of(savedTemplate);
+  }
+
+  /**
+   * Delete a show template by ID.
+   *
+   * @param id The ID of the show template to delete
+   * @return true if the template was deleted, false if not found
+   */
+  @Transactional
+  public boolean deleteTemplate(@NonNull Long id) {
+    if (showTemplateRepository.existsById(id)) {
+      showTemplateRepository.deleteById(id);
+      log.info("Deleted show template with ID: {}", id);
+      return true;
+    } else {
+      log.warn("Show template not found with ID: {}", id);
+      return false;
+    }
   }
 }

@@ -17,7 +17,6 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -26,7 +25,7 @@ import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
-@Table(name = "show", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
+@Table(name = "show")
 @Getter
 @Setter
 public class Show extends AbstractEntity<Long> {
@@ -56,6 +55,9 @@ public class Show extends AbstractEntity<Long> {
 
   @Column(name = "show_date")
   private LocalDate showDate;
+
+  @Column(name = "external_id", unique = true)
+  @Size(max = 255) private String externalId;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;

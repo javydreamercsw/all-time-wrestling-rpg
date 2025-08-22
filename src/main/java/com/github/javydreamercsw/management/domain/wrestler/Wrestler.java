@@ -47,6 +47,9 @@ public class Wrestler extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
+  @Column(name = "external_id", unique = true)
+  @Size(max = 255) private String externalId;
+
   // ==================== ATW RPG FIELDS ====================
 
   /** Fan count (stored in thousands, so 25000 fans = 25) */

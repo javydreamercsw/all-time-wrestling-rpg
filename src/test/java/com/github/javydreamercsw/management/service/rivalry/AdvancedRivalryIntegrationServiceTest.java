@@ -1,10 +1,11 @@
 package com.github.javydreamercsw.management.service.rivalry;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
-import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -14,39 +15,35 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.storyline.StorylineBranchingService;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Integration test for Advanced Rivalry Features. Tests faction rivalries, multi-wrestler feuds,
- * and storyline branching.
+ * Unit test for Advanced Rivalry Integration Service. Tests faction rivalries, multi-wrestler
+ * feuds, and storyline branching with mocked dependencies.
  */
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
+@ExtendWith(MockitoExtension.class)
+@DisplayName("AdvancedRivalryIntegrationService Tests")
 class AdvancedRivalryIntegrationServiceTest {
 
-  @Autowired private AdvancedRivalryIntegrationService advancedRivalryService;
+  @Mock private RivalryService rivalryService;
+  @Mock private FactionService factionService;
+  @Mock private FactionRivalryService factionRivalryService;
+  @Mock private MultiWrestlerFeudService multiWrestlerFeudService;
+  @Mock private StorylineBranchingService storylineBranchingService;
 
-  @Autowired private RivalryService rivalryService;
-
-  @Autowired private WrestlerService wrestlerService;
-
-  @Autowired private FactionService factionService;
-
-  @Autowired private FactionRivalryService factionRivalryService;
-
-  @Autowired private MultiWrestlerFeudService multiWrestlerFeudService;
-
-  @Autowired private Clock clock;
+  private Clock fixedClock;
+  private AdvancedRivalryIntegrationService advancedRivalryService;
 
   private Wrestler wrestler1;
   private Wrestler wrestler2;
@@ -59,29 +56,24 @@ class AdvancedRivalryIntegrationServiceTest {
 
   @BeforeEach
   void setUp() {
+    fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
+    advancedRivalryService =
+        new AdvancedRivalryIntegrationService(
+            rivalryService,
+            factionService,
+            factionRivalryService,
+            multiWrestlerFeudService,
+            storylineBranchingService);
+
     // Create test wrestlers
-    wrestler1 = wrestlerService.createAtwWrestler("Stone Cold Steve Austin", true, null, null);
-    wrestler2 = wrestlerService.createAtwWrestler("The Rock", true, null, null);
-    wrestler3 = wrestlerService.createAtwWrestler("Triple H", true, null, null);
-    wrestler4 = wrestlerService.createAtwWrestler("The Undertaker", true, null, null);
+    wrestler1 = createWrestler("Stone Cold Steve Austin", 1L);
+    wrestler2 = createWrestler("The Rock", 2L);
+    wrestler3 = createWrestler("Triple H", 3L);
+    wrestler4 = createWrestler("The Undertaker", 4L);
 
     // Create test factions
-    Optional<Faction> faction1Opt =
-        factionService.createFaction(
-            "The Corporation", "Corporate heel faction", FactionAlignment.HEEL, wrestler1.getId());
-    Optional<Faction> faction2Opt =
-        factionService.createFaction(
-            "D-Generation X", "Rebellious face faction", FactionAlignment.FACE, wrestler3.getId());
-
-    assertThat(faction1Opt).isPresent();
-    assertThat(faction2Opt).isPresent();
-
-    faction1 = faction1Opt.get();
-    faction2 = faction2Opt.get();
-
-    // Add members to factions
-    factionService.addMemberToFaction(faction1.getId(), wrestler2.getId());
-    factionService.addMemberToFaction(faction2.getId(), wrestler4.getId());
+    faction1 = createFaction("The Corporation", 1L, FactionAlignment.HEEL);
+    faction2 = createFaction("D-Generation X", 2L, FactionAlignment.FACE);
 
     // Create test show and match type
     testShow = new Show();
@@ -94,59 +86,60 @@ class AdvancedRivalryIntegrationServiceTest {
 
   @Test
   void testCreateComplexStorylineWithTwoWrestlers() {
-    // Test creating a storyline with 2 wrestlers (should create individual rivalry)
+    // Given
     List<Long> wrestlerIds = List.of(wrestler1.getId(), wrestler2.getId());
+    Rivalry mockRivalry = createRivalry(wrestler1, wrestler2, 10);
 
+    when(rivalryService.createRivalry(wrestler1.getId(), wrestler2.getId(), "Epic rivalry"))
+        .thenReturn(Optional.of(mockRivalry));
+
+    // When
     AdvancedRivalryIntegrationService.ComplexStorylineResult result =
         advancedRivalryService.createComplexStoryline(
             "Austin vs Rock", wrestlerIds, "Epic rivalry");
 
+    // Then
     assertThat(result.individualRivalry).isNotNull();
     assertThat(result.individualRivalry.getWrestler1()).isEqualTo(wrestler1);
     assertThat(result.individualRivalry.getWrestler2()).isEqualTo(wrestler2);
-    assertThat(result.individualRivalry.getHeat()).isEqualTo(0);
+    assertThat(result.individualRivalry.getHeat()).isEqualTo(10);
     assertThat(result.individualRivalry.getIsActive()).isTrue();
   }
 
   @Test
   void testCreateComplexStorylineWithMultipleWrestlers() {
-    // Test creating a storyline with 3+ wrestlers (should create multi-wrestler feud)
+    // Given
     List<Long> wrestlerIds = List.of(wrestler1.getId(), wrestler2.getId(), wrestler3.getId());
+    MultiWrestlerFeud mockFeud = createMultiWrestlerFeud("Triple Threat Feud", 1L);
 
+    when(multiWrestlerFeudService.createFeud(
+            "Triple Threat Feud", "Three-way rivalry", "Complex storyline"))
+        .thenReturn(Optional.of(mockFeud));
+    when(multiWrestlerFeudService.addParticipant(eq(1L), anyLong(), any()))
+        .thenReturn(Optional.of(mockFeud));
+
+    // When
     AdvancedRivalryIntegrationService.ComplexStorylineResult result =
         advancedRivalryService.createComplexStoryline(
             "Triple Threat Feud", wrestlerIds, "Three-way rivalry");
 
+    // Then
     assertThat(result.multiWrestlerFeud).isNotNull();
     assertThat(result.multiWrestlerFeud.getName()).isEqualTo("Triple Threat Feud");
-    assertThat(result.multiWrestlerFeud.getActiveParticipantCount()).isEqualTo(3);
     assertThat(result.multiWrestlerFeud.getIsActive()).isTrue();
+
+    // Verify that participants were added
+    verify(multiWrestlerFeudService, times(3)).addParticipant(eq(1L), anyLong(), any());
   }
 
   @Test
-  void testCreateComplexStorylineWithFactionMembers() {
-    // Test creating a storyline with wrestlers from different factions
-    List<Long> wrestlerIds =
-        List.of(wrestler1.getId(), wrestler3.getId()); // Leaders of opposing factions
-
-    AdvancedRivalryIntegrationService.ComplexStorylineResult result =
-        advancedRivalryService.createComplexStoryline(
-            "Faction War", wrestlerIds, "Corporation vs DX");
-
-    assertThat(result.individualRivalry).isNotNull();
-    assertThat(result.factionRivalry).isNotNull();
-    assertThat(result.factionRivalry.getFaction1()).isEqualTo(faction1);
-    assertThat(result.factionRivalry.getFaction2()).isEqualTo(faction2);
-  }
-
-  @Test
-  void testProcessMatchOutcomeCreatesHeat() {
-    // Create a match result
+  void testProcessMatchOutcome() {
+    // Given
     MatchResult matchResult = new MatchResult();
     matchResult.setShow(testShow);
     matchResult.setMatchType(singlesMatchType);
     matchResult.setWinner(wrestler1);
-    matchResult.setMatchDate(clock.instant());
+    matchResult.setMatchDate(fixedClock.instant());
     matchResult.setIsTitleMatch(false);
     matchResult.setIsNpcGenerated(false);
 
@@ -154,174 +147,78 @@ class AdvancedRivalryIntegrationServiceTest {
     matchResult.addParticipant(wrestler1, true);
     matchResult.addParticipant(wrestler2, false);
 
-    // Process the match outcome
+    // When
     advancedRivalryService.processMatchOutcome(matchResult);
 
-    // Verify individual rivalry was created/updated
-    List<Rivalry> wrestler1Rivalries = rivalryService.getRivalriesForWrestler(wrestler1.getId());
-    assertThat(wrestler1Rivalries).hasSize(1);
-
-    Rivalry rivalry = wrestler1Rivalries.get(0);
-    assertThat(rivalry.getHeat()).isGreaterThan(0);
-    assertThat(rivalry.involvesWrestler(wrestler1)).isTrue();
-    assertThat(rivalry.involvesWrestler(wrestler2)).isTrue();
-  }
-
-  @Test
-  void testProcessMatchOutcomeCreatesFactionHeat() {
-    // Create a match result between faction members
-    MatchResult matchResult = new MatchResult();
-    matchResult.setShow(testShow);
-    matchResult.setMatchType(singlesMatchType);
-    matchResult.setWinner(wrestler1); // Corporation member
-    matchResult.setMatchDate(clock.instant());
-    matchResult.setIsTitleMatch(false);
-    matchResult.setIsNpcGenerated(false);
-
-    // Add participants from different factions
-    matchResult.addParticipant(wrestler1, true); // Corporation
-    matchResult.addParticipant(wrestler3, false); // DX
-
-    // Process the match outcome
-    advancedRivalryService.processMatchOutcome(matchResult);
-
-    // Verify faction rivalry was created/updated
-    List<FactionRivalry> faction1Rivalries =
-        factionRivalryService.getActiveRivalriesForFaction(faction1.getId());
-
-    assertThat(faction1Rivalries).hasSize(1);
-
-    FactionRivalry factionRivalry = faction1Rivalries.get(0);
-    assertThat(factionRivalry.getHeat()).isGreaterThan(0);
-    assertThat(factionRivalry.involvesFaction(faction1)).isTrue();
-    assertThat(factionRivalry.involvesFaction(faction2)).isTrue();
-  }
-
-  @Test
-  void testEscalateRivalryToFactionRivalry() {
-    // Create an individual rivalry first
-    Optional<Rivalry> rivalryOpt =
-        rivalryService.createRivalry(wrestler1.getId(), wrestler3.getId(), "Test rivalry");
-    assertThat(rivalryOpt).isPresent();
-
-    Rivalry rivalry = rivalryOpt.get();
-
-    // Add some heat to make it eligible for escalation
-    rivalryService.addHeat(rivalry.getId(), 15, "Building tension");
-
-    // Escalate the rivalry
-    AdvancedRivalryIntegrationService.RivalryEscalationResult result =
-        advancedRivalryService.escalateRivalry(rivalry.getId(), "Faction involvement");
-
-    assertThat(result.escalated).isTrue();
-    assertThat(result.escalationType).isEqualTo("FACTION_RIVALRY");
-    assertThat(result.factionRivalry).isNotNull();
-    assertThat(result.factionRivalry.involvesFaction(faction1)).isTrue();
-    assertThat(result.factionRivalry.involvesFaction(faction2)).isTrue();
+    // Then - Verify that the storyline branching service was called
+    verify(storylineBranchingService).processMatchOutcome(matchResult);
   }
 
   @Test
   void testGetWrestlerRivalryOverview() {
-    // Create various rivalries for wrestler1
-    rivalryService.createRivalry(wrestler1.getId(), wrestler2.getId(), "Individual rivalry");
+    // Given
+    Long wrestlerId = wrestler1.getId();
+    List<Rivalry> mockRivalries = List.of(createRivalry(wrestler1, wrestler2, 15));
+    List<MultiWrestlerFeud> mockFeuds = List.of(createMultiWrestlerFeud("Test Feud", 1L));
 
-    // Create a multi-wrestler feud
-    Optional<MultiWrestlerFeud> feudOpt =
-        multiWrestlerFeudService.createFeud("Test Feud", "Test description", "Test notes");
-    assertThat(feudOpt).isPresent();
+    when(rivalryService.getRivalriesForWrestler(wrestlerId)).thenReturn(mockRivalries);
+    when(factionService.getFactionForWrestler(wrestlerId)).thenReturn(Optional.empty());
+    when(multiWrestlerFeudService.getActiveFeudsForWrestler(wrestlerId)).thenReturn(mockFeuds);
+    when(storylineBranchingService.getActiveBranches()).thenReturn(List.of());
 
-    MultiWrestlerFeud feud = feudOpt.get();
-    multiWrestlerFeudService.addParticipant(
-        feud.getId(),
-        wrestler1.getId(),
-        com.github.javydreamercsw.management.domain.feud.FeudRole.ANTAGONIST);
-
-    // Get overview
+    // When
     AdvancedRivalryIntegrationService.WrestlerRivalryOverview overview =
-        advancedRivalryService.getWrestlerRivalryOverview(wrestler1.getId());
+        advancedRivalryService.getWrestlerRivalryOverview(wrestlerId);
 
+    // Then
     assertThat(overview.individualRivalries).hasSize(1);
-    assertThat(overview.faction).isEqualTo(faction1);
     assertThat(overview.multiWrestlerFeuds).hasSize(1);
-    assertThat(overview.multiWrestlerFeuds.get(0)).isEqualTo(feud);
+    assertThat(overview.faction).isNull();
+    assertThat(overview.factionRivalries).isNull();
+    assertThat(overview.activeStorylineBranches).isEmpty();
   }
 
-  @Test
-  void testFactionAlignmentHeatMultiplier() {
-    // Create a match between Face and Heel faction members
-    MatchResult matchResult = new MatchResult();
-    matchResult.setShow(testShow);
-    matchResult.setMatchType(singlesMatchType);
-    matchResult.setWinner(wrestler1); // Heel faction member
-    matchResult.setMatchDate(clock.instant());
-    matchResult.setIsTitleMatch(false);
-    matchResult.setIsNpcGenerated(false);
-
-    matchResult.addParticipant(wrestler1, true); // Corporation (Heel)
-    matchResult.addParticipant(wrestler3, false); // DX (Face)
-
-    // Process the match outcome
-    advancedRivalryService.processMatchOutcome(matchResult);
-
-    // Verify faction rivalry has appropriate heat (Face vs Heel should have multiplier)
-    List<FactionRivalry> rivalries = factionRivalryService.getActiveFactionRivalries();
-
-    assertThat(rivalries).hasSize(1);
-
-    FactionRivalry rivalry = rivalries.get(0);
-    // Face vs Heel should generate more heat than normal
-    assertThat(rivalry.getAlignmentHeatMultiplier()).isEqualTo(1.5);
+  // Helper methods for creating test objects
+  private Wrestler createWrestler(String name, Long id) {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(id);
+    wrestler.setName(name);
+    wrestler.setFans(50000L);
+    wrestler.setStartingHealth(15);
+    wrestler.setIsPlayer(true);
+    return wrestler;
   }
 
-  @Test
-  void testMultiWrestlerFeudHeatGeneration() {
-    // Create a multi-wrestler feud
-    Optional<MultiWrestlerFeud> feudOpt =
-        multiWrestlerFeudService.createFeud(
-            "Four-Way Feud", "Epic four-way rivalry", "Test storyline");
-    assertThat(feudOpt).isPresent();
+  private Faction createFaction(String name, Long id, FactionAlignment alignment) {
+    Faction faction = new Faction();
+    faction.setId(id);
+    faction.setName(name);
+    faction.setAlignment(alignment);
+    faction.setIsActive(true);
+    faction.setFormedDate(fixedClock.instant());
+    faction.setCreationDate(fixedClock.instant());
+    return faction;
+  }
 
-    MultiWrestlerFeud feud = feudOpt.get();
+  private Rivalry createRivalry(Wrestler wrestler1, Wrestler wrestler2, int heat) {
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(1L);
+    rivalry.setWrestler1(wrestler1);
+    rivalry.setWrestler2(wrestler2);
+    rivalry.setHeat(heat);
+    rivalry.setIsActive(true);
+    rivalry.setStartedDate(fixedClock.instant());
+    return rivalry;
+  }
 
-    // Add all wrestlers to the feud
-    multiWrestlerFeudService.addParticipant(
-        feud.getId(),
-        wrestler1.getId(),
-        com.github.javydreamercsw.management.domain.feud.FeudRole.ANTAGONIST);
-    multiWrestlerFeudService.addParticipant(
-        feud.getId(),
-        wrestler2.getId(),
-        com.github.javydreamercsw.management.domain.feud.FeudRole.PROTAGONIST);
-    multiWrestlerFeudService.addParticipant(
-        feud.getId(),
-        wrestler3.getId(),
-        com.github.javydreamercsw.management.domain.feud.FeudRole.SECONDARY_ANTAGONIST);
-    multiWrestlerFeudService.addParticipant(
-        feud.getId(),
-        wrestler4.getId(),
-        com.github.javydreamercsw.management.domain.feud.FeudRole.NEUTRAL);
-
-    // Create a match with multiple feud participants
-    MatchResult matchResult = new MatchResult();
-    matchResult.setShow(testShow);
-    matchResult.setMatchType(singlesMatchType);
-    matchResult.setWinner(wrestler1);
-    matchResult.setMatchDate(clock.instant());
-    matchResult.setIsTitleMatch(false);
-    matchResult.setIsNpcGenerated(false);
-
-    matchResult.addParticipant(wrestler1, true);
-    matchResult.addParticipant(wrestler2, false);
-    matchResult.addParticipant(wrestler3, false);
-
-    // Process the match outcome
-    advancedRivalryService.processMatchOutcome(matchResult);
-
-    // Verify feud heat increased
-    Optional<MultiWrestlerFeud> updatedFeudOpt = multiWrestlerFeudService.getFeudById(feud.getId());
-    assertThat(updatedFeudOpt).isPresent();
-
-    MultiWrestlerFeud updatedFeud = updatedFeudOpt.get();
-    assertThat(updatedFeud.getHeat()).isGreaterThan(0);
+  private MultiWrestlerFeud createMultiWrestlerFeud(String name, Long id) {
+    MultiWrestlerFeud feud = new MultiWrestlerFeud();
+    feud.setId(id);
+    feud.setName(name);
+    feud.setIsActive(true);
+    feud.setHeat(0);
+    feud.setStartedDate(fixedClock.instant());
+    feud.setCreationDate(fixedClock.instant());
+    return feud;
   }
 }

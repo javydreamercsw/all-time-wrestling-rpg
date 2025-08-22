@@ -239,7 +239,15 @@ public class DataInitializer {
                       Collectors.toMap(
                           Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
           for (Wrestler w : wrestlersFromFile) {
-            Wrestler existingWrestler = existing.get(w.getName());
+            // Smart duplicate handling - prefer external ID, fallback to name
+            Wrestler existingWrestler = null;
+            if (w.getExternalId() != null && !w.getExternalId().trim().isEmpty()) {
+              existingWrestler = wrestlerService.findByExternalId(w.getExternalId()).orElse(null);
+            }
+            if (existingWrestler == null) {
+              existingWrestler = existing.get(w.getName());
+            }
+
             if (existingWrestler != null) {
               // Update card game fields
               existingWrestler.setDeckSize(w.getDeckSize());
@@ -266,6 +274,9 @@ public class DataInitializer {
               }
               if (w.getWrestlingStyle() != null) {
                 existingWrestler.setWrestlingStyle(w.getWrestlingStyle());
+              }
+              if (w.getExternalId() != null) {
+                existingWrestler.setExternalId(w.getExternalId());
               }
 
               wrestlerService.save(existingWrestler);
@@ -401,10 +412,19 @@ public class DataInitializer {
               continue;
             }
 
-            Show show = showService.findByName(dto.getName()).orElseGet(Show::new);
+            // Smart duplicate handling - prefer external ID, fallback to name
+            Show show = null;
+            if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
+              show = showService.findByExternalId(dto.getExternalId()).orElse(null);
+            }
+            if (show == null) {
+              show = showService.findByName(dto.getName()).orElseGet(Show::new);
+            }
+
             show.setName(dto.getName());
             show.setDescription(dto.getDescription());
             show.setType(type);
+            show.setExternalId(dto.getExternalId()); // Set external ID if provided
 
             // Set show date if provided
             if (dto.getShowDate() != null && !dto.getShowDate().trim().isEmpty()) {
@@ -497,5 +517,6 @@ public class DataInitializer {
     private String showDate; // ISO date format (YYYY-MM-DD)
     private String seasonName; // Reference to season by name
     private String templateName; // Reference to show template by name
+    private String externalId; // External system ID (e.g., Notion page ID)
   }
 }

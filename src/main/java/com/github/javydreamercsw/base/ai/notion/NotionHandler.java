@@ -2,6 +2,7 @@ package com.github.javydreamercsw.base.ai.notion;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -139,7 +140,16 @@ public class NotionHandler {
 
     log.debug("Initializing NotionHandler - loading databases from workspace");
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    String notionToken = System.getenv("NOTION_TOKEN");
+    if (notionToken == null || notionToken.trim().isEmpty()) {
+      log.warn(
+          "NOTION_TOKEN environment variable is not set. NotionHandler will be initialized in"
+              + " disabled mode.");
+      initialized = true; // Mark as initialized but in disabled state
+      return;
+    }
+
+    try (NotionClient client = new NotionClient(notionToken)) {
       loadDatabases(client);
       initialized = true;
       log.info("NotionHandler initialized successfully with {} databases", databaseMap.size());
@@ -205,7 +215,14 @@ public class NotionHandler {
    */
   public void querySpecificDatabase(@NonNull String databaseId) {
     log.debug("Querying specific database: {}", databaseId);
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+
+    String notionToken = System.getenv("NOTION_TOKEN");
+    if (notionToken == null || notionToken.trim().isEmpty()) {
+      log.warn("NOTION_TOKEN not available. Cannot query database: {}", databaseId);
+      return;
+    }
+
+    try (NotionClient client = new NotionClient(notionToken)) {
       querySpecificDatabase(client, databaseId);
     } catch (Exception e) {
       log.error("Failed to query database: {}", databaseId, e);
@@ -357,7 +374,7 @@ public class NotionHandler {
    * @param databaseName The name of the database
    * @return true if the database exists, false otherwise
    */
-  public boolean databaseExists(String databaseName) {
+  public boolean databaseExists(@NonNull String databaseName) {
     boolean exists = databaseMap.containsKey(databaseName);
     log.debug("Database '{}' exists: {}", databaseName, exists);
     return exists;
@@ -389,7 +406,7 @@ public class NotionHandler {
    * @param databaseName The name of the database
    * @return true if the database exists, false otherwise
    */
-  public static boolean staticDatabaseExists(String databaseName) {
+  public static boolean staticDatabaseExists(@NonNull String databaseName) {
     return getInstance().databaseExists(databaseName);
   }
 
@@ -399,7 +416,7 @@ public class NotionHandler {
    * @param wrestlerName The name of the wrestler to load (e.g., "Rob Van Dam")
    * @return Optional containing the WrestlerPage object if found, empty otherwise
    */
-  public Optional<WrestlerPage> loadWrestler(String wrestlerName) {
+  public Optional<WrestlerPage> loadWrestler(@NonNull String wrestlerName) {
     log.debug("Loading wrestler: '{}'", wrestlerName);
 
     // First, find the wrestlers database
@@ -409,7 +426,10 @@ public class NotionHandler {
       return Optional.empty();
     }
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        return Optional.empty();
+      }
       return loadWrestlerFromDatabase(client, wrestlerDbId, wrestlerName);
     } catch (Exception e) {
       log.error("Failed to load wrestler: {}", wrestlerName, e);
@@ -423,13 +443,56 @@ public class NotionHandler {
    * @param wrestlerName The name of the wrestler to load
    * @return Optional containing the WrestlerPage object if found, empty otherwise
    */
-  public static Optional<WrestlerPage> loadWrestlerStatic(String wrestlerName) {
+  public static Optional<WrestlerPage> loadWrestlerStatic(@NonNull String wrestlerName) {
     return getInstance().loadWrestler(wrestlerName);
+  }
+
+  /**
+   * Loads all wrestlers from the Notion Wrestlers database for sync operations. This method is
+   * optimized for bulk operations and extracts only essential properties.
+   *
+   * @return List of WrestlerPage objects with basic properties populated
+   */
+  public List<WrestlerPage> loadAllWrestlers() {
+    return loadAllWrestlers(true); // Default to sync mode for performance
+  }
+
+  /**
+   * Loads all wrestlers from the Notion Wrestlers database.
+   *
+   * @param syncMode If true, loads minimal data for sync operations (faster). If false, loads full
+   *     data with all relationships (slower).
+   * @return List of WrestlerPage objects from the Wrestlers database
+   */
+  public List<WrestlerPage> loadAllWrestlers(boolean syncMode) {
+    log.debug("Loading all wrestlers from Wrestlers database (syncMode: {})", syncMode);
+
+    String wrestlerDbId = getDatabaseId("Wrestlers");
+    if (wrestlerDbId == null) {
+      log.warn("Wrestlers database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        return new ArrayList<>();
+      }
+      if (syncMode) {
+        return loadAllEntitiesFromDatabase(
+            client, wrestlerDbId, "Wrestler", this::mapPageToWrestlerPageSyncMode);
+      } else {
+        return loadAllEntitiesFromDatabase(
+            client, wrestlerDbId, "Wrestler", this::mapPageToWrestlerPage);
+      }
+    } catch (Exception e) {
+      log.error("Failed to load all wrestlers for sync", e);
+      return new ArrayList<>();
+    }
   }
 
   /** Internal method to load a wrestler from a specific database. */
   private Optional<WrestlerPage> loadWrestlerFromDatabase(
-      @NonNull NotionClient client, String databaseId, String wrestlerName) {
+      @NonNull NotionClient client, @NonNull String databaseId, @NonNull String wrestlerName) {
     PrintStream originalOut = System.out;
     try {
       log.debug("Searching for wrestler '{}' in database {}", wrestlerName, databaseId);
@@ -484,7 +547,7 @@ public class NotionHandler {
   }
 
   /** Maps a Notion page to a WrestlerPage object. */
-  private WrestlerPage mapPageToWrestlerPage(Page pageData, String wrestlerName) {
+  private WrestlerPage mapPageToWrestlerPage(@NonNull Page pageData, @NonNull String wrestlerName) {
     log.debug("Mapping Notion page to WrestlerPage object for: {}", wrestlerName);
 
     WrestlerPage wrestlerPage = new WrestlerPage();
@@ -531,6 +594,68 @@ public class NotionHandler {
     return wrestlerPage;
   }
 
+  /** Maps a Notion page to a WrestlerPage object in sync mode (minimal processing). */
+  private WrestlerPage mapPageToWrestlerPageSyncMode(Page pageData, String wrestlerName) {
+    log.debug("Mapping Notion page to WrestlerPage object in sync mode for: {}", wrestlerName);
+
+    WrestlerPage wrestlerPage = new WrestlerPage();
+
+    // Set basic page information using the base class methods
+    setBasicPageInfo(wrestlerPage, pageData);
+
+    // Extract only essential properties for sync (no complex relationships)
+    Map<String, Object> minimalProperties = new HashMap<>();
+    Map<String, PageProperty> pageProperties = pageData.getProperties();
+
+    // Extract only simple properties needed for sync
+    for (Map.Entry<String, PageProperty> entry : pageProperties.entrySet()) {
+      String key = entry.getKey();
+      PageProperty property = entry.getValue();
+
+      try {
+        // Only extract simple properties, skip complex relationships like Matches, Heat, etc.
+        if (property.getTitle() != null && !property.getTitle().isEmpty()) {
+          minimalProperties.put(key, property.getTitle().get(0).getPlainText());
+          log.debug(
+              "Wrestler Property (sync mode) - {}: {}",
+              key,
+              property.getTitle().get(0).getPlainText());
+        } else if (property.getRichText() != null && !property.getRichText().isEmpty()) {
+          minimalProperties.put(key, property.getRichText().get(0).getPlainText());
+          log.debug(
+              "Wrestler Property (sync mode) - {}: {}",
+              key,
+              property.getRichText().get(0).getPlainText());
+        } else if (property.getNumber() != null) {
+          minimalProperties.put(key, property.getNumber());
+          log.debug("Wrestler Property (sync mode) - {}: {}", key, property.getNumber());
+        } else if (property.getSelect() != null) {
+          minimalProperties.put(key, property.getSelect().getName());
+          log.debug("Wrestler Property (sync mode) - {}: {}", key, property.getSelect().getName());
+        } else if (property.getRelation() != null && !property.getRelation().isEmpty()) {
+          // For complex properties, just store the count of relations without resolution
+          int relationCount = property.getRelation().size();
+          minimalProperties.put(key, relationCount + " relations");
+          log.debug(
+              "Wrestler Property (sync mode - count only) - {}: {} relations", key, relationCount);
+        }
+      } catch (Exception e) {
+        log.debug(
+            "Skipped property {} for wrestler {} in sync mode: {}",
+            key,
+            wrestlerName,
+            e.getMessage());
+      }
+    }
+
+    // Set the minimal properties
+    setRawProperties(wrestlerPage, minimalProperties);
+
+    log.debug(
+        "Mapped WrestlerPage in sync mode for: {} with ID: {}", wrestlerName, wrestlerPage.getId());
+    return wrestlerPage;
+  }
+
   /** Helper method to extract integer values from Notion properties. */
   private Integer getIntegerProperty(
       Map<String, PageProperty> properties, String propertyName, Integer defaultValue) {
@@ -574,6 +699,66 @@ public class NotionHandler {
     return getInstance().loadShow(showName);
   }
 
+  /**
+   * Loads all shows from the Notion Shows database.
+   *
+   * @return List of all ShowPage objects from the Shows database
+   */
+  public List<ShowPage> loadAllShows() {
+    log.debug("Loading all shows from Shows database");
+
+    String showDbId = getDatabaseId("Shows");
+    if (showDbId == null) {
+      log.warn("Shows database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        return new ArrayList<>();
+      }
+      return loadAllEntitiesFromDatabase(client, showDbId, "Show", this::mapPageToShowPage);
+    } catch (Exception e) {
+      log.error("Failed to load all shows", e);
+      return new ArrayList<>();
+    }
+  }
+
+  /**
+   * Static convenience method to load all shows.
+   *
+   * @return List of all ShowPage objects from the Shows database
+   */
+  public static List<ShowPage> loadAllShowsStatic() {
+    return getInstance().loadAllShows();
+  }
+
+  /**
+   * Loads all shows from the Notion Shows database with minimal processing for sync operations.
+   * This method is optimized for bulk operations and extracts only essential properties.
+   *
+   * @return List of ShowPage objects with basic properties populated
+   */
+  public List<ShowPage> loadAllShowsForSync() {
+    log.debug("Loading all shows for sync operation (optimized)");
+
+    String showDbId = getDatabaseId("Shows");
+    if (showDbId == null) {
+      log.warn("Shows database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        return new ArrayList<>();
+      }
+      return loadAllEntitiesForSync(client, showDbId, "Show");
+    } catch (Exception e) {
+      log.error("Failed to load all shows for sync", e);
+      return new ArrayList<>();
+    }
+  }
+
   // ==================== SHOW TEMPLATE LOADING METHODS ====================
 
   /**
@@ -607,6 +792,33 @@ public class NotionHandler {
   /** Static convenience method to load a show template. */
   public static Optional<ShowTemplatePage> loadShowTemplateStatic(@NonNull String templateName) {
     return getInstance().loadShowTemplate(templateName);
+  }
+
+  /**
+   * Loads all show templates from the Notion Show Templates database for sync operations. This
+   * method is optimized for bulk operations and extracts only essential properties.
+   *
+   * @return List of ShowTemplatePage objects with basic properties populated
+   */
+  public List<ShowTemplatePage> loadAllShowTemplates() {
+    log.debug("Loading all show templates for sync operation");
+
+    String templateDbId = getDatabaseId("Show Templates");
+    if (templateDbId == null) {
+      log.warn("Show Templates database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        return new ArrayList<>();
+      }
+      return loadAllEntitiesFromDatabase(
+          client, templateDbId, "Show Template", (page, name) -> mapPageToShowTemplatePage(page));
+    } catch (Exception e) {
+      log.error("Failed to load all show templates for sync", e);
+      return new ArrayList<>();
+    }
   }
 
   /**
@@ -883,6 +1095,160 @@ public class NotionHandler {
 
   // ==================== GENERIC HELPER METHODS ====================
 
+  /**
+   * Creates a NotionClient safely, checking for token availability.
+   *
+   * @return NotionClient instance, or null if token is not available
+   */
+  private NotionClient createNotionClient() {
+    String notionToken = System.getenv("NOTION_TOKEN");
+    if (notionToken == null || notionToken.trim().isEmpty()) {
+      log.warn("NOTION_TOKEN not available. Cannot create NotionClient.");
+      return null;
+    }
+    return new NotionClient(notionToken);
+  }
+
+  /** Optimized method to load all entities for sync operations with minimal processing. */
+  private List<ShowPage> loadAllEntitiesForSync(
+      @NonNull NotionClient client, @NonNull String databaseId, @NonNull String entityType) {
+
+    List<ShowPage> entities = new ArrayList<>();
+    PrintStream originalOut = System.out;
+
+    try {
+      log.debug("Loading all {} entities for sync from database {}", entityType, databaseId);
+
+      QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
+
+      // Temporarily redirect System.out to suppress Notion SDK logs
+      System.setOut(new PrintStream(new ByteArrayOutputStream()));
+
+      List<Page> results = client.queryDatabase(queryRequest).getResults();
+
+      // Restore System.out before logging our results
+      System.setOut(originalOut);
+
+      log.info("Found {} pages in {} database for sync", results.size(), entityType);
+
+      // Process pages in batches to avoid overwhelming the API
+      int batchSize = 10;
+      for (int i = 0; i < results.size(); i += batchSize) {
+        int endIndex = Math.min(i + batchSize, results.size());
+        List<Page> batch = results.subList(i, endIndex);
+
+        log.debug("Processing batch {}-{} of {} pages", i + 1, endIndex, results.size());
+
+        for (Page page : batch) {
+          try {
+            // Create ShowPage with minimal processing - just extract basic properties
+            ShowPage showPage = createMinimalShowPage(page);
+            entities.add(showPage);
+
+          } catch (Exception e) {
+            log.warn(
+                "Failed to process {} entity from page {}: {}",
+                entityType,
+                page.getId(),
+                e.getMessage());
+          }
+        }
+
+        // Small delay between batches to be respectful to the API
+        if (endIndex < results.size()) {
+          try {
+            Thread.sleep(100); // 100ms delay between batches
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            break;
+          }
+        }
+      }
+
+      log.info("Successfully loaded {} {} entities for sync", entities.size(), entityType);
+      return entities;
+
+    } catch (Exception e) {
+      // Restore System.out in case of exception
+      System.setOut(originalOut);
+      log.error(
+          "Error loading all {} entities for sync from database: {}", entityType, databaseId, e);
+      return entities; // Return partial results
+    } finally {
+      // Ensure System.out is always restored
+      System.setOut(originalOut);
+    }
+  }
+
+  /** Generic method to load all entities from a database. */
+  private <T> List<T> loadAllEntitiesFromDatabase(
+      @NonNull NotionClient client,
+      @NonNull String databaseId,
+      @NonNull String entityType,
+      @NonNull java.util.function.BiFunction<Page, String, T> mapper) {
+
+    List<T> entities = new ArrayList<>();
+    PrintStream originalOut = System.out;
+
+    try {
+      log.debug("Loading all {} entities from database {}", entityType, databaseId);
+
+      QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
+
+      // Temporarily redirect System.out to suppress Notion SDK logs
+      System.setOut(new PrintStream(new ByteArrayOutputStream()));
+
+      List<Page> results = client.queryDatabase(queryRequest).getResults();
+
+      // Restore System.out before logging our results
+      System.setOut(originalOut);
+
+      log.debug("Found {} pages in {} database", results.size(), entityType);
+
+      // Convert all pages to entities
+      for (Page page : results) {
+        try {
+          // Suppress output again for retrievePage calls
+          System.setOut(new PrintStream(new ByteArrayOutputStream()));
+          Page pageData = client.retrievePage(page.getId(), Collections.emptyList());
+          System.setOut(originalOut);
+
+          // Get the name property for logging
+          String entityName = "Unknown";
+          PageProperty nameProperty = pageData.getProperties().get("Name");
+          if (nameProperty != null
+              && nameProperty.getTitle() != null
+              && !nameProperty.getTitle().isEmpty()) {
+            entityName = nameProperty.getTitle().get(0).getPlainText();
+          }
+
+          T entity = mapper.apply(pageData, entityName);
+          entities.add(entity);
+          log.debug("Loaded {} entity: {}", entityType, entityName);
+
+        } catch (Exception e) {
+          log.warn(
+              "Failed to load {} entity from page {}: {}",
+              entityType,
+              page.getId(),
+              e.getMessage());
+        }
+      }
+
+      log.info("Successfully loaded {} {} entities from database", entities.size(), entityType);
+      return entities;
+
+    } catch (Exception e) {
+      // Restore System.out in case of exception
+      System.setOut(originalOut);
+      log.error("Error loading all {} entities from database: {}", entityType, databaseId, e);
+      return entities; // Return partial results
+    } finally {
+      // Ensure System.out is always restored
+      System.setOut(originalOut);
+    }
+  }
+
   /** Generic method to load any entity from a database by name. */
   private <T> Optional<T> loadEntityFromDatabase(
       @NonNull NotionClient client,
@@ -943,6 +1309,68 @@ public class NotionHandler {
   }
 
   // ==================== MAPPING METHODS ====================
+
+  /** Creates a minimal ShowPage object for sync operations without detailed property extraction. */
+  private ShowPage createMinimalShowPage(@NonNull Page page) {
+    ShowPage showPage = new ShowPage();
+
+    // Set basic page properties
+    showPage.setId(page.getId());
+    showPage.setCreated_time(page.getCreatedTime());
+    showPage.setLast_edited_time(page.getLastEditedTime());
+    showPage.setArchived(page.getArchived());
+    showPage.setIn_trash(page.getInTrash());
+    showPage.setUrl(page.getUrl());
+    showPage.setPublic_url(page.getPublicUrl());
+
+    // Extract only essential properties for sync without detailed processing
+    Map<String, Object> rawProperties = new HashMap<>();
+    Map<String, PageProperty> pageProperties = page.getProperties();
+
+    if (pageProperties != null) {
+      // Extract key properties with minimal processing
+      pageProperties.forEach(
+          (key, value) -> {
+            try {
+              String simpleValue = extractSimplePropertyValue(value);
+              rawProperties.put(key, simpleValue);
+            } catch (Exception e) {
+              log.debug("Failed to extract property {}: {}", key, e.getMessage());
+              rawProperties.put(key, "N/A");
+            }
+          });
+    }
+
+    showPage.setRawProperties(rawProperties);
+    return showPage;
+  }
+
+  /** Extracts a simple string value from a PageProperty without complex processing. */
+  private String extractSimplePropertyValue(PageProperty property) {
+    if (property == null) return "N/A";
+
+    // Handle different property types with minimal processing
+    if (property.getTitle() != null && !property.getTitle().isEmpty()) {
+      return property.getTitle().get(0).getPlainText();
+    }
+    if (property.getRichText() != null && !property.getRichText().isEmpty()) {
+      return property.getRichText().get(0).getPlainText();
+    }
+    if (property.getSelect() != null) {
+      return property.getSelect().getName();
+    }
+    if (property.getDate() != null) {
+      return property.getDate().getStart();
+    }
+    if (property.getNumber() != null) {
+      return property.getNumber().toString();
+    }
+    if (property.getRelation() != null && !property.getRelation().isEmpty()) {
+      return property.getRelation().get(0).getId();
+    }
+
+    return "N/A";
+  }
 
   /** Maps a Notion page to a ShowPage object. */
   private ShowPage mapPageToShowPage(@NonNull Page pageData, @NonNull String showName) {
@@ -1104,7 +1532,13 @@ public class NotionHandler {
   public String extractFirstMatchFromShow(@NonNull ShowPage showPage) {
     log.debug("Extracting first match from show: {}", showPage.getId());
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    String notionToken = System.getenv("NOTION_TOKEN");
+    if (notionToken == null || notionToken.trim().isEmpty()) {
+      log.warn("NOTION_TOKEN not available. Cannot extract match from show: {}", showPage.getId());
+      return null;
+    }
+
+    try (NotionClient client = new NotionClient(notionToken)) {
       // Get the original page data to access properties
       PrintStream originalOut = System.out;
       try {

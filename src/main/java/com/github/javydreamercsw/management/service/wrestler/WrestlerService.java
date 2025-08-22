@@ -62,6 +62,14 @@ public class WrestlerService {
     return wrestlerRepository.findAll();
   }
 
+  public Optional<Wrestler> findByName(String name) {
+    return wrestlerRepository.findByName(name);
+  }
+
+  public Optional<Wrestler> findByExternalId(String externalId) {
+    return wrestlerRepository.findByExternalId(externalId);
+  }
+
   // ==================== ATW RPG METHODS ====================
 
   /**

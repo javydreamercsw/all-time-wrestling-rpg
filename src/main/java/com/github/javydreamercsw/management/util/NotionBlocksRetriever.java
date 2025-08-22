@@ -33,7 +33,7 @@ public class NotionBlocksRetriever {
   /** Retrieve the page content for a given page ID. */
   public String retrievePageContent(String pageId) {
     try {
-      log.info("Retrieving page content for ID: {}", pageId);
+      log.debug("Retrieving page content for ID: {}", pageId);
 
       // Get all blocks for the page
       List<JsonNode> blocks = getAllBlocks(pageId);
@@ -53,7 +53,7 @@ public class NotionBlocksRetriever {
       }
 
       String result = content.toString().trim();
-      log.info(
+      log.debug(
           "Successfully retrieved {} characters of content for page: {}", result.length(), pageId);
       return result;
 

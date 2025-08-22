@@ -15,6 +15,8 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
 
   Optional<Show> findByName(String name);
 
+  Optional<Show> findByExternalId(String externalId);
+
   // ==================== CALENDAR-SPECIFIC QUERIES ====================
 
   /**

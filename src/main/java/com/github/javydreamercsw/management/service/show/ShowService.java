@@ -65,6 +65,10 @@ public class ShowService {
     return showRepository.findByName(showName);
   }
 
+  public Optional<Show> findByExternalId(String externalId) {
+    return showRepository.findByExternalId(externalId);
+  }
+
   // ==================== CALENDAR-SPECIFIC METHODS ====================
 
   /**

@@ -157,6 +157,36 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.3</version>
+        <configuration>
+          <!-- Enable parallel execution for unit tests -->
+          <parallel>classes</parallel>
+          <threadCount>4</threadCount>
+          <perCoreThreadCount>true</perCoreThreadCount>
+          <useUnlimitedThreads>false</useUnlimitedThreads>
+          <!-- Optimize for faster execution -->
+          <forkCount>1</forkCount>
+          <reuseForks>true</reuseForks>
+          <!-- Include unit tests, exclude integration tests -->
+          <includes>
+            <include>**/*Test.java</include>
+            <include>**/*Tests.java</include>
+            <include>**/*TestCase.java</include>
+          </includes>
+          <excludes>
+            <exclude>**/*IT.java</exclude>
+            <exclude>**/*IntegrationTest.java</exclude>
+          </excludes>
+          <!-- JVM arguments for better performance -->
+          <argLine>-Xmx2g
+            -XX:+EnableDynamicAgentLoading
+            -Djdk.instrument.traceUsage=false
+            -DNOTION_TOKEN=${NOTION_TOKEN}</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
@@ -384,12 +414,41 @@
       <id>integration-test</id>
       <build>
         <plugins>
+          <!-- Run integration tests with Surefire (sequential for safety) -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <!-- Disable parallel execution for integration tests -->
+              <parallel>none</parallel>
+              <threadCount>1</threadCount>
+              <!-- Include integration tests -->
+              <includes>
+                <include>**/*IT.java</include>
+                <include>**/*IntegrationTest.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/*Test.java</exclude>
+                <exclude>**/*Tests.java</exclude>
+                <exclude>**/*TestCase.java</exclude>
+              </excludes>
+              <!-- JVM arguments for integration tests -->
+              <argLine>-Xmx3g
+                -XX:+EnableDynamicAgentLoading
+                -Djdk.instrument.traceUsage=false
+                -DNOTION_TOKEN=${NOTION_TOKEN}</argLine>
+            </configuration>
+          </plugin>
+          <!-- Failsafe plugin for additional integration test support -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <trimStackTrace>false</trimStackTrace>
               <enableAssertions>true</enableAssertions>
+              <!-- Sequential execution for integration tests -->
+              <parallel>none</parallel>
+              <threadCount>1</threadCount>
             </configuration>
             <executions>
               <execution>
