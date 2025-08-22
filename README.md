@@ -24,17 +24,15 @@ This project includes several security measures:
 - **GitHub Dependency Review**: PR-based dependency vulnerability detection (public repositories only)
 - **Regular Security Scans**: Weekly automated security scans via GitHub Actions
 
-### Repository-Specific Security Workflows
+### Security Workflows
 
-#### Public Repositories
-- **Full dependency review**: License compliance + vulnerability scanning
-- **GitHub Advanced Security**: Complete security feature set
+This is a **public repository** with full GitHub Advanced Security features:
+
+- **Complete dependency review**: License compliance + vulnerability scanning
+- **GitHub Advanced Security**: Full security feature set available
 - **SARIF integration**: Vulnerabilities appear in Security tab
-
-#### Private Repositories
-- **OWASP-only scanning**: Vulnerability detection without Advanced Security
-- **Manual license review**: License compliance through local tooling
-- **Artifact reports**: HTML/JSON reports uploaded as artifacts
+- **Automated license compliance**: Only approved licenses allowed
+- **Weekly security scans**: Automated vulnerability monitoring
 
 ### Running Security Scans Locally
 ```bash
@@ -53,6 +51,27 @@ mvn org.owasp:dependency-check-maven:check -Dformats=HTML,JSON,SARIF
 - Only approved open source licenses are allowed (enforced on public repos)
 - Regular dependency updates are encouraged
 - Weekly automated vulnerability scanning
+
+## Development Workflow
+
+### Pull Request Labeling
+This repository uses automated pull request labeling based on changed files:
+
+- **Automatic labeling**: PRs are automatically labeled based on the files you modify
+- **Smart categorization**: Labels help identify the type and scope of changes
+- **Review efficiency**: Makes it easier for reviewers to understand PR content
+
+#### Label Categories
+- **Code Areas**: `frontend`, `backend`, `database`, `configuration`
+- **Content**: `documentation`, `tests`, `security`
+- **Domain**: `wrestling`, `ai`, `dependencies`
+- **Size**: `major`, `minor`, `patch`
+
+#### Setting Up Labels
+Run the label setup script to create all necessary labels:
+```bash
+./scripts/setup-labels.sh
+```
 
 ## Getting Started
 
