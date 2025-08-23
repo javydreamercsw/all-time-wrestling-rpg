@@ -42,7 +42,7 @@ class SeasonServiceTest {
   void shouldCreateNewSeasonWithDefaultValues() {
     // Given
     when(seasonRepository.findActiveSeason()).thenReturn(Optional.empty());
-    when(seasonRepository.findLatestSeason()).thenReturn(Optional.empty());
+
     when(seasonRepository.saveAndFlush(any(Season.class)))
         .thenAnswer(
             invocation -> {
@@ -67,7 +67,7 @@ class SeasonServiceTest {
   void shouldCreateSeasonWithCustomShowsPerPpv() {
     // Given
     when(seasonRepository.findActiveSeason()).thenReturn(Optional.empty());
-    when(seasonRepository.findLatestSeason()).thenReturn(Optional.empty());
+
     when(seasonRepository.saveAndFlush(any(Season.class)))
         .thenAnswer(
             invocation -> {
@@ -91,7 +91,7 @@ class SeasonServiceTest {
     activeSeason.setIsActive(true);
 
     when(seasonRepository.findActiveSeason()).thenReturn(Optional.of(activeSeason));
-    when(seasonRepository.findLatestSeason()).thenReturn(Optional.of(activeSeason));
+
     when(seasonRepository.saveAndFlush(any(Season.class)))
         .thenAnswer(
             invocation -> {
