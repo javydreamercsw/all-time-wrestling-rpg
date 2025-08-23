@@ -148,7 +148,7 @@ public class SeasonManagementScheduler {
       if (statsOpt.isPresent()) {
         SeasonProgressionService.SeasonStatistics stats = statsOpt.get();
 
-        log.info("Season: {} (Season #{})", stats.seasonName(), stats.seasonNumber());
+        log.info("Season: {}", stats.seasonName());
         log.info("Duration: {} days", stats.durationDays());
         log.info(
             "Shows: {} total ({} regular, {} PPV)",
@@ -241,10 +241,7 @@ public class SeasonManagementScheduler {
 
     if (newSeasonOpt.isPresent()) {
       Season newSeason = newSeasonOpt.get();
-      log.info(
-          "SEASON PROGRESSION: Started new season '{}' (Season #{})",
-          newSeason.getName(),
-          newSeason.getSeasonNumber());
+      log.info("SEASON PROGRESSION: Started new season '{}'", newSeason.getName());
 
       // Book inaugural show for new season
       bookRegularShow(newSeason);

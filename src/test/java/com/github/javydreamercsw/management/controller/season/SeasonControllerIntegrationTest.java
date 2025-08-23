@@ -53,7 +53,6 @@ class SeasonControllerIntegrationTest {
         .andExpect(jsonPath("$.name").value("Test Season"))
         .andExpect(jsonPath("$.description").value("Test description"))
         .andExpect(jsonPath("$.showsPerPpv").value(5))
-        .andExpect(jsonPath("$.seasonNumber").value(1))
         .andExpect(jsonPath("$.isActive").value(true));
   }
 
@@ -220,7 +219,6 @@ class SeasonControllerIntegrationTest {
       season.setId((long) seasonNumber);
       season.setName(name);
       season.setDescription("Test description");
-      season.setSeasonNumber(seasonNumber);
       season.setShowsPerPpv(5);
       season.setIsActive(false);
       return season;

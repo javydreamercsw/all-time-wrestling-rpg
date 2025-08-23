@@ -19,7 +19,6 @@ class SeasonTest {
   void setUp() {
     season = new Season();
     season.setName("Test Season");
-    season.setSeasonNumber(1);
     season.setShowsPerPpv(5);
     season.setIsActive(true);
   }
@@ -158,10 +157,9 @@ class SeasonTest {
   @Test
   @DisplayName("Should create display name")
   void shouldCreateDisplayName() {
-    season.setSeasonNumber(3);
     season.setName("Championship Era");
 
-    assertThat(season.getDisplayName()).isEqualTo("Season 3: Championship Era");
+    assertThat(season.getDisplayName()).isEqualTo("Championship Era");
   }
 
   @Test

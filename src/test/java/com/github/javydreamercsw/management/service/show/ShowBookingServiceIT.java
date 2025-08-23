@@ -50,7 +50,7 @@ class ShowBookingServiceIT {
     testSeason = new Season();
     testSeason.setName("Test Season");
     testSeason.setDescription("Test season for show booking");
-    testSeason.setSeasonNumber(1);
+
     testSeason.setShowsPerPpv(5);
     testSeason.setIsActive(true);
     testSeason = seasonRepository.save(testSeason);

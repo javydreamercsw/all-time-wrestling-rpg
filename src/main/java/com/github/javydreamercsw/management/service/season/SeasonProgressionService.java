@@ -106,7 +106,6 @@ public class SeasonProgressionService {
         new SeasonStatistics(
             season.getId(),
             season.getName(),
-            season.getSeasonNumber(),
             totalShows,
             regularShows,
             ppvShows,
@@ -196,21 +195,13 @@ public class SeasonProgressionService {
       newSeason.setName(newSeasonName);
       newSeason.setDescription(newSeasonDescription);
 
-      // Determine season number
-      Integer seasonNumber =
-          seasonRepository.findLatestSeason().map(season -> season.getSeasonNumber() + 1).orElse(1);
-      newSeason.setSeasonNumber(seasonNumber);
-
       newSeason.setShowsPerPpv(5); // Default
       newSeason.setIsActive(true);
       newSeason.setStartDate(clock.instant());
       newSeason.setCreationDate(clock.instant());
 
       Season savedSeason = seasonRepository.save(newSeason);
-      log.info(
-          "Started new season: {} (Season #{})",
-          savedSeason.getName(),
-          savedSeason.getSeasonNumber());
+      log.info("Started new season: {}", savedSeason.getName());
 
       return Optional.of(savedSeason);
 
@@ -297,12 +288,7 @@ public class SeasonProgressionService {
               }
 
               return new SeasonSummary(
-                  season.getId(),
-                  season.getName(),
-                  season.getSeasonNumber(),
-                  showCount,
-                  durationDays,
-                  season.getIsActive());
+                  season.getId(), season.getName(), showCount, durationDays, season.getIsActive());
             })
         .toList();
   }
@@ -311,7 +297,6 @@ public class SeasonProgressionService {
   public record SeasonStatistics(
       Long seasonId,
       String seasonName,
-      Integer seasonNumber,
       int totalShows,
       int regularShows,
       int ppvShows,
@@ -325,10 +310,5 @@ public class SeasonProgressionService {
 
   /** Record class for season summary information. */
   public record SeasonSummary(
-      Long seasonId,
-      String seasonName,
-      Integer seasonNumber,
-      int totalShows,
-      long durationDays,
-      boolean isActive) {}
+      Long seasonId, String seasonName, int totalShows, long durationDays, boolean isActive) {}
 }

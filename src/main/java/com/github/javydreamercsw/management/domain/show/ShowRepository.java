@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 
 public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificationExecutor<Show> {
 
@@ -51,4 +52,20 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
    * @return List of unscheduled shows
    */
   List<Show> findByShowDateIsNullOrderByCreationDate();
+
+  /**
+   * Find all shows with eagerly loaded relationships for export purposes. This prevents
+   * LazyInitializationException when accessing Season and ShowTemplate outside of transaction.
+   *
+   * @return List of all shows with eagerly loaded relationships
+   */
+  @Query(
+      """
+      SELECT s FROM Show s
+      LEFT JOIN FETCH s.season
+      LEFT JOIN FETCH s.template
+      LEFT JOIN FETCH s.type
+      ORDER BY s.creationDate DESC
+      """)
+  List<Show> findAllWithRelationships();
 }

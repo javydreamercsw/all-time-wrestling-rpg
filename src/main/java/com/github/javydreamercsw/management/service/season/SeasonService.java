@@ -34,15 +34,10 @@ public class SeasonService {
     Optional<Season> activeSeason = seasonRepository.findActiveSeason();
     activeSeason.ifPresent(this::endSeason);
 
-    // Determine season number
-    Integer seasonNumber =
-        seasonRepository.findLatestSeason().map(season -> season.getSeasonNumber() + 1).orElse(1);
-
     // Create new season
     Season season = new Season();
     season.setName(name);
     season.setDescription(description);
-    season.setSeasonNumber(seasonNumber);
     season.setShowsPerPpv(showsPerPpv != null ? showsPerPpv : 5);
     season.setIsActive(true);
     season.setStartDate(Instant.now(clock));
@@ -157,7 +152,6 @@ public class SeasonService {
               return new SeasonStats(
                   season.getId(),
                   season.getName(),
-                  season.getSeasonNumber(),
                   totalShows,
                   (int) regularShows,
                   (int) ppvShows,
@@ -169,13 +163,7 @@ public class SeasonService {
         .orElse(null);
   }
 
-  /** Check if a season number already exists. */
-  @Transactional(readOnly = true)
-  public boolean seasonNumberExists(Integer seasonNumber) {
-    return seasonRepository.existsBySeasonNumber(seasonNumber);
-  }
-
-  /** Get the latest season. */
+  /** Get the latest season by creation date. */
   @Transactional(readOnly = true)
   public Optional<Season> getLatestSeason() {
     return seasonRepository.findLatestSeason();
@@ -185,7 +173,6 @@ public class SeasonService {
   public record SeasonStats(
       Long seasonId,
       String name,
-      Integer seasonNumber,
       int totalShows,
       int regularShows,
       int ppvShows,

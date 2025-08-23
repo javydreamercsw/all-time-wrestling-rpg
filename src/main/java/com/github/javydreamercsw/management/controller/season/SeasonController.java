@@ -64,7 +64,7 @@ public class SeasonController {
   public ResponseEntity<Page<Season>> getAllSeasons(
       @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
       @Parameter(description = "Page size") @RequestParam(defaultValue = "20") @Min(1) int size,
-      @Parameter(description = "Sort field") @RequestParam(defaultValue = "seasonNumber")
+      @Parameter(description = "Sort field") @RequestParam(defaultValue = "creationDate")
           String sortBy,
       @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc")
           String sortDir) {

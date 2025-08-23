@@ -78,9 +78,19 @@ public class DataInitializer {
   @Order(1)
   public ApplicationRunner loadShowTemplatesFromFile(ShowTemplateService showTemplateService) {
     return args -> {
+      // Only load show templates from file if the table is empty
+      long existingTemplatesCount = showTemplateService.count();
+      if (existingTemplatesCount > 0) {
+        logger.info(
+            "Show templates table already contains {} templates - skipping file import",
+            existingTemplatesCount);
+        return;
+      }
+
       ClassPathResource resource = new ClassPathResource("show_templates.json");
       if (resource.exists()) {
-        logger.info("Loading show templates from file: {}", resource.getPath());
+        logger.info(
+            "Show templates table is empty - loading templates from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var templatesFromFile =
@@ -378,6 +388,30 @@ public class DataInitializer {
     };
   }
 
+  @Data
+  public static class CardDTO {
+    private String name;
+    private String type;
+    private int damage;
+    private boolean finisher = false;
+    private boolean signature = false;
+    private boolean pin = false;
+    private boolean taunt = false;
+    private boolean recover = false;
+    private int stamina;
+    private int momentum;
+    private int target;
+    private int number;
+    private String set;
+  }
+
+  // DTOs for deserialization
+  @Data
+  public static class DeckDTO {
+    private String wrestler;
+    private List<DeckCardDTO> cards;
+  }
+
   @Bean
   @Order(6)
   public ApplicationRunner syncShowsFromFile(
@@ -386,9 +420,17 @@ public class DataInitializer {
       SeasonService seasonService,
       ShowTemplateService showTemplateService) {
     return args -> {
+      // Only load shows from file if the shows table is empty
+      long existingShowsCount = showService.count();
+      if (existingShowsCount > 0) {
+        logger.info(
+            "Shows table already contains {} shows - skipping file import", existingShowsCount);
+        return;
+      }
+
       ClassPathResource resource = new ClassPathResource("shows.json");
       if (resource.exists()) {
-        logger.info("Loading shows from file: {}", resource.getPath());
+        logger.info("Shows table is empty - loading shows from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         try (var is = resource.getInputStream()) {
@@ -476,30 +518,6 @@ public class DataInitializer {
         logger.warn("Shows file not found: {}", resource.getPath());
       }
     };
-  }
-
-  @Data
-  public static class CardDTO {
-    private String name;
-    private String type;
-    private int damage;
-    private boolean finisher = false;
-    private boolean signature = false;
-    private boolean pin = false;
-    private boolean taunt = false;
-    private boolean recover = false;
-    private int stamina;
-    private int momentum;
-    private int target;
-    private int number;
-    private String set;
-  }
-
-  // DTOs for deserialization
-  @Data
-  public static class DeckDTO {
-    private String wrestler;
-    private List<DeckCardDTO> cards;
   }
 
   @Data

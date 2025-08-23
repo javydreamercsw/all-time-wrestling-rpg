@@ -15,16 +15,11 @@ public interface SeasonRepository
 
   Optional<Season> findByName(String name);
 
-  Optional<Season> findBySeasonNumber(Integer seasonNumber);
-
   /** Find the currently active season. There should only be one active season at a time. */
   @Query("SELECT s FROM Season s WHERE s.isActive = true AND s.endDate IS NULL")
   Optional<Season> findActiveSeason();
 
-  /** Find the most recent season (by season number). */
-  @Query("SELECT s FROM Season s ORDER BY s.seasonNumber DESC LIMIT 1")
+  /** Find the most recent season (by creation date). */
+  @Query("SELECT s FROM Season s ORDER BY s.creationDate DESC LIMIT 1")
   Optional<Season> findLatestSeason();
-
-  /** Check if a season with the given number already exists. */
-  boolean existsBySeasonNumber(Integer seasonNumber);
 }

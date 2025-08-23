@@ -57,7 +57,6 @@ class SeasonServiceTest {
     // Then
     assertThat(result.getName()).isEqualTo("Test Season");
     assertThat(result.getDescription()).isEqualTo("Test description");
-    assertThat(result.getSeasonNumber()).isEqualTo(1);
     assertThat(result.getShowsPerPpv()).isEqualTo(5); // Default value
     assertThat(result.getIsActive()).isTrue();
     verify(seasonRepository).saveAndFlush(any(Season.class));
@@ -107,7 +106,6 @@ class SeasonServiceTest {
     // Then
     assertThat(activeSeason.getIsActive()).isFalse();
     assertThat(activeSeason.getEndDate()).isNotNull();
-    assertThat(result.getSeasonNumber()).isEqualTo(2);
     verify(seasonRepository, times(2)).saveAndFlush(any(Season.class)); // End active + save new
   }
 
@@ -314,7 +312,6 @@ class SeasonServiceTest {
     Season season = new Season();
     season.setId(seasonNumber.longValue());
     season.setName(name);
-    season.setSeasonNumber(seasonNumber);
     season.setShowsPerPpv(5);
     season.setIsActive(true);
     season.setStartDate(Instant.now(fixedClock));

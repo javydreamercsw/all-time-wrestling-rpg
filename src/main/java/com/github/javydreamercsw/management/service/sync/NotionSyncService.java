@@ -1,7 +1,6 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
@@ -71,9 +70,8 @@ public class NotionSyncService {
   private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
   /**
-   * Synchronizes shows from Notion Shows database to the local shows.json file. This method
-   * retrieves all shows from Notion and updates the shows.json file with the latest data using
-   * optimized async processing.
+   * Synchronizes shows from Notion Shows database directly to the database. This method retrieves
+   * all shows from Notion and saves them to the database only.
    *
    * @return SyncResult containing the outcome of the sync operation
    */
@@ -82,7 +80,8 @@ public class NotionSyncService {
   }
 
   /**
-   * Synchronizes shows from Notion Shows database with optional progress tracking.
+   * Synchronizes shows from Notion Shows database directly to the database with optional progress
+   * tracking.
    *
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult containing the outcome of the sync operation
@@ -93,12 +92,13 @@ public class NotionSyncService {
       return SyncResult.success("Shows", 0, 0);
     }
 
-    log.info("🚀 Starting optimized shows synchronization from Notion...");
+    log.info("🚀 Starting shows synchronization from Notion to database...");
     long startTime = System.currentTimeMillis();
 
     // Initialize progress tracking if operation ID provided
     if (operationId != null) {
-      progressTracker.startOperation(operationId, "Sync Shows", 5); // Updated to 5 steps
+      progressTracker.startOperation(
+          operationId, "Sync Shows", 4); // Updated to 4 steps (no JSON file writing)
       progressTracker.updateProgress(operationId, 1, "Initializing sync operation...");
     }
 
@@ -138,26 +138,11 @@ public class NotionSyncService {
           showDTOs.size(),
           System.currentTimeMillis() - conversionStart);
 
-      // Write to shows.json
-      log.info("💾 Writing shows to JSON file...");
-      if (operationId != null) {
-        progressTracker.updateProgress(
-            operationId,
-            4,
-            String.format("Writing %d shows to shows.json file...", showDTOs.size()));
-      }
-      long writeStart = System.currentTimeMillis();
-      writeShowsToJsonFile(showDTOs);
-      log.info(
-          "✅ Written {} shows to file in {}ms",
-          showDTOs.size(),
-          System.currentTimeMillis() - writeStart);
-
-      // Save to database
+      // Save to database only (no JSON file writing)
       log.info("🗄️ Saving shows to database...");
       if (operationId != null) {
         progressTracker.updateProgress(
-            operationId, 5, String.format("Saving %d shows to database...", showDTOs.size()));
+            operationId, 4, String.format("Saving %d shows to database...", showDTOs.size()));
       }
       long dbStart = System.currentTimeMillis();
       int savedCount = saveShowsToDatabase(showDTOs);
@@ -166,7 +151,7 @@ public class NotionSyncService {
 
       long totalTime = System.currentTimeMillis() - startTime;
       log.info(
-          "🎉 Successfully synchronized {} shows (JSON + Database) in {}ms total",
+          "🎉 Successfully synchronized {} shows to database in {}ms total",
           showDTOs.size(),
           totalTime);
 
@@ -515,27 +500,6 @@ public class NotionSyncService {
       errorDto.setDescription("Failed to convert: " + e.getMessage());
       return errorDto;
     }
-  }
-
-  /**
-   * Writes the list of ShowDTO objects to the shows.json file.
-   *
-   * @param showDTOs List of ShowDTO objects to write
-   * @throws IOException if file writing fails
-   */
-  private void writeShowsToJsonFile(List<ShowDTO> showDTOs) throws IOException {
-    // Configure ObjectMapper for pretty printing and date handling
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.registerModule(new JavaTimeModule());
-
-    // Get the path to the resources directory
-    Path resourcesPath = Paths.get("src/main/resources/shows.json");
-
-    // Write the shows to JSON file with pretty printing
-    String jsonContent = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(showDTOs);
-    Files.write(resourcesPath, jsonContent.getBytes());
-
-    log.info("Successfully wrote {} shows to shows.json", showDTOs.size());
   }
 
   // ==================== DATABASE PERSISTENCE METHODS ====================

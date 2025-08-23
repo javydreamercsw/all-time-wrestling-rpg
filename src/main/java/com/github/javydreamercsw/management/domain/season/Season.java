@@ -38,9 +38,6 @@ public class Season extends AbstractEntity<Long> {
   @Column(name = "description")
   private String description;
 
-  @Column(name = "season_number", nullable = false)
-  @Min(1) private Integer seasonNumber;
-
   @Column(name = "start_date", nullable = false)
   private Instant startDate;
 
@@ -111,9 +108,9 @@ public class Season extends AbstractEntity<Long> {
     show.setSeason(null);
   }
 
-  /** Get display name with season number. */
+  /** Get display name. */
   public String getDisplayName() {
-    return String.format("Season %d: %s", seasonNumber, name);
+    return name;
   }
 
   /** Get the duration of this season in days. */

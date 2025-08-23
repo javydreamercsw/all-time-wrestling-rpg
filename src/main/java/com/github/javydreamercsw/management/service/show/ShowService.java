@@ -61,6 +61,16 @@ public class ShowService {
     return showRepository.findAll();
   }
 
+  /**
+   * Find all shows with eagerly loaded relationships. This is useful for export operations to
+   * prevent LazyInitializationException.
+   *
+   * @return List of all shows with eagerly loaded relationships
+   */
+  public List<Show> findAllWithRelationships() {
+    return showRepository.findAllWithRelationships();
+  }
+
   public Optional<Show> findByName(String showName) {
     return showRepository.findByName(showName);
   }
