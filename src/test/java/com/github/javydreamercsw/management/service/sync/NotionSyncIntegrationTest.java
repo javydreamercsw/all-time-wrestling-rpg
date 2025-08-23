@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -47,6 +48,7 @@ class NotionSyncIntegrationTest {
   private ShowTemplateService showTemplateService;
   private WrestlerService wrestlerService;
   private WrestlerRepository wrestlerRepository;
+  private FactionRepository factionRepository;
 
   @BeforeEach
   void setUp() {
@@ -68,6 +70,7 @@ class NotionSyncIntegrationTest {
     showTemplateService = mock(ShowTemplateService.class);
     wrestlerService = mock(WrestlerService.class);
     wrestlerRepository = mock(WrestlerRepository.class);
+    factionRepository = mock(FactionRepository.class);
 
     // Create sync properties with test configuration
     syncProperties = new NotionSyncProperties();
@@ -90,7 +93,8 @@ class NotionSyncIntegrationTest {
             wrestlerService,
             wrestlerRepository,
             seasonService,
-            showTemplateService);
+            showTemplateService,
+            factionRepository);
   }
 
   @Test
@@ -185,7 +189,8 @@ class NotionSyncIntegrationTest {
               wrestlerService,
               wrestlerRepository,
               seasonService,
-              showTemplateService);
+              showTemplateService,
+              factionRepository);
 
       // This should handle the error gracefully
       SyncResult result = invalidSyncService.syncShows();

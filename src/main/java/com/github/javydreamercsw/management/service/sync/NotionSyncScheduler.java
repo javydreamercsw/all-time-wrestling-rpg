@@ -93,6 +93,9 @@ public class NotionSyncScheduler {
       case "wrestlers":
         return notionSyncService.syncWrestlers(operationId);
 
+      case "factions":
+        return notionSyncService.syncFactions(operationId);
+
       case "teams":
         // TODO: Implement team sync (NotionHandler.loadAllTeams() is ready)
         log.warn("Team sync not yet implemented");

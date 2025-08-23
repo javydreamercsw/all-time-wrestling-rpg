@@ -368,6 +368,13 @@ public class NotionSyncView extends Main {
                               }));
             }
           }
+
+          @Override
+          public void onLogMessage(String logOperationId, String message, String level) {
+            if (logOperationId.equals(operationId)) {
+              getUI().ifPresent(ui -> ui.access(() -> addLogEntry(message, level)));
+            }
+          }
         };
 
     progressTracker.addProgressListener(progressListener);

@@ -1,17 +1,23 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.FactionPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.dto.ShowDTO;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -26,11 +32,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -65,6 +73,7 @@ public class NotionSyncService {
   private final WrestlerRepository wrestlerRepository;
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
+  private final FactionRepository factionRepository;
 
   // Thread pool for async processing - using fixed thread pool for Java 17 compatibility
   private final ExecutorService executorService = Executors.newFixedThreadPool(10);
@@ -108,6 +117,7 @@ public class NotionSyncService {
         log.info("📦 Creating backup...");
         if (operationId != null) {
           progressTracker.updateProgress(operationId, 1, "Creating backup of existing data...");
+          progressTracker.addLogMessage(operationId, "📦 Creating backup...", "INFO");
         }
         createBackup("shows.json");
       }
@@ -116,12 +126,18 @@ public class NotionSyncService {
       log.info("📥 Retrieving shows from Notion...");
       if (operationId != null) {
         progressTracker.updateProgress(operationId, 2, "Retrieving shows from Notion database...");
+        progressTracker.addLogMessage(operationId, "📥 Retrieving shows from Notion...", "INFO");
       }
       List<ShowPage> notionShows = getAllShowsFromNotion();
-      log.info(
-          "✅ Retrieved {} shows from Notion in {}ms",
-          notionShows.size(),
-          System.currentTimeMillis() - startTime);
+      long retrieveTime = System.currentTimeMillis() - startTime;
+      log.info("✅ Retrieved {} shows from Notion in {}ms", notionShows.size(), retrieveTime);
+      if (operationId != null) {
+        progressTracker.addLogMessage(
+            operationId,
+            String.format(
+                "✅ Retrieved %d shows from Notion in %dms", notionShows.size(), retrieveTime),
+            "SUCCESS");
+      }
 
       // Convert to DTOs using parallel processing
       log.info("🔄 Converting shows to DTOs...");
@@ -130,24 +146,36 @@ public class NotionSyncService {
             operationId,
             3,
             String.format("Converting %d shows to data format...", notionShows.size()));
+        progressTracker.addLogMessage(operationId, "🔄 Converting shows to DTOs...", "INFO");
       }
       long conversionStart = System.currentTimeMillis();
       List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows);
-      log.info(
-          "✅ Converted {} shows to DTOs in {}ms",
-          showDTOs.size(),
-          System.currentTimeMillis() - conversionStart);
+      long conversionTime = System.currentTimeMillis() - conversionStart;
+      log.info("✅ Converted {} shows to DTOs in {}ms", showDTOs.size(), conversionTime);
+      if (operationId != null) {
+        progressTracker.addLogMessage(
+            operationId,
+            String.format("✅ Converted %d shows to DTOs in %dms", showDTOs.size(), conversionTime),
+            "SUCCESS");
+      }
 
       // Save to database only (no JSON file writing)
       log.info("🗄️ Saving shows to database...");
       if (operationId != null) {
         progressTracker.updateProgress(
             operationId, 4, String.format("Saving %d shows to database...", showDTOs.size()));
+        progressTracker.addLogMessage(operationId, "🗄️ Saving shows to database...", "INFO");
       }
       long dbStart = System.currentTimeMillis();
       int savedCount = saveShowsToDatabase(showDTOs);
-      log.info(
-          "✅ Saved {} shows to database in {}ms", savedCount, System.currentTimeMillis() - dbStart);
+      long dbTime = System.currentTimeMillis() - dbStart;
+      log.info("✅ Saved {} shows to database in {}ms", savedCount, dbTime);
+      if (operationId != null) {
+        progressTracker.addLogMessage(
+            operationId,
+            String.format("✅ Saved %d shows to database in %dms", savedCount, dbTime),
+            "SUCCESS");
+      }
 
       long totalTime = System.currentTimeMillis() - startTime;
       log.info(
@@ -157,6 +185,11 @@ public class NotionSyncService {
 
       // Complete progress tracking
       if (operationId != null) {
+        progressTracker.addLogMessage(
+            operationId,
+            String.format(
+                "🎉 Successfully synchronized %d shows in %dms total", showDTOs.size(), totalTime),
+            "SUCCESS");
         progressTracker.completeOperation(
             operationId,
             true,
@@ -410,6 +443,137 @@ public class NotionSyncService {
       }
 
       return SyncResult.failure("Wrestlers", e.getMessage());
+    }
+  }
+
+  // ==================== FACTIONS SYNC ====================
+
+  /**
+   * Synchronizes factions from Notion to the database.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncFactions(String operationId) {
+    log.info("🏴 Starting factions synchronization from Notion to database...");
+    long startTime = System.currentTimeMillis();
+
+    try {
+      // Check if entity is enabled
+      if (!syncProperties.isEntityEnabled("factions")) {
+        log.info("Factions sync is disabled in configuration");
+        return SyncResult.success("Factions", 0, 0);
+      }
+
+      // Initialize progress tracking
+      if (operationId != null) {
+        progressTracker.startOperation(operationId, "Sync Factions", 4);
+        progressTracker.updateProgress(operationId, 1, "Retrieving factions from Notion...");
+        progressTracker.addLogMessage(
+            operationId, "🏴 Starting factions synchronization...", "INFO");
+      }
+
+      // Create backup if enabled
+      if (syncProperties.isBackupEnabled()) {
+        log.info("📦 Creating backup...");
+        if (operationId != null) {
+          progressTracker.updateProgress(operationId, 1, "Creating backup of existing data...");
+          progressTracker.addLogMessage(operationId, "📦 Creating backup...", "INFO");
+        }
+        createBackup("factions.json");
+      }
+
+      // Get all factions from Notion
+      log.info("📥 Retrieving factions from Notion...");
+      if (operationId != null) {
+        progressTracker.updateProgress(
+            operationId, 2, "Retrieving factions from Notion database...");
+        progressTracker.addLogMessage(operationId, "📥 Retrieving factions from Notion...", "INFO");
+      }
+      List<FactionPage> notionFactions = getAllFactionsFromNotion();
+      long retrieveTime = System.currentTimeMillis() - startTime;
+      log.info("✅ Retrieved {} factions from Notion in {}ms", notionFactions.size(), retrieveTime);
+      if (operationId != null) {
+        progressTracker.addLogMessage(
+            operationId,
+            String.format(
+                "✅ Retrieved %d factions from Notion in %dms", notionFactions.size(), retrieveTime),
+            "SUCCESS");
+      }
+
+      // Convert to DTOs using parallel processing
+      log.info("🔄 Converting factions to DTOs...");
+      if (operationId != null) {
+        progressTracker.updateProgress(
+            operationId,
+            3,
+            String.format("Converting %d factions to data format...", notionFactions.size()));
+        progressTracker.addLogMessage(operationId, "🔄 Converting factions to DTOs...", "INFO");
+      }
+      long conversionStart = System.currentTimeMillis();
+      List<FactionDTO> factionDTOs = convertFactionPagesToDTO(notionFactions);
+      long conversionTime = System.currentTimeMillis() - conversionStart;
+      log.info("✅ Converted {} factions to DTOs in {}ms", factionDTOs.size(), conversionTime);
+      if (operationId != null) {
+        progressTracker.addLogMessage(
+            operationId,
+            String.format(
+                "✅ Converted %d factions to DTOs in %dms", factionDTOs.size(), conversionTime),
+            "SUCCESS");
+      }
+
+      // Save to database only (no JSON file writing)
+      log.info("🗄️ Saving factions to database...");
+      if (operationId != null) {
+        progressTracker.updateProgress(
+            operationId, 4, String.format("Saving %d factions to database...", factionDTOs.size()));
+        progressTracker.addLogMessage(operationId, "🗄️ Saving factions to database...", "INFO");
+      }
+      long dbStart = System.currentTimeMillis();
+      int savedCount = saveFactionsToDatabase(factionDTOs);
+      long dbTime = System.currentTimeMillis() - dbStart;
+      log.info("✅ Saved {} factions to database in {}ms", savedCount, dbTime);
+      if (operationId != null) {
+        progressTracker.addLogMessage(
+            operationId,
+            String.format("✅ Saved %d factions to database in %dms", savedCount, dbTime),
+            "SUCCESS");
+      }
+
+      long totalTime = System.currentTimeMillis() - startTime;
+      log.info(
+          "🎉 Successfully synchronized {} factions to database in {}ms total",
+          factionDTOs.size(),
+          totalTime);
+
+      // Complete progress tracking
+      if (operationId != null) {
+        progressTracker.addLogMessage(
+            operationId,
+            String.format(
+                "🎉 Successfully synchronized %d factions in %dms total",
+                factionDTOs.size(), totalTime),
+            "SUCCESS");
+        progressTracker.completeOperation(
+            operationId,
+            true,
+            String.format("Successfully synced %d factions", factionDTOs.size()),
+            factionDTOs.size());
+      }
+
+      return SyncResult.success("Factions", factionDTOs.size(), 0);
+
+    } catch (Exception e) {
+      long totalTime = System.currentTimeMillis() - startTime;
+      log.error("❌ Failed to synchronize factions from Notion after {}ms", totalTime, e);
+
+      if (operationId != null) {
+        progressTracker.addLogMessage(
+            operationId, "❌ Faction sync failed: " + e.getMessage(), "ERROR");
+        progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
+      }
+
+      return SyncResult.failure("Factions", e.getMessage());
     }
   }
 
@@ -1139,6 +1303,61 @@ public class NotionSyncService {
     return null;
   }
 
+  /** Extracts a string property from any NotionPage type using raw properties. */
+  private String extractStringPropertyFromNotionPage(NotionPage page, String propertyName) {
+    if (page.getRawProperties() != null) {
+      Object property = page.getRawProperties().get(propertyName);
+      return property != null ? property.toString() : null;
+    }
+    return null;
+  }
+
+  /** Extracts a date property from any NotionPage type using raw properties. */
+  private String extractDatePropertyFromNotionPage(NotionPage page, String propertyName) {
+    if (page.getRawProperties() != null) {
+      Object dateProperty = page.getRawProperties().get(propertyName);
+      if (dateProperty != null) {
+        try {
+          // Try to parse and format the date
+          LocalDate date = LocalDate.parse(dateProperty.toString());
+          return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (Exception e) {
+          log.warn("Failed to parse date property {}: {}", propertyName, dateProperty);
+          return dateProperty.toString();
+        }
+      }
+    }
+    return null;
+  }
+
+  /** Extracts a relationship property from any NotionPage type using raw properties. */
+  private String extractRelationshipPropertyFromNotionPage(NotionPage page, String propertyName) {
+    if (page.getRawProperties() != null) {
+      Object property = page.getRawProperties().get(propertyName);
+      if (property != null) {
+        String propertyStr = property.toString().trim();
+
+        // Handle different formats that Notion might return
+        if (propertyStr.matches("\\d+ relations?")) {
+          // Format: "1 relation" - we have a relationship but it's not resolved
+          log.debug(
+              "Found {} for property '{}' but relationship not resolved",
+              propertyStr,
+              propertyName);
+          // For now, return null - full relationship resolution would require additional API calls
+          return null;
+        } else if (!propertyStr.isEmpty() && !propertyStr.equals("[]")) {
+          // If it's already a readable name, use it
+          if (!propertyStr.matches(
+              "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+            return propertyStr;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   // ==================== DTO CLASSES ====================
 
   /** DTO for Show Template data from Notion. */
@@ -1443,5 +1662,280 @@ public class NotionSyncService {
             entityType, errorMessage);
       }
     }
+  }
+
+  // ==================== FACTION HELPER METHODS ====================
+
+  /**
+   * Retrieves all factions from the Notion Factions database.
+   *
+   * @return List of FactionPage objects from Notion
+   */
+  private List<FactionPage> getAllFactionsFromNotion() {
+    log.debug("Retrieving all factions from Notion Factions database");
+
+    // Check if NOTION_TOKEN is available
+    String notionToken = System.getenv("NOTION_TOKEN");
+    if (notionToken == null || notionToken.trim().isEmpty()) {
+      log.warn("NOTION_TOKEN environment variable is not set. Cannot sync from Notion.");
+      throw new IllegalStateException(
+          "NOTION_TOKEN environment variable is required for Notion sync");
+    }
+
+    return notionHandler.loadAllFactions();
+  }
+
+  /**
+   * Converts FactionPage objects from Notion to FactionDTO objects for database operations.
+   *
+   * @param factionPages List of FactionPage objects from Notion
+   * @return List of FactionDTO objects
+   */
+  private List<FactionDTO> convertFactionPagesToDTO(List<FactionPage> factionPages) {
+    log.info("Converting {} factions to DTOs using parallel processing", factionPages.size());
+
+    // Use parallel stream for faster processing of large datasets
+    List<FactionDTO> factionDTOs =
+        factionPages.parallelStream()
+            .map(this::convertFactionPageToDTO)
+            .collect(Collectors.toList());
+
+    log.info("Successfully converted {} factions to DTOs", factionDTOs.size());
+    return factionDTOs;
+  }
+
+  /**
+   * Converts a single FactionPage to FactionDTO.
+   *
+   * @param factionPage The FactionPage from Notion
+   * @return FactionDTO for database operations
+   */
+  private FactionDTO convertFactionPageToDTO(FactionPage factionPage) {
+    FactionDTO dto = new FactionDTO();
+
+    try {
+      // Set basic properties
+      dto.setName(extractNameFromNotionPage(factionPage));
+      dto.setDescription(extractDescriptionFromNotionPage(factionPage));
+      dto.setExternalId(factionPage.getId()); // Use Notion page ID as external ID
+
+      // Extract alignment
+      String alignment = extractStringPropertyFromNotionPage(factionPage, "Alignment");
+      dto.setAlignment(alignment);
+
+      // Extract status (active/inactive)
+      String status = extractStringPropertyFromNotionPage(factionPage, "Status");
+      dto.setIsActive(status == null || !status.toLowerCase().contains("disbanded"));
+
+      // Extract dates
+      dto.setFormedDate(extractDatePropertyFromNotionPage(factionPage, "FormedDate"));
+      dto.setDisbandedDate(extractDatePropertyFromNotionPage(factionPage, "DisbandedDate"));
+
+      // Extract leader (relationship to wrestler)
+      dto.setLeader(extractRelationshipPropertyFromNotionPage(factionPage, "Leader"));
+
+      // Extract members (relationship to wrestlers)
+      dto.setMembers(extractMultipleRelationshipProperty(factionPage, "Members"));
+
+      // Extract teams (relationship to teams)
+      dto.setTeams(extractMultipleRelationshipProperty(factionPage, "Teams"));
+
+      log.debug(
+          "Converted faction: {} (Active: {}, Alignment: {}, Members: {}, Teams: {})",
+          dto.getName(),
+          dto.getIsActive(),
+          dto.getAlignment(),
+          dto.getMembers() != null ? dto.getMembers().size() : 0,
+          dto.getTeams() != null ? dto.getTeams().size() : 0);
+
+    } catch (Exception e) {
+      log.warn("Error converting faction page to DTO: {}", e.getMessage());
+      // Set minimal data to prevent sync failure
+      if (dto.getName() == null) {
+        dto.setName("Unknown Faction");
+      }
+      dto.setIsActive(true);
+      dto.setAlignment("NEUTRAL");
+    }
+
+    return dto;
+  }
+
+  /**
+   * Saves faction DTOs to the database.
+   *
+   * @param factionDTOs List of FactionDTO objects to save
+   * @return Number of factions saved
+   */
+  private int saveFactionsToDatabase(List<FactionDTO> factionDTOs) {
+    log.info("Saving {} factions to database", factionDTOs.size());
+    int savedCount = 0;
+
+    for (FactionDTO dto : factionDTOs) {
+      try {
+        // Find existing faction by external ID or name
+        Faction faction = null;
+        if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
+          faction = factionRepository.findByExternalId(dto.getExternalId()).orElse(null);
+        }
+        if (faction == null) {
+          faction = factionRepository.findByName(dto.getName()).orElseGet(Faction::new);
+        }
+
+        // Update faction properties
+        faction.setName(dto.getName());
+        faction.setDescription(dto.getDescription());
+        faction.setExternalId(dto.getExternalId());
+
+        // Set alignment
+        if (dto.getAlignment() != null) {
+          try {
+            FactionAlignment alignment = FactionAlignment.valueOf(dto.getAlignment().toUpperCase());
+            faction.setAlignment(alignment);
+          } catch (IllegalArgumentException e) {
+            log.warn(
+                "Invalid alignment '{}' for faction '{}', using NEUTRAL",
+                dto.getAlignment(),
+                dto.getName());
+            faction.setAlignment(FactionAlignment.NEUTRAL);
+          }
+        } else {
+          faction.setAlignment(FactionAlignment.NEUTRAL);
+        }
+
+        // Set status
+        faction.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
+
+        // Set dates
+        if (dto.getFormedDate() != null && !dto.getFormedDate().trim().isEmpty()) {
+          try {
+            faction.setFormedDate(
+                LocalDate.parse(dto.getFormedDate()).atStartOfDay().toInstant(ZoneOffset.UTC));
+          } catch (Exception e) {
+            log.warn(
+                "Invalid formed date '{}' for faction '{}'", dto.getFormedDate(), dto.getName());
+          }
+        }
+
+        if (dto.getDisbandedDate() != null && !dto.getDisbandedDate().trim().isEmpty()) {
+          try {
+            faction.setDisbandedDate(
+                LocalDate.parse(dto.getDisbandedDate()).atStartOfDay().toInstant(ZoneOffset.UTC));
+          } catch (Exception e) {
+            log.warn(
+                "Invalid disbanded date '{}' for faction '{}'",
+                dto.getDisbandedDate(),
+                dto.getName());
+          }
+        }
+
+        // Set leader relationship
+        if (dto.getLeader() != null && !dto.getLeader().trim().isEmpty()) {
+          Optional<Wrestler> leaderOpt = wrestlerRepository.findByName(dto.getLeader());
+          if (leaderOpt.isPresent()) {
+            faction.setLeader(leaderOpt.get());
+            log.debug("Set leader '{}' for faction '{}'", dto.getLeader(), dto.getName());
+          } else {
+            log.warn(
+                "Leader wrestler '{}' not found for faction '{}'", dto.getLeader(), dto.getName());
+          }
+        }
+
+        // Save faction first to get ID
+        faction = factionRepository.saveAndFlush(faction);
+
+        // Handle members relationships
+        if (dto.getMembers() != null && !dto.getMembers().isEmpty()) {
+          // Clear existing members first
+          for (Wrestler existingMember : new ArrayList<>(faction.getMembers())) {
+            faction.removeMember(existingMember);
+          }
+
+          // Add new members
+          for (String memberName : dto.getMembers()) {
+            if (memberName != null && !memberName.trim().isEmpty()) {
+              Optional<Wrestler> memberOpt = wrestlerRepository.findByName(memberName.trim());
+              if (memberOpt.isPresent()) {
+                faction.addMember(memberOpt.get());
+                log.debug("Added member '{}' to faction '{}'", memberName, dto.getName());
+              } else {
+                log.warn(
+                    "Member wrestler '{}' not found for faction '{}'", memberName, dto.getName());
+              }
+            }
+          }
+
+          // Save again to persist member relationships
+          faction = factionRepository.saveAndFlush(faction);
+        }
+
+        savedCount++;
+
+        log.debug(
+            "Saved faction: {} (ID: {}, Active: {}, Members: {}, Leader: {})",
+            faction.getName(),
+            faction.getId(),
+            faction.getIsActive(),
+            faction.getMemberCount(),
+            faction.getLeader() != null ? faction.getLeader().getName() : "None");
+
+      } catch (Exception e) {
+        log.error("Failed to save faction '{}': {}", dto.getName(), e.getMessage());
+      }
+    }
+
+    log.info(
+        "Successfully saved {} out of {} factions to database", savedCount, factionDTOs.size());
+    return savedCount;
+  }
+
+  /**
+   * Extracts multiple relationship property values from a NotionPage. This handles relationship
+   * properties that can have multiple values (like Members, Teams).
+   *
+   * @param page The NotionPage to extract from
+   * @param propertyName The name of the property to extract
+   * @return List of relationship names, or empty list if not found
+   */
+  private List<String> extractMultipleRelationshipProperty(NotionPage page, String propertyName) {
+    List<String> relationships = new ArrayList<>();
+
+    if (page.getRawProperties() != null) {
+      Object property = page.getRawProperties().get(propertyName);
+      if (property != null) {
+        String propertyStr = property.toString().trim();
+
+        // Handle different formats that Notion might return
+        if (propertyStr.matches("\\d+ relations?")) {
+          // Format: "3 relations" - we have relationships but they're not resolved
+          log.debug(
+              "Found {} for property '{}' but relationships not resolved",
+              propertyStr,
+              propertyName);
+          // For now, return empty list - full relationship resolution would require additional API
+          // calls
+          return relationships;
+        } else if (!propertyStr.isEmpty() && !propertyStr.equals("[]")) {
+          // Try to parse as comma-separated names or other formats
+          // This is a simplified approach - in practice, you might need more sophisticated parsing
+          String[] parts = propertyStr.split(",");
+          for (String part : parts) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()
+                && !trimmed.matches(
+                    "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+              relationships.add(trimmed);
+            }
+          }
+        }
+      }
+    }
+
+    log.debug(
+        "Extracted {} relationships for property '{}': {}",
+        relationships.size(),
+        propertyName,
+        relationships);
+    return relationships;
   }
 }

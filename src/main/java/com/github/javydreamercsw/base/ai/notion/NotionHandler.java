@@ -1088,6 +1088,32 @@ public class NotionHandler {
     }
   }
 
+  /**
+   * Loads all factions from the Notion Factions database.
+   *
+   * @return List of all FactionPage objects from the Factions database
+   */
+  public List<FactionPage> loadAllFactions() {
+    log.debug("Loading all factions from Factions database");
+
+    String factionDbId = getDatabaseId("Factions");
+    if (factionDbId == null) {
+      log.warn("Factions database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        return new ArrayList<>();
+      }
+      return loadAllEntitiesFromDatabase(
+          client, factionDbId, "Faction", this::mapPageToFactionPage);
+    } catch (Exception e) {
+      log.error("Failed to load all factions", e);
+      return new ArrayList<>();
+    }
+  }
+
   /** Static convenience method to load a faction. */
   public static Optional<FactionPage> loadFactionStatic(@NonNull String factionName) {
     return getInstance().loadFaction(factionName);

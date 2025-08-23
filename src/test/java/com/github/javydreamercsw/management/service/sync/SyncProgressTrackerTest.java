@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -272,5 +273,101 @@ class SyncProgressTrackerTest {
 
     // Then - call count should still be 1 (listener was removed)
     assertEquals(1, callCount.get());
+  }
+
+  @Test
+  @DisplayName("Should send log messages to listeners")
+  void shouldSendLogMessagesToListeners() {
+    // Given
+    String operationId = "test-operation";
+    progressTracker.startOperation(operationId, "Test Sync", 3);
+
+    AtomicReference<String> receivedOperationId = new AtomicReference<>();
+    AtomicReference<String> receivedMessage = new AtomicReference<>();
+    AtomicReference<String> receivedLevel = new AtomicReference<>();
+
+    SyncProgressListener listener =
+        new SyncProgressListener() {
+          @Override
+          public void onLogMessage(String logOperationId, String message, String level) {
+            receivedOperationId.set(logOperationId);
+            receivedMessage.set(message);
+            receivedLevel.set(level);
+          }
+        };
+
+    progressTracker.addProgressListener(listener);
+
+    // When
+    String testMessage = "📥 Retrieving data from Notion...";
+    String testLevel = "INFO";
+    progressTracker.addLogMessage(operationId, testMessage, testLevel);
+
+    // Then
+    assertEquals(operationId, receivedOperationId.get());
+    assertEquals(testMessage, receivedMessage.get());
+    assertEquals(testLevel, receivedLevel.get());
+  }
+
+  @Test
+  @DisplayName("Should not send log messages for non-existent operations")
+  void shouldNotSendLogMessagesForNonExistentOperations() {
+    // Given
+    String operationId = "test-operation";
+    String nonExistentOperationId = "non-existent-operation";
+    progressTracker.startOperation(operationId, "Test Sync", 3);
+
+    AtomicInteger callCount = new AtomicInteger(0);
+    SyncProgressListener listener =
+        new SyncProgressListener() {
+          @Override
+          public void onLogMessage(String logOperationId, String message, String level) {
+            callCount.incrementAndGet();
+          }
+        };
+
+    progressTracker.addProgressListener(listener);
+
+    // When
+    progressTracker.addLogMessage(nonExistentOperationId, "Test message", "INFO");
+
+    // Then
+    assertEquals(0, callCount.get());
+  }
+
+  @Test
+  @DisplayName("Should send log messages with different levels")
+  void shouldSendLogMessagesWithDifferentLevels() {
+    // Given
+    String operationId = "test-operation";
+    progressTracker.startOperation(operationId, "Test Sync", 3);
+
+    AtomicInteger infoCount = new AtomicInteger(0);
+    AtomicInteger successCount = new AtomicInteger(0);
+    AtomicInteger errorCount = new AtomicInteger(0);
+
+    SyncProgressListener listener =
+        new SyncProgressListener() {
+          @Override
+          public void onLogMessage(String logOperationId, String message, String level) {
+            switch (level) {
+              case "INFO" -> infoCount.incrementAndGet();
+              case "SUCCESS" -> successCount.incrementAndGet();
+              case "ERROR" -> errorCount.incrementAndGet();
+            }
+          }
+        };
+
+    progressTracker.addProgressListener(listener);
+
+    // When
+    progressTracker.addLogMessage(operationId, "Starting operation", "INFO");
+    progressTracker.addLogMessage(operationId, "Operation completed", "SUCCESS");
+    progressTracker.addLogMessage(operationId, "Operation failed", "ERROR");
+
+    // Then
+    assertEquals(1, infoCount.get());
+    assertEquals(1, successCount.get());
+    assertEquals(1, errorCount.get());
   }
 }

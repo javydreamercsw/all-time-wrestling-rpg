@@ -87,6 +87,25 @@ public class SyncProgressTracker {
   }
 
   /**
+   * Send a detailed log message for an operation to UI listeners. This allows sync operations to
+   * send rich log messages with emojis and timing info that will be displayed in the UI sync log.
+   *
+   * @param operationId The operation ID
+   * @param message Detailed log message (can include emojis, timing, etc.)
+   * @param level Log level (INFO, SUCCESS, WARN, ERROR)
+   */
+  public void addLogMessage(String operationId, String message, String level) {
+    activeOperations.stream()
+        .filter(op -> op.getOperationId().equals(operationId))
+        .findFirst()
+        .ifPresent(
+            progress -> {
+              log.debug("Adding log message for {}: {}", operationId, message);
+              notifyListeners(listener -> listener.onLogMessage(operationId, message, level));
+            });
+  }
+
+  /**
    * Complete a sync operation.
    *
    * @param operationId The operation ID
@@ -288,5 +307,15 @@ public class SyncProgressTracker {
      * @param progress The completed sync progress object
      */
     default void onOperationCompleted(SyncProgress progress) {}
+
+    /**
+     * Called when a detailed log message is sent for an operation. This allows sync operations to
+     * send rich log messages to the UI.
+     *
+     * @param operationId The operation ID
+     * @param message Detailed log message
+     * @param level Log level (INFO, SUCCESS, WARN, ERROR)
+     */
+    default void onLogMessage(String operationId, String message, String level) {}
   }
 }
