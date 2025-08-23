@@ -29,6 +29,12 @@ public class FactionService {
   private final WrestlerRepository wrestlerRepository;
   private final Clock clock;
 
+  /** Get all factions. */
+  @Transactional(readOnly = true)
+  public List<Faction> findAll() {
+    return factionRepository.findAll();
+  }
+
   /** Get all factions with pagination. */
   @Transactional(readOnly = true)
   public Page<Faction> getAllFactions(Pageable pageable) {
@@ -313,5 +319,23 @@ public class FactionService {
 
     // Both factions must have at least one member
     return faction1.getMemberCount() > 0 && faction2.getMemberCount() > 0;
+  }
+
+  /** Save a faction. */
+  public Faction save(Faction faction) {
+    if (faction.getId() == null) {
+      // New faction
+      faction.setCreationDate(clock.instant());
+      if (faction.getFormedDate() == null) {
+        faction.setFormedDate(clock.instant());
+      }
+    }
+    return factionRepository.saveAndFlush(faction);
+  }
+
+  /** Delete a faction. */
+  public void delete(Faction faction) {
+    log.info("Deleting faction: {}", faction.getName());
+    factionRepository.delete(faction);
   }
 }
