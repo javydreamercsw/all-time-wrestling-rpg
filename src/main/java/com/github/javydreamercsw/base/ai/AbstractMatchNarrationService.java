@@ -14,6 +14,43 @@ public abstract class AbstractMatchNarrationService implements MatchNarrationSer
    * provider-agnostic and can be used by any AI service implementation.
    */
   protected String buildMatchNarrationPrompt(@NonNull MatchNarrationContext context) {
+    // Check if this is a promo or a match
+    boolean isPromo = isPromoType(context);
+
+    if (isPromo) {
+      return buildPromoNarrationPrompt(context);
+    } else {
+      return buildMatchNarrationPromptInternal(context);
+    }
+  }
+
+  /** Determines if the context is for a promo rather than a match. */
+  private boolean isPromoType(@NonNull MatchNarrationContext context) {
+    if (context.getMatchType() == null || context.getMatchType().getMatchType() == null) {
+      return false;
+    }
+
+    String matchType = context.getMatchType().getMatchType().toLowerCase();
+    return matchType.contains("promo")
+        || (context.getWrestlers() != null && context.getWrestlers().size() == 1);
+  }
+
+  /** Builds a prompt specifically for promo narration. */
+  private String buildPromoNarrationPrompt(@NonNull MatchNarrationContext context) {
+    StringBuilder prompt = new StringBuilder();
+
+    prompt.append("You are a professional wrestling commentator and storyteller. ");
+    prompt.append(
+        "Narrate a compelling wrestling promo segment with vivid detail, authentic character voice,"
+            + " and dramatic storytelling. ");
+    prompt.append(
+        "Focus on the wrestler's personality, motivations, and storyline development.\n\n");
+
+    return buildPromoPromptInternal(context, prompt);
+  }
+
+  /** Builds the internal match narration prompt (non-promo). */
+  private String buildMatchNarrationPromptInternal(@NonNull MatchNarrationContext context) {
     StringBuilder prompt = new StringBuilder();
 
     prompt.append("You are a professional wrestling play-by-play commentator and storyteller. ");
@@ -22,6 +59,12 @@ public abstract class AbstractMatchNarrationService implements MatchNarrationSer
             + " authentic wrestling commentary. ");
     prompt.append("Include crowd reactions, move descriptions, and dramatic moments.\n\n");
 
+    return buildMatchPromptInternal(context, prompt);
+  }
+
+  /** Builds the internal match prompt content. */
+  private String buildMatchPromptInternal(
+      @NonNull MatchNarrationContext context, StringBuilder prompt) {
     // Match Setup
     prompt.append("MATCH SETUP:\n");
     prompt.append("Match Type: ").append(context.getMatchType().getMatchType()).append("\n");
@@ -161,6 +204,96 @@ public abstract class AbstractMatchNarrationService implements MatchNarrationSer
     prompt.append("12. Don't rush - take time to build drama and tell the complete story\n\n");
 
     prompt.append("Begin the match narration now:");
+
+    return prompt.toString();
+  }
+
+  /** Builds the internal promo prompt content. */
+  private String buildPromoPromptInternal(
+      @NonNull MatchNarrationContext context, StringBuilder prompt) {
+    // Promo Setup
+    prompt.append("PROMO SETUP:\n");
+    prompt.append("Segment Type: ").append(context.getMatchType().getMatchType()).append("\n");
+    if (context.getMatchType().getStipulation() != null) {
+      prompt.append("Purpose: ").append(context.getMatchType().getStipulation()).append("\n");
+    }
+    if (context.getMatchType().getTimeLimit() > 0) {
+      prompt
+          .append("Time Limit: ")
+          .append(context.getMatchType().getTimeLimit())
+          .append(" minutes\n");
+    }
+
+    // Venue Details
+    if (context.getVenue() != null) {
+      prompt.append("Venue: ").append(context.getVenue().getName());
+      if (context.getVenue().getLocation() != null) {
+        prompt.append(" (").append(context.getVenue().getLocation()).append(")");
+      }
+      prompt.append("\n");
+
+      if (context.getVenue().getDescription() != null) {
+        prompt
+            .append("Venue Description: ")
+            .append(context.getVenue().getDescription())
+            .append("\n");
+      }
+      if (context.getVenue().getAtmosphere() != null) {
+        prompt.append("Atmosphere: ").append(context.getVenue().getAtmosphere()).append("\n");
+      }
+    }
+
+    // Wrestler Details (usually just one for promos)
+    if (context.getWrestlers() != null && !context.getWrestlers().isEmpty()) {
+      prompt.append("\nWRESTLER DETAILS:\n");
+      for (WrestlerContext wrestler : context.getWrestlers()) {
+        prompt.append("Name: ").append(wrestler.getName()).append("\n");
+        if (wrestler.getDescription() != null) {
+          prompt.append("Character: ").append(wrestler.getDescription()).append("\n");
+        }
+        if (wrestler.getFeudsAndHeat() != null && !wrestler.getFeudsAndHeat().isEmpty()) {
+          prompt
+              .append("Current Storylines: ")
+              .append(String.join(", ", wrestler.getFeudsAndHeat()))
+              .append("\n");
+        }
+        if (wrestler.getRecentMatches() != null && !wrestler.getRecentMatches().isEmpty()) {
+          prompt
+              .append("Recent Activity: ")
+              .append(String.join(", ", wrestler.getRecentMatches()))
+              .append("\n");
+        }
+        prompt.append("\n");
+      }
+    }
+
+    // Audience
+    if (context.getAudience() != null) {
+      prompt.append("Audience: ").append(context.getAudience()).append("\n\n");
+    }
+
+    // Predetermined Outcome/Message
+    if (context.getDeterminedOutcome() != null) {
+      prompt.append("PROMO OBJECTIVE:\n");
+      prompt.append(context.getDeterminedOutcome()).append("\n\n");
+    }
+
+    // Instructions for Promo
+    prompt.append("PROMO NARRATION INSTRUCTIONS:\n");
+    prompt.append("1. Create an engaging promo segment with authentic character voice\n");
+    prompt.append("2. Focus on the wrestler's personality, motivations, and current storylines\n");
+    prompt.append("3. Include realistic crowd reactions and atmosphere\n");
+    prompt.append("4. Build emotional connection between wrestler and audience\n");
+    prompt.append("5. Reference current feuds and storylines naturally\n");
+    prompt.append("6. Show character development and progression\n");
+    prompt.append("7. Use wrestling terminology and authentic dialogue\n");
+    prompt.append("8. Create dramatic moments and memorable quotes\n");
+    prompt.append("9. Make it feel like a real wrestling promo with proper pacing\n");
+    prompt.append("10. Create a detailed promo narration of 800-1200 words\n");
+    prompt.append("11. Include setup, main message delivery, and crowd reaction\n");
+    prompt.append("12. Focus on storytelling and character rather than physical action\n\n");
+
+    prompt.append("Begin the promo narration now:");
 
     return prompt.toString();
   }

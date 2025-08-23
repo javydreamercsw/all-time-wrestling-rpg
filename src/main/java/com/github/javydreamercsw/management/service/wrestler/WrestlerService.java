@@ -1,5 +1,8 @@
 package com.github.javydreamercsw.management.service.wrestler;
 
+import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
+import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
+
 import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -8,6 +11,8 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -49,19 +54,27 @@ public class WrestlerService {
     return wrestlerRepository.count();
   }
 
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
   public Wrestler save(@NonNull Wrestler wrestler) {
     wrestler.setCreationDate(clock.instant());
     return wrestlerRepository.saveAndFlush(wrestler);
   }
 
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
   public void delete(@NonNull Wrestler wrestler) {
     wrestlerRepository.delete(wrestler);
   }
 
+  @Cacheable(value = WRESTLERS_CACHE, key = "'all'")
   public List<Wrestler> findAll() {
     return wrestlerRepository.findAll();
   }
 
+  @Cacheable(value = WRESTLERS_CACHE, key = "'name:' + #name")
   public Optional<Wrestler> findByName(String name) {
     return wrestlerRepository.findByName(name);
   }
