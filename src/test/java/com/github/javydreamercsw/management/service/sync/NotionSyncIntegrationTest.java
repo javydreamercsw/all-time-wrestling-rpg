@@ -54,14 +54,14 @@ class NotionSyncIntegrationTest {
   @BeforeEach
   void setUp() {
     // Check if NOTION_TOKEN is available via system property or environment variable
-    String notionToken = EnvironmentVariableUtil.getValue("notion.token", "NOTION_TOKEN");
+    String notionToken = EnvironmentVariableUtil.getValue("NOTION_TOKEN");
     if (notionToken != null && !notionToken.trim().isEmpty()) {
       System.setProperty("NOTION_TOKEN", notionToken);
       log.info("NOTION_TOKEN configured for integration testing");
     } else {
       log.warn(
           "NOTION_TOKEN not available. Integration tests will be limited. "
-              + "Pass token via: mvn test -Dnotion.token=YOUR_TOKEN");
+              + "Pass token via: mvn test -DNOTION_TOKEN=YOUR_TOKEN");
     }
 
     // Create real instances for integration testing

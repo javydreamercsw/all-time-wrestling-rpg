@@ -26,48 +26,42 @@ public final class EnvironmentVariableUtil {
   /**
    * Retrieves a configuration value with fallback from system property to environment variable.
    *
-   * @param systemPropertyKey the system property key (e.g., "notion.token")
-   * @param environmentVariableKey the environment variable key (e.g., "NOTION_TOKEN")
+   * @param key the configuration key (e.g., "NOTION_TOKEN")
    * @return the configuration value, or null if not found
    */
-  public static String getValue(
-      @NonNull String systemPropertyKey, @NonNull String environmentVariableKey) {
-    return getValue(systemPropertyKey, environmentVariableKey, null);
+  public static String getValue(@NonNull String key) {
+    return getValue(key, null);
   }
 
   /**
    * Retrieves a configuration value with fallback from system property to environment variable to
    * default.
    *
-   * @param systemPropertyKey the system property key (e.g., "notion.token")
-   * @param environmentVariableKey the environment variable key (e.g., "NOTION_TOKEN")
+   * @param key the configuration key (e.g., "NOTION_TOKEN")
    * @param defaultValue the default value to return if neither property nor environment variable is
    *     set
    * @return the configuration value, or the default value if not found
    */
-  public static String getValue(
-      @NonNull String systemPropertyKey,
-      @NonNull String environmentVariableKey,
-      String defaultValue) {
+  public static String getValue(@NonNull String key, String defaultValue) {
     // First try system property
-    String value = System.getProperty(systemPropertyKey);
+    String value = System.getProperty(key);
     if (value != null && !value.trim().isEmpty()) {
-      log.debug("Found configuration value from system property: {}", systemPropertyKey);
+      log.debug("Found configuration value from system property: {}", key);
       return value.trim();
     }
 
     // Then try environment variable
-    value = System.getenv(environmentVariableKey);
+    value = System.getenv(key);
     if (value != null && !value.trim().isEmpty()) {
-      log.debug("Found configuration value from environment variable: {}", environmentVariableKey);
+      log.debug("Found configuration value from environment variable: {}", key);
       return value.trim();
     }
 
     // Return default value
     if (defaultValue != null) {
-      log.debug("Using default value for {}/{}", systemPropertyKey, environmentVariableKey);
+      log.debug("Using default value for {}", key);
     } else {
-      log.debug("No value found for {}/{}", systemPropertyKey, environmentVariableKey);
+      log.debug("No value found for {}", key);
     }
     return defaultValue;
   }
@@ -79,7 +73,7 @@ public final class EnvironmentVariableUtil {
    * @return the Notion token, or null if not found
    */
   public static String getNotionToken() {
-    return getValue("notion.token", "NOTION_TOKEN");
+    return getValue("NOTION_TOKEN");
   }
 
   /**
@@ -88,7 +82,7 @@ public final class EnvironmentVariableUtil {
    * @return the OpenAI API key, or null if not found
    */
   public static String getOpenAiApiKey() {
-    return getValue("openai.api.key", "OPENAI_API_KEY");
+    return getValue("OPENAI_API_KEY");
   }
 
   /**
@@ -97,7 +91,7 @@ public final class EnvironmentVariableUtil {
    * @return the Claude API key, or null if not found
    */
   public static String getClaudeApiKey() {
-    return getValue("claude.api.key", "CLAUDE_API_KEY");
+    return getValue("CLAUDE_API_KEY");
   }
 
   /**
@@ -106,18 +100,17 @@ public final class EnvironmentVariableUtil {
    * @return the Gemini API key, or null if not found
    */
   public static String getGeminiApiKey() {
-    return getValue("gemini.api.key", "GEMINI_API_KEY");
+    return getValue("GEMINI_API_KEY");
   }
 
   /**
    * Checks if a configuration value is available (not null and not empty).
    *
-   * @param systemPropertyKey the system property key
-   * @param environmentVariableKey the environment variable key
+   * @param key the configuration key
    * @return true if a value is available, false otherwise
    */
-  public static boolean isAvailable(String systemPropertyKey, String environmentVariableKey) {
-    String value = getValue(systemPropertyKey, environmentVariableKey);
+  public static boolean isAvailable(String key) {
+    String value = getValue(key);
     return value != null && !value.trim().isEmpty();
   }
 
@@ -127,20 +120,18 @@ public final class EnvironmentVariableUtil {
    * @return true if the Notion token is available, false otherwise
    */
   public static boolean isNotionTokenAvailable() {
-    return isAvailable("notion.token", "NOTION_TOKEN");
+    return isAvailable("NOTION_TOKEN");
   }
 
   /**
    * Retrieves a boolean configuration value with fallback.
    *
-   * @param systemPropertyKey the system property key
-   * @param environmentVariableKey the environment variable key
+   * @param key the configuration key
    * @param defaultValue the default boolean value
    * @return the boolean configuration value
    */
-  public static boolean getBooleanValue(
-      String systemPropertyKey, String environmentVariableKey, boolean defaultValue) {
-    String value = getValue(systemPropertyKey, environmentVariableKey);
+  public static boolean getBooleanValue(String key, boolean defaultValue) {
+    String value = getValue(key);
     if (value == null) {
       return defaultValue;
     }
@@ -150,27 +141,20 @@ public final class EnvironmentVariableUtil {
   /**
    * Retrieves an integer configuration value with fallback.
    *
-   * @param systemPropertyKey the system property key
-   * @param environmentVariableKey the environment variable key
+   * @param key the configuration key
    * @param defaultValue the default integer value
    * @return the integer configuration value
    * @throws NumberFormatException if the value cannot be parsed as an integer
    */
-  public static int getIntValue(
-      String systemPropertyKey, String environmentVariableKey, int defaultValue) {
-    String value = getValue(systemPropertyKey, environmentVariableKey);
+  public static int getIntValue(String key, int defaultValue) {
+    String value = getValue(key);
     if (value == null) {
       return defaultValue;
     }
     try {
       return Integer.parseInt(value);
     } catch (NumberFormatException e) {
-      log.warn(
-          "Invalid integer value '{}' for {}/{}, using default: {}",
-          value,
-          systemPropertyKey,
-          environmentVariableKey,
-          defaultValue);
+      log.warn("Invalid integer value '{}' for {}, using default: {}", value, key, defaultValue);
       return defaultValue;
     }
   }
@@ -182,14 +166,8 @@ public final class EnvironmentVariableUtil {
   public static void logConfigurationStatus() {
     log.info("Configuration Status:");
     log.info("  Notion Token: {}", isNotionTokenAvailable() ? "Available" : "Not Available");
-    log.info(
-        "  OpenAI API Key: {}",
-        isAvailable("openai.api.key", "OPENAI_API_KEY") ? "Available" : "Not Available");
-    log.info(
-        "  Claude API Key: {}",
-        isAvailable("claude.api.key", "CLAUDE_API_KEY") ? "Available" : "Not Available");
-    log.info(
-        "  Gemini API Key: {}",
-        isAvailable("gemini.api.key", "GEMINI_API_KEY") ? "Available" : "Not Available");
+    log.info("  OpenAI API Key: {}", isAvailable("OPENAI_API_KEY") ? "Available" : "Not Available");
+    log.info("  Claude API Key: {}", isAvailable("CLAUDE_API_KEY") ? "Available" : "Not Available");
+    log.info("  Gemini API Key: {}", isAvailable("GEMINI_API_KEY") ? "Available" : "Not Available");
   }
 }

@@ -141,11 +141,9 @@ public class NotionHandler {
 
     log.debug("Initializing NotionHandler - loading databases from workspace");
 
-    String notionToken = System.getenv("NOTION_TOKEN");
+    String notionToken = EnvironmentVariableUtil.getNotionToken();
     if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn(
-          "NOTION_TOKEN environment variable is not set. NotionHandler will be initialized in"
-              + " disabled mode.");
+      log.warn("NOTION_TOKEN not available. NotionHandler will be initialized in disabled mode.");
       initialized = true; // Mark as initialized but in disabled state
       return;
     }
