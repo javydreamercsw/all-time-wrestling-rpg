@@ -1,5 +1,7 @@
 package com.github.javydreamercsw.management.domain.card;
 
+import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
+
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -9,8 +11,6 @@ import org.jspecify.annotations.Nullable;
 @Entity
 @Table(name = "card", uniqueConstraints = @UniqueConstraint(columnNames = {"set_id", "number"}))
 public class Card extends AbstractEntity<Long> {
-
-  public static final int DESCRIPTION_MAX_LENGTH = 255;
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

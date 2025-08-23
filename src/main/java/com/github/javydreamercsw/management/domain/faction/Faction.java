@@ -1,6 +1,6 @@
 package com.github.javydreamercsw.management.domain.faction;
 
-import static com.github.javydreamercsw.management.domain.card.Card.DESCRIPTION_MAX_LENGTH;
+import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
