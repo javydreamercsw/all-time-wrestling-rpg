@@ -84,6 +84,9 @@ class NotionSyncServiceTest {
     // Given
     when(syncProperties.isEntityEnabled("shows")).thenReturn(true);
     when(syncProperties.isBackupEnabled()).thenReturn(false);
+    // Mock NotionHandler to throw exception when NOTION_TOKEN is not available
+    when(notionHandler.loadAllShowsForSync())
+        .thenThrow(new IllegalStateException("NOTION_TOKEN is required for sync operations"));
 
     // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
     SyncResult result = notionSyncService.syncShows();
@@ -102,6 +105,9 @@ class NotionSyncServiceTest {
     // Given
     when(syncProperties.isEntityEnabled("shows")).thenReturn(true);
     when(syncProperties.isBackupEnabled()).thenReturn(false);
+    // Mock NotionHandler to throw exception when NOTION_TOKEN is not available
+    when(notionHandler.loadAllShowsForSync())
+        .thenThrow(new IllegalStateException("NOTION_TOKEN is required for sync operations"));
 
     // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
     SyncResult result = notionSyncService.syncShows();
@@ -154,6 +160,9 @@ class NotionSyncServiceTest {
     // Given
     when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
     when(syncProperties.isBackupEnabled()).thenReturn(false);
+    // Mock NotionHandler to throw exception when NOTION_TOKEN is not available
+    when(notionHandler.loadAllFactions())
+        .thenThrow(new IllegalStateException("NOTION_TOKEN is required for sync operations"));
 
     // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
     SyncResult result = notionSyncService.syncFactions(null);
@@ -172,6 +181,9 @@ class NotionSyncServiceTest {
     String operationId = "test-faction-sync";
     when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
     when(syncProperties.isBackupEnabled()).thenReturn(false);
+    // Mock NotionHandler to throw exception when NOTION_TOKEN is not available
+    when(notionHandler.loadAllFactions())
+        .thenThrow(new IllegalStateException("NOTION_TOKEN is required for sync operations"));
 
     // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
     SyncResult result = notionSyncService.syncFactions(operationId);

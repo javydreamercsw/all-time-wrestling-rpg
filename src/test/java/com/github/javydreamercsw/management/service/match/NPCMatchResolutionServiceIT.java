@@ -73,6 +73,10 @@ class NPCMatchResolutionServiceIT {
     tripleThreadType.setName("Triple Threat Match");
     tripleThreadType = matchTypeRepository.save(tripleThreadType);
 
+    // Create match rules for testing
+    matchRuleService.createOrUpdateRule(
+        "Steel Cage Match", "Steel cage match with no escape", false);
+
     // Create test show
     ShowType showType = new ShowType();
     showType.setName("Weekly Show");

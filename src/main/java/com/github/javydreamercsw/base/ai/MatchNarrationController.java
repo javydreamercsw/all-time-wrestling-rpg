@@ -8,7 +8,7 @@ import com.github.javydreamercsw.base.ai.MatchNarrationService.NPCContext;
 import com.github.javydreamercsw.base.ai.MatchNarrationService.RefereeContext;
 import com.github.javydreamercsw.base.ai.MatchNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.MatchNarrationService.WrestlerContext;
-import com.github.javydreamercsw.management.service.match.MatchOutcomeService;
+import com.github.javydreamercsw.base.service.match.MatchOutcomeProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -49,7 +49,7 @@ public class MatchNarrationController {
   private final MatchNarrationServiceFactory serviceFactory;
   private final MatchNarrationConfig config;
   private final Environment environment;
-  private final MatchOutcomeService matchOutcomeService;
+  private final MatchOutcomeProvider matchOutcomeService;
 
   /**
    * Gets the appropriate service based on the current environment. In test profile, always use the

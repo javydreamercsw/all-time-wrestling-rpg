@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.management.util;
+package com.github.javydreamercsw.base.util;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

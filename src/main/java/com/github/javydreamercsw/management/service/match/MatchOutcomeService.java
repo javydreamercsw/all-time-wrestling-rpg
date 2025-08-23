@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.match;
 
 import com.github.javydreamercsw.base.ai.MatchNarrationService.MatchNarrationContext;
 import com.github.javydreamercsw.base.ai.MatchNarrationService.WrestlerContext;
+import com.github.javydreamercsw.base.service.match.MatchOutcomeProvider;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.security.SecureRandom;
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class MatchOutcomeService {
+public class MatchOutcomeService implements MatchOutcomeProvider {
 
   private final WrestlerRepository wrestlerRepository;
   private final Random random = new SecureRandom();

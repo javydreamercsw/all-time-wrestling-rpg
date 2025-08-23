@@ -41,6 +41,7 @@ class TeamMatchResolutionIT {
   @Autowired MatchTypeRepository matchTypeRepository;
   @Autowired ShowRepository showRepository;
   @Autowired ShowTypeRepository showTypeRepository;
+  @Autowired MatchRuleService matchRuleService;
 
   private Wrestler rookie1;
   private Wrestler rookie2;
@@ -78,6 +79,10 @@ class TeamMatchResolutionIT {
     handicapMatchType = new MatchType();
     handicapMatchType.setName("Handicap Match");
     handicapMatchType = matchTypeRepository.save(handicapMatchType);
+
+    // Create match rules for testing
+    matchRuleService.createOrUpdateRule(
+        "Handicap Match", "Handicap match with uneven teams", false);
 
     // Create test show
     ShowType showType = new ShowType();

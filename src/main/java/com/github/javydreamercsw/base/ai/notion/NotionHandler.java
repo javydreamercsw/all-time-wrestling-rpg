@@ -1,6 +1,6 @@
 package com.github.javydreamercsw.base.ai.notion;
 
-import com.github.javydreamercsw.management.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -741,6 +741,11 @@ public class NotionHandler {
   public List<ShowPage> loadAllShowsForSync() {
     log.debug("Loading all shows for sync operation (optimized)");
 
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
     String showDbId = getDatabaseId("Shows");
     if (showDbId == null) {
       log.warn("Shows database not found in workspace");
@@ -749,12 +754,13 @@ public class NotionHandler {
 
     try (NotionClient client = createNotionClient()) {
       if (client == null) {
-        return new ArrayList<>();
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
       return loadAllEntitiesForSync(client, showDbId, "Show");
     } catch (Exception e) {
       log.error("Failed to load all shows for sync", e);
-      return new ArrayList<>();
+      throw new RuntimeException("Failed to load shows from Notion: " + e.getMessage(), e);
     }
   }
 
@@ -1095,6 +1101,11 @@ public class NotionHandler {
   public List<FactionPage> loadAllFactions() {
     log.debug("Loading all factions from Factions database");
 
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
     String factionDbId = getDatabaseId("Factions");
     if (factionDbId == null) {
       log.warn("Factions database not found in workspace");
@@ -1103,13 +1114,14 @@ public class NotionHandler {
 
     try (NotionClient client = createNotionClient()) {
       if (client == null) {
-        return new ArrayList<>();
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
       return loadAllEntitiesFromDatabase(
           client, factionDbId, "Faction", this::mapPageToFactionPage);
     } catch (Exception e) {
       log.error("Failed to load all factions", e);
-      return new ArrayList<>();
+      throw new RuntimeException("Failed to load factions from Notion: " + e.getMessage(), e);
     }
   }
 

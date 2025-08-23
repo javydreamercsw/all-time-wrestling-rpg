@@ -361,41 +361,8 @@ public class NPCMatchResolutionService {
       return;
     }
 
-    // Try to find exact match rule by name
+    // Try to find exact match rule by stipulation name
     matchRuleService.findByName(stipulation).ifPresent(result::addMatchRule);
-
-    // Handle common stipulation patterns that might not match exactly
-    String lowerStipulation = stipulation.toLowerCase();
-
-    // Handle multi-rule stipulations (e.g., "No DQ, No Count Out")
-    if (lowerStipulation.contains("no dq") || lowerStipulation.contains("no disqualification")) {
-      matchRuleService.findByName("No Disqualification").ifPresent(result::addMatchRule);
-    }
-
-    if (lowerStipulation.contains("no count") || lowerStipulation.contains("no countout")) {
-      matchRuleService.findByName("No Count Out").ifPresent(result::addMatchRule);
-    }
-
-    if (lowerStipulation.contains("falls count anywhere")) {
-      matchRuleService.findByName("Falls Count Anywhere").ifPresent(result::addMatchRule);
-    }
-
-    // Handle match type patterns
-    if (lowerStipulation.contains("handicap")) {
-      matchRuleService.findByName("Handicap Match").ifPresent(result::addMatchRule);
-    }
-
-    if (lowerStipulation.contains("triple threat")) {
-      matchRuleService.findByName("Triple Threat").ifPresent(result::addMatchRule);
-    }
-
-    if (lowerStipulation.contains("fatal four") || lowerStipulation.contains("fatal 4")) {
-      matchRuleService.findByName("Fatal Four Way").ifPresent(result::addMatchRule);
-    }
-
-    if (lowerStipulation.contains("tag team")) {
-      matchRuleService.findByName("Tag Team Match").ifPresent(result::addMatchRule);
-    }
 
     // If no rules were applied and it's not a standard match, log a warning
     if (result.getMatchRules().isEmpty() && !"Standard Match".equals(stipulation)) {
