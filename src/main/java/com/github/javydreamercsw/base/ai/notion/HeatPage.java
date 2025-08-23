@@ -9,6 +9,7 @@ public class HeatPage extends NotionPage {
   private NotionProperties properties;
 
   @Data
+  @EqualsAndHashCode(callSuper = false)
   static class NotionProperties extends NotionPage.BaseNotionProperties {
     // Heat-specific properties only (common properties inherited from base)
     private Property Wrestler1; // First wrestler in the feud

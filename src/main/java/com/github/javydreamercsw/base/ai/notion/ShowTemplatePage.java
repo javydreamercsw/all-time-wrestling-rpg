@@ -9,6 +9,7 @@ public class ShowTemplatePage extends NotionPage {
   private NotionProperties properties;
 
   @Data
+  @EqualsAndHashCode(callSuper = false)
   public static class NotionProperties extends NotionPage.BaseNotionProperties {
     // Show template-specific properties only (common properties inherited from base)
     private Property Description;

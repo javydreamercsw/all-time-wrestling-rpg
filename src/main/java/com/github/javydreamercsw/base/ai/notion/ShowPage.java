@@ -20,6 +20,7 @@ public class ShowPage extends NotionPage {
   private NotionProperties properties;
 
   @Data
+  @EqualsAndHashCode(callSuper = false)
   static class NotionProperties extends NotionPage.BaseNotionProperties {
     // Show-specific properties only (common properties inherited from base)
     private Property Description;

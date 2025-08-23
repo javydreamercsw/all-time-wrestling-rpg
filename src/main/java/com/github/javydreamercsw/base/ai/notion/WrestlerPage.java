@@ -9,6 +9,7 @@ public class WrestlerPage extends NotionPage {
   private NotionProperties properties;
 
   @Data
+  @EqualsAndHashCode(callSuper = false)
   static class NotionProperties extends NotionPage.BaseNotionProperties {
     // Wrestler-specific properties only (common properties inherited from base)
     private Property Player;
