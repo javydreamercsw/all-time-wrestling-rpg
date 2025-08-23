@@ -63,8 +63,12 @@ CREATE TABLE show_template (
     show_template_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(500) NOT NULL UNIQUE,
     description LONGTEXT,
-    template_data LONGTEXT,
-    creation_date TIMESTAMP(6) NOT NULL
+    show_type_id BIGINT NOT NULL,
+    notion_url VARCHAR(500),
+    external_id VARCHAR(255) UNIQUE,
+    creation_date TIMESTAMP(6) NOT NULL,
+
+    FOREIGN KEY (show_type_id) REFERENCES show_type(show_type_id) ON DELETE RESTRICT
 );
 
 -- Create show table
@@ -72,12 +76,13 @@ CREATE TABLE show (
     show_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(500) NOT NULL UNIQUE,
     description LONGTEXT NOT NULL,
-    show_date DATE NOT NULL,
-    creation_date TIMESTAMP(6) NOT NULL,
+    show_date DATE,
     show_type_id BIGINT NOT NULL,
     season_id BIGINT,
     template_id BIGINT,
-    
+    external_id VARCHAR(255) UNIQUE,
+    creation_date TIMESTAMP(6) NOT NULL,
+
     FOREIGN KEY (show_type_id) REFERENCES show_type(show_type_id) ON DELETE RESTRICT,
     FOREIGN KEY (season_id) REFERENCES season(season_id) ON DELETE SET NULL,
     FOREIGN KEY (template_id) REFERENCES show_template(show_template_id) ON DELETE SET NULL

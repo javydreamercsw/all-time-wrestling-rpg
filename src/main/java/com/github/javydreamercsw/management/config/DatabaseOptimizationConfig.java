@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.config;
 
+import java.sql.Connection;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -33,10 +34,10 @@ public class DatabaseOptimizationConfig {
   public void createDatabaseIndexes() {
     log.info("🚀 Starting database optimization - creating indexes...");
 
-    try {
+    try (Connection connection = dataSource.getConnection()) {
       // Execute the database optimization script
       ScriptUtils.executeSqlScript(
-          dataSource.getConnection(), new ClassPathResource("db/optimization/indexes.sql"));
+          connection, new ClassPathResource("db/optimization/indexes.sql"));
 
       log.info("✅ Database indexes created successfully");
 

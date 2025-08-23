@@ -28,6 +28,10 @@ public class ShowTemplateDTO {
   @JsonProperty("notionUrl")
   private String notionUrl;
 
+  /** External identifier for Notion synchronization */
+  @JsonProperty("externalId")
+  private String externalId;
+
   /**
    * Check if this is a Premium Live Event template.
    *
