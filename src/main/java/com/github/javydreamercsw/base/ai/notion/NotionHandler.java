@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.base.ai.notion;
 
+import com.github.javydreamercsw.management.util.EnvironmentVariableUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -216,7 +217,7 @@ public class NotionHandler {
   public void querySpecificDatabase(@NonNull String databaseId) {
     log.debug("Querying specific database: {}", databaseId);
 
-    String notionToken = System.getenv("NOTION_TOKEN");
+    String notionToken = EnvironmentVariableUtil.getNotionToken();
     if (notionToken == null || notionToken.trim().isEmpty()) {
       log.warn("NOTION_TOKEN not available. Cannot query database: {}", databaseId);
       return;
@@ -1127,7 +1128,7 @@ public class NotionHandler {
    * @return NotionClient instance, or null if token is not available
    */
   private NotionClient createNotionClient() {
-    String notionToken = System.getenv("NOTION_TOKEN");
+    String notionToken = EnvironmentVariableUtil.getNotionToken();
     if (notionToken == null || notionToken.trim().isEmpty()) {
       log.warn("NOTION_TOKEN not available. Cannot create NotionClient.");
       return null;
@@ -1525,7 +1526,7 @@ public class NotionHandler {
   /** Helper method to extract and log properties. */
   private Map<String, Object> extractAndLogProperties(
       @NonNull Page pageData, @NonNull String entityName, @NonNull String entityType) {
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = new NotionClient(EnvironmentVariableUtil.getNotionToken())) {
       Map<String, PageProperty> properties = pageData.getProperties();
       log.debug("Extracting {} properties for {}: {}", properties.size(), entityType, entityName);
 

@@ -17,6 +17,7 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.util.EnvironmentVariableUtil;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,9 +53,16 @@ class NotionSyncIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    // Set up the Notion token for testing
-    String notionToken = "***REMOVED***";
-    System.setProperty("NOTION_TOKEN", notionToken);
+    // Check if NOTION_TOKEN is available via system property or environment variable
+    String notionToken = EnvironmentVariableUtil.getValue("notion.token", "NOTION_TOKEN");
+    if (notionToken != null && !notionToken.trim().isEmpty()) {
+      System.setProperty("NOTION_TOKEN", notionToken);
+      log.info("NOTION_TOKEN configured for integration testing");
+    } else {
+      log.warn(
+          "NOTION_TOKEN not available. Integration tests will be limited. "
+              + "Pass token via: mvn test -Dnotion.token=YOUR_TOKEN");
+    }
 
     // Create real instances for integration testing
     ObjectMapper objectMapper = new ObjectMapper();

@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.util.NotionBlocksRetriever;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
@@ -607,9 +608,8 @@ public class NotionSyncService {
     log.debug("Retrieving all shows from Notion Shows database");
 
     // Check if NOTION_TOKEN is available
-    String notionToken = System.getenv("NOTION_TOKEN");
-    if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("NOTION_TOKEN environment variable is not set. Cannot sync from Notion.");
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      log.warn("NOTION_TOKEN not available. Cannot sync from Notion.");
       throw new IllegalStateException(
           "NOTION_TOKEN environment variable is required for Notion sync");
     }
@@ -1675,9 +1675,8 @@ public class NotionSyncService {
     log.debug("Retrieving all factions from Notion Factions database");
 
     // Check if NOTION_TOKEN is available
-    String notionToken = System.getenv("NOTION_TOKEN");
-    if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("NOTION_TOKEN environment variable is not set. Cannot sync from Notion.");
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      log.warn("NOTION_TOKEN not available. Cannot sync from Notion.");
       throw new IllegalStateException(
           "NOTION_TOKEN environment variable is required for Notion sync");
     }

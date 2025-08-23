@@ -238,7 +238,7 @@ public class ShowTemplateDataRetriever {
       NotionHandler handler, String databaseId) {
     List<ShowTemplatePage> templates = new ArrayList<>();
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = new NotionClient(EnvironmentVariableUtil.getNotionToken())) {
       // Query all pages from the Show Templates database
       QueryDatabaseRequest request = new QueryDatabaseRequest(databaseId);
 
