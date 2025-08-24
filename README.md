@@ -24,6 +24,15 @@ This project includes several security measures:
 - **GitHub Dependency Review**: PR-based dependency vulnerability detection (public repositories only)
 - **Regular Security Scans**: Weekly automated security scans via GitHub Actions
 
+#### NVD API Key Configuration
+To improve OWASP Dependency Check performance and avoid long update times, configure an NVD API key:
+
+1. **Get a free API key**: Visit [https://nvd.nist.gov/developers/request-an-api-key](https://nvd.nist.gov/developers/request-an-api-key)
+2. **Set environment variable**: `export NVD_API_KEY=your-api-key-here`
+3. **Or use Maven property**: `mvn dependency-check:check -Denv.NVD_API_KEY=your-api-key-here`
+
+Without an API key, dependency checks may take significantly longer due to rate limiting.
+
 ### Security Workflows
 
 This is a **public repository** with full GitHub Advanced Security features:

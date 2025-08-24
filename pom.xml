@@ -373,6 +373,11 @@
           <skipProvidedScope>true</skipProvidedScope>
           <skipRuntimeScope>false</skipRuntimeScope>
           <skipTestScope>true</skipTestScope>
+          <!-- NVD API Key configuration - set via environment variable or Maven property -->
+          <!-- Get your free API key from: https://nvd.nist.gov/developers/request-an-api-key -->
+          <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+          <nvdApiDelay>4000</nvdApiDelay>
+          <nvdMaxRetryCount>3</nvdMaxRetryCount>
           <suppressionFiles>
             <suppressionFile>owasp-dependency-check-suppressions.xml</suppressionFile>
           </suppressionFiles>
