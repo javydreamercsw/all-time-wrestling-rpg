@@ -106,6 +106,9 @@ class NotionSyncIntegrationTest {
     // Initialize retry and circuit breaker services (mocked for integration test)
     RetryService retryService = mock(RetryService.class);
     CircuitBreakerService circuitBreakerService = mock(CircuitBreakerService.class);
+    SyncValidationService validationService = mock(SyncValidationService.class);
+    SyncTransactionManager syncTransactionManager = mock(SyncTransactionManager.class);
+    DataIntegrityChecker integrityChecker = mock(DataIntegrityChecker.class);
 
     notionSyncService =
         new NotionSyncService(
@@ -116,6 +119,9 @@ class NotionSyncIntegrationTest {
             healthMonitor,
             retryService,
             circuitBreakerService,
+            validationService,
+            syncTransactionManager,
+            integrityChecker,
             showService,
             showTypeService,
             wrestlerService,
@@ -214,6 +220,9 @@ class NotionSyncIntegrationTest {
       TeamRepository invalidTeamRepository = mock(TeamRepository.class);
       RetryService invalidRetryService = mock(RetryService.class);
       CircuitBreakerService invalidCircuitBreakerService = mock(CircuitBreakerService.class);
+      SyncValidationService invalidValidationService = mock(SyncValidationService.class);
+      SyncTransactionManager invalidSyncTransactionManager = mock(SyncTransactionManager.class);
+      DataIntegrityChecker invalidIntegrityChecker = mock(DataIntegrityChecker.class);
       NotionSyncService invalidSyncService =
           new NotionSyncService(
               new ObjectMapper(),
@@ -223,6 +232,9 @@ class NotionSyncIntegrationTest {
               invalidHealthMonitor,
               invalidRetryService,
               invalidCircuitBreakerService,
+              invalidValidationService,
+              invalidSyncTransactionManager,
+              invalidIntegrityChecker,
               showService,
               showTypeService,
               wrestlerService,

@@ -76,6 +76,9 @@ public class NotionSyncService {
   private final SyncHealthMonitor healthMonitor;
   private final RetryService retryService;
   private final CircuitBreakerService circuitBreakerService;
+  private final SyncValidationService validationService;
+  private final SyncTransactionManager syncTransactionManager;
+  private final DataIntegrityChecker integrityChecker;
 
   // Database services for persisting synced data
   private final ShowService showService;
@@ -120,7 +123,7 @@ public class NotionSyncService {
     // Initialize progress tracking if operation ID provided
     if (operationId != null) {
       progressTracker.startOperation(
-          operationId, "Sync Shows", 4); // Updated to 4 steps (no JSON file writing)
+          operationId, "Sync Shows", 7); // Updated to 7 steps with validation and integrity checks
       progressTracker.updateProgress(operationId, 1, "Initializing sync operation...");
     }
 
@@ -163,92 +166,205 @@ public class NotionSyncService {
   }
 
   /**
-   * Performs the actual shows sync operation with enhanced error handling. This method is called by
-   * the retry and circuit breaker logic.
+   * Performs the actual shows sync operation with enhanced error handling, validation, and
+   * transaction management. This method is called by the retry and circuit breaker logic.
    */
   private SyncResult performShowsSync(String operationId, long startTime) throws Exception {
-    try {
-      // Create backup if enabled
-      if (syncProperties.isBackupEnabled()) {
-        log.info("📦 Creating backup...");
-        if (operationId != null) {
-          progressTracker.updateProgress(operationId, 1, "Creating backup of existing data...");
-          progressTracker.addLogMessage(operationId, "📦 Creating backup...", "INFO");
-        }
-        createBackup("shows.json");
-      }
+    return syncTransactionManager.executeInTransaction(
+        operationId,
+        "shows",
+        (transaction) -> {
+          try {
+            // Step 1: Validate sync prerequisites
+            log.info("🔍 Validating sync prerequisites...");
+            if (operationId != null) {
+              progressTracker.updateProgress(operationId, 1, "Validating sync prerequisites...");
+              progressTracker.addLogMessage(
+                  operationId, "🔍 Validating sync prerequisites...", "INFO");
+            }
 
-      // Get all shows from Notion using optimized method
-      log.info("📥 Retrieving shows from Notion...");
-      if (operationId != null) {
-        progressTracker.updateProgress(operationId, 2, "Retrieving shows from Notion database...");
-        progressTracker.addLogMessage(operationId, "📥 Retrieving shows from Notion...", "INFO");
-      }
+            SyncValidationService.ValidationResult prerequisiteResult =
+                validationService.validateSyncPrerequisites();
+            if (!prerequisiteResult.isValid()) {
+              throw new RuntimeException(
+                  "Sync prerequisites validation failed: "
+                      + String.join(", ", prerequisiteResult.getErrors()));
+            }
 
-      List<ShowPage> notionShows = getAllShowsFromNotion();
-      long retrieveTime = System.currentTimeMillis() - startTime;
-      log.info("✅ Retrieved {} shows from Notion in {}ms", notionShows.size(), retrieveTime);
+            if (prerequisiteResult.hasWarnings()) {
+              log.warn(
+                  "Sync prerequisites validation warnings: {}",
+                  String.join(", ", prerequisiteResult.getWarnings()));
+              if (operationId != null) {
+                progressTracker.addLogMessage(
+                    operationId,
+                    "⚠️ Prerequisites warnings: "
+                        + String.join(", ", prerequisiteResult.getWarnings()),
+                    "WARNING");
+              }
+            }
 
-      if (operationId != null) {
-        progressTracker.addLogMessage(
-            operationId,
-            String.format(
-                "✅ Retrieved %d shows from Notion in %dms", notionShows.size(), retrieveTime),
-            "SUCCESS");
-      }
+            // Step 2: Create backup if enabled
+            if (syncProperties.isBackupEnabled()) {
+              log.info("📦 Creating backup...");
+              if (operationId != null) {
+                progressTracker.updateProgress(
+                    operationId, 2, "Creating backup of existing data...");
+                progressTracker.addLogMessage(operationId, "📦 Creating backup...", "INFO");
+              }
+              createBackup("shows.json");
+            }
 
-      // Convert to DTOs using parallel processing
-      log.info("🔄 Converting shows to DTOs...");
-      if (operationId != null) {
-        progressTracker.updateProgress(operationId, 3, "Converting shows to DTOs...");
-        progressTracker.addLogMessage(operationId, "🔄 Converting shows to DTOs...", "INFO");
-      }
+            // Step 3: Get all shows from Notion using optimized method
+            log.info("📥 Retrieving shows from Notion...");
+            if (operationId != null) {
+              progressTracker.updateProgress(
+                  operationId, 3, "Retrieving shows from Notion database...");
+              progressTracker.addLogMessage(
+                  operationId, "📥 Retrieving shows from Notion...", "INFO");
+            }
 
-      List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows);
-      long convertTime = System.currentTimeMillis() - startTime - retrieveTime;
-      log.info("✅ Converted {} shows to DTOs in {}ms", showDTOs.size(), convertTime);
+            List<ShowPage> notionShows = getAllShowsFromNotion();
+            long retrieveTime = System.currentTimeMillis() - startTime;
+            log.info("✅ Retrieved {} shows from Notion in {}ms", notionShows.size(), retrieveTime);
 
-      if (operationId != null) {
-        progressTracker.addLogMessage(
-            operationId,
-            String.format("✅ Converted %d shows to DTOs in %dms", showDTOs.size(), convertTime),
-            "SUCCESS");
-      }
+            if (operationId != null) {
+              progressTracker.addLogMessage(
+                  operationId,
+                  String.format(
+                      "✅ Retrieved %d shows from Notion in %dms", notionShows.size(), retrieveTime),
+                  "SUCCESS");
+            }
 
-      // Save to database
-      log.info("💾 Saving shows to database...");
-      if (operationId != null) {
-        progressTracker.updateProgress(operationId, 4, "Saving shows to database...");
-        progressTracker.addLogMessage(operationId, "💾 Saving shows to database...", "INFO");
-      }
+            // Step 4: Validate retrieved shows data
+            log.info("🔍 Validating retrieved shows data...");
+            if (operationId != null) {
+              progressTracker.updateProgress(operationId, 4, "Validating shows data...");
+              progressTracker.addLogMessage(operationId, "🔍 Validating shows data...", "INFO");
+            }
 
-      int savedCount = saveShowsToDatabase(showDTOs);
-      long totalTime = System.currentTimeMillis() - startTime;
+            SyncValidationService.ValidationResult showsValidation =
+                validationService.validateShows(notionShows);
+            if (!showsValidation.isValid()) {
+              throw new RuntimeException(
+                  "Shows data validation failed: "
+                      + String.join(", ", showsValidation.getErrors()));
+            }
 
-      log.info(
-          "🎉 Successfully synchronized {} shows to database in {}ms total", savedCount, totalTime);
+            if (showsValidation.hasWarnings()) {
+              log.warn(
+                  "Shows data validation warnings: {}",
+                  String.join(", ", showsValidation.getWarnings()));
+              if (operationId != null) {
+                progressTracker.addLogMessage(
+                    operationId,
+                    "⚠️ Shows validation warnings: "
+                        + String.join(", ", showsValidation.getWarnings()),
+                    "WARNING");
+              }
+            }
 
-      if (operationId != null) {
-        progressTracker.addLogMessage(
-            operationId,
-            String.format(
-                "🎉 Successfully synchronized %d shows in %dms total", savedCount, totalTime),
-            "SUCCESS");
-        progressTracker.completeOperation(
-            operationId,
-            true,
-            String.format("Successfully synced %d shows", savedCount),
-            savedCount);
-      }
+            // Step 5: Convert to DTOs using parallel processing
+            log.info("🔄 Converting shows to DTOs...");
+            if (operationId != null) {
+              progressTracker.updateProgress(operationId, 5, "Converting shows to DTOs...");
+              progressTracker.addLogMessage(operationId, "🔄 Converting shows to DTOs...", "INFO");
+            }
 
-      // Record success in health monitor
-      healthMonitor.recordSuccess("Shows", totalTime, savedCount);
-      return SyncResult.success("Shows", savedCount, 0);
+            List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows);
+            long convertTime = System.currentTimeMillis() - startTime - retrieveTime;
+            log.info("✅ Converted {} shows to DTOs in {}ms", showDTOs.size(), convertTime);
 
-    } catch (Exception e) {
-      // Re-throw to be handled by retry/circuit breaker logic
-      throw new RuntimeException("Shows sync operation failed: " + e.getMessage(), e);
-    }
+            if (operationId != null) {
+              progressTracker.addLogMessage(
+                  operationId,
+                  String.format(
+                      "✅ Converted %d shows to DTOs in %dms", showDTOs.size(), convertTime),
+                  "SUCCESS");
+            }
+
+            // Step 6: Save to database with transaction support
+            log.info("💾 Saving shows to database...");
+            if (operationId != null) {
+              progressTracker.updateProgress(operationId, 6, "Saving shows to database...");
+              progressTracker.addLogMessage(operationId, "💾 Saving shows to database...", "INFO");
+            }
+
+            // Create savepoint before database operations
+            Object savepoint = transaction.createSavepoint("before-database-save");
+
+            try {
+              int savedCount = saveShowsToDatabase(showDTOs);
+
+              // Step 7: Perform post-sync data integrity check
+              log.info("🔍 Performing post-sync data integrity check...");
+              if (operationId != null) {
+                progressTracker.updateProgress(operationId, 7, "Checking data integrity...");
+                progressTracker.addLogMessage(operationId, "🔍 Checking data integrity...", "INFO");
+              }
+
+              DataIntegrityChecker.IntegrityCheckResult integrityResult =
+                  integrityChecker.performIntegrityCheck();
+              if (!integrityResult.isValid()) {
+                log.error(
+                    "❌ Data integrity check failed after sync: {}",
+                    String.join(", ", integrityResult.getErrors()));
+                throw new RuntimeException(
+                    "Data integrity check failed: "
+                        + String.join(", ", integrityResult.getErrors()));
+              }
+
+              if (integrityResult.hasWarnings()) {
+                log.warn(
+                    "⚠️ Data integrity warnings after sync: {}",
+                    String.join(", ", integrityResult.getWarnings()));
+                if (operationId != null) {
+                  progressTracker.addLogMessage(
+                      operationId,
+                      "⚠️ Integrity warnings: " + String.join(", ", integrityResult.getWarnings()),
+                      "WARNING");
+                }
+              }
+
+              // Release savepoint - everything is good
+              transaction.releaseSavepoint(savepoint);
+
+              long totalTime = System.currentTimeMillis() - startTime;
+              log.info(
+                  "🎉 Successfully synchronized {} shows to database in {}ms total",
+                  savedCount,
+                  totalTime);
+
+              if (operationId != null) {
+                progressTracker.addLogMessage(
+                    operationId,
+                    String.format(
+                        "🎉 Successfully synchronized %d shows in %dms total",
+                        savedCount, totalTime),
+                    "SUCCESS");
+                progressTracker.completeOperation(
+                    operationId,
+                    true,
+                    String.format("Successfully synced %d shows", savedCount),
+                    savedCount);
+              }
+
+              // Record success in health monitor
+              healthMonitor.recordSuccess("Shows", totalTime, savedCount);
+              return SyncResult.success("Shows", savedCount, 0);
+
+            } catch (Exception dbException) {
+              // Rollback to savepoint on database error
+              log.error("❌ Database operation failed, rolling back to savepoint", dbException);
+              transaction.rollbackToSavepoint(savepoint);
+              throw dbException;
+            }
+
+          } catch (Exception e) {
+            // Re-throw to be handled by retry/circuit breaker logic and transaction manager
+            throw new RuntimeException("Shows sync operation failed: " + e.getMessage(), e);
+          }
+        });
   }
 
   // ==================== SHOW TEMPLATES SYNC ====================
