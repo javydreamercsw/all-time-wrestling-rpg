@@ -66,6 +66,7 @@ public class NotionSyncService {
   private final NotionHandler notionHandler;
   private final NotionSyncProperties syncProperties;
   private final SyncProgressTracker progressTracker;
+  private final SyncHealthMonitor healthMonitor;
 
   // Database services for persisting synced data
   private final ShowService showService;
@@ -198,6 +199,10 @@ public class NotionSyncService {
             showDTOs.size());
       }
 
+      // Record success in health monitor
+      long totalTime = System.currentTimeMillis() - startTime;
+      healthMonitor.recordSuccess("Shows", totalTime, showDTOs.size());
+
       return SyncResult.success("Shows", showDTOs.size(), 0);
 
     } catch (Exception e) {
@@ -208,6 +213,9 @@ public class NotionSyncService {
       if (operationId != null) {
         progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
       }
+
+      // Record failure in health monitor
+      healthMonitor.recordFailure("Shows", e.getMessage());
 
       return SyncResult.failure("Shows", e.getMessage());
     }
