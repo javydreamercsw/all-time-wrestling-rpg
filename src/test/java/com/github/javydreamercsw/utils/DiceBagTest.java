@@ -9,7 +9,7 @@ public class DiceBagTest {
   @RepeatedTest(10)
   public void testRoll() {
     Random r = new Random();
-    DiceBag diceBag = new DiceBag(r.nextInt(100), r.nextInt(100), r.nextInt(100));
+    DiceBag diceBag = new DiceBag(r.nextInt(100) + 1, r.nextInt(100) + 1, r.nextInt(100) + 1);
     int result = diceBag.roll();
     System.out.println("Rolled: " + result + " for dice: " + Arrays.toString(diceBag.getDice()));
     Assertions.assertTrue(

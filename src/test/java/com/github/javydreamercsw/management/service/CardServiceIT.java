@@ -6,19 +6,24 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.javydreamercsw.TestcontainersConfiguration;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
+import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.service.card.CardService;
 import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class CardServiceIT {
 
@@ -26,9 +31,20 @@ class CardServiceIT {
 
   @Autowired CardRepository cardRepository;
 
+  @Autowired CardSetRepository cardSetRepository;
+
+  @BeforeEach
+  void setUp() {
+    // Create a test CardSet for the tests
+    CardSet testSet = new CardSet();
+    testSet.setName("TST");
+    cardSetRepository.save(testSet);
+  }
+
   @AfterEach
   void cleanUp() {
     cardRepository.deleteAll();
+    cardSetRepository.deleteAll();
   }
 
   @Test

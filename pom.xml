@@ -19,7 +19,8 @@
   <properties>
     <archunit.version>1.4.1</archunit.version>
     <java.version>17</java.version>
-    <vaadin.version>24.7.6</vaadin.version>
+    <testcontainers.version>1.21.3</testcontainers.version>
+    <vaadin.version>24.8.6</vaadin.version>
   </properties>
 
   <dependencyManagement>
@@ -64,6 +65,11 @@
       <groupId>com.vaadin</groupId>
       <artifactId>vaadin-spring-boot-starter</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.vaadin.stefan</groupId>
+      <artifactId>fullcalendar2</artifactId>
+      <version>6.3.1</version>
+    </dependency>
 
     <!-- Persistence -->
     <dependency>
@@ -76,8 +82,16 @@
       <artifactId>h2</artifactId>
       <scope>runtime</scope>
     </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
 
     <!-- Additional Spring Dependencies -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
@@ -92,6 +106,12 @@
       <optional>true</optional>
     </dependency>
 
+    <!-- AspectJ for Performance Monitoring -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-aop</artifactId>
+    </dependency>
+
     <!-- Testing -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -101,6 +121,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
+      <version>${testcontainers.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -114,11 +135,64 @@
       <version>${archunit.version}</version>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
+
+  <repositories>
+    <repository>
+      <id>vaadin-addons</id>
+      <url>https://maven.vaadin.com/vaadin-addons</url>
+    </repository>
+  </repositories>
 
   <build>
     <defaultGoal>spring-boot:run</defaultGoal>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.14.0</version>
+        <configuration>
+          <encoding>${project.build.sourceEncoding}</encoding>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>1.18.38</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.3</version>
+        <configuration>
+          <!-- Enable parallel execution for unit tests -->
+          <parallel>classes</parallel>
+          <threadCount>4</threadCount>
+          <perCoreThreadCount>true</perCoreThreadCount>
+          <useUnlimitedThreads>false</useUnlimitedThreads>
+          <!-- Optimize for faster execution -->
+          <forkCount>1</forkCount>
+          <reuseForks>true</reuseForks>
+          <!-- Include unit tests, exclude integration tests -->
+          <includes>
+            <include>**/*Test.java</include>
+            <include>**/*Tests.java</include>
+            <include>**/*TestCase.java</include>
+          </includes>
+          <excludes>
+            <exclude>**/*IT.java</exclude>
+            <exclude>**/*IntegrationTest.java</exclude>
+          </excludes>
+          <!-- JVM arguments for better performance -->
+          <argLine>-Xmx2g
+            -XX:+EnableDynamicAgentLoading
+            -Djdk.instrument.traceUsage=false
+            -DNOTION_TOKEN=${NOTION_TOKEN}</argLine>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
@@ -235,6 +309,13 @@
             </includes>
             <excludes>
               <exclude>target/**</exclude>
+              <exclude>node_modules/**</exclude>
+              <exclude>tsconfig.json</exclude>
+              <exclude>**/tsconfig.json</exclude>
+              <exclude>package.json</exclude>
+              <exclude>package-lock.json</exclude>
+              <exclude>**/package.json</exclude>
+              <exclude>**/package-lock.json</exclude>
             </excludes>
             <jackson/>
           </json>
@@ -278,6 +359,27 @@
         <artifactId>maven-wrapper-plugin</artifactId>
         <version>3.3.2</version>
       </plugin>
+      <plugin>
+        <groupId>org.owasp</groupId>
+        <artifactId>dependency-check-maven</artifactId>
+        <version>11.1.0</version>
+        <configuration>
+          <failBuildOnCVSS>7</failBuildOnCVSS>
+          <skipProvidedScope>true</skipProvidedScope>
+          <skipRuntimeScope>false</skipRuntimeScope>
+          <skipTestScope>true</skipTestScope>
+          <suppressionFiles>
+            <suppressionFile>owasp-dependency-check-suppressions.xml</suppressionFile>
+          </suppressionFiles>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -319,12 +421,41 @@
       <id>integration-test</id>
       <build>
         <plugins>
+          <!-- Run integration tests with Surefire (sequential for safety) -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <!-- Disable parallel execution for integration tests -->
+              <parallel>none</parallel>
+              <threadCount>1</threadCount>
+              <!-- Include integration tests -->
+              <includes>
+                <include>**/*IT.java</include>
+                <include>**/*IntegrationTest.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/*Test.java</exclude>
+                <exclude>**/*Tests.java</exclude>
+                <exclude>**/*TestCase.java</exclude>
+              </excludes>
+              <!-- JVM arguments for integration tests -->
+              <argLine>-Xmx3g
+                -XX:+EnableDynamicAgentLoading
+                -Djdk.instrument.traceUsage=false
+                -DNOTION_TOKEN=${NOTION_TOKEN}</argLine>
+            </configuration>
+          </plugin>
+          <!-- Failsafe plugin for additional integration test support -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <trimStackTrace>false</trimStackTrace>
               <enableAssertions>true</enableAssertions>
+              <!-- Sequential execution for integration tests -->
+              <parallel>none</parallel>
+              <threadCount>1</threadCount>
             </configuration>
             <executions>
               <execution>
