@@ -69,12 +69,12 @@ class InjurySystemIntegrationTest {
     matchTypeRepository.deleteAll();
 
     // Create test data
-    wrestler1 = wrestlerService.createAtwWrestler("Test Wrestler 1", true, null, null);
+    wrestler1 = wrestlerService.createWrestler("Test Wrestler 1", true, null);
     wrestler1.setFans(25000L); // Riser tier
     wrestler1.updateTier();
     wrestler1 = wrestlerRepository.save(wrestler1);
 
-    wrestler2 = wrestlerService.createAtwWrestler("Test Wrestler 2", true, null, null);
+    wrestler2 = wrestlerService.createWrestler("Test Wrestler 2", true, null);
     wrestler2.setFans(25000L); // Riser tier
     wrestler2.updateTier();
     wrestler2 = wrestlerRepository.save(wrestler2);

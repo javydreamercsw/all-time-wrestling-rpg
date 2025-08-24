@@ -1082,10 +1082,7 @@ public class NotionSyncService {
           wrestler.setIsPlayer(dto.getIsPlayer() != null ? dto.getIsPlayer() : false);
           wrestler.setBumps(dto.getBumps() != null ? dto.getBumps() : 0);
           wrestler.setCreationDate(java.time.Instant.now());
-          if (wrestler.getWrestlingStyle() == null) {
-            wrestler.setWrestlingStyle(
-                dto.getWrestlingStyle() != null ? dto.getWrestlingStyle() : "TODO");
-          }
+
         } else {
           // For existing wrestlers, update game fields from DTO if they have values
           if (dto.getDeckSize() != null) wrestler.setDeckSize(dto.getDeckSize());
@@ -1097,9 +1094,6 @@ public class NotionSyncService {
           if (dto.getFans() != null) wrestler.setFans(dto.getFans());
           if (dto.getIsPlayer() != null) wrestler.setIsPlayer(dto.getIsPlayer());
           if (dto.getBumps() != null) wrestler.setBumps(dto.getBumps());
-          if (dto.getWrestlingStyle() != null && !dto.getWrestlingStyle().trim().isEmpty()) {
-            wrestler.setWrestlingStyle(dto.getWrestlingStyle());
-          }
         }
 
         // Save the wrestler (use service for new, repository for existing to avoid creation date
@@ -1529,7 +1523,6 @@ public class NotionSyncService {
     private Boolean isPlayer;
     private Integer bumps;
     private String faction;
-    private String wrestlingStyle;
     private String creationDate;
   }
 
@@ -1667,7 +1660,7 @@ public class NotionSyncService {
     if (existing != null) {
       log.debug("  Existing faction: {}", existing.getFaction());
       log.debug("  Existing description: {}", existing.getDescription());
-      log.debug("  Existing wrestlingStyle: {}", existing.getWrestlingStyle());
+
     } else {
       log.debug("  No existing data found for wrestler: {}", notion.getName());
     }
@@ -1685,7 +1678,8 @@ public class NotionSyncService {
     } else if (existing != null && existing.getDescription() != null) {
       merged.setDescription(existing.getDescription());
     } else {
-      merged.setDescription("TODO");
+      // Use a generic default description when no description is available
+      merged.setDescription("Professional wrestler competing in All Time Wrestling");
     }
 
     // Smart faction handling: prefer Notion if available, otherwise preserve existing
@@ -1707,7 +1701,7 @@ public class NotionSyncService {
       merged.setFans(existing.getFans());
       merged.setIsPlayer(existing.getIsPlayer());
       merged.setBumps(existing.getBumps());
-      merged.setWrestlingStyle(existing.getWrestlingStyle());
+
       merged.setCreationDate(existing.getCreationDate());
     } else {
       // Set defaults for new wrestlers
@@ -1719,7 +1713,7 @@ public class NotionSyncService {
       merged.setFans(0L);
       merged.setIsPlayer(false);
       merged.setBumps(0);
-      merged.setWrestlingStyle("TODO");
+
       merged.setCreationDate(null);
     }
 

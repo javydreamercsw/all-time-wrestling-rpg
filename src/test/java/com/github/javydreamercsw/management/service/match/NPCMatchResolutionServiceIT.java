@@ -54,9 +54,9 @@ class NPCMatchResolutionServiceIT {
   @BeforeEach
   void setUp() {
     // Create test wrestlers with different tiers
-    rookie1 = wrestlerService.createAtwWrestler("Rookie One", true, null, null);
-    rookie2 = wrestlerService.createAtwWrestler("Rookie Two", true, null, null);
-    contender = wrestlerService.createAtwWrestler("The Contender", true, null, null);
+    rookie1 = wrestlerService.createWrestler("Rookie One", true, null);
+    rookie2 = wrestlerService.createWrestler("Rookie Two", true, null);
+    contender = wrestlerService.createWrestler("The Contender", true, null);
 
     // Award fans to create tier differences
     wrestlerService.awardFans(contender.getId(), 45000L); // CONTENDER tier

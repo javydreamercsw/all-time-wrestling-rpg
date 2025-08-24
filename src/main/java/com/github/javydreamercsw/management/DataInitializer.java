@@ -274,9 +274,7 @@ public class DataInitializer {
               if (w.getDescription() != null) {
                 existingWrestler.setDescription(w.getDescription());
               }
-              if (w.getWrestlingStyle() != null) {
-                existingWrestler.setWrestlingStyle(w.getWrestlingStyle());
-              }
+
               if (w.getExternalId() != null) {
                 existingWrestler.setExternalId(w.getExternalId());
               }

@@ -281,14 +281,14 @@ class WrestlerServiceTest {
 
   @Test
   @DisplayName("Should create ATW wrestler with correct defaults")
-  void shouldCreateAtwWrestlerWithCorrectDefaults() {
+  void shouldCreateWrestlerWithCorrectDefaults() {
     // Given
     Wrestler savedWrestler = new Wrestler();
     savedWrestler.setName("New Wrestler");
     savedWrestler.setFans(0L);
     savedWrestler.setIsPlayer(true);
     savedWrestler.setDescription("Test description");
-    savedWrestler.setWrestlingStyle("High-Flying");
+
     savedWrestler.setCreationDate(Instant.now(fixedClock));
 
     // Mock the saveAndFlush method that's actually called by save()
@@ -301,15 +301,14 @@ class WrestlerServiceTest {
             });
 
     // When
-    Wrestler result =
-        wrestlerService.createAtwWrestler("New Wrestler", true, "Test description", "High-Flying");
+    Wrestler result = wrestlerService.createWrestler("New Wrestler", true, "Test description");
 
     // Then
     assertThat(result).isNotNull();
     assertThat(result.getName()).isEqualTo("New Wrestler");
     assertThat(result.getIsPlayer()).isTrue();
     assertThat(result.getDescription()).isEqualTo("Test description");
-    assertThat(result.getWrestlingStyle()).isEqualTo("High-Flying");
+
     assertThat(result.getFans()).isEqualTo(0L);
     assertThat(result.getBumps()).isEqualTo(0);
     assertThat(result.getDeckSize()).isEqualTo(15);

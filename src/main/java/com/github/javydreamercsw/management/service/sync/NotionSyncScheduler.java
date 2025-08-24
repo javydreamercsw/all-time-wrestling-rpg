@@ -97,9 +97,7 @@ public class NotionSyncScheduler {
         return notionSyncService.syncFactions(operationId);
 
       case "teams":
-        // TODO: Implement team sync (NotionHandler.loadAllTeams() is ready)
-        log.warn("Team sync not yet implemented");
-        return SyncResult.success("Teams", 0, 0);
+        return notionSyncService.syncTeams();
 
       case "matches":
         // TODO: Implement match sync

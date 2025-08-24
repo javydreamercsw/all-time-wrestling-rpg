@@ -47,7 +47,7 @@ class WrestlerServiceIT {
   void shouldCreateWrestlerWithAtwRpgDefaults() {
     // When
     Wrestler wrestler =
-        wrestlerService.createAtwWrestler("Test Wrestler", true, "Test description", "High-Flying");
+        wrestlerService.createWrestler("Test Wrestler", true, "Test description");
 
     // Then
     assertThat(wrestler.getId()).isNotNull();
@@ -57,7 +57,7 @@ class WrestlerServiceIT {
     assertThat(wrestler.getBumps()).isEqualTo(0);
     assertThat(wrestler.getIsPlayer()).isTrue();
     assertThat(wrestler.getDescription()).isEqualTo("Test description");
-    assertThat(wrestler.getWrestlingStyle()).isEqualTo("High-Flying");
+
     assertThat(wrestler.getDeckSize()).isEqualTo(15);
     assertThat(wrestler.getStartingHealth()).isEqualTo(15);
   }
@@ -66,7 +66,7 @@ class WrestlerServiceIT {
   @DisplayName("Should award fans and persist tier changes")
   void shouldAwardFansAndPersistTierChanges() {
     // Given
-    Wrestler wrestler = wrestlerService.createAtwWrestler("Test Wrestler", true, null, null);
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
     assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.ROOKIE);
 
     // When - Award enough fans to reach Contender tier
@@ -88,7 +88,7 @@ class WrestlerServiceIT {
   @DisplayName("Should handle bump system with persistence")
   void shouldHandleBumpSystemWithPersistence() {
     // Given
-    Wrestler wrestler = wrestlerService.createAtwWrestler("Test Wrestler", true, null, null);
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
 
     // When - Add bumps
     wrestlerService.addBump(wrestler.getId());
@@ -109,7 +109,7 @@ class WrestlerServiceIT {
   @DisplayName("Should spend fans and update tier")
   void shouldSpendFansAndUpdateTier() {
     // Given
-    Wrestler wrestler = wrestlerService.createAtwWrestler("Test Wrestler", true, null, null);
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
     wrestlerService.awardFans(wrestler.getId(), 50000L); // Contender tier
 
     // When
@@ -129,16 +129,16 @@ class WrestlerServiceIT {
   @DisplayName("Should filter wrestlers by eligibility")
   void shouldFilterWrestlersByEligibility() {
     // Given - Create wrestlers with different fan levels
-    Wrestler rookie = wrestlerService.createAtwWrestler("Rookie", true, null, null);
+    Wrestler rookie = wrestlerService.createWrestler("Rookie", true, null);
     // rookie has 0 fans (Rookie tier)
 
-    Wrestler riser = wrestlerService.createAtwWrestler("Riser", true, null, null);
+    Wrestler riser = wrestlerService.createWrestler("Riser", true, null);
     wrestlerService.awardFans(riser.getId(), 30000L); // Riser tier
 
-    Wrestler contender = wrestlerService.createAtwWrestler("Contender", true, null, null);
+    Wrestler contender = wrestlerService.createWrestler("Contender", true, null);
     wrestlerService.awardFans(contender.getId(), 45000L); // Contender tier
 
-    Wrestler mainEventer = wrestlerService.createAtwWrestler("Main Eventer", true, null, null);
+    Wrestler mainEventer = wrestlerService.createWrestler("Main Eventer", true, null);
     wrestlerService.awardFans(mainEventer.getId(), 120000L); // Main Eventer tier
 
     // When
@@ -159,13 +159,13 @@ class WrestlerServiceIT {
   @DisplayName("Should filter wrestlers by tier")
   void shouldFilterWrestlersByTier() {
     // Given
-    Wrestler rookie1 = wrestlerService.createAtwWrestler("Rookie 1", true, null, null);
-    Wrestler rookie2 = wrestlerService.createAtwWrestler("Rookie 2", true, null, null);
+    Wrestler rookie1 = wrestlerService.createWrestler("Rookie 1", true, null);
+    Wrestler rookie2 = wrestlerService.createWrestler("Rookie 2", true, null);
 
-    Wrestler riser = wrestlerService.createAtwWrestler("Riser", true, null, null);
+    Wrestler riser = wrestlerService.createWrestler("Riser", true, null);
     wrestlerService.awardFans(riser.getId(), 30000L);
 
-    Wrestler contender = wrestlerService.createAtwWrestler("Contender", true, null, null);
+    Wrestler contender = wrestlerService.createWrestler("Contender", true, null);
     wrestlerService.awardFans(contender.getId(), 45000L);
 
     // When
@@ -190,10 +190,10 @@ class WrestlerServiceIT {
   @DisplayName("Should filter wrestlers by player status")
   void shouldFilterWrestlersByPlayerStatus() {
     // Given
-    Wrestler player1 = wrestlerService.createAtwWrestler("Player 1", true, null, null);
-    Wrestler player2 = wrestlerService.createAtwWrestler("Player 2", true, null, null);
-    Wrestler npc1 = wrestlerService.createAtwWrestler("NPC 1", false, null, null);
-    Wrestler npc2 = wrestlerService.createAtwWrestler("NPC 2", false, null, null);
+    Wrestler player1 = wrestlerService.createWrestler("Player 1", true, null);
+    Wrestler player2 = wrestlerService.createWrestler("Player 2", true, null);
+    Wrestler npc1 = wrestlerService.createWrestler("NPC 1", false, null);
+    Wrestler npc2 = wrestlerService.createWrestler("NPC 2", false, null);
 
     // When
     List<Wrestler> players = wrestlerService.getPlayerWrestlers();
@@ -214,8 +214,8 @@ class WrestlerServiceIT {
   void shouldMaintainDataIntegrityAcrossComplexOperations() {
     // Given
     Wrestler wrestler =
-        wrestlerService.createAtwWrestler(
-            "Complex Test", true, "Test wrestler for complex operations", "Technical");
+        wrestlerService.createWrestler(
+            "Complex Test", true, "Test wrestler for complex operations");
 
     // When - Perform multiple operations
     wrestlerService.awardFans(wrestler.getId(), 60000L); // Intertemporal tier
@@ -238,6 +238,5 @@ class WrestlerServiceIT {
     assertThat(finalWrestler.isEligibleForTitle(TitleTier.TAG_TEAM)).isTrue();
     assertThat(finalWrestler.isEligibleForTitle(TitleTier.INTERTEMPORAL)).isFalse();
     assertThat(finalWrestler.getDescription()).isEqualTo("Test wrestler for complex operations");
-    assertThat(finalWrestler.getWrestlingStyle()).isEqualTo("Technical");
   }
 }

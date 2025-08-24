@@ -222,11 +222,9 @@ public class WrestlerService {
    * @param name Wrestler name
    * @param isPlayer Whether this is a player-controlled wrestler
    * @param description Character description
-   * @param wrestlingStyle Wrestling style/gimmick
    * @return The created wrestler
    */
-  public Wrestler createAtwWrestler(
-      @NonNull String name, boolean isPlayer, String description, String wrestlingStyle) {
+  public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
     Wrestler wrestler = new Wrestler();
     wrestler.setName(name);
 
@@ -242,7 +240,6 @@ public class WrestlerService {
     wrestler.setIsPlayer(isPlayer);
     wrestler.setBumps(0);
     wrestler.setDescription(description);
-    wrestler.setWrestlingStyle(wrestlingStyle);
 
     return save(wrestler);
   }

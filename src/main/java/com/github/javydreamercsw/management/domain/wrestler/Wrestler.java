@@ -77,10 +77,6 @@ public class Wrestler extends AbstractEntity<Long> {
   @Column(name = "description", length = 1000)
   private String description;
 
-  /** Wrestling style/gimmick for match narration */
-  @Column(name = "wrestling_style")
-  @Size(max = Card.DESCRIPTION_MAX_LENGTH) private String wrestlingStyle;
-
   // ==================== ATW RPG RELATIONSHIPS ====================
 
   /** Titles currently held by this wrestler */

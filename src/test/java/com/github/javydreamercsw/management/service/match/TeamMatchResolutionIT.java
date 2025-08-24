@@ -56,12 +56,12 @@ class TeamMatchResolutionIT {
   @BeforeEach
   void setUp() {
     // Create test wrestlers
-    rookie1 = wrestlerService.createAtwWrestler("Rookie One", true, null, null);
-    rookie2 = wrestlerService.createAtwWrestler("Rookie Two", true, null, null);
-    rookie3 = wrestlerService.createAtwWrestler("Rookie Three", true, null, null);
-    rookie4 = wrestlerService.createAtwWrestler("Rookie Four", true, null, null);
-    contender1 = wrestlerService.createAtwWrestler("Contender One", true, null, null);
-    contender2 = wrestlerService.createAtwWrestler("Contender Two", true, null, null);
+    rookie1 = wrestlerService.createWrestler("Rookie One", true, null);
+    rookie2 = wrestlerService.createWrestler("Rookie Two", true, null);
+    rookie3 = wrestlerService.createWrestler("Rookie Three", true, null);
+    rookie4 = wrestlerService.createWrestler("Rookie Four", true, null);
+    contender1 = wrestlerService.createWrestler("Contender One", true, null);
+    contender2 = wrestlerService.createWrestler("Contender Two", true, null);
 
     // Award fans to create tier differences
     wrestlerService.awardFans(contender1.getId(), 45000L); // CONTENDER tier
