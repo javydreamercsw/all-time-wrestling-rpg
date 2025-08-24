@@ -46,8 +46,7 @@ class WrestlerServiceIT {
   @DisplayName("Should create wrestler with ATW RPG defaults")
   void shouldCreateWrestlerWithAtwRpgDefaults() {
     // When
-    Wrestler wrestler =
-        wrestlerService.createWrestler("Test Wrestler", true, "Test description");
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, "Test description");
 
     // Then
     assertThat(wrestler.getId()).isNotNull();

@@ -65,7 +65,6 @@ class SyncHealthMonitorTest {
   void shouldReturnUnhealthyStatusWithConsecutiveFailures() {
     // Given - Mock valid configuration first
     when(syncProperties.isEnabled()).thenReturn(true);
-    when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
 
     // Mock NOTION_TOKEN availability by mocking the environment check
     // This is done by ensuring the configuration is valid

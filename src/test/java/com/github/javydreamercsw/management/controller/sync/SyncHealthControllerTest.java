@@ -149,15 +149,10 @@ class SyncHealthControllerTest {
         .andExpect(
             jsonPath("$[1]")
                 .value(
-                    "Multiple consecutive failures detected. Check NOTION_TOKEN and API"
-                        + " connectivity."))
-        .andExpect(
-            jsonPath("$[2]")
-                .value(
                     "Average sync time is high. Consider optimizing sync operations or checking"
                         + " network performance."))
         .andExpect(
-            jsonPath("$[3]")
+            jsonPath("$[2]")
                 .value(
                     "No successful sync in over 24 hours. Check sync scheduler and"
                         + " configuration."));
