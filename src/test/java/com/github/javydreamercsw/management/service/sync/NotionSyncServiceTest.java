@@ -10,12 +10,14 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +37,10 @@ class NotionSyncServiceTest {
   @Mock private SyncProgressTracker progressTracker;
 
   @Mock private SyncHealthMonitor healthMonitor;
+
+  @Mock private TeamService teamService;
+
+  @Mock private TeamRepository teamRepository;
 
   // Mock database services
   @Mock private ShowService showService;
@@ -62,7 +68,9 @@ class NotionSyncServiceTest {
             wrestlerRepository,
             seasonService,
             showTemplateService,
-            factionRepository);
+            factionRepository,
+            teamService,
+            teamRepository);
   }
 
   @Test

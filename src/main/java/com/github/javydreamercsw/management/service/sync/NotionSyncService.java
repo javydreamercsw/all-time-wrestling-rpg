@@ -6,6 +6,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
+import com.github.javydreamercsw.base.ai.notion.TeamPage;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
@@ -16,14 +17,19 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.dto.ShowDTO;
+import com.github.javydreamercsw.management.dto.TeamDTO;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.util.NotionBlocksRetriever;
 import jakarta.annotation.PreDestroy;
@@ -31,6 +37,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -76,6 +83,8 @@ public class NotionSyncService {
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
   private final FactionRepository factionRepository;
+  private final TeamService teamService;
+  private final TeamRepository teamRepository;
 
   // Thread pool for async processing - using fixed thread pool for Java 17 compatibility
   private final ExecutorService executorService = Executors.newFixedThreadPool(10);
@@ -600,6 +609,112 @@ public class NotionSyncService {
       healthMonitor.recordFailure("Factions", e.getMessage());
 
       return SyncResult.failure("Factions", e.getMessage());
+    }
+  }
+
+  /**
+   * Synchronizes teams from Notion to the local database.
+   *
+   * @return SyncResult containing the operation status and details
+   */
+  public SyncResult syncTeams() {
+    log.info("🔄 Starting teams synchronization from Notion...");
+    long startTime = System.currentTimeMillis();
+    String operationId = null;
+
+    try {
+      // Start progress tracking
+      SyncProgressTracker.SyncProgress progress =
+          progressTracker.startOperation("Teams Sync", "Synchronizing teams from Notion", 0);
+      operationId = progress.getOperationId();
+
+      // Load teams from Notion
+      progressTracker.addLogMessage(
+          operationId, "📥 Loading teams from Notion database...", "INFO");
+      List<TeamPage> teamPages = notionHandler.loadAllTeams();
+
+      if (teamPages.isEmpty()) {
+        progressTracker.addLogMessage(operationId, "⚠️ No teams found in Notion database", "WARN");
+        progressTracker.completeOperation(operationId, true, "No teams to sync", 0);
+
+        // Record success in health monitor
+        long totalTime = System.currentTimeMillis() - startTime;
+        healthMonitor.recordSuccess("Teams", totalTime, 0);
+
+        return SyncResult.success("Teams", 0, 0);
+      }
+
+      progressTracker.addLogMessage(
+          operationId, String.format("📋 Found %d teams in Notion", teamPages.size()), "INFO");
+
+      // Convert to DTOs
+      List<TeamDTO> teamDTOs = new ArrayList<>();
+      for (TeamPage teamPage : teamPages) {
+        try {
+          TeamDTO teamDTO = convertTeamPageToDTO(teamPage);
+          if (teamDTO != null) {
+            teamDTOs.add(teamDTO);
+          }
+        } catch (Exception e) {
+          String teamName = extractNameFromNotionPage(teamPage);
+          log.warn("Failed to convert team page to DTO: {}", teamName, e);
+          progressTracker.addLogMessage(
+              operationId,
+              String.format("⚠️ Failed to convert team: %s - %s", teamName, e.getMessage()),
+              "WARN");
+        }
+      }
+
+      progressTracker.addLogMessage(
+          operationId,
+          String.format("✅ Successfully converted %d teams to DTOs", teamDTOs.size()),
+          "INFO");
+
+      // Save teams to database
+      progressTracker.addLogMessage(operationId, "💾 Saving teams to database...", "INFO");
+      int savedCount = 0;
+      for (TeamDTO teamDTO : teamDTOs) {
+        try {
+          saveOrUpdateTeam(teamDTO);
+          savedCount++;
+        } catch (Exception e) {
+          log.warn("Failed to save team: {}", teamDTO.getName(), e);
+          progressTracker.addLogMessage(
+              operationId,
+              String.format("⚠️ Failed to save team: %s - %s", teamDTO.getName(), e.getMessage()),
+              "WARN");
+        }
+      }
+
+      // Complete progress tracking
+      if (operationId != null) {
+        progressTracker.completeOperation(
+            operationId,
+            true,
+            String.format("Successfully synced %d teams", savedCount),
+            savedCount);
+      }
+
+      // Record success in health monitor
+      long totalTime = System.currentTimeMillis() - startTime;
+      healthMonitor.recordSuccess("Teams", totalTime, savedCount);
+
+      return SyncResult.success("Teams", savedCount, 0);
+
+    } catch (Exception e) {
+      log.error("❌ Teams sync failed", e);
+
+      // Fail progress tracking
+      if (operationId != null) {
+        progressTracker.addLogMessage(
+            operationId, "❌ Team sync failed: " + e.getMessage(), "ERROR");
+        progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
+      }
+
+      // Record failure in health monitor
+      healthMonitor.recordFailure("Teams", e.getMessage());
+
+      return SyncResult.failure("Teams", e.getMessage());
     }
   }
 
@@ -1961,5 +2076,232 @@ public class NotionSyncService {
         propertyName,
         relationships);
     return relationships;
+  }
+
+  // ==================== TEAM HELPER METHODS ====================
+
+  /**
+   * Converts a TeamPage from Notion to a TeamDTO.
+   *
+   * @param teamPage The TeamPage from Notion
+   * @return TeamDTO or null if conversion fails
+   */
+  private TeamDTO convertTeamPageToDTO(TeamPage teamPage) {
+    if (teamPage == null) {
+      return null;
+    }
+
+    try {
+      TeamDTO dto = new TeamDTO();
+
+      // Extract basic properties using existing methods
+      dto.setName(extractNameFromNotionPage(teamPage));
+      dto.setExternalId(teamPage.getId());
+      dto.setDescription(extractDescriptionFromNotionPage(teamPage));
+
+      // Extract wrestler names from Members property
+      String membersStr = extractStringPropertyFromNotionPage(teamPage, "Members");
+      if (membersStr != null && !membersStr.trim().isEmpty()) {
+        // Parse members - could be comma-separated or other format
+        String[] members = membersStr.split(",");
+        if (members.length >= 1) {
+          dto.setWrestler1Name(members[0].trim());
+        }
+        if (members.length >= 2) {
+          dto.setWrestler2Name(members[1].trim());
+        }
+      }
+
+      // Extract faction name if available
+      String factionName = extractFactionFromNotionPage(teamPage);
+      if (factionName != null && !factionName.trim().isEmpty()) {
+        dto.setFactionName(factionName);
+      }
+
+      // Extract status
+      String statusStr = extractStringPropertyFromNotionPage(teamPage, "Status");
+      if (statusStr != null && !statusStr.trim().isEmpty()) {
+        try {
+          dto.setStatus(TeamStatus.valueOf(statusStr.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+          log.warn(
+              "Invalid team status '{}' for team '{}', defaulting to ACTIVE",
+              statusStr,
+              dto.getName());
+          dto.setStatus(TeamStatus.ACTIVE);
+        }
+      } else {
+        dto.setStatus(TeamStatus.ACTIVE); // Default status
+      }
+
+      // Extract dates if available - convert string to Instant if needed
+      String formedDateStr = extractDatePropertyFromNotionPage(teamPage, "FormedDate");
+      if (formedDateStr != null && !formedDateStr.trim().isEmpty()) {
+        try {
+          dto.setFormedDate(Instant.parse(formedDateStr));
+        } catch (Exception e) {
+          log.warn("Failed to parse formed date '{}' for team '{}'", formedDateStr, dto.getName());
+        }
+      }
+
+      String disbandedDateStr = extractDatePropertyFromNotionPage(teamPage, "DisbandedDate");
+      if (disbandedDateStr != null && !disbandedDateStr.trim().isEmpty()) {
+        try {
+          dto.setDisbandedDate(Instant.parse(disbandedDateStr));
+        } catch (Exception e) {
+          log.warn(
+              "Failed to parse disbanded date '{}' for team '{}'", disbandedDateStr, dto.getName());
+        }
+      }
+
+      log.debug("Successfully converted team page '{}' to DTO", dto.getName());
+      return dto;
+
+    } catch (Exception e) {
+      log.error("Failed to convert team page to DTO", e);
+      return null;
+    }
+  }
+
+  /**
+   * Saves or updates a team in the database.
+   *
+   * @param dto The TeamDTO to save or update
+   */
+  private void saveOrUpdateTeam(TeamDTO dto) {
+    if (dto == null || dto.getName() == null || dto.getName().trim().isEmpty()) {
+      log.warn("Cannot save team: DTO is null or has no name");
+      return;
+    }
+
+    try {
+      // Try to find existing team by external ID first (most reliable)
+      Team existingTeam = null;
+      if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
+        existingTeam = teamService.getTeamByExternalId(dto.getExternalId()).orElse(null);
+      }
+
+      // If not found by external ID, try by name
+      if (existingTeam == null) {
+        existingTeam = teamService.getTeamByName(dto.getName()).orElse(null);
+      }
+
+      // Find wrestlers by name
+      Wrestler wrestler1 = null;
+      Wrestler wrestler2 = null;
+
+      if (dto.getWrestler1Name() != null && !dto.getWrestler1Name().trim().isEmpty()) {
+        wrestler1 = wrestlerService.findByName(dto.getWrestler1Name()).orElse(null);
+        if (wrestler1 == null) {
+          log.warn("Wrestler '{}' not found for team '{}'", dto.getWrestler1Name(), dto.getName());
+        }
+      }
+
+      if (dto.getWrestler2Name() != null && !dto.getWrestler2Name().trim().isEmpty()) {
+        wrestler2 = wrestlerService.findByName(dto.getWrestler2Name()).orElse(null);
+        if (wrestler2 == null) {
+          log.warn("Wrestler '{}' not found for team '{}'", dto.getWrestler2Name(), dto.getName());
+        }
+      }
+
+      // Both wrestlers are required for a team
+      if (wrestler1 == null || wrestler2 == null) {
+        String missingWrestlers =
+            (wrestler1 == null ? dto.getWrestler1Name() : "")
+                + (wrestler1 == null && wrestler2 == null ? ", " : "")
+                + (wrestler2 == null ? dto.getWrestler2Name() : "");
+        throw new RuntimeException(
+            "Cannot save team '"
+                + dto.getName()
+                + "': Missing required wrestlers: "
+                + missingWrestlers);
+      }
+
+      if (existingTeam != null) {
+        // Update existing team
+        log.debug("Updating existing team: {}", dto.getName());
+
+        existingTeam.setName(dto.getName());
+        existingTeam.setDescription(dto.getDescription());
+        existingTeam.setWrestler1(wrestler1);
+        existingTeam.setWrestler2(wrestler2);
+        existingTeam.setExternalId(dto.getExternalId());
+
+        if (dto.getStatus() != null) {
+          existingTeam.setStatus(dto.getStatus());
+        }
+
+        if (dto.getFormedDate() != null) {
+          existingTeam.setFormedDate(dto.getFormedDate());
+        }
+
+        if (dto.getDisbandedDate() != null) {
+          existingTeam.setDisbandedDate(dto.getDisbandedDate());
+        }
+
+        // Find and set faction if specified
+        if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
+          Faction faction = factionRepository.findByName(dto.getFactionName()).orElse(null);
+          existingTeam.setFaction(faction);
+          if (faction == null) {
+            log.warn("Faction '{}' not found for team '{}'", dto.getFactionName(), dto.getName());
+          }
+        }
+
+        teamRepository.saveAndFlush(existingTeam);
+        log.info("✅ Updated team: {}", dto.getName());
+
+      } else {
+        // Create new team using TeamService
+        log.debug("Creating new team: {}", dto.getName());
+
+        Long wrestler1Id = wrestler1.getId();
+        Long wrestler2Id = wrestler2.getId();
+        Long factionId = null;
+
+        // Find faction ID if specified
+        if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
+          Faction faction = factionRepository.findByName(dto.getFactionName()).orElse(null);
+          if (faction != null) {
+            factionId = faction.getId();
+          } else {
+            log.warn("Faction '{}' not found for team '{}'", dto.getFactionName(), dto.getName());
+          }
+        }
+
+        // Use TeamService to create the team (handles validation)
+        Optional<Team> createdTeam =
+            teamService.createTeam(
+                dto.getName(), dto.getDescription(), wrestler1Id, wrestler2Id, factionId);
+
+        if (createdTeam.isPresent()) {
+          Team newTeam = createdTeam.get();
+
+          // Set additional properties that TeamService doesn't handle
+          newTeam.setExternalId(dto.getExternalId());
+
+          if (dto.getStatus() != null) {
+            newTeam.setStatus(dto.getStatus());
+          }
+
+          if (dto.getFormedDate() != null) {
+            newTeam.setFormedDate(dto.getFormedDate());
+          }
+
+          if (dto.getDisbandedDate() != null) {
+            newTeam.setDisbandedDate(dto.getDisbandedDate());
+          }
+
+          teamRepository.saveAndFlush(newTeam);
+          log.info("✅ Created new team: {}", dto.getName());
+        } else {
+          log.warn("Failed to create team '{}' - TeamService validation failed", dto.getName());
+        }
+      }
+
+    } catch (Exception e) {
+      log.error("Failed to save team '{}': {}", dto.getName(), e.getMessage(), e);
+      throw new RuntimeException("Failed to save team: " + dto.getName(), e);
+    }
   }
 }

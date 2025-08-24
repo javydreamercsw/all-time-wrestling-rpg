@@ -1067,6 +1067,37 @@ public class NotionHandler {
     }
   }
 
+  /**
+   * Loads all teams from the Notion Teams database.
+   *
+   * @return List of all TeamPage objects from the Teams database
+   */
+  public List<TeamPage> loadAllTeams() {
+    log.debug("Loading all teams from Teams database");
+
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String teamDbId = getDatabaseId("Teams");
+    if (teamDbId == null) {
+      log.warn("Teams database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(client, teamDbId, "Team", this::mapPageToTeamPage);
+    } catch (Exception e) {
+      log.error("Failed to load all teams", e);
+      throw new RuntimeException("Failed to load teams from Notion: " + e.getMessage(), e);
+    }
+  }
+
   /** Static convenience method to load a team. */
   public static Optional<TeamPage> loadTeamStatic(@NonNull String teamName) {
     return getInstance().loadTeam(teamName);

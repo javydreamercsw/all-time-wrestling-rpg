@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,12 +12,14 @@ import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,6 +45,8 @@ class NotionSyncIntegrationTest {
   private NotionSyncProperties syncProperties;
   private SyncProgressTracker progressTracker;
   private SyncHealthMonitor healthMonitor;
+  private TeamService teamService;
+  private TeamRepository teamRepository;
 
   // Mock database services for testing
   private ShowService showService;
@@ -94,6 +99,10 @@ class NotionSyncIntegrationTest {
     // Initialize health monitor
     healthMonitor = new SyncHealthMonitor(syncProperties, progressTracker);
 
+    // Initialize team services (mocked for integration test)
+    teamService = mock(TeamService.class);
+    teamRepository = mock(TeamRepository.class);
+
     notionSyncService =
         new NotionSyncService(
             objectMapper,
@@ -107,7 +116,9 @@ class NotionSyncIntegrationTest {
             wrestlerRepository,
             seasonService,
             showTemplateService,
-            factionRepository);
+            factionRepository,
+            teamService,
+            teamRepository);
   }
 
   @Test
@@ -193,6 +204,8 @@ class NotionSyncIntegrationTest {
       SyncProgressTracker invalidProgressTracker = new SyncProgressTracker();
       SyncHealthMonitor invalidHealthMonitor =
           new SyncHealthMonitor(syncProperties, invalidProgressTracker);
+      TeamService invalidTeamService = mock(TeamService.class);
+      TeamRepository invalidTeamRepository = mock(TeamRepository.class);
       NotionSyncService invalidSyncService =
           new NotionSyncService(
               new ObjectMapper(),
@@ -206,7 +219,9 @@ class NotionSyncIntegrationTest {
               wrestlerRepository,
               seasonService,
               showTemplateService,
-              factionRepository);
+              factionRepository,
+              invalidTeamService,
+              invalidTeamRepository);
 
       // This should handle the error gracefully
       SyncResult result = invalidSyncService.syncShows();
