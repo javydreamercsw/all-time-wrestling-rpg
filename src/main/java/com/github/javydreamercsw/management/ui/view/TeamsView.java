@@ -1,5 +1,6 @@
-package com.github.javydreamercsw.base.ui.view;
+package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.base.ui.view.MainLayout;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.dto.TeamDTO;
 import com.github.javydreamercsw.management.service.team.TeamService;
@@ -38,10 +39,11 @@ public class TeamsView extends VerticalLayout {
   private final Grid<TeamDTO> grid;
   private final TextField searchField;
 
-  // TODO: Add TeamFormDialog when implemented
+  private TeamFormDialog teamFormDialog;
 
-  public TeamsView(TeamService teamService) {
+  public TeamsView(TeamService teamService, TeamFormDialog teamFormDialog) {
     this.teamService = teamService;
+    this.teamFormDialog = teamFormDialog;
     this.grid = new Grid<>(TeamDTO.class, false);
     this.searchField = new TextField();
 
@@ -181,8 +183,14 @@ public class TeamsView extends VerticalLayout {
   }
 
   private void openTeamDialog(TeamDTO team) {
-    // TODO: Implement TeamFormDialog
-    showErrorNotification("Team form dialog not yet implemented");
+    teamFormDialog.setTeam(team);
+    teamFormDialog.addOpenedChangeListener(
+        e -> {
+          if (!e.isOpened()) {
+            updateGrid();
+          }
+        });
+    teamFormDialog.open();
   }
 
   private void confirmDeleteTeam(TeamDTO team) {

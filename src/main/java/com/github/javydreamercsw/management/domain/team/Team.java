@@ -124,7 +124,9 @@ public class Team extends AbstractEntity<Long> {
 
   /** Get both wrestlers as a formatted string. */
   public String getMemberNames() {
-    return wrestler1.getName() + " & " + wrestler2.getName();
+    String name1 = wrestler1 != null ? wrestler1.getName() : "null";
+    String name2 = wrestler2 != null ? wrestler2.getName() : "null";
+    return name1 + " & " + name2;
   }
 
   /** Get display name with status. */

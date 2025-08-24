@@ -74,6 +74,16 @@ public class WrestlerService {
     return wrestlerRepository.findAll();
   }
 
+  /** Get wrestler by ID. */
+  public Optional<Wrestler> getWrestlerById(Long id) {
+    return wrestlerRepository.findById(id);
+  }
+
+  /** Get all wrestlers (alias for findAll for UI compatibility). */
+  public List<Wrestler> getAllWrestlers() {
+    return findAll();
+  }
+
   @Cacheable(value = WRESTLERS_CACHE, key = "'name:' + #name")
   public Optional<Wrestler> findByName(String name) {
     return wrestlerRepository.findByName(name);

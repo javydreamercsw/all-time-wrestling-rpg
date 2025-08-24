@@ -35,6 +35,12 @@ public class FactionService {
     return factionRepository.findAll();
   }
 
+  /** Get all factions (alias for findAll for UI compatibility). */
+  @Transactional(readOnly = true)
+  public List<Faction> getAllFactions() {
+    return findAll();
+  }
+
   /** Get all factions with pagination. */
   @Transactional(readOnly = true)
   public Page<Faction> getAllFactions(Pageable pageable) {
