@@ -74,6 +74,8 @@ public class NotionSyncService {
   private final NotionSyncProperties syncProperties;
   private final SyncProgressTracker progressTracker;
   private final SyncHealthMonitor healthMonitor;
+  private final RetryService retryService;
+  private final CircuitBreakerService circuitBreakerService;
 
   // Database services for persisting synced data
   private final ShowService showService;
@@ -123,6 +125,49 @@ public class NotionSyncService {
     }
 
     try {
+      // Execute with circuit breaker and retry logic
+      return circuitBreakerService.execute(
+          "shows",
+          () ->
+              retryService.executeWithRetry(
+                  "shows",
+                  (attemptNumber) -> {
+                    log.debug("Shows sync attempt {}", attemptNumber);
+                    return performShowsSync(operationId, startTime);
+                  }));
+
+    } catch (CircuitBreakerService.CircuitBreakerOpenException e) {
+      log.warn("❌ Shows sync rejected by circuit breaker: {}", e.getMessage());
+
+      if (operationId != null) {
+        progressTracker.failOperation(operationId, "Circuit breaker open: " + e.getMessage());
+      }
+
+      healthMonitor.recordFailure("Shows", "Circuit breaker open");
+      return SyncResult.failure("Shows", "Service temporarily unavailable - circuit breaker open");
+
+    } catch (Exception e) {
+      long totalTime = System.currentTimeMillis() - startTime;
+      log.error("❌ Failed to synchronize shows from Notion after {}ms", totalTime, e);
+
+      // Fail progress tracking
+      if (operationId != null) {
+        progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
+      }
+
+      // Record failure in health monitor
+      healthMonitor.recordFailure("Shows", e.getMessage());
+
+      return SyncResult.failure("Shows", e.getMessage());
+    }
+  }
+
+  /**
+   * Performs the actual shows sync operation with enhanced error handling. This method is called by
+   * the retry and circuit breaker logic.
+   */
+  private SyncResult performShowsSync(String operationId, long startTime) throws Exception {
+    try {
       // Create backup if enabled
       if (syncProperties.isBackupEnabled()) {
         log.info("📦 Creating backup...");
@@ -139,9 +184,11 @@ public class NotionSyncService {
         progressTracker.updateProgress(operationId, 2, "Retrieving shows from Notion database...");
         progressTracker.addLogMessage(operationId, "📥 Retrieving shows from Notion...", "INFO");
       }
+
       List<ShowPage> notionShows = getAllShowsFromNotion();
       long retrieveTime = System.currentTimeMillis() - startTime;
       log.info("✅ Retrieved {} shows from Notion in {}ms", notionShows.size(), retrieveTime);
+
       if (operationId != null) {
         progressTracker.addLogMessage(
             operationId,
@@ -153,79 +200,54 @@ public class NotionSyncService {
       // Convert to DTOs using parallel processing
       log.info("🔄 Converting shows to DTOs...");
       if (operationId != null) {
-        progressTracker.updateProgress(
-            operationId,
-            3,
-            String.format("Converting %d shows to data format...", notionShows.size()));
+        progressTracker.updateProgress(operationId, 3, "Converting shows to DTOs...");
         progressTracker.addLogMessage(operationId, "🔄 Converting shows to DTOs...", "INFO");
       }
-      long conversionStart = System.currentTimeMillis();
+
       List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows);
-      long conversionTime = System.currentTimeMillis() - conversionStart;
-      log.info("✅ Converted {} shows to DTOs in {}ms", showDTOs.size(), conversionTime);
+      long convertTime = System.currentTimeMillis() - startTime - retrieveTime;
+      log.info("✅ Converted {} shows to DTOs in {}ms", showDTOs.size(), convertTime);
+
       if (operationId != null) {
         progressTracker.addLogMessage(
             operationId,
-            String.format("✅ Converted %d shows to DTOs in %dms", showDTOs.size(), conversionTime),
+            String.format("✅ Converted %d shows to DTOs in %dms", showDTOs.size(), convertTime),
             "SUCCESS");
       }
 
-      // Save to database only (no JSON file writing)
-      log.info("🗄️ Saving shows to database...");
+      // Save to database
+      log.info("💾 Saving shows to database...");
       if (operationId != null) {
-        progressTracker.updateProgress(
-            operationId, 4, String.format("Saving %d shows to database...", showDTOs.size()));
-        progressTracker.addLogMessage(operationId, "🗄️ Saving shows to database...", "INFO");
+        progressTracker.updateProgress(operationId, 4, "Saving shows to database...");
+        progressTracker.addLogMessage(operationId, "💾 Saving shows to database...", "INFO");
       }
-      long dbStart = System.currentTimeMillis();
+
       int savedCount = saveShowsToDatabase(showDTOs);
-      long dbTime = System.currentTimeMillis() - dbStart;
-      log.info("✅ Saved {} shows to database in {}ms", savedCount, dbTime);
-      if (operationId != null) {
-        progressTracker.addLogMessage(
-            operationId,
-            String.format("✅ Saved %d shows to database in %dms", savedCount, dbTime),
-            "SUCCESS");
-      }
-
       long totalTime = System.currentTimeMillis() - startTime;
-      log.info(
-          "🎉 Successfully synchronized {} shows to database in {}ms total",
-          showDTOs.size(),
-          totalTime);
 
-      // Complete progress tracking
+      log.info(
+          "🎉 Successfully synchronized {} shows to database in {}ms total", savedCount, totalTime);
+
       if (operationId != null) {
         progressTracker.addLogMessage(
             operationId,
             String.format(
-                "🎉 Successfully synchronized %d shows in %dms total", showDTOs.size(), totalTime),
+                "🎉 Successfully synchronized %d shows in %dms total", savedCount, totalTime),
             "SUCCESS");
         progressTracker.completeOperation(
             operationId,
             true,
-            String.format("Successfully synced %d shows in %dms", showDTOs.size(), totalTime),
-            showDTOs.size());
+            String.format("Successfully synced %d shows", savedCount),
+            savedCount);
       }
 
       // Record success in health monitor
-      healthMonitor.recordSuccess("Shows", totalTime, showDTOs.size());
-
-      return SyncResult.success("Shows", showDTOs.size(), 0);
+      healthMonitor.recordSuccess("Shows", totalTime, savedCount);
+      return SyncResult.success("Shows", savedCount, 0);
 
     } catch (Exception e) {
-      long totalTime = System.currentTimeMillis() - startTime;
-      log.error("❌ Failed to synchronize shows from Notion after {}ms", totalTime, e);
-
-      // Fail progress tracking
-      if (operationId != null) {
-        progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
-      }
-
-      // Record failure in health monitor
-      healthMonitor.recordFailure("Shows", e.getMessage());
-
-      return SyncResult.failure("Shows", e.getMessage());
+      // Re-throw to be handled by retry/circuit breaker logic
+      throw new RuntimeException("Shows sync operation failed: " + e.getMessage(), e);
     }
   }
 
@@ -816,13 +838,25 @@ public class NotionSyncService {
    * @return Number of shows successfully saved/updated
    */
   private int saveShowsToDatabase(List<ShowDTO> showDTOs) {
-    log.info("Starting database persistence for {} shows", showDTOs.size());
+    return saveShowsToDatabaseWithBatching(showDTOs, 50); // Use batch size of 50
+  }
+
+  /**
+   * Enhanced method to save shows to database with batch processing and error recovery. Processes
+   * shows in batches to handle large datasets and provides partial success capability.
+   */
+  private int saveShowsToDatabaseWithBatching(List<ShowDTO> showDTOs, int batchSize) {
+    log.info(
+        "Starting database persistence for {} shows with batch size {}",
+        showDTOs.size(),
+        batchSize);
 
     // Cache lookups for performance (same as DataInitializer) with null safety
     Map<String, ShowType> showTypes = new HashMap<>();
     Map<String, Season> seasons = new HashMap<>();
     Map<String, ShowTemplate> templates = new HashMap<>();
 
+    // Load reference data with error handling
     try {
       List<ShowType> showTypeList = showTypeService.findAll();
       if (showTypeList != null) {
@@ -852,135 +886,186 @@ public class NotionSyncService {
 
     int savedCount = 0;
     int skippedCount = 0;
+    int totalBatches = (int) Math.ceil((double) showDTOs.size() / batchSize);
 
-    for (ShowDTO dto : showDTOs) {
+    // Process shows in batches for better error recovery
+    for (int batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      int startIndex = batchIndex * batchSize;
+      int endIndex = Math.min(startIndex + batchSize, showDTOs.size());
+      List<ShowDTO> batch = showDTOs.subList(startIndex, endIndex);
+
+      log.debug("Processing batch {}/{} ({} shows)", batchIndex + 1, totalBatches, batch.size());
+
       try {
-        // Find show type (required) - handle "N/A" case with smart mapping
-        String showTypeName = dto.getShowType();
-        if ("N/A".equals(showTypeName) || showTypeName == null || showTypeName.trim().isEmpty()) {
-          // Smart mapping based on show name patterns
-          String showName = dto.getName().toLowerCase();
-          if (showName.contains("continuum") || showName.contains("timeless")) {
-            showTypeName = "Weekly"; // These are weekly shows
-            log.debug("Mapped show '{}' to Weekly show type", dto.getName());
-          } else {
-            // For other shows, try to find a default show type
-            if (showTypes.containsKey("PLE")) {
-              showTypeName = "PLE"; // Assume premium live events for others
-              log.debug("Mapped show '{}' to PLE show type", dto.getName());
-            } else if (!showTypes.isEmpty()) {
-              showTypeName = showTypes.keySet().iterator().next();
-              log.debug("Using default show type '{}' for show: {}", showTypeName, dto.getName());
-            }
-          }
-        }
-
-        ShowType type = showTypes.get(showTypeName);
-        if (type == null) {
-          log.warn(
-              "Show type not found: {} for show: {} - skipping (available types: {})",
-              showTypeName,
-              dto.getName(),
-              showTypes.keySet());
-          skippedCount++;
-          continue;
-        }
-
-        // Smart duplicate handling using external ID (allows multiple shows with same name)
-        Show show = null;
-        boolean isNewShow = true;
-
-        // First, try to find by external ID (most reliable for sync operations)
-        if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
-          show = showService.findByExternalId(dto.getExternalId()).orElse(null);
-          if (show != null) {
-            isNewShow = false;
-            log.debug(
-                "Found existing show by external ID: {} for show: {}",
-                dto.getExternalId(),
-                dto.getName());
-          }
-        }
-
-        // If not found by external ID, create new show
-        if (show == null) {
-          show = new Show();
-          isNewShow = true;
-          log.debug(
-              "Creating new show: {} with external ID: {}", dto.getName(), dto.getExternalId());
-        }
-
-        // Set basic properties
-        show.setName(dto.getName());
-        show.setDescription(dto.getDescription());
-        show.setType(type);
-        show.setExternalId(dto.getExternalId()); // Set external ID for future sync operations
-
-        // Set show date if provided
-        if (dto.getShowDate() != null && !dto.getShowDate().trim().isEmpty()) {
+        // Process each show in the batch
+        for (ShowDTO dto : batch) {
           try {
-            show.setShowDate(LocalDate.parse(dto.getShowDate()));
-          } catch (Exception e) {
-            log.warn("Invalid date format for show {}: {}", dto.getName(), dto.getShowDate());
-          }
-        }
-
-        // Set season if provided - handle UUID case
-        if (dto.getSeasonName() != null && !dto.getSeasonName().trim().isEmpty()) {
-          String seasonIdentifier = dto.getSeasonName();
-          Season season = seasons.get(seasonIdentifier);
-
-          // If not found by name and looks like UUID, skip with debug message
-          if (season == null) {
-            if (seasonIdentifier.matches("[0-9a-fA-F-]{36}")) {
-              log.debug(
-                  "Season UUID found but not resolved: {} for show: {} - skipping season"
-                      + " assignment",
-                  seasonIdentifier,
-                  dto.getName());
+            if (processSingleShow(dto, showTypes, seasons, templates)) {
+              savedCount++;
             } else {
-              log.warn(
-                  "Season not found: {} for show: {} (available: {})",
-                  seasonIdentifier,
-                  dto.getName(),
-                  seasons.keySet());
+              skippedCount++;
             }
-          } else {
-            show.setSeason(season);
+          } catch (Exception e) {
+            log.warn(
+                "Failed to process show '{}' in batch {}: {}",
+                dto.getName(),
+                batchIndex + 1,
+                e.getMessage());
+            skippedCount++;
           }
         }
-
-        // Set template if provided
-        if (dto.getTemplateName() != null && !dto.getTemplateName().trim().isEmpty()) {
-          ShowTemplate template = templates.get(dto.getTemplateName());
-          if (template != null) {
-            show.setTemplate(template);
-          } else {
-            log.warn("Template not found: {} for show: {}", dto.getTemplateName(), dto.getName());
-          }
-        }
-
-        // Save to database
-        showService.save(show);
-        savedCount++;
 
         log.debug(
-            "{} show: {} (Date: {}, Season: {}, Template: {})",
-            isNewShow ? "Saved new" : "Updated existing",
-            show.getName(),
-            show.getShowDate(),
-            show.getSeason() != null ? show.getSeason().getName() : "None",
-            show.getTemplate() != null ? show.getTemplate().getName() : "None");
+            "Completed batch {}/{}: {} shows processed",
+            batchIndex + 1,
+            totalBatches,
+            batch.size());
 
       } catch (Exception e) {
-        log.error("Failed to save show: {} - {}", dto.getName(), e.getMessage());
-        skippedCount++;
+        log.error(
+            "Failed to process entire batch {}/{}: {}",
+            batchIndex + 1,
+            totalBatches,
+            e.getMessage());
+        skippedCount += batch.size();
       }
     }
 
     log.info(
-        "Database persistence completed: {} saved/updated, {} skipped", savedCount, skippedCount);
+        "Database persistence completed: {} saved, {} skipped out of {} total",
+        savedCount,
+        skippedCount,
+        showDTOs.size());
     return savedCount;
+  }
+
+  /** Process a single show with error handling. */
+  private boolean processSingleShow(
+      ShowDTO dto,
+      Map<String, ShowType> showTypes,
+      Map<String, Season> seasons,
+      Map<String, ShowTemplate> templates) {
+    try {
+      // Find show type (required) - handle "N/A" case with smart mapping
+      String showTypeName = dto.getShowType();
+      if ("N/A".equals(showTypeName) || showTypeName == null || showTypeName.trim().isEmpty()) {
+        // Smart mapping based on show name patterns
+        String showName = dto.getName().toLowerCase();
+        if (showName.contains("continuum") || showName.contains("timeless")) {
+          showTypeName = "Weekly"; // These are weekly shows
+          log.debug("Mapped show '{}' to Weekly show type", dto.getName());
+        } else {
+          // For other shows, try to find a default show type
+          if (showTypes.containsKey("PLE")) {
+            showTypeName = "PLE"; // Assume premium live events for others
+            log.debug("Mapped show '{}' to PLE show type", dto.getName());
+          } else if (!showTypes.isEmpty()) {
+            showTypeName = showTypes.keySet().iterator().next();
+            log.debug("Using default show type '{}' for show: {}", showTypeName, dto.getName());
+          }
+        }
+      }
+
+      ShowType type = showTypes.get(showTypeName);
+      if (type == null) {
+        log.warn(
+            "Show type not found: {} for show: {} - skipping (available types: {})",
+            showTypeName,
+            dto.getName(),
+            showTypes.keySet());
+        return false;
+      }
+
+      // Smart duplicate handling using external ID (allows multiple shows with same name)
+      Show show = null;
+      boolean isNewShow = true;
+
+      // First, try to find by external ID (most reliable for sync operations)
+      if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
+        show = showService.findByExternalId(dto.getExternalId()).orElse(null);
+        if (show != null) {
+          isNewShow = false;
+          log.debug(
+              "Found existing show by external ID: {} for show: {}",
+              dto.getExternalId(),
+              dto.getName());
+        }
+      }
+
+      // If not found by external ID, create new show
+      if (show == null) {
+        show = new Show();
+        isNewShow = true;
+        log.debug("Creating new show: {} with external ID: {}", dto.getName(), dto.getExternalId());
+      }
+
+      // Set basic properties
+      show.setName(dto.getName());
+      show.setDescription(dto.getDescription());
+      show.setType(type);
+      show.setExternalId(dto.getExternalId()); // Set external ID for future sync operations
+
+      // Set show date if provided
+      if (dto.getShowDate() != null && !dto.getShowDate().trim().isEmpty()) {
+        try {
+          show.setShowDate(LocalDate.parse(dto.getShowDate()));
+        } catch (Exception e) {
+          log.warn("Invalid date format for show {}: {}", dto.getName(), dto.getShowDate());
+        }
+      }
+
+      // Set season if provided - handle UUID case
+      if (dto.getSeasonName() != null && !dto.getSeasonName().trim().isEmpty()) {
+        String seasonIdentifier = dto.getSeasonName();
+        Season season = seasons.get(seasonIdentifier);
+
+        // If not found by name and looks like UUID, skip with debug message
+        if (season == null) {
+          if (seasonIdentifier.matches("[0-9a-fA-F-]{36}")) {
+            log.debug(
+                "Season UUID found but not resolved: {} for show: {} - skipping season"
+                    + " assignment",
+                seasonIdentifier,
+                dto.getName());
+          } else {
+            log.warn(
+                "Season not found: {} for show: {} (available: {})",
+                seasonIdentifier,
+                dto.getName(),
+                seasons.keySet());
+          }
+        } else {
+          show.setSeason(season);
+        }
+      }
+
+      // Set template if provided
+      if (dto.getTemplateName() != null && !dto.getTemplateName().trim().isEmpty()) {
+        ShowTemplate template = templates.get(dto.getTemplateName());
+        if (template != null) {
+          show.setTemplate(template);
+        } else {
+          log.warn("Template not found: {} for show: {}", dto.getTemplateName(), dto.getName());
+        }
+      }
+
+      // Save to database
+      showService.save(show);
+
+      log.debug(
+          "{} show: {} (Date: {}, Season: {}, Template: {})",
+          isNewShow ? "Saved new" : "Updated existing",
+          show.getName(),
+          show.getShowDate(),
+          show.getSeason() != null ? show.getSeason().getName() : "None",
+          show.getTemplate() != null ? show.getTemplate().getName() : "None");
+
+      return true;
+
+    } catch (Exception e) {
+      log.error("Failed to save show: {} - {}", dto.getName(), e.getMessage());
+      return false;
+    }
   }
 
   /**

@@ -42,6 +42,8 @@ class NotionSyncServiceTeamsTest {
   @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
+  @Mock private RetryService retryService;
+  @Mock private CircuitBreakerService circuitBreakerService;
   @Mock private ShowService showService;
   @Mock private ShowTypeService showTypeService;
   @Mock private WrestlerService wrestlerService;
@@ -63,6 +65,8 @@ class NotionSyncServiceTeamsTest {
             syncProperties,
             progressTracker,
             healthMonitor,
+            retryService,
+            circuitBreakerService,
             showService,
             showTypeService,
             wrestlerService,
