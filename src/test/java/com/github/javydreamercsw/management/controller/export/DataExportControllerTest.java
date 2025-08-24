@@ -115,8 +115,17 @@ class DataExportControllerTest {
 
     // Assert
     assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-    assertTrue(response.getBody().contains("Failed to export shows"));
-    assertTrue(response.getBody().contains("Database error"));
+    assertNotNull(response.getBody());
+
+    // Make test more robust by checking for key parts of the error message
+    // Updated to match the new error message format (changed due to AI suggestion in GitHub)
+    String responseBody = response.getBody();
+    assertTrue(
+        responseBody.contains("Failed to export shows"),
+        "Response should contain 'Failed to export shows', but was: " + responseBody);
+    assertTrue(
+        responseBody.contains("due to an internal error"),
+        "Response should contain 'due to an internal error', but was: " + responseBody);
   }
 
   @Test
@@ -177,8 +186,15 @@ class DataExportControllerTest {
 
     // Assert
     assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-    assertTrue(response.getBody().contains("Failed to export show templates"));
-    assertTrue(response.getBody().contains("Database error"));
+    // Make test more robust by checking for key parts of the error message
+    // Updated to match the new consistent error message format
+    String responseBody = response.getBody();
+    assertTrue(
+        responseBody.contains("Failed to export show templates"),
+        "Response should contain 'Failed to export show templates', but was: " + responseBody);
+    assertTrue(
+        responseBody.contains("due to an internal error"),
+        "Response should contain 'due to an internal error', but was: " + responseBody);
   }
 
   @Test

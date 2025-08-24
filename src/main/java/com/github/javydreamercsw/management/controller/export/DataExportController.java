@@ -128,8 +128,8 @@ public class DataExportController {
       return ResponseEntity.ok(message);
 
     } catch (Exception e) {
-      String errorMessage = "❌ Failed to export show templates: " + e.getMessage();
-      log.error(errorMessage, e);
+      String errorMessage = "❌ Failed to export show templates due to an internal error.";
+      log.error("Failed to export show templates.", e);
       return ResponseEntity.internalServerError().body(errorMessage);
     }
   }
