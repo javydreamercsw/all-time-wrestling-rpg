@@ -3,10 +3,12 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
@@ -24,10 +26,12 @@ public class WrestlerService {
 
   private final WrestlerRepository wrestlerRepository;
   private final Clock clock;
+  private final InjuryService injuryService;
 
-  WrestlerService(WrestlerRepository wrestlerRepository, Clock clock) {
+  WrestlerService(WrestlerRepository wrestlerRepository, Clock clock, InjuryService injuryService) {
     this.wrestlerRepository = wrestlerRepository;
     this.clock = clock;
+    this.injuryService = injuryService;
   }
 
   public void createCard(@NonNull String name) {
@@ -125,9 +129,23 @@ public class WrestlerService {
             wrestler -> {
               boolean injuryOccurred = wrestler.addBump();
               if (injuryOccurred) {
-                // TODO: Handle injury creation when injury system is implemented
-                // For now, just log it
-                System.out.println("Wrestler " + wrestler.getName() + " suffered an injury!");
+                // Create injury using the injury service
+                Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestlerId);
+                if (injury.isPresent()) {
+                  System.out.println(
+                      "Wrestler "
+                          + wrestler.getName()
+                          + " suffered an injury: "
+                          + injury.get().getName()
+                          + " ("
+                          + injury.get().getSeverity().getDisplayName()
+                          + ")");
+                } else {
+                  System.out.println(
+                      "Wrestler "
+                          + wrestler.getName()
+                          + " suffered an injury, but failed to create injury record!");
+                }
               }
               return wrestlerRepository.saveAndFlush(wrestler);
             });

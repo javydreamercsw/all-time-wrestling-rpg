@@ -122,8 +122,7 @@ public class Wrestler extends AbstractEntity<Long> {
 
   /** Get effective starting health (base health - bumps - injury penalties) */
   public Integer getEffectiveStartingHealth() {
-    int effective = startingHealth - bumps;
-    // TODO: Subtract injury penalties when injury system is implemented
+    int effective = startingHealth - bumps - getTotalInjuryPenalty();
     return Math.max(1, effective); // Never go below 1
   }
 
@@ -144,15 +143,15 @@ public class Wrestler extends AbstractEntity<Long> {
   }
 
   /**
-   * Add bump tokens, converting to injury if needed
+   * Add bump tokens, converting to injury if needed. When 3 bumps are reached, they are reset to 0
+   * and an injury should be created by the calling service (typically WrestlerService.addBump()).
    *
    * @return true if injury occurred (3 bumps reached)
    */
   public boolean addBump() {
     bumps++;
     if (bumps >= 3) {
-      // TODO: Convert to injury when injury system is implemented
-      bumps = 0;
+      bumps = 0; // Reset bumps - injury creation handled by service layer
       return true; // Indicates injury occurred
     }
     return false;

@@ -2,13 +2,17 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -31,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WrestlerServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private InjuryService injuryService;
 
   private Clock fixedClock;
   private WrestlerService wrestlerService;
@@ -39,7 +44,7 @@ class WrestlerServiceTest {
   @BeforeEach
   void setUp() {
     fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
-    wrestlerService = new WrestlerService(wrestlerRepository, fixedClock);
+    wrestlerService = new WrestlerService(wrestlerRepository, fixedClock, injuryService);
 
     testWrestler = new Wrestler();
     testWrestler.setId(1L);
@@ -121,6 +126,12 @@ class WrestlerServiceTest {
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(testWrestler));
     when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(testWrestler);
 
+    // Mock injury creation
+    Injury mockInjury = new Injury();
+    mockInjury.setName("Test Injury");
+    mockInjury.setSeverity(InjurySeverity.MINOR);
+    when(injuryService.createInjuryFromBumps(anyLong())).thenReturn(Optional.of(mockInjury));
+
     // When
     Optional<Wrestler> result = wrestlerService.addBump(1L);
 
@@ -128,6 +139,7 @@ class WrestlerServiceTest {
     assertThat(result).isPresent();
     assertThat(result.get().getBumps()).isEqualTo(0); // Reset after injury
     verify(wrestlerRepository).saveAndFlush(testWrestler);
+    verify(injuryService).createInjuryFromBumps(1L); // Verify injury service was called
   }
 
   @Test

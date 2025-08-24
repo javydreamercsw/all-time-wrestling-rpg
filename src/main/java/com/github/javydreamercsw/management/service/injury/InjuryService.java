@@ -74,8 +74,8 @@ public class InjuryService {
               wrestler.setBumps(0);
               wrestlerRepository.saveAndFlush(wrestler);
 
-              // Create random injury
-              InjurySeverity severity = getRandomInjurySeverity();
+              // Create injury with severity based on wrestler tier
+              InjurySeverity severity = getRandomInjurySeverityForWrestler(wrestler);
               String injuryName = generateInjuryName(severity);
               String description = generateInjuryDescription(severity);
 
@@ -84,7 +84,7 @@ public class InjuryService {
                       injuryName,
                       description,
                       severity,
-                      "Generated from bump accumulation")
+                      "Generated from bump accumulation (tier: " + wrestler.getTier().name() + ")")
                   .orElse(null);
             });
   }
@@ -246,6 +246,61 @@ public class InjuryService {
     if (roll <= 80) return InjurySeverity.MODERATE; // 30% chance
     if (roll <= 95) return InjurySeverity.SEVERE; // 15% chance
     return InjurySeverity.CRITICAL; // 5% chance
+  }
+
+  /**
+   * Generate random injury severity based on wrestler tier. Higher tier wrestlers are more
+   * resilient and get less severe injuries.
+   */
+  private InjurySeverity getRandomInjurySeverityForWrestler(Wrestler wrestler) {
+    int roll = random.nextInt(100) + 1;
+
+    // Adjust probabilities based on wrestler tier
+    // Higher tier wrestlers are more experienced and resilient
+    return switch (wrestler.getTier()) {
+      case ROOKIE -> {
+        // Rookies are more prone to severe injuries (inexperienced)
+        if (roll <= 35) yield InjurySeverity.MINOR; // 35% chance
+        if (roll <= 65) yield InjurySeverity.MODERATE; // 30% chance
+        if (roll <= 90) yield InjurySeverity.SEVERE; // 25% chance
+        yield InjurySeverity.CRITICAL; // 10% chance
+      }
+      case RISER -> {
+        // Risers have some experience but still learning
+        if (roll <= 40) yield InjurySeverity.MINOR; // 40% chance
+        if (roll <= 70) yield InjurySeverity.MODERATE; // 30% chance
+        if (roll <= 92) yield InjurySeverity.SEVERE; // 22% chance
+        yield InjurySeverity.CRITICAL; // 8% chance
+      }
+      case CONTENDER -> {
+        // Contenders are experienced and more careful
+        if (roll <= 45) yield InjurySeverity.MINOR; // 45% chance
+        if (roll <= 75) yield InjurySeverity.MODERATE; // 30% chance
+        if (roll <= 94) yield InjurySeverity.SEVERE; // 19% chance
+        yield InjurySeverity.CRITICAL; // 6% chance
+      }
+      case INTERTEMPORAL_TIER -> {
+        // Elite wrestlers know how to protect themselves
+        if (roll <= 55) yield InjurySeverity.MINOR; // 55% chance
+        if (roll <= 80) yield InjurySeverity.MODERATE; // 25% chance
+        if (roll <= 96) yield InjurySeverity.SEVERE; // 16% chance
+        yield InjurySeverity.CRITICAL; // 4% chance
+      }
+      case MAIN_EVENTER -> {
+        // Main eventers are very experienced
+        if (roll <= 60) yield InjurySeverity.MINOR; // 60% chance
+        if (roll <= 85) yield InjurySeverity.MODERATE; // 25% chance
+        if (roll <= 97) yield InjurySeverity.SEVERE; // 12% chance
+        yield InjurySeverity.CRITICAL; // 3% chance
+      }
+      case ICON -> {
+        // Icons are legends who know how to work safely
+        if (roll <= 65) yield InjurySeverity.MINOR; // 65% chance
+        if (roll <= 88) yield InjurySeverity.MODERATE; // 23% chance
+        if (roll <= 98) yield InjurySeverity.SEVERE; // 10% chance
+        yield InjurySeverity.CRITICAL; // 2% chance
+      }
+    };
   }
 
   /** Generate injury name based on severity. */

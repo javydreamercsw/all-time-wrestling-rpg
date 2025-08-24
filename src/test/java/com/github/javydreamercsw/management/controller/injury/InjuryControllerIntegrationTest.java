@@ -88,7 +88,8 @@ class InjuryControllerIntegrationTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.wrestler.name").value("Test Wrestler"))
         .andExpect(jsonPath("$.isActive").value(true))
-        .andExpect(jsonPath("$.injuryNotes").value("Generated from bump accumulation"));
+        .andExpect(
+            jsonPath("$.injuryNotes").value("Generated from bump accumulation (tier: CONTENDER)"));
   }
 
   @Test
