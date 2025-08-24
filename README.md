@@ -52,6 +52,27 @@ mvn org.owasp:dependency-check-maven:check -Dformats=HTML,JSON,SARIF
 - Regular dependency updates are encouraged
 - Weekly automated vulnerability scanning
 
+## Code Quality
+
+### Code Coverage
+This project maintains a **90% code coverage goal** using JaCoCo:
+
+```bash
+# Run tests with coverage (requires Java 17)
+JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home mvn clean verify
+
+# View coverage report
+open target/site/jacoco/index.html
+```
+
+For detailed coverage guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md#code-coverage).
+
+### Code Formatting
+```bash
+# Apply code formatting
+mvn spotless:apply
+```
+
 ## Development Workflow
 
 ### Pull Request Labeling
