@@ -28,8 +28,8 @@ echo 'export NOTION_TOKEN=your_token_here' >> ~/.bashrc
 ```bash
 # Test token validity
 curl -H "Authorization: Bearer $NOTION_TOKEN" \
-     -H "Notion-Version: 2022-06-28" \
-     https://api.notion.com/v1/users/me
+	-H "Notion-Version: 2022-06-28" \
+	https://api.notion.com/v1/users/me
 ```
 
 ### 2. Network Connectivity Issues
@@ -65,9 +65,9 @@ curl -I https://api.notion.com/v1/users/me
 **Configuration:**
 ```yaml
 notion:
-  sync:
-    scheduler:
-      interval: 3600000  # Increase interval (1 hour)
+sync:
+	scheduler:
+	interval: 3600000  # Increase interval (1 hour)
 ```
 
 ### 4. Database Connection Issues
@@ -153,14 +153,14 @@ grep "timeout\|connection" logs/application.log
 
 ```yaml
 notion:
-  sync:
-    enabled: true
-    entities: ["shows"]  # Sync only needed entities
-    scheduler:
-      enabled: true
-      interval: 7200000  # 2 hours
-    backup:
-      enabled: false     # Disable if not needed
+sync:
+	enabled: true
+	entities: ["shows"]  # Sync only needed entities
+	scheduler:
+	enabled: true
+	interval: 7200000  # 2 hours
+	backup:
+	enabled: false     # Disable if not needed
 ```
 
 ### 2. Database Optimization

@@ -200,7 +200,6 @@ public class NotionSyncService {
       }
 
       // Record success in health monitor
-      long totalTime = System.currentTimeMillis() - startTime;
       healthMonitor.recordSuccess("Shows", totalTime, showDTOs.size());
 
       return SyncResult.success("Shows", showDTOs.size(), 0);
@@ -301,6 +300,9 @@ public class NotionSyncService {
             templateDTOs.size());
       }
 
+      // Record success in health monitor
+      healthMonitor.recordSuccess("Show Templates", totalTime, templateDTOs.size());
+
       return SyncResult.success("Show Templates", templateDTOs.size(), 0);
 
     } catch (Exception e) {
@@ -310,6 +312,9 @@ public class NotionSyncService {
       if (operationId != null) {
         progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
       }
+
+      // Record failure in health monitor
+      healthMonitor.recordFailure("Show Templates", e.getMessage());
 
       return SyncResult.failure("Show Templates", e.getMessage());
     }
@@ -441,6 +446,9 @@ public class NotionSyncService {
             wrestlerDTOs.size());
       }
 
+      // Record success in health monitor
+      healthMonitor.recordSuccess("Wrestlers", totalTime, wrestlerDTOs.size());
+
       return SyncResult.success("Wrestlers", wrestlerDTOs.size(), 0);
 
     } catch (Exception e) {
@@ -450,6 +458,9 @@ public class NotionSyncService {
       if (operationId != null) {
         progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
       }
+
+      // Record failure in health monitor
+      healthMonitor.recordFailure("Wrestlers", e.getMessage());
 
       return SyncResult.failure("Wrestlers", e.getMessage());
     }
@@ -570,6 +581,9 @@ public class NotionSyncService {
             factionDTOs.size());
       }
 
+      // Record success in health monitor
+      healthMonitor.recordSuccess("Factions", totalTime, factionDTOs.size());
+
       return SyncResult.success("Factions", factionDTOs.size(), 0);
 
     } catch (Exception e) {
@@ -581,6 +595,9 @@ public class NotionSyncService {
             operationId, "❌ Faction sync failed: " + e.getMessage(), "ERROR");
         progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
       }
+
+      // Record failure in health monitor
+      healthMonitor.recordFailure("Factions", e.getMessage());
 
       return SyncResult.failure("Factions", e.getMessage());
     }

@@ -41,6 +41,7 @@ class NotionSyncIntegrationTest {
   private NotionHandler notionHandler;
   private NotionSyncProperties syncProperties;
   private SyncProgressTracker progressTracker;
+  private SyncHealthMonitor healthMonitor;
 
   // Mock database services for testing
   private ShowService showService;
@@ -90,12 +91,16 @@ class NotionSyncIntegrationTest {
     backup.setEnabled(false); // Disable backup for testing
     syncProperties.setBackup(backup);
 
+    // Initialize health monitor
+    healthMonitor = new SyncHealthMonitor(syncProperties, progressTracker);
+
     notionSyncService =
         new NotionSyncService(
             objectMapper,
             notionHandler,
             syncProperties,
             progressTracker,
+            healthMonitor,
             showService,
             showTypeService,
             wrestlerService,
@@ -186,12 +191,15 @@ class NotionSyncIntegrationTest {
       // Create a new handler with invalid token
       NotionHandler invalidHandler = NotionHandler.getInstance();
       SyncProgressTracker invalidProgressTracker = new SyncProgressTracker();
+      SyncHealthMonitor invalidHealthMonitor =
+          new SyncHealthMonitor(syncProperties, invalidProgressTracker);
       NotionSyncService invalidSyncService =
           new NotionSyncService(
               new ObjectMapper(),
               invalidHandler,
               syncProperties,
               invalidProgressTracker,
+              invalidHealthMonitor,
               showService,
               showTypeService,
               wrestlerService,

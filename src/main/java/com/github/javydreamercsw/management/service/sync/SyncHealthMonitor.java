@@ -2,6 +2,12 @@ package com.github.javydreamercsw.management.service.sync;
 
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.health.Health;
@@ -10,16 +16,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
- * Monitors the health and performance of Notion sync operations.
- * Provides health checks, performance metrics, and proactive issue detection.
+ * Monitors the health and performance of Notion sync operations. Provides health checks,
+ * performance metrics, and proactive issue detection.
  */
 @Service
 @Slf4j
@@ -35,7 +34,7 @@ public class SyncHealthMonitor implements HealthIndicator {
   private final AtomicInteger failedSyncs = new AtomicInteger(0);
   private final AtomicLong totalSyncTime = new AtomicLong(0);
   private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
-  
+
   private LocalDateTime lastSuccessfulSync;
   private LocalDateTime lastFailedSync;
   private String lastErrorMessage;
@@ -51,19 +50,23 @@ public class SyncHealthMonitor implements HealthIndicator {
         return builder
             .down()
             .withDetail("error", "Invalid configuration")
-            .withDetail("notionToken", EnvironmentVariableUtil.isNotionTokenAvailable() ? "Available" : "Missing")
+            .withDetail(
+                "notionToken",
+                EnvironmentVariableUtil.isNotionTokenAvailable() ? "Available" : "Missing")
             .withDetail("syncEnabled", syncProperties.isEnabled())
             .build();
       }
 
       // Check recent sync performance
       if (hasRecentFailures()) {
-        builder.down()
+        builder
+            .down()
             .withDetail("consecutiveFailures", consecutiveFailures.get())
             .withDetail("lastError", lastErrorMessage)
             .withDetail("lastFailedSync", lastFailedSync);
       } else if (hasStaleSync()) {
-        builder.degraded()
+        builder
+            .down()
             .withDetail("warning", "No recent successful sync")
             .withDetail("lastSuccessfulSync", lastSuccessfulSync);
       } else {
@@ -82,16 +85,11 @@ public class SyncHealthMonitor implements HealthIndicator {
 
     } catch (Exception e) {
       log.error("Error checking sync health", e);
-      return builder
-          .down()
-          .withDetail("error", "Health check failed: " + e.getMessage())
-          .build();
+      return builder.down().withDetail("error", "Health check failed: " + e.getMessage()).build();
     }
   }
 
-  /**
-   * Record a successful sync operation.
-   */
+  /** Record a successful sync operation. */
   public void recordSuccess(String entityType, long durationMs, int itemCount) {
     successfulSyncs.incrementAndGet();
     totalSyncTime.addAndGet(durationMs);
@@ -101,7 +99,7 @@ public class SyncHealthMonitor implements HealthIndicator {
     // Add to recent metrics
     synchronized (recentMetrics) {
       recentMetrics.add(new SyncMetric(entityType, true, durationMs, itemCount, null));
-      
+
       // Keep only last 50 metrics
       if (recentMetrics.size() > 50) {
         recentMetrics.remove(0);
@@ -111,9 +109,7 @@ public class SyncHealthMonitor implements HealthIndicator {
     log.debug("Recorded successful sync: {} ({} items, {}ms)", entityType, itemCount, durationMs);
   }
 
-  /**
-   * Record a failed sync operation.
-   */
+  /** Record a failed sync operation. */
   public void recordFailure(String entityType, String errorMessage) {
     failedSyncs.incrementAndGet();
     consecutiveFailures.incrementAndGet();
@@ -123,7 +119,7 @@ public class SyncHealthMonitor implements HealthIndicator {
     // Add to recent metrics
     synchronized (recentMetrics) {
       recentMetrics.add(new SyncMetric(entityType, false, 0, 0, errorMessage));
-      
+
       // Keep only last 50 metrics
       if (recentMetrics.size() > 50) {
         recentMetrics.remove(0);
@@ -133,18 +129,14 @@ public class SyncHealthMonitor implements HealthIndicator {
     log.warn("Recorded failed sync: {} - {}", entityType, errorMessage);
   }
 
-  /**
-   * Get recent sync metrics for analysis.
-   */
+  /** Get recent sync metrics for analysis. */
   public List<SyncMetric> getRecentMetrics() {
     synchronized (recentMetrics) {
       return new ArrayList<>(recentMetrics);
     }
   }
 
-  /**
-   * Periodic health check and cleanup.
-   */
+  /** Periodic health check and cleanup. */
   @Scheduled(fixedRate = 300000) // Every 5 minutes
   public void performHealthCheck() {
     try {
@@ -166,10 +158,10 @@ public class SyncHealthMonitor implements HealthIndicator {
   }
 
   private boolean isConfigurationValid() {
-    return syncProperties.isEnabled() && 
-           EnvironmentVariableUtil.isNotionTokenAvailable() &&
-           syncProperties.getEntities() != null && 
-           !syncProperties.getEntities().isEmpty();
+    return syncProperties.isEnabled()
+        && EnvironmentVariableUtil.isNotionTokenAvailable()
+        && syncProperties.getEntities() != null
+        && !syncProperties.getEntities().isEmpty();
   }
 
   private boolean hasRecentFailures() {
@@ -180,7 +172,7 @@ public class SyncHealthMonitor implements HealthIndicator {
     if (lastSuccessfulSync == null) {
       return true;
     }
-    
+
     // Consider sync stale if no success in last 24 hours
     return ChronoUnit.HOURS.between(lastSuccessfulSync, LocalDateTime.now()) > 24;
   }
@@ -209,9 +201,7 @@ public class SyncHealthMonitor implements HealthIndicator {
     }
   }
 
-  /**
-   * Reset all metrics (useful for testing or maintenance).
-   */
+  /** Reset all metrics (useful for testing or maintenance). */
   public void resetMetrics() {
     successfulSyncs.set(0);
     failedSyncs.set(0);
@@ -220,17 +210,15 @@ public class SyncHealthMonitor implements HealthIndicator {
     lastSuccessfulSync = null;
     lastFailedSync = null;
     lastErrorMessage = null;
-    
+
     synchronized (recentMetrics) {
       recentMetrics.clear();
     }
-    
+
     log.info("Sync health metrics reset");
   }
 
-  /**
-   * Get current health summary.
-   */
+  /** Get current health summary. */
   public SyncHealthSummary getHealthSummary() {
     return new SyncHealthSummary(
         successfulSyncs.get(),
@@ -241,29 +229,24 @@ public class SyncHealthMonitor implements HealthIndicator {
         lastSuccessfulSync,
         lastFailedSync,
         lastErrorMessage,
-        progressTracker.getActiveOperations().size()
-    );
+        progressTracker.getActiveOperations().size());
   }
 
-  /**
-   * Data class for sync metrics.
-   */
+  /** Data class for sync metrics. */
   public record SyncMetric(
       String entityType,
       boolean success,
       long durationMs,
       int itemCount,
       String errorMessage,
-      LocalDateTime timestamp
-  ) {
-    public SyncMetric(String entityType, boolean success, long durationMs, int itemCount, String errorMessage) {
+      LocalDateTime timestamp) {
+    public SyncMetric(
+        String entityType, boolean success, long durationMs, int itemCount, String errorMessage) {
       this(entityType, success, durationMs, itemCount, errorMessage, LocalDateTime.now());
     }
   }
 
-  /**
-   * Data class for health summary.
-   */
+  /** Data class for health summary. */
   public record SyncHealthSummary(
       int successfulSyncs,
       int failedSyncs,
@@ -273,6 +256,5 @@ public class SyncHealthMonitor implements HealthIndicator {
       LocalDateTime lastSuccessfulSync,
       LocalDateTime lastFailedSync,
       String lastErrorMessage,
-      int activeOperations
-  ) {}
+      int activeOperations) {}
 }
