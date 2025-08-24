@@ -197,10 +197,25 @@ public class Wrestler extends AbstractEntity<Long> {
     return getActiveInjuries().stream().mapToInt(Injury::getHealthPenalty).sum();
   }
 
-  /** Get effective starting health including injury penalties. */
-  public Integer getEffectiveStartingHealthWithInjuries() {
-    int effective = startingHealth - bumps - getTotalInjuryPenalty();
-    return Math.max(1, effective); // Never go below 1
+  /**
+   * Get current health accounting for injuries and bumps. This is the health value that should be
+   * used during matches.
+   */
+  public Integer getCurrentHealthWithPenalties() {
+    if (currentHealth == null) {
+      return getEffectiveStartingHealth();
+    }
+    // Apply injury and bump penalties to current health
+    int healthWithPenalties = currentHealth - bumps - getTotalInjuryPenalty();
+    return Math.max(1, healthWithPenalties); // Never go below 1
+  }
+
+  /**
+   * Update current health to match effective starting health. Call this when a wrestler's injury
+   * status changes.
+   */
+  public void refreshCurrentHealth() {
+    this.currentHealth = getEffectiveStartingHealth();
   }
 
   /** Check if wrestler is currently a champion. */

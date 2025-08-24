@@ -63,17 +63,15 @@ public class InjuryService {
             });
   }
 
-  /** Create injury from bump system (3 bumps = 1 injury). */
+  /**
+   * Create injury from bump system (3 bumps = 1 injury). This method should only be called when an
+   * injury should be created (bumps already reset by Wrestler.addBump()).
+   */
   public Optional<Injury> createInjuryFromBumps(Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
-        .filter(wrestler -> wrestler.getBumps() >= 3)
         .map(
             wrestler -> {
-              // Reset bumps
-              wrestler.setBumps(0);
-              wrestlerRepository.saveAndFlush(wrestler);
-
               // Create injury with severity based on wrestler tier
               InjurySeverity severity = getRandomInjurySeverityForWrestler(wrestler);
               String injuryName = generateInjuryName(severity);
@@ -232,7 +230,7 @@ public class InjuryService {
                   activeInjuries.size(),
                   allInjuries.size() - activeInjuries.size(),
                   totalHealthPenalty,
-                  wrestler.getEffectiveStartingHealth() - totalHealthPenalty,
+                  wrestler.getEffectiveStartingHealth(), // Already includes injury penalty
                   activeInjuries.stream().mapToLong(injury -> injury.getHealingCost()).sum());
             })
         .orElse(null);

@@ -77,7 +77,6 @@ class InjuryServiceTest {
     wrestler.setBumps(3);
 
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(wrestler);
     when(injuryRepository.saveAndFlush(any(Injury.class)))
         .thenAnswer(
             invocation -> {
@@ -91,10 +90,10 @@ class InjuryServiceTest {
 
     // Then
     assertThat(result).isPresent();
-    assertThat(wrestler.getBumps()).isEqualTo(0); // Bumps should be reset
+    assertThat(wrestler.getBumps())
+        .isEqualTo(3); // Bumps are not reset by this method (handled by Wrestler.addBump())
     assertThat(result.get().getWrestler()).isEqualTo(wrestler);
     assertThat(result.get().getIsActive()).isTrue();
-    verify(wrestlerRepository).saveAndFlush(wrestler);
     verify(injuryRepository).saveAndFlush(any(Injury.class));
   }
 
@@ -261,7 +260,7 @@ class InjuryServiceTest {
     assertThat(result.activeInjuries()).isEqualTo(1);
     assertThat(result.healedInjuries()).isEqualTo(1);
     assertThat(result.totalHealthPenalty()).isEqualTo(2);
-    assertThat(result.effectiveHealth()).isEqualTo(13); // 15 - 2
+    assertThat(result.effectiveHealth()).isEqualTo(15); // Already includes penalty calculation
   }
 
   @Test

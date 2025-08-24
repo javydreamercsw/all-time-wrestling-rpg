@@ -102,11 +102,7 @@ class InjuryControllerIntegrationTest {
     mockMvc
         .perform(post("/api/injuries/from-bumps/{wrestlerId}", wrestler.getId()))
         .andExpect(status().isBadRequest())
-        .andExpect(
-            jsonPath("$.message")
-                .value(
-                    "Cannot create injury from bumps - wrestler not found or has less than 3"
-                        + " bumps"));
+        .andExpect(jsonPath("$.message").value("Wrestler has less than 3 bumps (2)"));
   }
 
   @Test

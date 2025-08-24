@@ -145,8 +145,13 @@ public class MatchOutcomeService implements MatchOutcomeProvider {
     // Tier bonus
     int tierBonus = getTierBonus(dbWrestler);
 
-    // Health penalty (simplified - assume healthy if no injury data)
-    int healthPenalty = 0; // Could be enhanced to check injury status
+    // Health penalty from bumps and active injuries
+    int healthPenalty = dbWrestler.getBumps(); // Each bump = -1 penalty
+
+    // Add injury penalties (active injuries significantly reduce effectiveness)
+    long activeInjuries =
+        dbWrestler.getInjuries().stream().filter(injury -> injury.isCurrentlyActive()).count();
+    healthPenalty += (int) activeInjuries * 3; // Each active injury = -3 penalty
 
     // Calculate total weight (minimum 1)
     int totalWeight = Math.max(1, fanWeight + tierBonus - healthPenalty);

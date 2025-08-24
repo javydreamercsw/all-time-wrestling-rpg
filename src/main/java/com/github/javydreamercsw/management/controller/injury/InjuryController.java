@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.controller.injury;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,9 +38,11 @@ import org.springframework.web.bind.annotation.*;
 public class InjuryController {
 
   private final InjuryService injuryService;
+  private final WrestlerRepository wrestlerRepository;
 
-  public InjuryController(InjuryService injuryService) {
+  public InjuryController(InjuryService injuryService, WrestlerRepository wrestlerRepository) {
     this.injuryService = injuryService;
+    this.wrestlerRepository = wrestlerRepository;
   }
 
   @Operation(summary = "Create a new injury", description = "Creates a new injury for a wrestler")
@@ -80,15 +83,24 @@ public class InjuryController {
       })
   @PostMapping("/from-bumps/{wrestlerId}")
   public ResponseEntity<Object> createInjuryFromBumps(@PathVariable Long wrestlerId) {
+    // First check if wrestler exists and has enough bumps
+    Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
+    if (wrestlerOpt.isEmpty()) {
+      return ResponseEntity.badRequest().body(new ErrorResponse("Wrestler not found"));
+    }
+
+    Wrestler wrestler = wrestlerOpt.get();
+    if (wrestler.getBumps() < 3) {
+      return ResponseEntity.badRequest()
+          .body(new ErrorResponse("Wrestler has less than 3 bumps (" + wrestler.getBumps() + ")"));
+    }
+
     Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestlerId);
 
     if (injury.isPresent()) {
       return ResponseEntity.status(HttpStatus.CREATED).body(injury.get());
     } else {
-      return ResponseEntity.badRequest()
-          .body(
-              new ErrorResponse(
-                  "Cannot create injury from bumps - wrestler not found or has less than 3 bumps"));
+      return ResponseEntity.badRequest().body(new ErrorResponse("Failed to create injury"));
     }
   }
 
