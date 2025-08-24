@@ -80,8 +80,8 @@ public class DataExportController {
       return ResponseEntity.ok(message);
 
     } catch (Exception e) {
-      String errorMessage = "❌ Failed to export shows: " + e.getMessage();
-      log.error(errorMessage, e);
+      String errorMessage = "❌ Failed to export shows due to an internal error.";
+      log.error("Failed to export shows.", e);
       return ResponseEntity.internalServerError().body(errorMessage);
     }
   }
