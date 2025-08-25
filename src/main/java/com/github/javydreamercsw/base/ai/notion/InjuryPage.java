@@ -15,45 +15,21 @@ public class InjuryPage extends NotionPage {
   @Data
   @EqualsAndHashCode(callSuper = false)
   public static class NotionProperties extends NotionPage.BaseNotionProperties {
-    // Injury-specific properties only (common properties inherited from base)
+    // Injury-specific properties based on REAL Notion structure
 
-    /** The wrestler who sustained the injury (relation to Wrestlers database) */
-    private Property Wrestler;
+    /** Name of the injury type (e.g., "Head injury", "Back injury") */
+    private Property InjuryName;
 
-    /** Description of the injury */
-    private Property Description;
+    /** Health effect penalty (numeric, e.g., -3, -1, -2) */
+    private Property HealthEffect;
 
-    /** Severity level of the injury (MINOR, MODERATE, SEVERE, CRITICAL) */
-    private Property Severity;
+    /** Stamina effect penalty (numeric, e.g., 0, -3, -2) */
+    private Property StaminaEffect;
 
-    /** Health penalty caused by this injury */
-    private Property HealthPenalty;
+    /** Card effect penalty (numeric, e.g., -2, 0, -1) */
+    private Property CardEffect;
 
-    /** Whether the injury is currently active */
-    private Property IsActive;
-
-    /** Date when the injury occurred */
-    private Property InjuryDate;
-
-    /** Date when the injury was healed (if applicable) */
-    private Property HealedDate;
-
-    /** Cost in fans to attempt healing this injury */
-    private Property HealingCost;
-
-    /** Additional notes about the injury */
-    private Property InjuryNotes;
-
-    /** How the injury was sustained (match, training, etc.) */
-    private Property InjurySource;
-
-    /** Match where the injury occurred (relation to Matches database) */
-    private Property InjuryMatch;
-
-    /** Recovery progress or status */
-    private Property RecoveryStatus;
-
-    /** Expected recovery time */
-    private Property ExpectedRecoveryTime;
+    /** Special game effects description (text, e.g., "No reversal ability") */
+    private Property SpecialEffects;
   }
 }

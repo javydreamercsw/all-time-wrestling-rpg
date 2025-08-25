@@ -16,9 +16,7 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.injury.Injury;
-import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
-import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
@@ -31,12 +29,11 @@ import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.FactionDTO;
-import com.github.javydreamercsw.management.dto.InjuryDTO;
 import com.github.javydreamercsw.management.dto.MatchDTO;
 import com.github.javydreamercsw.management.dto.SeasonDTO;
 import com.github.javydreamercsw.management.dto.ShowDTO;
 import com.github.javydreamercsw.management.dto.TeamDTO;
-import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.match.MatchResultService;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
@@ -111,8 +108,8 @@ public class NotionSyncService {
   private final TeamRepository teamRepository;
   private final MatchResultService matchResultService;
   private final MatchTypeService matchTypeService;
-  private final InjuryService injuryService;
-  private final InjuryRepository injuryRepository;
+  private final InjuryTypeService injuryTypeService;
+  private final InjuryTypeRepository injuryTypeRepository;
 
   // Thread pool for async processing - using fixed thread pool for Java 17 compatibility
   private final ExecutorService executorService = Executors.newFixedThreadPool(10);
@@ -140,8 +137,8 @@ public class NotionSyncService {
       TeamRepository teamRepository,
       MatchResultService matchResultService,
       MatchTypeService matchTypeService,
-      InjuryService injuryService,
-      InjuryRepository injuryRepository) {
+      InjuryTypeService injuryTypeService,
+      InjuryTypeRepository injuryTypeRepository) {
     this.objectMapper = objectMapper;
     this.notionHandler = notionHandler;
     this.syncProperties = syncProperties;
@@ -163,8 +160,8 @@ public class NotionSyncService {
     this.teamRepository = teamRepository;
     this.matchResultService = matchResultService;
     this.matchTypeService = matchTypeService;
-    this.injuryService = injuryService;
-    this.injuryRepository = injuryRepository;
+    this.injuryTypeService = injuryTypeService;
+    this.injuryTypeRepository = injuryTypeRepository;
   }
 
   /**
@@ -4362,12 +4359,12 @@ public class NotionSyncService {
   // ==================== INJURY SYNC METHODS ====================
 
   /**
-   * Synchronizes injuries from Notion Injuries database to the local database.
+   * Synchronizes injury types from Notion Injuries database to the local database.
    *
    * @param operationId Operation ID for progress tracking
    * @return SyncResult containing the outcome of the sync operation
    */
-  public SyncResult syncInjuries(@NonNull String operationId) {
+  public SyncResult syncInjuryTypes(@NonNull String operationId) {
     if (!syncProperties.isEntityEnabled("injuries")) {
       log.debug("Injuries synchronization is disabled in configuration");
       return SyncResult.success("Injuries", 0, 0);
@@ -4474,40 +4471,21 @@ public class NotionSyncService {
    */
   private InjuryDTO convertInjuryPageToDTO(InjuryPage injuryPage) {
     try {
-      // Create DTO with required fields
+      // Create DTO with required fields based on REAL Notion structure
       String externalId = injuryPage.getId();
-      String name = extractPropertyAsString(injuryPage.getRawProperties(), "Name");
-      String wrestlerName = extractPropertyAsString(injuryPage.getRawProperties(), "Wrestler");
-      String severityStr = extractPropertyAsString(injuryPage.getRawProperties(), "Severity");
-      InjurySeverity severity = parseInjurySeverity(severityStr);
+      String injuryName = extractPropertyAsString(injuryPage.getRawProperties(), "Injury Name");
 
-      InjuryDTO dto = new InjuryDTO(externalId, name, wrestlerName, severity);
+      InjuryDTO dto = new InjuryDTO();
+      dto.setExternalId(externalId);
+      dto.setInjuryName(injuryName);
 
-      // Extract additional properties
-      dto.setDescription(extractPropertyAsString(injuryPage.getRawProperties(), "Description"));
-
-      // Extract numeric properties
-      dto.setHealthPenalty(
-          extractPropertyAsInteger(injuryPage.getRawProperties(), "HealthPenalty"));
-      dto.setHealingCost(extractPropertyAsInteger(injuryPage.getRawProperties(), "HealingCost"));
-      dto.setExpectedRecoveryDays(
-          extractPropertyAsInteger(injuryPage.getRawProperties(), "ExpectedRecoveryTime"));
-
-      // Extract boolean properties
-      dto.setIsActive(extractPropertyAsBoolean(injuryPage.getRawProperties(), "IsActive"));
-
-      // Extract dates
-      dto.setInjuryDate(
-          parseNotionDate(extractPropertyAsString(injuryPage.getRawProperties(), "InjuryDate")));
-      dto.setHealedDate(
-          parseNotionDate(extractPropertyAsString(injuryPage.getRawProperties(), "HealedDate")));
-
-      // Extract additional info
-      dto.setInjuryNotes(extractPropertyAsString(injuryPage.getRawProperties(), "InjuryNotes"));
-      dto.setInjurySource(extractPropertyAsString(injuryPage.getRawProperties(), "InjurySource"));
-      dto.setInjuryMatchName(extractPropertyAsString(injuryPage.getRawProperties(), "InjuryMatch"));
-      dto.setRecoveryStatus(
-          extractPropertyAsString(injuryPage.getRawProperties(), "RecoveryStatus"));
+      // Extract game effect properties (based on real Notion structure)
+      dto.setHealthEffect(extractPropertyAsInteger(injuryPage.getRawProperties(), "Health Effect"));
+      dto.setStaminaEffect(
+          extractPropertyAsInteger(injuryPage.getRawProperties(), "Stamina Effect"));
+      dto.setCardEffect(extractPropertyAsInteger(injuryPage.getRawProperties(), "Card Effect"));
+      dto.setSpecialEffects(
+          extractPropertyAsString(injuryPage.getRawProperties(), "Special Effects"));
 
       // Set metadata
       dto.setCreatedTime(parseInstantFromString(injuryPage.getCreated_time()));

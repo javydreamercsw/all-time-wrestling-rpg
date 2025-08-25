@@ -5,12 +5,12 @@ import lombok.Data;
 import lombok.NonNull;
 
 /**
- * Data Transfer Object for injury sync operations between Notion and the database. Based on REAL
- * Notion Injuries database structure - represents injury TYPES for the card game, not individual
- * wrestler injuries.
+ * Data Transfer Object for injury type sync operations between Notion and the database. Based on
+ * REAL Notion Injuries database structure - represents injury TYPES for the card game, not
+ * individual wrestler injuries.
  */
 @Data
-public class InjuryDTO {
+public class InjuryTypeDTO {
 
   // ==================== CORE PROPERTIES ====================
 
@@ -48,6 +48,15 @@ public class InjuryDTO {
   /** User who last edited the record in Notion */
   private String lastEditedBy;
 
+  // ==================== CONSTRUCTORS ====================
+
+  public InjuryTypeDTO() {}
+
+  public InjuryTypeDTO(@NonNull String externalId, @NonNull String injuryName) {
+    this.externalId = externalId;
+    this.injuryName = injuryName;
+  }
+
   // ==================== VALIDATION METHODS ====================
 
   /**
@@ -65,11 +74,11 @@ public class InjuryDTO {
   /**
    * Gets a summary string for logging and debugging.
    *
-   * @return Summary of the injury DTO
+   * @return Summary of the injury type DTO
    */
   public String getSummary() {
     return String.format(
-        "InjuryDTO[id=%s, name='%s', health=%d, stamina=%d, card=%d]",
+        "InjuryTypeDTO[id=%s, name='%s', health=%d, stamina=%d, card=%d]",
         externalId,
         injuryName,
         healthEffect != null ? healthEffect : 0,
@@ -113,5 +122,12 @@ public class InjuryDTO {
     return specialEffects != null
         && !specialEffects.trim().isEmpty()
         && !"N/A".equals(specialEffects.trim());
+  }
+
+  /** Calculates the total penalty severity of this injury type. */
+  public int getTotalPenalty() {
+    return Math.abs(getEffectiveHealthEffect())
+        + Math.abs(getEffectiveStaminaEffect())
+        + Math.abs(getEffectiveCardEffect());
   }
 }
