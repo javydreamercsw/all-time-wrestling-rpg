@@ -18,12 +18,14 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,13 +37,19 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest(properties = {"notion.sync.enabled=true", "notion.sync.entities.matches=true"})
+@SpringBootTest(
+    properties = {
+      "notion.sync.enabled=true",
+      "notion.sync.entities.matches=true",
+      "NOTION_TOKEN=${NOTION_TOKEN:test-token}"
+    })
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("Matches Sync Integration Tests")
 class MatchesSyncIntegrationTest {
 
   @Autowired private NotionSyncService notionSyncService;
+  @Autowired private ShowService showService;
 
   @MockBean private NotionHandler notionHandler;
 
@@ -70,18 +78,34 @@ class MatchesSyncIntegrationTest {
     ShowType showType = new ShowType();
     showType.setName("Weekly Show");
     showType.setDescription("Regular weekly show");
-    showType = showTypeRepository.save(showType);
+    showType = showTypeRepository.saveAndFlush(showType);
 
     testShow = new Show();
     testShow.setName("Test Show");
     testShow.setDescription("Test show for integration testing");
     testShow.setType(showType);
-    testShow = showRepository.save(testShow);
+    testShow = showRepository.saveAndFlush(testShow);
+
+    // Verify show was saved and can be found
+    System.out.println(
+        "DEBUG: Saved show with ID: " + testShow.getId() + ", Name: '" + testShow.getName() + "'");
+    Optional<Show> foundShow = showRepository.findByName("Test Show");
+    System.out.println(
+        "DEBUG: Found show by name: "
+            + foundShow.isPresent()
+            + (foundShow.isPresent() ? " (ID: " + foundShow.get().getId() + ")" : ""));
+
+    // Test ShowService directly
+    Optional<Show> foundByService = showService.findByName("Test Show");
+    System.out.println(
+        "DEBUG: Found show by service: "
+            + foundByService.isPresent()
+            + (foundByService.isPresent() ? " (ID: " + foundByService.get().getId() + ")" : ""));
 
     testMatchType = new MatchType();
     testMatchType.setName("Singles");
     testMatchType.setDescription("One-on-one match");
-    testMatchType = matchTypeRepository.save(testMatchType);
+    testMatchType = matchTypeRepository.saveAndFlush(testMatchType);
 
     testWrestler1 = new Wrestler();
     testWrestler1.setName("Test Wrestler 1");
@@ -94,7 +118,7 @@ class MatchesSyncIntegrationTest {
     testWrestler1.setLowStamina(20);
     testWrestler1.setDeckSize(40);
     testWrestler1.setFans(1000L);
-    testWrestler1 = wrestlerRepository.save(testWrestler1);
+    testWrestler1 = wrestlerRepository.saveAndFlush(testWrestler1);
 
     testWrestler2 = new Wrestler();
     testWrestler2.setName("Test Wrestler 2");
@@ -107,7 +131,7 @@ class MatchesSyncIntegrationTest {
     testWrestler2.setLowStamina(20);
     testWrestler2.setDeckSize(40);
     testWrestler2.setFans(1000L);
-    testWrestler2 = wrestlerRepository.save(testWrestler2);
+    testWrestler2 = wrestlerRepository.saveAndFlush(testWrestler2);
 
     // Create test MatchPage
     testMatchPage = createTestMatchPage();
