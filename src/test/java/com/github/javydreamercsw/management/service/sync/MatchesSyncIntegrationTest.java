@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.notion.MatchPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
@@ -26,13 +27,15 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@SpringBootTest(properties = {"notion.sync.enabled=true", "notion.sync.entities.matches=true"})
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("Matches Sync Integration Tests")
@@ -147,27 +150,32 @@ class MatchesSyncIntegrationTest {
   void shouldSyncMatchesFromNotionToDatabaseSuccessfully() {
     // Given
     List<MatchPage> matchPages = Arrays.asList(testMatchPage);
-    when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // When
-    SyncResult result = notionSyncService.syncMatches("test-operation-123");
+    try (MockedStatic<EnvironmentVariableUtil> mockedEnvUtil =
+        Mockito.mockStatic(EnvironmentVariableUtil.class)) {
+      mockedEnvUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(1);
+      // When
+      SyncResult result = notionSyncService.syncMatches("test-operation-123");
 
-    // Verify match was saved to database
-    List<MatchResult> savedMatches = matchResultRepository.findAll();
-    assertThat(savedMatches).hasSize(1);
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.isSuccess()).isTrue();
+      assertThat(result.getSyncedCount()).isEqualTo(1);
 
-    MatchResult savedMatch = savedMatches.get(0);
-    assertThat(savedMatch.getExternalId()).isEqualTo("notion-match-123");
-    assertThat(savedMatch.getShow()).isEqualTo(testShow);
-    assertThat(savedMatch.getMatchType()).isEqualTo(testMatchType);
-    assertThat(savedMatch.getWinner()).isEqualTo(testWrestler1);
-    assertThat(savedMatch.getDurationMinutes()).isEqualTo(15);
-    assertThat(savedMatch.getMatchRating()).isEqualTo(4);
+      // Verify match was saved to database
+      List<MatchResult> savedMatches = matchResultRepository.findAll();
+      assertThat(savedMatches).hasSize(1);
+
+      MatchResult savedMatch = savedMatches.get(0);
+      assertThat(savedMatch.getExternalId()).isEqualTo("notion-match-123");
+      assertThat(savedMatch.getShow()).isEqualTo(testShow);
+      assertThat(savedMatch.getMatchType()).isEqualTo(testMatchType);
+      assertThat(savedMatch.getWinner()).isEqualTo(testWrestler1);
+      assertThat(savedMatch.getDurationMinutes()).isEqualTo(15);
+      assertThat(savedMatch.getMatchRating()).isEqualTo(4);
+    }
   }
 
   @Test
@@ -185,19 +193,24 @@ class MatchesSyncIntegrationTest {
     matchResultRepository.save(existingMatch);
 
     List<MatchPage> matchPages = Arrays.asList(testMatchPage);
-    when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // When
-    SyncResult result = notionSyncService.syncMatches("test-operation-456");
+    try (MockedStatic<EnvironmentVariableUtil> mockedEnvUtil =
+        Mockito.mockStatic(EnvironmentVariableUtil.class)) {
+      mockedEnvUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(0); // Should skip duplicate
+      // When
+      SyncResult result = notionSyncService.syncMatches("test-operation-456");
 
-    // Verify only one match exists in database
-    List<MatchResult> savedMatches = matchResultRepository.findAll();
-    assertThat(savedMatches).hasSize(1);
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.isSuccess()).isTrue();
+      assertThat(result.getSyncedCount()).isEqualTo(0); // Should skip duplicate
+
+      // Verify only one match exists in database
+      List<MatchResult> savedMatches = matchResultRepository.findAll();
+      assertThat(savedMatches).hasSize(1);
+    }
   }
 
   @Test
@@ -209,19 +222,24 @@ class MatchesSyncIntegrationTest {
     testMatchPage.setRawProperties(rawProperties);
 
     List<MatchPage> matchPages = Arrays.asList(testMatchPage);
-    when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // When
-    SyncResult result = notionSyncService.syncMatches("test-operation-789");
+    try (MockedStatic<EnvironmentVariableUtil> mockedEnvUtil =
+        Mockito.mockStatic(EnvironmentVariableUtil.class)) {
+      mockedEnvUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(0); // Should skip invalid match
+      // When
+      SyncResult result = notionSyncService.syncMatches("test-operation-789");
 
-    // Verify no matches were saved
-    List<MatchResult> savedMatches = matchResultRepository.findAll();
-    assertThat(savedMatches).isEmpty();
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.isSuccess()).isTrue();
+      assertThat(result.getSyncedCount()).isEqualTo(0); // Should skip invalid match
+
+      // Verify no matches were saved
+      List<MatchResult> savedMatches = matchResultRepository.findAll();
+      assertThat(savedMatches).isEmpty();
+    }
   }
 
   @Test
@@ -233,19 +251,24 @@ class MatchesSyncIntegrationTest {
     testMatchPage.setRawProperties(rawProperties);
 
     List<MatchPage> matchPages = Arrays.asList(testMatchPage);
-    when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // When
-    SyncResult result = notionSyncService.syncMatches("test-operation-101");
+    try (MockedStatic<EnvironmentVariableUtil> mockedEnvUtil =
+        Mockito.mockStatic(EnvironmentVariableUtil.class)) {
+      mockedEnvUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(0); // Should skip invalid match
+      // When
+      SyncResult result = notionSyncService.syncMatches("test-operation-101");
 
-    // Verify no matches were saved
-    List<MatchResult> savedMatches = matchResultRepository.findAll();
-    assertThat(savedMatches).isEmpty();
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.isSuccess()).isTrue();
+      assertThat(result.getSyncedCount()).isEqualTo(0); // Should skip invalid match
+
+      // Verify no matches were saved
+      List<MatchResult> savedMatches = matchResultRepository.findAll();
+      assertThat(savedMatches).isEmpty();
+    }
   }
 
   @Test
@@ -257,58 +280,71 @@ class MatchesSyncIntegrationTest {
     testMatchPage.setRawProperties(rawProperties);
 
     List<MatchPage> matchPages = Arrays.asList(testMatchPage);
-    when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // When
-    SyncResult result = notionSyncService.syncMatches("test-operation-202");
+    try (MockedStatic<EnvironmentVariableUtil> mockedEnvUtil =
+        Mockito.mockStatic(EnvironmentVariableUtil.class)) {
+      mockedEnvUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(1);
+      // When
+      SyncResult result = notionSyncService.syncMatches("test-operation-202");
 
-    // Verify match was saved with null winner
-    List<MatchResult> savedMatches = matchResultRepository.findAll();
-    assertThat(savedMatches).hasSize(1);
-    assertThat(savedMatches.get(0).getWinner()).isNull();
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.isSuccess()).isTrue();
+      assertThat(result.getSyncedCount()).isEqualTo(1);
+
+      // Verify match was saved with null winner
+      List<MatchResult> savedMatches = matchResultRepository.findAll();
+      assertThat(savedMatches).hasSize(1);
+      assertThat(savedMatches.get(0).getWinner()).isNull();
+    }
   }
 
   @Test
   @DisplayName("Should handle empty match list from Notion")
   void shouldHandleEmptyMatchListFromNotion() {
     // Given
-    when(notionHandler.loadAllMatches()).thenReturn(Arrays.asList());
+    try (MockedStatic<EnvironmentVariableUtil> mockedEnvUtil =
+        Mockito.mockStatic(EnvironmentVariableUtil.class)) {
+      mockedEnvUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(notionHandler.loadAllMatches()).thenReturn(Arrays.asList());
 
-    // When
-    SyncResult result = notionSyncService.syncMatches("test-operation-303");
+      // When
+      SyncResult result = notionSyncService.syncMatches("test-operation-303");
 
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(0);
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.isSuccess()).isTrue();
+      assertThat(result.getSyncedCount()).isEqualTo(0);
 
-    // Verify no matches were saved
-    List<MatchResult> savedMatches = matchResultRepository.findAll();
-    assertThat(savedMatches).isEmpty();
+      // Verify no matches were saved
+      List<MatchResult> savedMatches = matchResultRepository.findAll();
+      assertThat(savedMatches).isEmpty();
+    }
   }
 
   @Test
   @DisplayName("Should handle Notion handler exception gracefully")
   void shouldHandleNotionHandlerExceptionGracefully() {
     // Given
-    when(notionHandler.loadAllMatches()).thenThrow(new RuntimeException("Notion API error"));
+    try (MockedStatic<EnvironmentVariableUtil> mockedEnvUtil =
+        Mockito.mockStatic(EnvironmentVariableUtil.class)) {
+      mockedEnvUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(notionHandler.loadAllMatches()).thenThrow(new RuntimeException("Notion API error"));
 
-    // When
-    SyncResult result = notionSyncService.syncMatches("test-operation-404");
+      // When
+      SyncResult result = notionSyncService.syncMatches("test-operation-404");
 
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.isSuccess()).isFalse();
-    assertThat(result.getErrorMessage()).contains("Notion API error");
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.isSuccess()).isFalse();
+      assertThat(result.getErrorMessage()).contains("Notion API error");
 
-    // Verify no matches were saved
-    List<MatchResult> savedMatches = matchResultRepository.findAll();
-    assertThat(savedMatches).isEmpty();
+      // Verify no matches were saved
+      List<MatchResult> savedMatches = matchResultRepository.findAll();
+      assertThat(savedMatches).isEmpty();
+    }
   }
 
   @Test
@@ -323,23 +359,28 @@ class MatchesSyncIntegrationTest {
     secondMatchPage.setRawProperties(rawProperties);
 
     List<MatchPage> matchPages = Arrays.asList(testMatchPage, secondMatchPage);
-    when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // When
-    SyncResult result = notionSyncService.syncMatches("test-operation-505");
+    try (MockedStatic<EnvironmentVariableUtil> mockedEnvUtil =
+        Mockito.mockStatic(EnvironmentVariableUtil.class)) {
+      mockedEnvUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(2);
+      // When
+      SyncResult result = notionSyncService.syncMatches("test-operation-505");
 
-    // Verify both matches were saved
-    List<MatchResult> savedMatches = matchResultRepository.findAll();
-    assertThat(savedMatches).hasSize(2);
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.isSuccess()).isTrue();
+      assertThat(result.getSyncedCount()).isEqualTo(2);
 
-    // Verify different winners
-    List<Wrestler> winners = savedMatches.stream().map(MatchResult::getWinner).toList();
-    assertThat(winners).containsExactlyInAnyOrder(testWrestler1, testWrestler2);
+      // Verify both matches were saved
+      List<MatchResult> savedMatches = matchResultRepository.findAll();
+      assertThat(savedMatches).hasSize(2);
+
+      // Verify different winners
+      List<Wrestler> winners = savedMatches.stream().map(MatchResult::getWinner).toList();
+      assertThat(winners).containsExactlyInAnyOrder(testWrestler1, testWrestler2);
+    }
   }
 
   @Test
@@ -355,19 +396,24 @@ class MatchesSyncIntegrationTest {
     invalidMatch.setRawProperties(invalidProperties);
 
     List<MatchPage> matchPages = Arrays.asList(validMatch, invalidMatch);
-    when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // When
-    SyncResult result = notionSyncService.syncMatches("test-operation-606");
+    try (MockedStatic<EnvironmentVariableUtil> mockedEnvUtil =
+        Mockito.mockStatic(EnvironmentVariableUtil.class)) {
+      mockedEnvUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(notionHandler.loadAllMatches()).thenReturn(matchPages);
 
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.isSuccess()).isTrue(); // Should still succeed with partial sync
-    assertThat(result.getSyncedCount()).isEqualTo(1); // Only valid match synced
+      // When
+      SyncResult result = notionSyncService.syncMatches("test-operation-606");
 
-    // Verify only valid match was saved
-    List<MatchResult> savedMatches = matchResultRepository.findAll();
-    assertThat(savedMatches).hasSize(1);
-    assertThat(savedMatches.get(0).getExternalId()).isEqualTo("notion-match-123");
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.isSuccess()).isTrue(); // Should still succeed with partial sync
+      assertThat(result.getSyncedCount()).isEqualTo(1); // Only valid match synced
+
+      // Verify only valid match was saved
+      List<MatchResult> savedMatches = matchResultRepository.findAll();
+      assertThat(savedMatches).hasSize(1);
+      assertThat(savedMatches.get(0).getExternalId()).isEqualTo("notion-match-123");
+    }
   }
 }
