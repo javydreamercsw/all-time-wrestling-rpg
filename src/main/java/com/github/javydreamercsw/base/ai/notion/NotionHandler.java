@@ -341,12 +341,20 @@ public class NotionHandler {
                           client.retrievePage(relation.getId(), Collections.emptyList());
                       System.setOut(originalOut);
 
-                      PageProperty titleProperty = relatedPage.getProperties().get("Name");
-                      if (titleProperty != null
-                          && titleProperty.getTitle() != null
-                          && !titleProperty.getTitle().isEmpty()) {
-                        return titleProperty.getTitle().get(0).getPlainText();
+                      // Try multiple common title property names
+                      String[] titlePropertyNames = {"Name", "Title", "Championship", "name", "title"};
+                      for (String propertyName : titlePropertyNames) {
+                        PageProperty titleProperty = relatedPage.getProperties().get(propertyName);
+                        if (titleProperty != null
+                            && titleProperty.getTitle() != null
+                            && !titleProperty.getTitle().isEmpty()) {
+                          return titleProperty.getTitle().get(0).getPlainText();
+                        }
                       }
+
+                      // If no title property found, log available properties for debugging
+                      log.debug("No title property found for relation {}. Available properties: {}",
+                          relation.getId(), relatedPage.getProperties().keySet());
                       return relation.getId();
                     } finally {
                       System.setOut(originalOut);
@@ -514,7 +522,12 @@ public class NotionHandler {
     } else if (formula.getBoolean() != null) {
       return formula.getBoolean().toString();
     } else if (formula.getDate() != null) {
-      return formula.getDate().toString();
+      // Handle formula date - extract the start date and format it properly
+      if (formula.getDate().getStart() != null) {
+        return formula.getDate().getStart().toString();
+      } else {
+        return formula.getDate().toString();
+      }
     } else {
       return "null";
     }
