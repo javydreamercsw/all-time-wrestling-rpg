@@ -14,6 +14,8 @@ import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.match.MatchResultService;
+import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -59,6 +61,8 @@ class NotionSyncServiceTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private FactionRepository factionRepository;
+  @Mock private MatchResultService matchResultService;
+  @Mock private MatchTypeService matchTypeService;
 
   private NotionSyncService notionSyncService;
 
@@ -103,7 +107,9 @@ class NotionSyncServiceTest {
             showTemplateService,
             factionRepository,
             teamService,
-            teamRepository);
+            teamRepository,
+            matchResultService,
+            matchTypeService);
   }
 
   @Test
