@@ -1,0 +1,27 @@
+{
+  "id" : "25290edc-c30f-8080-9686-f00dfe9dbf50",
+  "created_time" : "2025-06-25T10:00:00.000Z",
+  "last_edited_time" : "2025-06-25T10:30:00.000Z",
+  "created_by" : {
+    "name" : "Test User"
+  },
+  "last_edited_by" : {
+    "name" : "Test User"
+  },
+  "rawProperties" : {
+    "Name" : "🩹 Knee Injury - Eddie Guerrero",
+    "Wrestler" : "Eddie Guerrero",
+    "Description" : "Torn ACL from high-impact move during championship match",
+    "Severity" : "MODERATE",
+    "HealthPenalty" : "10",
+    "IsActive" : "true",
+    "InjuryDate" : "2025-06-25T00:00:00.000Z",
+    "HealedDate" : "N/A",
+    "HealingCost" : "250",
+    "InjuryNotes" : "Occurred during title defense, requires rest",
+    "InjurySource" : "Championship Match",
+    "InjuryMatch" : "Extreme Division Championship Match",
+    "RecoveryStatus" : "Resting",
+    "ExpectedRecoveryTime" : "14"
+  }
+}
