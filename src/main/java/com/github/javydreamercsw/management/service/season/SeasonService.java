@@ -58,6 +58,17 @@ public class SeasonService {
     return seasonRepository.findById(seasonId);
   }
 
+  /** Find season by name. */
+  @Transactional(readOnly = true)
+  public Season findByName(String name) {
+    return seasonRepository.findByName(name).orElse(null);
+  }
+
+  /** Save a season. */
+  public Season save(Season season) {
+    return seasonRepository.saveAndFlush(season);
+  }
+
   /** Get all seasons with pagination. */
   @Transactional(readOnly = true)
   public Page<Season> getAllSeasons(Pageable pageable) {

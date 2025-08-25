@@ -174,7 +174,7 @@ public class FactionListView extends Main {
   }
 
   private void refreshGrid() {
-    List<Faction> factions = factionService.findAll();
+    List<Faction> factions = factionService.findAllWithMembers();
     factionGrid.setItems(factions);
   }
 
@@ -338,9 +338,20 @@ public class FactionListView extends Main {
   }
 
   private void openViewDialog(Faction faction) {
+    // Reload faction with members to avoid lazy initialization issues
+    Optional<Faction> factionWithMembers =
+        factionService.getFactionByIdWithMembers(faction.getId());
+    if (factionWithMembers.isEmpty()) {
+      Notification.show("Faction not found", 3000, Notification.Position.BOTTOM_END)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      return;
+    }
+
+    Faction loadedFaction = factionWithMembers.get();
+
     Dialog viewDialog = new Dialog();
     viewDialog.setWidth("800px");
-    viewDialog.setHeaderTitle("Faction Details: " + faction.getName());
+    viewDialog.setHeaderTitle("Faction Details: " + loadedFaction.getName());
 
     VerticalLayout layout = new VerticalLayout();
     layout.setSpacing(true);
@@ -349,46 +360,53 @@ public class FactionListView extends Main {
     // Basic information
     Div basicInfo = new Div();
     basicInfo.add(new H3("Basic Information"));
-    basicInfo.add(new Div("Name: " + faction.getName()));
+    basicInfo.add(new Div("Name: " + loadedFaction.getName()));
     basicInfo.add(
         new Div(
             "Alignment: "
-                + (faction.getAlignment() != null ? faction.getAlignment().name() : "Not set")));
-    basicInfo.add(new Div("Status: " + (faction.getIsActive() ? "Active" : "Disbanded")));
+                + (loadedFaction.getAlignment() != null
+                    ? loadedFaction.getAlignment().name()
+                    : "Not set")));
+    basicInfo.add(new Div("Status: " + (loadedFaction.getIsActive() ? "Active" : "Disbanded")));
     basicInfo.add(
         new Div(
             "Leader: "
-                + (faction.getLeader() != null ? faction.getLeader().getName() : "No Leader")));
+                + (loadedFaction.getLeader() != null
+                    ? loadedFaction.getLeader().getName()
+                    : "No Leader")));
 
-    if (faction.getFormedDate() != null) {
+    if (loadedFaction.getFormedDate() != null) {
       basicInfo.add(
-          new Div("Formed Date: " + faction.getFormedDate().atZone(ZoneOffset.UTC).toLocalDate()));
+          new Div(
+              "Formed Date: "
+                  + loadedFaction.getFormedDate().atZone(ZoneOffset.UTC).toLocalDate()));
     }
 
-    if (faction.getDisbandedDate() != null) {
+    if (loadedFaction.getDisbandedDate() != null) {
       basicInfo.add(
           new Div(
               "Disbanded Date: "
-                  + faction.getDisbandedDate().atZone(ZoneOffset.UTC).toLocalDate()));
+                  + loadedFaction.getDisbandedDate().atZone(ZoneOffset.UTC).toLocalDate()));
     }
 
-    if (faction.getDescription() != null && !faction.getDescription().trim().isEmpty()) {
-      basicInfo.add(new Div("Description: " + faction.getDescription()));
+    if (loadedFaction.getDescription() != null
+        && !loadedFaction.getDescription().trim().isEmpty()) {
+      basicInfo.add(new Div("Description: " + loadedFaction.getDescription()));
     }
 
     layout.add(basicInfo);
 
     // Members section
-    if (!faction.getMembers().isEmpty()) {
+    if (!loadedFaction.getMembers().isEmpty()) {
       Div membersInfo = new Div();
-      membersInfo.add(new H3("Members (" + faction.getMemberCount() + ")"));
+      membersInfo.add(new H3("Members (" + loadedFaction.getMemberCount() + ")"));
 
       Grid<Wrestler> membersGrid = new Grid<>(Wrestler.class, false);
       membersGrid.addColumn(Wrestler::getName).setHeader("Name");
       membersGrid
           .addColumn(wrestler -> wrestler.getTier() != null ? wrestler.getTier().name() : "")
           .setHeader("Tier");
-      membersGrid.setItems(faction.getMembers());
+      membersGrid.setItems(loadedFaction.getMembers());
       membersGrid.setHeight("200px");
 
       membersInfo.add(membersGrid);
@@ -409,16 +427,27 @@ public class FactionListView extends Main {
   }
 
   private void openMembersDialog(Faction faction) {
+    // Reload faction with members to avoid lazy initialization issues
+    Optional<Faction> factionWithMembers =
+        factionService.getFactionByIdWithMembers(faction.getId());
+    if (factionWithMembers.isEmpty()) {
+      Notification.show("Faction not found", 3000, Notification.Position.BOTTOM_END)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      return;
+    }
+
+    Faction loadedFaction = factionWithMembers.get();
+
     Dialog membersDialog = new Dialog();
     membersDialog.setWidth("700px");
-    membersDialog.setHeaderTitle("Manage Members: " + faction.getName());
+    membersDialog.setHeaderTitle("Manage Members: " + loadedFaction.getName());
 
     VerticalLayout layout = new VerticalLayout();
     layout.setSpacing(true);
     layout.setPadding(true);
 
     // Current members grid
-    H3 currentMembersTitle = new H3("Current Members (" + faction.getMemberCount() + ")");
+    H3 currentMembersTitle = new H3("Current Members (" + loadedFaction.getMemberCount() + ")");
     Grid<Wrestler> currentMembersGrid = new Grid<>(Wrestler.class, false);
     currentMembersGrid.addColumn(Wrestler::getName).setHeader("Name");
     currentMembersGrid
@@ -436,11 +465,11 @@ public class FactionListView extends Main {
                   e -> {
                     try {
                       factionService.removeMemberFromFaction(
-                          faction.getId(), wrestler.getId(), "Removed via UI");
-                      refreshMembersDialog(faction, currentMembersGrid, membersDialog);
+                          loadedFaction.getId(), wrestler.getId(), "Removed via UI");
+                      refreshMembersDialog(loadedFaction, currentMembersGrid, membersDialog);
                       refreshGrid(); // Refresh main grid
                       Notification.show(
-                              wrestler.getName() + " removed from " + faction.getName(),
+                              wrestler.getName() + " removed from " + loadedFaction.getName(),
                               3000,
                               Notification.Position.BOTTOM_END)
                           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -457,14 +486,14 @@ public class FactionListView extends Main {
             })
         .setHeader("Actions");
 
-    currentMembersGrid.setItems(faction.getMembers());
+    currentMembersGrid.setItems(loadedFaction.getMembers());
     currentMembersGrid.setHeight("200px");
 
     // Add member section
     H3 addMemberTitle = new H3("Add Member");
     ComboBox<Wrestler> wrestlerCombo = new ComboBox<>("Select Wrestler");
     wrestlerCombo.setItems(
-        wrestlerService.findAll().stream().filter(w -> !faction.hasMember(w)).toList());
+        wrestlerService.findAll().stream().filter(w -> !loadedFaction.hasMember(w)).toList());
     wrestlerCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlerCombo.setWidth("300px");
 
@@ -475,12 +504,12 @@ public class FactionListView extends Main {
           Wrestler selectedWrestler = wrestlerCombo.getValue();
           if (selectedWrestler != null) {
             try {
-              factionService.addMemberToFaction(faction.getId(), selectedWrestler.getId());
+              factionService.addMemberToFaction(loadedFaction.getId(), selectedWrestler.getId());
               wrestlerCombo.clear();
-              refreshMembersDialog(faction, currentMembersGrid, membersDialog);
+              refreshMembersDialog(loadedFaction, currentMembersGrid, membersDialog);
               refreshGrid(); // Refresh main grid
               Notification.show(
-                      selectedWrestler.getName() + " added to " + faction.getName(),
+                      selectedWrestler.getName() + " added to " + loadedFaction.getName(),
                       3000,
                       Notification.Position.BOTTOM_END)
                   .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -512,8 +541,8 @@ public class FactionListView extends Main {
   }
 
   private void refreshMembersDialog(Faction faction, Grid<Wrestler> membersGrid, Dialog dialog) {
-    // Refresh faction data from database
-    Optional<Faction> updatedFaction = factionService.getFactionById(faction.getId());
+    // Refresh faction data from database with members eagerly loaded
+    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
     if (updatedFaction.isPresent()) {
       membersGrid.setItems(updatedFaction.get().getMembers());
       dialog.setHeaderTitle(

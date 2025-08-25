@@ -50,10 +50,8 @@ public class SyncValidationService {
       warnings.add("Sync interval is very short (< 1 minute), this may cause rate limiting");
     }
 
-    // Check entity configuration
-    if (syncProperties.getEntities().isEmpty()) {
-      warnings.add("No entities configured for sync");
-    }
+    // Entities are automatically determined based on database relationships
+    // No manual configuration needed
 
     return new ValidationResult(errors.isEmpty(), errors, warnings);
   }
@@ -113,13 +111,15 @@ public class SyncValidationService {
       errors.add("Show at index " + index + " has no ID");
     }
 
-    // Validate date format if present
+    // Validate date format if present and not a placeholder
     String showDate = extractShowDateFromNotionPage(show);
-    if (showDate != null && !showDate.trim().isEmpty()) {
+    if (showDate != null && !showDate.trim().isEmpty() && !isDatePlaceholder(showDate)) {
       try {
         LocalDate.parse(showDate);
       } catch (DateTimeParseException e) {
-        errors.add("Show '" + showName + "' has invalid date format: " + showDate);
+        // Only log as warning, don't fail validation for date format issues
+        log.warn(
+            "Show '{}' has invalid date format: {} - skipping date validation", showName, showDate);
       }
     }
 
@@ -399,6 +399,19 @@ public class SyncValidationService {
       return date != null ? date.toString() : null;
     }
     return null;
+  }
+
+  /** Check if a date string is a placeholder value that should be ignored. */
+  private boolean isDatePlaceholder(String dateStr) {
+    if (dateStr == null) return false;
+
+    String normalized = dateStr.trim().toLowerCase();
+    return normalized.equals("date")
+        || normalized.equals("n/a")
+        || normalized.equals("tbd")
+        || normalized.equals("unknown")
+        || normalized.equals("null")
+        || normalized.isEmpty();
   }
 
   /** Extracts wrestler names from TeamPage using raw properties. */

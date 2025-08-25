@@ -133,6 +133,26 @@ public interface FactionRepository
       """)
   List<Faction> findLargestFactions(Pageable pageable);
 
+  /** Find all factions with their members eagerly loaded for UI display. */
+  @Query(
+      """
+      SELECT DISTINCT f FROM Faction f
+      LEFT JOIN FETCH f.members m
+      LEFT JOIN FETCH f.leader
+      ORDER BY f.name
+      """)
+  List<Faction> findAllWithMembers();
+
+  /** Find faction by ID with members and leader eagerly loaded. */
+  @Query(
+      """
+      SELECT f FROM Faction f
+      LEFT JOIN FETCH f.members m
+      LEFT JOIN FETCH f.leader
+      WHERE f.id = :id
+      """)
+  Optional<Faction> findByIdWithMembers(@Param("id") Long id);
+
   /** Find newest active factions. */
   List<Faction> findByIsActiveTrueOrderByFormedDateDesc();
 

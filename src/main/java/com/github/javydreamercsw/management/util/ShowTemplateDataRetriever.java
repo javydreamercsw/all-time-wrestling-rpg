@@ -310,7 +310,7 @@ public class ShowTemplateDataRetriever {
   private static String retrievePageContentWithBlocks(String pageId) {
     try {
       NotionBlocksRetriever blocksRetriever =
-          new NotionBlocksRetriever(System.getenv("NOTION_TOKEN"));
+          new NotionBlocksRetriever(EnvironmentVariableUtil.getNotionToken());
       return blocksRetriever.retrievePageContent(pageId);
     } catch (Exception e) {
       log.error("Failed to retrieve page content for ID: {}", pageId, e);

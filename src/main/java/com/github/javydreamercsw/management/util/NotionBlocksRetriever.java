@@ -9,6 +9,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -24,7 +25,7 @@ public class NotionBlocksRetriever {
   private final ObjectMapper objectMapper;
   private final String notionToken;
 
-  public NotionBlocksRetriever(String notionToken) {
+  public NotionBlocksRetriever(@NonNull String notionToken) {
     this.notionToken = notionToken;
     this.httpClient = HttpClient.newHttpClient();
     this.objectMapper = new ObjectMapper();
@@ -64,7 +65,8 @@ public class NotionBlocksRetriever {
   }
 
   /** Get all blocks for a page, handling pagination. */
-  private List<JsonNode> getAllBlocks(String pageId) throws IOException, InterruptedException {
+  private List<JsonNode> getAllBlocks(@NonNull String pageId)
+      throws IOException, InterruptedException {
     List<JsonNode> allBlocks = new ArrayList<>();
     String nextCursor = null;
 

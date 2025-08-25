@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.controller.sync;
 
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
@@ -11,8 +12,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/sync/notion")
-@RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Notion Sync", description = "Notion synchronization management endpoints")
 @ConditionalOnProperty(name = "notion.sync.enabled", havingValue = "true", matchIfMissing = false)
@@ -37,6 +37,19 @@ public class NotionSyncController {
   private final NotionSyncService notionSyncService;
   private final NotionSyncScheduler notionSyncScheduler;
   private final NotionSyncProperties syncProperties;
+  private final EntityDependencyAnalyzer dependencyAnalyzer;
+
+  /** Constructor with optional NotionSyncScheduler for integration tests. */
+  public NotionSyncController(
+      NotionSyncService notionSyncService,
+      @Autowired(required = false) NotionSyncScheduler notionSyncScheduler,
+      NotionSyncProperties syncProperties,
+      EntityDependencyAnalyzer dependencyAnalyzer) {
+    this.notionSyncService = notionSyncService;
+    this.notionSyncScheduler = notionSyncScheduler;
+    this.syncProperties = syncProperties;
+    this.dependencyAnalyzer = dependencyAnalyzer;
+  }
 
   @Operation(
       summary = "Get sync status and configuration",
@@ -66,7 +79,9 @@ public class NotionSyncController {
               "maxBackupFiles",
               syncProperties.getBackup().getMaxFiles(),
               "detailedStatus",
-              notionSyncScheduler.getSyncStatus());
+              notionSyncScheduler != null
+                  ? notionSyncScheduler.getSyncStatus()
+                  : "Scheduler not available");
 
       return ResponseEntity.ok(status);
 
@@ -90,6 +105,11 @@ public class NotionSyncController {
   public ResponseEntity<Map<String, Object>> triggerManualSync() {
     try {
       log.info("Manual sync triggered via REST API");
+
+      if (notionSyncScheduler == null) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+            .body(Map.of("error", "Notion sync scheduler is not available"));
+      }
 
       List<SyncResult> results = notionSyncScheduler.triggerManualSync();
 
@@ -140,18 +160,20 @@ public class NotionSyncController {
           String entity) {
 
     try {
-      // Validate entity name
-      if (!syncProperties.getEntities().contains(entity.toLowerCase())) {
+      // Validate entity name against automatically determined entities
+      List<String> validEntities = dependencyAnalyzer.getAutomaticSyncOrder();
+      if (!validEntities.contains(entity.toLowerCase())) {
         return ResponseEntity.badRequest()
             .body(
-                Map.of(
-                    "error",
-                    "Invalid entity name: " + entity,
-                    "validEntities",
-                    syncProperties.getEntities()));
+                Map.of("error", "Invalid entity name: " + entity, "validEntities", validEntities));
       }
 
       log.info("Manual {} sync triggered via REST API", entity);
+
+      if (notionSyncScheduler == null) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+            .body(Map.of("error", "Notion sync scheduler is not available"));
+      }
 
       SyncResult result = notionSyncScheduler.triggerEntitySync(entity);
 
@@ -228,24 +250,31 @@ public class NotionSyncController {
       })
   @GetMapping("/entities")
   public ResponseEntity<Map<String, Object>> getSupportedEntities() {
+    List<String> automaticEntities = dependencyAnalyzer.getAutomaticSyncOrder();
     Map<String, Object> response =
         Map.of(
+            "syncEntities",
+            automaticEntities,
             "configuredEntities",
             syncProperties.getEntities(),
-            "supportedEntities",
-            List.of("shows", "wrestlers", "teams", "matches", "templates"),
+            "syncOrder",
+            "Automatically determined based on database relationships",
             "description",
             Map.of(
+                "templates",
+                "Show templates and formats",
+                "seasons",
+                "Wrestling seasons and periods",
                 "shows",
                 "Wrestling shows and events",
                 "wrestlers",
                 "Individual wrestlers and their profiles",
+                "factions",
+                "Wrestling factions and groups",
                 "teams",
                 "Wrestling teams and stables",
                 "matches",
-                "Match records and results",
-                "templates",
-                "Show templates and formats"));
+                "Match records and results"));
 
     return ResponseEntity.ok(response);
   }

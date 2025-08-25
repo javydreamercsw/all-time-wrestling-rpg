@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.ui.view.sync;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
@@ -55,10 +56,15 @@ public class NotionSyncView extends Main {
   private final NotionSyncScheduler notionSyncScheduler;
   private final NotionSyncProperties syncProperties;
   private final SyncProgressTracker progressTracker;
+  private final EntityDependencyAnalyzer dependencyAnalyzer;
 
   // UI Components
   private Button syncAllButton;
   private Button syncShowsButton;
+  private Button syncWrestlersButton;
+  private Button syncFactionsButton;
+  private Button syncTeamsButton;
+  private Button syncTemplatesButton;
   private ProgressBar progressBar;
   private Span statusLabel;
   private Span lastSyncLabel;
@@ -74,11 +80,13 @@ public class NotionSyncView extends Main {
       NotionSyncService notionSyncService,
       NotionSyncScheduler notionSyncScheduler,
       NotionSyncProperties syncProperties,
-      SyncProgressTracker progressTracker) {
+      SyncProgressTracker progressTracker,
+      EntityDependencyAnalyzer dependencyAnalyzer) {
     this.notionSyncService = notionSyncService;
     this.notionSyncScheduler = notionSyncScheduler;
     this.syncProperties = syncProperties;
     this.progressTracker = progressTracker;
+    this.dependencyAnalyzer = dependencyAnalyzer;
 
     initializeUI();
   }
@@ -148,15 +156,39 @@ public class NotionSyncView extends Main {
     syncAllButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     syncAllButton.addClickListener(e -> triggerFullSync());
 
-    syncShowsButton = new Button("Sync Shows Only", VaadinIcon.CALENDAR.create());
+    // Individual entity sync buttons
+    syncShowsButton = new Button("Sync Shows", VaadinIcon.CALENDAR.create());
     syncShowsButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-    syncShowsButton.addClickListener(e -> triggerShowsSync());
+    syncShowsButton.addClickListener(e -> triggerEntitySync("shows"));
+
+    syncWrestlersButton = new Button("Sync Wrestlers", VaadinIcon.USER.create());
+    syncWrestlersButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+    syncWrestlersButton.addClickListener(e -> triggerEntitySync("wrestlers"));
+
+    syncFactionsButton = new Button("Sync Factions", VaadinIcon.GROUP.create());
+    syncFactionsButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+    syncFactionsButton.addClickListener(e -> triggerEntitySync("factions"));
+
+    syncTeamsButton = new Button("Sync Teams", VaadinIcon.USERS.create());
+    syncTeamsButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+    syncTeamsButton.addClickListener(e -> triggerEntitySync("teams"));
+
+    syncTemplatesButton = new Button("Sync Templates", VaadinIcon.FILE_TEXT.create());
+    syncTemplatesButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+    syncTemplatesButton.addClickListener(e -> triggerEntitySync("templates"));
 
     Button statusButton = new Button("Check Status", VaadinIcon.INFO_CIRCLE.create());
     statusButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     statusButton.addClickListener(e -> updateSyncStatus());
 
-    controlSection.add(syncAllButton, syncShowsButton, statusButton);
+    controlSection.add(
+        syncAllButton,
+        syncShowsButton,
+        syncWrestlersButton,
+        syncFactionsButton,
+        syncTeamsButton,
+        syncTemplatesButton,
+        statusButton);
     return controlSection;
   }
 
@@ -194,7 +226,7 @@ public class NotionSyncView extends Main {
         createConfigItem("Scheduler Enabled", String.valueOf(syncProperties.isSchedulerEnabled())),
         createConfigItem(
             "Sync Interval", formatInterval(syncProperties.getScheduler().getInterval())),
-        createConfigItem("Entities", String.join(", ", syncProperties.getEntities())),
+        createConfigItem("Entities", String.join(", ", dependencyAnalyzer.getAutomaticSyncOrder())),
         createConfigItem("Backup Enabled", String.valueOf(syncProperties.isBackupEnabled())));
 
     if (syncProperties.isBackupEnabled()) {
@@ -267,30 +299,40 @@ public class NotionSyncView extends Main {
         });
   }
 
-  private void triggerShowsSync() {
+  private void triggerEntitySync(String entityName) {
     if (syncInProgress) {
       showNotification("Sync already in progress", NotificationVariant.LUMO_CONTRAST);
       return;
     }
 
-    String operationId = "shows-sync-" + System.currentTimeMillis();
+    String operationId = entityName + "-sync-" + System.currentTimeMillis();
+    String displayName = entityName.substring(0, 1).toUpperCase() + entityName.substring(1);
+
     startSyncOperationWithProgress(
-        "Syncing shows...",
+        "Syncing " + displayName.toLowerCase() + "...",
         operationId,
         () -> {
           try {
-            SyncResult result = notionSyncService.syncShows(operationId);
+            SyncResult result = notionSyncScheduler.syncEntity(entityName, operationId);
             return new SyncOperationResult(
                 result.isSuccess(),
                 1,
                 result.getSyncedCount(),
-                result.isSuccess() ? "Shows synced successfully" : result.getErrorMessage());
+                result.isSuccess()
+                    ? displayName + " synced successfully"
+                    : result.getErrorMessage());
           } catch (Exception e) {
-            log.error("Shows sync failed", e);
-            progressTracker.failOperation(operationId, "Shows sync failed: " + e.getMessage());
-            return new SyncOperationResult(false, 0, 0, "Shows sync failed: " + e.getMessage());
+            log.error("{} sync failed", displayName, e);
+            progressTracker.failOperation(
+                operationId, displayName + " sync failed: " + e.getMessage());
+            return new SyncOperationResult(
+                false, 0, 0, displayName + " sync failed: " + e.getMessage());
           }
         });
+  }
+
+  private void triggerShowsSync() {
+    triggerEntitySync("shows");
   }
 
   private void startSyncOperation(String operationName, SyncOperation operation) {
@@ -463,8 +505,13 @@ public class NotionSyncView extends Main {
   }
 
   private void updateButtonStates() {
-    syncAllButton.setEnabled(!syncInProgress);
-    syncShowsButton.setEnabled(!syncInProgress);
+    boolean enabled = !syncInProgress;
+    syncAllButton.setEnabled(enabled);
+    syncShowsButton.setEnabled(enabled);
+    syncWrestlersButton.setEnabled(enabled);
+    syncFactionsButton.setEnabled(enabled);
+    syncTeamsButton.setEnabled(enabled);
+    syncTemplatesButton.setEnabled(enabled);
   }
 
   private void handleSyncResult(SyncOperationResult result) {

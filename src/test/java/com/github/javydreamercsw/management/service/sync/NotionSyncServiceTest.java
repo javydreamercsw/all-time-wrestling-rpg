@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.service.sync;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -10,6 +11,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.season.SeasonService;
@@ -27,6 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class NotionSyncServiceTest {
@@ -59,7 +63,26 @@ class NotionSyncServiceTest {
   private NotionSyncService notionSyncService;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws Exception {
+    // Only mock the services that are actually used by syncShows()
+
+    // Mock circuit breaker to return a successful result (lenient to avoid unnecessary stubbing
+    // warnings)
+    SyncResult mockSuccessResult = SyncResult.success("Shows", 0, 0);
+    lenient().when(circuitBreakerService.execute(anyString(), any())).thenReturn(mockSuccessResult);
+
+    // Mock season service to avoid null pointer exceptions
+    Page<Season> emptySeasonPage = Page.empty();
+    lenient().when(seasonService.getAllSeasons(any(Pageable.class))).thenReturn(emptySeasonPage);
+
+    // Mock season creation
+    Season mockSeason = new Season();
+    mockSeason.setId(1L);
+    mockSeason.setName("Season 1");
+    lenient()
+        .when(seasonService.createSeason(anyString(), anyString(), anyInt()))
+        .thenReturn(mockSeason);
+
     notionSyncService =
         new NotionSyncService(
             objectMapper,
@@ -104,17 +127,15 @@ class NotionSyncServiceTest {
   void shouldHandleEmptyShowsListFromNotion() {
     // Given
     when(syncProperties.isEntityEnabled("shows")).thenReturn(true);
-    when(syncProperties.isBackupEnabled()).thenReturn(false);
 
     // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
     SyncResult result = notionSyncService.syncShows();
 
-    // Then - Should fail gracefully due to missing NOTION_TOKEN
+    // Then - Should fail due to missing NOTION_TOKEN (this is correct behavior)
     assertNotNull(result);
-    assertFalse(result.isSuccess());
+    assertFalse(result.isSuccess()); // Should fail without NOTION_TOKEN
     assertEquals("Shows", result.getEntityType());
-    assertNotNull(result.getErrorMessage());
-    assertTrue(result.getErrorMessage().contains("NOTION_TOKEN"));
+    assertThat(result.getErrorMessage()).contains("NOTION_TOKEN");
   }
 
   @Test
@@ -122,7 +143,6 @@ class NotionSyncServiceTest {
   void shouldHandleShowsWithValidData() {
     // Given
     when(syncProperties.isEntityEnabled("shows")).thenReturn(true);
-    when(syncProperties.isBackupEnabled()).thenReturn(false);
 
     // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
     SyncResult result = notionSyncService.syncShows();
@@ -160,7 +180,7 @@ class NotionSyncServiceTest {
     when(syncProperties.isEntityEnabled("factions")).thenReturn(false);
 
     // When
-    SyncResult result = notionSyncService.syncFactions(null);
+    SyncResult result = notionSyncService.syncFactions("test-operation-id");
 
     // Then
     assertTrue(result.isSuccess());
@@ -174,10 +194,9 @@ class NotionSyncServiceTest {
   void shouldHandleEmptyFactionsListFromNotion() {
     // Given
     when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
-    when(syncProperties.isBackupEnabled()).thenReturn(false);
 
     // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
-    SyncResult result = notionSyncService.syncFactions(null);
+    SyncResult result = notionSyncService.syncFactions("test-operation-id");
 
     // Then - Should fail gracefully due to missing NOTION_TOKEN
     assertNotNull(result);
@@ -192,19 +211,20 @@ class NotionSyncServiceTest {
     // Given
     String operationId = "test-faction-sync";
     when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
-    when(syncProperties.isBackupEnabled()).thenReturn(false);
 
     // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
     SyncResult result = notionSyncService.syncFactions(operationId);
 
-    // Then - Should fail gracefully but still track progress
+    // Then - Should fail gracefully due to missing NOTION_TOKEN
     assertNotNull(result);
     assertFalse(result.isSuccess());
     assertEquals("Factions", result.getEntityType());
+    assertNotNull(result.getErrorMessage());
+    assertTrue(result.getErrorMessage().contains("NOTION_TOKEN"));
 
-    // Verify progress tracking was attempted
-    verify(progressTracker).startOperation(eq(operationId), eq("Sync Factions"), eq(4));
-    verify(progressTracker).failOperation(eq(operationId), anyString());
+    // Verify progress tracking failure was recorded (no startOperation since we fail early)
+    verify(progressTracker).failOperation(eq(operationId), contains("NOTION_TOKEN"));
+    verify(progressTracker, never()).startOperation(anyString(), anyString(), anyInt());
   }
 
   /**

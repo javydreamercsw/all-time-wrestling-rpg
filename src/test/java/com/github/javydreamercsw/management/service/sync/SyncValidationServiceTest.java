@@ -33,7 +33,7 @@ class SyncValidationServiceTest {
   void shouldValidateSyncPrerequisitesSuccessfully() {
     // Given
     when(syncProperties.isEnabled()).thenReturn(true);
-    when(syncProperties.getEntities()).thenReturn(Arrays.asList("shows", "wrestlers"));
+    lenient().when(syncProperties.getEntities()).thenReturn(Arrays.asList("shows", "wrestlers"));
 
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
     scheduler.setEnabled(true);
@@ -79,7 +79,7 @@ class SyncValidationServiceTest {
   void shouldWarnAboutShortSyncInterval() {
     // Given
     when(syncProperties.isEnabled()).thenReturn(true);
-    when(syncProperties.getEntities()).thenReturn(Arrays.asList("shows"));
+    lenient().when(syncProperties.getEntities()).thenReturn(Arrays.asList("shows"));
 
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
     scheduler.setEnabled(true);
@@ -102,7 +102,7 @@ class SyncValidationServiceTest {
   void shouldWarnAboutNoEntitiesConfigured() {
     // Given
     when(syncProperties.isEnabled()).thenReturn(true);
-    when(syncProperties.getEntities()).thenReturn(Collections.emptyList());
+    lenient().when(syncProperties.getEntities()).thenReturn(Collections.emptyList());
 
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
     scheduler.setEnabled(true);

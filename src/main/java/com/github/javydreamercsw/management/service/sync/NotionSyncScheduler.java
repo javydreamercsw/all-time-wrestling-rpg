@@ -27,6 +27,20 @@ public class NotionSyncScheduler {
 
   private final NotionSyncService notionSyncService;
   private final NotionSyncProperties syncProperties;
+  private final EntityDependencyAnalyzer dependencyAnalyzer;
+
+  /**
+   * Gets the list of entities to sync using automatic dependency analysis. Analyzes entity
+   * relationships to determine the optimal sync order.
+   *
+   * @return List of entity names in dependency order
+   */
+  private List<String> getSyncEntities() {
+    log.info("🤖 Using automatic dependency analysis for sync order");
+    List<String> automaticEntities = dependencyAnalyzer.getAutomaticSyncOrder();
+    log.info("📋 Determined sync order: {}", automaticEntities);
+    return automaticEntities;
+  }
 
   /**
    * Performs automatic synchronization of all configured entities. The interval is configurable via
@@ -46,8 +60,8 @@ public class NotionSyncScheduler {
     try {
       List<SyncResult> results = new ArrayList<>();
 
-      // Sync each configured entity
-      for (String entity : syncProperties.getEntities()) {
+      // Sync each entity in dependency order
+      for (String entity : getSyncEntities()) {
         try {
           SyncResult result = syncEntity(entity);
           results.add(result);
@@ -72,6 +86,50 @@ public class NotionSyncScheduler {
     }
 
     log.info("=== SCHEDULED NOTION SYNC COMPLETED ===");
+  }
+
+  /**
+   * Synchronizes a specific entity type with custom operation ID for progress tracking.
+   *
+   * @param entityName The name of the entity to sync
+   * @param operationId Custom operation ID for progress tracking
+   * @return SyncResult containing the outcome of the sync operation
+   */
+  public SyncResult syncEntity(String entityName, String operationId) {
+    log.debug("Syncing entity: {} with operation ID: {}", entityName, operationId);
+
+    switch (entityName.toLowerCase()) {
+      case "shows":
+        return notionSyncService.syncShows(operationId);
+
+      case "wrestlers":
+        return notionSyncService.syncWrestlers(operationId);
+
+      case "factions":
+        return notionSyncService.syncFactions(operationId);
+
+      case "teams":
+        return notionSyncService.syncTeams();
+
+      case "matches":
+        // TODO: Implement match sync
+        log.warn("Match sync not yet implemented");
+        return SyncResult.success("Matches", 0, 0);
+
+      case "templates":
+        return notionSyncService.syncShowTemplates(operationId);
+
+      case "seasons":
+        return notionSyncService.syncSeasons(operationId);
+
+      case "show-types":
+      case "showtypes":
+        return notionSyncService.syncShowTypes(operationId);
+
+      default:
+        log.warn("Unknown entity type for sync: {}", entityName);
+        return SyncResult.failure(entityName, "Unknown entity type");
+    }
   }
 
   /**
@@ -106,6 +164,13 @@ public class NotionSyncScheduler {
 
       case "templates":
         return notionSyncService.syncShowTemplates(operationId);
+
+      case "seasons":
+        return notionSyncService.syncSeasons(operationId);
+
+      case "show-types":
+      case "showtypes":
+        return notionSyncService.syncShowTypes(operationId);
 
       default:
         log.warn("Unknown entity type for sync: {}", entityName);
@@ -154,7 +219,7 @@ public class NotionSyncScheduler {
 
     List<SyncResult> results = new ArrayList<>();
 
-    for (String entity : syncProperties.getEntities()) {
+    for (String entity : getSyncEntities()) {
       try {
         SyncResult result = syncEntity(entity);
         results.add(result);
@@ -221,10 +286,7 @@ public class NotionSyncScheduler {
         .append("- Sync Interval: ")
         .append(syncProperties.getScheduler().getInterval())
         .append("ms\n");
-    status
-        .append("- Entities: ")
-        .append(String.join(", ", syncProperties.getEntities()))
-        .append("\n");
+    status.append("- Entities: ").append(String.join(", ", getSyncEntities())).append("\n");
     status.append("- Backup Enabled: ").append(syncProperties.isBackupEnabled()).append("\n");
 
     if (syncProperties.isBackupEnabled()) {

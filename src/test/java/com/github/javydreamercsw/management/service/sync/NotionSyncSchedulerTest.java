@@ -19,12 +19,14 @@ class NotionSyncSchedulerTest {
 
   @Mock private NotionSyncService notionSyncService;
   @Mock private NotionSyncProperties syncProperties;
+  @Mock private EntityDependencyAnalyzer dependencyAnalyzer;
 
   private NotionSyncScheduler notionSyncScheduler;
 
   @BeforeEach
   void setUp() {
-    notionSyncScheduler = new NotionSyncScheduler(notionSyncService, syncProperties);
+    notionSyncScheduler =
+        new NotionSyncScheduler(notionSyncService, syncProperties, dependencyAnalyzer);
   }
 
   @Test
@@ -42,11 +44,11 @@ class NotionSyncSchedulerTest {
   }
 
   @Test
-  @DisplayName("Should perform sync for all configured entities")
+  @DisplayName("Should perform sync for all automatically determined entities")
   void shouldPerformSyncForAllConfiguredEntities() {
     // Given
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
-    when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
     when(notionSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0));
     when(notionSyncService.syncWrestlers(anyString()))
         .thenReturn(SyncResult.success("Wrestlers", 3, 0));
@@ -64,7 +66,7 @@ class NotionSyncSchedulerTest {
   void shouldHandleSyncFailuresGracefully() {
     // Given
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
-    when(syncProperties.getEntities()).thenReturn(List.of("shows"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows"));
     when(notionSyncService.syncShows(anyString()))
         .thenReturn(SyncResult.failure("Shows", "Connection failed"));
 
@@ -78,7 +80,7 @@ class NotionSyncSchedulerTest {
   @DisplayName("Should trigger manual sync for all entities")
   void shouldTriggerManualSyncForAllEntities() {
     // Given
-    when(syncProperties.getEntities()).thenReturn(List.of("shows"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows"));
     when(notionSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 10, 0));
 
     // When
@@ -128,7 +130,7 @@ class NotionSyncSchedulerTest {
     when(syncProperties.isEnabled()).thenReturn(true);
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(syncProperties.getScheduler()).thenReturn(createMockScheduler());
-    when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
     when(syncProperties.isBackupEnabled()).thenReturn(true);
     when(syncProperties.getBackup()).thenReturn(createMockBackup());
 

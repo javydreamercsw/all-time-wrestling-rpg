@@ -43,7 +43,7 @@ class FactionMemberManagementTest {
     testFaction = createTestFactionWithMembers();
 
     // Mock service responses
-    when(factionService.findAll()).thenReturn(List.of(testFaction));
+    when(factionService.findAllWithMembers()).thenReturn(List.of(testFaction));
     when(wrestlerService.findAll()).thenReturn(availableWrestlers);
     // Note: getFactionById is only mocked when needed in specific tests
 

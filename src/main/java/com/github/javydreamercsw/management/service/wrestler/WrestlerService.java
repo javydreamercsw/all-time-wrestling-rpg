@@ -83,6 +83,11 @@ public class WrestlerService {
     return wrestlerRepository.findById(id);
   }
 
+  /** Find wrestler by ID (alias for getWrestlerById for consistency). */
+  public Optional<Wrestler> findById(Long id) {
+    return getWrestlerById(id);
+  }
+
   /** Get all wrestlers (alias for findAll for UI compatibility). */
   public List<Wrestler> getAllWrestlers() {
     return findAll();

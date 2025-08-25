@@ -40,7 +40,7 @@ class FactionCrudIntegrationTest {
     testFactions = createTestFactions();
 
     // Mock service responses
-    when(factionService.findAll()).thenReturn(testFactions);
+    when(factionService.findAllWithMembers()).thenReturn(testFactions);
     when(wrestlerService.findAll()).thenReturn(testWrestlers);
 
     factionListView = new FactionListView(factionService, wrestlerService);
@@ -178,7 +178,7 @@ class FactionCrudIntegrationTest {
   @DisplayName("Should refresh data after CRUD operations")
   void shouldRefreshDataAfterCrudOperations() {
     // Given - Initial data load
-    verify(factionService, atLeastOnce()).findAll();
+    verify(factionService, atLeastOnce()).findAllWithMembers();
 
     // When - Simulate data refresh after operation
     List<Faction> updatedFactions = new ArrayList<>(testFactions);

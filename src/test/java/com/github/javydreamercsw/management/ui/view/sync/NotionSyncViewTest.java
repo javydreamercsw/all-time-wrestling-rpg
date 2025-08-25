@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
@@ -22,6 +23,7 @@ class NotionSyncViewTest {
   @Mock private NotionSyncScheduler notionSyncScheduler;
   @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncProgressTracker progressTracker;
+  @Mock private EntityDependencyAnalyzer dependencyAnalyzer;
 
   private NotionSyncView notionSyncView;
 
@@ -31,7 +33,7 @@ class NotionSyncViewTest {
     when(syncProperties.isEnabled()).thenReturn(true);
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(syncProperties.isBackupEnabled()).thenReturn(true);
-    when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
 
     // Mock scheduler properties
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
@@ -45,7 +47,12 @@ class NotionSyncViewTest {
     when(syncProperties.getBackup()).thenReturn(backup);
 
     notionSyncView =
-        new NotionSyncView(notionSyncService, notionSyncScheduler, syncProperties, progressTracker);
+        new NotionSyncView(
+            notionSyncService,
+            notionSyncScheduler,
+            syncProperties,
+            progressTracker,
+            dependencyAnalyzer);
   }
 
   @Test
@@ -66,7 +73,6 @@ class NotionSyncViewTest {
     verify(syncProperties, atLeastOnce()).isEnabled();
     verify(syncProperties, atLeastOnce()).isSchedulerEnabled();
     verify(syncProperties, atLeastOnce()).isBackupEnabled();
-    verify(syncProperties, atLeastOnce()).getEntities();
     verify(syncProperties, atLeastOnce()).getScheduler();
     verify(syncProperties, atLeastOnce()).getBackup();
   }
@@ -78,10 +84,15 @@ class NotionSyncViewTest {
     when(syncProperties.isEnabled()).thenReturn(false);
     when(syncProperties.isSchedulerEnabled()).thenReturn(false);
     when(syncProperties.isBackupEnabled()).thenReturn(false);
-    when(syncProperties.getEntities()).thenReturn(List.of());
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of());
 
     NotionSyncView disabledView =
-        new NotionSyncView(notionSyncService, notionSyncScheduler, syncProperties, progressTracker);
+        new NotionSyncView(
+            notionSyncService,
+            notionSyncScheduler,
+            syncProperties,
+            progressTracker,
+            dependencyAnalyzer);
 
     assertNotNull(disabledView);
   }
@@ -89,10 +100,15 @@ class NotionSyncViewTest {
   @Test
   @DisplayName("Should handle empty entities list")
   void shouldHandleEmptyEntitiesList() {
-    when(syncProperties.getEntities()).thenReturn(List.of());
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of());
 
     NotionSyncView emptyEntitiesView =
-        new NotionSyncView(notionSyncService, notionSyncScheduler, syncProperties, progressTracker);
+        new NotionSyncView(
+            notionSyncService,
+            notionSyncScheduler,
+            syncProperties,
+            progressTracker,
+            dependencyAnalyzer);
 
     assertNotNull(emptyEntitiesView);
   }
@@ -105,7 +121,7 @@ class NotionSyncViewTest {
     when(syncProperties.isEnabled()).thenReturn(true);
     when(syncProperties.isSchedulerEnabled()).thenReturn(false);
     when(syncProperties.isBackupEnabled()).thenReturn(false);
-    when(syncProperties.getEntities()).thenReturn(List.of());
+    lenient().when(syncProperties.getEntities()).thenReturn(List.of());
 
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
     when(syncProperties.getScheduler()).thenReturn(scheduler);
@@ -114,7 +130,11 @@ class NotionSyncViewTest {
     assertDoesNotThrow(
         () -> {
           new NotionSyncView(
-              notionSyncService, notionSyncScheduler, syncProperties, progressTracker);
+              notionSyncService,
+              notionSyncScheduler,
+              syncProperties,
+              progressTracker,
+              dependencyAnalyzer);
         });
   }
 }

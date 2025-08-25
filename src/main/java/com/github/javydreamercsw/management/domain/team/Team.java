@@ -14,6 +14,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
@@ -41,8 +42,9 @@ public class Team extends AbstractEntity<Long> {
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;
 
+  @Lob
   @Column(name = "description")
-  @Size(max = DESCRIPTION_MAX_LENGTH) private String description;
+  private String description;
 
   // First wrestler (required)
   @ManyToOne(fetch = FetchType.LAZY, optional = false)

@@ -20,11 +20,10 @@ public class NotionSyncProperties {
    */
   private boolean enabled = false;
 
-  /**
-   * List of entities to synchronize from Notion. Supported values: shows, wrestlers, teams,
-   * matches, templates
-   */
-  private List<String> entities = List.of("shows");
+  // Entities to sync are now automatically determined based on database relationships
+  // Keeping deprecated methods for backward compatibility with existing tests
+  @Deprecated(forRemoval = true)
+  private List<String> entities = List.of(); // Empty list - not used anymore
 
   /** Scheduler configuration for automatic synchronization. */
   private Scheduler scheduler = new Scheduler();
@@ -70,13 +69,14 @@ public class NotionSyncProperties {
   }
 
   /**
-   * Check if a specific entity is configured for synchronization.
+   * Check if a specific entity should be synchronized. With automatic dependency analysis, all
+   * entities are enabled when sync is enabled.
    *
    * @param entityName The name of the entity to check
-   * @return true if the entity should be synchronized
+   * @return true if sync is enabled (all entities are automatically included)
    */
   public boolean isEntityEnabled(String entityName) {
-    return enabled && entities.contains(entityName.toLowerCase());
+    return enabled; // All entities are automatically included when sync is enabled
   }
 
   /**
@@ -95,5 +95,26 @@ public class NotionSyncProperties {
    */
   public boolean isBackupEnabled() {
     return backup.enabled;
+  }
+
+  // ==================== DEPRECATED METHODS FOR BACKWARD COMPATIBILITY ====================
+  // These methods are kept for existing tests but should not be used in new code
+
+  /**
+   * @deprecated Entities are now automatically determined based on database relationships. This
+   *     method returns an empty list and should not be used.
+   */
+  @Deprecated(forRemoval = true)
+  public List<String> getEntities() {
+    return entities; // Returns empty list
+  }
+
+  /**
+   * @deprecated Entities are now automatically determined based on database relationships. This
+   *     method does nothing and should not be used.
+   */
+  @Deprecated(forRemoval = true)
+  public void setEntities(List<String> entities) {
+    // Do nothing - entities are automatically determined
   }
 }

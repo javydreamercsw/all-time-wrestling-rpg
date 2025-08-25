@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
@@ -27,6 +28,7 @@ class NotionSyncControllerTest {
   @MockBean private NotionSyncService notionSyncService;
   @MockBean private NotionSyncScheduler notionSyncScheduler;
   @MockBean private NotionSyncProperties syncProperties;
+  @MockBean private EntityDependencyAnalyzer dependencyAnalyzer;
 
   @Test
   @DisplayName("Should return sync status")
@@ -34,8 +36,8 @@ class NotionSyncControllerTest {
     // Given
     when(syncProperties.isEnabled()).thenReturn(true);
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
-    when(syncProperties.getEntities()).thenReturn(List.of("shows"));
     when(syncProperties.isBackupEnabled()).thenReturn(true);
+    when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
     when(syncProperties.getScheduler()).thenReturn(createMockScheduler());
     when(syncProperties.getBackup()).thenReturn(createMockBackup());
     when(notionSyncScheduler.getSyncStatus()).thenReturn("Mock status");
@@ -95,7 +97,7 @@ class NotionSyncControllerTest {
   @DisplayName("Should trigger entity sync successfully")
   void shouldTriggerEntitySyncSuccessfully() throws Exception {
     // Given
-    when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
     when(notionSyncScheduler.triggerEntitySync("shows"))
         .thenReturn(SyncResult.success("Shows", 8, 0));
 
@@ -114,7 +116,7 @@ class NotionSyncControllerTest {
   @DisplayName("Should reject invalid entity name")
   void shouldRejectInvalidEntityName() throws Exception {
     // Given
-    when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
 
     // When & Then
     mockMvc
@@ -162,6 +164,7 @@ class NotionSyncControllerTest {
   @DisplayName("Should return supported entities")
   void shouldReturnSupportedEntities() throws Exception {
     // Given
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
     when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
 
     // When & Then
@@ -171,7 +174,7 @@ class NotionSyncControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.configuredEntities[0]").value("shows"))
         .andExpect(jsonPath("$.configuredEntities[1]").value("wrestlers"))
-        .andExpect(jsonPath("$.supportedEntities").isArray())
+        .andExpect(jsonPath("$.syncEntities").isArray())
         .andExpect(jsonPath("$.description").isMap());
   }
 

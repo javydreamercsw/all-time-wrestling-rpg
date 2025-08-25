@@ -53,6 +53,9 @@ public class Season extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
+  @Column(name = "notion_id")
+  private String notionId; // External identifier for Notion synchronization
+
   // Relationships
   @OneToMany(mappedBy = "season", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   private List<Show> shows = new ArrayList<>();

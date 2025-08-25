@@ -48,5 +48,10 @@ logging:
 # Disable external API calls in tests by not setting API keys
 # This ensures tests use the mock provider
 # GEMINI_API_KEY: not-set
-# OPENAI_API_KEY: not-set  
+# OPENAI_API_KEY: not-set
 # CLAUDE_API_KEY: not-set
+
+# Enable Notion sync for testing (but without actual NOTION_TOKEN)
+notion:
+  sync:
+    enabled: true

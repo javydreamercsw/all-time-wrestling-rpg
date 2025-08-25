@@ -158,10 +158,8 @@ public class SyncHealthMonitor implements HealthIndicator {
   }
 
   private boolean isConfigurationValid() {
-    return syncProperties.isEnabled()
-        && EnvironmentVariableUtil.isNotionTokenAvailable()
-        && syncProperties.getEntities() != null
-        && !syncProperties.getEntities().isEmpty();
+    return syncProperties.isEnabled() && EnvironmentVariableUtil.isNotionTokenAvailable();
+    // Entities are automatically determined, no need to check configuration
   }
 
   private boolean hasRecentFailures() {

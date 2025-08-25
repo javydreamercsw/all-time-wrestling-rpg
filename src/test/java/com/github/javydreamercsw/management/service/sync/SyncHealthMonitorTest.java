@@ -39,7 +39,7 @@ class SyncHealthMonitorTest {
   void shouldReturnHealthyStatusWhenNoIssues() {
     // Given - Mock valid configuration and NOTION_TOKEN availability
     when(syncProperties.isEnabled()).thenReturn(true);
-    when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
+    lenient().when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
 
     // Set up environment for valid configuration
     System.setProperty("NOTION_TOKEN", "test-token");

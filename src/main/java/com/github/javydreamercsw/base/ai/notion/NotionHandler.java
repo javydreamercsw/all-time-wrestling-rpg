@@ -281,7 +281,28 @@ public class NotionHandler {
   }
 
   private String getValue(@NonNull NotionClient client, @NonNull PageProperty value) {
-    return switch (value.getType().getValue()) {
+    return getValue(
+        client, value, true); // Default to resolving relationships for backward compatibility
+  }
+
+  private String getValue(
+      @NonNull NotionClient client, @NonNull PageProperty value, boolean resolveRelationships) {
+    // Handle cases where type is null but we can infer the type from populated fields
+    String propertyType = null;
+
+    if (value.getType() != null && value.getType().getValue() != null) {
+      propertyType = value.getType().getValue();
+    } else {
+      // Infer property type from populated fields when type is null
+      propertyType = inferPropertyType(value);
+      if (propertyType == null) {
+        log.warn("Property type is null and cannot be inferred for property: {}", value);
+        return "N/A";
+      }
+      log.debug("Inferred property type '{}' for property with null type", propertyType);
+    }
+
+    return switch (propertyType) {
       case "formula" -> getFormulaValue(value.getFormula());
       case "people" -> value.getPeople().stream().findFirst().map(p -> p.getName()).orElse("N/A");
       case "created_by" -> value.getCreatedBy().getName();
@@ -291,8 +312,25 @@ public class NotionHandler {
       case "last_edited_time" -> value.getLastEditedTime().toString();
       case "unique_id" -> value.getUniqueId().getPrefix() + "-" + value.getUniqueId().getNumber();
       case "title" -> value.getTitle().get(0).getPlainText();
-      case "relation" ->
-          value.getRelation().stream()
+      case "rich_text" -> {
+        // Handle rich_text properties (commonly used for text fields in Notion)
+        if (value.getRichText() != null && !value.getRichText().isEmpty()) {
+          yield value.getRichText().stream()
+              .map(richText -> richText.getPlainText())
+              .filter(text -> text != null && !text.trim().isEmpty())
+              .reduce((a, b) -> a + " " + b)
+              .orElse("N/A");
+        } else {
+          yield "N/A";
+        }
+      }
+      case "relation" -> {
+        if (!resolveRelationships) {
+          // Fast mode: just return the count without resolving names
+          yield value.getRelation().size() + " items";
+        } else {
+          // Full mode: resolve relationship names (expensive)
+          yield value.getRelation().stream()
               .map(
                   relation -> {
                     // Suppress System.out for relation retrievePage calls
@@ -316,8 +354,150 @@ public class NotionHandler {
                   })
               .reduce((a, b) -> a + ", " + b)
               .orElse("N/A");
-      default -> value.getType().toString();
+        }
+      }
+      case "select" -> {
+        // Handle select properties (dropdown with single selection)
+        if (value.getSelect() != null) {
+          yield value.getSelect().getName();
+        } else {
+          yield "N/A";
+        }
+      }
+      case "status" -> {
+        // Handle status properties (workflow status)
+        if (value.getStatus() != null) {
+          yield value.getStatus().getName();
+        } else {
+          yield "N/A";
+        }
+      }
+      case "multi_select" -> {
+        // Handle multi_select properties (dropdown with multiple selections)
+        if (value.getMultiSelect() != null && !value.getMultiSelect().isEmpty()) {
+          yield value.getMultiSelect().stream()
+              .map(option -> option.getName())
+              .filter(name -> name != null && !name.trim().isEmpty())
+              .reduce((a, b) -> a + ", " + b)
+              .orElse("N/A");
+        } else {
+          yield "N/A";
+        }
+      }
+      case "date" -> {
+        // Handle date properties
+        if (value.getDate() != null && value.getDate().getStart() != null) {
+          yield value.getDate().getStart().toString();
+        } else {
+          yield "N/A";
+        }
+      }
+      case "checkbox" -> {
+        // Handle checkbox properties
+        if (value.getCheckbox() != null) {
+          yield value.getCheckbox().toString();
+        } else {
+          yield "false";
+        }
+      }
+      case "url" -> {
+        // Handle URL properties
+        if (value.getUrl() != null && !value.getUrl().trim().isEmpty()) {
+          yield value.getUrl();
+        } else {
+          yield "N/A";
+        }
+      }
+      case "email" -> {
+        // Handle email properties
+        if (value.getEmail() != null && !value.getEmail().trim().isEmpty()) {
+          yield value.getEmail();
+        } else {
+          yield "N/A";
+        }
+      }
+      case "phone_number" -> {
+        // Handle phone number properties
+        if (value.getPhoneNumber() != null && !value.getPhoneNumber().trim().isEmpty()) {
+          yield value.getPhoneNumber();
+        } else {
+          yield "N/A";
+        }
+      }
+      default -> {
+        // Log unhandled property types for debugging
+        log.warn("Unhandled property type '{}' for property: {}", propertyType, value);
+        yield "N/A";
+      }
     };
+  }
+
+  /**
+   * Infers the property type from populated fields when the type field is null. This is a fallback
+   * mechanism for cases where the Notion API doesn't properly set the type.
+   */
+  private String inferPropertyType(@NonNull PageProperty value) {
+    // Check each possible property type by looking at which field is populated
+    if (value.getTitle() != null && !value.getTitle().isEmpty()) {
+      return "title";
+    }
+    if (value.getRichText() != null && !value.getRichText().isEmpty()) {
+      return "rich_text";
+    }
+    if (value.getSelect() != null) {
+      return "select";
+    }
+    if (value.getStatus() != null) {
+      return "status";
+    }
+    if (value.getMultiSelect() != null && !value.getMultiSelect().isEmpty()) {
+      return "multi_select";
+    }
+    if (value.getDate() != null) {
+      return "date";
+    }
+    if (value.getCheckbox() != null) {
+      return "checkbox";
+    }
+    if (value.getNumber() != null) {
+      return "number";
+    }
+    if (value.getUrl() != null) {
+      return "url";
+    }
+    if (value.getEmail() != null) {
+      return "email";
+    }
+    if (value.getPhoneNumber() != null) {
+      return "phone_number";
+    }
+    if (value.getPeople() != null && !value.getPeople().isEmpty()) {
+      return "people";
+    }
+    if (value.getRelation() != null && !value.getRelation().isEmpty()) {
+      return "relation";
+    }
+    if (value.getFormula() != null) {
+      return "formula";
+    }
+    if (value.getCreatedBy() != null) {
+      return "created_by";
+    }
+    if (value.getLastEditedBy() != null) {
+      return "last_edited_by";
+    }
+    if (value.getCreatedTime() != null) {
+      return "created_time";
+    }
+    if (value.getLastEditedTime() != null) {
+      return "last_edited_time";
+    }
+    if (value.getUniqueId() != null) {
+      return "unique_id";
+    }
+
+    // Could not infer type
+    return null;
   }
 
   /** Helper method to extract values from formula properties based on their result type. */
@@ -757,7 +937,7 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesForSync(client, showDbId, "Show");
+      return loadAllEntitiesFromDatabase(client, showDbId, "Show", this::mapPageToShowPageForSync);
     } catch (Exception e) {
       log.error("Failed to load all shows for sync", e);
       throw new RuntimeException("Failed to load shows from Notion: " + e.getMessage(), e);
@@ -1103,6 +1283,63 @@ public class NotionHandler {
     return getInstance().loadTeam(teamName);
   }
 
+  // ==================== SEASON LOADING METHODS ====================
+
+  /** Loads a season from the Notion database by name. */
+  public Optional<SeasonPage> loadSeason(@NonNull String seasonName) {
+    log.debug("Loading season: '{}'", seasonName);
+
+    String seasonDbId = getDatabaseId("Seasons");
+    if (seasonDbId == null) {
+      log.warn("Seasons database not found in workspace");
+      return Optional.empty();
+    }
+
+    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+      return loadEntityFromDatabase(
+          client, seasonDbId, seasonName, "Season", this::mapPageToSeasonPage);
+    } catch (Exception e) {
+      log.error("Failed to load season: {}", seasonName, e);
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Loads all seasons from the Notion Seasons database.
+   *
+   * @return List of all SeasonPage objects from the Seasons database
+   */
+  public List<SeasonPage> loadAllSeasons() {
+    log.debug("Loading all seasons from Seasons database");
+
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String seasonDbId = getDatabaseId("Seasons");
+    if (seasonDbId == null) {
+      log.warn("Seasons database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(client, seasonDbId, "Season", this::mapPageToSeasonPage);
+    } catch (Exception e) {
+      log.error("Failed to load all seasons", e);
+      throw new RuntimeException("Failed to load seasons from Notion: " + e.getMessage(), e);
+    }
+  }
+
+  /** Static convenience method to load a season. */
+  public static Optional<SeasonPage> loadSeasonStatic(@NonNull String seasonName) {
+    return getInstance().loadSeason(seasonName);
+  }
+
   // ==================== FACTION LOADING METHODS ====================
 
   /** Loads a faction from the Notion database by name. */
@@ -1401,10 +1638,14 @@ public class NotionHandler {
           (key, value) -> {
             try {
               String simpleValue = extractSimplePropertyValue(value);
-              rawProperties.put(key, simpleValue);
+              if (simpleValue != null) {
+                rawProperties.put(key, simpleValue);
+              } else {
+                log.debug("Property {} extracted as null, skipping", key);
+              }
             } catch (Exception e) {
               log.debug("Failed to extract property {}: {}", key, e.getMessage());
-              rawProperties.put(key, "N/A");
+              // Don't put "N/A" - just skip the property if extraction fails
             }
           });
     }
@@ -1415,35 +1656,49 @@ public class NotionHandler {
 
   /** Extracts a simple string value from a PageProperty without complex processing. */
   private String extractSimplePropertyValue(PageProperty property) {
-    if (property == null) return "N/A";
+    if (property == null) return null; // Return null instead of "N/A" for missing properties
 
-    // Handle different property types with minimal processing
-    if (property.getTitle() != null && !property.getTitle().isEmpty()) {
-      return property.getTitle().get(0).getPlainText();
-    }
-    if (property.getRichText() != null && !property.getRichText().isEmpty()) {
-      return property.getRichText().get(0).getPlainText();
-    }
-    if (property.getSelect() != null) {
-      return property.getSelect().getName();
-    }
-    if (property.getDate() != null) {
-      return property.getDate().getStart();
-    }
-    if (property.getNumber() != null) {
-      return property.getNumber().toString();
-    }
-    if (property.getRelation() != null && !property.getRelation().isEmpty()) {
-      return property.getRelation().get(0).getId();
-    }
+    try {
+      // Handle different property types with minimal processing
+      if (property.getTitle() != null && !property.getTitle().isEmpty()) {
+        return property.getTitle().get(0).getPlainText();
+      }
+      if (property.getRichText() != null && !property.getRichText().isEmpty()) {
+        return property.getRichText().get(0).getPlainText();
+      }
+      if (property.getSelect() != null) {
+        return property.getSelect().getName();
+      }
+      if (property.getDate() != null) {
+        return property.getDate().getStart();
+      }
+      if (property.getNumber() != null) {
+        return property.getNumber().toString();
+      }
+      if (property.getRelation() != null && !property.getRelation().isEmpty()) {
+        return property.getRelation().get(0).getId();
+      }
 
-    return "N/A";
+      // Log when we can't extract a value instead of defaulting to "N/A"
+      log.debug("Unable to extract value from property type: {}", property.getType());
+      return null;
+
+    } catch (Exception e) {
+      log.debug("Error extracting property value: {}", e.getMessage());
+      return null; // Return null instead of "N/A" for extraction errors
+    }
   }
 
-  /** Maps a Notion page to a ShowPage object. */
+  /** Maps a Notion page to a ShowPage object with full relationship resolution. */
   private ShowPage mapPageToShowPage(@NonNull Page pageData, @NonNull String showName) {
     return mapPageToGenericEntity(
-        pageData, showName, "Show", ShowPage::new, ShowPage.NotionParent::new);
+        pageData, showName, "Show", ShowPage::new, ShowPage.NotionParent::new, true);
+  }
+
+  /** Maps a Notion page to a ShowPage object with minimal relationship resolution for sync. */
+  private ShowPage mapPageToShowPageForSync(@NonNull Page pageData, @NonNull String showName) {
+    return mapPageToGenericEntity(
+        pageData, showName, "Show", ShowPage::new, ShowPage.NotionParent::new, false);
   }
 
   /** Maps a Notion page to a MatchPage object. */
@@ -1461,7 +1716,13 @@ public class NotionHandler {
   /** Maps a Notion page to a TeamPage object. */
   private TeamPage mapPageToTeamPage(@NonNull Page pageData, @NonNull String teamName) {
     return mapPageToGenericEntity(
-        pageData, teamName, "Team", TeamPage::new, TeamPage.NotionParent::new);
+        pageData, teamName, "Team", TeamPage::new, TeamPage.NotionParent::new, false);
+  }
+
+  /** Maps a Notion page to a SeasonPage object. */
+  private SeasonPage mapPageToSeasonPage(@NonNull Page pageData, @NonNull String seasonName) {
+    return mapPageToGenericEntity(
+        pageData, seasonName, "Season", SeasonPage::new, SeasonPage.NotionParent::new);
   }
 
   /** Maps a Notion page to a FactionPage object. */
@@ -1470,13 +1731,25 @@ public class NotionHandler {
         pageData, factionName, "Faction", FactionPage::new, FactionPage.NotionParent::new);
   }
 
-  /** Generic mapping method for all entity types. */
+  /** Generic mapping method for all entity types with full relationship resolution. */
   private <T, P> T mapPageToGenericEntity(
       @NonNull Page pageData,
       @NonNull String entityName,
       @NonNull String entityType,
       @NonNull java.util.function.Supplier<T> entityConstructor,
       @NonNull java.util.function.Supplier<P> parentConstructor) {
+    return mapPageToGenericEntity(
+        pageData, entityName, entityType, entityConstructor, parentConstructor, true);
+  }
+
+  /** Generic mapping method for all entity types with optional relationship resolution. */
+  private <T, P> T mapPageToGenericEntity(
+      @NonNull Page pageData,
+      @NonNull String entityName,
+      @NonNull String entityType,
+      @NonNull java.util.function.Supplier<T> entityConstructor,
+      @NonNull java.util.function.Supplier<P> parentConstructor,
+      boolean resolveRelationships) {
 
     log.debug("Mapping Notion page to {} object for: {}", entityType, entityName);
 
@@ -1492,7 +1765,7 @@ public class NotionHandler {
 
     // Extract and log all property values, then set them on the entity page
     Map<String, Object> processedProperties =
-        extractAndLogProperties(pageData, entityName, entityType);
+        extractAndLogProperties(pageData, entityName, entityType, resolveRelationships);
     setRawProperties(entityPage, processedProperties);
 
     log.debug("Mapped {}Page for: {} with ID: {}", entityType, entityName, pageData.getId());
@@ -1549,7 +1822,11 @@ public class NotionHandler {
           .getMethod("setParent", parent.getClass().getSuperclass())
           .invoke(entityPage, parent);
     } catch (Exception e) {
-      log.warn("Failed to set parent: {}", e.getMessage());
+      // This is not critical for sync functionality, so just log at debug level
+      log.debug(
+          "Failed to set parent on {}: {} (this is not critical)",
+          entityPage.getClass().getSimpleName(),
+          e.getMessage());
     }
   }
 
@@ -1564,9 +1841,18 @@ public class NotionHandler {
     }
   }
 
-  /** Helper method to extract and log properties. */
+  /** Helper method to extract and log properties with full relationship resolution. */
   private Map<String, Object> extractAndLogProperties(
       @NonNull Page pageData, @NonNull String entityName, @NonNull String entityType) {
+    return extractAndLogProperties(pageData, entityName, entityType, true);
+  }
+
+  /** Helper method to extract and log properties with optional relationship resolution. */
+  private Map<String, Object> extractAndLogProperties(
+      @NonNull Page pageData,
+      @NonNull String entityName,
+      @NonNull String entityType,
+      boolean resolveRelationships) {
     try (NotionClient client = new NotionClient(EnvironmentVariableUtil.getNotionToken())) {
       Map<String, PageProperty> properties = pageData.getProperties();
       log.debug("Extracting {} properties for {}: {}", properties.size(), entityType, entityName);
@@ -1575,9 +1861,19 @@ public class NotionHandler {
 
       properties.forEach(
           (key, value) -> {
-            String valueStr = getValue(client, value);
-            log.info("{} Property - {}: {}", entityType, key, valueStr);
-            processedProperties.put(key, valueStr);
+            try {
+              String valueStr = getValue(client, value, resolveRelationships);
+              log.info("{} Property - {}: {}", entityType, key, valueStr);
+              processedProperties.put(key, valueStr);
+            } catch (Exception propertyError) {
+              log.warn(
+                  "Failed to extract property '{}' for {} '{}': {}",
+                  key,
+                  entityType,
+                  entityName,
+                  propertyError.getMessage());
+              processedProperties.put(key, "N/A"); // Use fallback value
+            }
           });
 
       return processedProperties;

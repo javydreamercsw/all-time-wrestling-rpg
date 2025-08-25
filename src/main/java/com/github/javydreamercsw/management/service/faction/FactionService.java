@@ -41,6 +41,12 @@ public class FactionService {
     return findAll();
   }
 
+  /** Get all factions with members eagerly loaded for UI display. */
+  @Transactional(readOnly = true)
+  public List<Faction> findAllWithMembers() {
+    return factionRepository.findAllWithMembers();
+  }
+
   /** Get all factions with pagination. */
   @Transactional(readOnly = true)
   public Page<Faction> getAllFactions(Pageable pageable) {
@@ -51,6 +57,12 @@ public class FactionService {
   @Transactional(readOnly = true)
   public Optional<Faction> getFactionById(Long id) {
     return factionRepository.findById(id);
+  }
+
+  /** Get faction by ID with members eagerly loaded. */
+  @Transactional(readOnly = true)
+  public Optional<Faction> getFactionByIdWithMembers(Long id) {
+    return factionRepository.findByIdWithMembers(id);
   }
 
   /** Get faction by name. */
@@ -343,5 +355,23 @@ public class FactionService {
   public void delete(Faction faction) {
     log.info("Deleting faction: {}", faction.getName());
     factionRepository.delete(faction);
+  }
+
+  /** Delete a faction by ID. */
+  public void deleteById(Long id) {
+    log.info("Deleting faction with ID: {}", id);
+    factionRepository.deleteById(id);
+  }
+
+  /** Check if a faction exists by ID. */
+  @Transactional(readOnly = true)
+  public boolean existsById(Long id) {
+    return factionRepository.existsById(id);
+  }
+
+  /** Count all factions. */
+  @Transactional(readOnly = true)
+  public long count() {
+    return factionRepository.count();
   }
 }

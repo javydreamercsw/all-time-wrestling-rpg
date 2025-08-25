@@ -18,6 +18,7 @@ import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -26,7 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @SpringBootTest
 @ActiveProfiles("test")
+@TestPropertySource(properties = {"notion.sync.enabled=true"})
 @Transactional
+@EnabledIf("isNotionTokenAvailable")
 class NotionSyncServiceTeamsIntegrationTest {
 
   @Autowired private NotionSyncService notionSyncService;
@@ -71,7 +74,6 @@ class NotionSyncServiceTeamsIntegrationTest {
   }
 
   @Test
-  @EnabledIf("isNotionTokenAvailable")
   void shouldSyncTeamsFromNotionSuccessfully() {
     // Given - Ensure we have wrestlers in database for team creation
     assertThat(wrestlerRepository.count()).isGreaterThanOrEqualTo(2);

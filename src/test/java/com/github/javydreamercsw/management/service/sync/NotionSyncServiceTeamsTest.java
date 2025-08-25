@@ -177,9 +177,9 @@ class NotionSyncServiceTeamsTest {
         .thenReturn(mockProgress);
     when(notionHandler.loadAllTeams()).thenReturn(teamPages);
 
-    // Mock missing wrestlers
-    when(wrestlerService.findByName("John Doe")).thenReturn(Optional.empty());
-    when(wrestlerService.findByName("Jane Smith")).thenReturn(Optional.empty());
+    // Mock missing wrestlers (lenient to avoid unnecessary stubbing warnings)
+    lenient().when(wrestlerService.findByName("John Doe")).thenReturn(Optional.empty());
+    lenient().when(wrestlerService.findByName("Jane Smith")).thenReturn(Optional.empty());
 
     // When
     SyncResult result = notionSyncService.syncTeams();
@@ -230,7 +230,8 @@ class NotionSyncServiceTeamsTest {
     // Create mock raw properties following the pattern from other tests
     Map<String, Object> rawProperties = new HashMap<>();
     rawProperties.put("Name", "Test Team");
-    rawProperties.put("Members", "John Doe, Jane Smith");
+    rawProperties.put("Member 1", "John Doe");
+    rawProperties.put("Member 2", "Jane Smith");
     rawProperties.put("Status", "Active");
     rawProperties.put("FormedDate", "2024-01-01T00:00:00Z");
 
@@ -249,7 +250,7 @@ class NotionSyncServiceTeamsTest {
 
   private Wrestler createMockWrestler(String name) {
     Wrestler wrestler = new Wrestler();
-    wrestler.setId(1L);
+    wrestler.setId(name.equals("John Doe") ? 1L : 2L); // Different IDs for different wrestlers
     wrestler.setName(name);
     return wrestler;
   }

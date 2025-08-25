@@ -152,12 +152,8 @@ public class TeamFormDialog extends Dialog {
             new StringLengthValidator("Team name must be between 1 and 255 characters", 1, 255))
         .bind(TeamDTO::getName, TeamDTO::setName);
 
-    // Bind description field
-    binder
-        .forField(descriptionField)
-        .withValidator(
-            new StringLengthValidator("Description must be at most 255 characters", 0, 255))
-        .bind(TeamDTO::getDescription, TeamDTO::setDescription);
+    // Bind description field (no length limit for Notion sync compatibility)
+    binder.forField(descriptionField).bind(TeamDTO::getDescription, TeamDTO::setDescription);
 
     // Bind wrestler fields
     binder

@@ -37,7 +37,7 @@ class FactionFormValidationTest {
   void setUp() {
     testWrestlers = createTestWrestlers();
 
-    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(testWrestlers);
 
     factionListView = new FactionListView(factionService, wrestlerService);
