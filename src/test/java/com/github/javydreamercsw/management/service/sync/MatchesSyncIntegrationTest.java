@@ -25,12 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest(
-    properties = {
-      "notion.sync.enabled=true",
-      "notion.sync.entities.matches=true",
-      "NOTION_TOKEN=${NOTION_TOKEN:test-token}"
-    })
+@SpringBootTest(properties = {"notion.sync.enabled=true", "notion.sync.entities.matches=true"})
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("Matches Sync Integration Tests")

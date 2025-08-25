@@ -1523,7 +1523,6 @@ public class NotionSyncService {
       }
 
       return result;
-
     } catch (Exception e) {
       String errorMessage = "Matches sync failed with exception: " + e.getMessage();
       log.error("❌ {}", errorMessage, e);

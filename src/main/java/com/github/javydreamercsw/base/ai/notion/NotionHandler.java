@@ -287,161 +287,181 @@ public class NotionHandler {
 
   private String getValue(
       @NonNull NotionClient client, @NonNull PageProperty value, boolean resolveRelationships) {
-    // Handle cases where type is null but we can infer the type from populated fields
-    String propertyType = null;
+    try {
+      // Handle cases where type is null but we can infer the type from populated fields
+      String propertyType = null;
 
-    if (value.getType() != null && value.getType().getValue() != null) {
-      propertyType = value.getType().getValue();
-    } else {
-      // Infer property type from populated fields when type is null
-      propertyType = inferPropertyType(value);
-      if (propertyType == null) {
-        log.warn("Property type is null and cannot be inferred for property: {}", value);
-        return "N/A";
-      }
-      log.debug("Inferred property type '{}' for property with null type", propertyType);
-    }
-
-    return switch (propertyType) {
-      case "formula" -> getFormulaValue(value.getFormula());
-      case "people" -> value.getPeople().stream().findFirst().map(p -> p.getName()).orElse("N/A");
-      case "created_by" -> value.getCreatedBy().getName();
-      case "last_edited_by" -> value.getLastEditedBy().getName();
-      case "created_time" -> value.getCreatedTime().toString();
-      case "number" -> value.getNumber().toString();
-      case "last_edited_time" -> value.getLastEditedTime().toString();
-      case "unique_id" -> value.getUniqueId().getPrefix() + "-" + value.getUniqueId().getNumber();
-      case "title" -> value.getTitle().get(0).getPlainText();
-      case "rich_text" -> {
-        // Handle rich_text properties (commonly used for text fields in Notion)
-        if (value.getRichText() != null && !value.getRichText().isEmpty()) {
-          yield value.getRichText().stream()
-              .map(richText -> richText.getPlainText())
-              .filter(text -> text != null && !text.trim().isEmpty())
-              .reduce((a, b) -> a + " " + b)
-              .orElse("N/A");
-        } else {
-          yield "N/A";
+      if (value.getType() != null && value.getType().getValue() != null) {
+        propertyType = value.getType().getValue();
+      } else {
+        // Infer property type from populated fields when type is null
+        propertyType = inferPropertyType(value);
+        if (propertyType == null) {
+          log.debug("Property type is null and cannot be inferred for property: {}", value);
+          return "N/A";
         }
+        log.debug("Inferred property type '{}' for property with null type", propertyType);
       }
-      case "relation" -> {
-        if (!resolveRelationships) {
-          // Fast mode: just return the count without resolving names
-          yield value.getRelation().size() + " items";
-        } else {
-          // Full mode: resolve relationship names (expensive)
-          yield value.getRelation().stream()
-              .map(
-                  relation -> {
-                    // Suppress System.out for relation retrievePage calls
-                    PrintStream originalOut = System.out;
-                    try {
-                      System.setOut(new PrintStream(new ByteArrayOutputStream()));
-                      Page relatedPage =
-                          client.retrievePage(relation.getId(), Collections.emptyList());
-                      System.setOut(originalOut);
 
-                      // Try multiple common title property names
-                      String[] titlePropertyNames = {
-                        "Name", "Title", "Championship", "name", "title"
-                      };
-                      for (String propertyName : titlePropertyNames) {
-                        PageProperty titleProperty = relatedPage.getProperties().get(propertyName);
-                        if (titleProperty != null
-                            && titleProperty.getTitle() != null
-                            && !titleProperty.getTitle().isEmpty()) {
-                          return titleProperty.getTitle().get(0).getPlainText();
+      return switch (propertyType) {
+        case "formula" -> value.getFormula() != null ? getFormulaValue(value.getFormula()) : "N/A";
+        case "people" ->
+            value.getPeople() != null && !value.getPeople().isEmpty()
+                ? value.getPeople().stream().findFirst().map(p -> p.getName()).orElse("N/A")
+                : "N/A";
+        case "created_by" -> value.getCreatedBy() != null ? value.getCreatedBy().getName() : "N/A";
+        case "last_edited_by" ->
+            value.getLastEditedBy() != null ? value.getLastEditedBy().getName() : "N/A";
+        case "created_time" ->
+            value.getCreatedTime() != null ? value.getCreatedTime().toString() : "N/A";
+        case "number" -> value.getNumber() != null ? value.getNumber().toString() : "N/A";
+        case "last_edited_time" ->
+            value.getLastEditedTime() != null ? value.getLastEditedTime().toString() : "N/A";
+        case "unique_id" ->
+            value.getUniqueId() != null
+                ? value.getUniqueId().getPrefix() + "-" + value.getUniqueId().getNumber()
+                : "N/A";
+        case "title" ->
+            value.getTitle() != null && !value.getTitle().isEmpty()
+                ? value.getTitle().get(0).getPlainText()
+                : "N/A";
+        case "rich_text" -> {
+          // Handle rich_text properties (commonly used for text fields in Notion)
+          if (value.getRichText() != null && !value.getRichText().isEmpty()) {
+            yield value.getRichText().stream()
+                .map(richText -> richText.getPlainText())
+                .filter(text -> text != null && !text.trim().isEmpty())
+                .reduce((a, b) -> a + " " + b)
+                .orElse("N/A");
+          } else {
+            yield "N/A";
+          }
+        }
+        case "relation" -> {
+          if (value.getRelation() == null || value.getRelation().isEmpty()) {
+            yield "N/A";
+          } else if (!resolveRelationships) {
+            // Fast mode: just return the count without resolving names
+            yield value.getRelation().size() + " items";
+          } else {
+            // Full mode: resolve relationship names (expensive)
+            yield value.getRelation().stream()
+                .map(
+                    relation -> {
+                      // Suppress System.out for relation retrievePage calls
+                      PrintStream originalOut = System.out;
+                      try {
+                        System.setOut(new PrintStream(new ByteArrayOutputStream()));
+                        Page relatedPage =
+                            client.retrievePage(relation.getId(), Collections.emptyList());
+                        System.setOut(originalOut);
+
+                        // Try multiple common title property names
+                        String[] titlePropertyNames = {
+                          "Name", "Title", "Championship", "name", "title"
+                        };
+                        for (String propertyName : titlePropertyNames) {
+                          PageProperty titleProperty =
+                              relatedPage.getProperties().get(propertyName);
+                          if (titleProperty != null
+                              && titleProperty.getTitle() != null
+                              && !titleProperty.getTitle().isEmpty()) {
+                            return titleProperty.getTitle().get(0).getPlainText();
+                          }
                         }
-                      }
 
-                      // If no title property found, log available properties for debugging
-                      log.debug(
-                          "No title property found for relation {}. Available properties: {}",
-                          relation.getId(),
-                          relatedPage.getProperties().keySet());
-                      return relation.getId();
-                    } finally {
-                      System.setOut(originalOut);
-                    }
-                  })
-              .reduce((a, b) -> a + ", " + b)
-              .orElse("N/A");
+                        // If no title property found, log available properties for debugging
+                        log.debug(
+                            "No title property found for relation {}. Available properties: {}",
+                            relation.getId(),
+                            relatedPage.getProperties().keySet());
+                        return relation.getId();
+                      } finally {
+                        System.setOut(originalOut);
+                      }
+                    })
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("N/A");
+          }
         }
-      }
-      case "select" -> {
-        // Handle select properties (dropdown with single selection)
-        if (value.getSelect() != null) {
-          yield value.getSelect().getName();
-        } else {
+        case "select" -> {
+          // Handle select properties (dropdown with single selection)
+          if (value.getSelect() != null) {
+            yield value.getSelect().getName();
+          } else {
+            yield "N/A";
+          }
+        }
+        case "status" -> {
+          // Handle status properties (workflow status)
+          if (value.getStatus() != null) {
+            yield value.getStatus().getName();
+          } else {
+            yield "N/A";
+          }
+        }
+        case "multi_select" -> {
+          // Handle multi_select properties (dropdown with multiple selections)
+          if (value.getMultiSelect() != null && !value.getMultiSelect().isEmpty()) {
+            yield value.getMultiSelect().stream()
+                .map(option -> option.getName())
+                .filter(name -> name != null && !name.trim().isEmpty())
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("N/A");
+          } else {
+            yield "N/A";
+          }
+        }
+        case "date" -> {
+          // Handle date properties
+          if (value.getDate() != null && value.getDate().getStart() != null) {
+            yield value.getDate().getStart().toString();
+          } else {
+            yield "N/A";
+          }
+        }
+        case "checkbox" -> {
+          // Handle checkbox properties
+          if (value.getCheckbox() != null) {
+            yield value.getCheckbox().toString();
+          } else {
+            yield "false";
+          }
+        }
+        case "url" -> {
+          // Handle URL properties
+          if (value.getUrl() != null && !value.getUrl().trim().isEmpty()) {
+            yield value.getUrl();
+          } else {
+            yield "N/A";
+          }
+        }
+        case "email" -> {
+          // Handle email properties
+          if (value.getEmail() != null && !value.getEmail().trim().isEmpty()) {
+            yield value.getEmail();
+          } else {
+            yield "N/A";
+          }
+        }
+        case "phone_number" -> {
+          // Handle phone number properties
+          if (value.getPhoneNumber() != null && !value.getPhoneNumber().trim().isEmpty()) {
+            yield value.getPhoneNumber();
+          } else {
+            yield "N/A";
+          }
+        }
+        default -> {
+          // Log unhandled property types for debugging
+          log.warn("Unhandled property type '{}' for property: {}", propertyType, value);
           yield "N/A";
         }
-      }
-      case "status" -> {
-        // Handle status properties (workflow status)
-        if (value.getStatus() != null) {
-          yield value.getStatus().getName();
-        } else {
-          yield "N/A";
-        }
-      }
-      case "multi_select" -> {
-        // Handle multi_select properties (dropdown with multiple selections)
-        if (value.getMultiSelect() != null && !value.getMultiSelect().isEmpty()) {
-          yield value.getMultiSelect().stream()
-              .map(option -> option.getName())
-              .filter(name -> name != null && !name.trim().isEmpty())
-              .reduce((a, b) -> a + ", " + b)
-              .orElse("N/A");
-        } else {
-          yield "N/A";
-        }
-      }
-      case "date" -> {
-        // Handle date properties
-        if (value.getDate() != null && value.getDate().getStart() != null) {
-          yield value.getDate().getStart().toString();
-        } else {
-          yield "N/A";
-        }
-      }
-      case "checkbox" -> {
-        // Handle checkbox properties
-        if (value.getCheckbox() != null) {
-          yield value.getCheckbox().toString();
-        } else {
-          yield "false";
-        }
-      }
-      case "url" -> {
-        // Handle URL properties
-        if (value.getUrl() != null && !value.getUrl().trim().isEmpty()) {
-          yield value.getUrl();
-        } else {
-          yield "N/A";
-        }
-      }
-      case "email" -> {
-        // Handle email properties
-        if (value.getEmail() != null && !value.getEmail().trim().isEmpty()) {
-          yield value.getEmail();
-        } else {
-          yield "N/A";
-        }
-      }
-      case "phone_number" -> {
-        // Handle phone number properties
-        if (value.getPhoneNumber() != null && !value.getPhoneNumber().trim().isEmpty()) {
-          yield value.getPhoneNumber();
-        } else {
-          yield "N/A";
-        }
-      }
-      default -> {
-        // Log unhandled property types for debugging
-        log.warn("Unhandled property type '{}' for property: {}", propertyType, value);
-        yield "N/A";
-      }
-    };
+      };
+    } catch (Exception e) {
+      log.debug("Exception in getValue method: {}", e.getMessage());
+      return "N/A";
+    }
   }
 
   /**

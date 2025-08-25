@@ -32,10 +32,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Show Type Sync Tests")
+@ActiveProfiles("test")
+@TestPropertySource(
+    properties = {
+      "notion.sync.enabled=true",
+      "notion.sync.entities=show_types",
+      "notion.sync.scheduler.enabled=true"
+    })
 class ShowTypeSyncTest {
 
   @Mock private ObjectMapper objectMapper;

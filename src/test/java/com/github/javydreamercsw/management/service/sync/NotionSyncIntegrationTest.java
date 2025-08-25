@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @SpringBootTest
 @ActiveProfiles("test")
-@TestPropertySource(properties = {"notion.sync.enabled=true"})
+@TestPropertySource(properties = {"notion.sync.enabled=true", "notion.sync.scheduler.enabled=true"})
 @Transactional
 @EnabledIf("isNotionTokenAvailable")
 @Slf4j
