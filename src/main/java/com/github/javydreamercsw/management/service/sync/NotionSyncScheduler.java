@@ -126,6 +126,10 @@ public class NotionSyncScheduler {
       case "showtypes":
         return notionSyncService.syncShowTypes(operationId);
 
+      case "injury-types":
+      case "injurytypes":
+        return notionSyncService.syncInjuryTypes(operationId);
+
       default:
         log.warn("Unknown entity type for sync: {}", entityName);
         return SyncResult.failure(entityName, "Unknown entity type");
@@ -172,6 +176,10 @@ public class NotionSyncScheduler {
       case "showtypes":
         return notionSyncService.syncShowTypes(operationId);
 
+      case "injury-types":
+      case "injurytypes":
+        return notionSyncService.syncInjuryTypes(operationId);
+
       default:
         log.warn("Unknown entity type for sync: {}", entityName);
         return SyncResult.failure(entityName, "Unknown entity type");
@@ -217,28 +225,39 @@ public class NotionSyncScheduler {
   public List<SyncResult> triggerManualSync() {
     log.info("=== MANUAL NOTION SYNC TRIGGERED ===");
 
+    // Clear sync session at the start of batch operation
+    notionSyncService.clearSyncSession();
+
     List<SyncResult> results = new ArrayList<>();
 
-    for (String entity : getSyncEntities()) {
-      try {
-        SyncResult result = syncEntity(entity);
-        results.add(result);
+    try {
+      for (String entity : getSyncEntities()) {
+        try {
+          SyncResult result = syncEntity(entity);
+          results.add(result);
 
-        if (result.isSuccess()) {
-          log.info(
-              "✅ Manual {} sync completed: {} items synchronized", entity, result.getSyncedCount());
-        } else {
-          log.error("❌ Manual {} sync failed: {}", entity, result.getErrorMessage());
+          if (result.isSuccess()) {
+            log.info(
+                "✅ Manual {} sync completed: {} items synchronized",
+                entity,
+                result.getSyncedCount());
+          } else {
+            log.error("❌ Manual {} sync failed: {}", entity, result.getErrorMessage());
+          }
+
+        } catch (Exception e) {
+          log.error("❌ Unexpected error during manual {} sync: {}", entity, e.getMessage(), e);
+          results.add(SyncResult.failure(entity, e.getMessage()));
         }
-
-      } catch (Exception e) {
-        log.error("❌ Unexpected error during manual {} sync: {}", entity, e.getMessage(), e);
-        results.add(SyncResult.failure(entity, e.getMessage()));
       }
-    }
 
-    logSyncSummary(results);
-    log.info("=== MANUAL NOTION SYNC COMPLETED ===");
+      logSyncSummary(results);
+      log.info("=== MANUAL NOTION SYNC COMPLETED ===");
+
+    } finally {
+      // Clean up sync session thread local
+      notionSyncService.cleanupSyncSession();
+    }
 
     return results;
   }

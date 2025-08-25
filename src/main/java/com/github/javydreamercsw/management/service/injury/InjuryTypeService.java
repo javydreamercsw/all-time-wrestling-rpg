@@ -48,6 +48,40 @@ public class InjuryTypeService {
     return saved;
   }
 
+  /** Updates an existing injury type with individual fields. */
+  public Optional<InjuryType> updateInjuryType(
+      Long id,
+      String injuryName,
+      Integer healthEffect,
+      Integer staminaEffect,
+      Integer cardEffect,
+      String specialEffects) {
+    log.debug("Updating injury type with ID: {}", id);
+
+    Optional<InjuryType> existingOpt = injuryTypeRepository.findById(id);
+    if (existingOpt.isEmpty()) {
+      return Optional.empty();
+    }
+
+    InjuryType existing = existingOpt.get();
+
+    // Check for name conflicts (excluding current record)
+    if (!existing.getInjuryName().equals(injuryName)
+        && injuryTypeRepository.existsByInjuryName(injuryName)) {
+      throw new IllegalArgumentException("Injury type already exists: " + injuryName);
+    }
+
+    existing.setInjuryName(injuryName);
+    existing.setHealthEffect(healthEffect);
+    existing.setStaminaEffect(staminaEffect);
+    existing.setCardEffect(cardEffect);
+    existing.setSpecialEffects(specialEffects);
+
+    InjuryType updated = injuryTypeRepository.saveAndFlush(existing);
+    log.info("Updated injury type: {}", updated.getInjuryName());
+    return Optional.of(updated);
+  }
+
   /** Updates an existing injury type. */
   public InjuryType updateInjuryType(InjuryType injuryType) {
     log.debug("Updating injury type: {}", injuryType.getInjuryName());
@@ -61,16 +95,25 @@ public class InjuryTypeService {
     return updated;
   }
 
-  /** Deletes an injury type by ID. */
-  public void deleteInjuryType(Long id) {
+  /** Deletes an injury type by ID. Returns true if deleted, false if not found. */
+  public boolean deleteInjuryType(Long id) {
     log.debug("Deleting injury type with ID: {}", id);
 
     if (!injuryTypeRepository.existsById(id)) {
-      throw new IllegalArgumentException("Injury type not found: " + id);
+      return false;
     }
 
-    injuryTypeRepository.deleteById(id);
-    log.info("Deleted injury type with ID: {}", id);
+    // TODO: Add check for references from other entities (e.g., active injuries)
+    // For now, we'll allow deletion but this should be enhanced later
+    try {
+      injuryTypeRepository.deleteById(id);
+      log.info("Deleted injury type with ID: {}", id);
+      return true;
+    } catch (Exception e) {
+      log.error("Failed to delete injury type with ID: {}", id, e);
+      throw new IllegalStateException(
+          "Cannot delete injury type - it may be referenced by other records");
+    }
   }
 
   // ==================== QUERY OPERATIONS ====================
@@ -85,6 +128,25 @@ public class InjuryTypeService {
   @Transactional(readOnly = true)
   public Optional<InjuryType> findById(Long id) {
     return injuryTypeRepository.findById(id);
+  }
+
+  /** Gets injury type by ID (alias for findById for consistency with other services). */
+  @Transactional(readOnly = true)
+  public Optional<InjuryType> getInjuryTypeById(Long id) {
+    return findById(id);
+  }
+
+  /** Gets all injury types with pagination. */
+  @Transactional(readOnly = true)
+  public org.springframework.data.domain.Page<InjuryType> getAllInjuryTypes(
+      org.springframework.data.domain.Pageable pageable) {
+    return injuryTypeRepository.findAll(pageable);
+  }
+
+  /** Counts all injury types. */
+  @Transactional(readOnly = true)
+  public long countAll() {
+    return injuryTypeRepository.count();
   }
 
   /** Finds injury type by name. */
@@ -140,16 +202,16 @@ public class InjuryTypeService {
   /** Gets statistics about injury type effects. */
   @Transactional(readOnly = true)
   public InjuryTypeStats getInjuryTypeStats() {
-    Object[] counts = injuryTypeRepository.getEffectTypeCounts();
-    if (counts != null && counts.length >= 4) {
-      return new InjuryTypeStats(
-          ((Number) counts[0]).intValue(), // healthCount
-          ((Number) counts[1]).intValue(), // staminaCount
-          ((Number) counts[2]).intValue(), // cardCount
-          ((Number) counts[3]).intValue() // specialCount
-          );
-    }
-    return new InjuryTypeStats(0, 0, 0, 0);
+    Long healthCount = injuryTypeRepository.countWithHealthEffects();
+    Long staminaCount = injuryTypeRepository.countWithStaminaEffects();
+    Long cardCount = injuryTypeRepository.countWithCardEffects();
+    Long specialCount = injuryTypeRepository.countWithSpecialEffects();
+
+    return new InjuryTypeStats(
+        healthCount != null ? healthCount.intValue() : 0,
+        staminaCount != null ? staminaCount.intValue() : 0,
+        cardCount != null ? cardCount.intValue() : 0,
+        specialCount != null ? specialCount.intValue() : 0);
   }
 
   /** Statistics about injury type effects. */

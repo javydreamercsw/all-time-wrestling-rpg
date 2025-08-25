@@ -49,8 +49,8 @@ public interface InjuryTypeRepository extends JpaRepository<InjuryType, Long> {
 
   /** Find injury types with special effects. */
   @Query(
-      "SELECT it FROM InjuryType it WHERE it.specialEffects IS NOT NULL "
-          + "AND TRIM(it.specialEffects) != '' AND it.specialEffects != 'N/A'")
+      "SELECT it FROM InjuryType it WHERE it.specialEffects IS NOT NULL AND it.specialEffects <>"
+          + " ''")
   List<InjuryType> findWithSpecialEffects();
 
   /** Find injury types by minimum health effect penalty. */
@@ -59,11 +59,21 @@ public interface InjuryTypeRepository extends JpaRepository<InjuryType, Long> {
 
   /** Get count of injury types by effect type. */
   @Query(
-      "SELECT COUNT(CASE WHEN it.healthEffect IS NOT NULL AND it.healthEffect != 0 THEN 1 END) as"
-          + " healthCount, COUNT(CASE WHEN it.staminaEffect IS NOT NULL AND it.staminaEffect != 0"
-          + " THEN 1 END) as staminaCount, COUNT(CASE WHEN it.cardEffect IS NOT NULL AND"
-          + " it.cardEffect != 0 THEN 1 END) as cardCount, COUNT(CASE WHEN it.specialEffects IS NOT"
-          + " NULL AND TRIM(it.specialEffects) != '' AND it.specialEffects != 'N/A' THEN 1 END) as"
-          + " specialCount FROM InjuryType it")
-  Object[] getEffectTypeCounts();
+      "SELECT COUNT(it) FROM InjuryType it WHERE it.healthEffect IS NOT NULL AND it.healthEffect <>"
+          + " 0")
+  Long countWithHealthEffects();
+
+  @Query(
+      "SELECT COUNT(it) FROM InjuryType it WHERE it.staminaEffect IS NOT NULL AND it.staminaEffect"
+          + " <> 0")
+  Long countWithStaminaEffects();
+
+  @Query(
+      "SELECT COUNT(it) FROM InjuryType it WHERE it.cardEffect IS NOT NULL AND it.cardEffect <> 0")
+  Long countWithCardEffects();
+
+  @Query(
+      "SELECT COUNT(it) FROM InjuryType it WHERE it.specialEffects IS NOT NULL AND"
+          + " it.specialEffects <> ''")
+  Long countWithSpecialEffects();
 }

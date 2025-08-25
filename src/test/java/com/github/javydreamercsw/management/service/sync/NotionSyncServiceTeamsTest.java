@@ -15,6 +15,7 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.match.MatchResultService;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
@@ -24,6 +25,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,34 +62,36 @@ class NotionSyncServiceTeamsTest {
   @Mock private TeamRepository teamRepository;
   @Mock private MatchResultService matchResultService;
   @Mock private MatchTypeService matchTypeService;
+  @Mock private InjuryTypeService injuryTypeService;
 
   private NotionSyncService notionSyncService;
 
   @BeforeEach
   void setUp() {
-    notionSyncService =
-        new NotionSyncService(
-            objectMapper,
-            notionHandler,
-            syncProperties,
-            progressTracker,
-            healthMonitor,
-            retryService,
-            circuitBreakerService,
-            validationService,
-            syncTransactionManager,
-            integrityChecker,
-            showService,
-            showTypeService,
-            wrestlerService,
-            wrestlerRepository,
-            seasonService,
-            showTemplateService,
-            factionRepository,
-            teamService,
-            teamRepository,
-            matchResultService,
-            matchTypeService);
+    // Create the service with simplified constructor
+    notionSyncService = new NotionSyncService(objectMapper, syncProperties);
+
+    // Manually inject the mocked dependencies using reflection
+    setField(notionSyncService, "notionHandler", notionHandler);
+    setField(notionSyncService, "progressTracker", progressTracker);
+    setField(notionSyncService, "healthMonitor", healthMonitor);
+    setField(notionSyncService, "retryService", retryService);
+    setField(notionSyncService, "circuitBreakerService", circuitBreakerService);
+    setField(notionSyncService, "validationService", validationService);
+    setField(notionSyncService, "syncTransactionManager", syncTransactionManager);
+    setField(notionSyncService, "integrityChecker", integrityChecker);
+    setField(notionSyncService, "showService", showService);
+    setField(notionSyncService, "showTypeService", showTypeService);
+    setField(notionSyncService, "wrestlerService", wrestlerService);
+    setField(notionSyncService, "wrestlerRepository", wrestlerRepository);
+    setField(notionSyncService, "seasonService", seasonService);
+    setField(notionSyncService, "showTemplateService", showTemplateService);
+    setField(notionSyncService, "factionRepository", factionRepository);
+    setField(notionSyncService, "teamService", teamService);
+    setField(notionSyncService, "teamRepository", teamRepository);
+    setField(notionSyncService, "matchResultService", matchResultService);
+    setField(notionSyncService, "matchTypeService", matchTypeService);
+    setField(notionSyncService, "injuryTypeService", injuryTypeService);
   }
 
   @Test
@@ -268,5 +272,19 @@ class NotionSyncServiceTeamsTest {
     team.setStatus(TeamStatus.ACTIVE);
     team.setFormedDate(Instant.now());
     return team;
+  }
+
+  /**
+   * Helper method to set private fields via reflection for testing. This is needed because we
+   * switched from constructor injection to field injection.
+   */
+  private void setField(Object target, String fieldName, Object value) {
+    try {
+      Field field = target.getClass().getDeclaredField(fieldName);
+      field.setAccessible(true);
+      field.set(target, value);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to set field " + fieldName, e);
+    }
   }
 }

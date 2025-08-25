@@ -265,6 +265,8 @@ public class NotionSyncController {
                 "Show templates and formats",
                 "seasons",
                 "Wrestling seasons and periods",
+                "injury-types",
+                "Injury types for the card game system",
                 "shows",
                 "Wrestling shows and events",
                 "wrestlers",

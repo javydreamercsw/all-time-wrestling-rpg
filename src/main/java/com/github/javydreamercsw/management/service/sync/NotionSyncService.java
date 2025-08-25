@@ -16,6 +16,9 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
+import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -29,10 +32,12 @@ import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.FactionDTO;
+import com.github.javydreamercsw.management.dto.InjuryDTO;
 import com.github.javydreamercsw.management.dto.MatchDTO;
 import com.github.javydreamercsw.management.dto.SeasonDTO;
 import com.github.javydreamercsw.management.dto.ShowDTO;
 import com.github.javydreamercsw.management.dto.TeamDTO;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.match.MatchResultService;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
@@ -85,83 +90,53 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(name = "notion.sync.enabled", havingValue = "true", matchIfMissing = false)
 public class NotionSyncService {
 
+  // Core dependencies - kept as constructor parameters for better testability
   private final ObjectMapper objectMapper;
-  private final NotionHandler notionHandler;
   private final NotionSyncProperties syncProperties;
-  private final SyncProgressTracker progressTracker;
-  private final SyncHealthMonitor healthMonitor;
-  private final RetryService retryService;
-  private final CircuitBreakerService circuitBreakerService;
-  private final SyncValidationService validationService;
-  private final SyncTransactionManager syncTransactionManager;
-  private final DataIntegrityChecker integrityChecker;
 
-  // Database services for persisting synced data
-  private final ShowService showService;
-  private final ShowTypeService showTypeService;
-  private final WrestlerService wrestlerService;
-  private final WrestlerRepository wrestlerRepository;
-  private final SeasonService seasonService;
-  private final ShowTemplateService showTemplateService;
-  private final FactionRepository factionRepository;
-  private final TeamService teamService;
-  private final TeamRepository teamRepository;
-  private final MatchResultService matchResultService;
-  private final MatchTypeService matchTypeService;
-  private final InjuryTypeService injuryTypeService;
-  private final InjuryTypeRepository injuryTypeRepository;
+  // Session-based tracking to prevent duplicate syncing during batch operations
+  private final ThreadLocal<Set<String>> currentSyncSession = ThreadLocal.withInitial(HashSet::new);
+
+  // Optional NotionHandler for integration tests
+  @Autowired(required = false)
+  private NotionHandler notionHandler;
+
+  // Sync infrastructure services - autowired
+  @Autowired private SyncProgressTracker progressTracker;
+  @Autowired private SyncHealthMonitor healthMonitor;
+  @Autowired private RetryService retryService;
+  @Autowired private CircuitBreakerService circuitBreakerService;
+  @Autowired private SyncValidationService validationService;
+  @Autowired private SyncTransactionManager syncTransactionManager;
+  @Autowired private DataIntegrityChecker integrityChecker;
+
+  // Database services for persisting synced data - autowired
+  @Autowired private ShowService showService;
+  @Autowired private ShowTypeService showTypeService;
+  @Autowired private WrestlerService wrestlerService;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private SeasonService seasonService;
+  @Autowired private ShowTemplateService showTemplateService;
+  @Autowired private FactionRepository factionRepository;
+  @Autowired private TeamService teamService;
+  @Autowired private TeamRepository teamRepository;
+  @Autowired private MatchResultService matchResultService;
+  @Autowired private MatchTypeService matchTypeService;
+  @Autowired private InjuryTypeService injuryTypeService;
+  @Autowired private InjuryTypeRepository injuryTypeRepository;
+  @Autowired private InjuryService injuryService;
+  @Autowired private InjuryRepository injuryRepository;
 
   // Thread pool for async processing - using fixed thread pool for Java 17 compatibility
   private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
-  /** Constructor for NotionSyncService with optional NotionHandler for integration tests. */
-  public NotionSyncService(
-      ObjectMapper objectMapper,
-      @Autowired(required = false) NotionHandler notionHandler,
-      NotionSyncProperties syncProperties,
-      SyncProgressTracker progressTracker,
-      SyncHealthMonitor healthMonitor,
-      RetryService retryService,
-      CircuitBreakerService circuitBreakerService,
-      SyncValidationService validationService,
-      SyncTransactionManager syncTransactionManager,
-      DataIntegrityChecker integrityChecker,
-      ShowService showService,
-      ShowTypeService showTypeService,
-      WrestlerService wrestlerService,
-      WrestlerRepository wrestlerRepository,
-      SeasonService seasonService,
-      ShowTemplateService showTemplateService,
-      FactionRepository factionRepository,
-      TeamService teamService,
-      TeamRepository teamRepository,
-      MatchResultService matchResultService,
-      MatchTypeService matchTypeService,
-      InjuryTypeService injuryTypeService,
-      InjuryTypeRepository injuryTypeRepository) {
+  /**
+   * Simplified constructor - most dependencies are now autowired. Only core dependencies that
+   * benefit from constructor injection are kept.
+   */
+  public NotionSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     this.objectMapper = objectMapper;
-    this.notionHandler = notionHandler;
     this.syncProperties = syncProperties;
-    this.progressTracker = progressTracker;
-    this.healthMonitor = healthMonitor;
-    this.retryService = retryService;
-    this.circuitBreakerService = circuitBreakerService;
-    this.validationService = validationService;
-    this.syncTransactionManager = syncTransactionManager;
-    this.integrityChecker = integrityChecker;
-    this.showService = showService;
-    this.showTypeService = showTypeService;
-    this.wrestlerService = wrestlerService;
-    this.wrestlerRepository = wrestlerRepository;
-    this.seasonService = seasonService;
-    this.showTemplateService = showTemplateService;
-    this.factionRepository = factionRepository;
-    this.teamService = teamService;
-    this.teamRepository = teamRepository;
-    this.matchResultService = matchResultService;
-    this.matchTypeService = matchTypeService;
-    this.injuryTypeService = injuryTypeService;
-    this.injuryTypeRepository = injuryTypeRepository;
   }
 
   /**
@@ -171,6 +146,38 @@ public class NotionSyncService {
    */
   private boolean isNotionHandlerAvailable() {
     return notionHandler != null;
+  }
+
+  /**
+   * Checks if an entity has already been synced in the current session.
+   *
+   * @param entityName The name of the entity to check
+   * @return true if already synced, false otherwise
+   */
+  private boolean isAlreadySyncedInSession(String entityName) {
+    return currentSyncSession.get().contains(entityName.toLowerCase());
+  }
+
+  /**
+   * Marks an entity as synced in the current session.
+   *
+   * @param entityName The name of the entity to mark as synced
+   */
+  private void markAsSyncedInSession(String entityName) {
+    currentSyncSession.get().add(entityName.toLowerCase());
+    log.debug("🏷️ Marked '{}' as synced in current session", entityName);
+  }
+
+  /** Clears the current sync session (should be called at the start of batch operations). */
+  public void clearSyncSession() {
+    currentSyncSession.get().clear();
+    log.debug("🧹 Cleared sync session");
+  }
+
+  /** Cleans up the sync session thread local (should be called at the end of operations). */
+  public void cleanupSyncSession() {
+    currentSyncSession.remove();
+    log.debug("🗑️ Cleaned up sync session thread local");
   }
 
   /**
@@ -191,6 +198,31 @@ public class NotionSyncService {
    * @return SyncResult containing the outcome of the sync operation
    */
   public SyncResult syncShows(@NonNull String operationId) {
+    // Check if already synced in current session
+    if (isAlreadySyncedInSession("shows")) {
+      log.info("⏭️ Shows already synced in current session, skipping");
+      return SyncResult.success("Shows", 0, 0);
+    }
+
+    try {
+      SyncResult result = performShowsSync(operationId);
+      if (result.isSuccess()) {
+        markAsSyncedInSession("shows");
+      }
+      return result;
+    } catch (Exception e) {
+      log.error("Failed to sync shows", e);
+      return SyncResult.failure("Shows", e.getMessage());
+    }
+  }
+
+  /**
+   * Internal method to perform the actual shows sync logic.
+   *
+   * @param operationId Operation ID for progress tracking
+   * @return SyncResult containing the outcome of the sync operation
+   */
+  private SyncResult performShowsSync(@NonNull String operationId) {
     if (!syncProperties.isEntityEnabled("shows")) {
       log.debug("Shows synchronization is disabled in configuration");
       return SyncResult.success("Shows", 0, 0);
@@ -221,23 +253,38 @@ public class NotionSyncService {
         finalOperationId, "Sync Shows", 10); // Updated to 10 steps with reference data sync
     progressTracker.updateProgress(finalOperationId, 1, "Initializing sync operation...");
 
-    // Sync reference data first (show types, seasons, templates)
-    progressTracker.updateProgress(finalOperationId, 2, "Syncing show types...");
-    SyncResult showTypesResult = syncShowTypes(finalOperationId + "-show-types");
-    if (!showTypesResult.isSuccess()) {
-      log.warn("Show types sync failed, but continuing: {}", showTypesResult.getErrorMessage());
+    // Sync reference data first (show types, seasons, templates) - only if not already synced
+    progressTracker.updateProgress(finalOperationId, 2, "Checking reference data...");
+
+    if (!isAlreadySyncedInSession("show-types")) {
+      progressTracker.updateProgress(finalOperationId, 2, "Syncing show types...");
+      SyncResult showTypesResult = syncShowTypes(finalOperationId + "-show-types");
+      if (!showTypesResult.isSuccess()) {
+        log.warn("Show types sync failed, but continuing: {}", showTypesResult.getErrorMessage());
+      }
+    } else {
+      log.info("⏭️ Show types already synced in session, skipping");
     }
 
-    progressTracker.updateProgress(finalOperationId, 3, "Syncing seasons...");
-    SyncResult seasonsResult = syncSeasons(finalOperationId + "-seasons");
-    if (!seasonsResult.isSuccess()) {
-      log.warn("Seasons sync failed, but continuing: {}", seasonsResult.getErrorMessage());
+    if (!isAlreadySyncedInSession("seasons")) {
+      progressTracker.updateProgress(finalOperationId, 3, "Syncing seasons...");
+      SyncResult seasonsResult = syncSeasons(finalOperationId + "-seasons");
+      if (!seasonsResult.isSuccess()) {
+        log.warn("Seasons sync failed, but continuing: {}", seasonsResult.getErrorMessage());
+      }
+    } else {
+      log.info("⏭️ Seasons already synced in session, skipping");
     }
 
-    progressTracker.updateProgress(finalOperationId, 4, "Syncing show templates...");
-    SyncResult templatesResult = syncShowTemplates(finalOperationId + "-templates");
-    if (!templatesResult.isSuccess()) {
-      log.warn("Show templates sync failed, but continuing: {}", templatesResult.getErrorMessage());
+    if (!isAlreadySyncedInSession("templates")) {
+      progressTracker.updateProgress(finalOperationId, 4, "Syncing show templates...");
+      SyncResult templatesResult = syncShowTemplates(finalOperationId + "-templates");
+      if (!templatesResult.isSuccess()) {
+        log.warn(
+            "Show templates sync failed, but continuing: {}", templatesResult.getErrorMessage());
+      }
+    } else {
+      log.info("⏭️ Show templates already synced in session, skipping");
     }
 
     try {
@@ -526,8 +573,28 @@ public class NotionSyncService {
    * @return SyncResult indicating success or failure with details
    */
   public SyncResult syncShowTemplates(@NonNull String operationId) {
+    // Check if already synced in current session
+    if (isAlreadySyncedInSession("templates")) {
+      log.info("⏭️ Show templates already synced in current session, skipping");
+      return SyncResult.success("Show Templates", 0, 0);
+    }
+
     log.info("🎭 Starting show templates synchronization from Notion...");
     long startTime = System.currentTimeMillis();
+
+    try {
+      SyncResult result = performShowTemplatesSync(operationId, startTime);
+      if (result.isSuccess()) {
+        markAsSyncedInSession("templates");
+      }
+      return result;
+    } catch (Exception e) {
+      log.error("Failed to sync show templates", e);
+      return SyncResult.failure("Show Templates", e.getMessage());
+    }
+  }
+
+  private SyncResult performShowTemplatesSync(@NonNull String operationId, long startTime) {
 
     try {
       // Check if entity is enabled
@@ -630,8 +697,28 @@ public class NotionSyncService {
    * @return SyncResult indicating success or failure with details
    */
   public SyncResult syncSeasons(@NonNull String operationId) {
+    // Check if already synced in current session
+    if (isAlreadySyncedInSession("seasons")) {
+      log.info("⏭️ Seasons already synced in current session, skipping");
+      return SyncResult.success("Seasons", 0, 0);
+    }
+
     log.info("📅 Starting seasons synchronization from Notion...");
     long startTime = System.currentTimeMillis();
+
+    try {
+      SyncResult result = performSeasonsSync(operationId, startTime);
+      if (result.isSuccess()) {
+        markAsSyncedInSession("seasons");
+      }
+      return result;
+    } catch (Exception e) {
+      log.error("Failed to sync seasons", e);
+      return SyncResult.failure("Seasons", e.getMessage());
+    }
+  }
+
+  private SyncResult performSeasonsSync(@NonNull String operationId, long startTime) {
 
     try {
       // Check if NOTION_TOKEN is available
@@ -717,8 +804,28 @@ public class NotionSyncService {
    * @return SyncResult indicating success or failure with details
    */
   public SyncResult syncShowTypes(@NonNull String operationId) {
+    // Check if already synced in current session
+    if (isAlreadySyncedInSession("show-types")) {
+      log.info("⏭️ Show types already synced in current session, skipping");
+      return SyncResult.success("Show Types", 0, 0);
+    }
+
     log.info("🎭 Starting show types synchronization with operation ID: {}", operationId);
     long startTime = System.currentTimeMillis();
+
+    try {
+      SyncResult result = performShowTypesSync(operationId, startTime);
+      if (result.isSuccess()) {
+        markAsSyncedInSession("show-types");
+      }
+      return result;
+    } catch (Exception e) {
+      log.error("Failed to sync show types", e);
+      return SyncResult.failure("Show Types", e.getMessage());
+    }
+  }
+
+  private SyncResult performShowTypesSync(@NonNull String operationId, long startTime) {
 
     try {
       // Initialize progress tracking for show types sync
@@ -1037,8 +1144,28 @@ public class NotionSyncService {
    * @return SyncResult indicating success or failure with details
    */
   public SyncResult syncWrestlers(@NonNull String operationId) {
+    // Check if already synced in current session
+    if (isAlreadySyncedInSession("wrestlers")) {
+      log.info("⏭️ Wrestlers already synced in current session, skipping");
+      return SyncResult.success("Wrestlers", 0, 0);
+    }
+
     log.info("🤼 Starting wrestlers synchronization from Notion...");
     long startTime = System.currentTimeMillis();
+
+    try {
+      SyncResult result = performWrestlersSync(operationId, startTime);
+      if (result.isSuccess()) {
+        markAsSyncedInSession("wrestlers");
+      }
+      return result;
+    } catch (Exception e) {
+      log.error("Failed to sync wrestlers", e);
+      return SyncResult.failure("Wrestlers", e.getMessage());
+    }
+  }
+
+  private SyncResult performWrestlersSync(@NonNull String operationId, long startTime) {
 
     try {
       // Check if entity is enabled
@@ -1339,25 +1466,34 @@ public class NotionSyncService {
         return SyncResult.failure("Teams", "NotionHandler is not available for sync operations");
       }
 
-      // Sync wrestlers first to ensure team dependencies exist
-      progressTracker.addLogMessage(
-          operationId, "🤼 Syncing wrestlers first to ensure team dependencies...", "INFO");
-      SyncResult wrestlerSyncResult = syncWrestlers(operationId + "-wrestlers");
+      // Sync wrestlers first to ensure team dependencies exist - only if not already synced
+      if (!isAlreadySyncedInSession("wrestlers")) {
+        progressTracker.addLogMessage(
+            operationId, "🤼 Syncing wrestlers first to ensure team dependencies...", "INFO");
+        SyncResult wrestlerSyncResult = syncWrestlers(operationId + "-wrestlers");
 
-      if (!wrestlerSyncResult.isSuccess()) {
-        log.warn(
-            "Wrestler sync failed, but continuing with team sync: {}",
-            wrestlerSyncResult.getErrorMessage());
-        progressTracker.addLogMessage(
-            operationId,
-            "⚠️ Wrestler sync failed, some teams may be skipped: "
-                + wrestlerSyncResult.getErrorMessage(),
-            "WARN");
+        if (!wrestlerSyncResult.isSuccess()) {
+          log.warn(
+              "Wrestler sync failed, but continuing with team sync: {}",
+              wrestlerSyncResult.getErrorMessage());
+          progressTracker.addLogMessage(
+              operationId,
+              "⚠️ Wrestler sync failed, some teams may be skipped: "
+                  + wrestlerSyncResult.getErrorMessage(),
+              "WARN");
+        } else {
+          progressTracker.addLogMessage(
+              operationId,
+              String.format(
+                  "✅ Synced %d wrestlers as team dependencies",
+                  wrestlerSyncResult.getSyncedCount()),
+              "INFO");
+        }
       } else {
+        log.info("⏭️ Wrestlers already synced in session, skipping dependency sync");
         progressTracker.addLogMessage(
             operationId,
-            String.format(
-                "✅ Synced %d wrestlers as team dependencies", wrestlerSyncResult.getSyncedCount()),
+            "⏭️ Wrestlers already synced in session, skipping dependency sync",
             "INFO");
       }
 
@@ -4365,10 +4501,36 @@ public class NotionSyncService {
    * @return SyncResult containing the outcome of the sync operation
    */
   public SyncResult syncInjuryTypes(@NonNull String operationId) {
+    // Check if already synced in current session
+    if (isAlreadySyncedInSession("injury-types")) {
+      log.info("⏭️ Injury types already synced in current session, skipping");
+      return SyncResult.success("Injuries", 0, 0);
+    }
+
     if (!syncProperties.isEntityEnabled("injuries")) {
       log.debug("Injuries synchronization is disabled in configuration");
       return SyncResult.success("Injuries", 0, 0);
     }
+
+    try {
+      SyncResult result = performInjuryTypesSync(operationId);
+      if (result.isSuccess()) {
+        markAsSyncedInSession("injury-types");
+      }
+      return result;
+    } catch (Exception e) {
+      log.error("Failed to sync injury types", e);
+      return SyncResult.failure("Injuries", e.getMessage());
+    }
+  }
+
+  /**
+   * Internal method to perform the actual injury types sync logic.
+   *
+   * @param operationId Operation ID for progress tracking
+   * @return SyncResult containing the outcome of the sync operation
+   */
+  private SyncResult performInjuryTypesSync(@NonNull String operationId) {
 
     log.info("🏥 Starting injuries synchronization from Notion with operation ID: {}", operationId);
     long startTime = System.currentTimeMillis();
@@ -4475,7 +4637,17 @@ public class NotionSyncService {
       String externalId = injuryPage.getId();
       String injuryName = extractPropertyAsString(injuryPage.getRawProperties(), "Injury Name");
 
-      InjuryDTO dto = new InjuryDTO();
+      // Validate required fields
+      if (externalId == null || externalId.trim().isEmpty()) {
+        log.warn("Skipping injury page with missing external ID");
+        return null;
+      }
+      if (injuryName == null || injuryName.trim().isEmpty()) {
+        log.warn("Skipping injury page {} with missing injury name", externalId);
+        return null;
+      }
+
+      InjuryDTO dto = new InjuryDTO(externalId, injuryName);
       dto.setExternalId(externalId);
       dto.setInjuryName(injuryName);
 
@@ -4512,13 +4684,13 @@ public class NotionSyncService {
   private int saveInjuriesToDatabase(List<InjuryDTO> injuryDTOs) {
     log.info("🚀 Starting parallel processing of {} injuries", injuryDTOs.size());
 
-    // Pre-load and cache wrestlers to avoid repeated database lookups
-    Map<String, Wrestler> wrestlerCache = preloadWrestlersForInjuries(injuryDTOs);
+    // Pre-load and cache existing injury types to avoid repeated database lookups
+    Map<String, InjuryType> existingTypesCache = preloadExistingInjuryTypes(injuryDTOs);
 
-    log.info("✅ Cached {} wrestlers for injury sync", wrestlerCache.size());
+    log.info("✅ Cached {} existing injury types for sync", existingTypesCache.size());
 
-    // Process injuries in parallel and collect results
-    List<Injury> createdInjuries =
+    // Process injury types in parallel and collect results
+    List<InjuryType> createdInjuryTypes =
         injuryDTOs.parallelStream()
             .filter(
                 dto -> {
@@ -4527,27 +4699,25 @@ public class NotionSyncService {
                     return false;
                   }
 
-                  // Check if injury already exists
-                  if (injuryService.existsByExternalId(dto.getExternalId())) {
-                    log.debug("Injury already exists, skipping: {}", dto.getName());
-                    return false;
-                  }
+                  // Check if injury type already exists (we'll update it, so don't skip)
+                  // Note: We handle updates in the creation method, so we process all DTOs
 
                   return true;
                 })
             .map(
                 dto -> {
                   try {
-                    Injury injury = createInjuryFromDTO(dto, wrestlerCache);
-                    if (injury != null) {
-                      log.debug("✅ Created injury: {}", dto.getName());
-                      return injury;
+                    InjuryType injuryType =
+                        createOrUpdateInjuryTypeFromDTO(dto, existingTypesCache);
+                    if (injuryType != null) {
+                      log.debug("✅ Created/updated injury type: {}", dto.getInjuryName());
+                      return injuryType;
                     } else {
-                      log.warn("❌ Failed to create injury: {}", dto.getName());
+                      log.warn("❌ Failed to create/update injury type: {}", dto.getInjuryName());
                       return null;
                     }
                   } catch (Exception e) {
-                    log.error("❌ Failed to save injury: {}", dto.getSummary(), e);
+                    log.error("❌ Failed to save injury type: {}", dto.getSummary(), e);
                     return null;
                   }
                 })
@@ -4555,87 +4725,73 @@ public class NotionSyncService {
             .collect(Collectors.toList());
 
     log.info(
-        "✅ Parallel processing completed: {} injuries created successfully",
-        createdInjuries.size());
-    return createdInjuries.size();
+        "✅ Parallel processing completed: {} injury types created/updated successfully",
+        createdInjuryTypes.size());
+    return createdInjuryTypes.size();
   }
 
-  /** Pre-loads wrestlers mentioned in injury DTOs to avoid repeated database lookups. */
-  private Map<String, Wrestler> preloadWrestlersForInjuries(List<InjuryDTO> injuryDTOs) {
-    Set<String> wrestlerNames =
+  /**
+   * Pre-loads existing injury types by external ID to avoid repeated database lookups. Since we're
+   * syncing injury TYPES, not individual wrestler injuries.
+   */
+  private Map<String, InjuryType> preloadExistingInjuryTypes(List<InjuryDTO> injuryDTOs) {
+    Set<String> externalIds =
         injuryDTOs.stream()
-            .map(InjuryDTO::getWrestlerName)
+            .map(InjuryDTO::getExternalId)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
 
-    Map<String, Wrestler> cache = new HashMap<>();
-    for (String wrestlerName : wrestlerNames) {
-      Optional<Wrestler> wrestler = wrestlerService.findByName(wrestlerName);
-      if (wrestler.isPresent()) {
-        cache.put(wrestlerName, wrestler.get());
+    Map<String, InjuryType> cache = new HashMap<>();
+    for (String externalId : externalIds) {
+      Optional<InjuryType> injuryType = injuryTypeRepository.findByExternalId(externalId);
+      if (injuryType.isPresent()) {
+        cache.put(externalId, injuryType.get());
       }
     }
     return cache;
   }
 
   /**
-   * Creates an Injury entity from an InjuryDTO using cached wrestlers for performance.
+   * Creates or updates an InjuryType entity from an InjuryDTO using cached existing types for
+   * performance.
    *
    * @param dto The InjuryDTO to convert
-   * @param wrestlerCache Pre-loaded wrestler cache
-   * @return Created Injury or null if creation fails
+   * @param existingTypesCache Pre-loaded existing injury types cache
+   * @return Created/updated InjuryType or null if creation fails
    */
-  private Injury createInjuryFromDTO(InjuryDTO dto, Map<String, Wrestler> wrestlerCache) {
+  private InjuryType createOrUpdateInjuryTypeFromDTO(
+      InjuryDTO dto, Map<String, InjuryType> existingTypesCache) {
     try {
-      // Resolve wrestler using cache
-      Wrestler wrestler = wrestlerCache.get(dto.getWrestlerName());
-      if (wrestler == null) {
-        log.warn(
-            "Could not resolve wrestler '{}' for injury '{}'",
-            dto.getWrestlerName(),
-            dto.getName());
-        return null;
-      }
+      // Check if injury type already exists
+      InjuryType existingType = existingTypesCache.get(dto.getExternalId());
 
-      // Create injury using the service (correct API signature)
-      Optional<Injury> injuryOpt =
-          injuryService.createInjury(
-              wrestler.getId(),
-              dto.getName(),
-              dto.getDescription(),
-              dto.getSeverity(),
-              dto.getInjuryNotes());
+      if (existingType != null) {
+        // Update existing injury type
+        log.debug("Updating existing injury type: {}", dto.getInjuryName());
+        existingType.setInjuryName(dto.getInjuryName());
+        existingType.setHealthEffect(dto.getHealthEffect());
+        existingType.setStaminaEffect(dto.getStaminaEffect());
+        existingType.setCardEffect(dto.getCardEffect());
+        existingType.setSpecialEffects(dto.getSpecialEffects());
 
-      if (injuryOpt.isEmpty()) {
-        log.warn("Failed to create injury for wrestler '{}'", dto.getWrestlerName());
-        return null;
-      }
-
-      Injury injury = injuryOpt.get();
-
-      // Set additional properties that aren't handled by the service
-      injury.setExternalId(dto.getExternalId());
-      if (dto.getInjuryDate() != null) {
-        injury.setInjuryDate(dto.getInjuryDate());
-      }
-      if (dto.getHealedDate() != null) {
-        injury.setHealedDate(dto.getHealedDate());
-        injury.setIsActive(false);
+        return injuryTypeRepository.saveAndFlush(existingType);
       } else {
-        injury.setIsActive(dto.isCurrentlyActive());
-      }
-      if (dto.getHealthPenalty() != null) {
-        injury.setHealthPenalty(dto.getHealthPenalty());
-      }
-      if (dto.getHealingCost() != null) {
-        injury.setHealingCost(dto.getHealingCost().longValue());
-      }
+        // Create new injury type using the service
+        InjuryType newType =
+            injuryTypeService.createInjuryType(
+                dto.getInjuryName(),
+                dto.getHealthEffect(),
+                dto.getStaminaEffect(),
+                dto.getCardEffect(),
+                dto.getSpecialEffects());
 
-      // Save the updated injury directly (no updateInjury method for entity)
-      return injuryRepository.saveAndFlush(injury);
+        // Set external ID for future sync operations
+        newType.setExternalId(dto.getExternalId());
+        return injuryTypeRepository.saveAndFlush(newType);
+      }
 
     } catch (Exception e) {
-      log.error("Failed to create injury from DTO: {}", dto.getSummary(), e);
+      log.error("Failed to create/update injury type from DTO: {}", dto.getSummary(), e);
       return null;
     }
   }

@@ -43,6 +43,7 @@ public class EntityDependencyAnalyzer {
     // Base entities with no dependencies
     order.add("templates"); // ShowTemplate (no dependencies)
     order.add("seasons"); // Season (no dependencies)
+    order.add("injury-types"); // InjuryType (no dependencies, reference data)
 
     // Entities that depend on base entities
     order.add("shows"); // Show (depends on ShowTemplate, Season)
