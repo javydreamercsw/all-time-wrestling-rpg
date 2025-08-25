@@ -358,7 +358,7 @@ public class NotionHandler {
 
                         // Try multiple common title property names
                         String[] titlePropertyNames = {
-                          "Name", "Title", "Championship", "name", "title"
+                          "Name", "Title", "Title Name", "Championship", "name", "title"
                         };
                         for (String propertyName : titlePropertyNames) {
                           PageProperty titleProperty =
@@ -548,9 +548,13 @@ public class NotionHandler {
     } else if (formula.getDate() != null) {
       // Handle formula date - extract the start date and format it properly
       if (formula.getDate().getStart() != null) {
-        return formula.getDate().getStart().toString();
+        String dateStr = formula.getDate().getStart().toString();
+        // Remove @ prefix if present
+        return dateStr.startsWith("@") ? dateStr.substring(1) : dateStr;
       } else {
-        return formula.getDate().toString();
+        String dateStr = formula.getDate().toString();
+        // Remove @ prefix if present
+        return dateStr.startsWith("@") ? dateStr.substring(1) : dateStr;
       }
     } else {
       return "null";
@@ -1931,7 +1935,14 @@ public class NotionHandler {
           (key, value) -> {
             try {
               String valueStr = getValue(client, value, resolveRelationships);
-              log.info("{} Property - {}: {}", entityType, key, valueStr);
+              // Add debug info for Date property to understand the @ issue
+              if ("Date".equals(key)) {
+                String propertyType = value.getType() != null ? value.getType().getValue() : "null";
+                log.info(
+                    "{} Property - {}: {} (type: {})", entityType, key, valueStr, propertyType);
+              } else {
+                log.info("{} Property - {}: {}", entityType, key, valueStr);
+              }
               processedProperties.put(key, valueStr);
             } catch (Exception propertyError) {
               log.warn(
