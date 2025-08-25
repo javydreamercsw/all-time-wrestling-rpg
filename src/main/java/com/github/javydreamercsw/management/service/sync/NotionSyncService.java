@@ -2322,7 +2322,7 @@ public class NotionSyncService {
                   Set<String> names = new HashSet<>();
                   if (dto.getWinner() != null) names.add(dto.getWinner());
                   if (dto.getParticipants() != null) {
-                    names.addAll(Arrays.asList(dto.getParticipants().split(",\\s*")));
+                    names.addAll(dto.getParticipants());
                   }
                   return names.stream();
                 })
@@ -2389,7 +2389,8 @@ public class NotionSyncService {
       matchResultService.updateMatchResult(matchResult);
 
       // Add participants using cache
-      addParticipantsToMatch(matchResult, dto.getParticipants(), dto.getWinner(), wrestlerCache);
+      addParticipantsToMatch(
+          matchResult, dto.getParticipantsAsString(), dto.getWinner(), wrestlerCache);
 
       return matchResult;
 
