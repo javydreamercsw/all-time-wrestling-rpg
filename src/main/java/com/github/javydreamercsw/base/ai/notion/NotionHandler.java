@@ -342,7 +342,9 @@ public class NotionHandler {
                       System.setOut(originalOut);
 
                       // Try multiple common title property names
-                      String[] titlePropertyNames = {"Name", "Title", "Championship", "name", "title"};
+                      String[] titlePropertyNames = {
+                        "Name", "Title", "Championship", "name", "title"
+                      };
                       for (String propertyName : titlePropertyNames) {
                         PageProperty titleProperty = relatedPage.getProperties().get(propertyName);
                         if (titleProperty != null
@@ -353,8 +355,10 @@ public class NotionHandler {
                       }
 
                       // If no title property found, log available properties for debugging
-                      log.debug("No title property found for relation {}. Available properties: {}",
-                          relation.getId(), relatedPage.getProperties().keySet());
+                      log.debug(
+                          "No title property found for relation {}. Available properties: {}",
+                          relation.getId(),
+                          relatedPage.getProperties().keySet());
                       return relation.getId();
                     } finally {
                       System.setOut(originalOut);

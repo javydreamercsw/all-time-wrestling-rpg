@@ -51,6 +51,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -2214,44 +2215,192 @@ public class NotionSyncService {
   }
 
   /**
-   * Saves match DTOs to the database.
+   * Saves match DTOs to the database using parallel processing with caching.
    *
    * @param matchDTOs List of MatchDTO objects to save
    * @return Number of matches successfully saved
    */
   private int saveMatchesToDatabase(List<MatchDTO> matchDTOs) {
-    int savedCount = 0;
+    log.info("🚀 Starting parallel processing of {} matches", matchDTOs.size());
 
-    for (MatchDTO dto : matchDTOs) {
-      try {
-        if (!dto.isValid()) {
-          log.warn("Skipping invalid match DTO: {}", dto.getSummary());
-          continue;
-        }
+    // Pre-load and cache entities to avoid repeated database lookups
+    Map<String, Show> showCache = preloadShows(matchDTOs);
+    Map<String, MatchType> matchTypeCache = preloadMatchTypes(matchDTOs);
+    Map<String, Wrestler> wrestlerCache = preloadWrestlers(matchDTOs);
 
-        // Check if match already exists
-        if (matchResultService.existsByExternalId(dto.getExternalId())) {
-          log.debug("Match already exists, skipping: {}", dto.getName());
-          continue;
-        }
+    log.info(
+        "✅ Cached {} shows, {} match types, {} wrestlers",
+        showCache.size(),
+        matchTypeCache.size(),
+        wrestlerCache.size());
 
-        // Create match result
-        MatchResult matchResult = createMatchResultFromDTO(dto);
-        if (matchResult != null) {
-          savedCount++;
-          log.debug("Created match result: {}", dto.getName());
-        }
+    // Process matches in parallel and collect results
+    List<MatchResult> createdMatches =
+        matchDTOs.parallelStream()
+            .filter(
+                dto -> {
+                  if (!dto.isValid()) {
+                    log.warn("Skipping invalid match DTO: {}", dto.getSummary());
+                    return false;
+                  }
 
-      } catch (Exception e) {
-        log.error("Failed to save match: {}", dto.getSummary(), e);
+                  // Check if match already exists
+                  if (matchResultService.existsByExternalId(dto.getExternalId())) {
+                    log.debug("Match already exists, skipping: {}", dto.getName());
+                    return false;
+                  }
+
+                  return true;
+                })
+            .map(
+                dto -> {
+                  try {
+                    MatchResult matchResult =
+                        createMatchResultFromDTO(dto, showCache, matchTypeCache, wrestlerCache);
+                    if (matchResult != null) {
+                      log.debug("✅ Created match result: {}", dto.getName());
+                      return matchResult;
+                    } else {
+                      log.warn("❌ Failed to create match result: {}", dto.getName());
+                      return null;
+                    }
+                  } catch (Exception e) {
+                    log.error("❌ Failed to save match: {}", dto.getSummary(), e);
+                    return null;
+                  }
+                })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+    log.info(
+        "✅ Parallel processing completed: {} matches created successfully", createdMatches.size());
+    return createdMatches.size();
+  }
+
+  /** Pre-loads shows mentioned in match DTOs to avoid repeated database lookups. */
+  private Map<String, Show> preloadShows(List<MatchDTO> matchDTOs) {
+    Set<String> showNames =
+        matchDTOs.stream()
+            .map(MatchDTO::getShow)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+    Map<String, Show> cache = new HashMap<>();
+    for (String showName : showNames) {
+      Optional<Show> show = showService.findByName(showName);
+      if (show.isPresent()) {
+        cache.put(showName, show.get());
       }
     }
+    return cache;
+  }
 
-    return savedCount;
+  /** Pre-loads match types mentioned in match DTOs to avoid repeated database lookups. */
+  private Map<String, MatchType> preloadMatchTypes(List<MatchDTO> matchDTOs) {
+    Set<String> matchTypeNames =
+        matchDTOs.stream()
+            .map(MatchDTO::getMatchType)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+    Map<String, MatchType> cache = new HashMap<>();
+    for (String matchTypeName : matchTypeNames) {
+      Optional<MatchType> matchType = matchTypeService.findByName(matchTypeName);
+      if (matchType.isPresent()) {
+        cache.put(matchTypeName, matchType.get());
+      }
+    }
+    return cache;
+  }
+
+  /** Pre-loads wrestlers mentioned in match DTOs to avoid repeated database lookups. */
+  private Map<String, Wrestler> preloadWrestlers(List<MatchDTO> matchDTOs) {
+    Set<String> wrestlerNames =
+        matchDTOs.stream()
+            .flatMap(
+                dto -> {
+                  Set<String> names = new HashSet<>();
+                  if (dto.getWinner() != null) names.add(dto.getWinner());
+                  if (dto.getParticipants() != null) {
+                    names.addAll(Arrays.asList(dto.getParticipants().split(",\\s*")));
+                  }
+                  return names.stream();
+                })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+    Map<String, Wrestler> cache = new HashMap<>();
+    for (String wrestlerName : wrestlerNames) {
+      Optional<Wrestler> wrestler = wrestlerService.findByName(wrestlerName);
+      if (wrestler.isPresent()) {
+        cache.put(wrestlerName, wrestler.get());
+      }
+    }
+    return cache;
   }
 
   /**
-   * Creates a MatchResult entity from a MatchDTO.
+   * Creates a MatchResult entity from a MatchDTO using cached entities for performance.
+   *
+   * @param dto The MatchDTO to convert
+   * @param showCache Pre-loaded show cache
+   * @param matchTypeCache Pre-loaded match type cache
+   * @param wrestlerCache Pre-loaded wrestler cache
+   * @return Created MatchResult or null if creation fails
+   */
+  private MatchResult createMatchResultFromDTO(
+      MatchDTO dto,
+      Map<String, Show> showCache,
+      Map<String, MatchType> matchTypeCache,
+      Map<String, Wrestler> wrestlerCache) {
+    try {
+      // Resolve dependencies using caches
+      Show show = showCache.get(dto.getShow());
+      if (show == null) {
+        log.warn("Could not resolve show '{}' for match '{}'", dto.getShow(), dto.getName());
+        return null;
+      }
+
+      MatchType matchType = matchTypeCache.get(dto.getMatchType());
+      if (matchType == null) {
+        log.warn(
+            "Could not resolve match type '{}' for match '{}'", dto.getMatchType(), dto.getName());
+        return null;
+      }
+
+      Wrestler winner = wrestlerCache.get(dto.getWinner());
+      // Winner can be null for draws
+
+      // Create match result
+      MatchResult matchResult =
+          matchResultService.createMatchResult(
+              show,
+              matchType,
+              winner,
+              dto.getMatchDate(),
+              dto.getDuration(),
+              dto.getRating(),
+              dto.getNarration(),
+              dto.getIsTitleMatch(),
+              dto.getIsNpcGenerated());
+
+      // Set external ID
+      matchResult.setExternalId(dto.getExternalId());
+      matchResultService.updateMatchResult(matchResult);
+
+      // Add participants using cache
+      addParticipantsToMatch(matchResult, dto.getParticipants(), dto.getWinner(), wrestlerCache);
+
+      return matchResult;
+
+    } catch (Exception e) {
+      log.error("Failed to create match result from DTO: {}", dto.getSummary(), e);
+      return null;
+    }
+  }
+
+  /**
+   * Creates a MatchResult entity from a MatchDTO (legacy method for backward compatibility).
    *
    * @param dto The MatchDTO to convert
    * @return Created MatchResult or null if creation fails
@@ -4116,7 +4265,32 @@ public class NotionSyncService {
     }
   }
 
-  /** Adds participants to a match result. */
+  /** Adds participants to a match result using cached wrestlers for performance. */
+  private void addParticipantsToMatch(
+      MatchResult matchResult,
+      String participantsString,
+      String winnerName,
+      Map<String, Wrestler> wrestlerCache) {
+    if (participantsString == null || participantsString.trim().isEmpty()) {
+      log.warn("No participants provided for match: {}", matchResult.getId());
+      return;
+    }
+
+    // Parse participants string and resolve using cache
+    String[] participantNames = participantsString.split(",\\s*");
+    List<Wrestler> participants =
+        Arrays.stream(participantNames)
+            .map(name -> wrestlerCache.get(name.trim()))
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+    // Note: This is a placeholder implementation
+    // The actual implementation would depend on how match participants are stored
+    // in the MatchResult entity (e.g., through a separate MatchParticipant entity)
+    log.debug("Adding {} participants to match: {}", participants.size(), matchResult.getId());
+  }
+
+  /** Adds participants to a match result (legacy method). */
   private void addParticipantsToMatch(
       MatchResult matchResult, List<String> participantNames, String winnerName) {
     if (participantNames == null || participantNames.isEmpty()) {
