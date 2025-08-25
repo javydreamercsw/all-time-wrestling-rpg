@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
+import com.github.javydreamercsw.base.ai.notion.MatchPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.SeasonPage;
@@ -16,6 +17,8 @@ import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.match.MatchResult;
+import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.Team;
@@ -24,9 +27,12 @@ import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.FactionDTO;
+import com.github.javydreamercsw.management.dto.MatchDTO;
 import com.github.javydreamercsw.management.dto.SeasonDTO;
 import com.github.javydreamercsw.management.dto.ShowDTO;
 import com.github.javydreamercsw.management.dto.TeamDTO;
+import com.github.javydreamercsw.management.service.match.MatchResultService;
+import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -96,6 +102,8 @@ public class NotionSyncService {
   private final FactionRepository factionRepository;
   private final TeamService teamService;
   private final TeamRepository teamRepository;
+  private final MatchResultService matchResultService;
+  private final MatchTypeService matchTypeService;
 
   // Thread pool for async processing - using fixed thread pool for Java 17 compatibility
   private final ExecutorService executorService = Executors.newFixedThreadPool(10);
@@ -120,7 +128,9 @@ public class NotionSyncService {
       ShowTemplateService showTemplateService,
       FactionRepository factionRepository,
       TeamService teamService,
-      TeamRepository teamRepository) {
+      TeamRepository teamRepository,
+      MatchResultService matchResultService,
+      MatchTypeService matchTypeService) {
     this.objectMapper = objectMapper;
     this.notionHandler = notionHandler;
     this.syncProperties = syncProperties;
@@ -140,6 +150,8 @@ public class NotionSyncService {
     this.factionRepository = factionRepository;
     this.teamService = teamService;
     this.teamRepository = teamRepository;
+    this.matchResultService = matchResultService;
+    this.matchTypeService = matchTypeService;
   }
 
   /**
@@ -1429,6 +1441,100 @@ public class NotionSyncService {
   }
 
   /**
+   * Synchronizes matches from Notion Matches database directly to the database with optional
+   * progress tracking.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult containing the outcome of the sync operation
+   */
+  public SyncResult syncMatches(@NonNull String operationId) {
+    if (!syncProperties.isEntityEnabled("matches")) {
+      log.debug("Matches synchronization is disabled in configuration");
+      return SyncResult.success("Matches", 0, 0);
+    }
+
+    // Generate operation ID if not provided (required for transaction management)
+    final String finalOperationId =
+        operationId != null ? operationId : "matches-sync-" + System.currentTimeMillis();
+    if (operationId == null) {
+      log.debug("Generated operation ID: {}", finalOperationId);
+    }
+
+    // Check if NOTION_TOKEN is available before starting sync
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      log.warn("NOTION_TOKEN not available. Cannot sync matches from Notion.");
+      if (operationId != null) {
+        progressTracker.failOperation(
+            finalOperationId, "NOTION_TOKEN environment variable is required for Notion sync");
+      }
+      healthMonitor.recordFailure("Matches", "NOTION_TOKEN not available");
+      return SyncResult.failure(
+          "Matches", "NOTION_TOKEN environment variable is required for Notion sync");
+    }
+
+    log.info("🚀 Starting matches synchronization from Notion to database...");
+    long startTime = System.currentTimeMillis();
+
+    // Initialize progress tracking
+    progressTracker.startOperation(finalOperationId, "Sync Matches", 8); // 8 steps for match sync
+    progressTracker.updateProgress(finalOperationId, 1, "Initializing matches sync operation...");
+
+    try {
+      log.debug("🔧 Executing matches sync with circuit breaker and retry logic");
+
+      // Execute with circuit breaker and retry logic
+      SyncResult result =
+          circuitBreakerService.execute(
+              "matches",
+              () -> {
+                log.debug("🔄 Circuit breaker executing matches sync");
+                return retryService.executeWithRetry(
+                    "matches",
+                    (attemptNumber) -> {
+                      log.debug("🔄 Matches sync attempt {} starting", attemptNumber);
+                      progressTracker.updateProgress(
+                          finalOperationId, 3, "Starting matches sync...");
+                      SyncResult attemptResult = performMatchesSync(finalOperationId, startTime);
+                      log.debug(
+                          "🔄 Matches sync attempt {} result: {}",
+                          attemptNumber,
+                          attemptResult != null ? attemptResult.isSuccess() : "NULL");
+                      return attemptResult;
+                    });
+              });
+
+      // Update final progress
+      progressTracker.updateProgress(finalOperationId, 8, "Matches sync completed");
+      progressTracker.completeOperation(
+          finalOperationId,
+          result.isSuccess(),
+          result.isSuccess() ? "Matches sync completed successfully" : result.getErrorMessage(),
+          result.getSyncedCount());
+
+      // Record health metrics
+      if (result.isSuccess()) {
+        healthMonitor.recordSuccess(
+            "Matches", System.currentTimeMillis() - startTime, result.getSyncedCount());
+        log.info("✅ Matches sync completed successfully: {}", result.getSummary());
+      } else {
+        healthMonitor.recordFailure("Matches", result.getErrorMessage());
+        log.error("❌ Matches sync failed: {}", result.getErrorMessage());
+      }
+
+      return result;
+
+    } catch (Exception e) {
+      String errorMessage = "Matches sync failed with exception: " + e.getMessage();
+      log.error("❌ {}", errorMessage, e);
+
+      progressTracker.failOperation(finalOperationId, errorMessage);
+      healthMonitor.recordFailure("Matches", errorMessage);
+
+      return SyncResult.failure("Matches", errorMessage);
+    }
+  }
+
+  /**
    * Cleanup method to shutdown the executor service. Called automatically when the service is being
    * destroyed.
    */
@@ -1967,6 +2073,234 @@ public class NotionSyncService {
         savedCount,
         templateDTOs.size());
     return savedCount;
+  }
+
+  // ==================== MATCH SYNC IMPLEMENTATION METHODS ====================
+
+  /**
+   * Performs the actual matches synchronization from Notion to database.
+   *
+   * @param operationId Operation ID for progress tracking
+   * @param startTime Start time for performance measurement
+   * @return SyncResult containing the outcome of the sync operation
+   */
+  private SyncResult performMatchesSync(@NonNull String operationId, long startTime) {
+    try {
+      // Step 1: Load matches from Notion
+      progressTracker.updateProgress(operationId, 4, "Loading matches from Notion...");
+      List<MatchPage> matchPages = loadMatchesFromNotion();
+      log.info(
+          "✅ Retrieved {} matches in {}ms",
+          matchPages.size(),
+          System.currentTimeMillis() - startTime);
+
+      if (matchPages.isEmpty()) {
+        log.info("No matches found in Notion database");
+        return SyncResult.success("Matches", 0, 0);
+      }
+
+      // Step 2: Convert to DTOs
+      progressTracker.updateProgress(operationId, 5, "Converting matches to DTOs...");
+      List<MatchDTO> matchDTOs = convertMatchesToDTOs(matchPages);
+      log.info(
+          "✅ Converted {} matches in {}ms",
+          matchDTOs.size(),
+          System.currentTimeMillis() - startTime);
+
+      // Step 3: Save to database
+      progressTracker.updateProgress(operationId, 6, "Saving matches to database...");
+      int syncedCount = saveMatchesToDatabase(matchDTOs);
+      log.info(
+          "✅ Saved {} matches to database in {}ms",
+          syncedCount,
+          System.currentTimeMillis() - startTime);
+
+      // Step 4: Validate results
+      progressTracker.updateProgress(operationId, 7, "Validating match sync results...");
+      boolean validationPassed = validateMatchSyncResults(matchDTOs, syncedCount);
+
+      if (!validationPassed) {
+        return SyncResult.failure("Matches", "Match sync validation failed");
+      }
+
+      long totalTime = System.currentTimeMillis() - startTime;
+      log.info("🎉 Matches sync completed successfully in {}ms", totalTime);
+
+      return SyncResult.success("Matches", syncedCount, 0);
+
+    } catch (Exception e) {
+      log.error("Failed to perform matches sync", e);
+      return SyncResult.failure("Matches", "Failed to sync matches: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Loads all matches from Notion database.
+   *
+   * @return List of MatchPage objects from Notion
+   */
+  private List<MatchPage> loadMatchesFromNotion() {
+    if (!isNotionHandlerAvailable()) {
+      log.warn("NotionHandler not available. Cannot load matches from Notion.");
+      return new ArrayList<>();
+    }
+
+    try {
+      return notionHandler.loadAllMatches();
+    } catch (Exception e) {
+      log.error("Failed to load matches from Notion", e);
+      throw new RuntimeException("Failed to load matches from Notion: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Converts MatchPage objects to MatchDTO objects.
+   *
+   * @param matchPages List of MatchPage objects from Notion
+   * @return List of MatchDTO objects
+   */
+  private List<MatchDTO> convertMatchesToDTOs(List<MatchPage> matchPages) {
+    return matchPages.parallelStream()
+        .map(this::convertMatchPageToDTO)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Converts a single MatchPage to MatchDTO.
+   *
+   * @param matchPage The MatchPage to convert
+   * @return MatchDTO object or null if conversion fails
+   */
+  private MatchDTO convertMatchPageToDTO(MatchPage matchPage) {
+    try {
+      MatchDTO dto = new MatchDTO();
+
+      // Set external ID (Notion page ID)
+      dto.setExternalId(matchPage.getId());
+
+      // Extract basic properties
+      dto.setName(extractNameFromNotionPage(matchPage));
+      dto.setDescription(extractDescriptionFromNotionPage(matchPage));
+
+      // Extract match-specific properties
+      dto.setParticipants(extractParticipantsFromMatchPage(matchPage));
+      dto.setWinner(extractWinnerFromMatchPage(matchPage));
+      dto.setMatchType(extractMatchTypeFromMatchPage(matchPage));
+      dto.setShow(extractShowFromMatchPage(matchPage));
+      dto.setDuration(extractDurationFromMatchPage(matchPage));
+      dto.setRating(extractRatingFromMatchPage(matchPage));
+      dto.setStipulation(extractStipulationFromMatchPage(matchPage));
+
+      // Extract timestamps
+      dto.setCreatedTime(parseInstantFromString(matchPage.getCreated_time()));
+      dto.setLastEditedTime(parseInstantFromString(matchPage.getLast_edited_time()));
+      dto.setCreatedBy(
+          matchPage.getCreated_by() != null ? matchPage.getCreated_by().getName() : null);
+      dto.setLastEditedBy(
+          matchPage.getLast_edited_by() != null ? matchPage.getLast_edited_by().getName() : null);
+
+      // Set defaults
+      dto.setIsTitleMatch(false);
+      dto.setIsNpcGenerated(false);
+      dto.setMatchDate(dto.getCreatedTime() != null ? dto.getCreatedTime() : Instant.now());
+
+      return dto;
+
+    } catch (Exception e) {
+      log.error("Failed to convert match page to DTO: {}", matchPage.getId(), e);
+      return null;
+    }
+  }
+
+  /**
+   * Saves match DTOs to the database.
+   *
+   * @param matchDTOs List of MatchDTO objects to save
+   * @return Number of matches successfully saved
+   */
+  private int saveMatchesToDatabase(List<MatchDTO> matchDTOs) {
+    int savedCount = 0;
+
+    for (MatchDTO dto : matchDTOs) {
+      try {
+        if (!dto.isValid()) {
+          log.warn("Skipping invalid match DTO: {}", dto.getSummary());
+          continue;
+        }
+
+        // Check if match already exists
+        if (matchResultService.existsByExternalId(dto.getExternalId())) {
+          log.debug("Match already exists, skipping: {}", dto.getName());
+          continue;
+        }
+
+        // Create match result
+        MatchResult matchResult = createMatchResultFromDTO(dto);
+        if (matchResult != null) {
+          savedCount++;
+          log.debug("Created match result: {}", dto.getName());
+        }
+
+      } catch (Exception e) {
+        log.error("Failed to save match: {}", dto.getSummary(), e);
+      }
+    }
+
+    return savedCount;
+  }
+
+  /**
+   * Creates a MatchResult entity from a MatchDTO.
+   *
+   * @param dto The MatchDTO to convert
+   * @return Created MatchResult or null if creation fails
+   */
+  private MatchResult createMatchResultFromDTO(MatchDTO dto) {
+    try {
+      // Resolve dependencies
+      Show show = resolveShow(dto.getShow());
+      if (show == null) {
+        log.warn("Could not resolve show '{}' for match '{}'", dto.getShow(), dto.getName());
+        return null;
+      }
+
+      MatchType matchType = resolveMatchType(dto.getMatchType());
+      if (matchType == null) {
+        log.warn(
+            "Could not resolve match type '{}' for match '{}'", dto.getMatchType(), dto.getName());
+        return null;
+      }
+
+      Wrestler winner = resolveWrestler(dto.getWinner());
+      // Winner can be null for draws
+
+      // Create match result
+      MatchResult matchResult =
+          matchResultService.createMatchResult(
+              show,
+              matchType,
+              winner,
+              dto.getMatchDate(),
+              dto.getDuration(),
+              dto.getRating(),
+              dto.getNarration(),
+              dto.getIsTitleMatch(),
+              dto.getIsNpcGenerated());
+
+      // Set external ID
+      matchResult.setExternalId(dto.getExternalId());
+      matchResultService.updateMatchResult(matchResult);
+
+      // Add participants
+      addParticipantsToMatch(matchResult, dto.getParticipants(), dto.getWinner());
+
+      return matchResult;
+
+    } catch (Exception e) {
+      log.error("Failed to create match result from DTO: {}", dto.getSummary(), e);
+      return null;
+    }
   }
 
   // ==================== BACKUP METHODS ====================
@@ -2854,6 +3188,14 @@ public class NotionSyncService {
       return errorMessage;
     }
 
+    public String getSummary() {
+      if (success) {
+        return String.format("%s: %d synced, %d errors", entityType, syncedCount, errorCount);
+      } else {
+        return String.format("%s: failed - %s", entityType, errorMessage);
+      }
+    }
+
     @Override
     public String toString() {
       if (success) {
@@ -3611,6 +3953,223 @@ public class NotionSyncService {
     } catch (Exception e) {
       log.error("Failed to save team '{}': {}", dto.getName(), e.getMessage(), e);
       throw new RuntimeException("Failed to save team: " + dto.getName(), e);
+    }
+  }
+
+  // ==================== MATCH PROPERTY EXTRACTION METHODS ====================
+
+  /** Extracts participants from a MatchPage. */
+  private List<String> extractParticipantsFromMatchPage(MatchPage matchPage) {
+    try {
+      if (matchPage.getRawProperties() != null) {
+        Object participants = matchPage.getRawProperties().get("Participants");
+        if (participants instanceof List<?> list) {
+          return list.stream()
+              .map(Object::toString)
+              .filter(name -> name != null && !name.trim().isEmpty())
+              .collect(Collectors.toList());
+        }
+      }
+      return new ArrayList<>();
+    } catch (Exception e) {
+      log.warn("Failed to extract participants from match page: {}", matchPage.getId(), e);
+      return new ArrayList<>();
+    }
+  }
+
+  /** Extracts winner from a MatchPage. */
+  private String extractWinnerFromMatchPage(MatchPage matchPage) {
+    try {
+      if (matchPage.getRawProperties() != null) {
+        Object winner = matchPage.getRawProperties().get("Winner");
+        return winner != null ? winner.toString() : null;
+      }
+      return null;
+    } catch (Exception e) {
+      log.warn("Failed to extract winner from match page: {}", matchPage.getId(), e);
+      return null;
+    }
+  }
+
+  /** Extracts match type from a MatchPage. */
+  private String extractMatchTypeFromMatchPage(MatchPage matchPage) {
+    try {
+      if (matchPage.getRawProperties() != null) {
+        Object matchType = matchPage.getRawProperties().get("MatchType");
+        if (matchType == null) {
+          matchType = matchPage.getRawProperties().get("Match Type");
+        }
+        return matchType != null ? matchType.toString() : "Singles";
+      }
+      return "Singles";
+    } catch (Exception e) {
+      log.warn("Failed to extract match type from match page: {}", matchPage.getId(), e);
+      return "Singles";
+    }
+  }
+
+  /** Extracts show from a MatchPage. */
+  private String extractShowFromMatchPage(MatchPage matchPage) {
+    try {
+      if (matchPage.getRawProperties() != null) {
+        Object show = matchPage.getRawProperties().get("Show");
+        return show != null ? show.toString() : null;
+      }
+      return null;
+    } catch (Exception e) {
+      log.warn("Failed to extract show from match page: {}", matchPage.getId(), e);
+      return null;
+    }
+  }
+
+  /** Extracts duration from a MatchPage. */
+  private Integer extractDurationFromMatchPage(MatchPage matchPage) {
+    try {
+      if (matchPage.getRawProperties() != null) {
+        Object duration = matchPage.getRawProperties().get("Duration");
+        if (duration instanceof Number number) {
+          return number.intValue();
+        } else if (duration instanceof String str) {
+          return Integer.parseInt(str);
+        }
+      }
+      return null;
+    } catch (Exception e) {
+      log.warn("Failed to extract duration from match page: {}", matchPage.getId(), e);
+      return null;
+    }
+  }
+
+  /** Extracts rating from a MatchPage. */
+  private Integer extractRatingFromMatchPage(MatchPage matchPage) {
+    try {
+      if (matchPage.getRawProperties() != null) {
+        Object rating = matchPage.getRawProperties().get("Rating");
+        if (rating instanceof Number number) {
+          return number.intValue();
+        } else if (rating instanceof String str) {
+          return Integer.parseInt(str);
+        }
+      }
+      return null;
+    } catch (Exception e) {
+      log.warn("Failed to extract rating from match page: {}", matchPage.getId(), e);
+      return null;
+    }
+  }
+
+  /** Extracts stipulation from a MatchPage. */
+  private String extractStipulationFromMatchPage(MatchPage matchPage) {
+    try {
+      if (matchPage.getRawProperties() != null) {
+        Object stipulation = matchPage.getRawProperties().get("Stipulation");
+        return stipulation != null ? stipulation.toString() : null;
+      }
+      return null;
+    } catch (Exception e) {
+      log.warn("Failed to extract stipulation from match page: {}", matchPage.getId(), e);
+      return null;
+    }
+  }
+
+  // ==================== MATCH DEPENDENCY RESOLUTION METHODS ====================
+
+  /** Resolves a show by name. */
+  private Show resolveShow(String showName) {
+    if (showName == null || showName.trim().isEmpty()) {
+      return null;
+    }
+
+    try {
+      return showService.findByName(showName).orElse(null);
+    } catch (Exception e) {
+      log.warn("Failed to resolve show: {}", showName, e);
+      return null;
+    }
+  }
+
+  /** Resolves a match type by name. */
+  private MatchType resolveMatchType(String matchTypeName) {
+    if (matchTypeName == null || matchTypeName.trim().isEmpty()) {
+      matchTypeName = "Singles"; // Default match type
+    }
+
+    try {
+      return matchTypeService.findByName(matchTypeName).orElse(null);
+    } catch (Exception e) {
+      log.warn("Failed to resolve match type: {}", matchTypeName, e);
+      return null;
+    }
+  }
+
+  /** Resolves a wrestler by name. */
+  private Wrestler resolveWrestler(String wrestlerName) {
+    if (wrestlerName == null || wrestlerName.trim().isEmpty()) {
+      return null;
+    }
+
+    try {
+      return wrestlerService.findByName(wrestlerName).orElse(null);
+    } catch (Exception e) {
+      log.warn("Failed to resolve wrestler: {}", wrestlerName, e);
+      return null;
+    }
+  }
+
+  /** Adds participants to a match result. */
+  private void addParticipantsToMatch(
+      MatchResult matchResult, List<String> participantNames, String winnerName) {
+    if (participantNames == null || participantNames.isEmpty()) {
+      log.warn("No participants provided for match: {}", matchResult.getId());
+      return;
+    }
+
+    // Note: This is a placeholder implementation
+    // The actual implementation would depend on how match participants are stored
+    // in the MatchResult entity (e.g., through a separate MatchParticipant entity)
+    log.debug("Adding {} participants to match: {}", participantNames.size(), matchResult.getId());
+  }
+
+  /** Validates match sync results. */
+  private boolean validateMatchSyncResults(List<MatchDTO> matchDTOs, int syncedCount) {
+    if (matchDTOs.isEmpty()) {
+      return true; // No matches to validate
+    }
+
+    // Basic validation: check if at least some matches were synced
+    double syncRate = (double) syncedCount / matchDTOs.size();
+    if (syncRate < 0.5) { // Less than 50% success rate
+      log.warn(
+          "Match sync validation failed: only {}/{} matches synced ({}%)",
+          syncedCount, matchDTOs.size(), Math.round(syncRate * 100));
+      return false;
+    }
+
+    log.info(
+        "Match sync validation passed: {}/{} matches synced ({}%)",
+        syncedCount, matchDTOs.size(), Math.round(syncRate * 100));
+    return true;
+  }
+
+  /** Synchronizes match types from Notion (placeholder implementation). */
+  private SyncResult syncMatchTypes(String operationId) {
+    // This is a placeholder - match types sync would be implemented similarly
+    // to other entity syncs if needed
+    log.debug("Match types sync not implemented yet");
+    return SyncResult.success("MatchTypes", 0, 0);
+  }
+
+  /** Parses an Instant from a Notion timestamp string. */
+  private Instant parseInstantFromString(String timestampString) {
+    if (timestampString == null || timestampString.trim().isEmpty()) {
+      return null;
+    }
+
+    try {
+      return Instant.parse(timestampString);
+    } catch (Exception e) {
+      log.warn("Failed to parse timestamp: {}", timestampString, e);
+      return null;
     }
   }
 }

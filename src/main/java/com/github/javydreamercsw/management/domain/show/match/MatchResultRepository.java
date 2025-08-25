@@ -4,6 +4,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -85,4 +86,10 @@ public interface MatchResultRepository
       WHERE p.wrestler = :wrestler
       """)
   long countMatchesByWrestler(@Param("wrestler") Wrestler wrestler);
+
+  /** Check if a match result exists by external ID. */
+  boolean existsByExternalId(String externalId);
+
+  /** Find a match result by external ID. */
+  Optional<MatchResult> findByExternalId(String externalId);
 }

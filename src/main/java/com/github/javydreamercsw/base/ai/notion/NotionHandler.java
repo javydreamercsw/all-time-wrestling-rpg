@@ -1202,6 +1202,37 @@ public class NotionHandler {
     return getInstance().loadMatch(matchName);
   }
 
+  /**
+   * Loads all matches from the Notion Matches database.
+   *
+   * @return List of all MatchPage objects from the Matches database
+   */
+  public List<MatchPage> loadAllMatches() {
+    log.debug("Loading all matches from Matches database");
+
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String matchDbId = getDatabaseId("Matches");
+    if (matchDbId == null) {
+      log.warn("Matches database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(client, matchDbId, "Match", this::mapPageToMatchPage);
+    } catch (Exception e) {
+      log.error("Failed to load all matches", e);
+      throw new RuntimeException("Failed to load matches from Notion: " + e.getMessage(), e);
+    }
+  }
+
   // ==================== HEAT LOADING METHODS ====================
 
   /** Loads a heat entry from the Notion database by name. */

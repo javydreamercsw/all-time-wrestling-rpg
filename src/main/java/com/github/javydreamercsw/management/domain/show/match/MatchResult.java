@@ -86,6 +86,9 @@ public class MatchResult extends AbstractEntity<Long> {
   @Column(name = "is_npc_generated", nullable = false)
   private Boolean isNpcGenerated = false;
 
+  @Column(name = "external_id", unique = true)
+  private String externalId;
+
   // Match participants
   @OneToMany(mappedBy = "matchResult", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"matchResult"})

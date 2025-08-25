@@ -10,7 +10,7 @@ public class MatchPage extends NotionPage {
 
   @Data
   @EqualsAndHashCode(callSuper = false)
-  static class NotionProperties extends NotionPage.BaseNotionProperties {
+  public static class NotionProperties extends NotionPage.BaseNotionProperties {
     // Match-specific properties only (common properties inherited from base)
     private Property Participants;
     private Property Winner;
