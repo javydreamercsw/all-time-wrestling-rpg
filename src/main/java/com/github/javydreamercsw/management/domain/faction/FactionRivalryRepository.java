@@ -87,28 +87,6 @@ public interface FactionRivalryRepository
       """)
   long countActiveRivalriesForFaction(@Param("faction") Faction faction);
 
-  /** Find rivalries by faction alignment combinations. */
-  @Query(
-      """
-      SELECT fr FROM FactionRivalry fr
-      WHERE fr.isActive = true
-      AND ((fr.faction1.alignment = :alignment1 AND fr.faction2.alignment = :alignment2)
-           OR (fr.faction1.alignment = :alignment2 AND fr.faction2.alignment = :alignment1))
-      """)
-  List<FactionRivalry> findByAlignmentCombination(
-      @Param("alignment1") FactionAlignment alignment1,
-      @Param("alignment2") FactionAlignment alignment2);
-
-  /** Find Face vs Heel rivalries. */
-  @Query(
-      """
-      SELECT fr FROM FactionRivalry fr
-      WHERE fr.isActive = true
-      AND ((fr.faction1.alignment = 'FACE' AND fr.faction2.alignment = 'HEEL')
-           OR (fr.faction1.alignment = 'HEEL' AND fr.faction2.alignment = 'FACE'))
-      """)
-  List<FactionRivalry> findFaceVsHeelRivalries();
-
   /** Find rivalries involving stables (3+ members). */
   @Query(
       """

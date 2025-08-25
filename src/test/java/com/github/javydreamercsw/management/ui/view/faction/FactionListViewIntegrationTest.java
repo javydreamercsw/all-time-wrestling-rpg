@@ -3,7 +3,6 @@ package com.github.javydreamercsw.management.ui.view.faction;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -71,7 +70,6 @@ class FactionListViewIntegrationTest {
     testFaction = new Faction();
     testFaction.setName("Evolution");
     testFaction.setDescription("A dominant faction");
-    testFaction.setAlignment(FactionAlignment.HEEL);
     testFaction.setIsActive(true);
     testFaction.setCreationDate(Instant.now());
     testFaction.setFormedDate(Instant.now());
@@ -145,7 +143,6 @@ class FactionListViewIntegrationTest {
     Faction emptyFaction = new Faction();
     emptyFaction.setName("Empty Faction");
     emptyFaction.setDescription("A faction with no members");
-    emptyFaction.setAlignment(FactionAlignment.NEUTRAL);
     emptyFaction.setIsActive(true);
     emptyFaction.setCreationDate(Instant.now());
     emptyFaction.setFormedDate(Instant.now());

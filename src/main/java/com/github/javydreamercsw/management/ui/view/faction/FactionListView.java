@@ -2,7 +2,6 @@ package com.github.javydreamercsw.management.ui.view.faction;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -36,6 +35,7 @@ import jakarta.annotation.security.PermitAll;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -55,7 +55,7 @@ public class FactionListView extends Main {
   private Dialog editDialog;
   private TextField editName;
   private TextArea editDescription;
-  private ComboBox<FactionAlignment> editAlignment;
+
   private ComboBox<Wrestler> editLeader;
   private DatePicker editFormedDate;
   private DatePicker editDisbandedDate;
@@ -115,17 +115,25 @@ public class FactionListView extends Main {
     factionGrid.addColumn(Faction::getName).setHeader("Name").setSortable(true);
 
     factionGrid
-        .addColumn(faction -> faction.getAlignment() != null ? faction.getAlignment().name() : "")
-        .setHeader("Alignment")
-        .setSortable(true);
-
-    factionGrid
         .addColumn(
             faction -> faction.getLeader() != null ? faction.getLeader().getName() : "No Leader")
         .setHeader("Leader")
         .setSortable(true);
 
-    factionGrid.addColumn(Faction::getMemberCount).setHeader("Members").setSortable(true);
+    // Members column - show wrestler names instead of count
+    factionGrid
+        .addColumn(
+            faction -> {
+              if (faction.getMembers() == null || faction.getMembers().isEmpty()) {
+                return "No members";
+              }
+              return faction.getMembers().stream()
+                  .map(Wrestler::getName)
+                  .collect(Collectors.joining(", "));
+            })
+        .setHeader("Members")
+        .setSortable(false)
+        .setFlexGrow(2); // Give more space for member names
 
     factionGrid
         .addColumn(faction -> faction.getIsActive() ? "Active" : "Disbanded")
@@ -193,11 +201,6 @@ public class FactionListView extends Main {
     editDescription.setMaxLength(1000);
     editDescription.setHeight("100px");
 
-    editAlignment = new ComboBox<>("Alignment");
-    editAlignment.setItems(FactionAlignment.values());
-    editAlignment.setItemLabelGenerator(FactionAlignment::name);
-    editAlignment.setRequired(true);
-
     editLeader = new ComboBox<>("Leader");
     editLeader.setItems(wrestlerService.findAll());
     editLeader.setItemLabelGenerator(Wrestler::getName);
@@ -207,8 +210,7 @@ public class FactionListView extends Main {
 
     // Form layout
     FormLayout formLayout = new FormLayout();
-    formLayout.add(
-        editName, editAlignment, editLeader, editFormedDate, editDisbandedDate, editDescription);
+    formLayout.add(editName, editLeader, editFormedDate, editDisbandedDate, editDescription);
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
     formLayout.setColspan(editDescription, 2);
@@ -232,10 +234,7 @@ public class FactionListView extends Main {
         .asRequired("Name is required")
         .bind(Faction::getName, Faction::setName);
     binder.forField(editDescription).bind(Faction::getDescription, Faction::setDescription);
-    binder
-        .forField(editAlignment)
-        .asRequired("Alignment is required")
-        .bind(Faction::getAlignment, Faction::setAlignment);
+
     binder.forField(editLeader).bind(Faction::getLeader, Faction::setLeader);
     binder
         .forField(editFormedDate)
@@ -262,7 +261,6 @@ public class FactionListView extends Main {
   private void openCreateDialog() {
     editingFaction = new Faction();
     editingFaction.setIsActive(true); // Default to active
-    editingFaction.setAlignment(FactionAlignment.NEUTRAL); // Default alignment
     editDialog.setHeaderTitle("Create Faction");
     binder.readBean(editingFaction);
     editDialog.open();
@@ -361,12 +359,6 @@ public class FactionListView extends Main {
     Div basicInfo = new Div();
     basicInfo.add(new H3("Basic Information"));
     basicInfo.add(new Div("Name: " + loadedFaction.getName()));
-    basicInfo.add(
-        new Div(
-            "Alignment: "
-                + (loadedFaction.getAlignment() != null
-                    ? loadedFaction.getAlignment().name()
-                    : "Not set")));
     basicInfo.add(new Div("Status: " + (loadedFaction.getIsActive() ? "Active" : "Disbanded")));
     basicInfo.add(
         new Div(

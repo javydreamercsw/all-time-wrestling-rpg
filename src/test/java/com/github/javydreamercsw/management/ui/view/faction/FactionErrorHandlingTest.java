@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -79,7 +78,6 @@ class FactionErrorHandlingTest {
 
     Faction factionToSave = new Faction();
     factionToSave.setName("Test Faction");
-    factionToSave.setAlignment(FactionAlignment.FACE);
 
     when(factionService.save(any(Faction.class)))
         .thenThrow(new RuntimeException("Constraint violation: Name already exists"));
@@ -156,11 +154,9 @@ class FactionErrorHandlingTest {
     Faction invalidFaction1 = new Faction(); // No name, no alignment
     Faction invalidFaction2 = new Faction();
     invalidFaction2.setName(""); // Empty name
-    invalidFaction2.setAlignment(FactionAlignment.FACE);
 
     Faction invalidFaction3 = new Faction();
     invalidFaction3.setName("Valid Name");
-    invalidFaction3.setAlignment(null); // Null alignment
 
     // When/Then - These should be caught by validation
     assertNull(invalidFaction1.getName());
@@ -168,7 +164,6 @@ class FactionErrorHandlingTest {
     // So we test that it's either null or has a default value
 
     assertTrue(invalidFaction2.getName().isEmpty());
-    assertNotNull(invalidFaction2.getAlignment());
 
     assertNotNull(invalidFaction3.getName());
     // The alignment might be set to a default value by the entity
@@ -186,7 +181,6 @@ class FactionErrorHandlingTest {
     Faction faction = new Faction();
     faction.setId(1L);
     faction.setName("Concurrent Test Faction");
-    faction.setAlignment(FactionAlignment.HEEL);
 
     when(factionService.save(faction))
         .thenThrow(
@@ -260,7 +254,6 @@ class FactionErrorHandlingTest {
       Faction faction = new Faction();
       faction.setId((long) i);
       faction.setName("Faction " + i);
-      faction.setAlignment(FactionAlignment.values()[i % 4]);
       faction.setIsActive(i % 2 == 0);
       faction.setCreationDate(Instant.now());
       largeFactionList.add(faction);
@@ -336,7 +329,6 @@ class FactionErrorHandlingTest {
     // Test faction with name too long
     Faction factionWithLongName = new Faction();
     factionWithLongName.setName("A".repeat(300)); // Exceeds 255 character limit
-    factionWithLongName.setAlignment(FactionAlignment.NEUTRAL);
 
     when(factionService.save(factionWithLongName))
         .thenThrow(new RuntimeException("Validation failed: Name exceeds maximum length"));

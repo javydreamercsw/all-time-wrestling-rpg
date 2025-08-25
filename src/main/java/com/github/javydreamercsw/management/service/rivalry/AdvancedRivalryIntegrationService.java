@@ -363,8 +363,9 @@ public class AdvancedRivalryIntegrationService {
       MatchResult matchResult, Faction faction1, Faction faction2) {
     int baseHeat = 1; // Base heat for faction members competing
 
-    // Apply alignment multiplier
-    double multiplier = faction1.getAlignment().getHeatMultiplier(faction2.getAlignment());
+    // Note: Alignment-based heat calculation removed as alignment field no longer exists
+    // Heat is now based purely on rivalry intensity and other factors
+    double multiplier = 1.0; // Default multiplier without alignment
 
     return (int) Math.round(baseHeat * multiplier);
   }

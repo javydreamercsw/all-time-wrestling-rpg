@@ -180,12 +180,10 @@ public class FactionRivalry extends AbstractEntity<Long> {
     return RivalryIntensity.EXPLOSIVE;
   }
 
-  /** Get heat multiplier based on faction alignments. */
-  public double getAlignmentHeatMultiplier() {
-    if (faction1.getAlignment() != null && faction2.getAlignment() != null) {
-      return faction1.getAlignment().getHeatMultiplier(faction2.getAlignment());
-    }
-    return 1.0;
+  /** Get heat multiplier based on faction rivalry intensity. */
+  public double getIntensityHeatMultiplier() {
+    // Use rivalry intensity instead of alignment for heat calculation
+    return getIntensity().getHeatMultiplier();
   }
 
   /** Get display name for this rivalry. */

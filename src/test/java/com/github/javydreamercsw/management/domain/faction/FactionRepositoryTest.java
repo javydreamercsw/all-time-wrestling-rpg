@@ -29,7 +29,6 @@ class FactionRepositoryTest {
     testFaction = new Faction();
     testFaction.setName("Test Faction");
     testFaction.setDescription("A test faction for unit tests");
-    testFaction.setAlignment(FactionAlignment.NEUTRAL);
     testFaction.setIsActive(true);
     testFaction.setCreationDate(Instant.now());
     testFaction.setExternalId("notion-test-faction-123");
@@ -106,14 +105,12 @@ class FactionRepositoryTest {
     // Given
     Faction faction1 = new Faction();
     faction1.setName("Faction One");
-    faction1.setAlignment(FactionAlignment.FACE);
     faction1.setIsActive(true);
     faction1.setCreationDate(Instant.now());
     faction1.setExternalId("external-id-1");
 
     Faction faction2 = new Faction();
     faction2.setName("Faction Two");
-    faction2.setAlignment(FactionAlignment.HEEL);
     faction2.setIsActive(true);
     faction2.setCreationDate(Instant.now());
     faction2.setExternalId("external-id-2");

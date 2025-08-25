@@ -53,6 +53,16 @@ public enum RivalryIntensity {
     return this == EXPLOSIVE;
   }
 
+  /** Get heat multiplier based on rivalry intensity. */
+  public double getHeatMultiplier() {
+    return switch (this) {
+      case SIMMERING -> 1.0;
+      case HEATED -> 1.2;
+      case INTENSE -> 1.5;
+      case EXPLOSIVE -> 2.0;
+    };
+  }
+
   // Getters
   public String getDisplayName() {
     return displayName;

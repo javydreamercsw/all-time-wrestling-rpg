@@ -98,15 +98,6 @@ public class FactionRivalryController {
   }
 
   @Operation(
-      summary = "Get Face vs Heel rivalries",
-      description = "Retrieve Face vs Heel faction rivalries")
-  @GetMapping("/face-vs-heel")
-  public ResponseEntity<List<FactionRivalry>> getFaceVsHeelRivalries() {
-    List<FactionRivalry> rivalries = factionRivalryService.getFaceVsHeelRivalries();
-    return ResponseEntity.ok(rivalries);
-  }
-
-  @Operation(
       summary = "Get tag team rivalries",
       description = "Retrieve tag team faction rivalries")
   @GetMapping("/tag-team")

@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -137,7 +136,6 @@ class FactionMemberManagementTest {
     Faction emptyFaction = new Faction();
     emptyFaction.setId(99L);
     emptyFaction.setName("Empty Faction");
-    emptyFaction.setAlignment(FactionAlignment.NEUTRAL);
     emptyFaction.setIsActive(true);
     emptyFaction.setCreationDate(Instant.now());
     emptyFaction.setMembers(new ArrayList<>());
@@ -243,7 +241,6 @@ class FactionMemberManagementTest {
     faction.setId(1L);
     faction.setName("Test Faction");
     faction.setDescription("A faction for testing member management");
-    faction.setAlignment(FactionAlignment.FACE);
     faction.setIsActive(true);
     faction.setCreationDate(Instant.now());
     faction.setMembers(new ArrayList<>(factionMembers));

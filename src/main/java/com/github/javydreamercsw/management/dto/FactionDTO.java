@@ -15,7 +15,7 @@ public class FactionDTO {
   private List<String>
       members; // List of member wrestler names (will be resolved to Wrestler entities)
   private List<String> teams; // List of team names associated with this faction
-  private String alignment; // FACE, HEEL, TWEENER, NEUTRAL
+
   private Boolean isActive;
   private String formedDate; // ISO date format (YYYY-MM-DD)
   private String disbandedDate; // ISO date format (YYYY-MM-DD)

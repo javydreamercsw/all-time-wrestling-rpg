@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -57,7 +56,7 @@ class FactionSyncTest {
     testFactionDTO.setDescription("A dominant faction in WWE");
     testFactionDTO.setLeader("Triple H");
     testFactionDTO.setMembers(Arrays.asList("Randy Orton", "Batista", "Ric Flair"));
-    testFactionDTO.setAlignment("HEEL");
+
     testFactionDTO.setIsActive(true);
     testFactionDTO.setFormedDate("2003-01-01");
     testFactionDTO.setExternalId("notion-evolution-id");
@@ -67,7 +66,7 @@ class FactionSyncTest {
     testFaction.setId(1L);
     testFaction.setName("Evolution");
     testFaction.setDescription("A dominant faction in WWE");
-    testFaction.setAlignment(FactionAlignment.HEEL);
+
     testFaction.setIsActive(true);
     testFaction.setCreationDate(Instant.now());
   }
@@ -85,7 +84,7 @@ class FactionSyncTest {
     assertTrue(testFactionDTO.getMembers().contains("Randy Orton"));
     assertTrue(testFactionDTO.getMembers().contains("Batista"));
     assertTrue(testFactionDTO.getMembers().contains("Ric Flair"));
-    assertEquals("HEEL", testFactionDTO.getAlignment());
+
     assertTrue(testFactionDTO.getIsActive());
     assertEquals("2003-01-01", testFactionDTO.getFormedDate());
     assertEquals("notion-evolution-id", testFactionDTO.getExternalId());
@@ -98,12 +97,12 @@ class FactionSyncTest {
     FactionDTO dto = new FactionDTO();
     dto.setName("Test Faction");
     dto.setLeader(null);
-    dto.setAlignment("NEUTRAL");
+
     dto.setIsActive(true);
 
     // Then
     assertNull(dto.getLeader());
-    assertEquals("NEUTRAL", dto.getAlignment());
+
     assertTrue(dto.getIsActive());
   }
 
@@ -114,27 +113,10 @@ class FactionSyncTest {
     FactionDTO dto = new FactionDTO();
     dto.setName("Solo Faction");
     dto.setMembers(new ArrayList<>());
-    dto.setAlignment("FACE");
 
     // Then
     assertNotNull(dto.getMembers());
     assertTrue(dto.getMembers().isEmpty());
-    assertEquals("FACE", dto.getAlignment());
-  }
-
-  @Test
-  @DisplayName("Should handle all faction alignments")
-  void shouldHandleAllFactionAlignments() {
-    // Test all alignment values
-    String[] alignments = {"FACE", "HEEL", "TWEENER", "NEUTRAL"};
-
-    for (String alignment : alignments) {
-      FactionDTO dto = new FactionDTO();
-      dto.setName("Test Faction");
-      dto.setAlignment(alignment);
-
-      assertEquals(alignment, dto.getAlignment());
-    }
   }
 
   @Test
@@ -171,8 +153,7 @@ class FactionSyncTest {
   }
 
   /** Helper method to create a mock FactionPage for testing. */
-  private FactionPage createMockFactionPage(
-      String name, String description, String leader, String alignment) {
+  private FactionPage createMockFactionPage(String name, String description, String leader) {
     FactionPage factionPage = new FactionPage();
     factionPage.setId("faction-" + name.toLowerCase().replace(" ", "-"));
 
@@ -180,7 +161,6 @@ class FactionSyncTest {
     rawProperties.put("Name", name);
     rawProperties.put("Description", description);
     rawProperties.put("Leader", leader);
-    rawProperties.put("Alignment", alignment);
     rawProperties.put("Status", "Active");
     rawProperties.put("FormedDate", "2024-01-01");
     rawProperties.put("Members", "3 relations");

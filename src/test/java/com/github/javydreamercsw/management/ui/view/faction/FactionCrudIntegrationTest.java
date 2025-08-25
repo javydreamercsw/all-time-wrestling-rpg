@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -53,7 +52,6 @@ class FactionCrudIntegrationTest {
     Faction newFaction = new Faction();
     newFaction.setName("New Test Faction");
     newFaction.setDescription("A newly created faction");
-    newFaction.setAlignment(FactionAlignment.FACE);
     newFaction.setIsActive(true);
     newFaction.setCreationDate(Instant.now());
 
@@ -61,7 +59,6 @@ class FactionCrudIntegrationTest {
     savedFaction.setId(99L);
     savedFaction.setName(newFaction.getName());
     savedFaction.setDescription(newFaction.getDescription());
-    savedFaction.setAlignment(newFaction.getAlignment());
     savedFaction.setIsActive(newFaction.getIsActive());
     savedFaction.setCreationDate(newFaction.getCreationDate());
 
@@ -74,7 +71,6 @@ class FactionCrudIntegrationTest {
     assertNotNull(result);
     assertEquals(99L, result.getId());
     assertEquals("New Test Faction", result.getName());
-    assertEquals(FactionAlignment.FACE, result.getAlignment());
     assertTrue(result.getIsActive());
     verify(factionService).save(newFaction);
   }
@@ -85,7 +81,6 @@ class FactionCrudIntegrationTest {
     // Given
     Faction existingFaction = testFactions.get(0);
     existingFaction.setDescription("Updated description");
-    existingFaction.setAlignment(FactionAlignment.TWEENER);
 
     when(factionService.save(any(Faction.class))).thenReturn(existingFaction);
 
@@ -95,7 +90,6 @@ class FactionCrudIntegrationTest {
     // Then
     assertNotNull(result);
     assertEquals("Updated description", result.getDescription());
-    assertEquals(FactionAlignment.TWEENER, result.getAlignment());
     verify(factionService).save(existingFaction);
   }
 
@@ -185,7 +179,6 @@ class FactionCrudIntegrationTest {
     Faction newFaction = new Faction();
     newFaction.setId(99L);
     newFaction.setName("Newly Added Faction");
-    newFaction.setAlignment(FactionAlignment.NEUTRAL);
     updatedFactions.add(newFaction);
 
     when(factionService.findAll()).thenReturn(updatedFactions);
@@ -218,13 +211,11 @@ class FactionCrudIntegrationTest {
   void shouldValidateFactionDataBeforeSaveOperations() {
     // Given - Invalid faction (no name)
     Faction invalidFaction = new Faction();
-    invalidFaction.setAlignment(FactionAlignment.HEEL);
     // Name is null/empty - should be invalid
 
     // When/Then - In a real scenario, validation would prevent this from reaching the service
     // For this test, we verify the service would be called with proper data
     assertNull(invalidFaction.getName());
-    assertNotNull(invalidFaction.getAlignment());
   }
 
   @Test
@@ -257,7 +248,6 @@ class FactionCrudIntegrationTest {
     evolution.setId(1L);
     evolution.setName("Evolution");
     evolution.setDescription("A dominant faction");
-    evolution.setAlignment(FactionAlignment.HEEL);
     evolution.setIsActive(false);
     evolution.setCreationDate(Instant.now());
 
@@ -265,7 +255,6 @@ class FactionCrudIntegrationTest {
     dx.setId(2L);
     dx.setName("D-Generation X");
     dx.setDescription("Rebellious faction");
-    dx.setAlignment(FactionAlignment.FACE);
     dx.setIsActive(true);
     dx.setCreationDate(Instant.now());
 

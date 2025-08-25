@@ -31,12 +31,6 @@ public interface FactionRepository
   /** Find disbanded factions. */
   List<Faction> findByIsActiveFalse();
 
-  /** Find factions by alignment. */
-  List<Faction> findByAlignment(FactionAlignment alignment);
-
-  /** Find active factions by alignment. */
-  List<Faction> findByIsActiveTrueAndAlignment(FactionAlignment alignment);
-
   /** Find factions led by a specific wrestler. */
   List<Faction> findByLeader(Wrestler leader);
 
@@ -117,9 +111,6 @@ public interface FactionRepository
       AND NOT EXISTS (SELECT fr FROM FactionRivalry fr WHERE (fr.faction1 = f OR fr.faction2 = f) AND fr.isActive = true)
       """)
   List<Faction> findFactionsWithoutActiveRivalries();
-
-  /** Count active factions by alignment. */
-  long countByIsActiveTrueAndAlignment(FactionAlignment alignment);
 
   /** Count total active factions. */
   long countByIsActiveTrue();

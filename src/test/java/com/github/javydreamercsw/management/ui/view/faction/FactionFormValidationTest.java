@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -49,7 +48,6 @@ class FactionFormValidationTest {
     // Given - Create a faction with empty name
     Faction testFaction = new Faction();
     testFaction.setName(""); // Empty name should fail validation
-    testFaction.setAlignment(FactionAlignment.NEUTRAL);
 
     // When/Then - This would be tested in a real UI test environment
     // For unit testing, we verify the view has proper validation setup
@@ -60,33 +58,17 @@ class FactionFormValidationTest {
   }
 
   @Test
-  @DisplayName("Should validate required alignment field")
-  void shouldValidateRequiredAlignmentField() {
-    // Given - Create a faction with no alignment
-    Faction testFaction = new Faction();
-    testFaction.setName("Test Faction");
-    testFaction.setAlignment(null); // Null alignment should fail validation
-
-    // When/Then - Verify view is properly configured
-    assertNotNull(factionListView);
-
-    // The binder should be configured with required alignment validation
-  }
-
-  @Test
   @DisplayName("Should accept valid faction data")
   void shouldAcceptValidFactionData() {
     // Given - Create a valid faction
     Faction validFaction = new Faction();
     validFaction.setName("Valid Faction");
     validFaction.setDescription("A valid test faction");
-    validFaction.setAlignment(FactionAlignment.FACE);
     validFaction.setIsActive(true);
     validFaction.setCreationDate(Instant.now());
 
     // When/Then - Valid data should not cause validation errors
     assertNotNull(validFaction.getName());
-    assertNotNull(validFaction.getAlignment());
     assertTrue(validFaction.getName().length() > 0);
   }
 
@@ -96,7 +78,6 @@ class FactionFormValidationTest {
     // Given - Create faction with dates
     Faction factionWithDates = new Faction();
     factionWithDates.setName("Date Test Faction");
-    factionWithDates.setAlignment(FactionAlignment.HEEL);
     factionWithDates.setFormedDate(
         LocalDate.of(2020, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC));
     factionWithDates.setDisbandedDate(
@@ -114,7 +95,6 @@ class FactionFormValidationTest {
     // Given - Create faction with leader
     Faction factionWithLeader = new Faction();
     factionWithLeader.setName("Leader Test Faction");
-    factionWithLeader.setAlignment(FactionAlignment.TWEENER);
     factionWithLeader.setLeader(testWrestlers.get(0));
 
     // When/Then - Leader should be properly set
@@ -128,7 +108,6 @@ class FactionFormValidationTest {
     // Given - Create faction with long description
     Faction factionWithLongDesc = new Faction();
     factionWithLongDesc.setName("Description Test");
-    factionWithLongDesc.setAlignment(FactionAlignment.NEUTRAL);
 
     // Create a description that's exactly at the limit (1000 characters)
     String maxDescription = "A".repeat(1000);
@@ -148,7 +127,6 @@ class FactionFormValidationTest {
   void shouldValidateNameLengthLimits() {
     // Given - Create faction with long name
     Faction factionWithLongName = new Faction();
-    factionWithLongName.setAlignment(FactionAlignment.FACE);
 
     // Create a name that's exactly at the limit (255 characters)
     String maxName = "A".repeat(255);
@@ -164,32 +142,11 @@ class FactionFormValidationTest {
   }
 
   @Test
-  @DisplayName("Should handle all faction alignment values")
-  void shouldHandleAllFactionAlignmentValues() {
-    // Test all alignment enum values
-    FactionAlignment[] alignments = FactionAlignment.values();
-
-    for (FactionAlignment alignment : alignments) {
-      Faction faction = new Faction();
-      faction.setName("Test Faction " + alignment.name());
-      faction.setAlignment(alignment);
-
-      // Each alignment should be valid
-      assertNotNull(faction.getAlignment());
-      assertEquals(alignment, faction.getAlignment());
-    }
-
-    // Verify we have all expected alignments
-    assertTrue(alignments.length >= 4); // FACE, HEEL, TWEENER, NEUTRAL
-  }
-
-  @Test
   @DisplayName("Should handle faction status logic")
   void shouldHandleFactionStatusLogic() {
     // Given - Active faction (no disbanded date)
     Faction activeFaction = new Faction();
     activeFaction.setName("Active Faction");
-    activeFaction.setAlignment(FactionAlignment.FACE);
     activeFaction.setIsActive(true);
     activeFaction.setFormedDate(Instant.now().minusSeconds(365 * 24 * 60 * 60)); // 1 year ago
 
@@ -200,7 +157,6 @@ class FactionFormValidationTest {
     // Given - Disbanded faction (has disbanded date)
     Faction disbandedFaction = new Faction();
     disbandedFaction.setName("Disbanded Faction");
-    disbandedFaction.setAlignment(FactionAlignment.HEEL);
     disbandedFaction.setIsActive(false);
     disbandedFaction.setFormedDate(Instant.now().minusSeconds(365 * 24 * 60 * 60)); // 1 year ago
     disbandedFaction.setDisbandedDate(

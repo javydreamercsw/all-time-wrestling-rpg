@@ -14,7 +14,6 @@ import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
@@ -3564,10 +3563,6 @@ public class NotionSyncService {
       dto.setDescription(extractDescriptionFromNotionPage(factionPage));
       dto.setExternalId(factionPage.getId()); // Use Notion page ID as external ID
 
-      // Extract alignment
-      String alignment = extractStringPropertyFromNotionPage(factionPage, "Alignment");
-      dto.setAlignment(alignment);
-
       // Extract status (active/inactive)
       String status = extractStringPropertyFromNotionPage(factionPage, "Status");
       dto.setIsActive(status == null || !status.toLowerCase().contains("disbanded"));
@@ -3589,7 +3584,6 @@ public class NotionSyncService {
           "Converted faction: {} (Active: {}, Alignment: {}, Members: {}, Teams: {})",
           dto.getName(),
           dto.getIsActive(),
-          dto.getAlignment(),
           dto.getMembers() != null ? dto.getMembers().size() : 0,
           dto.getTeams() != null ? dto.getTeams().size() : 0);
 
@@ -3600,7 +3594,6 @@ public class NotionSyncService {
         dto.setName("Unknown Faction");
       }
       dto.setIsActive(true);
-      dto.setAlignment("NEUTRAL");
     }
 
     return dto;
@@ -3631,22 +3624,6 @@ public class NotionSyncService {
         faction.setName(dto.getName());
         faction.setDescription(dto.getDescription());
         faction.setExternalId(dto.getExternalId());
-
-        // Set alignment
-        if (dto.getAlignment() != null) {
-          try {
-            FactionAlignment alignment = FactionAlignment.valueOf(dto.getAlignment().toUpperCase());
-            faction.setAlignment(alignment);
-          } catch (IllegalArgumentException e) {
-            log.warn(
-                "Invalid alignment '{}' for faction '{}', using NEUTRAL",
-                dto.getAlignment(),
-                dto.getName());
-            faction.setAlignment(FactionAlignment.NEUTRAL);
-          }
-        } else {
-          faction.setAlignment(FactionAlignment.NEUTRAL);
-        }
 
         // Set status
         faction.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);

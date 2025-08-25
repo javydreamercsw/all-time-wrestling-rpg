@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -72,8 +71,8 @@ class AdvancedRivalryIntegrationServiceTest {
     wrestler4 = createWrestler("The Undertaker", 4L);
 
     // Create test factions
-    faction1 = createFaction("The Corporation", 1L, FactionAlignment.HEEL);
-    faction2 = createFaction("D-Generation X", 2L, FactionAlignment.FACE);
+    faction1 = createFaction("The Corporation", 1L);
+    faction2 = createFaction("D-Generation X", 2L);
 
     // Create test show and match type
     testShow = new Show();
@@ -189,11 +188,10 @@ class AdvancedRivalryIntegrationServiceTest {
     return wrestler;
   }
 
-  private Faction createFaction(String name, Long id, FactionAlignment alignment) {
+  private Faction createFaction(String name, Long id) {
     Faction faction = new Faction();
     faction.setId(id);
     faction.setName(name);
-    faction.setAlignment(alignment);
     faction.setIsActive(true);
     faction.setFormedDate(fixedClock.instant());
     faction.setCreationDate(fixedClock.instant());

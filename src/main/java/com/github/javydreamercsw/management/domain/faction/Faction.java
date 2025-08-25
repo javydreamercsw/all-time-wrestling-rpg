@@ -40,10 +40,6 @@ public class Faction extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns", "faction"})
   private Wrestler leader;
 
-  @Column(name = "alignment")
-  @Enumerated(EnumType.STRING)
-  private FactionAlignment alignment = FactionAlignment.NEUTRAL;
-
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 

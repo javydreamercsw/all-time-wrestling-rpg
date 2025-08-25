@@ -116,7 +116,7 @@ public class FactionRivalryService {
         .map(
             rivalry -> {
               // Apply alignment heat multiplier
-              double multiplier = rivalry.getAlignmentHeatMultiplier();
+              double multiplier = rivalry.getIntensityHeatMultiplier();
               int adjustedHeatGain = (int) Math.round(heatGain * multiplier);
 
               rivalry.addHeat(adjustedHeatGain, reason);
@@ -257,12 +257,6 @@ public class FactionRivalryService {
   @Transactional(readOnly = true)
   public List<FactionRivalry> getHottestRivalries(int limit) {
     return factionRivalryRepository.findHottestRivalries(Pageable.ofSize(limit));
-  }
-
-  /** Get Face vs Heel rivalries. */
-  @Transactional(readOnly = true)
-  public List<FactionRivalry> getFaceVsHeelRivalries() {
-    return factionRivalryRepository.findFaceVsHeelRivalries();
   }
 
   /** Get tag team rivalries. */

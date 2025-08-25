@@ -1,7 +1,6 @@
 package com.github.javydreamercsw.management.controller.faction;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -54,16 +53,6 @@ public class FactionController {
   }
 
   @Operation(
-      summary = "Get factions by alignment",
-      description = "Retrieve active factions by alignment")
-  @GetMapping("/alignment/{alignment}")
-  public ResponseEntity<List<Faction>> getFactionsByAlignment(
-      @PathVariable FactionAlignment alignment) {
-    List<Faction> factions = factionService.getActiveFactionsByAlignment(alignment);
-    return ResponseEntity.ok(factions);
-  }
-
-  @Operation(
       summary = "Get factions by type",
       description = "Retrieve factions by type (singles, tag, stable)")
   @GetMapping("/type/{type}")
@@ -104,8 +93,7 @@ public class FactionController {
   @PostMapping
   public ResponseEntity<Object> createFaction(@Valid @RequestBody CreateFactionRequest request) {
     Optional<Faction> faction =
-        factionService.createFaction(
-            request.name(), request.description(), request.alignment(), request.leaderId());
+        factionService.createFaction(request.name(), request.description(), request.leaderId());
 
     if (faction.isPresent()) {
       return ResponseEntity.ok(faction.get());
@@ -172,22 +160,6 @@ public class FactionController {
     }
   }
 
-  @Operation(
-      summary = "Change faction alignment",
-      description = "Change the alignment of a faction")
-  @PutMapping("/{id}/alignment")
-  public ResponseEntity<Object> changeAlignment(
-      @PathVariable Long id, @Valid @RequestBody ChangeAlignmentRequest request) {
-    Optional<Faction> faction = factionService.changeFactionAlignment(id, request.newAlignment());
-
-    if (faction.isPresent()) {
-      return ResponseEntity.ok(faction.get());
-    } else {
-      return ResponseEntity.badRequest()
-          .body(new ErrorResponse("Cannot change alignment - faction not found"));
-    }
-  }
-
   @Operation(summary = "Disband faction", description = "Disband a faction")
   @DeleteMapping("/{id}")
   public ResponseEntity<Object> disbandFaction(
@@ -204,14 +176,11 @@ public class FactionController {
 
   // ==================== REQUEST/RESPONSE RECORDS ====================
 
-  public record CreateFactionRequest(
-      String name, String description, FactionAlignment alignment, Long leaderId) {}
+  public record CreateFactionRequest(String name, String description, Long leaderId) {}
 
   public record AddMemberRequest(Long wrestlerId) {}
 
   public record ChangeLeaderRequest(Long newLeaderId) {}
-
-  public record ChangeAlignmentRequest(FactionAlignment newAlignment) {}
 
   public record ErrorResponse(String message) {}
 }

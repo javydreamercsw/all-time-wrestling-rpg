@@ -10,7 +10,7 @@ CREATE TABLE faction (
     name VARCHAR(500) NOT NULL UNIQUE,
     description LONGTEXT,
     leader_id BIGINT,
-    alignment VARCHAR(20) NOT NULL DEFAULT 'NEUTRAL' CHECK (alignment IN ('FACE', 'HEEL', 'TWEENER', 'NEUTRAL')),
+
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     formed_date TIMESTAMP(6) NOT NULL,
     disbanded_date TIMESTAMP(6),

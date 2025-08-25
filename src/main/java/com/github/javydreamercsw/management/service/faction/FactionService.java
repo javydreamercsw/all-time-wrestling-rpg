@@ -1,7 +1,6 @@
 package com.github.javydreamercsw.management.service.faction;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -77,15 +76,8 @@ public class FactionService {
     return factionRepository.findByIsActiveTrue();
   }
 
-  /** Get active factions by alignment. */
-  @Transactional(readOnly = true)
-  public List<Faction> getActiveFactionsByAlignment(FactionAlignment alignment) {
-    return factionRepository.findByIsActiveTrueAndAlignment(alignment);
-  }
-
   /** Create a new faction. */
-  public Optional<Faction> createFaction(
-      String name, String description, FactionAlignment alignment, Long leaderId) {
+  public Optional<Faction> createFaction(String name, String description, Long leaderId) {
     // Check if faction name already exists
     if (factionRepository.existsByName(name)) {
       log.warn("Faction with name '{}' already exists", name);
@@ -95,7 +87,6 @@ public class FactionService {
     Faction faction = new Faction();
     faction.setName(name);
     faction.setDescription(description);
-    faction.setAlignment(alignment != null ? alignment : FactionAlignment.NEUTRAL);
     faction.setIsActive(true);
     faction.setFormedDate(clock.instant());
     faction.setCreationDate(clock.instant());
@@ -227,29 +218,6 @@ public class FactionService {
         faction.getName(),
         oldLeader != null ? oldLeader.getName() : "None",
         newLeader.getName());
-
-    return Optional.of(savedFaction);
-  }
-
-  /** Change faction alignment. */
-  public Optional<Faction> changeFactionAlignment(Long factionId, FactionAlignment newAlignment) {
-    Optional<Faction> factionOpt = factionRepository.findById(factionId);
-
-    if (factionOpt.isEmpty()) {
-      return Optional.empty();
-    }
-
-    Faction faction = factionOpt.get();
-    FactionAlignment oldAlignment = faction.getAlignment();
-    faction.setAlignment(newAlignment);
-
-    Faction savedFaction = factionRepository.saveAndFlush(faction);
-
-    log.info(
-        "Changed alignment of faction {} from {} to {}",
-        faction.getName(),
-        oldAlignment,
-        newAlignment);
 
     return Optional.of(savedFaction);
   }
