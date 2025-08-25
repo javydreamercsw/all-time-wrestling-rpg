@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
+import com.github.javydreamercsw.base.ai.notion.InjuryPage;
 import com.github.javydreamercsw.base.ai.notion.MatchPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
@@ -15,6 +16,9 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionAlignment;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
+import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
@@ -27,10 +31,12 @@ import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.FactionDTO;
+import com.github.javydreamercsw.management.dto.InjuryDTO;
 import com.github.javydreamercsw.management.dto.MatchDTO;
 import com.github.javydreamercsw.management.dto.SeasonDTO;
 import com.github.javydreamercsw.management.dto.ShowDTO;
 import com.github.javydreamercsw.management.dto.TeamDTO;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.match.MatchResultService;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
@@ -105,6 +111,8 @@ public class NotionSyncService {
   private final TeamRepository teamRepository;
   private final MatchResultService matchResultService;
   private final MatchTypeService matchTypeService;
+  private final InjuryService injuryService;
+  private final InjuryRepository injuryRepository;
 
   // Thread pool for async processing - using fixed thread pool for Java 17 compatibility
   private final ExecutorService executorService = Executors.newFixedThreadPool(10);
@@ -131,7 +139,9 @@ public class NotionSyncService {
       TeamService teamService,
       TeamRepository teamRepository,
       MatchResultService matchResultService,
-      MatchTypeService matchTypeService) {
+      MatchTypeService matchTypeService,
+      InjuryService injuryService,
+      InjuryRepository injuryRepository) {
     this.objectMapper = objectMapper;
     this.notionHandler = notionHandler;
     this.syncProperties = syncProperties;
@@ -153,6 +163,8 @@ public class NotionSyncService {
     this.teamRepository = teamRepository;
     this.matchResultService = matchResultService;
     this.matchTypeService = matchTypeService;
+    this.injuryService = injuryService;
+    this.injuryRepository = injuryRepository;
   }
 
   /**
@@ -4343,6 +4355,391 @@ public class NotionSyncService {
       return Instant.parse(timestampString);
     } catch (Exception e) {
       log.warn("Failed to parse timestamp: {}", timestampString, e);
+      return null;
+    }
+  }
+
+  // ==================== INJURY SYNC METHODS ====================
+
+  /**
+   * Synchronizes injuries from Notion Injuries database to the local database.
+   *
+   * @param operationId Operation ID for progress tracking
+   * @return SyncResult containing the outcome of the sync operation
+   */
+  public SyncResult syncInjuries(@NonNull String operationId) {
+    if (!syncProperties.isEntityEnabled("injuries")) {
+      log.debug("Injuries synchronization is disabled in configuration");
+      return SyncResult.success("Injuries", 0, 0);
+    }
+
+    log.info("🏥 Starting injuries synchronization from Notion with operation ID: {}", operationId);
+    long startTime = System.currentTimeMillis();
+
+    try {
+      // Check if NOTION_TOKEN is available
+      if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+        String errorMsg = "NOTION_TOKEN is not available for injuries sync";
+        log.error(errorMsg);
+        return SyncResult.failure("Injuries", errorMsg);
+      }
+
+      // Perform the actual sync
+      return performInjuriesSync(operationId, startTime);
+
+    } catch (Exception e) {
+      log.error("Failed to sync injuries from Notion", e);
+      return SyncResult.failure("Injuries", "Failed to sync injuries: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Performs the actual injuries synchronization from Notion to database.
+   *
+   * @param operationId Operation ID for progress tracking
+   * @param startTime Start time for performance tracking
+   * @return SyncResult containing the outcome of the sync operation
+   */
+  private SyncResult performInjuriesSync(@NonNull String operationId, long startTime) {
+    try {
+      // Load injuries from Notion
+      List<InjuryPage> injuryPages = loadInjuriesFromNotion();
+      log.info("📥 Loaded {} injuries from Notion", injuryPages.size());
+
+      if (injuryPages.isEmpty()) {
+        log.info("No injuries found in Notion database");
+        return SyncResult.success("Injuries", 0, 0);
+      }
+
+      // Convert to DTOs with parallel processing
+      List<InjuryDTO> injuryDTOs = convertInjuriesToDTOs(injuryPages);
+      log.info("🔄 Converted {} injuries to DTOs", injuryDTOs.size());
+
+      // Save to database with parallel processing and caching
+      int syncedCount = saveInjuriesToDatabase(injuryDTOs);
+      log.info("💾 Saved {} injuries to database", syncedCount);
+
+      // Validate sync results
+      boolean validationPassed = validateInjurySyncResults(injuryDTOs, syncedCount);
+
+      if (!validationPassed) {
+        return SyncResult.failure("Injuries", "Injury sync validation failed");
+      }
+
+      long totalTime = System.currentTimeMillis() - startTime;
+      log.info("🎉 Injuries sync completed successfully in {}ms", totalTime);
+
+      return SyncResult.success("Injuries", syncedCount, 0);
+
+    } catch (Exception e) {
+      log.error("Failed to perform injuries sync", e);
+      return SyncResult.failure("Injuries", "Failed to sync injuries: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Loads all injuries from Notion database.
+   *
+   * @return List of InjuryPage objects from Notion
+   */
+  private List<InjuryPage> loadInjuriesFromNotion() {
+    try {
+      return notionHandler.loadAllInjuries();
+    } catch (Exception e) {
+      log.error("Failed to load injuries from Notion", e);
+      throw new RuntimeException("Failed to load injuries from Notion: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Converts injury pages to DTOs using parallel processing.
+   *
+   * @param injuryPages List of InjuryPage objects from Notion
+   * @return List of InjuryDTO objects
+   */
+  private List<InjuryDTO> convertInjuriesToDTOs(List<InjuryPage> injuryPages) {
+    log.info("🔄 Converting {} injury pages to DTOs using parallel processing", injuryPages.size());
+
+    return injuryPages.parallelStream()
+        .map(this::convertInjuryPageToDTO)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Converts a single InjuryPage to InjuryDTO.
+   *
+   * @param injuryPage The InjuryPage to convert
+   * @return InjuryDTO or null if conversion fails
+   */
+  private InjuryDTO convertInjuryPageToDTO(InjuryPage injuryPage) {
+    try {
+      // Create DTO with required fields
+      String externalId = injuryPage.getId();
+      String name = extractPropertyAsString(injuryPage.getRawProperties(), "Name");
+      String wrestlerName = extractPropertyAsString(injuryPage.getRawProperties(), "Wrestler");
+      String severityStr = extractPropertyAsString(injuryPage.getRawProperties(), "Severity");
+      InjurySeverity severity = parseInjurySeverity(severityStr);
+
+      InjuryDTO dto = new InjuryDTO(externalId, name, wrestlerName, severity);
+
+      // Extract additional properties
+      dto.setDescription(extractPropertyAsString(injuryPage.getRawProperties(), "Description"));
+
+      // Extract numeric properties
+      dto.setHealthPenalty(
+          extractPropertyAsInteger(injuryPage.getRawProperties(), "HealthPenalty"));
+      dto.setHealingCost(extractPropertyAsInteger(injuryPage.getRawProperties(), "HealingCost"));
+      dto.setExpectedRecoveryDays(
+          extractPropertyAsInteger(injuryPage.getRawProperties(), "ExpectedRecoveryTime"));
+
+      // Extract boolean properties
+      dto.setIsActive(extractPropertyAsBoolean(injuryPage.getRawProperties(), "IsActive"));
+
+      // Extract dates
+      dto.setInjuryDate(
+          parseNotionDate(extractPropertyAsString(injuryPage.getRawProperties(), "InjuryDate")));
+      dto.setHealedDate(
+          parseNotionDate(extractPropertyAsString(injuryPage.getRawProperties(), "HealedDate")));
+
+      // Extract additional info
+      dto.setInjuryNotes(extractPropertyAsString(injuryPage.getRawProperties(), "InjuryNotes"));
+      dto.setInjurySource(extractPropertyAsString(injuryPage.getRawProperties(), "InjurySource"));
+      dto.setInjuryMatchName(extractPropertyAsString(injuryPage.getRawProperties(), "InjuryMatch"));
+      dto.setRecoveryStatus(
+          extractPropertyAsString(injuryPage.getRawProperties(), "RecoveryStatus"));
+
+      // Set metadata
+      dto.setCreatedTime(parseInstantFromString(injuryPage.getCreated_time()));
+      dto.setLastEditedTime(parseInstantFromString(injuryPage.getLast_edited_time()));
+      dto.setCreatedBy(
+          injuryPage.getCreated_by() != null ? injuryPage.getCreated_by().getName() : null);
+      dto.setLastEditedBy(
+          injuryPage.getLast_edited_by() != null ? injuryPage.getLast_edited_by().getName() : null);
+
+      return dto;
+
+    } catch (Exception e) {
+      log.error("Failed to convert InjuryPage to DTO: {}", injuryPage.getId(), e);
+      return null;
+    }
+  }
+
+  /**
+   * Saves injury DTOs to the database using parallel processing with caching.
+   *
+   * @param injuryDTOs List of InjuryDTO objects to save
+   * @return Number of injuries successfully saved
+   */
+  private int saveInjuriesToDatabase(List<InjuryDTO> injuryDTOs) {
+    log.info("🚀 Starting parallel processing of {} injuries", injuryDTOs.size());
+
+    // Pre-load and cache wrestlers to avoid repeated database lookups
+    Map<String, Wrestler> wrestlerCache = preloadWrestlersForInjuries(injuryDTOs);
+
+    log.info("✅ Cached {} wrestlers for injury sync", wrestlerCache.size());
+
+    // Process injuries in parallel and collect results
+    List<Injury> createdInjuries =
+        injuryDTOs.parallelStream()
+            .filter(
+                dto -> {
+                  if (!dto.isValid()) {
+                    log.warn("Skipping invalid injury DTO: {}", dto.getSummary());
+                    return false;
+                  }
+
+                  // Check if injury already exists
+                  if (injuryService.existsByExternalId(dto.getExternalId())) {
+                    log.debug("Injury already exists, skipping: {}", dto.getName());
+                    return false;
+                  }
+
+                  return true;
+                })
+            .map(
+                dto -> {
+                  try {
+                    Injury injury = createInjuryFromDTO(dto, wrestlerCache);
+                    if (injury != null) {
+                      log.debug("✅ Created injury: {}", dto.getName());
+                      return injury;
+                    } else {
+                      log.warn("❌ Failed to create injury: {}", dto.getName());
+                      return null;
+                    }
+                  } catch (Exception e) {
+                    log.error("❌ Failed to save injury: {}", dto.getSummary(), e);
+                    return null;
+                  }
+                })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+    log.info(
+        "✅ Parallel processing completed: {} injuries created successfully",
+        createdInjuries.size());
+    return createdInjuries.size();
+  }
+
+  /** Pre-loads wrestlers mentioned in injury DTOs to avoid repeated database lookups. */
+  private Map<String, Wrestler> preloadWrestlersForInjuries(List<InjuryDTO> injuryDTOs) {
+    Set<String> wrestlerNames =
+        injuryDTOs.stream()
+            .map(InjuryDTO::getWrestlerName)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+    Map<String, Wrestler> cache = new HashMap<>();
+    for (String wrestlerName : wrestlerNames) {
+      Optional<Wrestler> wrestler = wrestlerService.findByName(wrestlerName);
+      if (wrestler.isPresent()) {
+        cache.put(wrestlerName, wrestler.get());
+      }
+    }
+    return cache;
+  }
+
+  /**
+   * Creates an Injury entity from an InjuryDTO using cached wrestlers for performance.
+   *
+   * @param dto The InjuryDTO to convert
+   * @param wrestlerCache Pre-loaded wrestler cache
+   * @return Created Injury or null if creation fails
+   */
+  private Injury createInjuryFromDTO(InjuryDTO dto, Map<String, Wrestler> wrestlerCache) {
+    try {
+      // Resolve wrestler using cache
+      Wrestler wrestler = wrestlerCache.get(dto.getWrestlerName());
+      if (wrestler == null) {
+        log.warn(
+            "Could not resolve wrestler '{}' for injury '{}'",
+            dto.getWrestlerName(),
+            dto.getName());
+        return null;
+      }
+
+      // Create injury using the service (correct API signature)
+      Optional<Injury> injuryOpt =
+          injuryService.createInjury(
+              wrestler.getId(),
+              dto.getName(),
+              dto.getDescription(),
+              dto.getSeverity(),
+              dto.getInjuryNotes());
+
+      if (injuryOpt.isEmpty()) {
+        log.warn("Failed to create injury for wrestler '{}'", dto.getWrestlerName());
+        return null;
+      }
+
+      Injury injury = injuryOpt.get();
+
+      // Set additional properties that aren't handled by the service
+      injury.setExternalId(dto.getExternalId());
+      if (dto.getInjuryDate() != null) {
+        injury.setInjuryDate(dto.getInjuryDate());
+      }
+      if (dto.getHealedDate() != null) {
+        injury.setHealedDate(dto.getHealedDate());
+        injury.setIsActive(false);
+      } else {
+        injury.setIsActive(dto.isCurrentlyActive());
+      }
+      if (dto.getHealthPenalty() != null) {
+        injury.setHealthPenalty(dto.getHealthPenalty());
+      }
+      if (dto.getHealingCost() != null) {
+        injury.setHealingCost(dto.getHealingCost().longValue());
+      }
+
+      // Save the updated injury directly (no updateInjury method for entity)
+      return injuryRepository.saveAndFlush(injury);
+
+    } catch (Exception e) {
+      log.error("Failed to create injury from DTO: {}", dto.getSummary(), e);
+      return null;
+    }
+  }
+
+  /**
+   * Validates injury sync results.
+   *
+   * @param injuryDTOs Original DTOs
+   * @param syncedCount Number of injuries synced
+   * @return true if validation passes
+   */
+  private boolean validateInjurySyncResults(List<InjuryDTO> injuryDTOs, int syncedCount) {
+    log.info("🔍 Validating injury sync results...");
+
+    int validDTOs = (int) injuryDTOs.stream().filter(InjuryDTO::isValid).count();
+
+    log.info("📊 Validation results: {} valid DTOs, {} synced", validDTOs, syncedCount);
+
+    // Allow for some failures due to missing dependencies
+    boolean validationPassed = syncedCount >= (validDTOs * 0.8); // 80% success rate
+
+    if (validationPassed) {
+      log.info("✅ Injury sync validation passed");
+    } else {
+      log.warn("❌ Injury sync validation failed - too many sync failures");
+    }
+
+    return validationPassed;
+  }
+
+  // ==================== INJURY PROPERTY EXTRACTION METHODS ====================
+
+  /** Parses injury severity from string. */
+  private InjurySeverity parseInjurySeverity(String severityStr) {
+    if (severityStr == null || severityStr.trim().isEmpty()) {
+      return InjurySeverity.MINOR; // Default to minor
+    }
+
+    try {
+      return InjurySeverity.valueOf(severityStr.toUpperCase().trim());
+    } catch (IllegalArgumentException e) {
+      log.warn("Unknown injury severity: {}, defaulting to MINOR", severityStr);
+      return InjurySeverity.MINOR;
+    }
+  }
+
+  /** Extracts a property value as an integer from raw properties map. */
+  private Integer extractPropertyAsInteger(Map<String, Object> rawProperties, String propertyName) {
+    String strValue = extractPropertyAsString(rawProperties, propertyName);
+    if (strValue == null || strValue.trim().isEmpty() || "N/A".equals(strValue)) {
+      return null;
+    }
+
+    try {
+      return Integer.parseInt(strValue.trim());
+    } catch (NumberFormatException e) {
+      log.warn("Failed to parse integer property '{}': {}", propertyName, strValue);
+      return null;
+    }
+  }
+
+  /** Extracts a property value as a boolean from raw properties map. */
+  private Boolean extractPropertyAsBoolean(Map<String, Object> rawProperties, String propertyName) {
+    String strValue = extractPropertyAsString(rawProperties, propertyName);
+    if (strValue == null || strValue.trim().isEmpty() || "N/A".equals(strValue)) {
+      return null;
+    }
+
+    return Boolean.parseBoolean(strValue.trim());
+  }
+
+  /** Parses a Notion date string to Instant. */
+  private Instant parseNotionDate(String dateStr) {
+    if (dateStr == null || dateStr.trim().isEmpty() || "N/A".equals(dateStr)) {
+      return null;
+    }
+
+    try {
+      // Handle various date formats from Notion
+      return Instant.parse(dateStr);
+    } catch (Exception e) {
+      log.warn("Failed to parse Notion date: {}", dateStr);
       return null;
     }
   }

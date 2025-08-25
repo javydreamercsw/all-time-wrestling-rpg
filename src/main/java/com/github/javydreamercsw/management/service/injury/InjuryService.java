@@ -211,6 +211,18 @@ public class InjuryService {
             });
   }
 
+  /** Check if injury exists by external ID. */
+  @Transactional(readOnly = true)
+  public boolean existsByExternalId(String externalId) {
+    return injuryRepository.existsByExternalId(externalId);
+  }
+
+  /** Find injury by external ID. */
+  @Transactional(readOnly = true)
+  public Optional<Injury> findByExternalId(String externalId) {
+    return injuryRepository.findByExternalId(externalId);
+  }
+
   /** Get injury statistics for a wrestler. */
   @Transactional(readOnly = true)
   public InjuryStats getInjuryStatsForWrestler(Long wrestlerId) {

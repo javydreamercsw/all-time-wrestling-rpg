@@ -1470,6 +1470,39 @@ public class NotionHandler {
     return getInstance().loadFaction(factionName);
   }
 
+  // ==================== INJURY LOADING METHODS ====================
+
+  /**
+   * Loads all injuries from the Notion Injuries database.
+   *
+   * @return List of all InjuryPage objects from the Injuries database
+   */
+  public List<InjuryPage> loadAllInjuries() {
+    log.debug("Loading all injuries from Injuries database");
+
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String injuryDbId = getDatabaseId("Injuries");
+    if (injuryDbId == null) {
+      log.warn("Injuries database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(client, injuryDbId, "Injury", this::mapPageToInjuryPage);
+    } catch (Exception e) {
+      log.error("Failed to load all injuries", e);
+      throw new RuntimeException("Failed to load injuries from Notion: " + e.getMessage(), e);
+    }
+  }
+
   // ==================== GENERIC HELPER METHODS ====================
 
   /**
@@ -1801,6 +1834,12 @@ public class NotionHandler {
   private FactionPage mapPageToFactionPage(@NonNull Page pageData, @NonNull String factionName) {
     return mapPageToGenericEntity(
         pageData, factionName, "Faction", FactionPage::new, FactionPage.NotionParent::new);
+  }
+
+  /** Maps a Notion page to an InjuryPage object. */
+  private InjuryPage mapPageToInjuryPage(@NonNull Page pageData, @NonNull String injuryName) {
+    return mapPageToGenericEntity(
+        pageData, injuryName, "Injury", InjuryPage::new, InjuryPage.NotionParent::new);
   }
 
   /** Generic mapping method for all entity types with full relationship resolution. */

@@ -68,6 +68,9 @@ public class Injury extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
+  @Column(name = "external_id", unique = true)
+  @Size(max = 255) private String externalId; // External system ID (e.g., Notion page ID)
+
   // ==================== ATW RPG METHODS ====================
 
   /** Check if this injury is currently affecting the wrestler. */

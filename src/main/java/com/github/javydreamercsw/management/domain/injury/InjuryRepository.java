@@ -29,6 +29,12 @@ public interface InjuryRepository
   /** Find injuries by severity. */
   List<Injury> findBySeverity(InjurySeverity severity);
 
+  /** Find injury by external ID (e.g., Notion page ID). */
+  java.util.Optional<Injury> findByExternalId(String externalId);
+
+  /** Check if injury exists by external ID. */
+  boolean existsByExternalId(String externalId);
+
   /** Find all active injuries. */
   @Query("SELECT i FROM Injury i WHERE i.isActive = true")
   List<Injury> findAllActiveInjuries();
