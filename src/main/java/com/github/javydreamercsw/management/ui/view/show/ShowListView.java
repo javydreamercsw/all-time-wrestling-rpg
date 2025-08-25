@@ -252,7 +252,7 @@ public class ShowListView extends Main {
   }
 
   private void refreshGrid() {
-    List<Show> shows = showService.findAll();
+    List<Show> shows = showService.findAllWithRelationships();
     showGrid.setItems(shows);
   }
 

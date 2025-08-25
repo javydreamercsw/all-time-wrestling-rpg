@@ -129,6 +129,18 @@ public class SeasonService {
             });
   }
 
+  /** Update season with Season object. */
+  public Season updateSeason(Season season) {
+    return seasonRepository.saveAndFlush(season);
+  }
+
+  /** Search seasons by name or description. */
+  @Transactional(readOnly = true)
+  public Page<Season> searchSeasons(String searchTerm, Pageable pageable) {
+    return seasonRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+        searchTerm, pageable);
+  }
+
   /** Delete a season (only if not active and has no shows). */
   public boolean deleteSeason(Long seasonId) {
     return seasonRepository

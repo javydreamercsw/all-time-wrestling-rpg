@@ -22,4 +22,11 @@ public interface SeasonRepository
   /** Find the most recent season (by creation date). */
   @Query("SELECT s FROM Season s ORDER BY s.creationDate DESC LIMIT 1")
   Optional<Season> findLatestSeason();
+
+  /** Search seasons by name or description. */
+  @Query(
+      "SELECT s FROM Season s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR"
+          + " s.description LIKE CONCAT('%', :searchTerm, '%')")
+  Page<Season> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+      String searchTerm, Pageable pageable);
 }
