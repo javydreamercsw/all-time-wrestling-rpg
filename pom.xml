@@ -364,163 +364,6 @@
         <artifactId>maven-wrapper-plugin</artifactId>
         <version>3.3.2</version>
       </plugin>
-
-      <!-- JaCoCo Code Coverage Plugin -->
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>${jacoco.version}</version>
-        <configuration>
-          <excludes>
-            <!-- Exclude generated code -->
-            <exclude>**/generated/**</exclude>
-            <exclude>**/target/generated-sources/**</exclude>
-
-            <!-- Exclude configuration and startup classes -->
-            <exclude>**/Application.class</exclude>
-            <exclude>**/config/**</exclude>
-            <exclude>**/configuration/**</exclude>
-
-            <!-- Exclude DTOs and simple data classes -->
-            <exclude>**/*DTO.class</exclude>
-            <exclude>**/*Request.class</exclude>
-            <exclude>**/*Response.class</exclude>
-            <exclude>**/*Properties.class</exclude>
-
-            <!-- Exclude Vaadin UI components (hard to test) -->
-            <exclude>**/ui/view/**</exclude>
-            <exclude>**/ui/component/**</exclude>
-
-            <!-- Exclude test utilities -->
-            <exclude>**/TestcontainersConfiguration.class</exclude>
-
-            <!-- Exclude Lombok generated methods -->
-            <exclude>**/*$Builder.class</exclude>
-
-            <!-- Exclude Mockito generated classes -->
-            <exclude>**/*$MockitoMock$*</exclude>
-            <exclude>**/*$MockitoMock$*$auxiliary$*</exclude>
-            <exclude>**/*EnhancerByMockitoWithCGLIB*</exclude>
-
-            <!-- Exclude JaCoCo runtime -->
-            <exclude>**/org/jacoco/agent/rt/**</exclude>
-          </excludes>
-        </configuration>
-        <executions>
-          <!-- Prepare agent for unit tests -->
-          <execution>
-            <id>prepare-agent</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-            <configuration>
-              <propertyName>surefireArgLine</propertyName>
-            </configuration>
-          </execution>
-
-          <!-- Prepare agent for integration tests -->
-          <execution>
-            <id>prepare-agent-integration</id>
-            <goals>
-              <goal>prepare-agent-integration</goal>
-            </goals>
-            <configuration>
-              <propertyName>failsafeArgLine</propertyName>
-            </configuration>
-          </execution>
-
-          <!-- Generate unit test coverage report -->
-          <execution>
-            <id>report</id>
-            <goals>
-              <goal>report</goal>
-            </goals>
-            <phase>test</phase>
-          </execution>
-
-          <!-- Generate integration test coverage report -->
-          <execution>
-            <id>report-integration</id>
-            <goals>
-              <goal>report-integration</goal>
-            </goals>
-            <phase>post-integration-test</phase>
-          </execution>
-
-          <!-- Coverage verification -->
-          <execution>
-            <id>check</id>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <phase>verify</phase>
-            <configuration>
-              <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
-              <rules>
-                <rule>
-                  <element>BUNDLE</element>
-                  <limits>
-                    <limit>
-                      <counter>INSTRUCTION</counter>
-                      <value>COVEREDRATIO</value>
-                      <minimum>${jacoco.coverage.minimum}</minimum>
-                    </limit>
-                    <limit>
-                      <counter>BRANCH</counter>
-                      <value>COVEREDRATIO</value>
-                      <minimum>${jacoco.coverage.minimum}</minimum>
-                    </limit>
-                  </limits>
-                </rule>
-                <rule>
-                  <element>CLASS</element>
-                  <limits>
-                    <limit>
-                      <counter>INSTRUCTION</counter>
-                      <value>COVEREDRATIO</value>
-                      <minimum>0.80</minimum>
-                    </limit>
-                  </limits>
-                </rule>
-              </rules>
-            </configuration>
-          </execution>
-
-          <!-- Merge unit and integration test coverage -->
-          <execution>
-            <id>merge-results</id>
-            <goals>
-              <goal>merge</goal>
-            </goals>
-            <phase>verify</phase>
-            <configuration>
-              <fileSets>
-                <fileSet>
-                  <directory>${project.build.directory}</directory>
-                  <includes>
-                    <include>jacoco.exec</include>
-                    <include>jacoco-it.exec</include>
-                  </includes>
-                </fileSet>
-              </fileSets>
-              <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
-            </configuration>
-          </execution>
-
-          <!-- Generate merged coverage report -->
-          <execution>
-            <id>report-merged</id>
-            <goals>
-              <goal>report</goal>
-            </goals>
-            <phase>verify</phase>
-            <configuration>
-              <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
-              <outputDirectory>${project.reporting.outputDirectory}/jacoco-merged</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 
@@ -552,6 +395,169 @@
                   <goal>build-frontend</goal>
                 </goals>
                 <phase>compile</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>covergae</id>
+      <build>
+        <plugins>
+          <!-- JaCoCo Code Coverage Plugin -->
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>${jacoco.version}</version>
+            <configuration>
+              <excludes>
+                <!-- Exclude generated code -->
+                <exclude>**/generated/**</exclude>
+                <exclude>**/target/generated-sources/**</exclude>
+
+                <!-- Exclude configuration and startup classes -->
+                <exclude>**/Application.class</exclude>
+                <exclude>**/config/**</exclude>
+                <exclude>**/configuration/**</exclude>
+
+                <!-- Exclude DTOs and simple data classes -->
+                <exclude>**/*DTO.class</exclude>
+                <exclude>**/*Request.class</exclude>
+                <exclude>**/*Response.class</exclude>
+                <exclude>**/*Properties.class</exclude>
+
+                <!-- Exclude Vaadin UI components (hard to test) -->
+                <exclude>**/ui/view/**</exclude>
+                <exclude>**/ui/component/**</exclude>
+
+                <!-- Exclude test utilities -->
+                <exclude>**/TestcontainersConfiguration.class</exclude>
+
+                <!-- Exclude Lombok generated methods -->
+                <exclude>**/*$Builder.class</exclude>
+
+                <!-- Exclude Mockito generated classes -->
+                <exclude>**/*$MockitoMock$*</exclude>
+                <exclude>**/*$MockitoMock$*$auxiliary$*</exclude>
+                <exclude>**/*EnhancerByMockitoWithCGLIB*</exclude>
+
+                <!-- Exclude JaCoCo runtime -->
+                <exclude>**/org/jacoco/agent/rt/**</exclude>
+              </excludes>
+            </configuration>
+            <executions>
+              <!-- Prepare agent for unit tests -->
+              <execution>
+                <id>prepare-agent</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+                <configuration>
+                  <propertyName>surefireArgLine</propertyName>
+                </configuration>
+              </execution>
+
+              <!-- Prepare agent for integration tests -->
+              <execution>
+                <id>prepare-agent-integration</id>
+                <goals>
+                  <goal>prepare-agent-integration</goal>
+                </goals>
+                <configuration>
+                  <propertyName>failsafeArgLine</propertyName>
+                </configuration>
+              </execution>
+
+              <!-- Generate unit test coverage report -->
+              <execution>
+                <id>report</id>
+                <goals>
+                  <goal>report</goal>
+                </goals>
+                <phase>test</phase>
+              </execution>
+
+              <!-- Generate integration test coverage report -->
+              <execution>
+                <id>report-integration</id>
+                <goals>
+                  <goal>report-integration</goal>
+                </goals>
+                <phase>post-integration-test</phase>
+              </execution>
+
+              <!-- Coverage verification -->
+              <execution>
+                <id>check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>verify</phase>
+                <configuration>
+                  <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+                  <rules>
+                    <rule>
+                      <element>BUNDLE</element>
+                      <limits>
+                        <limit>
+                          <counter>INSTRUCTION</counter>
+                          <value>COVEREDRATIO</value>
+                          <minimum>${jacoco.coverage.minimum}</minimum>
+                        </limit>
+                        <limit>
+                          <counter>BRANCH</counter>
+                          <value>COVEREDRATIO</value>
+                          <minimum>${jacoco.coverage.minimum}</minimum>
+                        </limit>
+                      </limits>
+                    </rule>
+                    <rule>
+                      <element>CLASS</element>
+                      <limits>
+                        <limit>
+                          <counter>INSTRUCTION</counter>
+                          <value>COVEREDRATIO</value>
+                          <minimum>0.80</minimum>
+                        </limit>
+                      </limits>
+                    </rule>
+                  </rules>
+                </configuration>
+              </execution>
+
+              <!-- Merge unit and integration test coverage -->
+              <execution>
+                <id>merge-results</id>
+                <goals>
+                  <goal>merge</goal>
+                </goals>
+                <phase>verify</phase>
+                <configuration>
+                  <fileSets>
+                    <fileSet>
+                      <directory>${project.build.directory}</directory>
+                      <includes>
+                        <include>jacoco.exec</include>
+                        <include>jacoco-it.exec</include>
+                      </includes>
+                    </fileSet>
+                  </fileSets>
+                  <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+                </configuration>
+              </execution>
+
+              <!-- Generate merged coverage report -->
+              <execution>
+                <id>report-merged</id>
+                <goals>
+                  <goal>report</goal>
+                </goals>
+                <phase>verify</phase>
+                <configuration>
+                  <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+                  <outputDirectory>${project.reporting.outputDirectory}/jacoco-merged</outputDirectory>
+                </configuration>
               </execution>
             </executions>
           </plugin>
