@@ -7,7 +7,6 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import java.time.Instant;
 import java.util.List;
@@ -79,7 +78,7 @@ class NotionSyncServiceTeamsIntegrationTest {
     assertThat(wrestlerRepository.count()).isGreaterThanOrEqualTo(2);
 
     // When
-    SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
 
     // Then
     assertThat(result).isNotNull();
@@ -106,7 +105,7 @@ class NotionSyncServiceTeamsIntegrationTest {
   void shouldHandleTeamSyncWithoutNotionToken() {
     // Given - No NOTION_TOKEN available (handled by conditional test)
     // When
-    SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
 
     // Then - Should handle gracefully
     assertThat(result).isNotNull();

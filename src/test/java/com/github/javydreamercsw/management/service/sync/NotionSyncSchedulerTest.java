@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,9 +48,10 @@ class NotionSyncSchedulerTest {
     // Given
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
-    when(notionSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0));
+    when(notionSyncService.syncShows(anyString()))
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 5, 0));
     when(notionSyncService.syncWrestlers(anyString()))
-        .thenReturn(SyncResult.success("Wrestlers", 3, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Wrestlers", 3, 0));
 
     // When
     notionSyncScheduler.performScheduledSync();
@@ -68,7 +68,7 @@ class NotionSyncSchedulerTest {
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows"));
     when(notionSyncService.syncShows(anyString()))
-        .thenReturn(SyncResult.failure("Shows", "Connection failed"));
+        .thenReturn(NotionSyncService.SyncResult.failure("Shows", "Connection failed"));
 
     // When & Then - Should not throw exception
     assertDoesNotThrow(() -> notionSyncScheduler.performScheduledSync());
@@ -81,10 +81,11 @@ class NotionSyncSchedulerTest {
   void shouldTriggerManualSyncForAllEntities() {
     // Given
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows"));
-    when(notionSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 10, 0));
+    when(notionSyncService.syncShows(anyString()))
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 10, 0));
 
     // When
-    List<SyncResult> results = notionSyncScheduler.triggerManualSync();
+    List<NotionSyncService.SyncResult> results = notionSyncScheduler.triggerManualSync();
 
     // Then
     assertNotNull(results);
@@ -98,10 +99,11 @@ class NotionSyncSchedulerTest {
   @DisplayName("Should trigger sync for specific entity")
   void shouldTriggerSyncForSpecificEntity() {
     // Given
-    when(notionSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 7, 0));
+    when(notionSyncService.syncShows(anyString()))
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 7, 0));
 
     // When
-    SyncResult result = notionSyncScheduler.triggerEntitySync("shows");
+    NotionSyncService.SyncResult result = notionSyncScheduler.triggerEntitySync("shows");
 
     // Then
     assertNotNull(result);
@@ -114,7 +116,7 @@ class NotionSyncSchedulerTest {
   @DisplayName("Should handle unknown entity type")
   void shouldHandleUnknownEntityType() {
     // When
-    SyncResult result = notionSyncScheduler.triggerEntitySync("unknown");
+    NotionSyncService.SyncResult result = notionSyncScheduler.triggerEntitySync("unknown");
 
     // Then
     assertNotNull(result);

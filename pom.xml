@@ -25,6 +25,7 @@
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.version>0.8.13</jacoco.version>
     <java.version>17</java.version>
+    <surefireArgLine/>
     <testcontainers.version>1.21.3</testcontainers.version>
     <vaadin.version>24.8.6</vaadin.version>
   </properties>

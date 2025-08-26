@@ -12,7 +12,6 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -108,7 +107,7 @@ class InjurySyncTest {
           .thenAnswer(invocation -> invocation.getArgument(0));
 
       // When
-      SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
+      NotionSyncService.SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
 
       // Then
       assertThat(result).isNotNull();
@@ -140,7 +139,7 @@ class InjurySyncTest {
       when(notionHandler.loadAllInjuries()).thenReturn(List.of());
 
       // When
-      SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
+      NotionSyncService.SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
 
       // Then
       assertThat(result).isNotNull();
@@ -191,7 +190,7 @@ class InjurySyncTest {
             });
 
     // When
-    SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
+    NotionSyncService.SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
 
     // Then
     assertThat(result).isNotNull();
@@ -226,7 +225,7 @@ class InjurySyncTest {
     when(syncProperties.isEntityEnabled("injuries")).thenReturn(false);
 
     // When
-    SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
+    NotionSyncService.SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
 
     // Then
     assertThat(result).isNotNull();
@@ -253,7 +252,7 @@ class InjurySyncTest {
     // Note: Injury sync doesn't use progress tracking
 
     // When
-    SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
+    NotionSyncService.SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
 
     // Then
     assertThat(result).isNotNull();
@@ -282,7 +281,7 @@ class InjurySyncTest {
         .thenThrow(new RuntimeException("Database connection failed"));
 
     // When
-    SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
+    NotionSyncService.SyncResult result = notionSyncService.syncInjuryTypes("test-operation-id");
 
     // Then
     assertThat(result).isNotNull();

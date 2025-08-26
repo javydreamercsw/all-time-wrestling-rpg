@@ -19,7 +19,6 @@ import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.lang.reflect.Field;
@@ -115,7 +114,7 @@ class ShowTypeSyncTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
-    SyncResult result = syncService.syncShowTypes("test-operation-id");
+    NotionSyncService.SyncResult result = syncService.syncShowTypes("test-operation-id");
 
     // Then
     assertThat(result.isSuccess()).isTrue();
@@ -133,7 +132,7 @@ class ShowTypeSyncTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
-    SyncResult result = syncService.syncShowTypes("test-operation-id");
+    NotionSyncService.SyncResult result = syncService.syncShowTypes("test-operation-id");
 
     // Then
     assertThat(result.isSuccess()).isTrue();
@@ -160,7 +159,7 @@ class ShowTypeSyncTest {
     when(showTypeService.findAll()).thenReturn(List.of(existingWeekly, existingPLE));
 
     // When
-    SyncResult result = syncService.syncShowTypes("test-operation-id");
+    NotionSyncService.SyncResult result = syncService.syncShowTypes("test-operation-id");
 
     // Then
     assertThat(result.isSuccess()).isTrue();

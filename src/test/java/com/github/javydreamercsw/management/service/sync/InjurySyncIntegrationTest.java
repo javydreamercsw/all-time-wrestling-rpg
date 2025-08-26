@@ -7,7 +7,6 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +56,8 @@ class InjurySyncIntegrationTest {
     log.info("Initial injury types count: {}", initialCount);
 
     // When - Sync injury types from Notion
-    SyncResult result = notionSyncService.syncInjuryTypes("integration-test-operation");
+    NotionSyncService.SyncResult result =
+        notionSyncService.syncInjuryTypes("integration-test-operation");
 
     // Then - Verify sync was successful
     assertThat(result).isNotNull();
@@ -98,14 +98,16 @@ class InjurySyncIntegrationTest {
     log.info("🔄 Testing duplicate injury sync operations");
 
     // Given - First sync
-    SyncResult firstResult = notionSyncService.syncInjuryTypes("first-sync-operation");
+    NotionSyncService.SyncResult firstResult =
+        notionSyncService.syncInjuryTypes("first-sync-operation");
     assertThat(firstResult.isSuccess()).isTrue();
 
     long countAfterFirstSync = injuryTypeRepository.count();
     log.info("Count after first sync: {}", countAfterFirstSync);
 
     // When - Second sync (should update existing, not create duplicates)
-    SyncResult secondResult = notionSyncService.syncInjuryTypes("second-sync-operation");
+    NotionSyncService.SyncResult secondResult =
+        notionSyncService.syncInjuryTypes("second-sync-operation");
 
     // Then - Verify second sync was successful
     assertThat(secondResult).isNotNull();
@@ -130,7 +132,7 @@ class InjurySyncIntegrationTest {
     log.info("🎯 Testing specific injury type data accuracy");
 
     // When - Sync injury types
-    SyncResult result = notionSyncService.syncInjuryTypes("data-accuracy-test");
+    NotionSyncService.SyncResult result = notionSyncService.syncInjuryTypes("data-accuracy-test");
     assertThat(result.isSuccess()).isTrue();
 
     if (result.getSyncedCount() > 0) {
@@ -191,7 +193,7 @@ class InjurySyncIntegrationTest {
     long initialCount = injuryTypeRepository.count();
 
     // When - Sync injury types
-    SyncResult result = notionSyncService.syncInjuryTypes("integrity-test");
+    NotionSyncService.SyncResult result = notionSyncService.syncInjuryTypes("integrity-test");
 
     // Then - Verify integrity
     assertThat(result.isSuccess()).isTrue();

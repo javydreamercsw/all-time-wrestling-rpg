@@ -8,7 +8,6 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -57,7 +56,8 @@ class NotionSyncControllerTest {
   @DisplayName("Should trigger manual sync successfully")
   void shouldTriggerManualSyncSuccessfully() throws Exception {
     // Given
-    List<SyncResult> results = List.of(SyncResult.success("Shows", 5, 0));
+    List<NotionSyncService.SyncResult> results =
+        List.of(NotionSyncService.SyncResult.success("Shows", 5, 0));
     when(notionSyncScheduler.triggerManualSync()).thenReturn(results);
 
     // When & Then
@@ -76,9 +76,10 @@ class NotionSyncControllerTest {
   @DisplayName("Should handle manual sync failures")
   void shouldHandleManualSyncFailures() throws Exception {
     // Given
-    List<SyncResult> results =
+    List<NotionSyncService.SyncResult> results =
         List.of(
-            SyncResult.success("Shows", 3, 0), SyncResult.failure("Wrestlers", "Connection error"));
+            NotionSyncService.SyncResult.success("Shows", 3, 0),
+            NotionSyncService.SyncResult.failure("Wrestlers", "Connection error"));
     when(notionSyncScheduler.triggerManualSync()).thenReturn(results);
 
     // When & Then
@@ -99,7 +100,7 @@ class NotionSyncControllerTest {
     // Given
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
     when(notionSyncScheduler.triggerEntitySync("shows"))
-        .thenReturn(SyncResult.success("Shows", 8, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 8, 0));
 
     // When & Then
     mockMvc
@@ -132,7 +133,8 @@ class NotionSyncControllerTest {
   @DisplayName("Should sync shows successfully")
   void shouldSyncShowsSuccessfully() throws Exception {
     // Given
-    when(notionSyncService.syncShows()).thenReturn(SyncResult.success("Shows", 12, 0));
+    when(notionSyncService.syncShows())
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 12, 0));
 
     // When & Then
     mockMvc
@@ -149,7 +151,7 @@ class NotionSyncControllerTest {
   void shouldHandleShowsSyncFailure() throws Exception {
     // Given
     when(notionSyncService.syncShows())
-        .thenReturn(SyncResult.failure("Shows", "Database connection failed"));
+        .thenReturn(NotionSyncService.SyncResult.failure("Shows", "Database connection failed"));
 
     // When & Then
     mockMvc

@@ -3,7 +3,6 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -63,7 +62,7 @@ class ShowSyncRealIntegrationTest {
     log.info("🚀 Starting real show sync integration test...");
 
     // When - Perform real sync with real services
-    SyncResult result = notionSyncService.syncShows();
+    NotionSyncService.SyncResult result = notionSyncService.syncShows();
 
     // Then - Verify the sync result
     assertNotNull(result, "Sync result should not be null");
@@ -114,7 +113,7 @@ class ShowSyncRealIntegrationTest {
       log.info("🧪 Testing sync behavior without NOTION_TOKEN...");
 
       // When - Try to sync without token
-      SyncResult result = notionSyncService.syncShows();
+      NotionSyncService.SyncResult result = notionSyncService.syncShows();
 
       // Then - Should fail gracefully
       assertNotNull(result, "Sync result should not be null even without token");
@@ -141,7 +140,7 @@ class ShowSyncRealIntegrationTest {
     log.info("🔍 Testing sync result structure validation...");
 
     // When - Perform sync (with or without token)
-    SyncResult result = notionSyncService.syncShows();
+    NotionSyncService.SyncResult result = notionSyncService.syncShows();
 
     // Then - Verify result structure is always valid
     assertNotNull(result, "Sync result should never be null");

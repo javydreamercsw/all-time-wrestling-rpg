@@ -4,7 +4,6 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -111,12 +110,13 @@ public class NotionSyncController {
             .body(Map.of("error", "Notion sync scheduler is not available"));
       }
 
-      List<SyncResult> results = notionSyncScheduler.triggerManualSync();
+      List<NotionSyncService.SyncResult> results = notionSyncScheduler.triggerManualSync();
 
       // Calculate summary statistics
       int successCount = (int) results.stream().mapToLong(r -> r.isSuccess() ? 1 : 0).sum();
       int failureCount = results.size() - successCount;
-      int totalSynced = results.stream().mapToInt(SyncResult::getSyncedCount).sum();
+      int totalSynced =
+          results.stream().mapToInt(NotionSyncService.SyncResult::getSyncedCount).sum();
 
       Map<String, Object> response =
           Map.of(
@@ -175,7 +175,7 @@ public class NotionSyncController {
             .body(Map.of("error", "Notion sync scheduler is not available"));
       }
 
-      SyncResult result = notionSyncScheduler.triggerEntitySync(entity);
+      NotionSyncService.SyncResult result = notionSyncScheduler.triggerEntitySync(entity);
 
       Map<String, Object> response =
           Map.of(
@@ -216,7 +216,7 @@ public class NotionSyncController {
     try {
       log.info("Manual shows sync triggered via REST API");
 
-      SyncResult result = notionSyncService.syncShows();
+      NotionSyncService.SyncResult result = notionSyncService.syncShows();
 
       Map<String, Object> response =
           Map.of(

@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +47,8 @@ class NotionSyncIntegrationTest {
     log.info("🔗 Testing Notion connection and database retrieval");
 
     // When - Attempt to connect to Notion (this will validate the connection)
-    SyncResult result = notionSyncService.syncShowTypes("integration-test-connection");
+    NotionSyncService.SyncResult result =
+        notionSyncService.syncShowTypes("integration-test-connection");
 
     // Then - Should successfully connect and process
     assertNotNull(result, "Sync result should not be null");
@@ -85,7 +85,8 @@ class NotionSyncIntegrationTest {
     log.info("📋 Found {} existing show types before sync", existingShowTypes.size());
 
     // When - Sync show types from Notion
-    SyncResult result = notionSyncService.syncShowTypes("integration-test-show-types");
+    NotionSyncService.SyncResult result =
+        notionSyncService.syncShowTypes("integration-test-show-types");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -123,7 +124,7 @@ class NotionSyncIntegrationTest {
     log.info("📺 Testing full shows sync integration");
 
     // When - Perform full shows sync (includes show types, seasons, and shows)
-    SyncResult result = notionSyncService.syncShows();
+    NotionSyncService.SyncResult result = notionSyncService.syncShows();
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -163,7 +164,8 @@ class NotionSyncIntegrationTest {
     log.info("🔧 Testing Notion configuration and connectivity validation");
 
     // When - Test basic connectivity by attempting a simple sync operation
-    SyncResult result = notionSyncService.syncShowTypes("integration-test-validation");
+    NotionSyncService.SyncResult result =
+        notionSyncService.syncShowTypes("integration-test-validation");
 
     // Then - Should get a valid response (success or failure with proper error)
     assertNotNull(result, "Sync result should not be null");
@@ -198,7 +200,8 @@ class NotionSyncIntegrationTest {
     log.info("🤼 Testing wrestlers sync from Notion to database");
 
     // When - Sync wrestlers from Notion
-    SyncResult result = notionSyncService.syncWrestlers("integration-test-wrestlers");
+    NotionSyncService.SyncResult result =
+        notionSyncService.syncWrestlers("integration-test-wrestlers");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -234,7 +237,7 @@ class NotionSyncIntegrationTest {
     log.info("📅 Testing seasons sync from Notion to database");
 
     // When - Sync seasons from Notion
-    SyncResult result = notionSyncService.syncSeasons("integration-test-seasons");
+    NotionSyncService.SyncResult result = notionSyncService.syncSeasons("integration-test-seasons");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -263,7 +266,8 @@ class NotionSyncIntegrationTest {
     log.info("📋 Testing show templates sync from Notion to database");
 
     // When - Sync show templates from Notion
-    SyncResult result = notionSyncService.syncShowTemplates("integration-test-templates");
+    NotionSyncService.SyncResult result =
+        notionSyncService.syncShowTemplates("integration-test-templates");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -291,7 +295,8 @@ class NotionSyncIntegrationTest {
     log.info("👥 Testing factions sync from Notion to database");
 
     // When - Sync factions from Notion
-    SyncResult result = notionSyncService.syncFactions("integration-test-factions");
+    NotionSyncService.SyncResult result =
+        notionSyncService.syncFactions("integration-test-factions");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -319,7 +324,7 @@ class NotionSyncIntegrationTest {
     log.info("🏆 Testing teams sync from Notion to database");
 
     // When - Sync teams from Notion
-    SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");

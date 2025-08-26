@@ -14,7 +14,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,7 +120,7 @@ class MatchesSyncIntegrationTest {
     int initialMatchCount = matchResultRepository.findAll().size();
 
     // When - Sync matches from real Notion database
-    SyncResult result = notionSyncService.syncMatches("test-operation-123");
+    NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-123");
 
     // Then - Verify sync completed successfully (regardless of match count)
     assertThat(result).isNotNull();
@@ -156,11 +155,13 @@ class MatchesSyncIntegrationTest {
     int initialMatchCount = matchResultRepository.findAll().size();
 
     // When - First sync
-    SyncResult firstResult = notionSyncService.syncMatches("test-operation-456-first");
+    NotionSyncService.SyncResult firstResult =
+        notionSyncService.syncMatches("test-operation-456-first");
     int afterFirstSync = matchResultRepository.findAll().size();
 
     // Second sync (should detect duplicates)
-    SyncResult secondResult = notionSyncService.syncMatches("test-operation-456-second");
+    NotionSyncService.SyncResult secondResult =
+        notionSyncService.syncMatches("test-operation-456-second");
     int afterSecondSync = matchResultRepository.findAll().size();
 
     // Then - Verify duplicate handling works
@@ -190,7 +191,7 @@ class MatchesSyncIntegrationTest {
     int initialMatchCount = matchResultRepository.findAll().size();
 
     // When - Sync with real Notion data (may have missing shows/wrestlers/match types)
-    SyncResult result = notionSyncService.syncMatches("test-operation-789");
+    NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-789");
 
     // Then - Verify sync handles missing dependencies gracefully
     assertThat(result).isNotNull();
@@ -226,7 +227,7 @@ class MatchesSyncIntegrationTest {
     int initialMatchCount = matchResultRepository.findAll().size();
 
     // When - Sync with real Notion data
-    SyncResult result = notionSyncService.syncMatches("test-operation-101");
+    NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-101");
 
     // Then - Verify sync handles missing match types gracefully
     assertThat(result).isNotNull();
@@ -259,7 +260,7 @@ class MatchesSyncIntegrationTest {
     int initialMatchCount = matchResultRepository.findAll().size();
 
     // When - Sync with real Notion data
-    SyncResult result = notionSyncService.syncMatches("test-operation-202");
+    NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-202");
 
     // Then - Verify sync handles missing winners gracefully
     assertThat(result).isNotNull();
@@ -291,7 +292,7 @@ class MatchesSyncIntegrationTest {
     int initialMatchCount = matchResultRepository.findAll().size();
 
     // When - Sync with real Notion data (may be empty)
-    SyncResult result = notionSyncService.syncMatches("test-operation-303");
+    NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-303");
 
     // Then - Verify sync handles empty results gracefully
     assertThat(result).isNotNull();
@@ -322,7 +323,7 @@ class MatchesSyncIntegrationTest {
     int initialMatchCount = matchResultRepository.findAll().size();
 
     // When - Sync with real Notion data (may encounter errors)
-    SyncResult result = notionSyncService.syncMatches("test-operation-404");
+    NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-404");
 
     // Then - Verify sync handles errors gracefully
     assertThat(result).isNotNull();
@@ -355,7 +356,7 @@ class MatchesSyncIntegrationTest {
     int initialMatchCount = matchResultRepository.findAll().size();
 
     // When - Sync with real Notion data (may contain multiple matches)
-    SyncResult result = notionSyncService.syncMatches("test-operation-505");
+    NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-505");
 
     // Then - Verify sync handles multiple matches correctly
     assertThat(result).isNotNull();
@@ -392,7 +393,7 @@ class MatchesSyncIntegrationTest {
     int initialMatchCount = matchResultRepository.findAll().size();
 
     // When - Sync with real Notion data and validate results
-    SyncResult result = notionSyncService.syncMatches("test-operation-606");
+    NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-606");
 
     // Then - Verify sync validation works correctly
     assertThat(result).isNotNull();

@@ -5,7 +5,6 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker.SyncProgress;
 import com.vaadin.flow.component.AttachEvent;
@@ -286,11 +285,11 @@ public class NotionSyncView extends Main {
         "Syncing all entities...",
         () -> {
           try {
-            List<SyncResult> results = notionSyncScheduler.triggerManualSync();
+            List<NotionSyncService.SyncResult> results = notionSyncScheduler.triggerManualSync();
             return new SyncOperationResult(
                 true,
                 results.size(),
-                results.stream().mapToInt(SyncResult::getSyncedCount).sum(),
+                results.stream().mapToInt(NotionSyncService.SyncResult::getSyncedCount).sum(),
                 "All entities synced successfully");
           } catch (Exception e) {
             log.error("Full sync failed", e);
@@ -313,7 +312,8 @@ public class NotionSyncView extends Main {
         operationId,
         () -> {
           try {
-            SyncResult result = notionSyncScheduler.syncEntity(entityName, operationId);
+            NotionSyncService.SyncResult result =
+                notionSyncScheduler.syncEntity(entityName, operationId);
             return new SyncOperationResult(
                 result.isSuccess(),
                 1,

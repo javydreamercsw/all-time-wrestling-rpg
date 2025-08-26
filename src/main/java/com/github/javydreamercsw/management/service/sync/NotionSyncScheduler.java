@@ -1,7 +1,6 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -58,12 +57,12 @@ public class NotionSyncScheduler {
     log.info("=== STARTING SCHEDULED NOTION SYNC ===");
 
     try {
-      List<SyncResult> results = new ArrayList<>();
+      List<NotionSyncService.SyncResult> results = new ArrayList<>();
 
       // Sync each entity in dependency order
       for (String entity : getSyncEntities()) {
         try {
-          SyncResult result = syncEntity(entity);
+          NotionSyncService.SyncResult result = syncEntity(entity);
           results.add(result);
 
           if (result.isSuccess()) {
@@ -74,7 +73,7 @@ public class NotionSyncScheduler {
 
         } catch (Exception e) {
           log.error("❌ Unexpected error syncing {}: {}", entity, e.getMessage(), e);
-          results.add(SyncResult.failure(entity, e.getMessage()));
+          results.add(NotionSyncService.SyncResult.failure(entity, e.getMessage()));
         }
       }
 
@@ -95,7 +94,7 @@ public class NotionSyncScheduler {
    * @param operationId Custom operation ID for progress tracking
    * @return SyncResult containing the outcome of the sync operation
    */
-  public SyncResult syncEntity(String entityName, String operationId) {
+  public NotionSyncService.SyncResult syncEntity(String entityName, String operationId) {
     log.debug("Syncing entity: {} with operation ID: {}", entityName, operationId);
 
     switch (entityName.toLowerCase()) {
@@ -114,7 +113,7 @@ public class NotionSyncScheduler {
       case "matches":
         // TODO: Implement match sync
         log.warn("Match sync not yet implemented");
-        return SyncResult.success("Matches", 0, 0);
+        return NotionSyncService.SyncResult.success("Matches", 0, 0);
 
       case "templates":
         return notionSyncService.syncShowTemplates(operationId);
@@ -132,7 +131,7 @@ public class NotionSyncScheduler {
 
       default:
         log.warn("Unknown entity type for sync: {}", entityName);
-        return SyncResult.failure(entityName, "Unknown entity type");
+        return NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
     }
   }
 
@@ -142,7 +141,7 @@ public class NotionSyncScheduler {
    * @param entityName The name of the entity to sync
    * @return SyncResult containing the outcome of the sync operation
    */
-  private SyncResult syncEntity(String entityName) {
+  private NotionSyncService.SyncResult syncEntity(String entityName) {
     log.debug("Syncing entity: {}", entityName);
 
     // Generate operation ID for progress tracking
@@ -164,7 +163,7 @@ public class NotionSyncScheduler {
       case "matches":
         // TODO: Implement match sync
         log.warn("Match sync not yet implemented");
-        return SyncResult.success("Matches", 0, 0);
+        return NotionSyncService.SyncResult.success("Matches", 0, 0);
 
       case "templates":
         return notionSyncService.syncShowTemplates(operationId);
@@ -182,7 +181,7 @@ public class NotionSyncScheduler {
 
       default:
         log.warn("Unknown entity type for sync: {}", entityName);
-        return SyncResult.failure(entityName, "Unknown entity type");
+        return NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
     }
   }
 
@@ -191,12 +190,12 @@ public class NotionSyncScheduler {
    *
    * @param results List of sync results to summarize
    */
-  private void logSyncSummary(List<SyncResult> results) {
+  private void logSyncSummary(List<NotionSyncService.SyncResult> results) {
     int successCount = 0;
     int failureCount = 0;
     int totalSynced = 0;
 
-    for (SyncResult result : results) {
+    for (NotionSyncService.SyncResult result : results) {
       if (result.isSuccess()) {
         successCount++;
         totalSynced += result.getSyncedCount();
@@ -222,18 +221,18 @@ public class NotionSyncScheduler {
    *
    * @return List of sync results for all entities
    */
-  public List<SyncResult> triggerManualSync() {
+  public List<NotionSyncService.SyncResult> triggerManualSync() {
     log.info("=== MANUAL NOTION SYNC TRIGGERED ===");
 
     // Clear sync session at the start of batch operation
     notionSyncService.clearSyncSession();
 
-    List<SyncResult> results = new ArrayList<>();
+    List<NotionSyncService.SyncResult> results = new ArrayList<>();
 
     try {
       for (String entity : getSyncEntities()) {
         try {
-          SyncResult result = syncEntity(entity);
+          NotionSyncService.SyncResult result = syncEntity(entity);
           results.add(result);
 
           if (result.isSuccess()) {
@@ -247,7 +246,7 @@ public class NotionSyncScheduler {
 
         } catch (Exception e) {
           log.error("❌ Unexpected error during manual {} sync: {}", entity, e.getMessage(), e);
-          results.add(SyncResult.failure(entity, e.getMessage()));
+          results.add(NotionSyncService.SyncResult.failure(entity, e.getMessage()));
         }
       }
 
@@ -268,11 +267,11 @@ public class NotionSyncScheduler {
    * @param entityName The name of the entity to sync
    * @return SyncResult for the specified entity
    */
-  public SyncResult triggerEntitySync(String entityName) {
+  public NotionSyncService.SyncResult triggerEntitySync(String entityName) {
     log.info("=== MANUAL {} SYNC TRIGGERED ===", entityName.toUpperCase());
 
     try {
-      SyncResult result = syncEntity(entityName);
+      NotionSyncService.SyncResult result = syncEntity(entityName);
 
       if (result.isSuccess()) {
         log.info(
@@ -287,7 +286,7 @@ public class NotionSyncScheduler {
 
     } catch (Exception e) {
       log.error("❌ Unexpected error during manual {} sync: {}", entityName, e.getMessage(), e);
-      return SyncResult.failure(entityName, e.getMessage());
+      return NotionSyncService.SyncResult.failure(entityName, e.getMessage());
     }
   }
 

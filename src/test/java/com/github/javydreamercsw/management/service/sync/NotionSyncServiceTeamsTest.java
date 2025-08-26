@@ -22,7 +22,6 @@ import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.lang.reflect.Field;
@@ -117,7 +116,7 @@ class NotionSyncServiceTeamsTest {
         .thenReturn(Optional.of(createMockTeam()));
 
     // When
-    SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
 
     // Then
     assertThat(result).isNotNull();
@@ -143,7 +142,7 @@ class NotionSyncServiceTeamsTest {
     when(notionHandler.loadAllTeams()).thenReturn(new ArrayList<>());
 
     // When
-    SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
 
     // Then
     assertThat(result).isNotNull();
@@ -165,7 +164,7 @@ class NotionSyncServiceTeamsTest {
     when(notionHandler.loadAllTeams()).thenThrow(new RuntimeException("Connection failed"));
 
     // When
-    SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
 
     // Then
     assertThat(result).isNotNull();
@@ -192,7 +191,7 @@ class NotionSyncServiceTeamsTest {
     lenient().when(wrestlerService.findByName("Jane Smith")).thenReturn(Optional.empty());
 
     // When
-    SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
 
     // Then
     assertThat(result).isNotNull();
@@ -222,7 +221,7 @@ class NotionSyncServiceTeamsTest {
     when(wrestlerService.findByName("Jane Smith")).thenReturn(Optional.of(wrestler2));
 
     // When
-    SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
 
     // Then
     assertThat(result).isNotNull();
