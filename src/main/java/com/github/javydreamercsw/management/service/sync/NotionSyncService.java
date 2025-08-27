@@ -1,9 +1,11 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.FactionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.InjurySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.MatchSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.SeasonSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowSyncService;
@@ -11,6 +13,8 @@ import com.github.javydreamercsw.management.service.sync.entity.ShowTemplateSync
 import com.github.javydreamercsw.management.service.sync.entity.ShowTypeSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.TeamSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
+import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
+import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
 import jakarta.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,8 +27,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Main service responsible for orchestrating synchronization operations between Notion databases
- * and the local application. This service delegates to entity-specific sync services to handle the
- * actual synchronization logic for each entity type.
+ * and the local application. This service now supports both individual entity sync and
+ * high-performance parallel sync operations with fine-grained configuration control.
  */
 @Service
 @Slf4j
@@ -40,6 +44,11 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private SeasonSyncService seasonSyncService;
   @Autowired private ShowTypeSyncService showTypeSyncService;
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
+  @Autowired private InjurySyncService injurySyncService;
+
+  // New parallel sync capabilities
+  @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
+  @Autowired private EntitySyncConfiguration entitySyncConfiguration;
 
   // Thread pool for async processing
   private final ExecutorService executorService = Executors.newFixedThreadPool(10);
@@ -48,6 +57,33 @@ public class NotionSyncService extends BaseSyncService {
   public NotionSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
   }
+
+  // ==================== PARALLEL SYNC OPERATIONS ====================
+
+  /**
+   * Executes high-performance parallel synchronization of all enabled entities. This is the
+   * recommended method for full system synchronization as it provides better performance through
+   * concurrent processing.
+   *
+   * @return ParallelSyncResult containing results for all entity syncs
+   */
+  public ParallelSyncResult syncAllEntitiesParallel() {
+    log.info("🚀 Starting parallel synchronization of all enabled entities");
+    return parallelSyncOrchestrator.executeParallelSync();
+  }
+
+  /**
+   * Executes parallel synchronization with operation tracking for monitoring.
+   *
+   * @param operationId Operation ID for tracking and logging
+   * @return ParallelSyncResult containing results for all entity syncs
+   */
+  public ParallelSyncResult syncAllEntitiesParallel(@NonNull String operationId) {
+    log.info("🚀 Starting parallel synchronization with operation ID: {}", operationId);
+    return parallelSyncOrchestrator.executeParallelSync(operationId);
+  }
+
+  // ==================== INDIVIDUAL ENTITY SYNC OPERATIONS ====================
 
   /**
    * Synchronizes shows from Notion Shows database directly to the database.
@@ -139,16 +175,13 @@ public class NotionSyncService extends BaseSyncService {
   }
 
   /**
-   * Synchronizes injury types from Notion Injuries database to the local database. TODO: Create
-   * InjurySyncService and move implementation there
+   * Synchronizes injury types from Notion Injuries database to the local database.
    *
    * @param operationId Operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
   public SyncResult syncInjuryTypes(@NonNull String operationId) {
-    // TODO: Move to InjurySyncService
-    log.info("🏥 Injury types sync - to be moved to dedicated service");
-    return SyncResult.success("Injuries", 0, 0);
+    return injurySyncService.syncInjuryTypes(operationId);
   }
 
   /** Cleanup method to shutdown the executor service. */
