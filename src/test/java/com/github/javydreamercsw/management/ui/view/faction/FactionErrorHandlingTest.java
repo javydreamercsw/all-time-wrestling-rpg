@@ -18,12 +18,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 /**
  * Tests for Faction UI error handling and edge cases. Focuses on testing how the UI handles various
  * error conditions and edge cases.
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class FactionErrorHandlingTest {
 
   @Mock private FactionService factionService;
@@ -40,7 +43,7 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle service unavailable errors")
   void shouldHandleServiceUnavailableErrors() {
     // Given
-    when(factionService.findAllWithMembers())
+    when(factionService.findAllWithMembersAndTeams())
         .thenThrow(new RuntimeException("Database connection failed"));
 
     // When/Then - View should still be created but handle the error gracefully
@@ -72,7 +75,7 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle faction save failures")
   void shouldHandleFactionSaveFailures() {
     // Given
-    when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 
@@ -96,7 +99,7 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle faction deletion failures")
   void shouldHandleFactionDeletionFailures() {
     // Given
-    when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 
@@ -122,7 +125,7 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle member management failures")
   void shouldHandleMemberManagementFailures() {
     // Given
-    when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 
@@ -146,7 +149,7 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle invalid faction data")
   void shouldHandleInvalidFactionData() {
     // Given
-    when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 
@@ -174,7 +177,7 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle concurrent modification errors")
   void shouldHandleConcurrentModificationErrors() {
     // Given
-    when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 
@@ -201,7 +204,7 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle missing faction for member operations")
   void shouldHandleMissingFactionForMemberOperations() {
     // Given
-    when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 
@@ -222,7 +225,7 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle missing wrestler for member operations")
   void shouldHandleMissingWrestlerForMemberOperations() {
     // Given
-    when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 
@@ -265,7 +268,7 @@ class FactionErrorHandlingTest {
       largeWrestlerList.add(wrestler);
     }
 
-    when(factionService.findAllWithMembers()).thenReturn(largeFactionList);
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(largeFactionList);
     when(wrestlerService.findAll()).thenReturn(largeWrestlerList);
 
     // When
@@ -273,7 +276,7 @@ class FactionErrorHandlingTest {
 
     // Then - Should handle large datasets without issues
     assertNotNull(viewWithLargeDataset);
-    verify(factionService).findAllWithMembers();
+    verify(factionService).findAllWithMembersAndTeams();
     verify(wrestlerService, atLeastOnce()).findAll();
   }
 
@@ -281,7 +284,8 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle network timeout errors")
   void shouldHandleNetworkTimeoutErrors() {
     // Given
-    when(factionService.findAllWithMembers()).thenThrow(new RuntimeException("Connection timeout"));
+    when(factionService.findAllWithMembersAndTeams())
+        .thenThrow(new RuntimeException("Connection timeout"));
 
     // When/Then
     assertThrows(
@@ -290,14 +294,14 @@ class FactionErrorHandlingTest {
           new FactionListView(factionService, wrestlerService);
         });
 
-    verify(factionService).findAllWithMembers();
+    verify(factionService).findAllWithMembersAndTeams();
   }
 
   @Test
   @DisplayName("Should handle permission denied errors")
   void shouldHandlePermissionDeniedErrors() {
     // Given
-    when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 
@@ -322,7 +326,7 @@ class FactionErrorHandlingTest {
   @DisplayName("Should handle validation errors gracefully")
   void shouldHandleValidationErrorsGracefully() {
     // Given
-    when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 

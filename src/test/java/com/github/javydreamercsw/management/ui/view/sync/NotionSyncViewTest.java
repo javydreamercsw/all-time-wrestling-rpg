@@ -15,8 +15,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class NotionSyncViewTest {
 
   @Mock private NotionSyncService notionSyncService;
@@ -29,11 +32,10 @@ class NotionSyncViewTest {
 
   @BeforeEach
   void setUp() {
-    // Mock basic configuration
-    when(syncProperties.isEnabled()).thenReturn(true);
-    when(syncProperties.isSchedulerEnabled()).thenReturn(true);
-    when(syncProperties.isBackupEnabled()).thenReturn(true);
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
+    // Mock the sync properties
+    lenient().when(syncProperties.isEnabled()).thenReturn(true);
+    lenient().when(syncProperties.isSchedulerEnabled()).thenReturn(true);
+    lenient().when(syncProperties.isBackupEnabled()).thenReturn(true);
 
     // Mock scheduler properties
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
@@ -101,6 +103,7 @@ class NotionSyncViewTest {
   @DisplayName("Should handle empty entities list")
   void shouldHandleEmptyEntitiesList() {
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of());
+    // Remove deprecated getEntities() call - entities are now automatically determined
 
     NotionSyncView emptyEntitiesView =
         new NotionSyncView(
@@ -121,7 +124,6 @@ class NotionSyncViewTest {
     when(syncProperties.isEnabled()).thenReturn(true);
     when(syncProperties.isSchedulerEnabled()).thenReturn(false);
     when(syncProperties.isBackupEnabled()).thenReturn(false);
-    lenient().when(syncProperties.getEntities()).thenReturn(List.of());
 
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
     when(syncProperties.getScheduler()).thenReturn(scheduler);

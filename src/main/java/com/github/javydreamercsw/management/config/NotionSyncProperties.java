@@ -1,6 +1,5 @@
 package com.github.javydreamercsw.management.config;
 
-import java.util.List;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -19,11 +18,6 @@ public class NotionSyncProperties {
    * skipped.
    */
   private boolean enabled = false;
-
-  // Entities to sync are now automatically determined based on database relationships
-  // Keeping deprecated methods for backward compatibility with existing tests
-  @Deprecated(forRemoval = true)
-  private List<String> entities = List.of(); // Empty list - not used anymore
 
   /** Scheduler configuration for automatic synchronization. */
   private Scheduler scheduler = new Scheduler();
@@ -95,26 +89,5 @@ public class NotionSyncProperties {
    */
   public boolean isBackupEnabled() {
     return backup.enabled;
-  }
-
-  // ==================== DEPRECATED METHODS FOR BACKWARD COMPATIBILITY ====================
-  // These methods are kept for existing tests but should not be used in new code
-
-  /**
-   * @deprecated Entities are now automatically determined based on database relationships. This
-   *     method returns an empty list and should not be used.
-   */
-  @Deprecated(forRemoval = true)
-  public List<String> getEntities() {
-    return entities; // Returns empty list
-  }
-
-  /**
-   * @deprecated Entities are now automatically determined based on database relationships. This
-   *     method does nothing and should not be used.
-   */
-  @Deprecated(forRemoval = true)
-  public void setEntities(List<String> entities) {
-    // Do nothing - entities are automatically determined
   }
 }

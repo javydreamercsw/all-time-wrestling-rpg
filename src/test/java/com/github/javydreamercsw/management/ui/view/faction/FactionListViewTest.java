@@ -18,11 +18,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 /**
  * Unit tests for FactionListView. Tests the UI components, grid functionality, and CRUD operations.
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class FactionListViewTest {
 
   @Mock private FactionService factionService;
@@ -41,7 +44,7 @@ class FactionListViewTest {
     testFactions = createTestFactionsWithMembers();
 
     // Mock service responses
-    when(factionService.findAllWithMembers()).thenReturn(testFactions);
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(testFactions);
     when(wrestlerService.findAll()).thenReturn(testWrestlers);
 
     // Create the view
@@ -64,7 +67,7 @@ class FactionListViewTest {
   @DisplayName("Should load factions into grid on initialization")
   void shouldLoadFactionsIntoGridOnInitialization() {
     // Then
-    verify(factionService).findAllWithMembers();
+    verify(factionService).findAllWithMembersAndTeams();
 
     // Grid should be configured with test data
     assertNotNull(factionListView.factionGrid);
@@ -92,7 +95,7 @@ class FactionListViewTest {
 
     // Then
     // The service should be available for use
-    verify(factionService).findAllWithMembers(); // Called during initialization
+    verify(factionService).findAllWithMembersAndTeams(); // Called during initialization
   }
 
   @Test

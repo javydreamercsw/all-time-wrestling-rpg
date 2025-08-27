@@ -6,7 +6,6 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,19 +26,16 @@ class SyncHealthMonitorTest {
 
   @BeforeEach
   void setUp() {
-    // Mock basic configuration with lenient stubbing
-    lenient().when(syncProperties.isEnabled()).thenReturn(true);
-    lenient().when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
-    lenient().when(progressTracker.getActiveOperations()).thenReturn(Collections.emptyList());
-
     healthMonitor = new SyncHealthMonitor(syncProperties, progressTracker);
+    lenient().when(syncProperties.isEnabled()).thenReturn(true);
+    lenient().when(syncProperties.isSchedulerEnabled()).thenReturn(true);
+    // Remove deprecated getEntities() call - entities are now automatically determined
   }
 
   @Test
   void shouldReturnHealthyStatusWhenNoIssues() {
     // Given - Mock valid configuration and NOTION_TOKEN availability
     when(syncProperties.isEnabled()).thenReturn(true);
-    lenient().when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
 
     // Set up environment for valid configuration
     System.setProperty("NOTION_TOKEN", "test-token");

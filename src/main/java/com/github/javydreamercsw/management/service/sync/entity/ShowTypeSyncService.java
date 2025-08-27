@@ -132,7 +132,7 @@ public class ShowTypeSyncService extends BaseSyncService {
               createdCount + updatedCount, createdCount, updatedCount),
           createdCount + updatedCount);
 
-      return SyncResult.success("ShowTypes", createdCount, updatedCount);
+      return SyncResult.success("Show Types", createdCount, updatedCount);
 
     } catch (Exception e) {
       log.error("Failed to sync show types: {}", e.getMessage(), e);
@@ -140,7 +140,7 @@ public class ShowTypeSyncService extends BaseSyncService {
       progressTracker.completeOperation(
           operationId, false, "Failed to sync show types: " + e.getMessage(), 0);
 
-      return SyncResult.failure("ShowTypes", "Failed to sync show types: " + e.getMessage());
+      return SyncResult.failure("Show Types", "Failed to sync show types: " + e.getMessage());
     }
   }
 
@@ -235,19 +235,19 @@ public class ShowTypeSyncService extends BaseSyncService {
         log.info("Created show type: Premium Live Event (PLE)");
 
         log.info("✅ Created {} default show types", createdCount);
-        return SyncResult.success("ShowTypes", createdCount, 0);
+        return SyncResult.success("Show Types", createdCount, 0);
 
       } else {
         log.info(
             "Show types already exist in database: {}",
             existingShowTypes.stream().map(ShowType::getName).toList());
-        return SyncResult.success("ShowTypes", 0, 0);
+        return SyncResult.success("Show Types", 0, 0);
       }
 
     } catch (Exception e) {
       log.error("Failed to create default show types: {}", e.getMessage(), e);
       return SyncResult.failure(
-          "ShowTypes", "Failed to create default show types: " + e.getMessage());
+          "Show Types", "Failed to create default show types: " + e.getMessage());
     }
   }
 }

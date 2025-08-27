@@ -548,13 +548,14 @@ public class NotionHandler {
     } else if (formula.getDate() != null) {
       // Handle formula date - extract the start date and format it properly
       if (formula.getDate().getStart() != null) {
-        String dateStr = formula.getDate().getStart().toString();
-        // Remove @ prefix if present
-        return dateStr.startsWith("@") ? dateStr.substring(1) : dateStr;
+        String dateStr = formula.getDate().getStart();
+        // The Notion API sometimes prefixes dates with @, so we remove it.
+        if (dateStr != null && dateStr.startsWith("@")) {
+          return dateStr.substring(1);
+        }
+        return dateStr;
       } else {
-        String dateStr = formula.getDate().toString();
-        // Remove @ prefix if present
-        return dateStr.startsWith("@") ? dateStr.substring(1) : dateStr;
+        return "N/A";
       }
     } else {
       return "null";

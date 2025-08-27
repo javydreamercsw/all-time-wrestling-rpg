@@ -1,27 +1,20 @@
-package com.github.javydreamercsw.management.service.sync;
+package com.github.javydreamercsw.management.service.sync.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
-import com.github.javydreamercsw.management.service.match.MatchResultService;
-import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
-import com.github.javydreamercsw.management.service.season.SeasonService;
-import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
-import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.lang.reflect.Field;
@@ -38,59 +31,30 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NotionSyncServiceTeamsTest {
+class TeamSyncServiceTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
   @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
-  @Mock private RetryService retryService;
-  @Mock private CircuitBreakerService circuitBreakerService;
-  @Mock private SyncValidationService validationService;
-  @Mock private SyncTransactionManager syncTransactionManager;
-  @Mock private DataIntegrityChecker integrityChecker;
-  @Mock private ShowService showService;
-  @Mock private ShowTypeService showTypeService;
   @Mock private WrestlerService wrestlerService;
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private SeasonService seasonService;
-  @Mock private ShowTemplateService showTemplateService;
-  @Mock private FactionRepository factionRepository;
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
-  @Mock private MatchResultService matchResultService;
-  @Mock private MatchTypeService matchTypeService;
-  @Mock private InjuryTypeService injuryTypeService;
 
-  private NotionSyncService notionSyncService;
+  private TeamSyncService teamSyncService;
 
   @BeforeEach
   void setUp() {
-    // Create the service with simplified constructor
-    notionSyncService = new NotionSyncService(objectMapper, syncProperties);
+    teamSyncService = new TeamSyncService(objectMapper, syncProperties);
 
     // Manually inject the mocked dependencies using reflection
-    setField(notionSyncService, "notionHandler", notionHandler);
-    setField(notionSyncService, "progressTracker", progressTracker);
-    setField(notionSyncService, "healthMonitor", healthMonitor);
-    setField(notionSyncService, "retryService", retryService);
-    setField(notionSyncService, "circuitBreakerService", circuitBreakerService);
-    setField(notionSyncService, "validationService", validationService);
-    setField(notionSyncService, "syncTransactionManager", syncTransactionManager);
-    setField(notionSyncService, "integrityChecker", integrityChecker);
-    setField(notionSyncService, "showService", showService);
-    setField(notionSyncService, "showTypeService", showTypeService);
-    setField(notionSyncService, "wrestlerService", wrestlerService);
-    setField(notionSyncService, "wrestlerRepository", wrestlerRepository);
-    setField(notionSyncService, "seasonService", seasonService);
-    setField(notionSyncService, "showTemplateService", showTemplateService);
-    setField(notionSyncService, "factionRepository", factionRepository);
-    setField(notionSyncService, "teamService", teamService);
-    setField(notionSyncService, "teamRepository", teamRepository);
-    setField(notionSyncService, "matchResultService", matchResultService);
-    setField(notionSyncService, "matchTypeService", matchTypeService);
-    setField(notionSyncService, "injuryTypeService", injuryTypeService);
+    setField(teamSyncService, "notionHandler", notionHandler);
+    setField(teamSyncService, "progressTracker", progressTracker);
+    setField(teamSyncService, "healthMonitor", healthMonitor);
+    setField(teamSyncService, "wrestlerService", wrestlerService);
+    setField(teamSyncService, "teamService", teamService);
+    setField(teamSyncService, "teamRepository", teamRepository);
   }
 
   @Test
@@ -116,7 +80,7 @@ class NotionSyncServiceTeamsTest {
         .thenReturn(Optional.of(createMockTeam()));
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
+    BaseSyncService.SyncResult result = teamSyncService.syncTeams("test-team-sync");
 
     // Then
     assertThat(result).isNotNull();
@@ -142,7 +106,7 @@ class NotionSyncServiceTeamsTest {
     when(notionHandler.loadAllTeams()).thenReturn(new ArrayList<>());
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
+    BaseSyncService.SyncResult result = teamSyncService.syncTeams("test-team-sync");
 
     // Then
     assertThat(result).isNotNull();
@@ -164,7 +128,7 @@ class NotionSyncServiceTeamsTest {
     when(notionHandler.loadAllTeams()).thenThrow(new RuntimeException("Connection failed"));
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
+    BaseSyncService.SyncResult result = teamSyncService.syncTeams("test-team-sync");
 
     // Then
     assertThat(result).isNotNull();
@@ -191,7 +155,7 @@ class NotionSyncServiceTeamsTest {
     lenient().when(wrestlerService.findByName("Jane Smith")).thenReturn(Optional.empty());
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
+    BaseSyncService.SyncResult result = teamSyncService.syncTeams("test-team-sync");
 
     // Then
     assertThat(result).isNotNull();
@@ -221,7 +185,7 @@ class NotionSyncServiceTeamsTest {
     when(wrestlerService.findByName("Jane Smith")).thenReturn(Optional.of(wrestler2));
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
+    BaseSyncService.SyncResult result = teamSyncService.syncTeams("test-team-sync");
 
     // Then
     assertThat(result).isNotNull();
@@ -283,7 +247,13 @@ class NotionSyncServiceTeamsTest {
       field.setAccessible(true);
       field.set(target, value);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to set field " + fieldName, e);
+      try {
+        Field superField = target.getClass().getSuperclass().getDeclaredField(fieldName);
+        superField.setAccessible(true);
+        superField.set(target, value);
+      } catch (Exception e2) {
+        throw new RuntimeException("Failed to set field " + fieldName, e2);
+      }
     }
   }
 }

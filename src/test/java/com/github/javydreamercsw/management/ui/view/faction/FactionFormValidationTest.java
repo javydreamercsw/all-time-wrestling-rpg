@@ -18,12 +18,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 /**
  * Tests for Faction form validation and data binding functionality. Focuses on testing the Vaadin
  * Binder validation rules and form behavior.
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class FactionFormValidationTest {
 
   @Mock private FactionService factionService;

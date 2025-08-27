@@ -142,7 +142,7 @@ public class FactionSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.info(
           "🎉 Successfully synchronized {} factions to database in {}ms total",
-          factionDTOs.size(),
+          savedCount,
           totalTime);
 
       // Complete progress tracking
@@ -150,20 +150,22 @@ public class FactionSyncService extends BaseSyncService {
         progressTracker.addLogMessage(
             operationId,
             String.format(
-                "🎉 Successfully synchronized %d factions in %dms total",
-                factionDTOs.size(), totalTime),
+                "🎉 Successfully synchronized %d factions in %dms total", savedCount, totalTime),
             "SUCCESS");
         progressTracker.completeOperation(
             operationId,
             true,
-            String.format("Successfully synced %d factions", factionDTOs.size()),
-            factionDTOs.size());
+            String.format("Successfully synced %d factions", savedCount),
+            savedCount);
       }
 
       // Record success in health monitor
-      healthMonitor.recordSuccess("Factions", totalTime, factionDTOs.size());
+      healthMonitor.recordSuccess("Factions", totalTime, savedCount);
 
-      return SyncResult.success("Factions", factionDTOs.size(), 0);
+      if (savedCount < factionDTOs.size()) {
+        return SyncResult.failure("Factions", "Some factions failed to sync");
+      }
+      return SyncResult.success("Factions", savedCount, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;

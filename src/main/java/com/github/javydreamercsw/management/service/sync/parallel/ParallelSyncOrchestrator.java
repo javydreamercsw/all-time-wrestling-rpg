@@ -55,7 +55,8 @@ public class ParallelSyncOrchestrator {
 
     // Determine optimal thread pool size based on enabled entities
     int enabledEntities = countEnabledEntities();
-    int maxThreads = Math.min(enabledEntities, entityConfig.getDefaults().getMaxThreads());
+    int maxThreads =
+        Math.max(1, Math.min(enabledEntities, entityConfig.getDefaults().getMaxThreads()));
 
     ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
 

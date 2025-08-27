@@ -20,10 +20,12 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * Unit tests for Notion property resolution using real captured data samples. These tests verify
@@ -32,15 +34,16 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @SpringBootTest(properties = {"notion.sync.enabled=true", "notion.sync.entities.matches=true"})
 @ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 @DisplayName("Notion Property Resolution Tests")
 class NotionPropertyResolutionTest {
 
-  @Autowired private NotionSyncService notionSyncService;
+  @InjectMocks private NotionSyncService notionSyncService;
 
-  @MockBean private NotionHandler notionHandler;
-  @MockBean private ShowService showService;
-  @MockBean private MatchTypeService matchTypeService;
-  @MockBean private WrestlerService wrestlerService;
+  @MockitoBean private NotionHandler notionHandler;
+  @MockitoBean private ShowService showService;
+  @MockitoBean private MatchTypeService matchTypeService;
+  @MockitoBean private WrestlerService wrestlerService;
 
   private ObjectMapper objectMapper;
   private List<MatchPage> sampleMatches;

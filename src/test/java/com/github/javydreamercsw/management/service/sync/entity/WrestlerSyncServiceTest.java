@@ -33,6 +33,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WrestlerSyncServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.wrestler.WrestlerService wrestlerService;
+
   @Mock private NotionHandler notionHandler;
   @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncProgressTracker progressTracker;
@@ -55,6 +59,10 @@ class WrestlerSyncServiceTest {
           WrestlerSyncService.class.getDeclaredField("wrestlerRepository");
       wrestlerRepositoryField.setAccessible(true);
       wrestlerRepositoryField.set(wrestlerSyncService, wrestlerRepository);
+
+      var wrestlerServiceField = WrestlerSyncService.class.getDeclaredField("wrestlerService");
+      wrestlerServiceField.setAccessible(true);
+      wrestlerServiceField.set(wrestlerSyncService, wrestlerService);
 
       var notionHandlerField =
           WrestlerSyncService.class.getSuperclass().getDeclaredField("notionHandler");
@@ -80,9 +88,9 @@ class WrestlerSyncServiceTest {
     // Given
     List<WrestlerPage> mockPages = createMockWrestlerPages();
     when(notionHandler.loadAllWrestlers()).thenReturn(mockPages);
-    when(wrestlerRepository.findByExternalId(anyString())).thenReturn(Optional.empty());
-    when(wrestlerRepository.findByName(anyString())).thenReturn(Optional.empty());
-    when(wrestlerRepository.save(any(Wrestler.class)))
+    when(wrestlerService.findByExternalId(anyString())).thenReturn(Optional.empty());
+    when(wrestlerService.findByName(anyString())).thenReturn(Optional.empty());
+    when(wrestlerService.save(any(Wrestler.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
@@ -91,7 +99,7 @@ class WrestlerSyncServiceTest {
     // Then
     assertTrue(result.isSuccess());
     assertEquals("Wrestlers", result.getEntityType());
-    verify(wrestlerRepository, times(2)).save(any(Wrestler.class));
+    verify(wrestlerService, times(2)).save(any(Wrestler.class));
     verify(healthMonitor).recordSuccess(eq("Wrestlers"), anyLong(), anyInt());
   }
 

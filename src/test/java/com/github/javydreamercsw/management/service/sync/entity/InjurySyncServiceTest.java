@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.InjuryPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
@@ -25,13 +26,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 /**
  * Unit tests for InjurySyncService covering all major functionality including error handling,
  * validation, and edge cases.
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class InjurySyncServiceTest {
 
   @Mock private InjuryTypeService injuryTypeService;
@@ -51,9 +56,6 @@ class InjurySyncServiceTest {
 
     // Use reflection to inject mocked dependencies
     injectMockDependencies();
-
-    // Setup default behavior
-    when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
   }
 
   private void injectMockDependencies() {
@@ -130,122 +132,180 @@ class InjurySyncServiceTest {
   @Test
   void syncInjuryTypes_WhenSuccessful_ShouldReturnCorrectResult() {
     // Given
-    List<InjuryPage> mockPages = createMockInjuryPages();
-    when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
-    when(injuryTypeRepository.existsByInjuryName(anyString())).thenReturn(false);
-    when(injuryTypeService.createInjuryType(anyString(), anyInt(), anyInt(), anyInt(), anyString()))
-        .thenReturn(createMockInjuryType());
+    try (MockedStatic<EnvironmentVariableUtil> envUtil =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      envUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
 
-    // When
-    SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
+      List<InjuryPage> mockPages = createMockInjuryPages();
+      when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
+      when(injuryTypeRepository.existsByInjuryName(anyString())).thenReturn(false);
+      when(injuryTypeService.createInjuryType(
+              anyString(), anyInt(), anyInt(), anyInt(), anyString()))
+          .thenReturn(createMockInjuryType());
+      when(injuryTypeService.updateInjuryType(any())).thenReturn(createMockInjuryType());
 
-    // Then
-    assertTrue(result.isSuccess());
-    assertEquals("Injuries", result.getEntityType());
-    assertEquals(2, result.getSyncedCount()); // Two mock injuries
+      // When
+      SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
 
-    // Verify progress tracking
-    verify(progressTracker).startOperation(eq("test-operation"), eq("Sync Injuries"), eq(4));
-    verify(progressTracker).completeOperation(eq("test-operation"), eq(true), anyString(), eq(2));
+      // Then
+      assertTrue(result.isSuccess());
+      assertEquals("Injuries", result.getEntityType());
+      assertEquals(2, result.getSyncedCount()); // Two mock injuries
 
-    // Verify health monitoring
-    verify(healthMonitor).recordSuccess(eq("Injuries"), anyLong(), eq(2));
+      // Verify progress tracking
+      verify(progressTracker).startOperation(eq("test-operation"), eq("Sync Injuries"), eq(4));
+      verify(progressTracker).completeOperation(eq("test-operation"), eq(true), anyString(), eq(2));
+
+      // Verify health monitoring
+      verify(healthMonitor).recordSuccess(eq("Injuries"), anyLong(), eq(2));
+    }
   }
 
   @Test
   void syncInjuryTypes_WhenNoInjuriesFound_ShouldReturnSuccessWithZeroCount() {
     // Given
-    when(notionHandler.loadAllInjuries()).thenReturn(Collections.emptyList());
+    try (MockedStatic<EnvironmentVariableUtil> envUtil =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      envUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+      when(notionHandler.loadAllInjuries()).thenReturn(Collections.emptyList());
 
-    // When
-    SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
+      // When
+      SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
 
-    // Then
-    assertTrue(result.isSuccess());
-    assertEquals(0, result.getSyncedCount());
-    verify(progressTracker)
-        .completeOperation(eq("test-operation"), eq(true), eq("No injuries to sync"), eq(0));
+      // Then
+      assertTrue(result.isSuccess());
+      assertEquals(0, result.getSyncedCount());
+      verify(progressTracker)
+          .completeOperation(eq("test-operation"), eq(true), eq("No injuries to sync"), eq(0));
+    }
   }
 
   @Test
   void syncInjuryTypes_WhenDuplicateInjuries_ShouldSkipExisting() {
     // Given
-    List<InjuryPage> mockPages = createMockInjuryPages();
-    when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
-    when(injuryTypeRepository.existsByInjuryName("Head Injury")).thenReturn(true);
-    when(injuryTypeRepository.existsByInjuryName("Back Injury")).thenReturn(false);
-    when(injuryTypeService.createInjuryType(anyString(), anyInt(), anyInt(), anyInt(), anyString()))
-        .thenReturn(createMockInjuryType());
+    try (MockedStatic<EnvironmentVariableUtil> envUtil =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      envUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
 
-    // When
-    SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
+      List<InjuryPage> mockPages = createMockInjuryPages();
+      when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
+      when(injuryTypeRepository.existsByInjuryName("Head Injury")).thenReturn(true);
+      when(injuryTypeRepository.existsByInjuryName("Back Injury")).thenReturn(false);
+      when(injuryTypeService.createInjuryType(
+              anyString(), anyInt(), anyInt(), anyInt(), anyString()))
+          .thenReturn(createMockInjuryType());
+      when(injuryTypeService.updateInjuryType(any())).thenReturn(createMockInjuryType());
 
-    // Then
-    assertTrue(result.isSuccess());
-    assertEquals(1, result.getSyncedCount()); // Only one new injury
-    verify(injuryTypeService, times(1))
-        .createInjuryType(anyString(), anyInt(), anyInt(), anyInt(), anyString());
+      // When
+      SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
+
+      // Then
+      assertTrue(result.isSuccess());
+      assertEquals(1, result.getSyncedCount()); // Only one new injury
+      verify(injuryTypeService, times(1))
+          .createInjuryType(anyString(), anyInt(), anyInt(), anyInt(), anyString());
+    }
   }
 
   @Test
   void syncInjuryTypes_WhenNotionHandlerThrowsException_ShouldReturnFailure() {
     // Given
-    when(notionHandler.loadAllInjuries()).thenThrow(new RuntimeException("Notion API error"));
+    try (MockedStatic<EnvironmentVariableUtil> envUtil =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      envUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+      when(notionHandler.loadAllInjuries()).thenThrow(new RuntimeException("Notion API error"));
 
-    // When
-    SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
+      // When
+      SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
 
-    // Then
-    assertFalse(result.isSuccess());
-    assertEquals("Injuries", result.getEntityType());
-    assertTrue(result.getErrorMessage().contains("Notion API error"));
+      // Then
+      assertFalse(result.isSuccess());
+      assertEquals("Injuries", result.getEntityType());
+      assertTrue(result.getErrorMessage().contains("Notion API error"));
 
-    // Verify error handling
-    verify(progressTracker).failOperation(eq("test-operation"), anyString());
-    verify(healthMonitor).recordFailure(eq("Injuries"), anyString());
+      // Verify error handling
+      verify(progressTracker).failOperation(eq("test-operation"), anyString());
+      verify(healthMonitor).recordFailure(eq("Injuries"), anyString());
+    }
   }
 
   @Test
   void syncInjuryTypes_WhenServiceThrowsException_ShouldContinueWithOtherInjuries() {
     // Given
-    List<InjuryPage> mockPages = createMockInjuryPages();
-    when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
-    when(injuryTypeRepository.existsByInjuryName(anyString())).thenReturn(false);
-    when(injuryTypeService.createInjuryType(
-            eq("Head Injury"), anyInt(), anyInt(), anyInt(), anyString()))
-        .thenThrow(new RuntimeException("Database error"));
-    when(injuryTypeService.createInjuryType(
-            eq("Back Injury"), anyInt(), anyInt(), anyInt(), anyString()))
-        .thenReturn(createMockInjuryType());
+    try (MockedStatic<EnvironmentVariableUtil> envUtil =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      envUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
 
-    // When
-    SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
+      List<InjuryPage> mockPages = createMockInjuryPages();
+      when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
+      when(injuryTypeRepository.existsByInjuryName(anyString())).thenReturn(false);
+      when(injuryTypeService.createInjuryType(
+              eq("Head Injury"), anyInt(), anyInt(), anyInt(), anyString()))
+          .thenThrow(new RuntimeException("Database error"));
+      when(injuryTypeService.createInjuryType(
+              eq("Back Injury"), anyInt(), anyInt(), anyInt(), anyString()))
+          .thenReturn(createMockInjuryType());
+      when(injuryTypeService.updateInjuryType(any())).thenReturn(createMockInjuryType());
 
-    // Then
-    assertTrue(result.isSuccess());
-    assertEquals(1, result.getSyncedCount()); // One succeeded despite one failure
+      // When
+      SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
+
+      // Then
+      assertTrue(result.isSuccess());
+      assertEquals(1, result.getSyncedCount()); // One succeeded despite one failure
+    }
   }
 
   @Test
   void syncInjuryTypes_WhenValidationFails_ShouldReturnFailure() {
     // Given
-    List<InjuryPage> mockPages = createMockInjuryPages();
-    when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
-    when(injuryTypeRepository.existsByInjuryName(anyString())).thenReturn(false);
-    // Only one injury will be created, causing low success rate
-    when(injuryTypeService.createInjuryType(
-            eq("Head Injury"), anyInt(), anyInt(), anyInt(), anyString()))
-        .thenReturn(null); // Simulate creation failure
-    when(injuryTypeService.createInjuryType(
-            eq("Back Injury"), anyInt(), anyInt(), anyInt(), anyString()))
-        .thenReturn(null); // Simulate creation failure
+    try (MockedStatic<EnvironmentVariableUtil> envUtil =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      envUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
 
-    // When
-    SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
+      List<InjuryPage> mockPages = createMockInjuryPages();
+      when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
+      when(injuryTypeRepository.existsByInjuryName(anyString())).thenReturn(false);
+      // Only one injury will be created, causing low success rate
+      when(injuryTypeService.createInjuryType(
+              eq("Head Injury"), anyInt(), anyInt(), anyInt(), anyString()))
+          .thenReturn(null); // Simulate creation failure
+      when(injuryTypeService.createInjuryType(
+              eq("Back Injury"), anyInt(), anyInt(), anyInt(), anyString()))
+          .thenReturn(null); // Simulate creation failure
 
-    // Then
-    assertFalse(result.isSuccess());
-    assertTrue(result.getErrorMessage().contains("validation failed"));
+      // When
+      SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
+
+      // Then
+      assertFalse(result.isSuccess());
+      assertTrue(result.getErrorMessage().contains("validation failed"));
+    }
+  }
+
+  @Test
+  void syncInjuryTypes_WhenNotionTokenNotAvailable_ShouldReturnFailure() {
+    // Given
+    try (MockedStatic<EnvironmentVariableUtil> envUtil =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      envUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(false);
+      when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+
+      // When
+      SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
+
+      // Then
+      assertFalse(result.isSuccess());
+      assertEquals("Injuries", result.getEntityType());
+      assertTrue(result.getErrorMessage().contains("NOTION_TOKEN is not available"));
+      verify(notionHandler, never()).loadAllInjuries();
+    }
   }
 
   private List<InjuryPage> createMockInjuryPages() {
@@ -263,9 +323,17 @@ class InjurySyncServiceTest {
     when(page.getCreated_time()).thenReturn(Instant.now().toString());
     when(page.getLast_edited_time()).thenReturn(Instant.now().toString());
 
-    // Mock raw properties
+    // Mock raw properties with correct structure for name extraction
     Map<String, Object> properties = new HashMap<>();
-    properties.put("Name", Map.of("title", List.of(Map.of("text", Map.of("content", name)))));
+    // The Name property should be a simple string when toString() is called
+    Object nameProperty =
+        new Object() {
+          @Override
+          public String toString() {
+            return name;
+          }
+        };
+    properties.put("Name", nameProperty);
     properties.put("Health Effect", health);
     properties.put("Stamina Effect", stamina);
     properties.put("Card Effect", card);

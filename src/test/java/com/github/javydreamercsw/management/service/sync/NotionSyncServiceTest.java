@@ -6,278 +6,317 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.FactionPage;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.base.ai.notion.ShowPage;
+import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.season.Season;
-import com.github.javydreamercsw.management.domain.team.TeamRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
-import com.github.javydreamercsw.management.service.match.MatchResultService;
-import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
-import com.github.javydreamercsw.management.service.season.SeasonService;
-import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
-import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
-import com.github.javydreamercsw.management.service.team.TeamService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.FactionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.InjurySyncService;
+import com.github.javydreamercsw.management.service.sync.entity.MatchSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.SeasonSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.ShowSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.ShowTemplateSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.ShowTypeSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.TeamSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
+import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
+import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class NotionSyncServiceTest {
 
   @Mock private ObjectMapper objectMapper;
-  @Mock private NotionHandler notionHandler;
   @Mock private NotionSyncProperties syncProperties;
-  @Mock private SyncProgressTracker progressTracker;
 
-  @Mock private SyncHealthMonitor healthMonitor;
-  @Mock private RetryService retryService;
-  @Mock private CircuitBreakerService circuitBreakerService;
-  @Mock private SyncValidationService validationService;
-  @Mock private SyncTransactionManager syncTransactionManager;
-  @Mock private DataIntegrityChecker integrityChecker;
+  // Mock entity-specific sync services
+  @Mock private ShowSyncService showSyncService;
+  @Mock private WrestlerSyncService wrestlerSyncService;
+  @Mock private FactionSyncService factionSyncService;
+  @Mock private TeamSyncService teamSyncService;
+  @Mock private MatchSyncService matchSyncService;
+  @Mock private SeasonSyncService seasonSyncService;
+  @Mock private ShowTypeSyncService showTypeSyncService;
+  @Mock private ShowTemplateSyncService showTemplateSyncService;
+  @Mock private InjurySyncService injurySyncService;
 
-  @Mock private TeamService teamService;
-
-  @Mock private TeamRepository teamRepository;
-
-  // Mock database services
-  @Mock private ShowService showService;
-  @Mock private ShowTypeService showTypeService;
-  @Mock private SeasonService seasonService;
-  @Mock private ShowTemplateService showTemplateService;
-  @Mock private WrestlerService wrestlerService;
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private FactionRepository factionRepository;
-  @Mock private MatchResultService matchResultService;
-  @Mock private MatchTypeService matchTypeService;
-  @Mock private InjuryTypeService injuryTypeService;
+  // Mock parallel sync components
+  @Mock private ParallelSyncOrchestrator parallelSyncOrchestrator;
+  @Mock private EntitySyncConfiguration entitySyncConfiguration;
 
   private NotionSyncService notionSyncService;
 
   @BeforeEach
   void setUp() throws Exception {
-    // Only mock the services that are actually used by syncShows()
-
-    // Mock circuit breaker to return a successful result (lenient to avoid unnecessary stubbing
-    // warnings)
-    NotionSyncService.SyncResult mockSuccessResult =
-        NotionSyncService.SyncResult.success("Shows", 0, 0);
-    lenient().when(circuitBreakerService.execute(anyString(), any())).thenReturn(mockSuccessResult);
-
-    // Mock season service to avoid null pointer exceptions
-    Page<Season> emptySeasonPage = Page.empty();
-    lenient().when(seasonService.getAllSeasons(any(Pageable.class))).thenReturn(emptySeasonPage);
-
-    // Mock season creation
-    Season mockSeason = new Season();
-    mockSeason.setId(1L);
-    mockSeason.setName("Season 1");
-    lenient()
-        .when(seasonService.createSeason(anyString(), anyString(), anyInt()))
-        .thenReturn(mockSeason);
-
-    // Create the service with simplified constructor
+    // Create the service with constructor injection
     notionSyncService = new NotionSyncService(objectMapper, syncProperties);
 
-    // Manually inject the mocked dependencies using reflection or setters
-    // Since we're using @Autowired fields, we need to set them manually in tests
-    setField(notionSyncService, "notionHandler", notionHandler);
-    setField(notionSyncService, "progressTracker", progressTracker);
-    setField(notionSyncService, "healthMonitor", healthMonitor);
-    setField(notionSyncService, "retryService", retryService);
-    setField(notionSyncService, "circuitBreakerService", circuitBreakerService);
-    setField(notionSyncService, "validationService", validationService);
-    setField(notionSyncService, "syncTransactionManager", syncTransactionManager);
-    setField(notionSyncService, "integrityChecker", integrityChecker);
-    setField(notionSyncService, "showService", showService);
-    setField(notionSyncService, "showTypeService", showTypeService);
-    setField(notionSyncService, "wrestlerService", wrestlerService);
-    setField(notionSyncService, "wrestlerRepository", wrestlerRepository);
-    setField(notionSyncService, "seasonService", seasonService);
-    setField(notionSyncService, "showTemplateService", showTemplateService);
-    setField(notionSyncService, "factionRepository", factionRepository);
-    setField(notionSyncService, "teamService", teamService);
-    setField(notionSyncService, "teamRepository", teamRepository);
-    setField(notionSyncService, "matchResultService", matchResultService);
-    setField(notionSyncService, "matchTypeService", matchTypeService);
-    setField(notionSyncService, "injuryTypeService", injuryTypeService);
+    // Inject the mocked sync services using reflection
+    setField(notionSyncService, "showSyncService", showSyncService);
+    setField(notionSyncService, "wrestlerSyncService", wrestlerSyncService);
+    setField(notionSyncService, "factionSyncService", factionSyncService);
+    setField(notionSyncService, "teamSyncService", teamSyncService);
+    setField(notionSyncService, "matchSyncService", matchSyncService);
+    setField(notionSyncService, "seasonSyncService", seasonSyncService);
+    setField(notionSyncService, "showTypeSyncService", showTypeSyncService);
+    setField(notionSyncService, "showTemplateSyncService", showTemplateSyncService);
+    setField(notionSyncService, "injurySyncService", injurySyncService);
+    setField(notionSyncService, "parallelSyncOrchestrator", parallelSyncOrchestrator);
+    setField(notionSyncService, "entitySyncConfiguration", entitySyncConfiguration);
   }
 
+  // ==================== PARALLEL SYNC TESTS ====================
+
   @Test
-  @DisplayName("Should skip sync when shows entity is disabled")
-  void shouldSkipSyncWhenShowsEntityDisabled() {
+  @DisplayName("Should execute parallel sync for all entities")
+  void shouldExecuteParallelSyncForAllEntities() {
     // Given
-    when(syncProperties.isEntityEnabled("shows")).thenReturn(false);
+    ParallelSyncResult mockResult = mock(ParallelSyncResult.class);
+    when(parallelSyncOrchestrator.executeParallelSync()).thenReturn(mockResult);
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncShows();
+    ParallelSyncResult result = notionSyncService.syncAllEntitiesParallel();
 
     // Then
-    assertTrue(result.isSuccess());
-    assertEquals("Shows", result.getEntityType());
-    assertEquals(0, result.getSyncedCount());
-    verify(notionHandler, never()).loadAllShowsForSync();
+    assertThat(result).isEqualTo(mockResult);
+    verify(parallelSyncOrchestrator).executeParallelSync();
   }
 
   @Test
-  @DisplayName("Should handle empty shows list from Notion")
-  void shouldHandleEmptyShowsListFromNotion() {
+  @DisplayName("Should execute parallel sync with operation ID")
+  void shouldExecuteParallelSyncWithOperationId() {
     // Given
-    when(syncProperties.isEntityEnabled("shows")).thenReturn(true);
-
-    // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
-    NotionSyncService.SyncResult result = notionSyncService.syncShows();
-
-    // Then - Should fail due to missing NOTION_TOKEN (this is correct behavior)
-    assertNotNull(result);
-    assertFalse(result.isSuccess()); // Should fail without NOTION_TOKEN
-    assertEquals("Shows", result.getEntityType());
-    assertThat(result.getErrorMessage()).contains("NOTION_TOKEN");
-  }
-
-  @Test
-  @DisplayName("Should handle shows with valid data")
-  void shouldHandleShowsWithValidData() {
-    // Given
-    when(syncProperties.isEntityEnabled("shows")).thenReturn(true);
-
-    // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
-    NotionSyncService.SyncResult result = notionSyncService.syncShows();
-
-    // Then - Should fail gracefully due to missing NOTION_TOKEN
-    assertNotNull(result);
-    assertFalse(result.isSuccess());
-    assertEquals("Shows", result.getEntityType());
-    assertNotNull(result.getErrorMessage());
-    assertTrue(result.getErrorMessage().contains("NOTION_TOKEN"));
-  }
-
-  private ShowPage createMockShowPage(String name, String description) {
-    ShowPage showPage = new ShowPage();
-    showPage.setId("test-id-123");
-
-    // Create mock raw properties
-    Map<String, Object> rawProperties = new HashMap<>();
-    rawProperties.put("Name", name);
-    rawProperties.put("Description", description);
-    rawProperties.put("Show Type", "Weekly");
-    rawProperties.put("Date", "2024-01-15");
-
-    showPage.setRawProperties(rawProperties);
-
-    return showPage;
-  }
-
-  // ==================== FACTION SYNC TESTS ====================
-
-  @Test
-  @DisplayName("Should skip faction sync when factions entity is disabled")
-  void shouldSkipFactionSyncWhenFactionsEntityDisabled() {
-    // Given
-    when(syncProperties.isEntityEnabled("factions")).thenReturn(false);
+    String operationId = "test-parallel-sync";
+    ParallelSyncResult mockResult = mock(ParallelSyncResult.class);
+    when(parallelSyncOrchestrator.executeParallelSync(operationId)).thenReturn(mockResult);
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncFactions("test-operation-id");
+    ParallelSyncResult result = notionSyncService.syncAllEntitiesParallel(operationId);
 
     // Then
-    assertTrue(result.isSuccess());
-    assertEquals("Factions", result.getEntityType());
-    assertEquals(0, result.getSyncedCount());
-    verify(notionHandler, never()).loadAllFactions();
+    assertThat(result).isEqualTo(mockResult);
+    verify(parallelSyncOrchestrator).executeParallelSync(operationId);
+  }
+
+  // ==================== SHOWS SYNC TESTS ====================
+
+  @Test
+  @DisplayName("Should delegate shows sync to ShowSyncService")
+  void shouldDelegateShowsSyncToShowSyncService() {
+    // Given
+    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Shows", 5, 0);
+    when(showSyncService.syncShows()).thenReturn(mockResult);
+
+    // When
+    BaseSyncService.SyncResult result = notionSyncService.syncShows();
+
+    // Then
+    assertThat(result).isEqualTo(mockResult);
+    verify(showSyncService).syncShows();
   }
 
   @Test
-  @DisplayName("Should handle empty factions list from Notion")
-  void shouldHandleEmptyFactionsListFromNotion() {
+  @DisplayName("Should delegate shows sync with operation ID to ShowSyncService")
+  void shouldDelegateShowsSyncWithOperationIdToShowSyncService() {
     // Given
-    when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
+    String operationId = "test-shows-sync";
+    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Shows", 3, 1);
+    when(showSyncService.syncShows(operationId)).thenReturn(mockResult);
 
-    // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
-    NotionSyncService.SyncResult result = notionSyncService.syncFactions("test-operation-id");
+    // When
+    BaseSyncService.SyncResult result = notionSyncService.syncShows(operationId);
 
-    // Then - Should fail gracefully due to missing NOTION_TOKEN
-    assertNotNull(result);
-    assertFalse(result.isSuccess());
-    assertEquals("Factions", result.getEntityType());
-    assertTrue(result.getErrorMessage().contains("NOTION_TOKEN"));
+    // Then
+    assertThat(result).isEqualTo(mockResult);
+    verify(showSyncService).syncShows(operationId);
   }
+
+  // ==================== WRESTLERS SYNC TESTS ====================
 
   @Test
-  @DisplayName("Should handle faction sync with progress tracking")
-  void shouldHandleFactionSyncWithProgressTracking() {
+  @DisplayName("Should delegate wrestlers sync to WrestlerSyncService")
+  void shouldDelegateWrestlersSyncToWrestlerSyncService() {
     // Given
-    String operationId = "test-faction-sync";
-    when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
+    String operationId = "test-wrestlers-sync";
+    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Wrestlers", 10, 2);
+    when(wrestlerSyncService.syncWrestlers(operationId)).thenReturn(mockResult);
 
-    // When - This will fail due to missing NOTION_TOKEN, which is expected in unit tests
-    NotionSyncService.SyncResult result = notionSyncService.syncFactions(operationId);
+    // When
+    BaseSyncService.SyncResult result = notionSyncService.syncWrestlers(operationId);
 
-    // Then - Should fail gracefully due to missing NOTION_TOKEN
-    assertNotNull(result);
-    assertFalse(result.isSuccess());
-    assertEquals("Factions", result.getEntityType());
-    assertNotNull(result.getErrorMessage());
-    assertTrue(result.getErrorMessage().contains("NOTION_TOKEN"));
-
-    // Verify progress tracking failure was recorded (no startOperation since we fail early)
-    verify(progressTracker).failOperation(eq(operationId), contains("NOTION_TOKEN"));
-    verify(progressTracker, never()).startOperation(anyString(), anyString(), anyInt());
+    // Then
+    assertThat(result).isEqualTo(mockResult);
+    verify(wrestlerSyncService).syncWrestlers(operationId);
   }
 
-  /**
-   * Helper method to create a mock FactionPage for testing.
-   *
-   * @param name Faction name
-   * @param description Faction description
-   * @param leader Leader wrestler name
-   * @param alignment Faction alignment
-   * @return Mock FactionPage
-   */
-  private FactionPage createMockFactionPage(
-      String name, String description, String leader, String alignment) {
-    FactionPage factionPage = new FactionPage();
-    factionPage.setId("faction-" + name.toLowerCase().replace(" ", "-"));
+  // ==================== FACTIONS SYNC TESTS ====================
 
-    // Create mock raw properties
-    Map<String, Object> rawProperties = new HashMap<>();
-    rawProperties.put("Name", name);
-    rawProperties.put("Description", description);
-    rawProperties.put("Leader", leader);
-    rawProperties.put("Alignment", alignment);
-    rawProperties.put("Status", "Active");
-    rawProperties.put("FormedDate", "2024-01-01");
-    rawProperties.put("Members", "2 relations"); // Mock format for multiple relations
+  @Test
+  @DisplayName("Should delegate factions sync to FactionSyncService")
+  void shouldDelegateFactionsSyncToFactionSyncService() {
+    // Given
+    String operationId = "test-factions-sync";
+    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Factions", 4, 0);
+    when(factionSyncService.syncFactions(operationId)).thenReturn(mockResult);
 
-    factionPage.setRawProperties(rawProperties);
+    // When
+    BaseSyncService.SyncResult result = notionSyncService.syncFactions(operationId);
 
-    return factionPage;
+    // Then
+    assertThat(result).isEqualTo(mockResult);
+    verify(factionSyncService).syncFactions(operationId);
   }
 
-  /**
-   * Helper method to set private fields via reflection for testing. This is needed because we
-   * switched from constructor injection to field injection.
-   */
+  // ==================== TEAMS SYNC TESTS ====================
+
+  @Test
+  @DisplayName("Should delegate teams sync to TeamSyncService")
+  void shouldDelegateTeamsSyncToTeamSyncService() {
+    // Given
+    String operationId = "test-teams-sync";
+    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Teams", 6, 1);
+    when(teamSyncService.syncTeams(operationId)).thenReturn(mockResult);
+
+    // When
+    BaseSyncService.SyncResult result = notionSyncService.syncTeams(operationId);
+
+    // Then
+    assertThat(result).isEqualTo(mockResult);
+    verify(teamSyncService).syncTeams(operationId);
+  }
+
+  // ==================== MATCHES SYNC TESTS ====================
+
+  @Test
+  @DisplayName("Should delegate matches sync to MatchSyncService")
+  void shouldDelegateMatchesSyncToMatchSyncService() {
+    // Given
+    String operationId = "test-matches-sync";
+    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Matches", 15, 3);
+    when(matchSyncService.syncMatches(operationId)).thenReturn(mockResult);
+
+    // When
+    BaseSyncService.SyncResult result = notionSyncService.syncMatches(operationId);
+
+    // Then
+    assertThat(result).isEqualTo(mockResult);
+    verify(matchSyncService).syncMatches(operationId);
+  }
+
+  // ==================== SEASONS SYNC TESTS ====================
+
+  @Test
+  @DisplayName("Should delegate seasons sync to SeasonSyncService")
+  void shouldDelegateSeasonsSyncToSeasonSyncService() {
+    // Given
+    String operationId = "test-seasons-sync";
+    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Seasons", 2, 0);
+    when(seasonSyncService.syncSeasons(operationId)).thenReturn(mockResult);
+
+    // When
+    BaseSyncService.SyncResult result = notionSyncService.syncSeasons(operationId);
+
+    // Then
+    assertThat(result).isEqualTo(mockResult);
+    verify(seasonSyncService).syncSeasons(operationId);
+  }
+
+  // ==================== SHOW TEMPLATES SYNC TESTS ====================
+
+  @Test
+  @DisplayName("Should delegate show templates sync to ShowTemplateSyncService")
+  void shouldDelegateShowTemplatesSyncToShowTemplateSyncService() {
+    // Given
+    String operationId = "test-show-templates-sync";
+    BaseSyncService.SyncResult mockResult =
+        BaseSyncService.SyncResult.success("ShowTemplates", 8, 1);
+    when(showTemplateSyncService.syncShowTemplates(operationId)).thenReturn(mockResult);
+
+    // When
+    BaseSyncService.SyncResult result = notionSyncService.syncShowTemplates(operationId);
+
+    // Then
+    assertThat(result).isEqualTo(mockResult);
+    verify(showTemplateSyncService).syncShowTemplates(operationId);
+  }
+
+  // ==================== SHOW TYPES SYNC TESTS ====================
+
+  @Test
+  @DisplayName("Should delegate show types sync to ShowTypeSyncService")
+  void shouldDelegateShowTypesSyncToShowTypeSyncService() {
+    // Given
+    String operationId = "test-show-types-sync";
+    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("ShowTypes", 3, 0);
+    when(showTypeSyncService.syncShowTypes(operationId)).thenReturn(mockResult);
+
+    // When
+    BaseSyncService.SyncResult result = notionSyncService.syncShowTypes(operationId);
+
+    // Then
+    assertThat(result).isEqualTo(mockResult);
+    verify(showTypeSyncService).syncShowTypes(operationId);
+  }
+
+  // ==================== INJURY TYPES SYNC TESTS ====================
+
+  @Test
+  @DisplayName("Should delegate injury types sync to InjurySyncService")
+  void shouldDelegateInjuryTypesSyncToInjurySyncService() {
+    // Given
+    String operationId = "test-injury-types-sync";
+    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("InjuryTypes", 7, 2);
+    when(injurySyncService.syncInjuryTypes(operationId)).thenReturn(mockResult);
+
+    // When
+    BaseSyncService.SyncResult result = notionSyncService.syncInjuryTypes(operationId);
+
+    // Then
+    assertThat(result).isEqualTo(mockResult);
+    verify(injurySyncService).syncInjuryTypes(operationId);
+  }
+
+  // ==================== ERROR HANDLING TESTS ====================
+
+  @Test
+  @DisplayName("Should handle sync service failures gracefully")
+  void shouldHandleSyncServiceFailuresGracefully() {
+    // Given
+    String operationId = "test-error-handling";
+    RuntimeException testException = new RuntimeException("Test sync failure");
+    when(showSyncService.syncShows(operationId)).thenThrow(testException);
+
+    // When & Then
+    assertThrows(RuntimeException.class, () -> notionSyncService.syncShows(operationId));
+    verify(showSyncService).syncShows(operationId);
+  }
+
+  /** Helper method to set private fields via reflection for testing. */
   private void setField(Object target, String fieldName, Object value) {
     try {
-      Field field = target.getClass().getDeclaredField(fieldName);
+      Field field = findField(target.getClass(), fieldName);
       field.setAccessible(true);
       field.set(target, value);
     } catch (Exception e) {
       throw new RuntimeException("Failed to set field " + fieldName, e);
+    }
+  }
+
+  /** Recursively searches for a field in the class hierarchy. */
+  private Field findField(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+    try {
+      return clazz.getDeclaredField(fieldName);
+    } catch (NoSuchFieldException e) {
+      Class<?> superclass = clazz.getSuperclass();
+      if (superclass != null && superclass != Object.class) {
+        return findField(superclass, fieldName);
+      }
+      throw e;
     }
   }
 }

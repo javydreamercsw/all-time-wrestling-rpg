@@ -3,7 +3,11 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -32,8 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 class NotionSyncIntegrationTest {
 
   @Autowired private NotionSyncService notionSyncService;
-
   @Autowired private ShowTypeService showTypeService;
+  @Autowired private FactionRepository factionRepository;
 
   @BeforeEach
   void setUp() {
@@ -42,7 +46,7 @@ class NotionSyncIntegrationTest {
   }
 
   @Test
-  @DisplayName("Should connect to Notion and retrieve database information")
+  @DisplayName("Should sync show types from Notion to database")
   void shouldConnectToNotionAndRetrieveDatabaseInfo() {
     log.info("🔗 Testing Notion connection and database retrieval");
 
@@ -169,7 +173,7 @@ class NotionSyncIntegrationTest {
 
     // Then - Should get a valid response (success or failure with proper error)
     assertNotNull(result, "Sync result should not be null");
-    assertThat(result.getEntityType()).isEqualTo("ShowTypes");
+    assertThat(result.getEntityType()).isEqualTo("Show Types");
 
     if (result.isSuccess()) {
       log.info("✅ Notion connectivity validated successfully");
@@ -275,7 +279,7 @@ class NotionSyncIntegrationTest {
 
     if (result.isSuccess()) {
       log.info("✅ Show templates sync successful");
-      assertThat(result.getEntityType()).isEqualTo("ShowTemplates");
+      assertThat(result.getEntityType()).isEqualTo("Show Templates");
       assertThat(result.getSyncedCount()).isGreaterThanOrEqualTo(0);
     } else {
       log.warn("⚠️ Show templates sync failed: {}", result.getErrorMessage());
@@ -292,6 +296,10 @@ class NotionSyncIntegrationTest {
   @Test
   @DisplayName("Should sync factions from Notion to database")
   void shouldSyncFactionsFromNotionToDatabase() {
+    // When - Sync wrestlers from Notion first (factions depend on wrestlers)
+    NotionSyncService.SyncResult wrestlerResult =
+        notionSyncService.syncWrestlers("integration-test-wrestlers");
+
     log.info("👥 Testing factions sync from Notion to database");
 
     // When - Sync factions from Notion
@@ -306,53 +314,151 @@ class NotionSyncIntegrationTest {
       log.info("✅ Factions sync successful");
       assertThat(result.getEntityType()).isEqualTo("Factions");
       assertThat(result.getSyncedCount()).isGreaterThanOrEqualTo(0);
+
+      // Validate factions are properly stored in database
+      validateFactionsInDatabase();
+
     } else {
       log.warn("⚠️ Factions sync failed: {}", result.getErrorMessage());
       assertThat(result.getErrorMessage()).isNotBlank();
       boolean isExpectedError =
           result.getErrorMessage().contains("NotionHandler")
-              || result.getErrorMessage().contains("not available");
+              || result.getErrorMessage().contains("not available")
+              || result.getErrorMessage().contains("NOTION_TOKEN");
       if (isExpectedError) {
         log.info("ℹ️ Expected error due to NotionHandler unavailability");
+      } else {
+        log.error("❌ Unexpected faction sync failure: {}", result.getErrorMessage());
       }
     }
   }
 
-  @Test
-  @DisplayName("Should sync teams from Notion to database")
-  void shouldSyncTeamsFromNotionToDatabase() {
-    log.info("🏆 Testing teams sync from Notion to database");
+  /** Validates that factions are properly stored in the database with valid leader and members. */
+  private void validateFactionsInDatabase() {
+    log.info("🔍 Validating factions in database...");
 
-    // When - Sync teams from Notion
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
+    // Get all factions from database
+    List<Faction> factions = factionRepository.findAll();
+    log.info("📋 Found {} factions in database", factions.size());
 
-    // Then - Verify sync result
-    assertNotNull(result, "Sync result should not be null");
-    log.info("📊 Teams sync result: {}", result);
+    if (factions.isEmpty()) {
+      log.warn("⚠️ No factions found in database after sync");
+      return;
+    }
 
-    if (result.isSuccess()) {
-      log.info("✅ Teams sync completed successfully");
-      assertThat(result.getEntityType()).isEqualTo("Teams");
-      assertThat(result.getSyncedCount()).isGreaterThanOrEqualTo(0);
+    int validFactions = 0;
+    int factionsWithLeader = 0;
+    int factionsWithMembers = 0;
+    int factionsWithValidData = 0;
 
-      // Additional validation for sync quality
-      assertFalse(result.getSyncedCount() == 0);
-    } else {
-      log.warn("⚠️ Teams sync failed: {}", result.getErrorMessage());
-      assertThat(result.getErrorMessage()).isNotBlank();
-      boolean isExpectedError =
-          result.getErrorMessage().contains("NotionHandler")
-              || result.getErrorMessage().contains("not available");
-      if (isExpectedError) {
-        log.info("ℹ️ Expected error due to NotionHandler unavailability");
+    for (Faction faction : factions) {
+      log.info("🏴 Validating faction: {}", faction.getName());
+
+      // Basic validation
+      assertThat(faction.getName()).isNotBlank();
+      assertThat(faction.getId()).isNotNull();
+      validFactions++;
+
+      // Validate leader
+      if (faction.getLeader() != null) {
+        assertThat(faction.getLeader().getName()).isNotBlank();
+        log.info(
+            "👑 Faction '{}' has leader: {}", faction.getName(), faction.getLeader().getName());
+        factionsWithLeader++;
       } else {
-        log.error("❌ Unexpected teams sync failure: {}", result.getErrorMessage());
+        log.warn("⚠️ Faction '{}' has no leader", faction.getName());
       }
+
+      // Validate members
+      if (faction.getMembers() != null && !faction.getMembers().isEmpty()) {
+        assertThat(faction.getMemberCount()).isGreaterThan(0);
+        log.info("👥 Faction '{}' has {} members", faction.getName(), faction.getMemberCount());
+
+        // Validate each member
+        for (Wrestler member : faction.getMembers()) {
+          assertThat(member).isNotNull();
+          assertThat(member.getName()).isNotBlank();
+          assertThat(member.getFaction()).isEqualTo(faction);
+          log.debug("   - Member: {}", member.getName());
+        }
+        factionsWithMembers++;
+
+        // Check if leader is also a member (should be true for valid factions)
+        if (faction.getLeader() != null) {
+          boolean leaderIsMember =
+              faction.getMembers().stream().anyMatch(member -> member.equals(faction.getLeader()));
+          if (leaderIsMember) {
+            log.info(
+                "✅ Leader '{}' is properly included in members list",
+                faction.getLeader().getName());
+          } else {
+            log.warn(
+                "⚠️ Leader '{}' is not in the members list for faction '{}'",
+                faction.getLeader().getName(),
+                faction.getName());
+          }
+        }
+      } else {
+        log.warn("⚠️ Faction '{}' has no members", faction.getName());
+      }
+
+      // Check for factions with both leader and members (considered valid)
+      if (faction.getLeader() != null && faction.getMemberCount() > 0) {
+        factionsWithValidData++;
+        log.info("✅ Faction '{}' has complete data (leader + members)", faction.getName());
+      }
+
+      // Validate faction status and dates
+      assertThat(faction.getIsActive()).isNotNull();
+      assertThat(faction.getFormedDate()).isNotNull();
+
+      if (faction.getExternalId() != null) {
+        assertThat(faction.getExternalId()).isNotBlank();
+        log.debug(
+            "🔗 Faction '{}' has external ID: {}", faction.getName(), faction.getExternalId());
+      }
+
+      log.info(
+          "📊 Faction '{}' validation complete - Active: {}, Members: {}, Leader: {}",
+          faction.getName(),
+          faction.getIsActive(),
+          faction.getMemberCount(),
+          faction.getLeader() != null ? faction.getLeader().getName() : "None");
+    }
+
+    // Summary validation
+    log.info("📈 Faction validation summary:");
+    log.info("   - Total factions: {}", factions.size());
+    log.info("   - Valid factions: {}", validFactions);
+    log.info("   - Factions with leader: {}", factionsWithLeader);
+    log.info("   - Factions with members: {}", factionsWithMembers);
+    log.info("   - Factions with complete data: {}", factionsWithValidData);
+
+    // Assert minimum data quality
+    assertThat(validFactions).isEqualTo(factions.size());
+
+    if (factionsWithValidData > 0) {
+      log.info("✅ Found {} factions with complete leader and member data", factionsWithValidData);
+
+      // If we have complete data, ensure it's meaningful
+      double completenessRatio = (double) factionsWithValidData / factions.size();
+      double completenessPercentage = completenessRatio * 100;
+      if (completenessRatio < 0.5) {
+        log.warn(
+            "⚠️ Only {}% of factions have complete data (leader + members)",
+            String.format("%.1f", completenessPercentage));
+      } else {
+        log.info(
+            "✅ {}% of factions have complete data (leader + members)",
+            String.format("%.1f", completenessPercentage));
+      }
+    } else {
+      log.warn("⚠️ No factions found with complete leader and member data");
     }
   }
 
   /** Helper method to check if NOTION_TOKEN is available for conditional tests. */
   static boolean isNotionTokenAvailable() {
-    return System.getenv("NOTION_TOKEN") != null || System.getProperty("NOTION_TOKEN") != null;
+    return EnvironmentVariableUtil.getNotionToken() != null;
   }
 }

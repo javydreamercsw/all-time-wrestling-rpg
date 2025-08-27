@@ -13,9 +13,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(NotionSyncController.class)
@@ -24,10 +24,10 @@ class NotionSyncControllerTest {
 
   @Autowired private MockMvc mockMvc;
 
-  @MockBean private NotionSyncService notionSyncService;
-  @MockBean private NotionSyncScheduler notionSyncScheduler;
-  @MockBean private NotionSyncProperties syncProperties;
-  @MockBean private EntityDependencyAnalyzer dependencyAnalyzer;
+  @MockitoBean private NotionSyncService notionSyncService;
+  @MockitoBean private NotionSyncScheduler notionSyncScheduler;
+  @MockitoBean private NotionSyncProperties syncProperties;
+  @MockitoBean private EntityDependencyAnalyzer dependencyAnalyzer;
 
   @Test
   @DisplayName("Should return sync status")
@@ -36,7 +36,7 @@ class NotionSyncControllerTest {
     when(syncProperties.isEnabled()).thenReturn(true);
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(syncProperties.isBackupEnabled()).thenReturn(true);
-    when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
     when(syncProperties.getScheduler()).thenReturn(createMockScheduler());
     when(syncProperties.getBackup()).thenReturn(createMockBackup());
     when(notionSyncScheduler.getSyncStatus()).thenReturn("Mock status");
@@ -49,6 +49,7 @@ class NotionSyncControllerTest {
         .andExpect(jsonPath("$.enabled").value(true))
         .andExpect(jsonPath("$.schedulerEnabled").value(true))
         .andExpect(jsonPath("$.entities[0]").value("shows"))
+        .andExpect(jsonPath("$.entities[1]").value("wrestlers"))
         .andExpect(jsonPath("$.backupEnabled").value(true));
   }
 
@@ -167,7 +168,6 @@ class NotionSyncControllerTest {
   void shouldReturnSupportedEntities() throws Exception {
     // Given
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
-    when(syncProperties.getEntities()).thenReturn(List.of("shows", "wrestlers"));
 
     // When & Then
     mockMvc

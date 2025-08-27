@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -201,6 +202,30 @@ public abstract class BaseSyncService {
   protected String extractTextFromProperty(Object property) {
     if (property == null) {
       return null;
+    }
+
+    // Handle Map objects that mimic Notion's structure
+    if (property instanceof Map) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> map = (Map<String, Object>) property;
+      if (map.containsKey("title")) {
+        Object titleObj = map.get("title");
+        if (titleObj instanceof List) {
+          @SuppressWarnings("unchecked")
+          List<Object> titleList = (List<Object>) titleObj;
+          if (!titleList.isEmpty() && titleList.get(0) instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> titleMap = (Map<String, Object>) titleList.get(0);
+            if (titleMap.containsKey("text") && titleMap.get("text") instanceof Map) {
+              @SuppressWarnings("unchecked")
+              Map<String, Object> textMap = (Map<String, Object>) titleMap.get("text");
+              if (textMap.containsKey("content")) {
+                return textMap.get("content").toString();
+              }
+            }
+          }
+        }
+      }
     }
 
     // Handle PageProperty objects (from Notion API)

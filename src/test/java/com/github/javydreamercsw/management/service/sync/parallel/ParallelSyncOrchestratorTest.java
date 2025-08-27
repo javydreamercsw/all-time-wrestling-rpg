@@ -174,6 +174,21 @@ class ParallelSyncOrchestratorTest {
 
     // Setup service to throw exception
     when(showSyncService.syncShows(anyString())).thenThrow(new RuntimeException("Critical error"));
+    // Stub other services to return success
+    when(wrestlerSyncService.syncWrestlers(anyString()))
+        .thenReturn(SyncResult.success("Wrestlers", 1, 0));
+    when(factionSyncService.syncFactions(anyString()))
+        .thenReturn(SyncResult.success("Factions", 1, 0));
+    when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 1, 0));
+    when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 1, 0));
+    when(seasonSyncService.syncSeasons(anyString()))
+        .thenReturn(SyncResult.success("Seasons", 1, 0));
+    when(showTypeSyncService.syncShowTypes(anyString()))
+        .thenReturn(SyncResult.success("ShowTypes", 1, 0));
+    when(showTemplateSyncService.syncShowTemplates(anyString()))
+        .thenReturn(SyncResult.success("ShowTemplates", 1, 0));
+    when(injurySyncService.syncInjuryTypes(anyString()))
+        .thenReturn(SyncResult.success("Injuries", 1, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");

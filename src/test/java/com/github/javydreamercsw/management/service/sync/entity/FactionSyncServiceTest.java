@@ -181,7 +181,7 @@ class FactionSyncServiceTest {
 
     // Then
     assertFalse(result.isSuccess());
-    assertTrue(result.getErrorMessage().contains("Database error"));
+    assertTrue(result.getErrorMessage().contains("Some factions failed to sync"));
   }
 
   private List<FactionPage> createMockFactionPages() {
