@@ -4,6 +4,7 @@ import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_M
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -59,6 +60,11 @@ public class Faction extends AbstractEntity<Long> {
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction", "rivalries", "injuries", "deck", "titleReigns"})
   private List<Wrestler> members = new ArrayList<>();
+
+  // Teams associated with this faction
+  @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @JsonIgnoreProperties({"faction", "wrestler1", "wrestler2"})
+  private List<Team> teams = new ArrayList<>();
 
   // Faction rivalries where this faction is faction1
   @OneToMany(mappedBy = "faction1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

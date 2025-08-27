@@ -124,7 +124,7 @@ public interface FactionRepository
       """)
   List<Faction> findLargestFactions(Pageable pageable);
 
-  /** Find all factions with their members eagerly loaded for UI display. */
+  /** Find all factions with members and leader eagerly loaded for UI display. */
   @Query(
       """
       SELECT DISTINCT f FROM Faction f
@@ -133,6 +133,15 @@ public interface FactionRepository
       ORDER BY f.name
       """)
   List<Faction> findAllWithMembers();
+
+  /** Find all factions with teams eagerly loaded for UI display. */
+  @Query(
+      """
+      SELECT DISTINCT f FROM Faction f
+      LEFT JOIN FETCH f.teams t
+      ORDER BY f.name
+      """)
+  List<Faction> findAllWithTeams();
 
   /** Find faction by ID with members and leader eagerly loaded. */
   @Query(

@@ -153,15 +153,64 @@ public class TeamSyncService extends BaseSyncService {
       dto.setExternalId(teamPage.getId());
       dto.setDescription(extractDescriptionFromNotionPage(teamPage));
 
-      // Try Members property first - use relation-aware extraction
-      String wrestler1Name = extractWrestlerNameFromRelation(teamPage, "Member 1");
-      String wrestler2Name = extractWrestlerNameFromRelation(teamPage, "Member 2");
+      // Log available properties for debugging
+      log.debug(
+          "Team '{}' available properties: {}",
+          dto.getName(),
+          teamPage.getRawProperties().keySet());
+
+      // Extract wrestler names using enhanced relation-aware extraction
+      String wrestler1Name = extractWrestlerNameFromTeamPage(teamPage, "Member 1");
+      String wrestler2Name = extractWrestlerNameFromTeamPage(teamPage, "Member 2");
+
+      log.debug(
+          "Initial extraction for team '{}': Member 1='{}', Member 2='{}'",
+          dto.getName(),
+          wrestler1Name,
+          wrestler2Name);
+
+      // Try alternative property names if the standard ones don't work
+      if (wrestler1Name == null || wrestler1Name.matches("\\d+ items?")) {
+        String altWrestler1 = extractWrestlerNameFromTeamPage(teamPage, "Wrestler 1");
+        if (altWrestler1 != null) {
+          wrestler1Name = altWrestler1;
+          log.debug(
+              "Using alternative 'Wrestler 1' for team '{}': '{}'", dto.getName(), wrestler1Name);
+        }
+      }
+      if (wrestler2Name == null || wrestler2Name.matches("\\d+ items?")) {
+        String altWrestler2 = extractWrestlerNameFromTeamPage(teamPage, "Wrestler 2");
+        if (altWrestler2 != null) {
+          wrestler2Name = altWrestler2;
+          log.debug(
+              "Using alternative 'Wrestler 2' for team '{}': '{}'", dto.getName(), wrestler2Name);
+        }
+      }
+
+      // If still null or relation counts, check if this is a Notion API limitation
+      if (wrestler1Name == null
+          || wrestler2Name == null
+          || (wrestler1Name != null && wrestler1Name.matches("\\d+ items?"))
+          || (wrestler2Name != null && wrestler2Name.matches("\\d+ items?"))) {
+
+        log.warn(
+            "Team '{}' has unresolved wrestler relations. Final values: '{}', '{}'. Available"
+                + " properties: {}",
+            dto.getName(),
+            wrestler1Name,
+            wrestler2Name,
+            teamPage.getRawProperties().keySet());
+
+        // Mark these as unresolved so we can handle them appropriately
+        if (wrestler1Name == null) wrestler1Name = "UNRESOLVED_RELATION";
+        if (wrestler2Name == null) wrestler2Name = "UNRESOLVED_RELATION";
+      }
 
       dto.setWrestler1Name(wrestler1Name);
       dto.setWrestler2Name(wrestler2Name);
 
       log.debug(
-          "Extracted wrestlers for team '{}': '{}' and '{}'",
+          "Final extracted wrestlers for team '{}': '{}' and '{}'",
           dto.getName(),
           wrestler1Name,
           wrestler2Name);
@@ -173,7 +222,7 @@ public class TeamSyncService extends BaseSyncService {
       }
 
       // Extract status
-      String statusStr = extractStringPropertyFromNotionPage(teamPage, "Status");
+      String statusStr = extractPropertyAsString(teamPage.getRawProperties(), "Status");
       if (statusStr != null && !statusStr.trim().isEmpty()) {
         try {
           dto.setStatus(TeamStatus.valueOf(statusStr.toUpperCase()));
@@ -197,6 +246,101 @@ public class TeamSyncService extends BaseSyncService {
     }
   }
 
+  /** Extracts wrestler name from team page with enhanced relation handling. */
+  private String extractWrestlerNameFromTeamPage(
+      @NonNull TeamPage teamPage, @NonNull String propertyName) {
+    if (teamPage.getRawProperties() == null) {
+      return null;
+    }
+
+    Object property = teamPage.getRawProperties().get(propertyName);
+    if (property == null) {
+      return null;
+    }
+
+    String propertyStr = property.toString().trim();
+
+    // If it shows as "X items" or "X relations", this means the relation isn't resolved
+    if (propertyStr.matches("\\d+ (items?|relations?)")) {
+      log.debug(
+          "Property '{}' shows as relationship count ({}), attempting alternative resolution",
+          propertyName,
+          propertyStr);
+
+      // Try to resolve the relation using the NotionHandler if available
+      String resolvedName = resolveWrestlerRelation(teamPage, propertyName);
+      if (resolvedName != null) {
+        log.debug("Successfully resolved '{}' to '{}'", propertyName, resolvedName);
+        return resolvedName;
+      }
+
+      // If we can't resolve it, return the count so we can detect this case later
+      return propertyStr;
+    }
+
+    // If it's a UUID, it's likely a relation ID that wasn't resolved
+    if (propertyStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+      log.debug(
+          "Property '{}' appears to be a relation ID that wasn't resolved: {}",
+          propertyName,
+          propertyStr);
+      return null;
+    }
+
+    // If it contains comma-separated values, it might be multiple wrestlers
+    if (propertyStr.contains(",")) {
+      String[] parts = propertyStr.split(",");
+      for (String part : parts) {
+        String trimmedPart = part.trim();
+        if (!trimmedPart.isEmpty()
+            && !trimmedPart.matches("\\d+ (items?|relations?)")
+            && !trimmedPart.matches(
+                "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+          log.debug(
+              "Property '{}' contains multiple values, using: '{}'", propertyName, trimmedPart);
+          return trimmedPart;
+        }
+      }
+    }
+
+    // If it's a clean string that's not empty and not a relation count/ID, use it
+    if (!propertyStr.isEmpty()) {
+      return propertyStr;
+    }
+
+    return null;
+  }
+
+  /**
+   * Attempts to resolve wrestler relation using alternative methods. This method tries to work
+   * around Notion API limitations for unresolved relations.
+   */
+  private String resolveWrestlerRelation(@NonNull TeamPage teamPage, @NonNull String propertyName) {
+    if (!isNotionHandlerAvailable()) {
+      return null;
+    }
+
+    try {
+      // Try to get more detailed information about the relation
+      // This is a workaround for when Notion returns "X items" instead of actual names
+
+      // For now, we'll implement a simple fallback strategy
+      // In a production environment, you might want to make additional API calls
+      // to resolve the relation IDs to actual wrestler names
+
+      log.debug(
+          "Attempting to resolve relation '{}' for team '{}'", propertyName, teamPage.getId());
+
+      // Since we can't easily resolve the relations without additional API calls,
+      // we'll return null and let the higher-level logic handle it
+      return null;
+
+    } catch (Exception e) {
+      log.warn("Failed to resolve wrestler relation '{}': {}", propertyName, e.getMessage());
+      return null;
+    }
+  }
+
   /** Saves or updates a team in the database. */
   private boolean saveOrUpdateTeam(TeamDTO dto) {
     if (dto == null || dto.getName() == null || dto.getName().trim().isEmpty()) {
@@ -205,6 +349,71 @@ public class TeamSyncService extends BaseSyncService {
     }
 
     try {
+      // Check if we have unresolved relations (null, relation counts, or our UNRESOLVED_RELATION
+      // marker)
+      boolean hasUnresolvedRelations =
+          (dto.getWrestler1Name() != null
+                  && (dto.getWrestler1Name().matches("\\d+ items?")
+                      || dto.getWrestler1Name().equals("UNRESOLVED_RELATION")))
+              || (dto.getWrestler2Name() != null
+                  && (dto.getWrestler2Name().matches("\\d+ items?")
+                      || dto.getWrestler2Name().equals("UNRESOLVED_RELATION")))
+              || dto.getWrestler1Name() == null
+              || dto.getWrestler2Name() == null;
+
+      if (hasUnresolvedRelations) {
+        log.warn(
+            "Team '{}' has unresolved wrestler relations ('{}', '{}') - this is likely a Notion API"
+                + " limitation. Preserving existing team data if available.",
+            dto.getName(),
+            dto.getWrestler1Name(),
+            dto.getWrestler2Name());
+
+        // Try to find existing team and preserve it without updating wrestlers
+        Team existingTeam = null;
+        if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
+          existingTeam = teamService.getTeamByExternalId(dto.getExternalId()).orElse(null);
+        }
+        if (existingTeam == null) {
+          existingTeam = teamService.getTeamByName(dto.getName()).orElse(null);
+        }
+
+        if (existingTeam != null) {
+          // Update only the non-wrestler properties
+          log.info(
+              "Updating existing team '{}' metadata only (preserving wrestlers)", dto.getName());
+
+          existingTeam.setName(dto.getName());
+          if (dto.getDescription() != null) {
+            existingTeam.setDescription(dto.getDescription());
+          }
+          existingTeam.setExternalId(dto.getExternalId());
+
+          if (dto.getStatus() != null) {
+            existingTeam.setStatus(dto.getStatus());
+          }
+
+          // Find and set faction if specified
+          if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
+            Faction faction = factionRepository.findByName(dto.getFactionName()).orElse(null);
+            existingTeam.setFaction(faction);
+            if (faction == null) {
+              log.warn("Faction '{}' not found for team '{}'", dto.getFactionName(), dto.getName());
+            }
+          }
+
+          teamRepository.saveAndFlush(existingTeam);
+          log.info("✅ Updated team metadata: {}", dto.getName());
+          return true;
+        } else {
+          // Can't create new team without wrestlers
+          log.warn(
+              "Cannot create new team '{}' without resolved wrestler relations", dto.getName());
+          return false;
+        }
+      }
+
+      // Original logic for when we have actual wrestler names
       // Try to find existing team by external ID first
       Team existingTeam = null;
       if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
@@ -233,22 +442,52 @@ public class TeamSyncService extends BaseSyncService {
         }
       }
 
-      // Both wrestlers are required for a team
+      // Both wrestlers are required for a new team
       if (wrestler1 == null || wrestler2 == null) {
-        String missingWrestlers =
-            (wrestler1 == null
-                    ? (dto.getWrestler1Name() != null ? dto.getWrestler1Name() : "null")
-                    : "")
-                + (wrestler1 == null && wrestler2 == null ? ", " : "")
-                + (wrestler2 == null
-                    ? (dto.getWrestler2Name() != null ? dto.getWrestler2Name() : "null")
-                    : "");
+        if (existingTeam != null) {
+          // Update existing team without changing wrestlers if we can't resolve them
+          log.info(
+              "Updating existing team '{}' metadata only (couldn't resolve wrestlers)",
+              dto.getName());
 
-        log.warn(
-            "⚠️ Skipping team '{}' due to missing required wrestlers: {}",
-            dto.getName(),
-            missingWrestlers);
-        return false;
+          existingTeam.setName(dto.getName());
+          if (dto.getDescription() != null) {
+            existingTeam.setDescription(dto.getDescription());
+          }
+          existingTeam.setExternalId(dto.getExternalId());
+
+          if (dto.getStatus() != null) {
+            existingTeam.setStatus(dto.getStatus());
+          }
+
+          // Find and set faction if specified
+          if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
+            Faction faction = factionRepository.findByName(dto.getFactionName()).orElse(null);
+            existingTeam.setFaction(faction);
+            if (faction == null) {
+              log.warn("Faction '{}' not found for team '{}'", dto.getFactionName(), dto.getName());
+            }
+          }
+
+          teamRepository.saveAndFlush(existingTeam);
+          log.info("✅ Updated team metadata: {}", dto.getName());
+          return true;
+        } else {
+          String missingWrestlers =
+              (wrestler1 == null
+                      ? (dto.getWrestler1Name() != null ? dto.getWrestler1Name() : "null")
+                      : "")
+                  + (wrestler1 == null && wrestler2 == null ? ", " : "")
+                  + (wrestler2 == null
+                      ? (dto.getWrestler2Name() != null ? dto.getWrestler2Name() : "null")
+                      : "");
+
+          log.warn(
+              "⚠️ Skipping team '{}' due to missing required wrestlers: {}",
+              dto.getName(),
+              missingWrestlers);
+          return false;
+        }
       }
 
       if (existingTeam != null) {
@@ -349,46 +588,12 @@ public class TeamSyncService extends BaseSyncService {
     }
   }
 
-  /** Extracts wrestler name from a relation property in a TeamPage. */
-  private String extractWrestlerNameFromRelation(
-      @NonNull TeamPage teamPage, @NonNull String memberPropertyName) {
-    if (teamPage.getRawProperties() == null) {
-      return null;
-    }
-
-    Object memberProperty = teamPage.getRawProperties().get(memberPropertyName);
-    if (memberProperty == null) {
-      return null;
-    }
-
-    String memberStr = memberProperty.toString().trim();
-
-    // If it's already a resolved name, use it
-    if (!memberStr.matches("\\d+ items?")
-        && !memberStr.isEmpty()
-        && !memberStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-      return memberStr;
-    }
-
-    // If it's in "X items" format, we can't easily resolve it in sync mode
-    if (memberStr.matches("\\d+ items?")) {
-      log.debug(
-          "Could not extract wrestler name from property '{}': {}", memberPropertyName, memberStr);
-      return null;
-    }
-
-    return null;
-  }
-
   /** Extracts faction from a team page. */
   private String extractFactionFromNotionPage(
       @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page) {
     if (page.getRawProperties() != null) {
       // Try different possible property names for faction
       Object faction = page.getRawProperties().get("Faction");
-      if (faction == null) {
-        faction = page.getRawProperties().get("Team");
-      }
       if (faction == null) {
         faction = page.getRawProperties().get("faction");
       }

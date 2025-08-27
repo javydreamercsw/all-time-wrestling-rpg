@@ -135,6 +135,21 @@ public class FactionListView extends Main {
         .setSortable(false)
         .setFlexGrow(2); // Give more space for member names
 
+    // Teams column - show team names
+    factionGrid
+        .addColumn(
+            faction -> {
+              if (faction.getTeams() == null || faction.getTeams().isEmpty()) {
+                return "No teams";
+              }
+              return faction.getTeams().stream()
+                  .map(team -> team.getName())
+                  .collect(Collectors.joining(", "));
+            })
+        .setHeader("Teams")
+        .setSortable(false)
+        .setFlexGrow(1);
+
     factionGrid
         .addColumn(faction -> faction.getIsActive() ? "Active" : "Disbanded")
         .setHeader("Status")
@@ -182,7 +197,7 @@ public class FactionListView extends Main {
   }
 
   private void refreshGrid() {
-    List<Faction> factions = factionService.findAllWithMembers();
+    List<Faction> factions = factionService.findAllWithMembersAndTeams();
     factionGrid.setItems(factions);
   }
 

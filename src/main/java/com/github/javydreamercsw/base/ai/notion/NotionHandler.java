@@ -1821,7 +1821,7 @@ public class NotionHandler {
   /** Maps a Notion page to a TeamPage object. */
   private TeamPage mapPageToTeamPage(@NonNull Page pageData, @NonNull String teamName) {
     return mapPageToGenericEntity(
-        pageData, teamName, "Team", TeamPage::new, TeamPage.NotionParent::new, false);
+        pageData, teamName, "Team", TeamPage::new, TeamPage.NotionParent::new, true);
   }
 
   /** Maps a Notion page to a SeasonPage object. */
