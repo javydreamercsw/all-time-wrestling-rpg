@@ -64,6 +64,7 @@ public class NotionSyncView extends Main {
   private Button syncFactionsButton;
   private Button syncTeamsButton;
   private Button syncTemplatesButton;
+  private Button syncInjuriesButton; // Add injury sync button
   private ProgressBar progressBar;
   private Span statusLabel;
   private Span lastSyncLabel;
@@ -176,6 +177,10 @@ public class NotionSyncView extends Main {
     syncTemplatesButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
     syncTemplatesButton.addClickListener(e -> triggerEntitySync("templates"));
 
+    syncInjuriesButton = new Button("Sync Injuries", VaadinIcon.HEART.create());
+    syncInjuriesButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+    syncInjuriesButton.addClickListener(e -> triggerEntitySync("injuries"));
+
     Button statusButton = new Button("Check Status", VaadinIcon.INFO_CIRCLE.create());
     statusButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     statusButton.addClickListener(e -> updateSyncStatus());
@@ -187,6 +192,7 @@ public class NotionSyncView extends Main {
         syncFactionsButton,
         syncTeamsButton,
         syncTemplatesButton,
+        syncInjuriesButton,
         statusButton);
     return controlSection;
   }
@@ -512,6 +518,7 @@ public class NotionSyncView extends Main {
     syncFactionsButton.setEnabled(enabled);
     syncTeamsButton.setEnabled(enabled);
     syncTemplatesButton.setEnabled(enabled);
+    syncInjuriesButton.setEnabled(enabled);
   }
 
   private void handleSyncResult(SyncOperationResult result) {

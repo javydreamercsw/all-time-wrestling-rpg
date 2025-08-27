@@ -76,7 +76,7 @@ class ParallelSyncOrchestratorTest {
     verify(showSyncService).syncShows(anyString());
     verify(wrestlerSyncService).syncWrestlers(anyString());
     verify(factionSyncService).syncFactions(anyString());
-    verify(teamSyncService).syncTeams(); // Fixed: no parameters
+    verify(teamSyncService).syncTeams(anyString());
     verify(matchSyncService).syncMatches(anyString());
     verify(seasonSyncService).syncSeasons(anyString());
     verify(showTypeSyncService).syncShowTypes(anyString());
@@ -118,7 +118,7 @@ class ParallelSyncOrchestratorTest {
 
     // Verify disabled services were not called
     verify(factionSyncService, never()).syncFactions(anyString());
-    verify(teamSyncService, never()).syncTeams(); // Fixed: no parameters
+    verify(teamSyncService, never()).syncTeams(anyString());
   }
 
   @Test
@@ -132,7 +132,8 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.failure("Wrestlers", "Database error"));
     when(factionSyncService.syncFactions(anyString()))
         .thenReturn(SyncResult.success("Factions", 3, 0));
-    when(teamSyncService.syncTeams()).thenReturn(SyncResult.failure("Teams", "Notion API error"));
+    when(teamSyncService.syncTeams(anyString()))
+        .thenReturn(SyncResult.failure("Teams", "Notion API error"));
     when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 8, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 2, 0));
@@ -202,7 +203,7 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("Wrestlers", 10, 0));
     when(factionSyncService.syncFactions(anyString()))
         .thenReturn(SyncResult.success("Factions", 3, 0));
-    when(teamSyncService.syncTeams()).thenReturn(SyncResult.success("Teams", 7, 0));
+    when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 7, 0));
     when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 8, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 2, 0));

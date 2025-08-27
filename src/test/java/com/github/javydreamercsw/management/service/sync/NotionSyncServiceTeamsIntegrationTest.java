@@ -78,7 +78,7 @@ class NotionSyncServiceTeamsIntegrationTest {
     assertThat(wrestlerRepository.count()).isGreaterThanOrEqualTo(2);
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
 
     // Then
     assertThat(result).isNotNull();
@@ -105,7 +105,7 @@ class NotionSyncServiceTeamsIntegrationTest {
   void shouldHandleTeamSyncWithoutNotionToken() {
     // Given - No NOTION_TOKEN available (handled by conditional test)
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
 
     // Then - Should handle gracefully
     assertThat(result).isNotNull();

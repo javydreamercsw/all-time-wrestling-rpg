@@ -130,8 +130,8 @@ public class NotionSyncService extends BaseSyncService {
    *
    * @return SyncResult containing the operation status and details
    */
-  public SyncResult syncTeams() {
-    return teamSyncService.syncTeams();
+  public SyncResult syncTeams(@NonNull String operationId) {
+    return teamSyncService.syncTeams(operationId);
   }
 
   /**

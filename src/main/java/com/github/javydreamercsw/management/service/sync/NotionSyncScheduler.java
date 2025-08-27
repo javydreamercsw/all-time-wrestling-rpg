@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.sync;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -94,7 +95,8 @@ public class NotionSyncScheduler {
    * @param operationId Custom operation ID for progress tracking
    * @return SyncResult containing the outcome of the sync operation
    */
-  public NotionSyncService.SyncResult syncEntity(String entityName, String operationId) {
+  public NotionSyncService.SyncResult syncEntity(
+      @NonNull String entityName, @NonNull String operationId) {
     log.debug("Syncing entity: {} with operation ID: {}", entityName, operationId);
 
     switch (entityName.toLowerCase()) {
@@ -108,12 +110,10 @@ public class NotionSyncScheduler {
         return notionSyncService.syncFactions(operationId);
 
       case "teams":
-        return notionSyncService.syncTeams();
+        return notionSyncService.syncTeams(operationId);
 
       case "matches":
-        // TODO: Implement match sync
-        log.warn("Match sync not yet implemented");
-        return NotionSyncService.SyncResult.success("Matches", 0, 0);
+        return notionSyncService.syncMatches(operationId);
 
       case "templates":
         return notionSyncService.syncShowTemplates(operationId);
@@ -122,11 +122,9 @@ public class NotionSyncScheduler {
         return notionSyncService.syncSeasons(operationId);
 
       case "show-types":
-      case "showtypes":
         return notionSyncService.syncShowTypes(operationId);
 
-      case "injury-types":
-      case "injurytypes":
+      case "injuries":
         return notionSyncService.syncInjuryTypes(operationId);
 
       default:
@@ -158,7 +156,7 @@ public class NotionSyncScheduler {
         return notionSyncService.syncFactions(operationId);
 
       case "teams":
-        return notionSyncService.syncTeams();
+        return notionSyncService.syncTeams(operationId);
 
       case "matches":
         // TODO: Implement match sync
@@ -175,6 +173,7 @@ public class NotionSyncScheduler {
       case "showtypes":
         return notionSyncService.syncShowTypes(operationId);
 
+      case "injuries":
       case "injury-types":
       case "injurytypes":
         return notionSyncService.syncInjuryTypes(operationId);

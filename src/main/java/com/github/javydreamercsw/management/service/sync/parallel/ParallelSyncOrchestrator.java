@@ -119,7 +119,11 @@ public class ParallelSyncOrchestrator {
     if (entityConfig.isEntityEnabled("teams")) {
       futures.add(
           executor.submit(
-              () -> syncEntity("teams", baseOperationId, () -> teamSyncService.syncTeams())));
+              () ->
+                  syncEntity(
+                      "teams",
+                      baseOperationId,
+                      () -> teamSyncService.syncTeams(baseOperationId + "-teams"))));
     }
 
     if (entityConfig.isEntityEnabled("matches")) {

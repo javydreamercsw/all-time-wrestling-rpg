@@ -116,7 +116,7 @@ class NotionSyncServiceTeamsTest {
         .thenReturn(Optional.of(createMockTeam()));
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
 
     // Then
     assertThat(result).isNotNull();
@@ -142,7 +142,7 @@ class NotionSyncServiceTeamsTest {
     when(notionHandler.loadAllTeams()).thenReturn(new ArrayList<>());
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
 
     // Then
     assertThat(result).isNotNull();
@@ -164,7 +164,7 @@ class NotionSyncServiceTeamsTest {
     when(notionHandler.loadAllTeams()).thenThrow(new RuntimeException("Connection failed"));
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
 
     // Then
     assertThat(result).isNotNull();
@@ -191,7 +191,7 @@ class NotionSyncServiceTeamsTest {
     lenient().when(wrestlerService.findByName("Jane Smith")).thenReturn(Optional.empty());
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
 
     // Then
     assertThat(result).isNotNull();
@@ -221,7 +221,7 @@ class NotionSyncServiceTeamsTest {
     when(wrestlerService.findByName("Jane Smith")).thenReturn(Optional.of(wrestler2));
 
     // When
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
 
     // Then
     assertThat(result).isNotNull();

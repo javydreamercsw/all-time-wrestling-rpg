@@ -17,7 +17,6 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,10 +41,9 @@ public class TeamSyncService extends BaseSyncService {
    *
    * @return SyncResult containing the operation status and details
    */
-  public SyncResult syncTeams() {
+  public SyncResult syncTeams(@NonNull String operationId) {
     log.info("🔄 Starting teams synchronization from Notion...");
     long startTime = System.currentTimeMillis();
-    String operationId = UUID.randomUUID().toString();
 
     try {
       // Start progress tracking

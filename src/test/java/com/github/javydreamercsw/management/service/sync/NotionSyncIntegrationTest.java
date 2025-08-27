@@ -324,7 +324,7 @@ class NotionSyncIntegrationTest {
     log.info("🏆 Testing teams sync from Notion to database");
 
     // When - Sync teams from Notion
-    NotionSyncService.SyncResult result = notionSyncService.syncTeams();
+    NotionSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
