@@ -24,12 +24,14 @@ import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NotionSyncServiceTest {
+@EnabledIf("isNotionTokenAvailable")
+class NotionSyncServiceTest extends BaseSyncTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionSyncProperties syncProperties;

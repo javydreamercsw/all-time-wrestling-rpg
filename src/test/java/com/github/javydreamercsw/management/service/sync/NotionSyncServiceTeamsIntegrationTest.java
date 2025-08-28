@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @TestPropertySource(properties = {"notion.sync.enabled=true"})
 @Transactional
 @EnabledIf("isNotionTokenAvailable")
-class NotionSyncServiceTeamsIntegrationTest {
+class NotionSyncServiceTeamsIntegrationTest extends BaseSyncTest {
 
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private TeamRepository teamRepository;
@@ -219,10 +219,5 @@ class NotionSyncServiceTeamsIntegrationTest {
     // Should fail validation (depending on TeamService implementation)
     // This test verifies the service handles invalid input appropriately
     assertThat(invalidTeam).isEmpty();
-  }
-
-  /** Helper method to check if NOTION_TOKEN is available for conditional tests. */
-  static boolean isNotionTokenAvailable() {
-    return System.getenv("NOTION_TOKEN") != null || System.getProperty("NOTION_TOKEN") != null;
   }
 }

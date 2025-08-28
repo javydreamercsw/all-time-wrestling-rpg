@@ -3,7 +3,6 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -31,9 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("test")
 @TestPropertySource(properties = {"notion.sync.enabled=true", "notion.sync.scheduler.enabled=true"})
 @Transactional
-@EnabledIf("isNotionTokenAvailable")
 @Slf4j
-class NotionSyncIntegrationTest {
+@EnabledIf("isNotionTokenAvailable")
+class NotionSyncIntegrationTest extends BaseSyncTest {
 
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private ShowTypeService showTypeService;
@@ -455,10 +454,5 @@ class NotionSyncIntegrationTest {
     } else {
       log.warn("⚠️ No factions found with complete leader and member data");
     }
-  }
-
-  /** Helper method to check if NOTION_TOKEN is available for conditional tests. */
-  static boolean isNotionTokenAvailable() {
-    return EnvironmentVariableUtil.getNotionToken() != null;
   }
 }

@@ -11,6 +11,7 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.BaseSyncTest;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
@@ -22,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,7 +33,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * relationship handling and error conditions.
  */
 @ExtendWith(MockitoExtension.class)
-class FactionSyncServiceTest {
+@EnabledIf("isNotionTokenAvailable")
+class FactionSyncServiceTest extends BaseSyncTest {
 
   @Mock private FactionRepository factionRepository;
   @Mock private WrestlerRepository wrestlerRepository;

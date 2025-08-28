@@ -1,6 +1,5 @@
 package com.github.javydreamercsw.management.service.sync;
 
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 
@@ -8,7 +7,7 @@ import org.junit.jupiter.api.condition.EnabledIf;
  * Simple test to discover what databases actually exist in the Notion workspace. This test doesn't
  * depend on NotionSyncService constructor.
  */
-class SimpleNotionDiscoveryTest {
+class SimpleNotionDiscoveryTest extends BaseSyncTest {
 
   @Test
   @EnabledIf("isNotionTokenAvailable")
@@ -80,10 +79,5 @@ class SimpleNotionDiscoveryTest {
     } catch (Exception e) {
       System.out.println("❓ Error checking " + dbName + ": " + e.getMessage());
     }
-  }
-
-  /** Condition method to check if Notion token is available. */
-  static boolean isNotionTokenAvailable() {
-    return EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 }

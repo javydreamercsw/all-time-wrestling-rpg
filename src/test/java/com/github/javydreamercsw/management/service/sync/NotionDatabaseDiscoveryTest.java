@@ -1,11 +1,10 @@
 package com.github.javydreamercsw.management.service.sync;
 
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 
 /** Test to discover what databases actually exist in the Notion workspace. */
-class NotionDatabaseDiscoveryTest {
+class NotionDatabaseDiscoveryTest extends BaseSyncTest {
 
   @Test
   @EnabledIf("isNotionTokenAvailable")
@@ -51,10 +50,5 @@ class NotionDatabaseDiscoveryTest {
       System.out.println("❌ Failed to discover databases: " + e.getMessage());
       e.printStackTrace();
     }
-  }
-
-  /** Condition method to check if Notion token is available. */
-  static boolean isNotionTokenAvailable() {
-    return EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 }

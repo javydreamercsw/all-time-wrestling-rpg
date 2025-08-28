@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -18,7 +19,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * objects.
  */
 @ExtendWith(MockitoExtension.class)
-class SyncValidationServiceTest {
+@EnabledIf("isNotionTokenAvailable")
+class SyncValidationServiceTest extends BaseSyncTest {
 
   @Mock private NotionSyncProperties syncProperties;
 
@@ -36,7 +38,7 @@ class SyncValidationServiceTest {
 
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
     scheduler.setEnabled(true);
-    scheduler.setInterval(300000); // 5 minutes
+    scheduler.setInterval(300_000); // 5 minutes
     when(syncProperties.getScheduler()).thenReturn(scheduler);
 
     // When
@@ -62,7 +64,7 @@ class SyncValidationServiceTest {
     // Mock scheduler to avoid null pointer
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
     scheduler.setEnabled(false);
-    scheduler.setInterval(300000);
+    scheduler.setInterval(300_000);
     when(syncProperties.getScheduler()).thenReturn(scheduler);
 
     // When
@@ -81,7 +83,7 @@ class SyncValidationServiceTest {
 
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
     scheduler.setEnabled(true);
-    scheduler.setInterval(30000); // 30 seconds - very short
+    scheduler.setInterval(30_000); // 30 seconds - very short
     when(syncProperties.getScheduler()).thenReturn(scheduler);
 
     // When
@@ -104,7 +106,7 @@ class SyncValidationServiceTest {
 
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
     scheduler.setEnabled(true);
-    scheduler.setInterval(300000);
+    scheduler.setInterval(300_000);
     when(syncProperties.getScheduler()).thenReturn(scheduler);
 
     // When

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.management.service.sync.BaseSyncTest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ import org.mockito.MockedStatic;
 /**
  * Tests for NotionHandler teams functionality. These tests require NOTION_TOKEN to be available.
  */
-class NotionHandlerTeamsTest {
+class NotionHandlerTeamsTest extends BaseSyncTest {
 
   private NotionHandler notionHandler;
 
@@ -108,10 +109,5 @@ class NotionHandlerTeamsTest {
           // Verify team has properties (structure may vary based on Notion setup)
           assertThat(team.getProperties()).isNotNull();
         });
-  }
-
-  /** Helper method to check if NOTION_TOKEN is available for conditional tests. */
-  static boolean isNotionTokenAvailable() {
-    return EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 }

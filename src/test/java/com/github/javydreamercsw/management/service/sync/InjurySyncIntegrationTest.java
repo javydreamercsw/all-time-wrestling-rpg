@@ -3,7 +3,6 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
@@ -32,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @EnabledIf("isNotionTokenAvailable")
 @Slf4j
-class InjurySyncIntegrationTest {
+class InjurySyncIntegrationTest extends BaseSyncTest {
 
   @Autowired private NotionSyncService notionSyncService;
 
@@ -214,13 +213,5 @@ class InjurySyncIntegrationTest {
     }
 
     log.info("✅ Referential integrity maintained for {} injury types", allInjuryTypes.size());
-  }
-
-  /**
-   * Helper method to check if NOTION_TOKEN is available for integration tests. This is used by
-   * the @EnabledIf annotation.
-   */
-  static boolean isNotionTokenAvailable() {
-    return EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 }

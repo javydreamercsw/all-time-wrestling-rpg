@@ -29,7 +29,7 @@ import org.springframework.test.context.TestPropertySource;
       "notion.sync.scheduler.enabled=true"
     })
 @EnabledIf("isNotionTokenAvailable")
-class ShowSyncRealIntegrationTest {
+class ShowSyncRealIntegrationTest extends BaseSyncTest {
 
   private static final Logger log = LoggerFactory.getLogger(ShowSyncRealIntegrationTest.class);
 
@@ -158,10 +158,5 @@ class ShowSyncRealIntegrationTest {
     }
 
     log.info("✅ Sync result structure is valid");
-  }
-
-  /** Helper method to check if NOTION_TOKEN is available for conditional tests. */
-  static boolean isNotionTokenAvailable() {
-    return System.getenv("NOTION_TOKEN") != null || System.getProperty("NOTION_TOKEN") != null;
   }
 }

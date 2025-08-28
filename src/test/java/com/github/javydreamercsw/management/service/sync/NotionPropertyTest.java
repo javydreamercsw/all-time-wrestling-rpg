@@ -2,7 +2,6 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @SpringBootTest(properties = {"notion.sync.enabled=true", "notion.sync.entities.matches=true"})
 @ActiveProfiles("test")
-class NotionPropertyTest {
+class NotionPropertyTest extends BaseSyncTest {
 
   @Autowired private NotionSyncService notionSyncService;
 
@@ -43,10 +42,5 @@ class NotionPropertyTest {
       System.out.println("❌ Property resolution test failed: " + e.getMessage());
       throw e;
     }
-  }
-
-  /** Condition method to check if Notion token is available. */
-  static boolean isNotionTokenAvailable() {
-    return EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 }

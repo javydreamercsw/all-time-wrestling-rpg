@@ -10,6 +10,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -21,7 +22,8 @@ import org.slf4j.LoggerFactory;
  * wrestlers are properly saved to the database with correct data using the right save methods.
  */
 @ExtendWith(MockitoExtension.class)
-class WrestlerSyncDatabaseTest {
+@EnabledIf("isNotionTokenAvailable")
+class WrestlerSyncDatabaseTest extends BaseSyncTest {
 
   private static final Logger log = LoggerFactory.getLogger(WrestlerSyncDatabaseTest.class);
 

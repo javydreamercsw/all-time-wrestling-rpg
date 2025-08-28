@@ -19,6 +19,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,7 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("Matches Sync Integration Tests")
-class MatchesSyncIntegrationTest {
+@EnabledIf("isNotionTokenAvailable")
+class MatchesSyncIntegrationTest extends BaseSyncTest {
 
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private ShowService showService;
