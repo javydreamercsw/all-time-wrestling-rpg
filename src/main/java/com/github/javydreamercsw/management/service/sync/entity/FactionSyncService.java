@@ -488,12 +488,12 @@ public class FactionSyncService extends BaseSyncService {
   /** Extracts multiple relationship property values from a NotionPage. */
   private List<String> extractMultipleRelationshipProperty(
       @NonNull NotionPage page, @NonNull String propertyName) {
-    log.info("Extracting multiple relationship property: {}", propertyName);
+    log.debug("Extracting multiple relationship property: {}", propertyName);
     List<String> relationships = new ArrayList<>();
 
     if (page.getRawProperties() != null) {
       Object property = page.getRawProperties().get(propertyName);
-      log.info("Raw property for '{}': {}", propertyName, property);
+      log.debug("Raw property for '{}': {}", propertyName, property);
       if (property != null) {
         String propertyStr = property.toString().trim();
 

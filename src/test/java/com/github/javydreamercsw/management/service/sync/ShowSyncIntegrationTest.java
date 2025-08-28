@@ -4,12 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import org.junit.jupiter.api.BeforeEach;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -30,25 +28,10 @@ import org.springframework.test.context.TestPropertySource;
       "notion.sync.scheduler.enabled=true"
     })
 @EnabledIf("isNotionTokenAvailable")
-class ShowSyncRealIntegrationTest extends BaseTest {
-
-  private static final Logger log = LoggerFactory.getLogger(ShowSyncRealIntegrationTest.class);
+@Slf4j
+class ShowSyncIntegrationTest extends BaseTest {
 
   @Autowired private NotionSyncService notionSyncService;
-
-  @BeforeEach
-  void setUp() {
-    // Check if NOTION_TOKEN is available
-    String notionToken = EnvironmentVariableUtil.getValue("NOTION_TOKEN");
-    if (notionToken != null && !notionToken.trim().isEmpty()) {
-      System.setProperty("NOTION_TOKEN", notionToken);
-      log.info("✅ NOTION_TOKEN configured for real integration testing");
-    } else {
-      log.warn("⚠️ NOTION_TOKEN not available. Integration test will be limited.");
-      log.warn(
-          "   Run with: mvn test -Dtest=ShowSyncRealIntegrationTest -DNOTION_TOKEN=your_token");
-    }
-  }
 
   @Test
   @DisplayName("Should sync shows from Notion with real services")
