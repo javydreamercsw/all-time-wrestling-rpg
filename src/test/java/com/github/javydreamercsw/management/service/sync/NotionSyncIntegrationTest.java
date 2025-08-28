@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -32,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @Slf4j
 @EnabledIf("isNotionTokenAvailable")
-class NotionSyncIntegrationTest extends BaseSyncTest {
+class NotionSyncIntegrationTest extends BaseTest {
 
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private ShowTypeService showTypeService;
@@ -318,7 +319,7 @@ class NotionSyncIntegrationTest extends BaseSyncTest {
       validateFactionsInDatabase();
 
     } else {
-      log.warn("⚠️ Factions sync failed: {}", result.getErrorMessage());
+      log.warn("��️ Factions sync failed: {}", result.getErrorMessage());
       assertThat(result.getErrorMessage()).isNotBlank();
       boolean isExpectedError =
           result.getErrorMessage().contains("NotionHandler")

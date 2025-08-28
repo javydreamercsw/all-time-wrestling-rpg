@@ -1,10 +1,10 @@
-package com.github.javydreamercsw.management.service.sync;
+package com.github.javydreamercsw.base.test;
 
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 
-public abstract class BaseSyncTest {
+public abstract class BaseTest {
   /** Helper method to check if NOTION_TOKEN is available for conditional tests. */
-  static boolean isNotionTokenAvailable() {
+  public static boolean isNotionTokenAvailable() {
     return EnvironmentVariableUtil.getNotionToken() != null;
   }
 }

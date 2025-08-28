@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -31,7 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @EnabledIf("isNotionTokenAvailable")
-class NotionSyncServiceTest extends BaseSyncTest {
+class NotionSyncServiceTest extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionSyncProperties syncProperties;

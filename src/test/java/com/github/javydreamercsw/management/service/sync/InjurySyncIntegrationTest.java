@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
@@ -31,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @EnabledIf("isNotionTokenAvailable")
 @Slf4j
-class InjurySyncIntegrationTest extends BaseSyncTest {
+class InjurySyncIntegrationTest extends BaseTest {
 
   @Autowired private NotionSyncService notionSyncService;
 
@@ -42,7 +43,7 @@ class InjurySyncIntegrationTest extends BaseSyncTest {
   @BeforeEach
   void setUp() {
     log.info("🧪 Setting up InjurySyncIntegrationTest");
-    log.info("NOTION_TOKEN available: {}", isNotionTokenAvailable());
+    log.info("NOTION_TOKEN available: {}", BaseTest.isNotionTokenAvailable());
   }
 
   @Test

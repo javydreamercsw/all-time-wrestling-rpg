@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @SpringBootTest(properties = {"notion.sync.enabled=true", "notion.sync.entities.matches=true"})
 @ActiveProfiles("test")
-class NotionPropertyTest extends BaseSyncTest {
+class NotionPropertyTest extends BaseTest {
 
   @Autowired private NotionSyncService notionSyncService;
 

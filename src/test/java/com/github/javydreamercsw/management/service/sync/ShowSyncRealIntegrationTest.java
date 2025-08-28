@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +30,7 @@ import org.springframework.test.context.TestPropertySource;
       "notion.sync.scheduler.enabled=true"
     })
 @EnabledIf("isNotionTokenAvailable")
-class ShowSyncRealIntegrationTest extends BaseSyncTest {
+class ShowSyncRealIntegrationTest extends BaseTest {
 
   private static final Logger log = LoggerFactory.getLogger(ShowSyncRealIntegrationTest.class);
 

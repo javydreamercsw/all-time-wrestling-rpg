@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.service.sync.BaseSyncTest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ import org.mockito.MockedStatic;
 /**
  * Tests for NotionHandler teams functionality. These tests require NOTION_TOKEN to be available.
  */
-class NotionHandlerTeamsTest extends BaseSyncTest {
+class NotionHandlerTeamsTest extends BaseTest {
 
   private NotionHandler notionHandler;
 

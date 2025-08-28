@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
@@ -29,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @TestPropertySource(properties = {"notion.sync.enabled=true"})
 @Transactional
 @EnabledIf("isNotionTokenAvailable")
-class NotionSyncServiceTeamsIntegrationTest extends BaseSyncTest {
+class NotionSyncServiceTeamsIntegrationTest extends BaseTest {
 
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private TeamRepository teamRepository;

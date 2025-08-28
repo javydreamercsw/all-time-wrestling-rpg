@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
@@ -30,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @DisplayName("Matches Sync Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
-class MatchesSyncIntegrationTest extends BaseSyncTest {
+class MatchesSyncIntegrationTest extends BaseTest {
 
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private ShowService showService;

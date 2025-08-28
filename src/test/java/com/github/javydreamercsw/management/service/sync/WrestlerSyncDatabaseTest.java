@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -23,7 +24,7 @@ import org.slf4j.LoggerFactory;
  */
 @ExtendWith(MockitoExtension.class)
 @EnabledIf("isNotionTokenAvailable")
-class WrestlerSyncDatabaseTest extends BaseSyncTest {
+class WrestlerSyncDatabaseTest extends BaseTest {
 
   private static final Logger log = LoggerFactory.getLogger(WrestlerSyncDatabaseTest.class);
 

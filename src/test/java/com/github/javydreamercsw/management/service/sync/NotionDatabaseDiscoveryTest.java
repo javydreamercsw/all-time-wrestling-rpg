@@ -1,10 +1,11 @@
 package com.github.javydreamercsw.management.service.sync;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 
 /** Test to discover what databases actually exist in the Notion workspace. */
-class NotionDatabaseDiscoveryTest extends BaseSyncTest {
+class NotionDatabaseDiscoveryTest extends BaseTest {
 
   @Test
   @EnabledIf("isNotionTokenAvailable")

@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,7 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 @EnabledIf("isNotionTokenAvailable")
-class SyncValidationServiceTest extends BaseSyncTest {
+class SyncValidationServiceTest extends BaseTest {
 
   @Mock private NotionSyncProperties syncProperties;
 

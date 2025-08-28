@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @EnabledIf("isNotionTokenAvailable")
-class NotionSyncSchedulerTest extends BaseSyncTest {
+class NotionSyncSchedulerTest extends BaseTest {
 
   @Mock private NotionSyncService notionSyncService;
   @Mock private NotionSyncProperties syncProperties;

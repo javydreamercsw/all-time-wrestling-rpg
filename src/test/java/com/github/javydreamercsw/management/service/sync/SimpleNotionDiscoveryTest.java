@@ -1,5 +1,7 @@
 package com.github.javydreamercsw.management.service.sync;
 
+import com.github.javydreamercsw.base.test.BaseTest;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 
@@ -7,7 +9,8 @@ import org.junit.jupiter.api.condition.EnabledIf;
  * Simple test to discover what databases actually exist in the Notion workspace. This test doesn't
  * depend on NotionSyncService constructor.
  */
-class SimpleNotionDiscoveryTest extends BaseSyncTest {
+@Slf4j
+class SimpleNotionDiscoveryTest extends BaseTest {
 
   @Test
   @EnabledIf("isNotionTokenAvailable")
