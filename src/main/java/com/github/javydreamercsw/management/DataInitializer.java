@@ -5,30 +5,144 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
-import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.dto.MatchRuleDTO;
+import com.github.javydreamercsw.management.dto.MatchTypeDTO;
+import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckCardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
-import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.match.MatchRuleService;
+import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 
 @Configuration
+@Profile("!test")
 public class DataInitializer {
   private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
+
+  @Bean
+  @Order(-1)
+  public ApplicationRunner loadMatchRulesFromFile(MatchRuleService matchRuleService) {
+    return args -> {
+      ClassPathResource resource = new ClassPathResource("match_rules.json");
+      if (resource.exists()) {
+        logger.info("Loading match rules from file: {}", resource.getPath());
+        ObjectMapper mapper = new ObjectMapper();
+        try (var is = resource.getInputStream()) {
+          var matchRulesFromFile = mapper.readValue(is, new TypeReference<List<MatchRuleDTO>>() {});
+
+          for (MatchRuleDTO dto : matchRulesFromFile) {
+            matchRuleService.createOrUpdateRule(
+                dto.getName(), dto.getDescription(), dto.isRequiresHighHeat());
+            logger.info(
+                "Loaded match rule: {} (High Heat: {})", dto.getName(), dto.isRequiresHighHeat());
+          }
+
+          logger.info("Match rule loading completed - {} rules loaded", matchRulesFromFile.size());
+        } catch (Exception e) {
+          logger.error("Error loading match rules from file", e);
+        }
+      } else {
+        logger.warn("Match rules file not found: {}", resource.getPath());
+      }
+    };
+  }
+
+  @Bean
+  @Order(1)
+  public ApplicationRunner loadShowTemplatesFromFile(ShowTemplateService showTemplateService) {
+    return args -> {
+      // Only load show templates from file if the table is empty
+      long existingTemplatesCount = showTemplateService.count();
+      if (existingTemplatesCount > 0) {
+        logger.info(
+            "Show templates table already contains {} templates - skipping file import",
+            existingTemplatesCount);
+        return;
+      }
+
+      ClassPathResource resource = new ClassPathResource("show_templates.json");
+      if (resource.exists()) {
+        logger.info(
+            "Show templates table is empty - loading templates from file: {}", resource.getPath());
+        ObjectMapper mapper = new ObjectMapper();
+        try (var is = resource.getInputStream()) {
+          var templatesFromFile =
+              mapper.readValue(is, new TypeReference<List<ShowTemplateDTO>>() {});
+
+          for (ShowTemplateDTO dto : templatesFromFile) {
+            var template =
+                showTemplateService.createOrUpdateTemplate(
+                    dto.getName(), dto.getDescription(), dto.getShowTypeName(), dto.getNotionUrl());
+            if (template != null) {
+              logger.info(
+                  "Loaded show template: {} (Type: {})", template.getName(), dto.getShowTypeName());
+            } else {
+              logger.warn(
+                  "Failed to load show template: {} - show type not found: {}",
+                  dto.getName(),
+                  dto.getShowTypeName());
+            }
+          }
+
+          logger.info(
+              "Show template loading completed - {} templates processed", templatesFromFile.size());
+        } catch (Exception e) {
+          logger.error("Error loading show templates from file", e);
+        }
+      } else {
+        logger.warn("Show templates file not found: {}", resource.getPath());
+      }
+    };
+  }
+
+  @Bean
+  @Order(0)
+  public ApplicationRunner loadMatchTypesFromFile(MatchTypeService matchTypeService) {
+    return args -> {
+      ClassPathResource resource = new ClassPathResource("match_types.json");
+      if (resource.exists()) {
+        logger.info("Loading match types from file: {}", resource.getPath());
+        ObjectMapper mapper = new ObjectMapper();
+        try (var is = resource.getInputStream()) {
+          var matchTypesFromFile = mapper.readValue(is, new TypeReference<List<MatchTypeDTO>>() {});
+
+          for (MatchTypeDTO dto : matchTypesFromFile) {
+            MatchType matchType =
+                matchTypeService.createOrUpdateMatchType(dto.getName(), dto.getDescription());
+            logger.info(
+                "Loaded match type: {} (Players: {})",
+                matchType.getName(),
+                dto.isUnlimited() ? "Unlimited" : dto.getPlayerAmount());
+          }
+
+          logger.info("Match type loading completed");
+        } catch (Exception e) {
+          logger.error("Error loading match types from file", e);
+        }
+      } else {
+        logger.warn("Match types file not found: {}", resource.getPath());
+      }
+    };
+  }
 
   @Bean
   @Order(1)
@@ -120,19 +234,51 @@ public class DataInitializer {
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var wrestlersFromFile = mapper.readValue(is, new TypeReference<List<Wrestler>>() {});
-          // Map existing wrestlers by name
+          // Map existing wrestlers by name (handle duplicates by keeping the first one)
           Map<String, Wrestler> existing =
               wrestlerService.findAll().stream()
-                  .collect(Collectors.toMap(Wrestler::getName, w -> w));
+                  .collect(
+                      Collectors.toMap(
+                          Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
           for (Wrestler w : wrestlersFromFile) {
-            Wrestler existingWrestler = existing.get(w.getName());
+            // Smart duplicate handling - prefer external ID, fallback to name
+            Wrestler existingWrestler = null;
+            if (w.getExternalId() != null && !w.getExternalId().trim().isEmpty()) {
+              existingWrestler = wrestlerService.findByExternalId(w.getExternalId()).orElse(null);
+            }
+            if (existingWrestler == null) {
+              existingWrestler = existing.get(w.getName());
+            }
+
             if (existingWrestler != null) {
-              // Update fields
+              // Update card game fields
               existingWrestler.setDeckSize(w.getDeckSize());
               existingWrestler.setStartingHealth(w.getStartingHealth());
               existingWrestler.setLowHealth(w.getLowHealth());
               existingWrestler.setStartingStamina(w.getStartingStamina());
               existingWrestler.setLowStamina(w.getLowStamina());
+
+              // Update ATW RPG fields if they exist in the JSON
+              if (w.getFans() != null) {
+                existingWrestler.setFans(w.getFans());
+              }
+              if (w.getIsPlayer() != null) {
+                existingWrestler.setIsPlayer(w.getIsPlayer());
+              }
+              if (w.getBumps() != null) {
+                existingWrestler.setBumps(w.getBumps());
+              }
+              if (w.getFaction() != null) {
+                existingWrestler.setFaction(w.getFaction());
+              }
+              if (w.getDescription() != null) {
+                existingWrestler.setDescription(w.getDescription());
+              }
+
+              if (w.getExternalId() != null) {
+                existingWrestler.setExternalId(w.getExternalId());
+              }
+
               wrestlerService.save(existingWrestler);
               logger.info("Updated existing wrestler: {}", existingWrestler.getName());
             } else {
@@ -161,7 +307,9 @@ public class DataInitializer {
           var decksFromFile = mapper.readValue(is, new TypeReference<List<DeckDTO>>() {});
           Map<String, Wrestler> wrestlers =
               wrestlerService.findAll().stream()
-                  .collect(Collectors.toMap(Wrestler::getName, w -> w));
+                  .collect(
+                      Collectors.toMap(
+                          Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
           List<Card> allCards = cardService.findAll();
           for (DeckDTO deckDTO : decksFromFile) {
             Wrestler wrestler = wrestlers.get(deckDTO.getWrestler());
@@ -230,39 +378,7 @@ public class DataInitializer {
     };
   }
 
-  @Bean
-  @Order(6)
-  public ApplicationRunner syncShowsFromFile(
-      ShowService showService, ShowTypeService showTypeService) {
-    return args -> {
-      ClassPathResource resource = new ClassPathResource("shows.json");
-      if (resource.exists()) {
-        logger.info("Loading shows from file: {}", resource.getPath());
-        ObjectMapper mapper = new ObjectMapper();
-        try (var is = resource.getInputStream()) {
-          var showsFromFile = mapper.readValue(is, new TypeReference<List<ShowDTO>>() {});
-          Map<String, ShowType> showTypes =
-              showTypeService.findAll().stream()
-                  .collect(Collectors.toMap(ShowType::getName, s -> s));
-          for (ShowDTO dto : showsFromFile) {
-            ShowType type = showTypes.get(dto.getShowType());
-            if (type == null) continue;
-            Show show = showService.findByName(dto.getName()).orElseGet(Show::new);
-            show.setName(dto.getName());
-            show.setDescription(dto.getDescription());
-            show.setType(type);
-            showService.save(show);
-            logger.info(
-                "{} show: {} of type {}",
-                show.getId() == null ? "Saved new" : "Updated existing",
-                show.getName(),
-                type.getName());
-          }
-        }
-      }
-    };
-  }
-
+  @Data
   public static class CardDTO {
     private String name;
     private String type;
@@ -277,192 +393,19 @@ public class DataInitializer {
     private int target;
     private int number;
     private String set;
-
-    public boolean isPin() {
-      return pin;
-    }
-
-    public void setPin(boolean pin) {
-      this.pin = pin;
-    }
-
-    public boolean isTaunt() {
-      return taunt;
-    }
-
-    public void setTaunt(boolean taunt) {
-      this.taunt = taunt;
-    }
-
-    public boolean isRecover() {
-      return recover;
-    }
-
-    public void setRecover(boolean recover) {
-      this.recover = recover;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public void setName(String name) {
-      this.name = name;
-    }
-
-    public String getType() {
-      return type;
-    }
-
-    public void setType(String type) {
-      this.type = type;
-    }
-
-    public int getDamage() {
-      return damage;
-    }
-
-    public void setNumber(int number) {
-      this.number = number;
-    }
-
-    public int getNumber() {
-      return number;
-    }
-
-    public void setDamage(int damage) {
-      this.damage = damage;
-    }
-
-    public boolean isFinisher() {
-      return finisher;
-    }
-
-    public void setFinisher(boolean finisher) {
-      this.finisher = finisher;
-    }
-
-    public boolean isSignature() {
-      return signature;
-    }
-
-    public void setSignature(boolean signature) {
-      this.signature = signature;
-    }
-
-    public int getStamina() {
-      return stamina;
-    }
-
-    public void setStamina(int stamina) {
-      this.stamina = stamina;
-    }
-
-    public int getMomentum() {
-      return momentum;
-    }
-
-    public void setMomentum(int momentum) {
-      this.momentum = momentum;
-    }
-
-    public int getTarget() {
-      return target;
-    }
-
-    public void setTarget(int target) {
-      this.target = target;
-    }
-
-    public String getSet() {
-      return set;
-    }
-
-    public void setSet(String set) {
-      this.set = set;
-    }
   }
 
   // DTOs for deserialization
+  @Data
   public static class DeckDTO {
     private String wrestler;
     private List<DeckCardDTO> cards;
-
-    public String getWrestler() {
-      return wrestler;
-    }
-
-    public void setWrestler(String wrestler) {
-      this.wrestler = wrestler;
-    }
-
-    public List<DeckCardDTO> getCards() {
-      return cards;
-    }
-
-    public void setCards(List<DeckCardDTO> cards) {
-      this.cards = cards;
-    }
   }
 
+  @Data
   public static class DeckCardDTO {
     private int number;
     private String set;
     private int amount;
-
-    public int getNumber() {
-      return number;
-    }
-
-    public void setNumber(int number) {
-      this.number = number;
-    }
-
-    public String getSet() {
-      return set;
-    }
-
-    public void setSet(String set) {
-      this.set = set;
-    }
-
-    public int getAmount() {
-      return amount;
-    }
-
-    public void setAmount(int amount) {
-      this.amount = amount;
-    }
-  }
-
-  public static class ShowDTO {
-    private String name;
-    private String showType;
-    private String description;
-
-    // getters and setters
-    public String getName() {
-      return name;
-    }
-
-    public void setName(String title) {
-      this.name = title;
-    }
-
-    public String getShowType() {
-      return showType;
-    }
-
-    public void setShowType(String type) {
-      this.showType = type;
-    }
-
-    public String getDescription() {
-      return description;
-    }
-
-    public void setDescription(String description) {
-      this.description = description;
-    }
   }
 }

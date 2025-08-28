@@ -1,0 +1,51 @@
+# Entity-specific sync configuration example
+# Add this to your application.yml or application.properties
+
+notion:
+  sync:
+    entities:
+      # Default settings for all entities
+      defaults:
+        enabled: true
+        batchSize: 50
+        parallelProcessing: true
+        maxThreads: 4
+        timeoutSeconds: 300
+        retryAttempts: 3
+        retryDelayMs: 1000
+        validationEnabled: true
+        skipOnError: true
+
+      # Entity-specific overrides
+      specific:
+        wrestlers:
+          enabled: true
+          batchSize: 100  # Larger batch for wrestlers
+          maxThreads: 6   # More threads for heavy processing
+          timeoutSeconds: 600  # Longer timeout for complex data
+
+        factions:
+          enabled: true
+          batchSize: 25   # Smaller batch due to relationship complexity
+          parallelProcessing: false  # Disable parallel processing for relationship integrity
+
+        matches:
+          enabled: true
+          batchSize: 200  # Large batch for simple match data
+          timeoutSeconds: 900  # Very long timeout for large datasets
+
+        injuries:
+          enabled: true
+          batchSize: 20
+          retryAttempts: 5  # More retries for critical injury data
+
+        shows:
+          enabled: true
+          validationEnabled: false  # Skip validation for faster sync
+
+        # Disable certain entities if not needed
+        showtemplates:
+          enabled: false
+
+        seasons:
+          enabled: false

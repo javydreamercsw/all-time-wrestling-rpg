@@ -17,11 +17,15 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "deck")
+@Getter
+@Setter
 public class Deck extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,30 +49,6 @@ public class Deck extends AbstractEntity<Long> {
   @Override
   public @Nullable Long getId() {
     return id;
-  }
-
-  public void setCreationDate(Instant creationDate) {
-    this.creationDate = creationDate;
-  }
-
-  public Instant getCreationDate() {
-    return creationDate;
-  }
-
-  public void setWrestler(Wrestler wrestler) {
-    this.wrestler = wrestler;
-  }
-
-  public Wrestler getWrestler() {
-    return wrestler;
-  }
-
-  public List<DeckCard> getCards() {
-    return cards;
-  }
-
-  public void setCards(List<DeckCard> cards) {
-    this.cards = cards;
   }
 
   public void addCard(@NonNull Card card, int amount) {
