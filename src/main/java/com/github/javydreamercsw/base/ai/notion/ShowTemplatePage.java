@@ -1,32 +1,12 @@
 package com.github.javydreamercsw.base.ai.notion;
 
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class ShowTemplatePage extends NotionPage {
-  private NotionProperties properties;
-
-  @Data
-  @EqualsAndHashCode(callSuper = false)
-  public static class NotionProperties extends NotionPage.BaseNotionProperties {
-    // Show template-specific properties only (common properties inherited from base)
-    private Property Description;
-    private Property ShowType;
-    private Property Format;
-    private Property Duration;
-    private Property MatchCount;
-    private Property MainEvent;
-    private Property SpecialFeatures;
-    private Property MatchTypes;
-    private Property StorylineElements;
-    private Property Venue;
-    private Property Pyrotechnics;
-    private Property SpecialStaging;
-    private Property Commentary;
-    private Property Content;
-  }
 
   /**
    * Get the show type name from the template. This will extract the actual show type from the
@@ -35,9 +15,8 @@ public class ShowTemplatePage extends NotionPage {
    * @return show type name or null if not available
    */
   public String getShowTypeName() {
-    if (properties != null && properties.getShowType() != null) {
-      // Extract the actual value from the Notion property
-      return extractTextFromProperty(properties.getShowType());
+    if (getRawProperties() != null && getRawProperties().containsKey("Show Type")) {
+      return (String) getRawProperties().get("Show Type");
     }
     return null;
   }
@@ -49,18 +28,17 @@ public class ShowTemplatePage extends NotionPage {
    */
   public TemplateContent getTemplateContent() {
     TemplateContent content = new TemplateContent();
+    Map<String, Object> props = getRawProperties();
 
-    if (properties != null) {
-      // Extract content from Notion properties
-      // This would need to be implemented based on the actual Notion property structure
-      content.setFormat(extractTextFromProperty(properties.getFormat()));
-      content.setDuration(extractTextFromProperty(properties.getDuration()));
-      content.setMatchCount(extractTextFromProperty(properties.getMatchCount()));
-      content.setMainEvent(extractTextFromProperty(properties.getMainEvent()));
-      content.setVenue(extractTextFromProperty(properties.getVenue()));
-      content.setPyrotechnics(extractBooleanFromProperty(properties.getPyrotechnics()));
-      content.setSpecialStaging(extractTextFromProperty(properties.getSpecialStaging()));
-      content.setCommentary(extractTextFromProperty(properties.getCommentary()));
+    if (props != null) {
+      content.setFormat((String) props.get("Format"));
+      content.setDuration((String) props.get("Duration"));
+      content.setMatchCount((String) props.get("Match Count"));
+      content.setMainEvent((String) props.get("Main Event"));
+      content.setVenue((String) props.get("Venue"));
+      content.setPyrotechnics(Boolean.parseBoolean((String) props.get("Pyrotechnics")));
+      content.setSpecialStaging((String) props.get("Special Staging"));
+      content.setCommentary((String) props.get("Commentary"));
     }
 
     return content;
@@ -72,8 +50,8 @@ public class ShowTemplatePage extends NotionPage {
    * @return description or null if not available
    */
   public String getTemplateDescription() {
-    if (properties != null && properties.getDescription() != null) {
-      return extractTextFromProperty(properties.getDescription());
+    if (getRawProperties() != null && getRawProperties().containsKey("Description")) {
+      return (String) getRawProperties().get("Description");
     }
     return null;
   }
@@ -84,8 +62,8 @@ public class ShowTemplatePage extends NotionPage {
    * @return format or null if not available
    */
   public String getFormat() {
-    if (properties != null && properties.getFormat() != null) {
-      return extractTextFromProperty(properties.getFormat());
+    if (getRawProperties() != null && getRawProperties().containsKey("Format")) {
+      return (String) getRawProperties().get("Format");
     }
     return null;
   }
@@ -96,8 +74,8 @@ public class ShowTemplatePage extends NotionPage {
    * @return duration or null if not available
    */
   public String getDuration() {
-    if (properties != null && properties.getDuration() != null) {
-      return extractTextFromProperty(properties.getDuration());
+    if (getRawProperties() != null && getRawProperties().containsKey("Duration")) {
+      return (String) getRawProperties().get("Duration");
     }
     return null;
   }
@@ -108,8 +86,8 @@ public class ShowTemplatePage extends NotionPage {
    * @return match count or null if not available
    */
   public String getMatchCount() {
-    if (properties != null && properties.getMatchCount() != null) {
-      return extractTextFromProperty(properties.getMatchCount());
+    if (getRawProperties() != null && getRawProperties().containsKey("Match Count")) {
+      return (String) getRawProperties().get("Match Count");
     }
     return null;
   }
@@ -120,8 +98,8 @@ public class ShowTemplatePage extends NotionPage {
    * @return main event or null if not available
    */
   public String getMainEvent() {
-    if (properties != null && properties.getMainEvent() != null) {
-      return extractTextFromProperty(properties.getMainEvent());
+    if (getRawProperties() != null && getRawProperties().containsKey("Main Event")) {
+      return (String) getRawProperties().get("Main Event");
     }
     return null;
   }
@@ -132,8 +110,8 @@ public class ShowTemplatePage extends NotionPage {
    * @return venue or null if not available
    */
   public String getVenue() {
-    if (properties != null && properties.getVenue() != null) {
-      return extractTextFromProperty(properties.getVenue());
+    if (getRawProperties() != null && getRawProperties().containsKey("Venue")) {
+      return (String) getRawProperties().get("Venue");
     }
     return null;
   }
@@ -144,8 +122,8 @@ public class ShowTemplatePage extends NotionPage {
    * @return true if pyrotechnics are used, false otherwise
    */
   public boolean hasPyrotechnics() {
-    if (properties != null && properties.getPyrotechnics() != null) {
-      return extractBooleanFromProperty(properties.getPyrotechnics());
+    if (getRawProperties() != null && getRawProperties().containsKey("Pyrotechnics")) {
+      return Boolean.parseBoolean((String) getRawProperties().get("Pyrotechnics"));
     }
     return false;
   }
@@ -156,8 +134,8 @@ public class ShowTemplatePage extends NotionPage {
    * @return special staging or null if not available
    */
   public String getSpecialStaging() {
-    if (properties != null && properties.getSpecialStaging() != null) {
-      return extractTextFromProperty(properties.getSpecialStaging());
+    if (getRawProperties() != null && getRawProperties().containsKey("Special Staging")) {
+      return (String) getRawProperties().get("Special Staging");
     }
     return null;
   }
@@ -168,28 +146,10 @@ public class ShowTemplatePage extends NotionPage {
    * @return commentary or null if not available
    */
   public String getCommentary() {
-    if (properties != null && properties.getCommentary() != null) {
-      return extractTextFromProperty(properties.getCommentary());
+    if (getRawProperties() != null && getRawProperties().containsKey("Commentary")) {
+      return (String) getRawProperties().get("Commentary");
     }
     return null;
-  }
-
-  /**
-   * Helper method to extract text from a Notion property. This is a placeholder - actual
-   * implementation would depend on Notion property structure.
-   */
-  private String extractTextFromProperty(NotionPage.Property property) {
-    // Placeholder implementation
-    return property != null ? "Extracted text" : null;
-  }
-
-  /**
-   * Helper method to extract boolean from a Notion property. This is a placeholder - actual
-   * implementation would depend on Notion property structure.
-   */
-  private Boolean extractBooleanFromProperty(NotionPage.Property property) {
-    // Placeholder implementation
-    return property != null ? true : false;
   }
 
   @Data

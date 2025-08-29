@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -229,9 +230,7 @@ public abstract class BaseSyncService {
     }
 
     // Handle PageProperty objects (from Notion API)
-    if (property instanceof notion.api.v1.model.pages.PageProperty) {
-      notion.api.v1.model.pages.PageProperty pageProperty =
-          (notion.api.v1.model.pages.PageProperty) property;
+    if (property instanceof notion.api.v1.model.pages.PageProperty pageProperty) {
 
       // Handle title properties
       if (pageProperty.getTitle() != null && !pageProperty.getTitle().isEmpty()) {
@@ -268,9 +267,6 @@ public abstract class BaseSyncService {
   /** Extracts a property value as a string from raw properties map. */
   protected String extractPropertyAsString(
       @NonNull java.util.Map<String, Object> rawProperties, @NonNull String propertyName) {
-    if (rawProperties == null || propertyName == null) {
-      return null;
-    }
 
     Object property = rawProperties.get(propertyName);
     return extractTextFromProperty(property);
@@ -282,7 +278,7 @@ public abstract class BaseSyncService {
    * @param entityType The entity type being synced (for error messages)
    * @return true if token is available, false otherwise
    */
-  protected boolean validateNotionToken(String entityType) {
+  protected boolean validateNotionToken(@NonNull String entityType) {
     if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
       log.warn("NOTION_TOKEN not available. Cannot sync {} from Notion.", entityType);
       return false;
@@ -291,7 +287,9 @@ public abstract class BaseSyncService {
   }
 
   /** Represents the result of a synchronization operation. */
+  @Getter
   public static class SyncResult {
+    // Getters
     private final boolean success;
     private final String entityType;
     private final int syncedCount;
@@ -317,27 +315,6 @@ public abstract class BaseSyncService {
 
     public static SyncResult failure(@NonNull String entityType, String errorMessage) {
       return new SyncResult(false, entityType, 0, 0, errorMessage);
-    }
-
-    // Getters
-    public boolean isSuccess() {
-      return success;
-    }
-
-    public String getEntityType() {
-      return entityType;
-    }
-
-    public int getSyncedCount() {
-      return syncedCount;
-    }
-
-    public int getErrorCount() {
-      return errorCount;
-    }
-
-    public String getErrorMessage() {
-      return errorMessage;
     }
 
     public String getSummary() {

@@ -11,10 +11,12 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.NonNull;
 import notion.api.v1.NotionClient;
+import notion.api.v1.model.databases.DatabaseProperty;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.model.search.DatabaseSearchResult;
 import notion.api.v1.model.search.SearchResults;
+import notion.api.v1.model.users.User;
 import notion.api.v1.request.databases.QueryDatabaseRequest;
 import notion.api.v1.request.search.SearchRequest;
 import org.slf4j.Logger;
@@ -291,7 +293,7 @@ public class NotionHandler {
       // Handle cases where type is null but we can infer the type from populated fields
       String propertyType = null;
 
-      if (value.getType() != null && value.getType().getValue() != null) {
+      if (value.getType() != null) {
         propertyType = value.getType().getValue();
       } else {
         // Infer property type from populated fields when type is null
@@ -307,16 +309,15 @@ public class NotionHandler {
         case "formula" -> value.getFormula() != null ? getFormulaValue(value.getFormula()) : "N/A";
         case "people" ->
             value.getPeople() != null && !value.getPeople().isEmpty()
-                ? value.getPeople().stream().findFirst().map(p -> p.getName()).orElse("N/A")
+                ? value.getPeople().stream().findFirst().map(User::getName).orElse("N/A")
                 : "N/A";
         case "created_by" -> value.getCreatedBy() != null ? value.getCreatedBy().getName() : "N/A";
         case "last_edited_by" ->
             value.getLastEditedBy() != null ? value.getLastEditedBy().getName() : "N/A";
-        case "created_time" ->
-            value.getCreatedTime() != null ? value.getCreatedTime().toString() : "N/A";
+        case "created_time" -> value.getCreatedTime() != null ? value.getCreatedTime() : "N/A";
         case "number" -> value.getNumber() != null ? value.getNumber().toString() : "N/A";
         case "last_edited_time" ->
-            value.getLastEditedTime() != null ? value.getLastEditedTime().toString() : "N/A";
+            value.getLastEditedTime() != null ? value.getLastEditedTime() : "N/A";
         case "unique_id" ->
             value.getUniqueId() != null
                 ? value.getUniqueId().getPrefix() + "-" + value.getUniqueId().getNumber()
@@ -329,7 +330,7 @@ public class NotionHandler {
           // Handle rich_text properties (commonly used for text fields in Notion)
           if (value.getRichText() != null && !value.getRichText().isEmpty()) {
             yield value.getRichText().stream()
-                .map(richText -> richText.getPlainText())
+                .map(PageProperty.RichText::getPlainText)
                 .filter(text -> text != null && !text.trim().isEmpty())
                 .reduce((a, b) -> a + " " + b)
                 .orElse("N/A");
@@ -404,7 +405,7 @@ public class NotionHandler {
           // Handle multi_select properties (dropdown with multiple selections)
           if (value.getMultiSelect() != null && !value.getMultiSelect().isEmpty()) {
             yield value.getMultiSelect().stream()
-                .map(option -> option.getName())
+                .map(DatabaseProperty.MultiSelect.Option::getName)
                 .filter(name -> name != null && !name.trim().isEmpty())
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("N/A");
@@ -415,7 +416,7 @@ public class NotionHandler {
         case "date" -> {
           // Handle date properties
           if (value.getDate() != null && value.getDate().getStart() != null) {
-            yield value.getDate().getStart().toString();
+            yield value.getDate().getStart();
           } else {
             yield "N/A";
           }
@@ -534,9 +535,6 @@ public class NotionHandler {
 
   /** Helper method to extract values from formula properties based on their result type. */
   private String getFormulaValue(@NonNull PageProperty.Formula formula) {
-    if (formula == null) {
-      return "null";
-    }
 
     // Check the formula result type and extract accordingly
     if (formula.getString() != null) {
@@ -550,7 +548,7 @@ public class NotionHandler {
       if (formula.getDate().getStart() != null) {
         String dateStr = formula.getDate().getStart();
         // The Notion API sometimes prefixes dates with @, so we remove it.
-        if (dateStr != null && dateStr.startsWith("@")) {
+        if (dateStr.startsWith("@")) {
           return dateStr.substring(1);
         }
         return dateStr;
@@ -776,9 +774,9 @@ public class NotionHandler {
     // Set basic page information using Lombok-generated setters
     wrestlerPage.setObject("page");
     wrestlerPage.setId(pageData.getId());
-    wrestlerPage.setCreated_time(pageData.getCreatedTime().toString());
-    wrestlerPage.setLast_edited_time(pageData.getLastEditedTime().toString());
-    wrestlerPage.setArchived(pageData.getArchived());
+    wrestlerPage.setCreated_time(pageData.getCreatedTime());
+    wrestlerPage.setLast_edited_time(pageData.getLastEditedTime());
+    wrestlerPage.setArchived(Boolean.TRUE.equals(pageData.getArchived()));
     wrestlerPage.setIn_trash(false); // Default value
     wrestlerPage.setUrl(pageData.getUrl());
     wrestlerPage.setPublic_url(pageData.getPublicUrl());
@@ -786,6 +784,7 @@ public class NotionHandler {
     // Set parent information
     WrestlerPage.NotionParent parent = new WrestlerPage.NotionParent();
     parent.setType("database_id");
+    assert pageData.getParent() != null;
     parent.setDatabase_id(pageData.getParent().getDatabaseId());
     wrestlerPage.setParent(parent);
 
@@ -1009,7 +1008,13 @@ public class NotionHandler {
           templateDbId,
           templateName,
           "Show Template",
-          (page, name) -> mapPageToShowTemplatePage(page));
+          (pageData, entityName) ->
+              mapPageToGenericEntity(
+                  pageData,
+                  entityName,
+                  "ShowTemplate",
+                  ShowTemplatePage::new,
+                  NotionPage.NotionParent::new));
     } catch (Exception e) {
       log.error("Failed to load show template: {}", templateName, e);
       return Optional.empty();
@@ -1041,7 +1046,16 @@ public class NotionHandler {
         return new ArrayList<>();
       }
       return loadAllEntitiesFromDatabase(
-          client, templateDbId, "Show Template", (page, name) -> mapPageToShowTemplatePage(page));
+          client,
+          templateDbId,
+          "Show Template",
+          (pageData, entityName) ->
+              mapPageToGenericEntity(
+                  pageData,
+                  entityName,
+                  "ShowTemplate",
+                  ShowTemplatePage::new,
+                  NotionPage.NotionParent::new));
     } catch (Exception e) {
       log.error("Failed to load all show templates for sync", e);
       return new ArrayList<>();
@@ -1084,41 +1098,6 @@ public class NotionHandler {
       @NonNull String templateName, @NonNull ShowTemplatePage templatePage) {
     log.info("=== TEMPLATE DATA FOR {} ===", templateName);
 
-    if (templatePage.getProperties() != null) {
-      var props = templatePage.getProperties();
-
-      // Log all available properties
-      log.info("Available properties:");
-      if (props.getName() != null) log.info("  Name: {}", extractPropertyValue(props.getName()));
-      if (props.getDescription() != null)
-        log.info("  Description: {}", extractPropertyValue(props.getDescription()));
-      if (props.getShowType() != null)
-        log.info("  Show Type: {}", extractPropertyValue(props.getShowType()));
-      if (props.getFormat() != null)
-        log.info("  Format: {}", extractPropertyValue(props.getFormat()));
-      if (props.getDuration() != null)
-        log.info("  Duration: {}", extractPropertyValue(props.getDuration()));
-      if (props.getMatchCount() != null)
-        log.info("  Match Count: {}", extractPropertyValue(props.getMatchCount()));
-      if (props.getMainEvent() != null)
-        log.info("  Main Event: {}", extractPropertyValue(props.getMainEvent()));
-      if (props.getVenue() != null) log.info("  Venue: {}", extractPropertyValue(props.getVenue()));
-      if (props.getPyrotechnics() != null)
-        log.info("  Pyrotechnics: {}", extractPropertyValue(props.getPyrotechnics()));
-      if (props.getSpecialStaging() != null)
-        log.info("  Special Staging: {}", extractPropertyValue(props.getSpecialStaging()));
-      if (props.getCommentary() != null)
-        log.info("  Commentary: {}", extractPropertyValue(props.getCommentary()));
-      if (props.getSpecialFeatures() != null)
-        log.info("  Special Features: {}", extractPropertyValue(props.getSpecialFeatures()));
-      if (props.getMatchTypes() != null)
-        log.info("  Match Types: {}", extractPropertyValue(props.getMatchTypes()));
-      if (props.getStorylineElements() != null)
-        log.info("  Storyline Elements: {}", extractPropertyValue(props.getStorylineElements()));
-      if (props.getContent() != null)
-        log.info("  Content: {}", extractPropertyValue(props.getContent()));
-    }
-
     // Log raw properties for complete data inspection
     if (templatePage.getRawProperties() != null && !templatePage.getRawProperties().isEmpty()) {
       log.info("Raw properties:");
@@ -1131,91 +1110,6 @@ public class NotionHandler {
     }
 
     log.info("=== END TEMPLATE DATA FOR {} ===", templateName);
-  }
-
-  /** Helper method to extract string value from a property object. */
-  private String extractPropertyValue(Object property) {
-    if (property == null) return "null";
-    return property.toString();
-  }
-
-  /**
-   * Maps a Notion page to a ShowTemplatePage object. This method converts the raw Notion page data
-   * into our ShowTemplatePage structure.
-   */
-  private ShowTemplatePage mapPageToShowTemplatePage(Page page) {
-    ShowTemplatePage templatePage = new ShowTemplatePage();
-
-    // Set basic page properties
-    templatePage.setObject("page");
-    templatePage.setId(page.getId());
-    templatePage.setCreated_time(page.getCreatedTime());
-    templatePage.setLast_edited_time(page.getLastEditedTime());
-    templatePage.setArchived(page.getArchived());
-    templatePage.setIn_trash(page.getInTrash());
-    templatePage.setUrl(page.getUrl());
-    templatePage.setPublic_url(page.getPublicUrl());
-
-    // Set parent information
-    NotionPage.NotionParent parent = new NotionPage.NotionParent();
-    parent.setType("database_id");
-    parent.setDatabase_id(page.getParent().getDatabaseId());
-    templatePage.setParent(parent);
-
-    // Create and populate properties
-    ShowTemplatePage.NotionProperties properties = new ShowTemplatePage.NotionProperties();
-
-    // Map properties from the Notion page
-    Map<String, PageProperty> pageProperties = page.getProperties();
-    if (pageProperties != null) {
-      // Store raw properties for debugging - convert to Map<String, Object>
-      Map<String, Object> rawProperties = new HashMap<>();
-      pageProperties.forEach((key, value) -> rawProperties.put(key, value));
-      templatePage.setRawProperties(rawProperties);
-
-      // Map specific properties - these will be extracted based on actual Notion structure
-      properties.setName(createPropertyFromValue(pageProperties.get("Name")));
-      properties.setDescription(createPropertyFromValue(pageProperties.get("Description")));
-      properties.setShowType(createPropertyFromValue(pageProperties.get("Show Type")));
-      properties.setFormat(createPropertyFromValue(pageProperties.get("Format")));
-      properties.setDuration(createPropertyFromValue(pageProperties.get("Duration")));
-      properties.setMatchCount(createPropertyFromValue(pageProperties.get("Match Count")));
-      properties.setMainEvent(createPropertyFromValue(pageProperties.get("Main Event")));
-      properties.setVenue(createPropertyFromValue(pageProperties.get("Venue")));
-      properties.setPyrotechnics(createPropertyFromValue(pageProperties.get("Pyrotechnics")));
-      properties.setSpecialStaging(createPropertyFromValue(pageProperties.get("Special Staging")));
-      properties.setCommentary(createPropertyFromValue(pageProperties.get("Commentary")));
-      properties.setSpecialFeatures(
-          createPropertyFromValue(pageProperties.get("Special Features")));
-      properties.setMatchTypes(createPropertyFromValue(pageProperties.get("Match Types")));
-      properties.setStorylineElements(
-          createPropertyFromValue(pageProperties.get("Storyline Elements")));
-      properties.setContent(createPropertyFromValue(pageProperties.get("Content")));
-    }
-
-    templatePage.setProperties(properties);
-
-    log.debug(
-        "Mapped show template page: {} (ID: {})",
-        templatePage.getProperties().getName(),
-        templatePage.getId());
-
-    return templatePage;
-  }
-
-  /**
-   * Helper method to create a Property object from a raw value. This handles the conversion from
-   * Notion's property format to our Property objects.
-   */
-  private NotionPage.Property createPropertyFromValue(Object value) {
-    if (value == null) return null;
-
-    // This is a simplified implementation
-    // In practice, you'd need to handle different Notion property types
-    NotionPage.Property property = new NotionPage.Property();
-    // Set the appropriate fields based on the property type
-    // For now, just store the raw value
-    return property;
   }
 
   // ==================== MATCH LOADING METHODS ====================
@@ -1729,8 +1623,8 @@ public class NotionHandler {
     showPage.setId(page.getId());
     showPage.setCreated_time(page.getCreatedTime());
     showPage.setLast_edited_time(page.getLastEditedTime());
-    showPage.setArchived(page.getArchived());
-    showPage.setIn_trash(page.getInTrash());
+    showPage.setArchived(Boolean.TRUE.equals(page.getArchived()));
+    showPage.setIn_trash(Boolean.TRUE.equals(page.getInTrash()));
     showPage.setUrl(page.getUrl());
     showPage.setPublic_url(page.getPublicUrl());
 
@@ -1738,23 +1632,21 @@ public class NotionHandler {
     Map<String, Object> rawProperties = new HashMap<>();
     Map<String, PageProperty> pageProperties = page.getProperties();
 
-    if (pageProperties != null) {
-      // Extract key properties with minimal processing
-      pageProperties.forEach(
-          (key, value) -> {
-            try {
-              String simpleValue = extractSimplePropertyValue(value);
-              if (simpleValue != null) {
-                rawProperties.put(key, simpleValue);
-              } else {
-                log.debug("Property {} extracted as null, skipping", key);
-              }
-            } catch (Exception e) {
-              log.debug("Failed to extract property {}: {}", key, e.getMessage());
-              // Don't put "N/A" - just skip the property if extraction fails
+    // Extract key properties with minimal processing
+    pageProperties.forEach(
+        (key, value) -> {
+          try {
+            String simpleValue = extractSimplePropertyValue(value);
+            if (simpleValue != null) {
+              rawProperties.put(key, simpleValue);
+            } else {
+              log.debug("Property {} extracted as null, skipping", key);
             }
-          });
-    }
+          } catch (Exception e) {
+            log.debug("Failed to extract property {}: {}", key, e.getMessage());
+            // Don't put "N/A" - just skip the property if extraction fails
+          }
+        });
 
     showPage.setRawProperties(rawProperties);
     return showPage;
@@ -1917,6 +1809,7 @@ public class NotionHandler {
   private void setParentInfo(@NonNull Object parent, @NonNull Page pageData) {
     try {
       parent.getClass().getMethod("setType", String.class).invoke(parent, "database_id");
+      assert pageData.getParent() != null;
       parent
           .getClass()
           .getMethod("setDatabase_id", String.class)
@@ -1951,12 +1844,6 @@ public class NotionHandler {
     } catch (Exception e) {
       log.warn("Failed to set raw properties: {}", e.getMessage());
     }
-  }
-
-  /** Helper method to extract and log properties with full relationship resolution. */
-  private Map<String, Object> extractAndLogProperties(
-      @NonNull Page pageData, @NonNull String entityName, @NonNull String entityType) {
-    return extractAndLogProperties(pageData, entityName, entityType, true);
   }
 
   /** Helper method to extract and log properties with optional relationship resolution. */

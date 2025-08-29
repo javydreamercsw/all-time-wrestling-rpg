@@ -52,7 +52,7 @@ public class ShowTemplateDataRetriever {
 
     try {
       // Use the NotionHandler to query the Show Templates database directly
-      var allTemplates = queryAllShowTemplates(handler, showTemplatesDbId);
+      var allTemplates = queryAllShowTemplates(showTemplatesDbId);
 
       if (!allTemplates.isEmpty()) {
         log.info(
@@ -94,149 +94,9 @@ public class ShowTemplateDataRetriever {
     log.info("=== TEMPLATE RETRIEVAL COMPLETED ===");
   }
 
-  private static void extractAndLogTemplateProperties(
-      ShowTemplatePage templatePage, String templateName) {
-    log.info("=== PROPERTIES FOR {} ===", templateName);
-
-    if (templatePage.getProperties() != null) {
-      var props = templatePage.getProperties();
-
-      // Log template-specific properties
-      if (props.getName() != null) {
-        log.info("Name: {}", extractPropertyValue(props.getName()));
-      }
-
-      if (props.getDescription() != null) {
-        log.info("Description: {}", extractPropertyValue(props.getDescription()));
-      }
-
-      if (props.getShowType() != null) {
-        log.info("Show Type: {}", extractPropertyValue(props.getShowType()));
-      }
-
-      if (props.getFormat() != null) {
-        log.info("Format: {}", extractPropertyValue(props.getFormat()));
-      }
-
-      if (props.getDuration() != null) {
-        log.info("Duration: {}", extractPropertyValue(props.getDuration()));
-      }
-
-      if (props.getMatchCount() != null) {
-        log.info("Match Count: {}", extractPropertyValue(props.getMatchCount()));
-      }
-
-      if (props.getMainEvent() != null) {
-        log.info("Main Event: {}", extractPropertyValue(props.getMainEvent()));
-      }
-
-      if (props.getVenue() != null) {
-        log.info("Venue: {}", extractPropertyValue(props.getVenue()));
-      }
-
-      if (props.getPyrotechnics() != null) {
-        log.info("Pyrotechnics: {}", extractPropertyValue(props.getPyrotechnics()));
-      }
-
-      if (props.getSpecialStaging() != null) {
-        log.info("Special Staging: {}", extractPropertyValue(props.getSpecialStaging()));
-      }
-
-      if (props.getCommentary() != null) {
-        log.info("Commentary: {}", extractPropertyValue(props.getCommentary()));
-      }
-    }
-
-    // Also log raw properties if available
-    if (templatePage.getRawProperties() != null) {
-      log.info("Raw properties available: {}", templatePage.getRawProperties().keySet());
-      templatePage
-          .getRawProperties()
-          .forEach(
-              (key, value) -> {
-                log.info("Raw Property - {}: {}", key, value);
-              });
-    }
-
-    log.info("=== END PROPERTIES FOR {} ===", templateName);
-  }
-
-  private static void generateJsonStructure(String templateName, ShowTemplatePage templatePage) {
-    log.info("=== JSON STRUCTURE FOR {} ===", templateName);
-
-    StringBuilder json = new StringBuilder();
-    json.append("{\n");
-    json.append("  \"name\": \"").append(templateName).append("\",\n");
-
-    // Extract description
-    String description = templatePage.getTemplateDescription();
-    if (description != null) {
-      json.append("  \"description\": \"").append(description).append("\",\n");
-    }
-
-    // Extract show type
-    String showType = templatePage.getShowTypeName();
-    if (showType != null) {
-      json.append("  \"showTypeName\": \"").append(showType).append("\",\n");
-    }
-
-    // Add content structure
-    json.append("  \"content\": {\n");
-
-    String format = templatePage.getFormat();
-    if (format != null) {
-      json.append("    \"format\": \"").append(format).append("\",\n");
-    }
-
-    String duration = templatePage.getDuration();
-    if (duration != null) {
-      json.append("    \"duration\": \"").append(duration).append("\",\n");
-    }
-
-    String matchCount = templatePage.getMatchCount();
-    if (matchCount != null) {
-      json.append("    \"matchCount\": \"").append(matchCount).append("\",\n");
-    }
-
-    String mainEvent = templatePage.getMainEvent();
-    if (mainEvent != null) {
-      json.append("    \"mainEvent\": \"").append(mainEvent).append("\",\n");
-    }
-
-    String venue = templatePage.getVenue();
-    if (venue != null) {
-      json.append("    \"venue\": \"").append(venue).append("\",\n");
-    }
-
-    json.append("    \"pyrotechnics\": ").append(templatePage.hasPyrotechnics()).append(",\n");
-
-    String specialStaging = templatePage.getSpecialStaging();
-    if (specialStaging != null) {
-      json.append("    \"specialStaging\": \"").append(specialStaging).append("\",\n");
-    }
-
-    String commentary = templatePage.getCommentary();
-    if (commentary != null) {
-      json.append("    \"commentary\": \"").append(commentary).append("\"\n");
-    }
-
-    json.append("  }\n");
-    json.append("}");
-
-    log.info("Generated JSON structure:\n{}", json.toString());
-    log.info("=== END JSON STRUCTURE FOR {} ===", templateName);
-  }
-
-  private static String extractPropertyValue(Object property) {
-    if (property == null) {
-      return "null";
-    }
-    return property.toString();
-  }
-
   /** Query all show templates from the Show Templates database. */
   private static List<ShowTemplatePage> queryAllShowTemplates(
-      NotionHandler handler, String databaseId) {
+      String databaseId) {
     List<ShowTemplatePage> templates = new ArrayList<>();
 
     try (NotionClient client = new NotionClient(EnvironmentVariableUtil.getNotionToken())) {
