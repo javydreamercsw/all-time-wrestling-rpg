@@ -64,4 +64,12 @@ public interface ShowTemplateRepository extends JpaRepository<ShowTemplate, Long
    */
   @Query("SELECT st FROM ShowTemplate st WHERE st.showType.name = :showTypeName")
   List<ShowTemplate> findByShowTypeName(@Param("showTypeName") String showTypeName);
+
+  /**
+   * Find all show templates with ShowType eagerly loaded.
+   *
+   * @return List of show templates with show types
+   */
+  @Query("SELECT st FROM ShowTemplate st JOIN FETCH st.showType")
+  List<ShowTemplate> findAllWithShowType();
 }

@@ -66,7 +66,7 @@ public class ShowTemplateService {
    * @return List of all show templates
    */
   public List<ShowTemplate> findAll() {
-    return showTemplateRepository.findAll();
+    return showTemplateRepository.findAllWithShowType();
   }
 
   /**

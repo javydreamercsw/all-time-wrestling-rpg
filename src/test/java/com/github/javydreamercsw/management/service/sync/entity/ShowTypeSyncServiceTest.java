@@ -32,7 +32,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Show Type Sync Service Tests")
-class ShowTypeSyncServiceRefactoredTest {
+class ShowTypeSyncServiceTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
@@ -58,7 +58,7 @@ class ShowTypeSyncServiceRefactoredTest {
     List<ShowPage> mockShowPages = createMockShowPages();
     when(notionHandler.loadAllShowsForSync()).thenReturn(mockShowPages);
     when(showTypeService.findByName("Weekly")).thenReturn(Optional.empty());
-    when(showTypeService.findByName("Premium Live Event")).thenReturn(Optional.empty());
+    when(showTypeService.findByName("Premium Live Event (PLE)")).thenReturn(Optional.empty());
     when(showTypeService.findAll()).thenReturn(List.of());
     when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -81,7 +81,7 @@ class ShowTypeSyncServiceRefactoredTest {
 
     ShowPage pleShow = new ShowPage();
     Map<String, Object> pleProps = new HashMap<>();
-    pleProps.put("Show Type", "Premium Live Event");
+    pleProps.put("Show Type", "Premium Live Event (PLE)");
     ReflectionTestUtils.setField(pleShow, "rawProperties", pleProps);
     showPages.add(pleShow);
 

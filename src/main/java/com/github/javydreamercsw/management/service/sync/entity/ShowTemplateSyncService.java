@@ -159,28 +159,8 @@ public class ShowTemplateSyncService extends BaseSyncService {
     dto.setName(extractNameFromNotionPage(templatePage));
     dto.setDescription(extractDescriptionFromNotionPage(templatePage));
 
-    // Extract show type and provide intelligent defaults
+    // Extract show type from Notion properties
     String showType = extractShowTypeFromNotionPage(templatePage);
-    if (showType == null || showType.trim().isEmpty()) {
-      // Smart mapping based on template name patterns
-      String templateName = dto.getName().toLowerCase();
-      if (templateName.contains("weekly")
-          || templateName.contains("continuum")
-          || templateName.contains("timeless")) {
-        showType = "Weekly";
-        log.debug("Mapped template '{}' to Weekly show type based on name pattern", dto.getName());
-      } else if (templateName.contains("ple")
-          || templateName.contains("premium")
-          || templateName.contains("ppv")) {
-        showType = "PLE";
-        log.debug("Mapped template '{}' to PLE show type based on name pattern", dto.getName());
-      } else {
-        // Default to Weekly for unknown templates
-        showType = "Weekly";
-        log.debug("Using default Weekly show type for template: {}", dto.getName());
-      }
-    }
-
     dto.setShowType(showType);
     dto.setExternalId(templatePage.getId());
     return dto;
@@ -223,6 +203,15 @@ public class ShowTemplateSyncService extends BaseSyncService {
 
     for (ShowTemplateDTO dto : templateDTOs) {
       try {
+        // Skip templates without a determined show type
+        if (dto.getShowType() == null || dto.getShowType().trim().isEmpty()) {
+          log.warn(
+              "Skipping template '{}' - no show type could be determined. Please manually assign a"
+                  + " show type.",
+              dto.getName());
+          continue;
+        }
+
         // Use the ShowTemplateService to create or update the template
         ShowTemplate savedTemplate =
             showTemplateService.createOrUpdateTemplate(
@@ -240,7 +229,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
             savedTemplate = showTemplateService.save(savedTemplate);
           }
           savedCount++;
-          log.debug("Saved show template: {}", dto.getName());
+          log.debug("Saved show template: {} with show type: {}", dto.getName(), dto.getShowType());
         } else {
           log.warn(
               "Failed to save show template: {} (show type not found: {})",
