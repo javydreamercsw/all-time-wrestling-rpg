@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * View for managing Factions. Provides a list of factions with create, edit, and delete
@@ -196,6 +197,7 @@ public class FactionListView extends Main {
     factionGrid.setSizeFull();
   }
 
+  @Transactional(readOnly = true)
   private void refreshGrid() {
     List<Faction> factions = factionService.findAllWithMembersAndTeams();
     factionGrid.setItems(factions);
