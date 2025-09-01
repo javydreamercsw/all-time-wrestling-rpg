@@ -1,5 +1,7 @@
 package com.github.javydreamercsw.management.domain.card;
 
+import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
+
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -9,8 +11,6 @@ import org.jspecify.annotations.Nullable;
 @Entity
 @Table(name = "card", uniqueConstraints = @UniqueConstraint(columnNames = {"set_id", "number"}))
 public class Card extends AbstractEntity<Long> {
-
-  public static final int DESCRIPTION_MAX_LENGTH = 255;
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,7 +39,7 @@ public class Card extends AbstractEntity<Long> {
   @Column(name = "momentum", nullable = false)
   private Integer momentum;
 
-  @Column(name = "number", nullable = false)
+  @Column(name = "number")
   private Integer number;
 
   @Column(name = "signature", nullable = false)
@@ -175,5 +175,14 @@ public class Card extends AbstractEntity<Long> {
 
   public void setPin(Boolean pin) {
     this.pin = pin;
+  }
+
+  /** Ensure default values before persisting. */
+  @PrePersist
+  @PreUpdate
+  private void ensureDefaults() {
+    if (number == null) {
+      number = 0;
+    }
   }
 }

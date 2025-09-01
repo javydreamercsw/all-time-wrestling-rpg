@@ -1,0 +1,57 @@
+# Test configuration for match narration system
+# Ensures tests run with mock AI provider and don't require external API keys
+
+spring:
+  # Use in-memory database for tests
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  # Disable Flyway for tests - use JPA schema generation instead
+  flyway:
+    enabled: false
+
+# Match narration configuration for testing
+match-narration:
+  ai:
+    max-output-tokens: 2000
+    temperature: 0.8
+    timeout-seconds: 30  # Shorter timeout for tests
+    word-count:
+      minimum: 500
+      maximum: 1500
+      target: 1000
+    rate-limit:
+      enabled: false  # Disable rate limiting in tests
+      requests-per-minute: 1000
+      requests-per-hour: 10000
+
+# Logging configuration for tests
+logging:
+  level:
+    com.github.javydreamercsw.base.ai: DEBUG
+    org.springframework.web: WARN
+    org.hibernate: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Disable external API calls in tests by not setting API keys
+# This ensures tests use the mock provider
+# GEMINI_API_KEY: not-set
+# OPENAI_API_KEY: not-set
+# CLAUDE_API_KEY: not-set
+
+# Enable Notion sync for testing (but without actual NOTION_TOKEN)
+notion:
+  sync:
+    enabled: true

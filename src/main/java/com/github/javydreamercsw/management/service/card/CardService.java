@@ -2,6 +2,8 @@ package com.github.javydreamercsw.management.service.card;
 
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
+import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import java.time.Clock;
 import java.util.List;
 import lombok.NonNull;
@@ -15,10 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class CardService {
 
   private final CardRepository cardRepository;
+  private final CardSetRepository cardSetRepository;
   private final Clock clock;
 
-  CardService(CardRepository cardRepository, Clock clock) {
+  CardService(CardRepository cardRepository, CardSetRepository cardSetRepository, Clock clock) {
     this.cardRepository = cardRepository;
+    this.cardSetRepository = cardSetRepository;
     this.clock = clock;
   }
 
@@ -33,6 +37,14 @@ public class CardService {
     card.setSignature(false);
     card.setFinisher(false);
     card.setType("TBD");
+
+    // Set default CardSet (use the first available one)
+    CardSet defaultSet =
+        cardSetRepository.findAll().stream()
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("No CardSet available for default"));
+    card.setSet(defaultSet);
+
     save(card);
   }
 
