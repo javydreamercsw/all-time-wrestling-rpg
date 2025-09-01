@@ -3,9 +3,10 @@ package com.github.javydreamercsw.management.config;
 import java.sql.Connection;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
@@ -16,7 +17,8 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  */
 @Configuration
 @Slf4j
-public class DatabaseOptimizationConfig {
+@Order(100)
+public class DatabaseOptimizationConfig implements ApplicationRunner {
 
   private final DataSource dataSource;
   private final JdbcTemplate jdbcTemplate;
@@ -26,11 +28,18 @@ public class DatabaseOptimizationConfig {
     this.jdbcTemplate = jdbcTemplate;
   }
 
+  @Override
+  public void run(ApplicationArguments args) throws Exception {
+    // Run all post-startup tasks
+    createDatabaseIndexes();
+    optimizeConnectionSettings();
+    analyzeQueryPerformance();
+  }
+
   /**
    * Creates database indexes after the application is ready. This ensures all JPA entities have
    * been processed and tables created.
    */
-  @EventListener(ApplicationReadyEvent.class)
   public void createDatabaseIndexes() {
     log.info("🚀 Starting database optimization - creating indexes...");
 
@@ -61,12 +70,25 @@ public class DatabaseOptimizationConfig {
           jdbcTemplate.queryForObject("SELECT COUNT(*) FROM rivalry", Integer.class);
       Integer injuryCount =
           jdbcTemplate.queryForObject("SELECT COUNT(*) FROM injury", Integer.class);
+      Integer injuryTypeCount =
+          jdbcTemplate.queryForObject("SELECT COUNT(*) FROM injury_type", Integer.class);
+      Integer factionCount =
+          jdbcTemplate.queryForObject("SELECT COUNT(*) FROM faction", Integer.class);
+      Integer showTemplateCount =
+          jdbcTemplate.queryForObject("SELECT COUNT(*) FROM show_template", Integer.class);
+      Integer deckCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM deck", Integer.class);
+      Integer cardCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM card", Integer.class);
 
       log.info("📊 Database Statistics:");
       log.info("   - Wrestlers: {}", wrestlerCount);
       log.info("   - Shows: {}", showCount);
       log.info("   - Rivalries: {}", rivalryCount);
       log.info("   - Injuries: {}", injuryCount);
+      log.info("   - Injury Types: {}", injuryTypeCount);
+      log.info("   - Factions: {}", factionCount);
+      log.info("   - Show Templates: {}", showTemplateCount);
+      log.info("   - Decks: {}", deckCount);
+      log.info("   - Cards: {}", cardCount);
 
       // Check if indexes exist (H2 specific query)
       try {
@@ -136,7 +158,6 @@ public class DatabaseOptimizationConfig {
   }
 
   /** Optimizes database connection settings for better performance. */
-  @EventListener(ApplicationReadyEvent.class)
   public void optimizeConnectionSettings() {
     try {
       // Set optimal H2 database settings for performance
