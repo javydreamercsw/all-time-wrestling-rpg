@@ -26,7 +26,7 @@ import java.time.Clock;
 
 @Route("wrestler-list")
 @PageTitle("Wrestler List")
-@Menu(order = 0, icon = "vaadin:clipboard-check", title = "Wrestler List")
+@Menu(order = 0, icon = "vaadin:user", title = "Wrestler List")
 @PermitAll // When security is enabled, allow all authenticated users
 public class WrestlerListView extends Main {
 
