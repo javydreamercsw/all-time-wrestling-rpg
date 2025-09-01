@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.databases.DatabaseProperty;
@@ -343,7 +344,12 @@ public class NotionHandler {
         case "date" -> {
           // Handle date properties
           if (value.getDate() != null && value.getDate().getStart() != null) {
-            yield value.getDate().getStart();
+            String dateStr = value.getDate().getStart();
+            // The Notion API sometimes prefixes dates with @, so we remove it.
+            if (dateStr.startsWith("@")) {
+              yield dateStr.substring(1);
+            }
+            yield dateStr;
           } else {
             yield "N/A";
           }
@@ -1674,7 +1680,19 @@ public class NotionHandler {
     property.setRich_text(pageProperty.getRichText());
     property.setDate(pageProperty.getDate());
     property.setSelect(pageProperty.getSelect());
-    property.setRelation(pageProperty.getRelation());
+    // Convert Notion API's PageReference list to NotionPage.Relation list
+    if (pageProperty.getRelation() != null) {
+      List<NotionPage.Relation> relations =
+          pageProperty.getRelation().stream()
+              .map(
+                  pageReference -> {
+                    NotionPage.Relation newRelation = new NotionPage.Relation();
+                    newRelation.setId(pageReference.getId());
+                    return newRelation;
+                  })
+              .collect(Collectors.toList());
+      property.setRelation(relations);
+    }
     property.setPeople(pageProperty.getPeople());
     property.setNumber(pageProperty.getNumber());
     property.setCreated_time(pageProperty.getCreatedTime());

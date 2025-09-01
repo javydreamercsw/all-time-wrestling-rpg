@@ -358,6 +358,7 @@ public class ShowSyncService extends BaseSyncService {
       boolean isNewShow = true;
 
       if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
+        log.debug("Searching for existing show with external ID: {}", dto.getExternalId());
         show = showService.findByExternalId(dto.getExternalId()).orElse(null);
         if (show != null) {
           isNewShow = false;
@@ -365,6 +366,8 @@ public class ShowSyncService extends BaseSyncService {
               "Found existing show by external ID: {} for show: {}",
               dto.getExternalId(),
               dto.getName());
+        } else {
+          log.debug("No existing show found with external ID: {}", dto.getExternalId());
         }
       }
 

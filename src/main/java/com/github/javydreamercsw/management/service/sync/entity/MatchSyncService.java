@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync.entity;
 
 import com.github.javydreamercsw.base.ai.notion.MatchPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
@@ -123,7 +124,13 @@ public class MatchSyncService {
       matchDTO.setLastEditedTime(Instant.parse(matchPage.getLast_edited_time()));
 
       Object showsProperty = matchPage.getRawProperties().get("Shows");
-      if (showsProperty instanceof String && !((String) showsProperty).isEmpty()) {
+      if (showsProperty instanceof NotionPage.Property) {
+        NotionPage.Property notionProperty = (NotionPage.Property) showsProperty;
+        if (notionProperty.getRelation() != null && !notionProperty.getRelation().isEmpty()) {
+          matchDTO.setShowExternalId(notionProperty.getRelation().get(0).getId());
+        }
+      } else if (showsProperty instanceof String && !((String) showsProperty).isEmpty()) {
+        // Fallback for old data or if Notion API changes
         matchDTO.setShowName(((String) showsProperty).split(",")[0].trim());
       }
 
@@ -194,7 +201,7 @@ public class MatchSyncService {
           log.debug("Updating existing match: {}", matchResult.getId());
         }
 
-        Optional<Show> showOpt = showService.findByName(matchDTO.getShowName());
+        Optional<Show> showOpt = showService.findByExternalId(matchDTO.getShowExternalId());
         if (showOpt.isEmpty()) {
           log.warn(
               "Skipping match {} as show '{}' was not found.",

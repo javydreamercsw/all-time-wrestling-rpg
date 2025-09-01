@@ -16,6 +16,7 @@ public class MatchDTO {
   private String externalId;
   private String name;
   private String showName;
+  private String showExternalId;
   private List<String> participantNames;
   private List<String> winnerNames;
   private String matchTypeName;

@@ -40,7 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Slf4j
 @DisplayName("Show Type Sync Integration Tests")
-class ShowTypeSyncIntegrationTest extends BaseTest {
+class ShowTypeSyncITTest extends BaseTest {
 
   @Autowired private ShowTypeSyncService showTypeSyncService;
   @Autowired private ShowTypeService showTypeService;

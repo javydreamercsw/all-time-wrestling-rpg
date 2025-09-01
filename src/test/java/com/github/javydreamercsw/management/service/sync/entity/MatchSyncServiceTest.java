@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.MatchPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
@@ -73,7 +74,18 @@ class MatchSyncServiceTest {
             "Name",
             "Test Match",
             "Shows",
-            "Test Show",
+            new NotionPage.Property() {
+              {
+                setType("relation");
+                setRelation(
+                    List.of(
+                        new NotionPage.Relation() {
+                          {
+                            setId("dummyShowExternalId");
+                          }
+                        }));
+              }
+            },
             "Match Type",
             "Singles",
             "Participants",
@@ -83,7 +95,7 @@ class MatchSyncServiceTest {
 
     when(notionHandler.loadAllMatches()).thenReturn(List.of(matchPage));
     when(matchResultService.findByExternalId(anyString())).thenReturn(Optional.empty());
-    when(showService.findByName(anyString())).thenReturn(Optional.of(new Show()));
+    when(showService.findByExternalId(anyString())).thenReturn(Optional.of(new Show()));
     when(matchTypeService.findByName(anyString())).thenReturn(Optional.of(new MatchType()));
 
     // When
@@ -108,7 +120,18 @@ class MatchSyncServiceTest {
             "Name",
             "Updated Test Match",
             "Shows",
-            "Test Show",
+            new NotionPage.Property() {
+              {
+                setType("relation");
+                setRelation(
+                    List.of(
+                        new NotionPage.Relation() {
+                          {
+                            setId("dummyShowExternalId");
+                          }
+                        }));
+              }
+            },
             "Match Type",
             "Singles",
             "Participants",
@@ -122,7 +145,7 @@ class MatchSyncServiceTest {
 
     when(notionHandler.loadAllMatches()).thenReturn(List.of(matchPage));
     when(matchResultService.findByExternalId(anyString())).thenReturn(Optional.of(existingMatch));
-    when(showService.findByName(anyString())).thenReturn(Optional.of(new Show()));
+    when(showService.findByExternalId(anyString())).thenReturn(Optional.of(new Show()));
     when(matchTypeService.findByName(anyString())).thenReturn(Optional.of(new MatchType()));
 
     // When
