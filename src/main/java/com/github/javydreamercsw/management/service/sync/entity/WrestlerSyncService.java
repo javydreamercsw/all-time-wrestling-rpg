@@ -435,20 +435,26 @@ public class WrestlerSyncService extends BaseSyncService {
 
         // 1. Try to find by external ID first (most reliable)
         if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
+          log.debug("Searching for existing wrestler with external ID: {}", dto.getExternalId());
           wrestler = wrestlerService.findByExternalId(dto.getExternalId()).orElse(null);
           if (wrestler != null) {
             log.debug(
                 "Found existing wrestler by external ID: {} for wrestler: {}",
                 dto.getExternalId(),
                 dto.getName());
+          } else {
+            log.debug("No existing wrestler found with external ID: {}", dto.getExternalId());
           }
         }
 
         // 2. Fallback to name matching if external ID didn't work
         if (wrestler == null && dto.getName() != null && !dto.getName().trim().isEmpty()) {
+          log.debug("Searching for existing wrestler with name: {}", dto.getName());
           wrestler = wrestlerService.findByName(dto.getName()).orElse(null);
           if (wrestler != null) {
             log.debug("Found existing wrestler by name: {}", dto.getName());
+          } else {
+            log.debug("No existing wrestler found with name: {}", dto.getName());
           }
         }
 

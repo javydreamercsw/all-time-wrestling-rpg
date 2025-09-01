@@ -2,6 +2,7 @@ package com.github.javydreamercsw.base.ai.notion;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import lombok.Data;
 
 /** Base class for all Notion page types containing common fields and functionality. */
@@ -47,6 +48,11 @@ public abstract class NotionPage {
   }
 
   @Data
+  public static class Relation {
+    private String id;
+  }
+
+  @Data
   public static class Property {
     private String id;
     private String type;
@@ -54,7 +60,7 @@ public abstract class NotionPage {
     private Object rich_text;
     private Object date;
     private Object select;
-    private Object relation;
+    private List<Relation> relation;
     private Object people;
     private Object number;
     private Object created_time;
