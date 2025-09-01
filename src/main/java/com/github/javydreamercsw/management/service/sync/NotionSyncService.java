@@ -141,7 +141,7 @@ public class NotionSyncService extends BaseSyncService {
    * @return SyncResult containing the outcome of the sync operation
    */
   public SyncResult syncMatches(@NonNull String operationId) {
-    return matchSyncService.syncMatches(operationId);
+    return matchSyncService.syncMatches(operationId + "-matches");
   }
 
   /**
