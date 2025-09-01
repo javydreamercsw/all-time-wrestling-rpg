@@ -29,12 +29,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 
 @Configuration
-@Profile("!test")
 public class DataInitializer {
   private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
 
