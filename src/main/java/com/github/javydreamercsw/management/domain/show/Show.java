@@ -45,11 +45,11 @@ public class Show extends AbstractEntity<Long> {
   @JoinColumn(name = "show_type_id", nullable = false)
   private ShowType type;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "season_id")
   private Season season;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "template_id")
   private ShowTemplate template;
 
