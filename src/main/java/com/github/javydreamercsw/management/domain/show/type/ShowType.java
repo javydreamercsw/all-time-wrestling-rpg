@@ -1,6 +1,6 @@
 package com.github.javydreamercsw.management.domain.show.type;
 
-import static com.github.javydreamercsw.management.domain.card.Card.DESCRIPTION_MAX_LENGTH;
+import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.Column;
@@ -8,6 +8,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
@@ -58,5 +59,13 @@ public class ShowType extends AbstractEntity<Long> {
 
   public Instant getCreationDate() {
     return creationDate;
+  }
+
+  /** Ensure default values before persisting. */
+  @PrePersist
+  private void ensureDefaults() {
+    if (creationDate == null) {
+      creationDate = Instant.now();
+    }
   }
 }

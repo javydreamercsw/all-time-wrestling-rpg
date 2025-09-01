@@ -1,0 +1,21 @@
+[ {
+  "name" : "One on One",
+  "description" : "Traditional singles wrestling match between two competitors",
+  "playerAmount" : 2
+}, {
+  "name" : "Tag Team",
+  "description" : "Team-based wrestling match with tag-in/tag-out mechanics",
+  "playerAmount" : -1
+}, {
+  "name" : "Free-for-All",
+  "description" : "Multi-person match where everyone fights at once",
+  "playerAmount" : -1
+}, {
+  "name" : "Abu Dhabi Rumble",
+  "description" : "Large-scale elimination match with timed entries",
+  "playerAmount" : -1
+}, {
+  "name" : "Promo",
+  "description" : "Non-wrestling segment for storyline development and character work",
+  "playerAmount" : -1
+} ]
