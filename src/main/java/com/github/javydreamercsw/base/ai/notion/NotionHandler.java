@@ -56,80 +56,7 @@ public class NotionHandler {
     log.info("Database map loaded with {} databases", handler.databaseMap.size());
     log.info("You can now reference databases by name using getDatabaseId(name)");
 
-    // Example: Load different entity types
-
-    // Load a wrestler
-    Optional<WrestlerPage> wrestlerPage = handler.loadWrestler("Rob Van Dam");
-    if (wrestlerPage.isPresent()) {
-      WrestlerPage rvd = wrestlerPage.get();
-      log.info("Loaded wrestler page: {} with ID: {}", "Rob Van Dam", rvd.getId());
-      log.info("Wrestler page as pretty JSON:\n{}", rvd.toPrettyJson());
-    } else {
-      log.info("Wrestler 'Rob Van Dam' not found in Notion database");
-    }
-
-    // Load a show
-    Optional<ShowPage> showPage = handler.loadShow("Quantum Quarrel");
-    if (showPage.isPresent()) {
-      ShowPage show = showPage.get();
-      log.info("Loaded show page: {} with ID: {}", "Quantum Quarrel", show.getId());
-      log.info("Show page as pretty JSON:\n{}", show.toPrettyJson());
-
-      // Load all matches from the show using the new getMatches() method
-      log.info("Loading all matches for show 'Quantum Quarrel'...");
-      List<MatchPage> matches = show.getMatches();
-
-      if (!matches.isEmpty()) {
-        log.info("Found {} matches in show:", matches.size());
-        for (int i = 0; i < matches.size(); i++) {
-          MatchPage match = matches.get(i);
-          log.info("Match {}: ID = {}", (i + 1), match.getId());
-          log.info("Match {} details as JSON:\n{}", (i + 1), match.toPrettyJson());
-        }
-
-        // Also demonstrate loading the first match individually for comparison
-        if (!matches.isEmpty()) {
-          MatchPage firstMatch = matches.get(0);
-          log.info("First match from list has ID: {}", firstMatch.getId());
-        }
-      } else {
-        log.info("No matches found in the show, trying fallback approach");
-        // Fallback to the original single match loading approach
-        String firstMatchName = handler.extractFirstMatchFromShow(show);
-        if (firstMatchName != null) {
-          Optional<MatchPage> matchPage = handler.loadMatch(firstMatchName);
-          if (matchPage.isPresent()) {
-            MatchPage match = matchPage.get();
-            log.info("Loaded fallback match '{}' with ID: {}", firstMatchName, match.getId());
-            log.info("Fallback match as JSON:\n{}", match.toPrettyJson());
-          }
-        } else {
-          log.info("No matches found using any method");
-        }
-      }
-    } else {
-      log.info("Show 'Quantum Quarrel' not found in Notion database");
-    }
-
-    // Load a team
-    Optional<TeamPage> teamPage = handler.loadTeam("Team Extreme");
-    if (teamPage.isPresent()) {
-      TeamPage team = teamPage.get();
-      log.info("Loaded team page: {} with ID: {}", "Team Extreme", team.getId());
-      log.info("Team page as pretty JSON:\n{}", team.toPrettyJson());
-    } else {
-      log.info("Team 'Team Extreme' not found in Notion database");
-    }
-
-    // Load a faction
-    Optional<FactionPage> factionPage = handler.loadFaction("Desolation's Smile");
-    if (factionPage.isPresent()) {
-      FactionPage faction = factionPage.get();
-      log.info("Loaded faction page: {} with ID: {}", "Desolation's Smile", faction.getId());
-      log.info("Faction page as pretty JSON:\n{}", faction.toPrettyJson());
-    } else {
-      log.info("Faction 'Desolation's Smile' not found in Notion database");
-    }
+    handler.databaseMap.forEach((key, value) -> log.info("{}: {}", key, value));
   }
 
   /**
@@ -1707,8 +1634,57 @@ public class NotionHandler {
 
   /** Maps a Notion page to a MatchPage object. */
   private MatchPage mapPageToMatchPage(@NonNull Page pageData, @NonNull String matchName) {
-    return mapPageToGenericEntity(
-        pageData, matchName, "Match", MatchPage::new, MatchPage.NotionParent::new);
+    MatchPage matchPage =
+        mapPageToGenericEntity(
+            pageData, matchName, "Match", MatchPage::new, MatchPage.NotionParent::new);
+
+    // Extract and set specific MatchPage properties
+    MatchPage.NotionProperties properties = new MatchPage.NotionProperties();
+    Map<String, PageProperty> notionProperties = pageData.getProperties();
+
+    try (NotionClient client = createNotionClient()) {
+      properties.setParticipants(createProperty(notionProperties, "Participants", client));
+      properties.setWinners(createProperty(notionProperties, "Winners", client));
+      properties.setShows(createProperty(notionProperties, "Shows", client));
+      properties.setMatch_Type(createProperty(notionProperties, "Match Type", client));
+      properties.setReferee_s(createProperty(notionProperties, "Referee(s)", client));
+      properties.setRules(createProperty(notionProperties, "Rules", client));
+      properties.setTitle_s(createProperty(notionProperties, "Title(s)", client));
+      properties.setNotes(createProperty(notionProperties, "Notes", client));
+      properties.setDate(createProperty(notionProperties, "Date", client));
+    } catch (Exception e) {
+      log.error("Error mapping MatchPage properties for {}: {}", matchName, e.getMessage());
+    }
+
+    matchPage.setProperties(properties);
+    return matchPage;
+  }
+
+  // Helper method to create a NotionPage.Property from a PageProperty
+  private NotionPage.Property createProperty(
+      Map<String, PageProperty> notionProperties, String propertyName, NotionClient client) {
+    PageProperty pageProperty = notionProperties.get(propertyName);
+    if (pageProperty == null) {
+      return null;
+    }
+    NotionPage.Property property = new NotionPage.Property();
+    property.setId(pageProperty.getId());
+    property.setType(pageProperty.getType() != null ? pageProperty.getType().getValue() : null);
+    property.setTitle(pageProperty.getTitle());
+    property.setRich_text(pageProperty.getRichText());
+    property.setDate(pageProperty.getDate());
+    property.setSelect(pageProperty.getSelect());
+    property.setRelation(pageProperty.getRelation());
+    property.setPeople(pageProperty.getPeople());
+    property.setNumber(pageProperty.getNumber());
+    property.setCreated_time(pageProperty.getCreatedTime());
+    property.setLast_edited_time(pageProperty.getLastEditedTime());
+    property.setCreated_by(pageProperty.getCreatedBy());
+    property.setLast_edited_by(pageProperty.getLastEditedBy());
+    property.setUnique_id(pageProperty.getUniqueId());
+    property.setFormula(pageProperty.getFormula());
+    property.setHas_more(pageProperty.getHasMore());
+    return property;
   }
 
   /** Maps a Notion page to a HeatPage object. */
