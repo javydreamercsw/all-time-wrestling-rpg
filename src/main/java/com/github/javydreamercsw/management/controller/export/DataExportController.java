@@ -173,8 +173,8 @@ public class DataExportController {
       return ResponseEntity.ok(message);
 
     } catch (Exception e) {
-      String errorMessage = "❌ Failed to export all data: " + e.getMessage();
-      log.error(errorMessage, e);
+      String errorMessage = "❌ Failed to export all data due to an unexpected error.";
+      log.error("❌ Failed to export all data", e);
       return ResponseEntity.internalServerError().body(errorMessage);
     }
   }
