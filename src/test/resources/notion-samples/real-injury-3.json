@@ -1,0 +1,24 @@
+{
+  "object" : "page",
+  "id" : "22890edc-c30f-80fe-a8ac-c02bb9299825",
+  "created_time" : "2025-07-06T17:33:00.000Z",
+  "last_edited_time" : "2025-07-06T17:33:00.000Z",
+  "created_by" : null,
+  "last_edited_by" : null,
+  "cover" : null,
+  "icon" : null,
+  "parent" : null,
+  "archived" : false,
+  "in_trash" : false,
+  "url" : "https://www.notion.so/Leg-injury-22890edcc30f80fea8acc02bb9299825",
+  "public_url" : "https://alltimewrestlingrpg.notion.site/Leg-injury-22890edcc30f80fea8acc02bb9299825",
+  "request_id" : null,
+  "rawProperties" : {
+    "Stamina Effect" : "0",
+    "Card Effect" : "-1",
+    "Special Effects" : "Maximum handsize is reduced by 1",
+    "Health Effect" : "-2",
+    "Injury Name" : "Leg injury"
+  },
+  "properties" : null
+}

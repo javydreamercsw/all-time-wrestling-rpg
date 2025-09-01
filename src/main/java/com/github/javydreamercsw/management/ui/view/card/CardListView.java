@@ -29,7 +29,7 @@ import java.time.Clock;
 
 @Route("card-list")
 @PageTitle("Card List")
-@Menu(order = 2, icon = "vaadin:clipboard-check", title = "Card List")
+@Menu(order = 2, icon = "vaadin:credit-card", title = "Card List")
 @PermitAll // When security is enabled, allow all authenticated users
 public class CardListView extends Main {
 
