@@ -68,8 +68,6 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
       Integer showCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM show", Integer.class);
       Integer rivalryCount =
           jdbcTemplate.queryForObject("SELECT COUNT(*) FROM rivalry", Integer.class);
-      Integer injuryCount =
-          jdbcTemplate.queryForObject("SELECT COUNT(*) FROM injury", Integer.class);
       Integer injuryTypeCount =
           jdbcTemplate.queryForObject("SELECT COUNT(*) FROM injury_type", Integer.class);
       Integer factionCount =
@@ -78,17 +76,18 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
           jdbcTemplate.queryForObject("SELECT COUNT(*) FROM show_template", Integer.class);
       Integer deckCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM deck", Integer.class);
       Integer cardCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM card", Integer.class);
+      Integer matchCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM match", Integer.class);
 
       log.info("📊 Database Statistics:");
       log.info("   - Wrestlers: {}", wrestlerCount);
       log.info("   - Shows: {}", showCount);
       log.info("   - Rivalries: {}", rivalryCount);
-      log.info("   - Injuries: {}", injuryCount);
       log.info("   - Injury Types: {}", injuryTypeCount);
       log.info("   - Factions: {}", factionCount);
       log.info("   - Show Templates: {}", showTemplateCount);
       log.info("   - Decks: {}", deckCount);
       log.info("   - Cards: {}", cardCount);
+      log.info("   - Matches: {}", matchCount);
 
       // Check if indexes exist (H2 specific query)
       try {

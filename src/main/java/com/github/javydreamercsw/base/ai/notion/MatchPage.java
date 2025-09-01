@@ -12,12 +12,14 @@ public class MatchPage extends NotionPage {
   @EqualsAndHashCode(callSuper = false)
   public static class NotionProperties extends NotionPage.BaseNotionProperties {
     // Match-specific properties only (common properties inherited from base)
-    private Property Participants;
-    private Property Winner;
-    private Property MatchType;
-    private Property Show;
-    private Property Duration;
-    private Property Rating;
-    private Property Stipulation;
+    private NotionPage.Property Participants;
+    private NotionPage.Property Winners;
+    private NotionPage.Property Shows;
+    private NotionPage.Property Match_Type;
+    private NotionPage.Property Referee_s;
+    private NotionPage.Property Rules;
+    private NotionPage.Property Title_s;
+    private NotionPage.Property Notes;
+    private NotionPage.Property Date;
   }
 }
