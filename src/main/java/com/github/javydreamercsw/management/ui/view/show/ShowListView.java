@@ -89,6 +89,15 @@ public class ShowListView extends Main {
     showGrid = new Grid<>(Show.class, false);
     showGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
+    showGrid.setPartNameGenerator(
+        show -> {
+          if (!show.isPremiumLiveEvent() && !show.isWeeklyShow()) {
+            return "ple-show";
+          } else {
+            return null;
+          }
+        });
+
     // Name column with link to detail view
     showGrid
         .addComponentColumn(
@@ -138,8 +147,8 @@ public class ShowListView extends Main {
                 typeSpan.addClassNames(
                     LumoUtility.Background.PRIMARY, LumoUtility.TextColor.PRIMARY_CONTRAST);
               } else {
-                typeSpan.addClassNames(
-                    LumoUtility.Background.SUCCESS, LumoUtility.TextColor.SUCCESS_CONTRAST);
+                typeSpan.getStyle().set("background-color", "#8A2BE2");
+                typeSpan.getStyle().set("color", "white");
               }
 
               return typeSpan;

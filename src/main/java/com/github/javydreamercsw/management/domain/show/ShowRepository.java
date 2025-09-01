@@ -53,6 +53,17 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
    */
   List<Show> findByShowDateIsNullOrderByCreationDate();
 
+  @Query(
+      """
+      SELECT s FROM Show s
+      LEFT JOIN FETCH s.season
+      LEFT JOIN FETCH s.template t
+      LEFT JOIN FETCH t.showType
+      WHERE s.showDate >= :date
+      ORDER BY s.showDate ASC
+      """)
+  List<Show> findUpcomingWithRelationships(LocalDate date, Pageable pageable);
+
   /**
    * Find all shows with eagerly loaded relationships for export purposes. This prevents
    * LazyInitializationException when accessing Season and ShowTemplate outside of transaction.

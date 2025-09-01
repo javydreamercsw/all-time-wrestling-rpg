@@ -137,6 +137,12 @@ public class ShowService {
     return showRepository.findByShowDateGreaterThanEqualOrderByShowDate(today, pageable);
   }
 
+  public List<Show> getUpcomingShowsWithRelationships(int limit) {
+    LocalDate today = LocalDate.now(clock);
+    Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
+    return showRepository.findUpcomingWithRelationships(today, pageable);
+  }
+
   /**
    * Create a new show.
    *

@@ -52,6 +52,14 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
   private Select<String> monthSelect;
   private H5 currentDateLabel;
 
+  public FullCalendar getCalendar() {
+    return calendar;
+  }
+
+  public VerticalLayout getUpcomingShowsPanel() {
+    return upcomingShowsPanel;
+  }
+
   public ShowCalendarView(@NonNull ShowService showService) {
     this.showService = showService;
     this.currentYearMonth = YearMonth.now();
@@ -258,7 +266,9 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
   private void loadShowsIntoCalendar() {
     // Get all shows with dates
     List<Show> allShows =
-        showService.findAll().stream().filter(show -> show.getShowDate() != null).toList();
+        showService.findAllWithRelationships().stream()
+            .filter(show -> show.getShowDate() != null)
+            .toList();
 
     // Clear existing entries
     calendar.getEntryProvider().asInMemory().removeAllEntries();
@@ -277,7 +287,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
       } else if (show.isWeeklyShow()) {
         entry.setColor("#2563eb"); // Blue for Weekly shows
       } else {
-        entry.setColor("#16a34a"); // Green for other shows
+        entry.setColor("#8A2BE2"); // Purple for other shows
       }
 
       // Store show ID for navigation
@@ -324,7 +334,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     upcomingTitle.addClassNames(LumoUtility.Margin.NONE);
     upcomingShowsPanel.add(upcomingTitle);
 
-    List<Show> upcomingShows = showService.getUpcomingShows(10);
+    List<Show> upcomingShows = showService.getUpcomingShowsWithRelationships(10);
 
     if (upcomingShows.isEmpty()) {
       Span noShows = new Span("No upcoming shows scheduled");
@@ -358,6 +368,11 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
           // Then navigate to show detail
           getUI().ifPresent(ui -> ui.navigate("show-detail/" + show.getId() + "?ref=calendar"));
         });
+
+    if (!show.isPremiumLiveEvent() && !show.isWeeklyShow()) {
+      showItem.getStyle().set("border-color", "#8A2BE2");
+      showItem.getStyle().set("border-width", "2px");
+    }
 
     Span showName = new Span(show.getName());
     showName.addClassNames(LumoUtility.FontWeight.SEMIBOLD);

@@ -6,8 +6,10 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
+import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.databases.QueryDatabaseRequest;
 
 /**
@@ -95,8 +97,7 @@ public class ShowTemplateDataRetriever {
   }
 
   /** Query all show templates from the Show Templates database. */
-  private static List<ShowTemplatePage> queryAllShowTemplates(
-      String databaseId) {
+  private static List<ShowTemplatePage> queryAllShowTemplates(@NonNull String databaseId) {
     List<ShowTemplatePage> templates = new ArrayList<>();
 
     try (NotionClient client = new NotionClient(EnvironmentVariableUtil.getNotionToken())) {
@@ -128,8 +129,7 @@ public class ShowTemplateDataRetriever {
   }
 
   /** Create a ShowTemplatePage from a Notion Page (simplified version). */
-  private static ShowTemplatePage createShowTemplatePageFromNotionPage(
-      notion.api.v1.model.pages.Page page) {
+  private static ShowTemplatePage createShowTemplatePageFromNotionPage(Page page) {
     ShowTemplatePage templatePage = new ShowTemplatePage();
 
     // Set basic page properties
@@ -137,10 +137,7 @@ public class ShowTemplateDataRetriever {
     templatePage.setUrl(page.getUrl());
 
     // Store raw properties for extraction
-    java.util.Map<String, Object> rawProperties = new java.util.HashMap<>();
-    if (page.getProperties() != null) {
-      page.getProperties().forEach((key, value) -> rawProperties.put(key, value));
-    }
+    java.util.Map<String, Object> rawProperties = new java.util.HashMap<>(page.getProperties());
     templatePage.setRawProperties(rawProperties);
 
     return templatePage;
@@ -153,9 +150,7 @@ public class ShowTemplateDataRetriever {
       Object nameProperty = templatePage.getRawProperties().get("Template Name");
       if (nameProperty != null) {
         // Extract the plain text from the title property
-        if (nameProperty instanceof notion.api.v1.model.pages.PageProperty) {
-          notion.api.v1.model.pages.PageProperty prop =
-              (notion.api.v1.model.pages.PageProperty) nameProperty;
+        if (nameProperty instanceof notion.api.v1.model.pages.PageProperty prop) {
           if (prop.getTitle() != null && !prop.getTitle().isEmpty()) {
             return prop.getTitle().get(0).getPlainText();
           }

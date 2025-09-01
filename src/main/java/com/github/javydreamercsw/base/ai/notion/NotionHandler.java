@@ -1510,35 +1510,41 @@ public class NotionHandler {
 
       log.debug("Found {} pages in {} database", results.size(), entityType);
 
-      // Convert all pages to entities
-      for (Page page : results) {
-        try {
-          // Suppress output again for retrievePage calls
-          System.setOut(new PrintStream(new ByteArrayOutputStream()));
-          Page pageData = client.retrievePage(page.getId(), Collections.emptyList());
-          System.setOut(originalOut);
+      // Convert all pages to entities in parallel
+      entities =
+          results.parallelStream()
+              .map(
+                  page -> {
+                    try {
+                      // Suppress output again for retrievePage calls
+                      System.setOut(new PrintStream(new ByteArrayOutputStream()));
+                      Page pageData = client.retrievePage(page.getId(), Collections.emptyList());
+                      System.setOut(originalOut);
 
-          // Get the name property for logging
-          String entityName = "Unknown";
-          PageProperty nameProperty = pageData.getProperties().get("Name");
-          if (nameProperty != null
-              && nameProperty.getTitle() != null
-              && !nameProperty.getTitle().isEmpty()) {
-            entityName = nameProperty.getTitle().get(0).getPlainText();
-          }
+                      // Get the name property for logging
+                      String entityName = "Unknown";
+                      PageProperty nameProperty = pageData.getProperties().get("Name");
+                      if (nameProperty != null
+                          && nameProperty.getTitle() != null
+                          && !nameProperty.getTitle().isEmpty()) {
+                        entityName = nameProperty.getTitle().get(0).getPlainText();
+                      }
 
-          T entity = mapper.apply(pageData, entityName);
-          entities.add(entity);
-          log.debug("Loaded {} entity: {}", entityType, entityName);
+                      T entity = mapper.apply(pageData, entityName);
+                      log.debug("Loaded {} entity: {}", entityType, entityName);
+                      return entity;
 
-        } catch (Exception e) {
-          log.warn(
-              "Failed to load {} entity from page {}: {}",
-              entityType,
-              page.getId(),
-              e.getMessage());
-        }
-      }
+                    } catch (Exception e) {
+                      log.warn(
+                          "Failed to load {} entity from page {}: {}",
+                          entityType,
+                          page.getId(),
+                          e.getMessage());
+                      return null;
+                    }
+                  })
+              .filter(java.util.Objects::nonNull)
+              .collect(java.util.stream.Collectors.toList());
 
       log.info("Successfully loaded {} {} entities from database", entities.size(), entityType);
       return entities;
@@ -1696,7 +1702,7 @@ public class NotionHandler {
   /** Maps a Notion page to a ShowPage object with minimal relationship resolution for sync. */
   private ShowPage mapPageToShowPageForSync(@NonNull Page pageData, @NonNull String showName) {
     return mapPageToGenericEntity(
-        pageData, showName, "Show", ShowPage::new, ShowPage.NotionParent::new, false);
+        pageData, showName, "Show", ShowPage::new, ShowPage.NotionParent::new, true);
   }
 
   /** Maps a Notion page to a MatchPage object. */
@@ -1785,11 +1791,11 @@ public class NotionHandler {
       entityPage
           .getClass()
           .getMethod("setCreated_time", String.class)
-          .invoke(entityPage, pageData.getCreatedTime().toString());
+          .invoke(entityPage, pageData.getCreatedTime());
       entityPage
           .getClass()
           .getMethod("setLast_edited_time", String.class)
-          .invoke(entityPage, pageData.getLastEditedTime().toString());
+          .invoke(entityPage, pageData.getLastEditedTime());
       entityPage
           .getClass()
           .getMethod("setArchived", boolean.class)
