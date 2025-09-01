@@ -52,6 +52,11 @@ public class TitleService {
     return titleRepository.findById(titleId);
   }
 
+  @Transactional(readOnly = true)
+  public Optional<Title> findByName(String name) {
+    return titleRepository.findByName(name);
+  }
+
   /** Get all titles with pagination. */
   @Transactional(readOnly = true)
   public Page<Title> getAllTitles(Pageable pageable) {
