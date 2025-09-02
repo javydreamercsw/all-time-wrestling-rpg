@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.MatchPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
@@ -21,7 +22,6 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
-import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MatchSyncService Tests")
-class MatchSyncServiceTest {
+class MatchSyncServiceTest extends BaseTest {
 
   @Mock private NotionHandler notionHandler;
   @Mock private MatchResultService matchResultService;
@@ -184,25 +184,5 @@ class MatchSyncServiceTest {
 
     // Then
     verify(matchResultService, times(0)).updateMatchResult(any(MatchResult.class));
-  }
-
-  /**
-   * Helper method to set private fields via reflection for testing. This is needed because we
-   * switched from constructor injection to field injection.
-   */
-  private void setField(Object target, String fieldName, Object value) {
-    try {
-      Field field = target.getClass().getDeclaredField(fieldName);
-      field.setAccessible(true);
-      field.set(target, value);
-    } catch (Exception e) {
-      try {
-        Field superField = target.getClass().getSuperclass().getDeclaredField(fieldName);
-        superField.setAccessible(true);
-        superField.set(target, value);
-      } catch (Exception e2) {
-        throw new RuntimeException("Failed to set field " + fieldName, e2);
-      }
-    }
   }
 }
