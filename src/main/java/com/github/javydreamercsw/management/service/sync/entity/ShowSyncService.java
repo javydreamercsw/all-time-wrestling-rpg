@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync.entity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -12,6 +13,7 @@ import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -36,6 +38,7 @@ public class ShowSyncService extends BaseSyncService {
   @Autowired private ShowTypeService showTypeService;
   @Autowired private SeasonService seasonService;
   @Autowired private ShowTemplateService showTemplateService;
+  @Autowired private NotionRateLimitService rateLimitService;
 
   public ShowSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -58,22 +61,25 @@ public class ShowSyncService extends BaseSyncService {
    * @return SyncResult containing the outcome of the sync operation
    */
   public SyncResult syncShows(@NonNull String operationId) {
-    // Check if already synced in current session
-    if (isAlreadySyncedInSession("shows")) {
-      log.info("⏭️ Shows already synced in current session, skipping");
-      return SyncResult.success("Shows", 0, 0);
-    }
-
-    try {
-      SyncResult result = performShowsSync(operationId);
-      if (result.isSuccess()) {
-        markAsSyncedInSession("shows");
+    if (EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      // Check if already synced in current session
+      if (isAlreadySyncedInSession("shows")) {
+        log.info("⏭️ Shows already synced in current session, skipping");
+        return SyncResult.success("Shows", 0, 0);
       }
-      return result;
-    } catch (Exception e) {
-      log.error("Failed to sync shows", e);
-      return SyncResult.failure("Shows", e.getMessage());
+
+      try {
+        SyncResult result = performShowsSync(operationId);
+        if (result.isSuccess()) {
+          markAsSyncedInSession("shows");
+        }
+        return result;
+      } catch (Exception e) {
+        log.error("Failed to sync shows", e);
+        return SyncResult.failure("Shows", e.getMessage());
+      }
     }
+    return SyncResult.failure("Shows", "Notion Token was not provided!");
   }
 
   /** Internal method to perform the actual shows sync logic. */
@@ -197,14 +203,25 @@ public class ShowSyncService extends BaseSyncService {
 
   /** Retrieves all shows from the Notion Shows database. */
   private List<ShowPage> getAllShowsFromNotion() {
-    log.debug("Retrieving all shows from Notion Shows database");
+    log.debug("Retrieving all shows from Notion Shows database with rate limiting");
 
     if (!isNotionHandlerAvailable()) {
       log.warn("NotionHandler not available. Cannot sync from Notion.");
       throw new IllegalStateException("NotionHandler is not available for sync operations");
     }
 
-    return notionHandler.loadAllShowsForSync();
+    try {
+      // Apply rate limiting before making the Notion API call
+      rateLimitService.acquirePermit();
+      return notionHandler.loadAllShowsForSync();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.error("Interrupted while waiting for rate limit permit for shows sync");
+      throw new RuntimeException("Shows sync interrupted while waiting for rate limit", e);
+    } catch (Exception e) {
+      log.error("Failed to retrieve shows from Notion: {}", e.getMessage());
+      throw new RuntimeException("Failed to retrieve shows from Notion", e);
+    }
   }
 
   /** Converts ShowPage objects from Notion to ShowDTO objects. */

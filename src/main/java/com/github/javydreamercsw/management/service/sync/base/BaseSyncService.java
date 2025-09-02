@@ -7,6 +7,7 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
 import com.github.javydreamercsw.management.service.sync.DataIntegrityChecker;
+import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.RetryService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
@@ -22,15 +23,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * Base class for all sync services providing common functionality and utilities. This class
- * contains shared methods for property extraction, backup creation, session management, and other
- * common sync operations.
+ * Enhanced base class for all sync services providing common functionality including rate limiting,
+ * parallel processing, circuit breaking, and retry mechanisms.
  */
 @Slf4j
 public abstract class BaseSyncService {
@@ -41,11 +47,14 @@ public abstract class BaseSyncService {
   // Session-based tracking to prevent duplicate syncing during batch operations
   private final ThreadLocal<Set<String>> currentSyncSession = ThreadLocal.withInitial(HashSet::new);
 
+  // Controlled parallelism executor for all sync operations
+  private final ExecutorService syncExecutorService = Executors.newFixedThreadPool(3);
+
   // Optional NotionHandler for integration tests
   @Autowired(required = false)
   protected NotionHandler notionHandler;
 
-  // Sync infrastructure services - autowired
+  // Enhanced sync infrastructure services - autowired
   @Autowired protected SyncProgressTracker progressTracker;
   @Autowired protected SyncHealthMonitor healthMonitor;
   @Autowired protected RetryService retryService;
@@ -53,6 +62,7 @@ public abstract class BaseSyncService {
   @Autowired protected SyncValidationService validationService;
   @Autowired protected SyncTransactionManager syncTransactionManager;
   @Autowired protected DataIntegrityChecker integrityChecker;
+  @Autowired protected NotionRateLimitService rateLimitService;
 
   protected BaseSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     this.objectMapper = objectMapper;
@@ -284,6 +294,142 @@ public abstract class BaseSyncService {
       return false;
     }
     return true;
+  }
+
+  /**
+   * Execute a sync operation with full resilience patterns: circuit breaker, retry, and rate
+   * limiting.
+   */
+  protected <T> T executeResilientSync(
+      String entityType, String operationId, Function<Integer, T> syncOperation) throws Exception {
+    return circuitBreakerService.execute(
+        entityType,
+        () ->
+            retryService.executeWithRetry(
+                entityType,
+                (int attemptNumber) -> {
+                  log.debug("🔄 {} sync attempt {} starting", entityType, attemptNumber);
+                  rateLimitService.acquirePermit();
+                  return syncOperation.apply(attemptNumber);
+                }));
+  }
+
+  /**
+   * Process a list of items with controlled parallel processing and rate limiting.
+   *
+   * @param items List of items to process
+   * @param processor Function to process each item
+   * @param batchSize Number of items to process in each batch
+   * @param operationId Operation ID for progress tracking
+   * @param progressStep Current progress step
+   * @param description Description for progress updates
+   * @return List of processed results
+   */
+  protected <T, R> List<R> processWithControlledParallelism(
+      List<T> items,
+      Function<T, R> processor,
+      int batchSize,
+      String operationId,
+      int progressStep,
+      String description) {
+
+    if (items.isEmpty()) {
+      return List.of();
+    }
+
+    log.info(
+        "Processing {} items with controlled parallelism (batch size: {})",
+        items.size(),
+        batchSize);
+    List<R> allResults = new java.util.ArrayList<>();
+
+    for (int i = 0; i < items.size(); i += batchSize) {
+      int endIndex = Math.min(i + batchSize, items.size());
+      List<T> batch = items.subList(i, endIndex);
+
+      log.debug("Processing batch {}-{} of {}", i + 1, endIndex, items.size());
+
+      // Process batch with parallel execution and rate limiting
+      List<CompletableFuture<R>> futures =
+          batch.stream()
+              .map(
+                  item ->
+                      CompletableFuture.supplyAsync(
+                          () -> {
+                            try {
+                              rateLimitService.acquirePermit();
+                              return processor.apply(item);
+                            } catch (InterruptedException e) {
+                              Thread.currentThread().interrupt();
+                              log.error("Interrupted while processing item");
+                              throw new RuntimeException("Processing interrupted", e);
+                            } catch (Exception e) {
+                              log.error("Error processing item: {}", e.getMessage());
+                              throw new RuntimeException("Processing failed", e);
+                            }
+                          },
+                          syncExecutorService))
+              .toList();
+
+      // Wait for batch completion with timeout
+      try {
+        List<R> batchResults =
+            futures.stream()
+                .map(
+                    future -> {
+                      try {
+                        return future.get(30, TimeUnit.SECONDS);
+                      } catch (Exception e) {
+                        log.error("Failed to complete processing future: {}", e.getMessage());
+                        throw new RuntimeException("Future completion failed", e);
+                      }
+                    })
+                .toList();
+
+        allResults.addAll(batchResults);
+
+        // Update progress
+        int processedCount = Math.min(endIndex, items.size());
+        double progressPercent = (double) processedCount / items.size() * 100;
+        progressTracker.updateProgress(
+            operationId,
+            progressStep,
+            String.format(
+                "%s %d/%d items (%.1f%%)",
+                description, processedCount, items.size(), progressPercent));
+
+        // Small delay between batches to be nice to the API
+        if (endIndex < items.size()) {
+          Thread.sleep(500);
+        }
+
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.error("Interrupted while processing batch");
+        throw new RuntimeException("Batch processing interrupted", e);
+      }
+    }
+
+    return allResults;
+  }
+
+  /** Execute a Notion API call with proper rate limiting. */
+  protected <T> T executeWithRateLimit(Supplier<T> apiCall) throws InterruptedException {
+    rateLimitService.acquirePermit();
+    return apiCall.get();
+  }
+
+  /** Shutdown the executor service (should be called during application shutdown). */
+  public void shutdown() {
+    syncExecutorService.shutdown();
+    try {
+      if (!syncExecutorService.awaitTermination(60, TimeUnit.SECONDS)) {
+        syncExecutorService.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+      syncExecutorService.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
   }
 
   /** Represents the result of a synchronization operation. */

@@ -55,30 +55,23 @@ public class FactionSyncService extends BaseSyncService {
 
       // Check if NOTION_TOKEN is available before starting sync
       if (!validateNotionToken("Factions")) {
-        if (operationId != null) {
-          progressTracker.failOperation(
-              operationId, "NOTION_TOKEN environment variable is required for Notion sync");
-        }
+        progressTracker.failOperation(
+            operationId, "NOTION_TOKEN environment variable is required for Notion sync");
         healthMonitor.recordFailure("Factions", "NOTION_TOKEN not available");
         return SyncResult.failure(
             "Factions", "NOTION_TOKEN environment variable is required for Notion sync");
       }
 
       // Initialize progress tracking
-      if (operationId != null) {
-        progressTracker.startOperation(operationId, "Sync Factions", 4);
-        progressTracker.updateProgress(operationId, 1, "Retrieving factions from Notion...");
-        progressTracker.addLogMessage(
-            operationId, "🏴 Starting factions synchronization...", "INFO");
-      }
+      progressTracker.startOperation(operationId, "Sync Factions", 4);
+      progressTracker.updateProgress(operationId, 1, "Retrieving factions from Notion...");
+      progressTracker.addLogMessage(operationId, "🏴 Starting factions synchronization...", "INFO");
 
       // Create backup if enabled
       if (syncProperties.isBackupEnabled()) {
         log.info("📦 Creating backup...");
-        if (operationId != null) {
-          progressTracker.updateProgress(operationId, 1, "Creating backup of existing data...");
-          progressTracker.addLogMessage(operationId, "📦 Creating backup...", "INFO");
-        }
+        progressTracker.updateProgress(operationId, 1, "Creating backup of existing data...");
+        progressTracker.addLogMessage(operationId, "📦 Creating backup...", "INFO");
         createBackup("factions.json");
       }
 

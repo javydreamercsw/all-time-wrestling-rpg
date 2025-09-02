@@ -1,32 +1,34 @@
 package com.github.javydreamercsw.management.service.sync.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.MatchPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
+import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.service.match.MatchResultService;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,24 +43,25 @@ class MatchSyncServiceTest {
   @Mock private NotionHandler notionHandler;
   @Mock private MatchResultService matchResultService;
   @Mock private ShowService showService;
-  @Mock private WrestlerService wrestlerService;
   @Mock private MatchTypeService matchTypeService;
-  @Mock private SyncProgressTracker syncProgressTracker;
-  @Mock private SyncValidationService syncValidationService;
+  @Mock private NotionSyncProperties syncProperties;
+  @Mock private ObjectMapper objectMapper;
+  @Mock private SyncProgressTracker progressTracker;
+  @Mock private NotionRateLimitService rateLimitService;
 
   private MatchSyncService matchSyncService;
 
   @BeforeEach
   void setUp() {
-    matchSyncService =
-        new MatchSyncService(
-            notionHandler,
-            matchResultService,
-            showService,
-            wrestlerService,
-            matchTypeService,
-            syncProgressTracker,
-            syncValidationService);
+    matchSyncService = new MatchSyncService(objectMapper, syncProperties);
+
+    // Manually inject the mocked dependencies using reflection
+    setField(matchSyncService, "notionHandler", notionHandler);
+    setField(matchSyncService, "progressTracker", progressTracker);
+    setField(matchSyncService, "rateLimitService", rateLimitService);
+    setField(matchSyncService, "matchResultService", matchResultService);
+    setField(matchSyncService, "showService", showService);
+    setField(matchSyncService, "matchTypeService", matchTypeService);
   }
 
   @Test
@@ -69,12 +72,11 @@ class MatchSyncServiceTest {
     matchPage.setId("ext1");
     matchPage.setCreated_time(Instant.now().toString());
     matchPage.setLast_edited_time(Instant.now().toString());
-    matchPage.setRawProperties(
-        Map.of(
-            "Name",
-            "Test Match",
-            "Shows",
-            new NotionPage.Property() {
+    matchPage.setProperties(new MatchPage.NotionProperties());
+    matchPage
+        .getProperties()
+        .setShows(
+            new MatchPage.Property() {
               {
                 setType("relation");
                 setRelation(
@@ -85,13 +87,9 @@ class MatchSyncServiceTest {
                           }
                         }));
               }
-            },
-            "Match Type",
-            "Singles",
-            "Participants",
-            "",
-            "Winners",
-            ""));
+            });
+    matchPage.setRawProperties(
+        Map.of("Name", "Test Match", "Match Type", "Singles", "Participants", "", "Winners", ""));
 
     when(notionHandler.loadAllMatches()).thenReturn(List.of(matchPage));
     when(matchResultService.findByExternalId(anyString())).thenReturn(Optional.empty());
@@ -115,12 +113,11 @@ class MatchSyncServiceTest {
     matchPage.setId("ext1");
     matchPage.setCreated_time(Instant.now().toString());
     matchPage.setLast_edited_time(Instant.now().toString());
-    matchPage.setRawProperties(
-        Map.of(
-            "Name",
-            "Updated Test Match",
-            "Shows",
-            new NotionPage.Property() {
+    matchPage.setProperties(new MatchPage.NotionProperties());
+    matchPage
+        .getProperties()
+        .setShows(
+            new MatchPage.Property() {
               {
                 setType("relation");
                 setRelation(
@@ -131,7 +128,11 @@ class MatchSyncServiceTest {
                           }
                         }));
               }
-            },
+            });
+    matchPage.setRawProperties(
+        Map.of(
+            "Name",
+            "Updated Test Match",
             "Match Type",
             "Singles",
             "Participants",
@@ -179,12 +180,29 @@ class MatchSyncServiceTest {
     when(notionHandler.loadAllMatches()).thenThrow(new RuntimeException("Notion API error"));
 
     // When
-    assertThrows(
-        RuntimeException.class,
-        () -> matchSyncService.syncMatches(UUID.randomUUID().toString()),
-        "Notion API error");
+    Assertions.assertFalse(matchSyncService.syncMatches(UUID.randomUUID().toString()).isSuccess());
 
     // Then
     verify(matchResultService, times(0)).updateMatchResult(any(MatchResult.class));
+  }
+
+  /**
+   * Helper method to set private fields via reflection for testing. This is needed because we
+   * switched from constructor injection to field injection.
+   */
+  private void setField(Object target, String fieldName, Object value) {
+    try {
+      Field field = target.getClass().getDeclaredField(fieldName);
+      field.setAccessible(true);
+      field.set(target, value);
+    } catch (Exception e) {
+      try {
+        Field superField = target.getClass().getSuperclass().getDeclaredField(fieldName);
+        superField.setAccessible(true);
+        superField.set(target, value);
+      } catch (Exception e2) {
+        throw new RuntimeException("Failed to set field " + fieldName, e2);
+      }
+    }
   }
 }

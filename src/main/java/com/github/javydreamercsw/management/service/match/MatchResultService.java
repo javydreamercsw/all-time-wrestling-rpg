@@ -8,6 +8,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -74,7 +75,7 @@ public class MatchResultService {
    * @param matchResult The match result to update
    * @return The updated MatchResult
    */
-  public MatchResult updateMatchResult(MatchResult matchResult) {
+  public MatchResult updateMatchResult(@NonNull MatchResult matchResult) {
     MatchResult updated = matchResultRepository.save(matchResult);
     log.info("Updated match result with ID: {}", updated.getId());
     return updated;
@@ -87,7 +88,7 @@ public class MatchResultService {
    * @return Optional containing the MatchResult if found
    */
   @Transactional(readOnly = true)
-  public Optional<MatchResult> findById(Long id) {
+  public Optional<MatchResult> findById(@NonNull Long id) {
     return matchResultRepository.findById(id);
   }
 
@@ -98,7 +99,7 @@ public class MatchResultService {
    * @return Page of MatchResult objects
    */
   @Transactional(readOnly = true)
-  public Page<MatchResult> getAllMatchResults(Pageable pageable) {
+  public Page<MatchResult> getAllMatchResults(@NonNull Pageable pageable) {
     return matchResultRepository.findAllBy(pageable);
   }
 
@@ -109,7 +110,7 @@ public class MatchResultService {
    * @return List of MatchResult objects for the show
    */
   @Transactional(readOnly = true)
-  public List<MatchResult> getMatchResultsByShow(Show show) {
+  public List<MatchResult> getMatchResultsByShow(@NonNull Show show) {
     return matchResultRepository.findByShow(show);
   }
 
@@ -120,7 +121,7 @@ public class MatchResultService {
    * @return List of MatchResult objects where the wrestler participated
    */
   @Transactional(readOnly = true)
-  public List<MatchResult> getMatchResultsByWrestlerParticipation(Wrestler wrestler) {
+  public List<MatchResult> getMatchResultsByWrestlerParticipation(@NonNull Wrestler wrestler) {
     return matchResultRepository.findByWrestlerParticipation(wrestler);
   }
 
@@ -131,7 +132,7 @@ public class MatchResultService {
    * @return List of MatchResult objects won by the wrestler
    */
   @Transactional(readOnly = true)
-  public List<MatchResult> getMatchResultsByWinner(Wrestler wrestler) {
+  public List<MatchResult> getMatchResultsByWinner(@NonNull Wrestler wrestler) {
     return matchResultRepository.findByWinner(wrestler);
   }
 
@@ -143,7 +144,8 @@ public class MatchResultService {
    * @return List of MatchResult objects between the two wrestlers
    */
   @Transactional(readOnly = true)
-  public List<MatchResult> getMatchesBetween(Wrestler wrestler1, Wrestler wrestler2) {
+  public List<MatchResult> getMatchesBetween(
+      @NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2) {
     return matchResultRepository.findMatchesBetween(wrestler1, wrestler2);
   }
 
@@ -174,7 +176,7 @@ public class MatchResultService {
    * @return List of MatchResult objects after the specified date
    */
   @Transactional(readOnly = true)
-  public List<MatchResult> getMatchesAfter(Instant date) {
+  public List<MatchResult> getMatchesAfter(@NonNull Instant date) {
     return matchResultRepository.findByMatchDateAfter(date);
   }
 
@@ -185,7 +187,7 @@ public class MatchResultService {
    * @return Number of wins
    */
   @Transactional(readOnly = true)
-  public long countWinsByWrestler(Wrestler wrestler) {
+  public long countWinsByWrestler(@NonNull Wrestler wrestler) {
     return matchResultRepository.countWinsByWrestler(wrestler);
   }
 
@@ -196,7 +198,7 @@ public class MatchResultService {
    * @return Total number of matches
    */
   @Transactional(readOnly = true)
-  public long countMatchesByWrestler(Wrestler wrestler) {
+  public long countMatchesByWrestler(@NonNull Wrestler wrestler) {
     return matchResultRepository.countMatchesByWrestler(wrestler);
   }
 
@@ -205,7 +207,7 @@ public class MatchResultService {
    *
    * @param id The ID of the match result to delete
    */
-  public void deleteMatchResult(Long id) {
+  public void deleteMatchResult(@NonNull Long id) {
     matchResultRepository.deleteById(id);
     log.info("Deleted match result with ID: {}", id);
   }
@@ -217,7 +219,7 @@ public class MatchResultService {
    * @return true if a match result with the external ID exists
    */
   @Transactional(readOnly = true)
-  public boolean existsByExternalId(String externalId) {
+  public boolean existsByExternalId(@NonNull String externalId) {
     return matchResultRepository.existsByExternalId(externalId);
   }
 
@@ -228,7 +230,7 @@ public class MatchResultService {
    * @return Optional containing the MatchResult if found
    */
   @Transactional(readOnly = true)
-  public Optional<MatchResult> findByExternalId(String externalId) {
+  public Optional<MatchResult> findByExternalId(@NonNull String externalId) {
     return matchResultRepository.findByExternalId(externalId);
   }
 }
