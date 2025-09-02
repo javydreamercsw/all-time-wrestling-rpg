@@ -1,0 +1,43 @@
+# Example AI configuration
+# Copy this to application.yml or create application-local.yml to configure AI services
+
+ai:
+  # AI provider selection: "auto", "openai", "notion"
+  # "auto" will automatically select the first available service
+  provider: auto
+  
+  # OpenAI configuration
+  openai:
+    # API key - can also be set via OPENAI_API_KEY environment variable
+    # Get your API key from: https://platform.openai.com/api-keys
+    api-key: ${OPENAI_API_KEY:}
+    
+    # Model to use for requests
+    model: gpt-3.5-turbo
+    # Alternative models: gpt-4, gpt-4-turbo-preview, gpt-3.5-turbo-16k
+    
+    # Maximum tokens for responses (affects cost and response length)
+    max-tokens: 1000
+    
+    # Temperature (0.0 to 2.0) - higher values make output more creative/random
+    temperature: 0.7
+    
+    # Request timeout in seconds
+    timeout-seconds: 30
+  
+  # Notion AI configuration (for future use)
+  notion:
+    # Enable when Notion AI API becomes available
+    enabled: false
+    
+    # API key (when available)
+    api-key: ${NOTION_AI_API_KEY:}
+    
+    # Request timeout in seconds
+    timeout-seconds: 30
+
+# Logging configuration for AI services
+logging:
+  level:
+    com.github.javydreamercsw.base.ai: DEBUG
+    # Set to INFO or WARN in production to reduce log verbosity

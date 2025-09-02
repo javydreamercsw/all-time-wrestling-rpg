@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!-- 
+    This file contains suppressions for OWASP Dependency Check false positives.
+    Each suppression should include a justification comment explaining why it's safe to suppress.
+    -->
+    
+    <!-- Suppress false positives for Vaadin components that are not directly exposed -->
+    <suppress>
+        <notes><![CDATA[
+        Vaadin framework components are server-side rendered and not directly exposed to client-side attacks.
+        These CVEs typically apply to client-side JavaScript usage which doesn't apply to our server-side Vaadin usage.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:javascript/.*</packageUrl>
+        <cve>CVE-2021-23337</cve>
+        <cve>CVE-2021-23382</cve>
+        <cve>CVE-2021-23424</cve>
+    </suppress>
+    
+    <!-- Suppress test-only dependencies that don't affect production -->
+    <suppress>
+        <notes><![CDATA[
+        Test dependencies are not included in the production build and therefore don't pose a security risk.
+        ]]></notes>
+        <gav regex="true">.*:.*:.*:test</gav>
+    </suppress>
+    
+    <!-- Suppress provided scope dependencies that are managed by the runtime environment -->
+    <suppress>
+        <notes><![CDATA[
+        Provided scope dependencies are managed by the runtime environment (e.g., application server)
+        and are not bundled with the application.
+        ]]></notes>
+        <gav regex="true">.*:.*:.*:provided</gav>
+    </suppress>
+</suppressions>

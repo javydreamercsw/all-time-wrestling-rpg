@@ -6,13 +6,18 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import lombok.Getter;
+import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "card_set")
+@Getter
+@Setter
 public class CardSet extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,6 +35,14 @@ public class CardSet extends AbstractEntity<Long> {
     return id;
   }
 
+  /** Ensure default values before persisting. */
+  @PrePersist
+  private void ensureDefaults() {
+    if (creationDate == null) {
+      creationDate = Instant.now();
+    }
+  }
+
   public String getName() {
     return name;
   }
@@ -38,11 +51,11 @@ public class CardSet extends AbstractEntity<Long> {
     this.name = name;
   }
 
-  public void setCreationDate(Instant creationDate) {
-    this.creationDate = creationDate;
-  }
-
   public Instant getCreationDate() {
     return creationDate;
+  }
+
+  public void setCreationDate(Instant creationDate) {
+    this.creationDate = creationDate;
   }
 }

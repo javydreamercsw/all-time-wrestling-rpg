@@ -1,0 +1,75 @@
+name: 'Security Scan'
+
+on:
+  schedule:
+    # Run weekly on Mondays at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual triggering
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Vulnerability Scan
+    
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v4
+        
+      - name: 'Set up JDK 17'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: 'Cache Maven dependencies'
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+          
+      - name: 'Run OWASP Dependency Check'
+        run: |
+          mvn org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=7 \
+            -DskipTests \
+            -Dformats=HTML,JSON,SARIF
+        continue-on-error: true
+        
+      - name: 'Upload OWASP Dependency Check Report'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: owasp-dependency-check-report
+          path: |
+            target/dependency-check-report.html
+            target/dependency-check-report.json
+            target/dependency-check-report.sarif
+          retention-days: 90
+          
+      - name: 'Upload SARIF results to GitHub Security'
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: target/dependency-check-report.sarif
+          category: dependency-check
+          
+      - name: 'Check for high severity vulnerabilities'
+        run: |
+          if [ -f target/dependency-check-report.json ]; then
+            HIGH_VULNS=$(jq '.dependencies[].vulnerabilities[]? | select(.severity == "HIGH" or .severity == "CRITICAL") | .name' target/dependency-check-report.json | wc -l)
+            if [ "$HIGH_VULNS" -gt 0 ]; then
+              echo "::error::Found $HIGH_VULNS high/critical severity vulnerabilities"
+              echo "Please review the dependency check report and update vulnerable dependencies"
+              exit 1
+            else
+              echo "No high/critical severity vulnerabilities found"
+            fi
+          fi

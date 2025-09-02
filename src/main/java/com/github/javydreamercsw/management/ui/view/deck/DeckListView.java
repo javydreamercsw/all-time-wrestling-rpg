@@ -23,7 +23,7 @@ import lombok.NonNull;
 
 @Route("deck-list")
 @PageTitle("Deck List")
-@Menu(order = 1, icon = "vaadin:clipboard-check", title = "Deck List")
+@Menu(order = 1, icon = "vaadin:records", title = "Deck List")
 @PermitAll // When security is enabled, allow all authenticated users
 public class DeckListView extends VerticalLayout {
 
