@@ -198,16 +198,16 @@ class NotionSyncServiceTest extends BaseTest {
   @DisplayName("Should delegate matches sync to MatchSyncService")
   void shouldDelegateMatchesSyncToMatchSyncService() {
     // Given
-    String operationId = "test-matches-sync";
+    String testOperationId = "my-test-operation-id";
     BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Matches", 15, 3);
-    when(matchSyncService.syncMatches(operationId)).thenReturn(mockResult);
+    when(matchSyncService.syncMatches(testOperationId + "-matches")).thenReturn(mockResult);
 
     // When
-    BaseSyncService.SyncResult result = notionSyncService.syncMatches(operationId);
+    BaseSyncService.SyncResult result = notionSyncService.syncMatches(testOperationId);
 
     // Then
     assertThat(result).isEqualTo(mockResult);
-    verify(matchSyncService).syncMatches(operationId);
+    verify(matchSyncService).syncMatches(testOperationId + "-matches");
   }
 
   // ==================== SEASONS SYNC TESTS ====================

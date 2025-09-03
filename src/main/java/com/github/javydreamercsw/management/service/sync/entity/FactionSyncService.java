@@ -10,6 +10,7 @@ import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.FactionDTO;
+import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
@@ -17,7 +18,10 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +34,9 @@ public class FactionSyncService extends BaseSyncService {
 
   @Autowired private FactionRepository factionRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private NotionRateLimitService rateLimitService;
+
+  private final ExecutorService executorService = Executors.newFixedThreadPool(3);
 
   public FactionSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -77,60 +84,47 @@ public class FactionSyncService extends BaseSyncService {
 
       // Get all factions from Notion
       log.info("📥 Retrieving factions from Notion...");
-      if (operationId != null) {
-        progressTracker.updateProgress(
-            operationId, 2, "Retrieving factions from Notion database...");
-        progressTracker.addLogMessage(operationId, "📥 Retrieving factions from Notion...", "INFO");
-      }
+      progressTracker.updateProgress(operationId, 2, "Retrieving factions from Notion database...");
+      progressTracker.addLogMessage(operationId, "📥 Retrieving factions from Notion...", "INFO");
       List<FactionPage> notionFactions = getAllFactionsFromNotion();
       long retrieveTime = System.currentTimeMillis() - startTime;
       log.info("✅ Retrieved {} factions from Notion in {}ms", notionFactions.size(), retrieveTime);
-      if (operationId != null) {
-        progressTracker.addLogMessage(
-            operationId,
-            String.format(
-                "✅ Retrieved %d factions from Notion in %dms", notionFactions.size(), retrieveTime),
-            "SUCCESS");
-      }
+      progressTracker.addLogMessage(
+          operationId,
+          String.format(
+              "✅ Retrieved %d factions from Notion in %dms", notionFactions.size(), retrieveTime),
+          "SUCCESS");
 
       // Convert to DTOs using parallel processing
       log.info("🔄 Converting factions to DTOs...");
-      if (operationId != null) {
-        progressTracker.updateProgress(
-            operationId,
-            3,
-            String.format("Converting %d factions to data format...", notionFactions.size()));
-        progressTracker.addLogMessage(operationId, "🔄 Converting factions to DTOs...", "INFO");
-      }
+      progressTracker.updateProgress(
+          operationId,
+          3,
+          String.format("Converting %d factions to data format...", notionFactions.size()));
+      progressTracker.addLogMessage(operationId, "🔄 Converting factions to DTOs...", "INFO");
       long conversionStart = System.currentTimeMillis();
-      List<FactionDTO> factionDTOs = convertFactionPagesToDTO(notionFactions);
+      List<FactionDTO> factionDTOs = convertFactionPagesToDTO(notionFactions, operationId);
       long conversionTime = System.currentTimeMillis() - conversionStart;
       log.info("✅ Converted {} factions to DTOs in {}ms", factionDTOs.size(), conversionTime);
-      if (operationId != null) {
-        progressTracker.addLogMessage(
-            operationId,
-            String.format(
-                "✅ Converted %d factions to DTOs in %dms", factionDTOs.size(), conversionTime),
-            "SUCCESS");
-      }
+      progressTracker.addLogMessage(
+          operationId,
+          String.format(
+              "✅ Converted %d factions to DTOs in %dms", factionDTOs.size(), conversionTime),
+          "SUCCESS");
 
       // Save to database only (no JSON file writing)
       log.info("🗄️ Saving factions to database...");
-      if (operationId != null) {
-        progressTracker.updateProgress(
-            operationId, 4, String.format("Saving %d factions to database...", factionDTOs.size()));
-        progressTracker.addLogMessage(operationId, "🗄️ Saving factions to database...", "INFO");
-      }
+      progressTracker.updateProgress(
+          operationId, 4, String.format("Saving %d factions to database...", factionDTOs.size()));
+      progressTracker.addLogMessage(operationId, "🗄️ Saving factions to database...", "INFO");
       long dbStart = System.currentTimeMillis();
       int savedCount = saveFactionsToDatabase(factionDTOs);
       long dbTime = System.currentTimeMillis() - dbStart;
       log.info("✅ Saved {} factions to database in {}ms", savedCount, dbTime);
-      if (operationId != null) {
-        progressTracker.addLogMessage(
-            operationId,
-            String.format("✅ Saved %d factions to database in %dms", savedCount, dbTime),
-            "SUCCESS");
-      }
+      progressTracker.addLogMessage(
+          operationId,
+          String.format("✅ Saved %d factions to database in %dms", savedCount, dbTime),
+          "SUCCESS");
 
       long totalTime = System.currentTimeMillis() - startTime;
       log.info(
@@ -139,18 +133,16 @@ public class FactionSyncService extends BaseSyncService {
           totalTime);
 
       // Complete progress tracking
-      if (operationId != null) {
-        progressTracker.addLogMessage(
-            operationId,
-            String.format(
-                "🎉 Successfully synchronized %d factions in %dms total", savedCount, totalTime),
-            "SUCCESS");
-        progressTracker.completeOperation(
-            operationId,
-            true,
-            String.format("Successfully synced %d factions", savedCount),
-            savedCount);
-      }
+      progressTracker.addLogMessage(
+          operationId,
+          String.format(
+              "🎉 Successfully synchronized %d factions in %dms total", savedCount, totalTime),
+          "SUCCESS");
+      progressTracker.completeOperation(
+          operationId,
+          true,
+          String.format("Successfully synced %d factions", savedCount),
+          savedCount);
 
       // Record success in health monitor
       healthMonitor.recordSuccess("Factions", totalTime, savedCount);
@@ -164,11 +156,9 @@ public class FactionSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize factions from Notion after {}ms", totalTime, e);
 
-      if (operationId != null) {
-        progressTracker.addLogMessage(
-            operationId, "❌ Faction sync failed: " + e.getMessage(), "ERROR");
-        progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
-      }
+      progressTracker.addLogMessage(
+          operationId, "❌ Faction sync failed: " + e.getMessage(), "ERROR");
+      progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
 
       // Record failure in health monitor
       healthMonitor.recordFailure("Factions", e.getMessage());
@@ -182,7 +172,7 @@ public class FactionSyncService extends BaseSyncService {
    *
    * @return List of FactionPage objects from Notion
    */
-  private List<FactionPage> getAllFactionsFromNotion() {
+  private List<FactionPage> getAllFactionsFromNotion() throws InterruptedException {
     log.debug("Retrieving all factions from Notion Factions database");
 
     // Check if NOTION_TOKEN is available
@@ -198,6 +188,7 @@ public class FactionSyncService extends BaseSyncService {
       throw new IllegalStateException("NotionHandler is not available for sync operations");
     }
 
+    rateLimitService.acquirePermit();
     return notionHandler.loadAllFactions();
   }
 
@@ -207,17 +198,84 @@ public class FactionSyncService extends BaseSyncService {
    * @param factionPages List of FactionPage objects from Notion
    * @return List of FactionDTO objects
    */
-  private List<FactionDTO> convertFactionPagesToDTO(@NonNull List<FactionPage> factionPages) {
+  private List<FactionDTO> convertFactionPagesToDTO(
+      @NonNull List<FactionPage> factionPages, String operationId) {
     log.info("Converting {} factions to DTOs using parallel processing", factionPages.size());
 
-    // Use parallel stream for faster processing of large datasets
-    List<FactionDTO> factionDTOs =
-        factionPages.parallelStream()
-            .map(this::convertFactionPageToDTO)
-            .collect(Collectors.toList());
+    int batchSize = 10; // Process 10 factions at a time
+    List<FactionDTO> allFactionDTOs = new ArrayList<>();
 
-    log.info("Successfully converted {} factions to DTOs", factionDTOs.size());
-    return factionDTOs;
+    for (int i = 0; i < factionPages.size(); i += batchSize) {
+      int endIndex = Math.min(i + batchSize, factionPages.size());
+      List<FactionPage> batch = factionPages.subList(i, endIndex);
+
+      log.debug("Processing faction batch {}-{} of {}", i + 1, endIndex, factionPages.size());
+
+      List<CompletableFuture<Optional<FactionDTO>>> futures =
+          batch.stream()
+              .map(
+                  factionPage ->
+                      CompletableFuture.supplyAsync(
+                          () -> {
+                            try {
+                              rateLimitService.acquirePermit();
+                              return Optional.of(convertFactionPageToDTO(factionPage));
+                            } catch (InterruptedException e) {
+                              Thread.currentThread().interrupt();
+                              log.error(
+                                  "Interrupted while rate limiting for faction {}",
+                                  factionPage.getId());
+                              return Optional.<FactionDTO>empty();
+                            } catch (Exception e) {
+                              log.error(
+                                  "Error converting faction {}: {}",
+                                  factionPage.getId(),
+                                  e.getMessage());
+                              return Optional.<FactionDTO>empty();
+                            }
+                          },
+                          executorService))
+              .toList();
+
+      try {
+        List<FactionDTO> batchResults =
+            futures.stream()
+                .map(
+                    future -> {
+                      try {
+                        return future.get(30, TimeUnit.SECONDS);
+                      } catch (Exception e) {
+                        log.error(
+                            "Failed to complete faction conversion future: {}", e.getMessage());
+                        return Optional.<FactionDTO>empty();
+                      }
+                    })
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
+
+        allFactionDTOs.addAll(batchResults);
+
+        int processedCount = Math.min(endIndex, factionPages.size());
+        double progressPercent = (double) processedCount / factionPages.size() * 100;
+        progressTracker.updateProgress(
+            operationId,
+            3,
+            String.format(
+                "Converted %d/%d factions (%.1f%%)",
+                processedCount, factionPages.size(), progressPercent));
+
+        if (endIndex < factionPages.size()) {
+          Thread.sleep(500);
+        }
+
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.error("Interrupted while processing faction batch");
+        throw new RuntimeException("Faction conversion interrupted", e);
+      }
+    }
+    return allFactionDTOs;
   }
 
   /**
@@ -317,7 +375,7 @@ public class FactionSyncService extends BaseSyncService {
                 LocalDate.parse(dto.getDisbandedDate()).atStartOfDay().toInstant(ZoneOffset.UTC));
           } catch (Exception e) {
             log.warn(
-                "Invalid disbanded date '{}' for faction '{}'",
+                "Invalid disbanded date '{}' for faction '{}",
                 dto.getDisbandedDate(),
                 dto.getName());
           }

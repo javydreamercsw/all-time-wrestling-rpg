@@ -17,10 +17,16 @@ import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -39,6 +45,8 @@ public class ShowSyncService extends BaseSyncService {
   @Autowired private SeasonService seasonService;
   @Autowired private ShowTemplateService showTemplateService;
   @Autowired private NotionRateLimitService rateLimitService;
+
+  private final ExecutorService executorService = Executors.newFixedThreadPool(3);
 
   public ShowSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -169,7 +177,7 @@ public class ShowSyncService extends BaseSyncService {
             log.info("🔄 Converting shows to DTOs...");
             progressTracker.updateProgress(operationId, 5, "Converting shows to DTOs...");
 
-            List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows);
+            List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows, operationId);
             long convertTime = System.currentTimeMillis() - startTime - retrieveTime;
             log.info("✅ Converted {} shows to DTOs in {}ms", showDTOs.size(), convertTime);
 
@@ -225,14 +233,80 @@ public class ShowSyncService extends BaseSyncService {
   }
 
   /** Converts ShowPage objects from Notion to ShowDTO objects. */
-  private List<ShowDTO> convertShowPagesToDTO(@NonNull List<ShowPage> showPages) {
+  private List<ShowDTO> convertShowPagesToDTO(
+      @NonNull List<ShowPage> showPages, String operationId) {
     log.info("Converting {} shows to DTOs using parallel processing", showPages.size());
 
-    List<ShowDTO> showDTOs =
-        showPages.parallelStream().map(this::convertShowPageToDTO).collect(Collectors.toList());
+    int batchSize = 10; // Process 10 shows at a time
+    List<ShowDTO> allShowDTOs = new ArrayList<>();
 
-    log.info("Successfully converted {} shows to DTOs", showDTOs.size());
-    return showDTOs;
+    for (int i = 0; i < showPages.size(); i += batchSize) {
+      int endIndex = Math.min(i + batchSize, showPages.size());
+      List<ShowPage> batch = showPages.subList(i, endIndex);
+
+      log.debug("Processing show batch {}-{} of {}", i + 1, endIndex, showPages.size());
+
+      List<CompletableFuture<Optional<ShowDTO>>> futures =
+          batch.stream()
+              .map(
+                  showPage ->
+                      CompletableFuture.supplyAsync(
+                          () -> {
+                            try {
+                              rateLimitService.acquirePermit();
+                              return Optional.of(convertShowPageToDTO(showPage));
+                            } catch (InterruptedException e) {
+                              Thread.currentThread().interrupt();
+                              log.error(
+                                  "Interrupted while rate limiting for show {}", showPage.getId());
+                              return Optional.<ShowDTO>empty();
+                            } catch (Exception e) {
+                              log.error(
+                                  "Error converting show {}: {}", showPage.getId(), e.getMessage());
+                              return Optional.<ShowDTO>empty();
+                            }
+                          },
+                          executorService))
+              .toList();
+
+      try {
+        List<ShowDTO> batchResults =
+            futures.stream()
+                .map(
+                    future -> {
+                      try {
+                        return future.get(30, TimeUnit.SECONDS);
+                      } catch (Exception e) {
+                        log.error("Failed to complete show conversion future: {}", e.getMessage());
+                        return Optional.<ShowDTO>empty();
+                      }
+                    })
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
+
+        allShowDTOs.addAll(batchResults);
+
+        int processedCount = Math.min(endIndex, showPages.size());
+        double progressPercent = (double) processedCount / showPages.size() * 100;
+        progressTracker.updateProgress(
+            operationId,
+            5,
+            String.format(
+                "Converted %d/%d shows (%.1f%%)",
+                processedCount, showPages.size(), progressPercent));
+
+        if (endIndex < showPages.size()) {
+          Thread.sleep(500);
+        }
+
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.error("Interrupted while processing show batch");
+        throw new RuntimeException("Show conversion interrupted", e);
+      }
+    }
+    return allShowDTOs;
   }
 
   /** Converts a single ShowPage to ShowDTO. */
@@ -390,7 +464,6 @@ public class ShowSyncService extends BaseSyncService {
 
       if (show == null) {
         show = new Show();
-        isNewShow = true;
         log.debug("Creating new show: {} with external ID: {}", dto.getName(), dto.getExternalId());
       }
 
@@ -517,7 +590,7 @@ public class ShowSyncService extends BaseSyncService {
         }
 
         if (!seasonStr.isEmpty()
-            && !seasonStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+            && !seasonStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[^w-z]{4}-[0-9a-f]{12}")) {
           return seasonStr;
         }
       }
