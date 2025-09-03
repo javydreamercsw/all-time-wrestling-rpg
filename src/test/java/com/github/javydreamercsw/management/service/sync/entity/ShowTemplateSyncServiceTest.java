@@ -11,6 +11,7 @@ import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -42,6 +43,7 @@ class ShowTemplateSyncServiceTest {
   @Mock private NotionHandler notionHandler;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
+  @Mock private NotionRateLimitService rateLimitService;
 
   private ShowTemplateSyncService syncService;
 
@@ -53,6 +55,8 @@ class ShowTemplateSyncServiceTest {
     ReflectionTestUtils.setField(syncService, "showTemplateService", showTemplateService);
     ReflectionTestUtils.setField(syncService, "progressTracker", progressTracker);
     ReflectionTestUtils.setField(syncService, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
+    ReflectionTestUtils.setField(syncService, "rateLimitService", rateLimitService);
 
     // Clear sync session before each test
     syncService.clearSyncSession();
@@ -80,7 +84,8 @@ class ShowTemplateSyncServiceTest {
   void shouldFailWhenNotionHandlerNotAvailable() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    // Don't set notionHandler - it will be null
+    // Set notionHandler to null for this test
+    ReflectionTestUtils.setField(syncService, "notionHandler", null);
 
     // When
     BaseSyncService.SyncResult result = syncService.syncShowTemplates("test-operation");
