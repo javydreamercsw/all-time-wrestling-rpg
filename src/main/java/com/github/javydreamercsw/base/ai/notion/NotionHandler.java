@@ -1,6 +1,8 @@
 package com.github.javydreamercsw.base.ai.notion;
 
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import notion.api.v1.NotionClient;
+import notion.api.v1.exception.NotionAPIError;
 import notion.api.v1.model.databases.DatabaseProperty;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
@@ -101,7 +104,7 @@ public class NotionHandler {
       SearchRequest.SearchFilter searchFilter =
           new SearchRequest.SearchFilter("database", "object");
       SearchRequest searchRequest = new SearchRequest("", searchFilter);
-      SearchResults searchResults = client.search(searchRequest);
+      SearchResults searchResults = executeWithRetry(() -> client.search(searchRequest));
 
       // Restore System.out before logging our results
       System.setOut(originalOut);
@@ -172,7 +175,7 @@ public class NotionHandler {
       System.setOut(new PrintStream(new ByteArrayOutputStream()));
 
       // Send query request
-      List<Page> results = client.queryDatabase(queryRequest).getResults();
+      List<Page> results = executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
 
       // Restore System.out before logging our results
       System.setOut(originalOut);
@@ -185,7 +188,8 @@ public class NotionHandler {
 
             // Suppress output again for retrievePage calls
             System.setOut(new PrintStream(new ByteArrayOutputStream()));
-            Page pageData = client.retrievePage(page.getId(), Collections.emptyList());
+            Page pageData =
+                executeWithRetry(() -> client.retrievePage(page.getId(), Collections.emptyList()));
             System.setOut(originalOut);
 
             pageData
@@ -208,6 +212,21 @@ public class NotionHandler {
       // Ensure System.out is always restored
       System.setOut(originalOut);
     }
+  }
+
+  private <T> T executeWithRetry(java.util.function.Supplier<T> action) {
+    RetryPolicy<T> retryPolicy =
+        RetryPolicy.<T>builder()
+            .handleIf(
+                e ->
+                    e instanceof NotionAPIError
+                        && ((NotionAPIError) e).getError().getStatus() == 429)
+            .withBackoff(1, 5, java.time.temporal.ChronoUnit.SECONDS)
+            .withMaxRetries(3)
+            .onRetry(e -> log.warn("Rate limited by Notion API. Retrying...", e.getLastException()))
+            .build();
+
+    return Failsafe.with(retryPolicy).get(action::get);
   }
 
   private String getValue(@NonNull NotionClient client, @NonNull PageProperty value) {
@@ -282,7 +301,9 @@ public class NotionHandler {
                       try {
                         System.setOut(new PrintStream(new ByteArrayOutputStream()));
                         Page relatedPage =
-                            client.retrievePage(relation.getId(), Collections.emptyList());
+                            executeWithRetry(
+                                () ->
+                                    client.retrievePage(relation.getId(), Collections.emptyList()));
                         System.setOut(originalOut);
 
                         // Try multiple common title property names
@@ -656,7 +677,7 @@ public class NotionHandler {
       System.setOut(new PrintStream(new ByteArrayOutputStream()));
 
       // Send query request
-      List<Page> results = client.queryDatabase(queryRequest).getResults();
+      List<Page> results = executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
 
       // Restore System.out before logging our results
       System.setOut(originalOut);
@@ -667,7 +688,8 @@ public class NotionHandler {
       for (Page page : results) {
         // Suppress output again for retrievePage calls
         System.setOut(new PrintStream(new ByteArrayOutputStream()));
-        Page pageData = client.retrievePage(page.getId(), Collections.emptyList());
+        Page pageData =
+            executeWithRetry(() -> client.retrievePage(page.getId(), Collections.emptyList()));
         System.setOut(originalOut);
 
         // Get the name property
@@ -1352,20 +1374,12 @@ public class NotionHandler {
       @NonNull NotionClient client, @NonNull String databaseId, @NonNull String entityType) {
 
     List<ShowPage> entities = new ArrayList<>();
-    PrintStream originalOut = System.out;
-
     try {
       log.debug("Loading all {} entities for sync from database {}", entityType, databaseId);
 
       QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
 
-      // Temporarily redirect System.out to suppress Notion SDK logs
-      System.setOut(new PrintStream(new ByteArrayOutputStream()));
-
-      List<Page> results = client.queryDatabase(queryRequest).getResults();
-
-      // Restore System.out before logging our results
-      System.setOut(originalOut);
+      List<Page> results = executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
 
       log.info("Found {} pages in {} database for sync", results.size(), entityType);
 
@@ -1407,14 +1421,9 @@ public class NotionHandler {
       return entities;
 
     } catch (Exception e) {
-      // Restore System.out in case of exception
-      System.setOut(originalOut);
       log.error(
           "Error loading all {} entities for sync from database: {}", entityType, databaseId, e);
       return entities; // Return partial results
-    } finally {
-      // Ensure System.out is always restored
-      System.setOut(originalOut);
     }
   }
 
@@ -1426,70 +1435,57 @@ public class NotionHandler {
       @NonNull java.util.function.BiFunction<Page, String, T> mapper) {
 
     List<T> entities = new ArrayList<>();
-    PrintStream originalOut = System.out;
-
     try {
       log.debug("Loading all {} entities from database {}", entityType, databaseId);
 
       QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
 
-      // Temporarily redirect System.out to suppress Notion SDK logs
-      System.setOut(new PrintStream(new ByteArrayOutputStream()));
-
-      List<Page> results = client.queryDatabase(queryRequest).getResults();
-
-      // Restore System.out before logging our results
-      System.setOut(originalOut);
+      List<Page> results = executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
 
       log.debug("Found {} pages in {} database", results.size(), entityType);
 
-      // Convert all pages to entities in parallel
-      entities =
-          results.parallelStream()
-              .map(
-                  page -> {
-                    try {
-                      // Suppress output again for retrievePage calls
-                      System.setOut(new PrintStream(new ByteArrayOutputStream()));
-                      Page pageData = client.retrievePage(page.getId(), Collections.emptyList());
-                      System.setOut(originalOut);
-
-                      // Get the name property for logging
-                      String entityName = "Unknown";
-                      PageProperty nameProperty = pageData.getProperties().get("Name");
-                      if (nameProperty != null
-                          && nameProperty.getTitle() != null
-                          && !nameProperty.getTitle().isEmpty()) {
-                        entityName = nameProperty.getTitle().get(0).getPlainText();
-                      }
-
-                      T entity = mapper.apply(pageData, entityName);
-                      log.debug("Loaded {} entity: {}", entityType, entityName);
-                      return entity;
-
-                    } catch (Exception e) {
-                      log.warn(
-                          "Failed to load {} entity from page {}: {}",
-                          entityType,
-                          page.getId(),
-                          e.getMessage());
-                      return null;
-                    }
-                  })
-              .filter(java.util.Objects::nonNull)
-              .collect(java.util.stream.Collectors.toList());
+      for (Page page : results) {
+        T entity = mapPageToEntity(page, client, entityType, mapper);
+        if (entity != null) {
+          entities.add(entity);
+        }
+      }
 
       log.info("Successfully loaded {} {} entities from database", entities.size(), entityType);
       return entities;
 
     } catch (Exception e) {
-      // Restore System.out in case of exception
-      System.setOut(originalOut);
       log.error("Error loading all {} entities from database: {}", entityType, databaseId, e);
       return entities; // Return partial results
-    } finally {
-      // Ensure System.out is always restored
-      System.setOut(originalOut);
+    }
+  }
+
+  private <T> T mapPageToEntity(
+      Page page,
+      NotionClient client,
+      String entityType,
+      java.util.function.BiFunction<Page, String, T> mapper) {
+    try {
+      Page pageData =
+          executeWithRetry(() -> client.retrievePage(page.getId(), Collections.emptyList()));
+
+      // Get the name property for logging
+      String entityName = "Unknown";
+      PageProperty nameProperty = pageData.getProperties().get("Name");
+      if (nameProperty != null
+          && nameProperty.getTitle() != null
+          && !nameProperty.getTitle().isEmpty()) {
+        entityName = nameProperty.getTitle().get(0).getPlainText();
+      }
+
+      T entity = mapper.apply(pageData, entityName);
+      log.debug("Loaded {} entity: {}", entityType, entityName);
+      return entity;
+
+    } catch (Exception e) {
+      log.warn(
+          "Failed to load {} entity from page {}: {}", entityType, page.getId(), e.getMessage());
+      return null;
     }
   }
 
@@ -1510,7 +1506,7 @@ public class NotionHandler {
       // Temporarily redirect System.out to suppress Notion SDK logs
       System.setOut(new PrintStream(new ByteArrayOutputStream()));
 
-      List<Page> results = client.queryDatabase(queryRequest).getResults();
+      List<Page> results = executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
 
       // Restore System.out before logging our results
       System.setOut(originalOut);
@@ -1521,7 +1517,8 @@ public class NotionHandler {
       for (Page page : results) {
         // Suppress output again for retrievePage calls
         System.setOut(new PrintStream(new ByteArrayOutputStream()));
-        Page pageData = client.retrievePage(page.getId(), Collections.emptyList());
+        Page pageData =
+            executeWithRetry(() -> client.retrievePage(page.getId(), Collections.emptyList()));
         System.setOut(originalOut);
 
         // Get the name property
@@ -1913,7 +1910,8 @@ public class NotionHandler {
       PrintStream originalOut = System.out;
       try {
         System.setOut(new PrintStream(new ByteArrayOutputStream()));
-        Page pageData = client.retrievePage(showPage.getId(), Collections.emptyList());
+        Page pageData =
+            executeWithRetry(() -> client.retrievePage(showPage.getId(), Collections.emptyList()));
         System.setOut(originalOut);
 
         Map<String, PageProperty> properties = pageData.getProperties();
@@ -1940,7 +1938,9 @@ public class NotionHandler {
 
           // Retrieve the match page to get its name
           System.setOut(new PrintStream(new ByteArrayOutputStream()));
-          Page matchPage = client.retrievePage(matchId, Collections.emptyList());
+          final String finalMatchId = matchId;
+          Page matchPage =
+              executeWithRetry(() -> client.retrievePage(finalMatchId, Collections.emptyList()));
           System.setOut(originalOut);
 
           // Get the match name from the Name property

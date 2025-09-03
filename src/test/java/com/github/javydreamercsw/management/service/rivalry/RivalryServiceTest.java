@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.rivalry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,14 +13,15 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,14 +32,14 @@ class RivalryServiceTest {
 
   @Mock private RivalryRepository rivalryRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private Clock clock;
+  @Mock private Random random;
 
-  private Clock fixedClock;
-  private RivalryService rivalryService;
+  @InjectMocks private RivalryService rivalryService;
 
   @BeforeEach
   void setUp() {
-    fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
-    rivalryService = new RivalryService(rivalryRepository, wrestlerRepository, fixedClock);
+    lenient().when(clock.instant()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
   }
 
   @Test
@@ -350,7 +352,7 @@ class RivalryServiceTest {
     rivalry.setWrestler2(wrestler2);
     rivalry.setHeat(heat);
     rivalry.setIsActive(true);
-    rivalry.setStartedDate(Instant.now(fixedClock));
+    rivalry.setStartedDate(Instant.now(clock));
     return rivalry;
   }
 }

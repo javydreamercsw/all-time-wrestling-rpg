@@ -15,7 +15,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -36,16 +36,15 @@ class WrestlerServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private InjuryService injuryService;
+  @Mock private Clock clock;
 
-  private Clock fixedClock;
-  private WrestlerService wrestlerService;
+  @InjectMocks private WrestlerService wrestlerService;
+
   private Wrestler testWrestler;
+  private final Instant fixedInstant = Instant.parse("2024-01-01T00:00:00Z");
 
   @BeforeEach
   void setUp() {
-    fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
-    wrestlerService = new WrestlerService(wrestlerRepository, fixedClock, injuryService);
-
     testWrestler = new Wrestler();
     testWrestler.setId(1L);
     testWrestler.setName("Test Wrestler");
@@ -283,13 +282,14 @@ class WrestlerServiceTest {
   @DisplayName("Should create ATW wrestler with correct defaults")
   void shouldCreateWrestlerWithCorrectDefaults() {
     // Given
+    when(clock.instant()).thenReturn(fixedInstant);
     Wrestler savedWrestler = new Wrestler();
     savedWrestler.setName("New Wrestler");
     savedWrestler.setFans(0L);
     savedWrestler.setIsPlayer(true);
     savedWrestler.setDescription("Test description");
 
-    savedWrestler.setCreationDate(Instant.now(fixedClock));
+    savedWrestler.setCreationDate(fixedInstant);
 
     // Mock the saveAndFlush method that's actually called by save()
     when(wrestlerRepository.saveAndFlush(any(Wrestler.class)))

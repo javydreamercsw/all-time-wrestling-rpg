@@ -9,8 +9,10 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,25 +28,25 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class MultiWrestlerFeudService {
 
-  private final MultiWrestlerFeudRepository multiWrestlerFeudRepository;
-  private final WrestlerRepository wrestlerRepository;
-  private final Clock clock;
+  @Autowired private MultiWrestlerFeudRepository multiWrestlerFeudRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private Clock clock;
 
   /** Get all multi-wrestler feuds with pagination. */
   @Transactional(readOnly = true)
-  public Page<MultiWrestlerFeud> getAllFeuds(Pageable pageable) {
+  public Page<MultiWrestlerFeud> getAllFeuds(@NonNull Pageable pageable) {
     return multiWrestlerFeudRepository.findAllBy(pageable);
   }
 
   /** Get feud by ID. */
   @Transactional(readOnly = true)
-  public Optional<MultiWrestlerFeud> getFeudById(Long id) {
+  public Optional<MultiWrestlerFeud> getFeudById(@NonNull Long id) {
     return multiWrestlerFeudRepository.findById(id);
   }
 
   /** Get feud by name. */
   @Transactional(readOnly = true)
-  public Optional<MultiWrestlerFeud> getFeudByName(String name) {
+  public Optional<MultiWrestlerFeud> getFeudByName(@NonNull String name) {
     return multiWrestlerFeudRepository.findByName(name);
   }
 
@@ -56,7 +58,7 @@ public class MultiWrestlerFeudService {
 
   /** Get active feuds for a specific wrestler. */
   @Transactional(readOnly = true)
-  public List<MultiWrestlerFeud> getActiveFeudsForWrestler(Long wrestlerId) {
+  public List<MultiWrestlerFeud> getActiveFeudsForWrestler(@NonNull Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
     if (wrestlerOpt.isEmpty()) {
@@ -68,7 +70,7 @@ public class MultiWrestlerFeudService {
 
   /** Create a new multi-wrestler feud. */
   public Optional<MultiWrestlerFeud> createFeud(
-      String name, String description, String storylineNotes) {
+      @NonNull String name, @NonNull String description, @NonNull String storylineNotes) {
     // Check if feud name already exists
     if (multiWrestlerFeudRepository.existsByName(name)) {
       log.warn("Feud with name '{}' already exists", name);
@@ -92,7 +94,8 @@ public class MultiWrestlerFeudService {
   }
 
   /** Add a participant to a feud. */
-  public Optional<MultiWrestlerFeud> addParticipant(Long feudId, Long wrestlerId, FeudRole role) {
+  public Optional<MultiWrestlerFeud> addParticipant(
+      @NonNull Long feudId, @NonNull Long wrestlerId, @NonNull FeudRole role) {
     Optional<MultiWrestlerFeud> feudOpt = multiWrestlerFeudRepository.findById(feudId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -114,7 +117,7 @@ public class MultiWrestlerFeudService {
       return Optional.empty();
     }
 
-    feud.addParticipant(wrestler, role != null ? role : FeudRole.NEUTRAL);
+    feud.addParticipant(wrestler, role);
     MultiWrestlerFeud savedFeud = multiWrestlerFeudRepository.saveAndFlush(feud);
 
     log.info(
@@ -129,7 +132,7 @@ public class MultiWrestlerFeudService {
 
   /** Remove a participant from a feud. */
   public Optional<MultiWrestlerFeud> removeParticipant(
-      Long feudId, Long wrestlerId, String reason) {
+      @NonNull Long feudId, @NonNull Long wrestlerId, @NonNull String reason) {
     Optional<MultiWrestlerFeud> feudOpt = multiWrestlerFeudRepository.findById(feudId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -159,10 +162,11 @@ public class MultiWrestlerFeudService {
   }
 
   /** Add heat to a feud. */
-  public Optional<MultiWrestlerFeud> addHeat(Long feudId, int heatGain, String reason) {
+  public Optional<MultiWrestlerFeud> addHeat(
+      @NonNull Long feudId, int heatGain, @NonNull String reason) {
     return multiWrestlerFeudRepository
         .findById(feudId)
-        .filter(feud -> feud.getIsActive())
+        .filter(MultiWrestlerFeud::getIsActive)
         .map(
             feud -> {
               feud.addHeat(heatGain, reason);
@@ -181,7 +185,7 @@ public class MultiWrestlerFeudService {
   }
 
   /** End a feud. */
-  public Optional<MultiWrestlerFeud> endFeud(Long feudId, String reason) {
+  public Optional<MultiWrestlerFeud> endFeud(@NonNull Long feudId, @NonNull String reason) {
     Optional<MultiWrestlerFeud> feudOpt = multiWrestlerFeudRepository.findById(feudId);
 
     if (feudOpt.isEmpty()) {
@@ -272,7 +276,7 @@ public class MultiWrestlerFeudService {
 
   /** Get feuds with specific role. */
   @Transactional(readOnly = true)
-  public List<MultiWrestlerFeud> getFeudsWithRole(FeudRole role) {
+  public List<MultiWrestlerFeud> getFeudsWithRole(@NonNull FeudRole role) {
     return multiWrestlerFeudRepository.findFeudsWithRole(role);
   }
 
@@ -281,11 +285,9 @@ public class MultiWrestlerFeudService {
   public long countActiveFeudsForWrestler(Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
-    if (wrestlerOpt.isEmpty()) {
-      return 0;
-    }
-
-    return multiWrestlerFeudRepository.countActiveFeudsForWrestler(wrestlerOpt.get());
+    return wrestlerOpt
+        .map(wrestler -> multiWrestlerFeudRepository.countActiveFeudsForWrestler(wrestler))
+        .orElse(0L);
   }
 
   /** Get recent feuds. */
@@ -297,14 +299,10 @@ public class MultiWrestlerFeudService {
 
   /** Check if a feud is valid (has 3+ participants). */
   @Transactional(readOnly = true)
-  public boolean isValidMultiWrestlerFeud(Long feudId) {
+  public boolean isValidMultiWrestlerFeud(@NonNull Long feudId) {
     Optional<MultiWrestlerFeud> feudOpt = multiWrestlerFeudRepository.findById(feudId);
 
-    if (feudOpt.isEmpty()) {
-      return false;
-    }
-
-    return feudOpt.get().isValidMultiWrestlerFeud();
+    return feudOpt.map(MultiWrestlerFeud::isValidMultiWrestlerFeud).orElse(false);
   }
 
   /** Get feud statistics. */

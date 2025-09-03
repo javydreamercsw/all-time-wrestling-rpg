@@ -1,14 +1,17 @@
 package com.github.javydreamercsw.management.service.match;
 
+import com.github.javydreamercsw.base.ai.MatchNarrationService;
 import com.github.javydreamercsw.base.ai.MatchNarrationService.MatchNarrationContext;
 import com.github.javydreamercsw.base.ai.MatchNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.service.match.MatchOutcomeProvider;
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,7 +32,7 @@ public class MatchOutcomeService implements MatchOutcomeProvider {
    * Determines the match outcome if none is provided in the context. Uses wrestler stats, tier
    * bonuses, and weighted random selection.
    */
-  public MatchNarrationContext determineOutcomeIfNeeded(MatchNarrationContext context) {
+  public MatchNarrationContext determineOutcomeIfNeeded(@NonNull MatchNarrationContext context) {
     // If outcome is already determined, return as-is
     if (context.getDeterminedOutcome() != null
         && !context.getDeterminedOutcome().trim().isEmpty()) {
@@ -58,13 +61,13 @@ public class MatchOutcomeService implements MatchOutcomeProvider {
   }
 
   /** Determines outcome for a single wrestler (exhibition or promo). */
-  private String determineSingleWrestlerOutcome(WrestlerContext wrestler) {
+  private String determineSingleWrestlerOutcome(@NonNull WrestlerContext wrestler) {
     return wrestler.getName()
         + " delivers an impressive performance, showcasing their skills to the crowd";
   }
 
   /** Determines outcome for a two-wrestler match using weighted probability. */
-  private String determineTwoWrestlerOutcome(List<WrestlerContext> wrestlers) {
+  private String determineTwoWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
     WrestlerContext wrestler1 = wrestlers.get(0);
     WrestlerContext wrestler2 = wrestlers.get(1);
 
@@ -96,7 +99,7 @@ public class MatchOutcomeService implements MatchOutcomeProvider {
   }
 
   /** Determines outcome for a multi-wrestler match. */
-  private String determineMultiWrestlerOutcome(List<WrestlerContext> wrestlers) {
+  private String determineMultiWrestlerOutcome(@NonNull List<WrestlerContext> wrestlers) {
     // Calculate weights for all wrestlers
     List<WrestlerWeight> wrestlerWeights =
         wrestlers.stream()
@@ -150,7 +153,7 @@ public class MatchOutcomeService implements MatchOutcomeProvider {
 
     // Add injury penalties (active injuries significantly reduce effectiveness)
     long activeInjuries =
-        dbWrestler.getInjuries().stream().filter(injury -> injury.isCurrentlyActive()).count();
+        dbWrestler.getInjuries().stream().filter(Injury::isCurrentlyActive).count();
     healthPenalty += (int) activeInjuries * 3; // Each active injury = -3 penalty
 
     // Calculate total weight (minimum 1)
@@ -192,13 +195,15 @@ public class MatchOutcomeService implements MatchOutcomeProvider {
   }
 
   /** Gets a random finishing move for the winner. */
-  private String getRandomFinishingMove(WrestlerContext wrestler) {
+  private String getRandomFinishingMove(@NonNull WrestlerContext wrestler) {
     // Check if wrestler has finishers defined in their moveset
     if (wrestler.getMoveSet() != null
         && wrestler.getMoveSet().getFinishers() != null
         && !wrestler.getMoveSet().getFinishers().isEmpty()) {
       List<String> finisherNames =
-          wrestler.getMoveSet().getFinishers().stream().map(move -> move.getName()).toList();
+          wrestler.getMoveSet().getFinishers().stream()
+              .map(MatchNarrationService.Move::getName)
+              .toList();
       return finisherNames.get(random.nextInt(finisherNames.size()));
     }
 
@@ -207,7 +212,9 @@ public class MatchOutcomeService implements MatchOutcomeProvider {
         && wrestler.getMoveSet().getTrademarks() != null
         && !wrestler.getMoveSet().getTrademarks().isEmpty()) {
       List<String> trademarkNames =
-          wrestler.getMoveSet().getTrademarks().stream().map(move -> move.getName()).toList();
+          wrestler.getMoveSet().getTrademarks().stream()
+              .map(MatchNarrationService.Move::getName)
+              .toList();
       return trademarkNames.get(random.nextInt(trademarkNames.size()));
     }
 

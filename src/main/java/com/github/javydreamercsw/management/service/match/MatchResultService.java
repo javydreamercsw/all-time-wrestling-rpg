@@ -11,6 +11,7 @@ import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class MatchResultService {
 
-  private final MatchResultRepository matchResultRepository;
+  @Autowired private MatchResultRepository matchResultRepository;
 
   /**
    * Creates a new match result.
@@ -43,26 +44,26 @@ public class MatchResultService {
    * @return The created MatchResult
    */
   public MatchResult createMatchResult(
-      Show show,
-      MatchType matchType,
-      Wrestler winner,
-      Instant matchDate,
-      Integer durationMinutes,
-      Integer matchRating,
-      String narration,
-      Boolean isTitleMatch,
-      Boolean isNpcGenerated) {
+      @NonNull Show show,
+      @NonNull MatchType matchType,
+      @NonNull Wrestler winner,
+      @NonNull Instant matchDate,
+      @NonNull Integer durationMinutes,
+      @NonNull Integer matchRating,
+      @NonNull String narration,
+      @NonNull Boolean isTitleMatch,
+      @NonNull Boolean isNpcGenerated) {
 
     MatchResult matchResult = new MatchResult();
     matchResult.setShow(show);
     matchResult.setMatchType(matchType);
     matchResult.setWinner(winner);
-    matchResult.setMatchDate(matchDate != null ? matchDate : Instant.now());
+    matchResult.setMatchDate(matchDate);
     matchResult.setDurationMinutes(durationMinutes);
     matchResult.setMatchRating(matchRating);
     matchResult.setNarration(narration);
-    matchResult.setIsTitleMatch(isTitleMatch != null ? isTitleMatch : false);
-    matchResult.setIsNpcGenerated(isNpcGenerated != null ? isNpcGenerated : false);
+    matchResult.setIsTitleMatch(isTitleMatch);
+    matchResult.setIsNpcGenerated(isNpcGenerated);
 
     MatchResult saved = matchResultRepository.save(matchResult);
     log.info("Created match result with ID: {} for show: {}", saved.getId(), show.getName());

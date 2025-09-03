@@ -4,6 +4,7 @@ import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +34,7 @@ public class MatchTypeService {
   }
 
   @Transactional
-  public MatchType createOrUpdateMatchType(String name, String description) {
+  public MatchType createOrUpdateMatchType(@NonNull String name, @NonNull String description) {
     Optional<MatchType> existingOpt = matchTypeRepository.findByName(name);
     MatchType matchType;
     if (existingOpt.isPresent()) {

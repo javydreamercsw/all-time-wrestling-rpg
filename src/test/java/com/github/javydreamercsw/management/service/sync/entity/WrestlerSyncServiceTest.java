@@ -14,6 +14,7 @@ import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,8 +36,7 @@ class WrestlerSyncServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.wrestler.WrestlerService wrestlerService;
+  @Mock private WrestlerService wrestlerService;
 
   @Mock private NotionHandler notionHandler;
   @Mock private NotionSyncProperties syncProperties;

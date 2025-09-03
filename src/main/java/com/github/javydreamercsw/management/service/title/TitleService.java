@@ -9,6 +9,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,19 +24,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class TitleService {
 
-  private final TitleRepository titleRepository;
-  private final WrestlerRepository wrestlerRepository;
-  private final Clock clock;
-
-  public TitleService(
-      TitleRepository titleRepository, WrestlerRepository wrestlerRepository, Clock clock) {
-    this.titleRepository = titleRepository;
-    this.wrestlerRepository = wrestlerRepository;
-    this.clock = clock;
-  }
+  @Autowired private TitleRepository titleRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private Clock clock;
 
   /** Create a new title. */
-  public Title createTitle(String name, String description, TitleTier tier) {
+  public Title createTitle(
+      @NonNull String name, @NonNull String description, @NonNull TitleTier tier) {
     Title title = new Title();
     title.setName(name);
     title.setDescription(description);
@@ -48,18 +44,18 @@ public class TitleService {
 
   /** Get title by ID. */
   @Transactional(readOnly = true)
-  public Optional<Title> getTitleById(Long titleId) {
+  public Optional<Title> getTitleById(@NonNull Long titleId) {
     return titleRepository.findById(titleId);
   }
 
   @Transactional(readOnly = true)
-  public Optional<Title> findByName(String name) {
+  public Optional<Title> findByName(@NonNull String name) {
     return titleRepository.findByName(name);
   }
 
   /** Get all titles with pagination. */
   @Transactional(readOnly = true)
-  public Page<Title> getAllTitles(Pageable pageable) {
+  public Page<Title> getAllTitles(@NonNull Pageable pageable) {
     return titleRepository.findAllBy(pageable);
   }
 
@@ -77,12 +73,12 @@ public class TitleService {
 
   /** Get titles by tier. */
   @Transactional(readOnly = true)
-  public List<Title> getTitlesByTier(TitleTier tier) {
+  public List<Title> getTitlesByTier(@NonNull TitleTier tier) {
     return titleRepository.findActiveTitlesByTier(tier);
   }
 
   /** Award title to a wrestler. */
-  public Optional<Title> awardTitle(Long titleId, Long wrestlerId) {
+  public Optional<Title> awardTitle(@NonNull Long titleId, @NonNull Long wrestlerId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -103,7 +99,7 @@ public class TitleService {
   }
 
   /** Vacate a title. */
-  public Optional<Title> vacateTitle(Long titleId) {
+  public Optional<Title> vacateTitle(@NonNull Long titleId) {
     return titleRepository
         .findById(titleId)
         .map(
@@ -114,7 +110,7 @@ public class TitleService {
   }
 
   /** Challenge for a title (spend fans to challenge). */
-  public ChallengeResult challengeForTitle(Long challengerId, Long titleId) {
+  public ChallengeResult challengeForTitle(@NonNull Long challengerId, @NonNull Long titleId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
     Optional<Wrestler> challengerOpt = wrestlerRepository.findById(challengerId);
 
@@ -165,7 +161,7 @@ public class TitleService {
 
   /** Get eligible challengers for a title. */
   @Transactional(readOnly = true)
-  public List<Wrestler> getEligibleChallengers(Long titleId) {
+  public List<Wrestler> getEligibleChallengers(@NonNull Long titleId) {
     return titleRepository
         .findById(titleId)
         .map(
@@ -181,7 +177,7 @@ public class TitleService {
 
   /** Get titles held by a wrestler. */
   @Transactional(readOnly = true)
-  public List<Title> getTitlesHeldBy(Long wrestlerId) {
+  public List<Title> getTitlesHeldBy(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(titleRepository::findByCurrentChampion)
@@ -190,14 +186,17 @@ public class TitleService {
 
   /** Update title information. */
   public Optional<Title> updateTitle(
-      Long titleId, String name, String description, Boolean isActive) {
+      @NonNull Long titleId,
+      @NonNull String name,
+      @NonNull String description,
+      @NonNull Boolean isActive) {
     return titleRepository
         .findById(titleId)
         .map(
             title -> {
-              if (name != null) title.setName(name);
-              if (description != null) title.setDescription(description);
-              if (isActive != null) title.setIsActive(isActive);
+              title.setName(name);
+              title.setDescription(description);
+              title.setIsActive(isActive);
               return titleRepository.saveAndFlush(title);
             });
   }
@@ -217,7 +216,7 @@ public class TitleService {
 
   /** Get title statistics. */
   @Transactional(readOnly = true)
-  public TitleStats getTitleStats(Long titleId) {
+  public TitleStats getTitleStats(@NonNull Long titleId) {
     return titleRepository
         .findById(titleId)
         .map(
@@ -238,13 +237,13 @@ public class TitleService {
 
   /** Check if a title name already exists. */
   @Transactional(readOnly = true)
-  public boolean titleNameExists(String name) {
+  public boolean titleNameExists(@NonNull String name) {
     return titleRepository.existsByName(name);
   }
 
   /** Challenge result data class. */
   public record ChallengeResult(
-      boolean success, String message, Title title, Wrestler challenger) {}
+      boolean success, @NonNull String message, Title title, Wrestler challenger) {}
 
   /** Title statistics data class. */
   public record TitleStats(
