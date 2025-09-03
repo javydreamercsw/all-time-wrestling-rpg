@@ -6,15 +6,8 @@ import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -28,9 +21,6 @@ import org.springframework.stereotype.Service;
 public class ShowTemplateSyncService extends BaseSyncService {
 
   @Autowired private ShowTemplateService showTemplateService;
-  @Autowired private NotionRateLimitService rateLimitService;
-
-  private final ExecutorService executorService = Executors.newFixedThreadPool(3);
 
   public ShowTemplateSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -148,88 +138,15 @@ public class ShowTemplateSyncService extends BaseSyncService {
     }
   }
 
-  /** Converts ShowTemplatePage objects to ShowTemplateDTO objects. */
   private List<ShowTemplateDTO> convertShowTemplatePagesToDTOs(
       @NonNull List<ShowTemplatePage> templatePages, String operationId) {
-    log.info(
-        "Converting {} show templates to DTOs using parallel processing", templatePages.size());
-
-    int batchSize = 10; // Process 10 show templates at a time
-    List<ShowTemplateDTO> allTemplateDTOs = new ArrayList<>();
-
-    for (int i = 0; i < templatePages.size(); i += batchSize) {
-      int endIndex = Math.min(i + batchSize, templatePages.size());
-      List<ShowTemplatePage> batch = templatePages.subList(i, endIndex);
-
-      log.debug(
-          "Processing show template batch {}-{} of {}", i + 1, endIndex, templatePages.size());
-
-      List<CompletableFuture<Optional<ShowTemplateDTO>>> futures =
-          batch.stream()
-              .map(
-                  templatePage ->
-                      CompletableFuture.supplyAsync(
-                          () -> {
-                            try {
-                              rateLimitService.acquirePermit();
-                              return Optional.of(convertShowTemplatePageToDTO(templatePage));
-                            } catch (InterruptedException e) {
-                              Thread.currentThread().interrupt();
-                              log.error(
-                                  "Interrupted while rate limiting for show template {}",
-                                  templatePage.getId());
-                              return Optional.<ShowTemplateDTO>empty();
-                            } catch (Exception e) {
-                              log.error(
-                                  "Error converting show template {}: {}",
-                                  templatePage.getId(),
-                                  e.getMessage());
-                              return Optional.<ShowTemplateDTO>empty();
-                            }
-                          },
-                          executorService))
-              .toList();
-
-      try {
-        List<ShowTemplateDTO> batchResults =
-            futures.stream()
-                .map(
-                    future -> {
-                      try {
-                        return future.get(30, TimeUnit.SECONDS);
-                      } catch (Exception e) {
-                        log.error(
-                            "Failed to complete show template conversion future: {}",
-                            e.getMessage());
-                        return Optional.<ShowTemplateDTO>empty();
-                      }
-                    })
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
-
-        allTemplateDTOs.addAll(batchResults);
-
-        int processedCount = Math.min(endIndex, templatePages.size());
-        double progressPercent = (double) processedCount / templatePages.size() * 100;
-        progressTracker.updateProgress(
-            operationId,
-            2,
-            String.format(
-                "Converted %d/%d show templates (%.1f%%)",
-                processedCount, templatePages.size(), progressPercent));
-
-        if (endIndex < templatePages.size()) {
-          Thread.sleep(500);
-        }
-
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("Interrupted while processing show template batch");
-        throw new RuntimeException("Show template conversion interrupted", e);
-      }
-    }
-    return allTemplateDTOs;
+    return processWithControlledParallelism(
+        templatePages,
+        this::convertShowTemplatePageToDTO,
+        10, // Batch size
+        operationId,
+        2, // Progress step
+        "Converted %d/%d show templates");
   }
 
   /** Converts a single ShowTemplatePage to ShowTemplateDTO. */

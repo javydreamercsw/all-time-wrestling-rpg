@@ -7,15 +7,8 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.dto.SeasonDTO;
 import com.github.javydreamercsw.management.service.season.SeasonService;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +21,6 @@ import org.springframework.stereotype.Service;
 public class SeasonSyncService extends BaseSyncService {
 
   @Autowired private SeasonService seasonService;
-  @Autowired private NotionRateLimitService rateLimitService;
-
-  private final ExecutorService executorService = Executors.newFixedThreadPool(3);
 
   public SeasonSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -128,85 +118,15 @@ public class SeasonSyncService extends BaseSyncService {
     }
   }
 
-  /** Converts a SeasonPage from Notion to a SeasonDTO for database persistence. */
   private List<SeasonDTO> convertSeasonPagesToDTO(
       @NonNull List<SeasonPage> seasonPages, String operationId) {
-    log.info("Converting {} seasons to DTOs using parallel processing", seasonPages.size());
-
-    int batchSize = 10; // Process 10 seasons at a time
-    List<SeasonDTO> allSeasonDTOs = new ArrayList<>();
-
-    for (int i = 0; i < seasonPages.size(); i += batchSize) {
-      int endIndex = Math.min(i + batchSize, seasonPages.size());
-      List<SeasonPage> batch = seasonPages.subList(i, endIndex);
-
-      log.debug("Processing season batch {}-{} of {}", i + 1, endIndex, seasonPages.size());
-
-      List<CompletableFuture<Optional<SeasonDTO>>> futures =
-          batch.stream()
-              .map(
-                  seasonPage ->
-                      CompletableFuture.supplyAsync(
-                          () -> {
-                            try {
-                              rateLimitService.acquirePermit();
-                              return Optional.ofNullable(convertSeasonPageToDTO(seasonPage));
-                            } catch (InterruptedException e) {
-                              Thread.currentThread().interrupt();
-                              log.error(
-                                  "Interrupted while rate limiting for season {}",
-                                  seasonPage.getId());
-                              return Optional.<SeasonDTO>empty();
-                            } catch (Exception e) {
-                              log.error(
-                                  "Error converting season {}: {}",
-                                  seasonPage.getId(),
-                                  e.getMessage());
-                              return Optional.<SeasonDTO>empty();
-                            }
-                          },
-                          executorService))
-              .toList();
-
-      try {
-        List<SeasonDTO> batchResults =
-            futures.stream()
-                .map(
-                    future -> {
-                      try {
-                        return future.get(30, TimeUnit.SECONDS);
-                      } catch (Exception e) {
-                        log.error(
-                            "Failed to complete season conversion future: {}", e.getMessage());
-                        return Optional.<SeasonDTO>empty();
-                      }
-                    })
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
-
-        allSeasonDTOs.addAll(batchResults);
-
-        int processedCount = Math.min(endIndex, seasonPages.size());
-        double progressPercent = (double) processedCount / seasonPages.size() * 100;
-        progressTracker.updateProgress(
-            operationId,
-            2,
-            String.format(
-                "Converted %d/%d seasons (%.1f%%)",
-                processedCount, seasonPages.size(), progressPercent));
-
-        if (endIndex < seasonPages.size()) {
-          Thread.sleep(500);
-        }
-
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("Interrupted while processing season batch");
-        throw new RuntimeException("Season conversion interrupted", e);
-      }
-    }
-    return allSeasonDTOs;
+    return processWithControlledParallelism(
+        seasonPages,
+        this::convertSeasonPageToDTO,
+        10, // Batch size
+        operationId,
+        2, // Progress step
+        "Converted %d/%d seasons");
   }
 
   private SeasonDTO convertSeasonPageToDTO(@NonNull SeasonPage seasonPage) {

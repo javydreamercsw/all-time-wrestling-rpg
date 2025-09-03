@@ -13,6 +13,7 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
+import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -42,6 +43,7 @@ class InjurySyncServiceRefactoredTest extends BaseTest {
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
+  @Mock private NotionRateLimitService rateLimitService;
 
   private InjurySyncService injurySyncService;
   private ObjectMapper realObjectMapper;
@@ -54,6 +56,7 @@ class InjurySyncServiceRefactoredTest extends BaseTest {
     setField(injurySyncService, "healthMonitor", healthMonitor);
     setField(injurySyncService, "injuryTypeService", injuryTypeService);
     setField(injurySyncService, "injuryTypeRepository", injuryTypeRepository);
+    setField(injurySyncService, "rateLimitService", rateLimitService);
 
     realObjectMapper = new ObjectMapper();
   }

@@ -12,7 +12,6 @@ import com.github.javydreamercsw.management.service.match.MatchResultService;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.RetryService;
 import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -25,10 +24,6 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.NonNull;
@@ -48,10 +43,6 @@ public class MatchSyncService extends BaseSyncService {
   @Autowired private SyncValidationService syncValidationService;
   @Autowired private CircuitBreakerService circuitBreakerService;
   @Autowired private RetryService retryService;
-  @Autowired private NotionRateLimitService rateLimitService;
-
-  // Controlled parallelism to respect rate limits
-  private final ExecutorService executorService = Executors.newFixedThreadPool(3);
 
   public MatchSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -75,7 +66,7 @@ public class MatchSyncService extends BaseSyncService {
   private SyncResult performMatchSyncInternal(@NonNull String operationId) throws Exception {
     // 1. Load all match pages from Notion with rate limiting
     progressTracker.updateProgress(operationId, 1, "Loading matches from Notion");
-    List<MatchPage> notionMatches = loadMatchesWithRateLimit();
+    List<MatchPage> notionMatches = executeWithRateLimit(notionHandler::loadAllMatches);
 
     if (notionMatches.isEmpty()) {
       log.info("No matches found in Notion database");
@@ -112,100 +103,18 @@ public class MatchSyncService extends BaseSyncService {
     }
   }
 
-  /** Load matches from Notion with proper rate limiting */
-  private List<MatchPage> loadMatchesWithRateLimit() throws Exception {
-    rateLimitService.acquirePermit();
-    return notionHandler.loadAllMatches();
-  }
-
-  /** Convert matches with controlled parallel processing and rate limiting */
   private List<MatchDTO> convertMatchesWithRateLimit(
       List<MatchPage> notionMatches, String operationId) {
-    log.info("Converting {} matches with controlled parallelism", notionMatches.size());
-
-    // Process matches in smaller batches to respect rate limits
-    int batchSize = 10; // Process 10 matches at a time
-    List<MatchDTO> allMatchDTOs = new ArrayList<>();
-
-    for (int i = 0; i < notionMatches.size(); i += batchSize) {
-      int endIndex = Math.min(i + batchSize, notionMatches.size());
-      List<MatchPage> batch = notionMatches.subList(i, endIndex);
-
-      log.debug("Processing match batch {}-{} of {}", i + 1, endIndex, notionMatches.size());
-
-      // Process batch with parallel processing
-      List<CompletableFuture<Optional<MatchDTO>>> futures =
-          batch.stream()
-              .map(
-                  matchPage ->
-                      CompletableFuture.supplyAsync(
-                          () -> {
-                            try {
-                              // Rate limit each conversion that might need additional API calls
-                              rateLimitService.acquirePermit();
-                              return convertNotionPageToDTO(matchPage);
-                            } catch (InterruptedException e) {
-                              Thread.currentThread().interrupt();
-                              log.error(
-                                  "Interrupted while rate limiting for match {}",
-                                  matchPage.getId());
-                              return Optional.<MatchDTO>empty();
-                            } catch (Exception e) {
-                              log.error(
-                                  "Error converting match {}: {}",
-                                  matchPage.getId(),
-                                  e.getMessage());
-                              return Optional.<MatchDTO>empty();
-                            }
-                          },
-                          executorService))
-              .toList();
-
-      // Wait for batch completion with timeout
-      try {
-        List<MatchDTO> batchResults =
-            futures.stream()
-                .map(
-                    future -> {
-                      try {
-                        return future.get(30, TimeUnit.SECONDS);
-                      } catch (Exception e) {
-                        log.error("Failed to complete match conversion future: {}", e.getMessage());
-                        return Optional.<MatchDTO>empty();
-                      }
-                    })
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
-
-        allMatchDTOs.addAll(batchResults);
-
-        // Update progress
-        int processedCount = Math.min(endIndex, notionMatches.size());
-        double progressPercent = (double) processedCount / notionMatches.size() * 100;
-        progressTracker.updateProgress(
-            operationId,
-            2,
-            String.format(
-                "Converted %d/%d matches (%.1f%%)",
-                processedCount, notionMatches.size(), progressPercent));
-
-        // Small delay between batches to be nice to the API
-        if (endIndex < notionMatches.size()) {
-          Thread.sleep(500);
-        }
-
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("Interrupted while processing match batch");
-        throw new RuntimeException("Match conversion interrupted", e);
-      }
-    }
-
-    return allMatchDTOs;
+    return processWithControlledParallelism(
+        notionMatches,
+        this::convertNotionPageToDTO,
+        10, // Batch size
+        operationId,
+        2, // Progress step
+        "Converted %d/%d matches");
   }
 
-  private Optional<MatchDTO> convertNotionPageToDTO(@NonNull MatchPage matchPage) {
+  private MatchDTO convertNotionPageToDTO(@NonNull MatchPage matchPage) {
     try {
       MatchDTO matchDTO = new MatchDTO();
       matchDTO.setExternalId(matchPage.getId());
@@ -262,14 +171,14 @@ public class MatchSyncService extends BaseSyncService {
         }
       }
 
-      return Optional.of(matchDTO);
+      return matchDTO;
     } catch (Exception e) {
       log.error(
           "Error converting Notion MatchPage to DTO for page {}: {}",
           matchPage.getId(),
           e.getMessage(),
           e);
-      return Optional.empty();
+      return null;
     }
   }
 

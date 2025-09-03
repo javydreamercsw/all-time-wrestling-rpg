@@ -3,14 +3,12 @@ package com.github.javydreamercsw.management.service.sync.entity;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.FactionDTO;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
@@ -18,10 +16,6 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,9 +28,6 @@ public class FactionSyncService extends BaseSyncService {
 
   @Autowired private FactionRepository factionRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private NotionRateLimitService rateLimitService;
-
-  private final ExecutorService executorService = Executors.newFixedThreadPool(3);
 
   public FactionSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -86,7 +77,7 @@ public class FactionSyncService extends BaseSyncService {
       log.info("📥 Retrieving factions from Notion...");
       progressTracker.updateProgress(operationId, 2, "Retrieving factions from Notion database...");
       progressTracker.addLogMessage(operationId, "📥 Retrieving factions from Notion...", "INFO");
-      List<FactionPage> notionFactions = getAllFactionsFromNotion();
+      List<FactionPage> notionFactions = executeWithRateLimit(notionHandler::loadAllFactions);
       long retrieveTime = System.currentTimeMillis() - startTime;
       log.info("✅ Retrieved {} factions from Notion in {}ms", notionFactions.size(), retrieveTime);
       progressTracker.addLogMessage(
@@ -167,115 +158,15 @@ public class FactionSyncService extends BaseSyncService {
     }
   }
 
-  /**
-   * Retrieves all factions from the Notion Factions database.
-   *
-   * @return List of FactionPage objects from Notion
-   */
-  private List<FactionPage> getAllFactionsFromNotion() throws InterruptedException {
-    log.debug("Retrieving all factions from Notion Factions database");
-
-    // Check if NOTION_TOKEN is available
-    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
-      log.warn("NOTION_TOKEN not available. Cannot sync from Notion.");
-      throw new IllegalStateException(
-          "NOTION_TOKEN environment variable is required for Notion sync");
-    }
-
-    // Check if NotionHandler is available
-    if (!isNotionHandlerAvailable()) {
-      log.warn("NotionHandler not available. Cannot sync from Notion.");
-      throw new IllegalStateException("NotionHandler is not available for sync operations");
-    }
-
-    rateLimitService.acquirePermit();
-    return notionHandler.loadAllFactions();
-  }
-
-  /**
-   * Converts FactionPage objects from Notion to FactionDTO objects for database operations.
-   *
-   * @param factionPages List of FactionPage objects from Notion
-   * @return List of FactionDTO objects
-   */
   private List<FactionDTO> convertFactionPagesToDTO(
       @NonNull List<FactionPage> factionPages, String operationId) {
-    log.info("Converting {} factions to DTOs using parallel processing", factionPages.size());
-
-    int batchSize = 10; // Process 10 factions at a time
-    List<FactionDTO> allFactionDTOs = new ArrayList<>();
-
-    for (int i = 0; i < factionPages.size(); i += batchSize) {
-      int endIndex = Math.min(i + batchSize, factionPages.size());
-      List<FactionPage> batch = factionPages.subList(i, endIndex);
-
-      log.debug("Processing faction batch {}-{} of {}", i + 1, endIndex, factionPages.size());
-
-      List<CompletableFuture<Optional<FactionDTO>>> futures =
-          batch.stream()
-              .map(
-                  factionPage ->
-                      CompletableFuture.supplyAsync(
-                          () -> {
-                            try {
-                              rateLimitService.acquirePermit();
-                              return Optional.of(convertFactionPageToDTO(factionPage));
-                            } catch (InterruptedException e) {
-                              Thread.currentThread().interrupt();
-                              log.error(
-                                  "Interrupted while rate limiting for faction {}",
-                                  factionPage.getId());
-                              return Optional.<FactionDTO>empty();
-                            } catch (Exception e) {
-                              log.error(
-                                  "Error converting faction {}: {}",
-                                  factionPage.getId(),
-                                  e.getMessage());
-                              return Optional.<FactionDTO>empty();
-                            }
-                          },
-                          executorService))
-              .toList();
-
-      try {
-        List<FactionDTO> batchResults =
-            futures.stream()
-                .map(
-                    future -> {
-                      try {
-                        return future.get(30, TimeUnit.SECONDS);
-                      } catch (Exception e) {
-                        log.error(
-                            "Failed to complete faction conversion future: {}", e.getMessage());
-                        return Optional.<FactionDTO>empty();
-                      }
-                    })
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
-
-        allFactionDTOs.addAll(batchResults);
-
-        int processedCount = Math.min(endIndex, factionPages.size());
-        double progressPercent = (double) processedCount / factionPages.size() * 100;
-        progressTracker.updateProgress(
-            operationId,
-            3,
-            String.format(
-                "Converted %d/%d factions (%.1f%%)",
-                processedCount, factionPages.size(), progressPercent));
-
-        if (endIndex < factionPages.size()) {
-          Thread.sleep(500);
-        }
-
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("Interrupted while processing faction batch");
-        throw new RuntimeException("Faction conversion interrupted", e);
-      }
-    }
-    return allFactionDTOs;
+    return processWithControlledParallelism(
+        factionPages,
+        this::convertFactionPageToDTO,
+        10, // Batch size
+        operationId,
+        3, // Progress step
+        "Converted %d/%d factions");
   }
 
   /**

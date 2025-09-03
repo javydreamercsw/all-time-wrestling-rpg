@@ -15,10 +15,6 @@ import com.github.javydreamercsw.management.service.sync.entity.TeamSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
-import jakarta.annotation.PreDestroy;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,9 +45,6 @@ public class NotionSyncService extends BaseSyncService {
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
   @Autowired private EntitySyncConfiguration entitySyncConfiguration;
-
-  // Thread pool for async processing
-  private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
   /** Constructor for NotionSyncService. */
   public NotionSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
@@ -182,22 +175,5 @@ public class NotionSyncService extends BaseSyncService {
    */
   public SyncResult syncInjuryTypes(@NonNull String operationId) {
     return injurySyncService.syncInjuryTypes(operationId);
-  }
-
-  /** Cleanup method to shutdown the executor service. */
-  @PreDestroy
-  public void shutdown() {
-    log.info("Shutting down NotionSyncService executor...");
-    executorService.shutdown();
-    try {
-      if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
-        log.warn("Executor did not terminate gracefully, forcing shutdown");
-        executorService.shutdownNow();
-      }
-    } catch (InterruptedException e) {
-      log.warn("Interrupted while waiting for executor termination");
-      executorService.shutdownNow();
-      Thread.currentThread().interrupt();
-    }
   }
 }

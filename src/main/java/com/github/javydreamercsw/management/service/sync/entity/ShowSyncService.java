@@ -13,20 +13,13 @@ import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -44,9 +37,6 @@ public class ShowSyncService extends BaseSyncService {
   @Autowired private ShowTypeService showTypeService;
   @Autowired private SeasonService seasonService;
   @Autowired private ShowTemplateService showTemplateService;
-  @Autowired private NotionRateLimitService rateLimitService;
-
-  private final ExecutorService executorService = Executors.newFixedThreadPool(3);
 
   public ShowSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -169,7 +159,7 @@ public class ShowSyncService extends BaseSyncService {
             progressTracker.updateProgress(
                 operationId, 3, "Retrieving shows from Notion database...");
 
-            List<ShowPage> notionShows = getAllShowsFromNotion();
+            List<ShowPage> notionShows = executeWithRateLimit(notionHandler::loadAllShowsForSync);
             long retrieveTime = System.currentTimeMillis() - startTime;
             log.info("✅ Retrieved {} shows from Notion in {}ms", notionShows.size(), retrieveTime);
 
@@ -209,104 +199,15 @@ public class ShowSyncService extends BaseSyncService {
         });
   }
 
-  /** Retrieves all shows from the Notion Shows database. */
-  private List<ShowPage> getAllShowsFromNotion() {
-    log.debug("Retrieving all shows from Notion Shows database with rate limiting");
-
-    if (!isNotionHandlerAvailable()) {
-      log.warn("NotionHandler not available. Cannot sync from Notion.");
-      throw new IllegalStateException("NotionHandler is not available for sync operations");
-    }
-
-    try {
-      // Apply rate limiting before making the Notion API call
-      rateLimitService.acquirePermit();
-      return notionHandler.loadAllShowsForSync();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      log.error("Interrupted while waiting for rate limit permit for shows sync");
-      throw new RuntimeException("Shows sync interrupted while waiting for rate limit", e);
-    } catch (Exception e) {
-      log.error("Failed to retrieve shows from Notion: {}", e.getMessage());
-      throw new RuntimeException("Failed to retrieve shows from Notion", e);
-    }
-  }
-
-  /** Converts ShowPage objects from Notion to ShowDTO objects. */
   private List<ShowDTO> convertShowPagesToDTO(
       @NonNull List<ShowPage> showPages, String operationId) {
-    log.info("Converting {} shows to DTOs using parallel processing", showPages.size());
-
-    int batchSize = 10; // Process 10 shows at a time
-    List<ShowDTO> allShowDTOs = new ArrayList<>();
-
-    for (int i = 0; i < showPages.size(); i += batchSize) {
-      int endIndex = Math.min(i + batchSize, showPages.size());
-      List<ShowPage> batch = showPages.subList(i, endIndex);
-
-      log.debug("Processing show batch {}-{} of {}", i + 1, endIndex, showPages.size());
-
-      List<CompletableFuture<Optional<ShowDTO>>> futures =
-          batch.stream()
-              .map(
-                  showPage ->
-                      CompletableFuture.supplyAsync(
-                          () -> {
-                            try {
-                              rateLimitService.acquirePermit();
-                              return Optional.of(convertShowPageToDTO(showPage));
-                            } catch (InterruptedException e) {
-                              Thread.currentThread().interrupt();
-                              log.error(
-                                  "Interrupted while rate limiting for show {}", showPage.getId());
-                              return Optional.<ShowDTO>empty();
-                            } catch (Exception e) {
-                              log.error(
-                                  "Error converting show {}: {}", showPage.getId(), e.getMessage());
-                              return Optional.<ShowDTO>empty();
-                            }
-                          },
-                          executorService))
-              .toList();
-
-      try {
-        List<ShowDTO> batchResults =
-            futures.stream()
-                .map(
-                    future -> {
-                      try {
-                        return future.get(30, TimeUnit.SECONDS);
-                      } catch (Exception e) {
-                        log.error("Failed to complete show conversion future: {}", e.getMessage());
-                        return Optional.<ShowDTO>empty();
-                      }
-                    })
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
-
-        allShowDTOs.addAll(batchResults);
-
-        int processedCount = Math.min(endIndex, showPages.size());
-        double progressPercent = (double) processedCount / showPages.size() * 100;
-        progressTracker.updateProgress(
-            operationId,
-            5,
-            String.format(
-                "Converted %d/%d shows (%.1f%%)",
-                processedCount, showPages.size(), progressPercent));
-
-        if (endIndex < showPages.size()) {
-          Thread.sleep(500);
-        }
-
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("Interrupted while processing show batch");
-        throw new RuntimeException("Show conversion interrupted", e);
-      }
-    }
-    return allShowDTOs;
+    return processWithControlledParallelism(
+        showPages,
+        this::convertShowPageToDTO,
+        10, // Batch size
+        operationId,
+        5, // Progress step
+        "Converted %d/%d shows");
   }
 
   /** Converts a single ShowPage to ShowDTO. */

@@ -13,6 +13,7 @@ import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -41,6 +42,7 @@ class TeamSyncServiceTest extends BaseTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
+  @Mock private NotionRateLimitService rateLimitService;
 
   private TeamSyncService teamSyncService;
 
@@ -55,6 +57,7 @@ class TeamSyncServiceTest extends BaseTest {
     setField(teamSyncService, "wrestlerService", wrestlerService);
     setField(teamSyncService, "teamService", teamService);
     setField(teamSyncService, "teamRepository", teamRepository);
+    setField(teamSyncService, "rateLimitService", rateLimitService);
   }
 
   @Test
