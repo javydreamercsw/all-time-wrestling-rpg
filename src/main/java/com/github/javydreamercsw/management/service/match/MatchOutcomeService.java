@@ -15,6 +15,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for determining match outcomes when none is provided. Uses the same logic as
@@ -32,6 +33,7 @@ public class MatchOutcomeService implements MatchOutcomeProvider {
    * Determines the match outcome if none is provided in the context. Uses wrestler stats, tier
    * bonuses, and weighted random selection.
    */
+  @Transactional
   public MatchNarrationContext determineOutcomeIfNeeded(@NonNull MatchNarrationContext context) {
     // If outcome is already determined, return as-is
     if (context.getDeterminedOutcome() != null
