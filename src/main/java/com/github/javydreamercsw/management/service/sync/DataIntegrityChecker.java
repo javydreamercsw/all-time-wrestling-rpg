@@ -4,8 +4,8 @@ import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
@@ -14,7 +14,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -25,33 +27,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class DataIntegrityChecker {
 
-  private final ShowService showService;
-  private final ShowTypeService showTypeService;
-  private final SeasonService seasonService;
-  private final SeasonRepository seasonRepository;
-  private final ShowTemplateService showTemplateService;
-  private final WrestlerRepository wrestlerRepository;
-  private final FactionRepository factionRepository;
-  private final TeamRepository teamRepository;
-
-  public DataIntegrityChecker(
-      ShowService showService,
-      ShowTypeService showTypeService,
-      SeasonService seasonService,
-      SeasonRepository seasonRepository,
-      ShowTemplateService showTemplateService,
-      WrestlerRepository wrestlerRepository,
-      FactionRepository factionRepository,
-      TeamRepository teamRepository) {
-    this.showService = showService;
-    this.showTypeService = showTypeService;
-    this.seasonService = seasonService;
-    this.seasonRepository = seasonRepository;
-    this.showTemplateService = showTemplateService;
-    this.wrestlerRepository = wrestlerRepository;
-    this.factionRepository = factionRepository;
-    this.teamRepository = teamRepository;
-  }
+  @Autowired private ShowService showService;
+  @Autowired private ShowTypeService showTypeService;
+  @Autowired private SeasonRepository seasonRepository;
+  @Autowired private ShowTemplateService showTemplateService;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private FactionRepository factionRepository;
+  @Autowired private TeamRepository teamRepository;
 
   /** Perform a comprehensive data integrity check. */
   public IntegrityCheckResult performIntegrityCheck() {
@@ -180,7 +162,7 @@ public class DataIntegrityChecker {
                   wrestler ->
                       wrestler.getExternalId() != null
                           && !wrestler.getExternalId().trim().isEmpty())
-              .map(wrestler -> wrestler.getExternalId())
+              .map(Wrestler::getExternalId)
               .distinct()
               .count();
 
@@ -307,11 +289,10 @@ public class DataIntegrityChecker {
 
   /** Result of a data integrity check. */
   public static class IntegrityCheckResult {
-    private final boolean valid;
+    @Getter private final boolean valid;
     private final List<String> errors;
     private final List<String> warnings;
     private final Map<String, Object> statistics;
-    private final LocalDateTime checkTime;
 
     public IntegrityCheckResult(
         boolean valid, List<String> errors, List<String> warnings, Map<String, Object> statistics) {
@@ -319,11 +300,6 @@ public class DataIntegrityChecker {
       this.errors = new ArrayList<>(errors);
       this.warnings = new ArrayList<>(warnings);
       this.statistics = new HashMap<>(statistics);
-      this.checkTime = LocalDateTime.now();
-    }
-
-    public boolean isValid() {
-      return valid;
     }
 
     public List<String> getErrors() {
@@ -336,14 +312,6 @@ public class DataIntegrityChecker {
 
     public Map<String, Object> getStatistics() {
       return new HashMap<>(statistics);
-    }
-
-    public LocalDateTime getCheckTime() {
-      return checkTime;
-    }
-
-    public boolean hasWarnings() {
-      return !warnings.isEmpty();
     }
 
     public boolean hasErrors() {

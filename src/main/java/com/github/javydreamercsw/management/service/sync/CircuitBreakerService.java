@@ -4,6 +4,7 @@ import com.github.javydreamercsw.management.config.RetryConfig;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -117,7 +118,7 @@ public class CircuitBreakerService {
   /** Internal state management for circuit breaker. */
   private static class CircuitBreakerState {
     private final RetryConfig.CircuitBreakerConfig config;
-    private volatile CircuitBreakerStatus status = CircuitBreakerStatus.CLOSED;
+    @Getter private volatile CircuitBreakerStatus status = CircuitBreakerStatus.CLOSED;
     private final AtomicInteger failureCount = new AtomicInteger(0);
     private final AtomicInteger successCount = new AtomicInteger(0);
     private final AtomicLong lastFailureTime = new AtomicLong(0);
@@ -197,10 +198,6 @@ public class CircuitBreakerService {
 
     public void reset() {
       close();
-    }
-
-    public CircuitBreakerStatus getStatus() {
-      return status;
     }
   }
 }

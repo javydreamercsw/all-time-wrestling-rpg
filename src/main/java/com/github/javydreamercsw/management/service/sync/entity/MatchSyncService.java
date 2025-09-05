@@ -11,9 +11,6 @@ import com.github.javydreamercsw.management.dto.MatchDTO;
 import com.github.javydreamercsw.management.service.match.MatchResultService;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
-import com.github.javydreamercsw.management.service.sync.RetryService;
-import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -40,9 +37,6 @@ public class MatchSyncService extends BaseSyncService {
   @Autowired private ShowService showService;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private MatchTypeService matchTypeService;
-  @Autowired private SyncValidationService syncValidationService;
-  @Autowired private CircuitBreakerService circuitBreakerService;
-  @Autowired private RetryService retryService;
 
   public MatchSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);

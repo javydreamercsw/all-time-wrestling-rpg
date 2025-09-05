@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,7 +52,6 @@ public class ParallelSyncOrchestrator {
     log.info("🚀 Starting parallel entity synchronization with operation ID: {}", operationId);
 
     long startTime = System.currentTimeMillis();
-    List<Future<EntitySyncResult>> futures = new ArrayList<>();
 
     // Determine optimal thread pool size based on enabled entities
     int enabledEntities = countEnabledEntities();
@@ -62,7 +62,8 @@ public class ParallelSyncOrchestrator {
 
     try {
       // Submit sync tasks for each enabled entity type
-      futures.addAll(submitSyncTasks(executor, operationId));
+      List<Future<EntitySyncResult>> futures =
+          new ArrayList<>(submitSyncTasks(executor, operationId));
 
       // Wait for all tasks to complete and collect results
       List<EntitySyncResult> results = collectResults(futures);
@@ -267,7 +268,9 @@ public class ParallelSyncOrchestrator {
   }
 
   /** Result of a parallel sync operation containing results for all entities. */
+  @Getter
   public static class ParallelSyncResult {
+    // Getters
     private final List<EntitySyncResult> entityResults;
     private final long totalDurationMs;
     private final boolean success;
@@ -284,23 +287,6 @@ public class ParallelSyncOrchestrator {
       this.errorMessage = errorMessage;
     }
 
-    // Getters
-    public List<EntitySyncResult> getEntityResults() {
-      return entityResults;
-    }
-
-    public long getTotalDurationMs() {
-      return totalDurationMs;
-    }
-
-    public boolean isSuccess() {
-      return success;
-    }
-
-    public String getErrorMessage() {
-      return errorMessage;
-    }
-
     public int getSuccessfulSyncs() {
       return (int) entityResults.stream().filter(r -> r.getSyncResult().isSuccess()).count();
     }
@@ -311,7 +297,9 @@ public class ParallelSyncOrchestrator {
   }
 
   /** Result of syncing a specific entity type. */
+  @Getter
   public static class EntitySyncResult {
+    // Getters
     private final String entityType;
     private final SyncResult syncResult;
     private final long durationMs;
@@ -323,23 +311,6 @@ public class ParallelSyncOrchestrator {
       this.syncResult = syncResult;
       this.durationMs = durationMs;
       this.errorMessage = errorMessage;
-    }
-
-    // Getters
-    public String getEntityType() {
-      return entityType;
-    }
-
-    public SyncResult getSyncResult() {
-      return syncResult;
-    }
-
-    public long getDurationMs() {
-      return durationMs;
-    }
-
-    public String getErrorMessage() {
-      return errorMessage;
     }
   }
 }

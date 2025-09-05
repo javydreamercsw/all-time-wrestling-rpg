@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -196,13 +197,14 @@ public class SyncTransactionManager {
 
   /** Represents a sync transaction with savepoint capabilities. */
   public static class SyncTransaction {
-    private final String operationId;
-    private final String entityType;
-    private final TransactionStatus status;
-    private final LocalDateTime startTime;
+    // Getters
+    @Getter private final String operationId;
+    @Getter private final String entityType;
+    @Getter private final TransactionStatus status;
+    @Getter private final LocalDateTime startTime;
     private final List<Object> savepoints = new ArrayList<>();
-    private boolean committed = false;
-    private boolean rolledBack = false;
+    @Getter private boolean committed = false;
+    @Getter private boolean rolledBack = false;
 
     public SyncTransaction(String operationId, String entityType, TransactionStatus status) {
       this.operationId = operationId;
@@ -243,33 +245,8 @@ public class SyncTransactionManager {
       }
     }
 
-    // Getters
-    public String getOperationId() {
-      return operationId;
-    }
-
-    public String getEntityType() {
-      return entityType;
-    }
-
-    public TransactionStatus getStatus() {
-      return status;
-    }
-
-    public LocalDateTime getStartTime() {
-      return startTime;
-    }
-
     public int getSavepointCount() {
       return savepoints.size();
-    }
-
-    public boolean isCommitted() {
-      return committed;
-    }
-
-    public boolean isRolledBack() {
-      return rolledBack;
     }
 
     void markCommitted() {
@@ -282,7 +259,9 @@ public class SyncTransactionManager {
   }
 
   /** Information about an active transaction. */
+  @Getter
   public static class TransactionInfo {
+    // Getters
     private final String operationId;
     private final String entityType;
     private final LocalDateTime startTime;
@@ -294,23 +273,6 @@ public class SyncTransactionManager {
       this.entityType = entityType;
       this.startTime = startTime;
       this.savepointCount = savepointCount;
-    }
-
-    // Getters
-    public String getOperationId() {
-      return operationId;
-    }
-
-    public String getEntityType() {
-      return entityType;
-    }
-
-    public LocalDateTime getStartTime() {
-      return startTime;
-    }
-
-    public int getSavepointCount() {
-      return savepointCount;
     }
   }
 }
