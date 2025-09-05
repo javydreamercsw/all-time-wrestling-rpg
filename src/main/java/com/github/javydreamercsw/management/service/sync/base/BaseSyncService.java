@@ -52,17 +52,17 @@ public abstract class BaseSyncService {
 
   // Optional NotionHandler for integration tests
   @Autowired(required = false)
-  protected NotionHandler notionHandler;
+  public NotionHandler notionHandler;
 
   // Enhanced sync infrastructure services - autowired
-  @Autowired protected SyncProgressTracker progressTracker;
-  @Autowired protected SyncHealthMonitor healthMonitor;
-  @Autowired protected RetryService retryService;
-  @Autowired protected CircuitBreakerService circuitBreakerService;
-  @Autowired protected SyncValidationService validationService;
-  @Autowired protected SyncTransactionManager syncTransactionManager;
-  @Autowired protected DataIntegrityChecker integrityChecker;
-  @Autowired protected NotionRateLimitService rateLimitService;
+  @Autowired public SyncProgressTracker progressTracker;
+  @Autowired public SyncHealthMonitor healthMonitor;
+  @Autowired public RetryService retryService;
+  @Autowired public CircuitBreakerService circuitBreakerService;
+  @Autowired public SyncValidationService validationService;
+  @Autowired public SyncTransactionManager syncTransactionManager;
+  @Autowired public DataIntegrityChecker integrityChecker;
+  @Autowired public NotionRateLimitService rateLimitService;
 
   protected BaseSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     this.objectMapper = objectMapper;

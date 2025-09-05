@@ -6,6 +6,7 @@ import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_S
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
@@ -241,5 +242,9 @@ public class WrestlerService {
     wrestler.setDescription(description);
 
     return save(wrestler);
+  }
+
+  public List<WrestlerDTO> findAllAsDTO() {
+    return findAll().stream().map(WrestlerDTO::new).toList();
   }
 }

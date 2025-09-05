@@ -109,6 +109,7 @@ public class NotionSyncScheduler {
       case "seasons" -> notionSyncService.syncSeasons(operationId);
       case "show-types" -> notionSyncService.syncShowTypes(operationId);
       case "injuries" -> notionSyncService.syncInjuryTypes(operationId);
+      case "npcs" -> notionSyncService.syncNpcs(operationId);
       default -> {
         log.warn("Unknown entity type for sync: {}", entityName);
         yield NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
@@ -139,6 +140,7 @@ public class NotionSyncScheduler {
       case "show-types", "showtypes" -> notionSyncService.syncShowTypes(operationId);
       case "injuries", "injury-types", "injurytypes" ->
           notionSyncService.syncInjuryTypes(operationId);
+      case "npcs" -> notionSyncService.syncNpcs(operationId);
       default -> {
         log.warn("Unknown entity type for sync: {}", entityName);
         yield NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");

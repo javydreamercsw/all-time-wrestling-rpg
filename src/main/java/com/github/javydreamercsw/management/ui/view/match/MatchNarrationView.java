@@ -9,9 +9,11 @@ import com.github.javydreamercsw.base.ai.MatchNarrationService.RefereeContext;
 import com.github.javydreamercsw.base.ai.MatchNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.MatchNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -40,6 +42,7 @@ import jakarta.annotation.security.PermitAll;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -57,6 +60,7 @@ public class MatchNarrationView extends Main {
 
   private final WrestlerService wrestlerService;
   private final MatchTypeService matchTypeService;
+  private final NpcService npcService;
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
 
@@ -66,8 +70,9 @@ public class MatchNarrationView extends Main {
   private TextField venueField;
   private TextField audienceField;
   private TextArea outcomeField;
-  private TextField refereeField;
-  private TextArea commentatorsField;
+  private ComboBox<Npc> refereeField;
+  private MultiSelectComboBox<Npc> commentatorsField;
+  private ComboBox<Npc> ringAnnouncerField;
   private Button generateButton;
   private Button testButton;
 
@@ -78,9 +83,11 @@ public class MatchNarrationView extends Main {
   private Div costDisplay;
   private Div providerDisplay;
 
-  public MatchNarrationView(WrestlerService wrestlerService, MatchTypeService matchTypeService) {
+  public MatchNarrationView(
+      WrestlerService wrestlerService, MatchTypeService matchTypeService, NpcService npcService) {
     this.wrestlerService = wrestlerService;
     this.matchTypeService = matchTypeService;
+    this.npcService = npcService;
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
 
@@ -124,17 +131,22 @@ public class MatchNarrationView extends Main {
     outcomeField.setHelperText("Optional: Specify the match outcome for more controlled narration");
 
     // Referee
-    refereeField = new TextField("Referee");
+    refereeField = new ComboBox<>("Referee");
+    refereeField.setItems(npcService.findAllByType("Referee"));
+    refereeField.setItemLabelGenerator(Npc::getName);
     refereeField.setWidthFull();
-    refereeField.setPlaceholder("e.g., Earl Hebner");
-    refereeField.setValue("Earl Hebner");
 
     // Commentators
-    commentatorsField = new TextArea("Commentators");
+    commentatorsField = new MultiSelectComboBox<>("Commentators");
+    commentatorsField.setItems(npcService.findAllByType("Commentator"));
+    commentatorsField.setItemLabelGenerator(Npc::getName);
     commentatorsField.setWidthFull();
-    commentatorsField.setHeight("80px");
-    commentatorsField.setPlaceholder("e.g., Michael Cole, Tazz");
-    commentatorsField.setValue("Michael Cole (Play-by-Play), Tazz (Color Commentary)");
+
+    // Ring Announcer
+    ringAnnouncerField = new ComboBox<>("Ring Announcer");
+    ringAnnouncerField.setItems(npcService.findAllByType("Ring Announcer"));
+    ringAnnouncerField.setItemLabelGenerator(Npc::getName);
+    ringAnnouncerField.setWidthFull();
 
     // Action buttons
     generateButton = new Button("Generate Match Narration", new Icon(VaadinIcon.PLAY));
@@ -193,7 +205,8 @@ public class MatchNarrationView extends Main {
         audienceField,
         outcomeField,
         refereeField,
-        commentatorsField);
+        commentatorsField,
+        ringAnnouncerField);
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
     formLayout.setColspan(outcomeField, 2);
@@ -314,24 +327,38 @@ public class MatchNarrationView extends Main {
     }
 
     // Set referee
-    RefereeContext referee = new RefereeContext();
-    referee.setName(refereeField.getValue());
-    referee.setDescription("Experienced wrestling referee");
-    context.setReferee(referee);
-
-    // Set commentators
-    if (!commentatorsField.getValue().trim().isEmpty()) {
-      List<NPCContext> npcs = new ArrayList<>();
-      String[] commentators = commentatorsField.getValue().split(",");
-      for (String commentator : commentators) {
-        NPCContext npc = new NPCContext();
-        npc.setName(commentator.trim());
-        npc.setRole("Commentator");
-        npc.setDescription("Wrestling commentator");
-        npcs.add(npc);
-      }
-      context.setNpcs(npcs);
+    if (refereeField.getValue() != null) {
+      RefereeContext referee = new RefereeContext();
+      referee.setName(refereeField.getValue().getName());
+      referee.setDescription("Experienced wrestling referee");
+      context.setReferee(referee);
     }
+
+    List<NPCContext> npcs = new ArrayList<>();
+    // Set commentators
+    if (!commentatorsField.getValue().isEmpty()) {
+      npcs.addAll(
+          commentatorsField.getValue().stream()
+              .map(
+                  commentator -> {
+                    NPCContext npc = new NPCContext();
+                    npc.setName(commentator.getName());
+                    npc.setRole("Commentator");
+                    npc.setDescription("Wrestling commentator");
+                    return npc;
+                  })
+              .collect(Collectors.toList()));
+    }
+
+    // Set Ring Announcer
+    if (ringAnnouncerField.getValue() != null) {
+      NPCContext npc = new NPCContext();
+      npc.setName(ringAnnouncerField.getValue().getName());
+      npc.setRole("Ring Announcer");
+      npc.setDescription("Wrestling ring announcer");
+      npcs.add(npc);
+    }
+    context.setNpcs(npcs);
 
     return context;
   }

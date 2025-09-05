@@ -11,6 +11,7 @@ import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
@@ -59,12 +60,8 @@ public class NotionSyncView extends Main {
 
   // UI Components
   private Button syncAllButton;
-  private Button syncShowsButton;
-  private Button syncWrestlersButton;
-  private Button syncFactionsButton;
-  private Button syncTeamsButton;
-  private Button syncTemplatesButton;
-  private Button syncInjuriesButton; // Add injury sync button
+  private ComboBox<String> entitySelectionCombo;
+  private Button syncSelectedButton;
   private ProgressBar progressBar;
   private Span statusLabel;
   private Span lastSyncLabel;
@@ -156,44 +153,26 @@ public class NotionSyncView extends Main {
     syncAllButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     syncAllButton.addClickListener(e -> triggerFullSync());
 
-    // Individual entity sync buttons
-    syncShowsButton = new Button("Sync Shows", VaadinIcon.CALENDAR.create());
-    syncShowsButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-    syncShowsButton.addClickListener(e -> triggerEntitySync("shows"));
+    entitySelectionCombo = new ComboBox<>("Select Entity to Sync");
+    entitySelectionCombo.setItems(dependencyAnalyzer.getAutomaticSyncOrder());
 
-    syncWrestlersButton = new Button("Sync Wrestlers", VaadinIcon.USER.create());
-    syncWrestlersButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-    syncWrestlersButton.addClickListener(e -> triggerEntitySync("wrestlers"));
-
-    syncFactionsButton = new Button("Sync Factions", VaadinIcon.GROUP.create());
-    syncFactionsButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-    syncFactionsButton.addClickListener(e -> triggerEntitySync("factions"));
-
-    syncTeamsButton = new Button("Sync Teams", VaadinIcon.USERS.create());
-    syncTeamsButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-    syncTeamsButton.addClickListener(e -> triggerEntitySync("teams"));
-
-    syncTemplatesButton = new Button("Sync Templates", VaadinIcon.FILE_TEXT.create());
-    syncTemplatesButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-    syncTemplatesButton.addClickListener(e -> triggerEntitySync("templates"));
-
-    syncInjuriesButton = new Button("Sync Injuries", VaadinIcon.HEART.create());
-    syncInjuriesButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-    syncInjuriesButton.addClickListener(e -> triggerEntitySync("injuries"));
+    syncSelectedButton = new Button("Sync Selected", VaadinIcon.PLAY.create());
+    syncSelectedButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+    syncSelectedButton.addClickListener(
+        e -> {
+          String selectedEntity = entitySelectionCombo.getValue();
+          if (selectedEntity != null && !selectedEntity.isEmpty()) {
+            triggerEntitySync(selectedEntity);
+          } else {
+            showNotification("Please select an entity to sync", NotificationVariant.LUMO_CONTRAST);
+          }
+        });
 
     Button statusButton = new Button("Check Status", VaadinIcon.INFO_CIRCLE.create());
     statusButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     statusButton.addClickListener(e -> updateSyncStatus());
 
-    controlSection.add(
-        syncAllButton,
-        syncShowsButton,
-        syncWrestlersButton,
-        syncFactionsButton,
-        syncTeamsButton,
-        syncTemplatesButton,
-        syncInjuriesButton,
-        statusButton);
+    controlSection.add(syncAllButton, entitySelectionCombo, syncSelectedButton, statusButton);
     return controlSection;
   }
 
@@ -513,12 +492,8 @@ public class NotionSyncView extends Main {
   private void updateButtonStates() {
     boolean enabled = !syncInProgress;
     syncAllButton.setEnabled(enabled);
-    syncShowsButton.setEnabled(enabled);
-    syncWrestlersButton.setEnabled(enabled);
-    syncFactionsButton.setEnabled(enabled);
-    syncTeamsButton.setEnabled(enabled);
-    syncTemplatesButton.setEnabled(enabled);
-    syncInjuriesButton.setEnabled(enabled);
+    entitySelectionCombo.setEnabled(enabled);
+    syncSelectedButton.setEnabled(enabled);
   }
 
   private void handleSyncResult(SyncOperationResult result) {

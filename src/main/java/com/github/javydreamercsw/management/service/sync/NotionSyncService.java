@@ -7,6 +7,7 @@ import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.InjurySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.MatchSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.NpcSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.SeasonSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTemplateSyncService;
@@ -41,6 +42,7 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private ShowTypeSyncService showTypeSyncService;
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private InjurySyncService injurySyncService;
+  @Autowired private NpcSyncService npcSyncService;
 
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
@@ -175,5 +177,15 @@ public class NotionSyncService extends BaseSyncService {
    */
   public SyncResult syncInjuryTypes(@NonNull String operationId) {
     return injurySyncService.syncInjuryTypes(operationId);
+  }
+
+  /**
+   * Synchronizes NPCs from Notion to the local database.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncNpcs(@NonNull String operationId) {
+    return npcSyncService.syncNpcs(operationId);
   }
 }

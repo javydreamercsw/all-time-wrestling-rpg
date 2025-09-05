@@ -1320,6 +1320,45 @@ public class NotionHandler {
     return getInstance().loadFaction(factionName);
   }
 
+  // ==================== NPC LOADING METHODS ====================
+
+  /**
+   * Loads all NPCs from the Notion NPCs database.
+   *
+   * @return List of all NpcPage objects from the NPCs database
+   */
+  public List<NpcPage> loadAllNpcs() {
+    log.debug("Loading all NPCs from NPCs database");
+
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String npcDbId = getDatabaseId("NPCs");
+    if (npcDbId == null) {
+      log.warn("NPCs database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(client, npcDbId, "NPC", this::mapPageToNpcPage);
+    } catch (Exception e) {
+      log.error("Failed to load all NPCs", e);
+      throw new RuntimeException("Failed to load NPCs from Notion: " + e.getMessage(), e);
+    }
+  }
+
+  /** Maps a Notion page to a NpcPage object. */
+  private NpcPage mapPageToNpcPage(@NonNull Page pageData, @NonNull String npcName) {
+    return mapPageToGenericEntity(
+        pageData, npcName, "NPC", NpcPage::new, NpcPage.NotionParent::new);
+  }
+
   // ==================== INJURY LOADING METHODS ====================
 
   /**

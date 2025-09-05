@@ -10,6 +10,7 @@ import java.util.concurrent.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -21,16 +22,17 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ParallelSyncOrchestrator {
 
-  private final ShowSyncService showSyncService;
-  private final WrestlerSyncService wrestlerSyncService;
-  private final FactionSyncService factionSyncService;
-  private final TeamSyncService teamSyncService;
-  private final MatchSyncService matchSyncService;
-  private final SeasonSyncService seasonSyncService;
-  private final ShowTypeSyncService showTypeSyncService;
-  private final ShowTemplateSyncService showTemplateSyncService;
-  private final InjurySyncService injurySyncService;
-  private final EntitySyncConfiguration entityConfig;
+  @Autowired private ShowSyncService showSyncService;
+  @Autowired private WrestlerSyncService wrestlerSyncService;
+  @Autowired private FactionSyncService factionSyncService;
+  @Autowired private TeamSyncService teamSyncService;
+  @Autowired private MatchSyncService matchSyncService;
+  @Autowired private SeasonSyncService seasonSyncService;
+  @Autowired private ShowTypeSyncService showTypeSyncService;
+  @Autowired private ShowTemplateSyncService showTemplateSyncService;
+  @Autowired private InjurySyncService injurySyncService;
+  @Autowired private NpcSyncService npcSyncService;
+  @Autowired private EntitySyncConfiguration entityConfig;
 
   /**
    * Executes parallel synchronization of all enabled entities.
@@ -180,6 +182,16 @@ public class ParallelSyncOrchestrator {
                       () -> injurySyncService.syncInjuryTypes(baseOperationId + "-injuries"))));
     }
 
+    if (entityConfig.isEntityEnabled("npcs")) {
+      futures.add(
+          executor.submit(
+              () ->
+                  syncEntity(
+                      "npcs",
+                      baseOperationId,
+                      () -> npcSyncService.syncNpcs(baseOperationId + "-npcs"))));
+    }
+
     return futures;
   }
 
@@ -240,7 +252,8 @@ public class ParallelSyncOrchestrator {
       "seasons",
       "showtypes",
       "showtemplates",
-      "injuries"
+      "injuries",
+      "npcs"
     };
 
     for (String entity : entities) {
