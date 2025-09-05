@@ -12,6 +12,7 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
@@ -43,6 +44,7 @@ class FactionSyncServiceTest extends BaseTest {
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private ObjectMapper objectMapper;
+  @Mock private NotionRateLimitService rateLimitService;
 
   private FactionSyncService factionSyncService;
 
@@ -81,6 +83,11 @@ class FactionSyncServiceTest extends BaseTest {
           FactionSyncService.class.getSuperclass().getDeclaredField("healthMonitor");
       healthMonitorField.setAccessible(true);
       healthMonitorField.set(factionSyncService, healthMonitor);
+
+      var rateLimitServiceField =
+          FactionSyncService.class.getSuperclass().getDeclaredField("rateLimitService");
+      rateLimitServiceField.setAccessible(true);
+      rateLimitServiceField.set(factionSyncService, rateLimitService);
     } catch (Exception e) {
       throw new RuntimeException("Failed to inject mock dependencies", e);
     }

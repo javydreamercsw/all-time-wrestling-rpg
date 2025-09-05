@@ -7,6 +7,7 @@ import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.InjurySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.MatchSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.NpcSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.SeasonSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTemplateSyncService;
@@ -15,10 +16,6 @@ import com.github.javydreamercsw.management.service.sync.entity.TeamSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
-import jakarta.annotation.PreDestroy;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,13 +42,11 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private ShowTypeSyncService showTypeSyncService;
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private InjurySyncService injurySyncService;
+  @Autowired private NpcSyncService npcSyncService;
 
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
   @Autowired private EntitySyncConfiguration entitySyncConfiguration;
-
-  // Thread pool for async processing
-  private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
   /** Constructor for NotionSyncService. */
   public NotionSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
@@ -184,20 +179,13 @@ public class NotionSyncService extends BaseSyncService {
     return injurySyncService.syncInjuryTypes(operationId);
   }
 
-  /** Cleanup method to shutdown the executor service. */
-  @PreDestroy
-  public void shutdown() {
-    log.info("Shutting down NotionSyncService executor...");
-    executorService.shutdown();
-    try {
-      if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
-        log.warn("Executor did not terminate gracefully, forcing shutdown");
-        executorService.shutdownNow();
-      }
-    } catch (InterruptedException e) {
-      log.warn("Interrupted while waiting for executor termination");
-      executorService.shutdownNow();
-      Thread.currentThread().interrupt();
-    }
+  /**
+   * Synchronizes NPCs from Notion to the local database.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncNpcs(@NonNull String operationId) {
+    return npcSyncService.syncNpcs(operationId);
   }
 }

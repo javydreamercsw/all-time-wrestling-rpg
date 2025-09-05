@@ -10,6 +10,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,22 +25,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class RivalryService {
 
-  private final RivalryRepository rivalryRepository;
-  private final WrestlerRepository wrestlerRepository;
-  private final Clock clock;
-  private final Random random;
-
-  public RivalryService(
-      RivalryRepository rivalryRepository, WrestlerRepository wrestlerRepository, Clock clock) {
-    this.rivalryRepository = rivalryRepository;
-    this.wrestlerRepository = wrestlerRepository;
-    this.clock = clock;
-    this.random = new Random();
-  }
+  @Autowired private RivalryRepository rivalryRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private Clock clock;
+  @Autowired private Random random;
 
   /** Create a new rivalry between two wrestlers. */
   public Optional<Rivalry> createRivalry(
-      Long wrestler1Id, Long wrestler2Id, String storylineNotes) {
+      @NonNull Long wrestler1Id, @NonNull Long wrestler2Id, @NonNull String storylineNotes) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
 
@@ -83,7 +77,7 @@ public class RivalryService {
 
   /** Add heat between two specific wrestlers. */
   public Optional<Rivalry> addHeatBetweenWrestlers(
-      Long wrestler1Id, Long wrestler2Id, int heatGain, String reason) {
+      @NonNull Long wrestler1Id, @NonNull Long wrestler2Id, int heatGain, @NonNull String reason) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
 
@@ -105,7 +99,7 @@ public class RivalryService {
 
   /** Attempt to resolve a rivalry with dice rolls. */
   public ResolutionResult attemptResolution(
-      Long rivalryId, Integer wrestler1Roll, Integer wrestler2Roll) {
+      @NonNull Long rivalryId, @NonNull Integer wrestler1Roll, @NonNull Integer wrestler2Roll) {
     Optional<Rivalry> rivalryOpt = rivalryRepository.findById(rivalryId);
 
     if (rivalryOpt.isEmpty()) {
@@ -147,7 +141,7 @@ public class RivalryService {
   }
 
   /** End a rivalry manually. */
-  public Optional<Rivalry> endRivalry(Long rivalryId, String reason) {
+  public Optional<Rivalry> endRivalry(@NonNull Long rivalryId, @NonNull String reason) {
     return rivalryRepository
         .findById(rivalryId)
         .filter(Rivalry::getIsActive)
@@ -160,13 +154,13 @@ public class RivalryService {
 
   /** Get rivalry by ID. */
   @Transactional(readOnly = true)
-  public Optional<Rivalry> getRivalryById(Long rivalryId) {
+  public Optional<Rivalry> getRivalryById(@NonNull Long rivalryId) {
     return rivalryRepository.findById(rivalryId);
   }
 
   /** Get all rivalries with pagination. */
   @Transactional(readOnly = true)
-  public Page<Rivalry> getAllRivalries(Pageable pageable) {
+  public Page<Rivalry> getAllRivalries(@NonNull Pageable pageable) {
     return rivalryRepository.findAllBy(pageable);
   }
 
@@ -178,7 +172,7 @@ public class RivalryService {
 
   /** Get rivalries for a specific wrestler. */
   @Transactional(readOnly = true)
-  public List<Rivalry> getRivalriesForWrestler(Long wrestlerId) {
+  public List<Rivalry> getRivalriesForWrestler(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(rivalryRepository::findActiveRivalriesForWrestler)
@@ -205,7 +199,7 @@ public class RivalryService {
 
   /** Get rivalries by intensity level. */
   @Transactional(readOnly = true)
-  public List<Rivalry> getRivalriesByIntensity(RivalryIntensity intensity) {
+  public List<Rivalry> getRivalriesByIntensity(@NonNull RivalryIntensity intensity) {
     return rivalryRepository.findByHeatRange(
         intensity.getMinHeat(),
         intensity.getMaxHeat() == Integer.MAX_VALUE ? 999 : intensity.getMaxHeat());
@@ -219,7 +213,8 @@ public class RivalryService {
   }
 
   /** Update rivalry storyline notes. */
-  public Optional<Rivalry> updateStorylineNotes(Long rivalryId, String storylineNotes) {
+  public Optional<Rivalry> updateStorylineNotes(
+      @NonNull Long rivalryId, @NonNull String storylineNotes) {
     return rivalryRepository
         .findById(rivalryId)
         .map(
@@ -231,7 +226,7 @@ public class RivalryService {
 
   /** Get rivalry statistics. */
   @Transactional(readOnly = true)
-  public RivalryStats getRivalryStats(Long rivalryId) {
+  public RivalryStats getRivalryStats(@NonNull Long rivalryId) {
     return rivalryRepository
         .findById(rivalryId)
         .map(
@@ -253,7 +248,8 @@ public class RivalryService {
 
   /** Get rivalry between two wrestlers. */
   @Transactional(readOnly = true)
-  public Optional<Rivalry> getRivalryBetweenWrestlers(Long wrestler1Id, Long wrestler2Id) {
+  public Optional<Rivalry> getRivalryBetweenWrestlers(
+      @NonNull Long wrestler1Id, @NonNull Long wrestler2Id) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
 
@@ -266,7 +262,7 @@ public class RivalryService {
 
   /** Check if two wrestlers have rivalry history. */
   @Transactional(readOnly = true)
-  public boolean hasRivalryHistory(Long wrestler1Id, Long wrestler2Id) {
+  public boolean hasRivalryHistory(@NonNull Long wrestler1Id, @NonNull Long wrestler2Id) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
 

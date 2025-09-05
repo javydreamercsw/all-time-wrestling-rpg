@@ -21,7 +21,6 @@ import com.github.javydreamercsw.management.service.sync.entity.TeamSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
-import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -199,16 +198,16 @@ class NotionSyncServiceTest extends BaseTest {
   @DisplayName("Should delegate matches sync to MatchSyncService")
   void shouldDelegateMatchesSyncToMatchSyncService() {
     // Given
-    String operationId = "test-matches-sync";
+    String testOperationId = "my-test-operation-id";
     BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Matches", 15, 3);
-    when(matchSyncService.syncMatches(operationId)).thenReturn(mockResult);
+    when(matchSyncService.syncMatches(testOperationId + "-matches")).thenReturn(mockResult);
 
     // When
-    BaseSyncService.SyncResult result = notionSyncService.syncMatches(operationId);
+    BaseSyncService.SyncResult result = notionSyncService.syncMatches(testOperationId);
 
     // Then
     assertThat(result).isEqualTo(mockResult);
-    verify(matchSyncService).syncMatches(operationId);
+    verify(matchSyncService).syncMatches(testOperationId + "-matches");
   }
 
   // ==================== SEASONS SYNC TESTS ====================
@@ -297,29 +296,5 @@ class NotionSyncServiceTest extends BaseTest {
     // When & Then
     assertThrows(RuntimeException.class, () -> notionSyncService.syncShows(operationId));
     verify(showSyncService).syncShows(operationId);
-  }
-
-  /** Helper method to set private fields via reflection for testing. */
-  private void setField(Object target, String fieldName, Object value) {
-    try {
-      Field field = findField(target.getClass(), fieldName);
-      field.setAccessible(true);
-      field.set(target, value);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to set field " + fieldName, e);
-    }
-  }
-
-  /** Recursively searches for a field in the class hierarchy. */
-  private Field findField(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-    try {
-      return clazz.getDeclaredField(fieldName);
-    } catch (NoSuchFieldException e) {
-      Class<?> superclass = clazz.getSuperclass();
-      if (superclass != null && superclass != Object.class) {
-        return findField(superclass, fieldName);
-      }
-      throw e;
-    }
   }
 }

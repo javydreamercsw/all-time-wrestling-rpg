@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.service.match;
 
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
 import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Random;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,23 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 @Slf4j
 public class NPCMatchResolutionService {
-  private final MatchResultRepository matchResultRepository;
-  private final WrestlerRepository wrestlerRepository;
-  private final MatchRuleService matchRuleService;
-  private final Clock clock;
-  private final Random random;
 
-  public NPCMatchResolutionService(
-      MatchResultRepository matchResultRepository,
-      WrestlerRepository wrestlerRepository,
-      MatchRuleService matchRuleService,
-      Clock clock) {
-    this.matchResultRepository = matchResultRepository;
-    this.wrestlerRepository = wrestlerRepository;
-    this.matchRuleService = matchRuleService;
-    this.clock = clock;
-    this.random = new Random();
-  }
+  @Autowired private MatchResultRepository matchResultRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private MatchRuleService matchRuleService;
+  @Autowired private Clock clock;
+  @Autowired private Random random;
 
   /**
    * Resolve a team-based match using ATW RPG mechanics. This is the core method that handles all
@@ -208,8 +199,7 @@ public class NPCMatchResolutionService {
     penalty += wrestler.getBumps();
 
     // Injury penalties (active injuries significantly reduce effectiveness)
-    long activeInjuries =
-        wrestler.getInjuries().stream().filter(injury -> injury.isCurrentlyActive()).count();
+    long activeInjuries = wrestler.getInjuries().stream().filter(Injury::isCurrentlyActive).count();
     penalty += (int) activeInjuries * 3; // Each active injury = -3 penalty
 
     return penalty;
@@ -244,17 +234,17 @@ public class NPCMatchResolutionService {
     double team2Probability = (double) team2TotalWeight / totalWeight * 100;
 
     log.debug(
-        "Team match probabilities calculated - {}: {:.1f}% (TW:{}, ATB:{:.1f}, THP:{}), {}: {:.1f}%"
-            + " (TW:{}, ATB:{:.1f}, THP:{})",
+        "Team match probabilities calculated - {}: {}% (TW:{}, ATB:{}, THP:{}), {}: {}% (TW:{},"
+            + " ATB:{}, THP:{})",
         team1.getTeamName(),
-        team1Probability,
+        String.format("%.1f", team1Probability),
         team1TotalWeight,
-        team1.getAverageTierBonus(),
+        String.format("%.1f", team1.getAverageTierBonus()),
         team1.getTotalHealthPenalty(),
         team2.getTeamName(),
-        team2Probability,
+        String.format("%.1f", team2Probability),
         team2TotalWeight,
-        team2.getAverageTierBonus(),
+        String.format("%.1f", team2.getAverageTierBonus()),
         team2.getTotalHealthPenalty());
 
     return new TeamMatchProbabilities(
@@ -365,7 +355,7 @@ public class NPCMatchResolutionService {
     matchRuleService.findByName(stipulation).ifPresent(result::addMatchRule);
 
     // If no rules were applied and it's not a standard match, log a warning
-    if (result.getMatchRules().isEmpty() && !"Standard Match".equals(stipulation)) {
+    if (result.getMatchRules().isEmpty()) {
       log.warn("No match rules found for stipulation: {}", stipulation);
     }
   }
@@ -462,7 +452,7 @@ public class NPCMatchResolutionService {
     /** Calculate total health penalty for the team. */
     public int calculateTeamHealthPenalty(@NonNull MatchTeam team) {
       return team.getMembers().stream()
-          .mapToInt(wrestler -> NPCMatchResolutionService.this.getHealthPenalty(wrestler))
+          .mapToInt(NPCMatchResolutionService.this::getHealthPenalty)
           .sum();
     }
   }

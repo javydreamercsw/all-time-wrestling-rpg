@@ -130,31 +130,22 @@ public class NotionBlocksRetriever {
     String blockType = typeNode.asText();
 
     try {
-      switch (blockType) {
-        case "paragraph":
-          return parseParagraph(block);
-        case "heading_1":
-          return parseHeading(block, 1);
-        case "heading_2":
-          return parseHeading(block, 2);
-        case "heading_3":
-          return parseHeading(block, 3);
-        case "bulleted_list_item":
-          return parseBulletedListItem(block);
-        case "numbered_list_item":
-          return parseNumberedListItem(block);
-        case "to_do":
-          return parseToDoItem(block);
-        case "quote":
-          return parseQuote(block);
-        case "callout":
-          return parseCallout(block);
-        case "divider":
-          return "---";
-        default:
+      return switch (blockType) {
+        case "paragraph" -> parseParagraph(block);
+        case "heading_1" -> parseHeading(block, 1);
+        case "heading_2" -> parseHeading(block, 2);
+        case "heading_3" -> parseHeading(block, 3);
+        case "bulleted_list_item" -> parseBulletedListItem(block);
+        case "numbered_list_item" -> parseNumberedListItem(block);
+        case "to_do" -> parseToDoItem(block);
+        case "quote" -> parseQuote(block);
+        case "callout" -> parseCallout(block);
+        case "divider" -> "---";
+        default -> {
           log.debug("Unhandled block type: {}", blockType);
-          return null;
-      }
+          yield null;
+        }
+      };
     } catch (Exception e) {
       log.warn("Failed to parse block of type {}: {}", blockType, e.getMessage());
       return null;

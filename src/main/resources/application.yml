@@ -49,3 +49,6 @@ notion:
 
         seasons:
           enabled: false
+
+        npcs:
+          enabled: true

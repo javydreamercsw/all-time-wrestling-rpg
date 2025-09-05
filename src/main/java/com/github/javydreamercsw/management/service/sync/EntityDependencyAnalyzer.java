@@ -41,6 +41,7 @@ public class EntityDependencyAnalyzer {
     List<String> order = new ArrayList<>();
 
     // Base entities with no dependencies
+    order.add("npcs"); // NPCs (no dependencies)
     order.add("templates"); // ShowTemplate (no dependencies)
     order.add("seasons"); // Season (no dependencies)
     order.add("injuries"); // InjuryType (no dependencies, reference data)

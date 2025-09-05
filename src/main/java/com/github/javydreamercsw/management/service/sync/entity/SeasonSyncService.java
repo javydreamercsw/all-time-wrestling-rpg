@@ -9,7 +9,6 @@ import com.github.javydreamercsw.management.dto.SeasonDTO;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
-import java.util.Objects;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,10 +63,8 @@ public class SeasonSyncService extends BaseSyncService {
       }
 
       // Initialize progress tracking if operation ID provided
-      if (operationId != null) {
-        progressTracker.startOperation(operationId, "Sync Seasons", 4);
-        progressTracker.updateProgress(operationId, 1, "Retrieving seasons from Notion...");
-      }
+      progressTracker.startOperation(operationId, "Sync Seasons", 4);
+      progressTracker.updateProgress(operationId, 1, "Retrieving seasons from Notion...");
 
       // Retrieve seasons from Notion
       log.info("📥 Retrieving seasons from Notion...");
@@ -78,6 +75,7 @@ public class SeasonSyncService extends BaseSyncService {
         return createDefaultSeasonIfNeeded();
       }
 
+      rateLimitService.acquirePermit();
       List<SeasonPage> seasonPages = notionHandler.loadAllSeasons();
       log.info(
           "✅ Retrieved {} seasons in {}ms",
@@ -90,31 +88,21 @@ public class SeasonSyncService extends BaseSyncService {
       }
 
       // Convert to DTOs
-      if (operationId != null) {
-        progressTracker.updateProgress(operationId, 2, "Converting seasons to DTOs...");
-      }
+      progressTracker.updateProgress(operationId, 2, "Converting seasons to DTOs...");
       log.info("🔄 Converting seasons to DTOs...");
-      List<SeasonDTO> seasonDTOs =
-          seasonPages.parallelStream()
-              .map(this::convertSeasonPageToDTO)
-              .filter(Objects::nonNull)
-              .toList();
+      List<SeasonDTO> seasonDTOs = convertSeasonPagesToDTO(seasonPages, operationId);
       log.info("✅ Converted {} seasons to DTOs", seasonDTOs.size());
 
       // Save to database
-      if (operationId != null) {
-        progressTracker.updateProgress(operationId, 3, "Saving seasons to database...");
-      }
+      progressTracker.updateProgress(operationId, 3, "Saving seasons to database...");
       log.info("💾 Saving seasons to database...");
       int savedCount = saveSeasonsToDB(seasonDTOs);
       log.info("✅ Processed {} seasons ({} new seasons created)", seasonDTOs.size(), savedCount);
 
       // Complete progress tracking
-      if (operationId != null) {
-        progressTracker.updateProgress(operationId, 4, "Seasons sync completed");
-        progressTracker.completeOperation(
-            operationId, true, "Seasons sync completed successfully", savedCount);
-      }
+      progressTracker.updateProgress(operationId, 4, "Seasons sync completed");
+      progressTracker.completeOperation(
+          operationId, true, "Seasons sync completed successfully", savedCount);
 
       long totalTime = System.currentTimeMillis() - startTime;
       log.info("🎉 Successfully synchronized {} seasons in {}ms total", savedCount, totalTime);
@@ -124,15 +112,23 @@ public class SeasonSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize seasons after {}ms", totalTime, e);
 
-      if (operationId != null) {
-        progressTracker.failOperation(operationId, "Seasons sync failed: " + e.getMessage());
-      }
+      progressTracker.failOperation(operationId, "Seasons sync failed: " + e.getMessage());
 
       return SyncResult.failure("Seasons", e.getMessage());
     }
   }
 
-  /** Converts a SeasonPage from Notion to a SeasonDTO for database persistence. */
+  private List<SeasonDTO> convertSeasonPagesToDTO(
+      @NonNull List<SeasonPage> seasonPages, String operationId) {
+    return processWithControlledParallelism(
+        seasonPages,
+        this::convertSeasonPageToDTO,
+        10, // Batch size
+        operationId,
+        2, // Progress step
+        "Converted %d/%d seasons");
+  }
+
   private SeasonDTO convertSeasonPageToDTO(@NonNull SeasonPage seasonPage) {
     try {
       SeasonDTO dto = new SeasonDTO();

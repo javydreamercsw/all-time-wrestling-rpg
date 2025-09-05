@@ -99,38 +99,22 @@ public class NotionSyncScheduler {
       @NonNull String entityName, @NonNull String operationId) {
     log.debug("Syncing entity: {} with operation ID: {}", entityName, operationId);
 
-    switch (entityName.toLowerCase()) {
-      case "shows":
-        return notionSyncService.syncShows(operationId);
-
-      case "wrestlers":
-        return notionSyncService.syncWrestlers(operationId);
-
-      case "factions":
-        return notionSyncService.syncFactions(operationId);
-
-      case "teams":
-        return notionSyncService.syncTeams(operationId);
-
-      case "matches":
-        return notionSyncService.syncMatches(operationId);
-
-      case "templates":
-        return notionSyncService.syncShowTemplates(operationId);
-
-      case "seasons":
-        return notionSyncService.syncSeasons(operationId);
-
-      case "show-types":
-        return notionSyncService.syncShowTypes(operationId);
-
-      case "injuries":
-        return notionSyncService.syncInjuryTypes(operationId);
-
-      default:
+    return switch (entityName.toLowerCase()) {
+      case "shows" -> notionSyncService.syncShows(operationId);
+      case "wrestlers" -> notionSyncService.syncWrestlers(operationId);
+      case "factions" -> notionSyncService.syncFactions(operationId);
+      case "teams" -> notionSyncService.syncTeams(operationId);
+      case "matches" -> notionSyncService.syncMatches(operationId);
+      case "templates" -> notionSyncService.syncShowTemplates(operationId);
+      case "seasons" -> notionSyncService.syncSeasons(operationId);
+      case "show-types" -> notionSyncService.syncShowTypes(operationId);
+      case "injuries" -> notionSyncService.syncInjuryTypes(operationId);
+      case "npcs" -> notionSyncService.syncNpcs(operationId);
+      default -> {
         log.warn("Unknown entity type for sync: {}", entityName);
-        return NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
-    }
+        yield NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
+      }
+    };
   }
 
   /**
@@ -145,43 +129,23 @@ public class NotionSyncScheduler {
     // Generate operation ID for progress tracking
     String operationId = "sync-" + entityName.toLowerCase() + "-" + System.currentTimeMillis();
 
-    switch (entityName.toLowerCase()) {
-      case "shows":
-        return notionSyncService.syncShows(operationId);
-
-      case "wrestlers":
-        return notionSyncService.syncWrestlers(operationId);
-
-      case "factions":
-        return notionSyncService.syncFactions(operationId);
-
-      case "teams":
-        return notionSyncService.syncTeams(operationId);
-
-      case "matches":
-        // TODO: Implement match sync
-        log.warn("Match sync not yet implemented");
-        return NotionSyncService.SyncResult.success("Matches", 0, 0);
-
-      case "templates":
-        return notionSyncService.syncShowTemplates(operationId);
-
-      case "seasons":
-        return notionSyncService.syncSeasons(operationId);
-
-      case "show-types":
-      case "showtypes":
-        return notionSyncService.syncShowTypes(operationId);
-
-      case "injuries":
-      case "injury-types":
-      case "injurytypes":
-        return notionSyncService.syncInjuryTypes(operationId);
-
-      default:
+    return switch (entityName.toLowerCase()) {
+      case "shows" -> notionSyncService.syncShows(operationId);
+      case "wrestlers" -> notionSyncService.syncWrestlers(operationId);
+      case "factions" -> notionSyncService.syncFactions(operationId);
+      case "teams" -> notionSyncService.syncTeams(operationId);
+      case "matches" -> notionSyncService.syncMatches(operationId);
+      case "templates" -> notionSyncService.syncShowTemplates(operationId);
+      case "seasons" -> notionSyncService.syncSeasons(operationId);
+      case "show-types", "showtypes" -> notionSyncService.syncShowTypes(operationId);
+      case "injuries", "injury-types", "injurytypes" ->
+          notionSyncService.syncInjuryTypes(operationId);
+      case "npcs" -> notionSyncService.syncNpcs(operationId);
+      default -> {
         log.warn("Unknown entity type for sync: {}", entityName);
-        return NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
-    }
+        yield NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
+      }
+    };
   }
 
   /**

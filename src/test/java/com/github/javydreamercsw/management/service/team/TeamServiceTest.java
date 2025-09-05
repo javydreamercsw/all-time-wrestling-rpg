@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -38,14 +39,13 @@ class TeamServiceTest {
   @Mock private TeamRepository teamRepository;
   @Mock private WrestlerRepository wrestlerRepository;
 
-  private TeamService teamService;
+  @InjectMocks private TeamService teamService;
   private Wrestler wrestler1;
   private Wrestler wrestler2;
   private Team team;
 
   @BeforeEach
   void setUp() {
-    teamService = new TeamService(teamRepository, wrestlerRepository);
 
     // Create test wrestlers
     wrestler1 = new Wrestler();

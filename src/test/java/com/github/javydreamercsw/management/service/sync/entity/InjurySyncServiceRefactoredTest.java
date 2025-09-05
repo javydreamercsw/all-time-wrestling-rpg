@@ -7,16 +7,17 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.InjuryPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
+import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.io.File;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +34,7 @@ import org.mockito.quality.Strictness;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Injury Sync Unit Tests")
-class InjurySyncServiceRefactoredTest {
+class InjurySyncServiceRefactoredTest extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
@@ -42,6 +43,7 @@ class InjurySyncServiceRefactoredTest {
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
+  @Mock private NotionRateLimitService rateLimitService;
 
   private InjurySyncService injurySyncService;
   private ObjectMapper realObjectMapper;
@@ -54,6 +56,7 @@ class InjurySyncServiceRefactoredTest {
     setField(injurySyncService, "healthMonitor", healthMonitor);
     setField(injurySyncService, "injuryTypeService", injuryTypeService);
     setField(injurySyncService, "injuryTypeRepository", injuryTypeRepository);
+    setField(injurySyncService, "rateLimitService", rateLimitService);
 
     realObjectMapper = new ObjectMapper();
   }
@@ -109,21 +112,5 @@ class InjurySyncServiceRefactoredTest {
     InjuryPage injury3 =
         realObjectMapper.readValue(new File(samplesDir, "real-injury-3.json"), InjuryPage.class);
     return Arrays.asList(injury1, injury2, injury3);
-  }
-
-  private void setField(Object target, String fieldName, Object value) {
-    try {
-      Field field = target.getClass().getDeclaredField(fieldName);
-      field.setAccessible(true);
-      field.set(target, value);
-    } catch (Exception e) {
-      try {
-        Field superField = target.getClass().getSuperclass().getDeclaredField(fieldName);
-        superField.setAccessible(true);
-        superField.set(target, value);
-      } catch (Exception e2) {
-        throw new RuntimeException("Failed to set field " + fieldName, e2);
-      }
-    }
   }
 }

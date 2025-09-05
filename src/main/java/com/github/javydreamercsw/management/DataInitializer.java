@@ -3,9 +3,13 @@ package com.github.javydreamercsw.management;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.Card;
+import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.show.match.stipulation.MatchRuleRepository;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.MatchRuleDTO;
@@ -24,25 +28,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Data;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 
+@Slf4j
 @Configuration
 public class DataInitializer {
-  private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
+
+  @Autowired private CardRepository cardRepository;
+  @Autowired private CardSetRepository cardSetRepository;
+  @Autowired private MatchRuleRepository matchRuleRepository;
+  @Autowired private ShowTemplateRepository showTemplateRepository;
 
   @Bean
   @Order(-1)
-  public ApplicationRunner loadMatchRulesFromFile(MatchRuleService matchRuleService) {
+  public ApplicationRunner loadMatchRulesFromFile(@NonNull MatchRuleService matchRuleService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("match_rules.json");
       if (resource.exists()) {
-        logger.info("Loading match rules from file: {}", resource.getPath());
+        log.info("Loading match rules from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var matchRulesFromFile = mapper.readValue(is, new TypeReference<List<MatchRuleDTO>>() {});
@@ -50,28 +60,29 @@ public class DataInitializer {
           for (MatchRuleDTO dto : matchRulesFromFile) {
             matchRuleService.createOrUpdateRule(
                 dto.getName(), dto.getDescription(), dto.isRequiresHighHeat());
-            logger.info(
+            log.info(
                 "Loaded match rule: {} (High Heat: {})", dto.getName(), dto.isRequiresHighHeat());
           }
-
-          logger.info("Match rule loading completed - {} rules loaded", matchRulesFromFile.size());
+          matchRuleRepository.flush();
+          log.info("Match rule loading completed - {} rules loaded", matchRulesFromFile.size());
         } catch (Exception e) {
-          logger.error("Error loading match rules from file", e);
+          log.error("Error loading match rules from file", e);
         }
       } else {
-        logger.warn("Match rules file not found: {}", resource.getPath());
+        log.warn("Match rules file not found: {}", resource.getPath());
       }
     };
   }
 
   @Bean
   @Order(1)
-  public ApplicationRunner loadShowTemplatesFromFile(ShowTemplateService showTemplateService) {
+  public ApplicationRunner loadShowTemplatesFromFile(
+      @NonNull ShowTemplateService showTemplateService) {
     return args -> {
       // Only load show templates from file if the table is empty
       long existingTemplatesCount = showTemplateService.count();
       if (existingTemplatesCount > 0) {
-        logger.info(
+        log.info(
             "Show templates table already contains {} templates - skipping file import",
             existingTemplatesCount);
         return;
@@ -79,7 +90,7 @@ public class DataInitializer {
 
       ClassPathResource resource = new ClassPathResource("show_templates.json");
       if (resource.exists()) {
-        logger.info(
+        log.info(
             "Show templates table is empty - loading templates from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
@@ -91,34 +102,34 @@ public class DataInitializer {
                 showTemplateService.createOrUpdateTemplate(
                     dto.getName(), dto.getDescription(), dto.getShowTypeName(), dto.getNotionUrl());
             if (template != null) {
-              logger.info(
+              log.info(
                   "Loaded show template: {} (Type: {})", template.getName(), dto.getShowTypeName());
             } else {
-              logger.warn(
+              log.warn(
                   "Failed to load show template: {} - show type not found: {}",
                   dto.getName(),
                   dto.getShowTypeName());
             }
           }
-
-          logger.info(
+          showTemplateRepository.flush();
+          log.info(
               "Show template loading completed - {} templates processed", templatesFromFile.size());
         } catch (Exception e) {
-          logger.error("Error loading show templates from file", e);
+          log.error("Error loading show templates from file", e);
         }
       } else {
-        logger.warn("Show templates file not found: {}", resource.getPath());
+        log.warn("Show templates file not found: {}", resource.getPath());
       }
     };
   }
 
   @Bean
   @Order(0)
-  public ApplicationRunner loadMatchTypesFromFile(MatchTypeService matchTypeService) {
+  public ApplicationRunner loadMatchTypesFromFile(@NonNull MatchTypeService matchTypeService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("match_types.json");
       if (resource.exists()) {
-        logger.info("Loading match types from file: {}", resource.getPath());
+        log.info("Loading match types from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var matchTypesFromFile = mapper.readValue(is, new TypeReference<List<MatchTypeDTO>>() {});
@@ -126,29 +137,29 @@ public class DataInitializer {
           for (MatchTypeDTO dto : matchTypesFromFile) {
             MatchType matchType =
                 matchTypeService.createOrUpdateMatchType(dto.getName(), dto.getDescription());
-            logger.info(
+            log.info(
                 "Loaded match type: {} (Players: {})",
                 matchType.getName(),
                 dto.isUnlimited() ? "Unlimited" : dto.getPlayerAmount());
           }
 
-          logger.info("Match type loading completed");
+          log.info("Match type loading completed");
         } catch (Exception e) {
-          logger.error("Error loading match types from file", e);
+          log.error("Error loading match types from file", e);
         }
       } else {
-        logger.warn("Match types file not found: {}", resource.getPath());
+        log.warn("Match types file not found: {}", resource.getPath());
       }
     };
   }
 
   @Bean
   @Order(1)
-  public ApplicationRunner syncSetsFromFile(CardSetService cardSetService) {
+  public ApplicationRunner syncSetsFromFile(@NonNull CardSetService cardSetService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("sets.json");
       if (resource.exists()) {
-        logger.info("Loading card sets from file: {}", resource.getPath());
+        log.info("Loading card sets from file: {}", resource.getPath());
         // Load card sets from JSON file
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
@@ -161,13 +172,14 @@ public class DataInitializer {
             if (existingSet != null) {
               // Update fields
               cardSetService.save(existingSet);
-              logger.info("Updated existing card set: {}", existingSet.getName());
+              log.info("Updated existing card set: {}", existingSet.getName());
             } else {
               cardSetService.save(c);
-              logger.info("Saved new card set: {}", c.getName());
+              log.info("Saved new card set: {}", c.getName());
             }
           }
         }
+        cardSetRepository.flush();
       }
     };
   }
@@ -175,11 +187,11 @@ public class DataInitializer {
   @Bean
   @Order(2)
   public ApplicationRunner syncCardsFromFile(
-      CardService cardService, CardSetService cardSetService) {
+      @NonNull CardService cardService, @NonNull CardSetService cardSetService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("cards.json");
       if (resource.exists()) {
-        logger.info("Loading cards from file: {}", resource.getPath());
+        log.info("Loading cards from file: {}", resource.getPath());
         // Load cards from JSON file
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
@@ -211,11 +223,12 @@ public class DataInitializer {
             card.setRecover(dto.isRecover());
             cardService.save(card);
             if (existing.containsKey(dto.getName())) {
-              logger.info("Updated existing card: {}", card.getName());
+              log.info("Updated existing card: {}", card.getName());
             } else {
-              logger.info("Saved new card: {}", card.getName());
+              log.info("Saved new card: {}", card.getName());
             }
           }
+          cardRepository.flush();
         }
       }
     };
@@ -223,11 +236,11 @@ public class DataInitializer {
 
   @Bean
   @Order(3)
-  public ApplicationRunner syncWrestlersFromFile(WrestlerService wrestlerService) {
+  public ApplicationRunner syncWrestlersFromFile(@NonNull WrestlerService wrestlerService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("wrestlers.json");
       if (resource.exists()) {
-        logger.info("Loading wrestlers from file: {}", resource.getPath());
+        log.info("Loading wrestlers from file: {}", resource.getPath());
         // Load wrestlers from JSON file
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
@@ -278,10 +291,10 @@ public class DataInitializer {
               }
 
               wrestlerService.save(existingWrestler);
-              logger.info("Updated existing wrestler: {}", existingWrestler.getName());
+              log.info("Updated existing wrestler: {}", existingWrestler.getName());
             } else {
               wrestlerService.save(w);
-              logger.info("Saved new wrestler: {}", w.getName());
+              log.info("Saved new wrestler: {}", w.getName());
             }
           }
         }
@@ -292,14 +305,14 @@ public class DataInitializer {
   @Bean
   @Order(4)
   public ApplicationRunner syncDecksFromFile(
-      CardService cardService,
-      WrestlerService wrestlerService,
-      DeckService deckService,
-      DeckCardService deckCardService) {
+      @NonNull CardService cardService,
+      @NonNull WrestlerService wrestlerService,
+      @NonNull DeckService deckService,
+      @NonNull DeckCardService deckCardService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("decks.json");
       if (resource.exists()) {
-        logger.info("Loading decks from file: {}", resource.getPath());
+        log.info("Loading decks from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var decksFromFile = mapper.readValue(is, new TypeReference<List<DeckDTO>>() {});
@@ -308,7 +321,6 @@ public class DataInitializer {
                   .collect(
                       Collectors.toMap(
                           Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
-          List<Card> allCards = cardService.findAll();
           for (DeckDTO deckDTO : decksFromFile) {
             Wrestler wrestler = wrestlers.get(deckDTO.getWrestler());
             if (wrestler == null) {
@@ -326,15 +338,11 @@ public class DataInitializer {
             deck.getCards().forEach(deckCardService::delete);
             for (DeckCardDTO cardDTO : deckDTO.getCards()) {
               Card card =
-                  allCards.stream()
-                      .filter(
-                          c ->
-                              c.getNumber() == cardDTO.getNumber()
-                                  && c.getSet().getName().equals(cardDTO.getSet()))
-                      .findFirst()
+                  cardService
+                      .findByNumberAndSet(cardDTO.getNumber(), cardDTO.getSet())
                       .orElse(null);
               if (card == null) {
-                logger.warn(
+                log.warn(
                     "Card not found: {} in set {} from deck {}",
                     cardDTO.getNumber(),
                     cardDTO.getSet(),
@@ -344,7 +352,7 @@ public class DataInitializer {
               deck.addCard(card, cardDTO.getAmount());
             }
             deckService.save(deck);
-            logger.info("Saved deck for wrestler: {}", wrestler.getName());
+            log.info("Saved deck for wrestler: {}", wrestler.getName());
           }
         }
       }
@@ -353,11 +361,11 @@ public class DataInitializer {
 
   @Bean
   @Order(5)
-  public ApplicationRunner syncShowTypesFromFile(ShowTypeService showTypeService) {
+  public ApplicationRunner syncShowTypesFromFile(@NonNull ShowTypeService showTypeService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("show_types.json");
       if (resource.exists()) {
-        logger.info("Loading show types from file: {}", resource.getPath());
+        log.info("Loading show types from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
           var showTypesFromFile = mapper.readValue(is, new TypeReference<List<ShowType>>() {});
@@ -368,7 +376,7 @@ public class DataInitializer {
             ShowType existingType = existing.get(st.getName());
             if (existingType == null) {
               showTypeService.save(st);
-              logger.info("Saved new show type: {}", st.getName());
+              log.info("Saved new show type: {}", st.getName());
             }
           }
         }

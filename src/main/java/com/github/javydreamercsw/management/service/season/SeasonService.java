@@ -7,6 +7,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,16 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class SeasonService {
 
-  private final SeasonRepository seasonRepository;
-  private final Clock clock;
-
-  public SeasonService(SeasonRepository seasonRepository, Clock clock) {
-    this.seasonRepository = seasonRepository;
-    this.clock = clock;
-  }
+  @Autowired private SeasonRepository seasonRepository;
+  @Autowired private Clock clock;
 
   /** Create a new season. */
-  public Season createSeason(String name, String description, Integer showsPerPpv) {
+  public Season createSeason(
+      @NonNull String name, @NonNull String description, Integer showsPerPpv) {
     // End any currently active season
     Optional<Season> activeSeason = seasonRepository.findActiveSeason();
     activeSeason.ifPresent(this::endSeason);
@@ -38,7 +36,7 @@ public class SeasonService {
     Season season = new Season();
     season.setName(name);
     season.setDescription(description);
-    season.setShowsPerPpv(showsPerPpv != null ? showsPerPpv : 5);
+    season.setShowsPerPpv(showsPerPpv == null ? 5 : showsPerPpv); // Default to 5 if not provided
     season.setIsActive(true);
     season.setStartDate(Instant.now(clock));
     season.setCreationDate(Instant.now(clock));
@@ -54,24 +52,24 @@ public class SeasonService {
 
   /** Get season by ID. */
   @Transactional(readOnly = true)
-  public Optional<Season> getSeasonById(Long seasonId) {
+  public Optional<Season> getSeasonById(@NonNull Long seasonId) {
     return seasonRepository.findById(seasonId);
   }
 
   /** Find season by name. */
   @Transactional(readOnly = true)
-  public Season findByName(String name) {
+  public Season findByName(@NonNull String name) {
     return seasonRepository.findByName(name).orElse(null);
   }
 
   /** Save a season. */
-  public Season save(Season season) {
+  public Season save(@NonNull Season season) {
     return seasonRepository.saveAndFlush(season);
   }
 
   /** Get all seasons with pagination. */
   @Transactional(readOnly = true)
-  public Page<Season> getAllSeasons(Pageable pageable) {
+  public Page<Season> getAllSeasons(@NonNull Pageable pageable) {
     return seasonRepository.findAllBy(pageable);
   }
 
@@ -83,13 +81,13 @@ public class SeasonService {
   }
 
   /** End a specific season. */
-  public Season endSeason(Season season) {
+  public Season endSeason(@NonNull Season season) {
     season.endSeason();
     return seasonRepository.saveAndFlush(season);
   }
 
   /** Add a show to the active season. */
-  public Optional<Season> addShowToActiveSeason(Show show) {
+  public Optional<Season> addShowToActiveSeason(@NonNull Show show) {
     Optional<Season> activeSeason = seasonRepository.findActiveSeason();
     if (activeSeason.isPresent()) {
       Season season = activeSeason.get();
@@ -117,32 +115,35 @@ public class SeasonService {
 
   /** Update season settings. */
   public Optional<Season> updateSeason(
-      Long seasonId, String name, String description, Integer showsPerPpv) {
+      @NonNull Long seasonId,
+      @NonNull String name,
+      @NonNull String description,
+      @NonNull Integer showsPerPpv) {
     return seasonRepository
         .findById(seasonId)
         .map(
             season -> {
-              if (name != null) season.setName(name);
-              if (description != null) season.setDescription(description);
-              if (showsPerPpv != null) season.setShowsPerPpv(showsPerPpv);
+              season.setName(name);
+              season.setDescription(description);
+              season.setShowsPerPpv(showsPerPpv);
               return seasonRepository.saveAndFlush(season);
             });
   }
 
   /** Update season with Season object. */
-  public Season updateSeason(Season season) {
+  public Season updateSeason(@NonNull Season season) {
     return seasonRepository.saveAndFlush(season);
   }
 
   /** Search seasons by name or description. */
   @Transactional(readOnly = true)
-  public Page<Season> searchSeasons(String searchTerm, Pageable pageable) {
+  public Page<Season> searchSeasons(@NonNull String searchTerm, @NonNull Pageable pageable) {
     return seasonRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
         searchTerm, pageable);
   }
 
   /** Delete a season (only if not active and has no shows). */
-  public boolean deleteSeason(Long seasonId) {
+  public boolean deleteSeason(@NonNull Long seasonId) {
     return seasonRepository
         .findById(seasonId)
         .filter(season -> !season.getIsActive() && season.getShows().isEmpty())
@@ -156,7 +157,7 @@ public class SeasonService {
 
   /** Get season statistics. */
   @Transactional(readOnly = true)
-  public SeasonStats getSeasonStats(Long seasonId) {
+  public SeasonStats getSeasonStats(@NonNull Long seasonId) {
     return seasonRepository
         .findById(seasonId)
         .map(
@@ -165,11 +166,11 @@ public class SeasonService {
               int expectedPpvs = season.getExpectedPpvCount();
               long regularShows =
                   season.getShows().stream()
-                      .filter(show -> !show.getType().getName().toLowerCase().contains("ppv"))
+                      .filter(show -> !show.getType().getName().toLowerCase().contains("ple"))
                       .count();
               long ppvShows =
                   season.getShows().stream()
-                      .filter(show -> show.getType().getName().toLowerCase().contains("ppv"))
+                      .filter(show -> show.getType().getName().toLowerCase().contains("ple"))
                       .count();
 
               return new SeasonStats(

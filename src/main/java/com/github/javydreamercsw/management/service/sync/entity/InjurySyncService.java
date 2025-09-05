@@ -4,17 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.InjuryPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
-import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.dto.InjuryDTO;
-import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +23,6 @@ public class InjurySyncService extends BaseSyncService {
 
   @Autowired private InjuryTypeService injuryTypeService;
   @Autowired private InjuryTypeRepository injuryTypeRepository;
-  @Autowired private InjuryService injuryService;
-  @Autowired private InjuryRepository injuryRepository;
 
   public InjurySyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -105,7 +99,7 @@ public class InjurySyncService extends BaseSyncService {
       progressTracker.updateProgress(operationId, 1, "Loading injuries from Notion...");
 
       // Load injuries from Notion
-      List<InjuryPage> injuryPages = loadInjuriesFromNotion();
+      List<InjuryPage> injuryPages = executeWithRateLimit(notionHandler::loadAllInjuries);
       log.info("📥 Loaded {} injuries from Notion", injuryPages.size());
 
       if (injuryPages.isEmpty()) {
@@ -116,12 +110,12 @@ public class InjurySyncService extends BaseSyncService {
 
       // Convert to DTOs with parallel processing
       progressTracker.updateProgress(operationId, 2, "Converting injuries to DTOs...");
-      List<InjuryDTO> injuryDTOs = convertInjuriesToDTOs(injuryPages);
+      List<InjuryDTO> injuryDTOs = convertInjuriesToDTOs(injuryPages, operationId);
       log.info("🔄 Converted {} injuries to DTOs", injuryDTOs.size());
 
       // Save to database with parallel processing and caching
       progressTracker.updateProgress(operationId, 3, "Saving injuries to database...");
-      int syncedCount = saveInjuriesToDatabase(injuryDTOs);
+      int syncedCount = saveInjuriesToDatabase(injuryDTOs, operationId);
       log.info("💾 Saved {} injuries to database", syncedCount);
 
       // Validate sync results
@@ -151,46 +145,16 @@ public class InjurySyncService extends BaseSyncService {
     }
   }
 
-  /**
-   * Loads all injuries from Notion database.
-   *
-   * @return List of InjuryPage objects from Notion
-   */
-  private List<InjuryPage> loadInjuriesFromNotion() {
-    if (!isNotionHandlerAvailable()) {
-      log.warn("NotionHandler not available. Cannot load injuries from Notion.");
-      throw new RuntimeException("NotionHandler is not available for sync operations");
-    }
-
-    try {
-      return notionHandler.loadAllInjuries();
-    } catch (Exception e) {
-      log.error("Failed to load injuries from Notion", e);
-      throw new RuntimeException("Failed to load injuries from Notion: " + e.getMessage(), e);
-    }
+  private List<InjuryDTO> convertInjuriesToDTOs(List<InjuryPage> injuryPages, String operationId) {
+    return processWithControlledParallelism(
+        injuryPages,
+        this::convertInjuryPageToDTO,
+        10, // Batch size
+        operationId,
+        2, // Progress step
+        "Converted %d/%d injuries");
   }
 
-  /**
-   * Converts injury pages to DTOs using parallel processing.
-   *
-   * @param injuryPages List of InjuryPage objects from Notion
-   * @return List of InjuryDTO objects
-   */
-  private List<InjuryDTO> convertInjuriesToDTOs(List<InjuryPage> injuryPages) {
-    log.info("🔄 Converting {} injury pages to DTOs using parallel processing", injuryPages.size());
-
-    return injuryPages.parallelStream()
-        .map(this::convertInjuryPageToDTO)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList());
-  }
-
-  /**
-   * Converts a single InjuryPage to InjuryDTO.
-   *
-   * @param injuryPage The InjuryPage to convert
-   * @return InjuryDTO object or null if conversion fails
-   */
   private InjuryDTO convertInjuryPageToDTO(InjuryPage injuryPage) {
     try {
       // Extract basic properties first
@@ -222,80 +186,29 @@ public class InjurySyncService extends BaseSyncService {
     }
   }
 
-  /**
-   * Saves injury DTOs to the database.
-   *
-   * @param injuryDTOs List of InjuryDTO objects to save
-   * @return Number of injuries successfully saved
-   */
-  private int saveInjuriesToDatabase(List<InjuryDTO> injuryDTOs) {
-    log.info("🚀 Starting processing of {} injuries", injuryDTOs.size());
-
-    // Log all injury names for debugging
-    log.debug(
-        "📋 Injuries to process: {}",
-        injuryDTOs.stream().map(InjuryDTO::getInjuryName).collect(Collectors.toList()));
-
-    // Filter and process valid injuries
+  private int saveInjuriesToDatabase(List<InjuryDTO> injuryDTOs, String operationId) {
     List<InjuryType> createdInjuryTypes =
-        injuryDTOs.parallelStream()
-            .filter(
-                dto -> {
-                  log.debug("🔍 Processing injury DTO: {}", dto.getSummary());
-
-                  if (!dto.isValid()) {
-                    log.warn("❌ Skipping invalid injury DTO: {}", dto.getSummary());
-                    return false;
-                  }
-
-                  // Check if injury type already exists
-                  boolean exists = injuryTypeRepository.existsByInjuryName(dto.getInjuryName());
-                  if (exists) {
-                    log.warn("⚠️ Injury type already exists, skipping: {}", dto.getInjuryName());
-                    return false;
-                  }
-
-                  log.debug("✅ Injury type '{}' does not exist, will create", dto.getInjuryName());
-                  return true;
-                })
-            .map(
-                dto -> {
-                  try {
-                    log.debug("🏗️ Creating injury type from DTO: {}", dto.getInjuryName());
-                    InjuryType injuryType = createInjuryTypeFromDTO(dto);
-                    if (injuryType != null) {
-                      log.debug(
-                          "✅ Created injury type: {} with ID: {}",
-                          dto.getInjuryName(),
-                          injuryType.getId());
-                      return injuryType;
-                    } else {
-                      log.warn(
-                          "❌ Failed to create injury type (returned null): {}",
-                          dto.getInjuryName());
-                      return null;
-                    }
-                  } catch (Exception e) {
-                    log.error(
-                        "❌ Failed to save injury '{}': {}", dto.getInjuryName(), e.getMessage(), e);
-                    return null;
-                  }
-                })
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
-
-    log.info(
-        "✅ Processing completed: {} injury types created successfully", createdInjuryTypes.size());
-    return createdInjuryTypes.size();
+        processWithControlledParallelism(
+            injuryDTOs,
+            this::createInjuryTypeFromDTO,
+            10, // Batch size
+            operationId,
+            3, // Progress step
+            "Saved %d/%d injuries");
+    return (int) createdInjuryTypes.stream().filter(java.util.Objects::nonNull).count();
   }
 
-  /**
-   * Creates an InjuryType entity from an InjuryDTO.
-   *
-   * @param dto The InjuryDTO to convert
-   * @return Created InjuryType or null if creation fails
-   */
   private InjuryType createInjuryTypeFromDTO(InjuryDTO dto) {
+    if (dto == null || !dto.isValid()) {
+      log.warn("Skipping invalid injury DTO: {}", dto != null ? dto.getSummary() : "null");
+      return null;
+    }
+
+    if (injuryTypeRepository.existsByInjuryName(dto.getInjuryName())) {
+      log.warn("Injury type already exists, skipping: {}", dto.getInjuryName());
+      return null;
+    }
+
     try {
       log.debug(
           "Attempting to create injury type: {} with effects H:{}, S:{}, C:{}",
@@ -303,12 +216,6 @@ public class InjurySyncService extends BaseSyncService {
           dto.getHealthEffect(),
           dto.getStaminaEffect(),
           dto.getCardEffect());
-
-      // Double-check if injury type already exists to avoid race conditions
-      if (injuryTypeRepository.existsByInjuryName(dto.getInjuryName())) {
-        log.warn("Injury type '{}' already exists during creation, skipping", dto.getInjuryName());
-        return null;
-      }
 
       // Create injury type using the service's create method
       InjuryType injuryType =

@@ -10,6 +10,7 @@ import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,9 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 public class ShowTemplateService {
 
-  private final ShowTemplateRepository showTemplateRepository;
-  private final ShowTypeRepository showTypeRepository;
-  private final Clock clock;
+  @Autowired private ShowTemplateRepository showTemplateRepository;
+  @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private Clock clock;
 
   /**
    * Get paginated list of show templates.

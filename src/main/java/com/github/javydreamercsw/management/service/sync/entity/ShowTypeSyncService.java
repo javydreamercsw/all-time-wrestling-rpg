@@ -156,7 +156,7 @@ public class ShowTypeSyncService extends BaseSyncService {
       }
 
       log.info("Extracting show types from Notion Shows database...");
-      List<ShowPage> allShows = notionHandler.loadAllShowsForSync();
+      List<ShowPage> allShows = executeWithRateLimit(notionHandler::loadAllShowsForSync);
 
       for (ShowPage showPage : allShows) {
         String showType = extractShowType(showPage);

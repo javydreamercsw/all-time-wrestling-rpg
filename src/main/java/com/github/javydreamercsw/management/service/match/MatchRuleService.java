@@ -7,6 +7,7 @@ import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class MatchRuleService {
 
-  private final MatchRuleRepository matchRuleRepository;
+  @Autowired private MatchRuleRepository matchRuleRepository;
 
   /**
    * Get all active match rules.
@@ -68,7 +69,8 @@ public class MatchRuleService {
    * @return The created match rule
    */
   @Transactional
-  public MatchRule createRule(String name, String description, boolean requiresHighHeat) {
+  public MatchRule createRule(
+      @NonNull String name, @NonNull String description, boolean requiresHighHeat) {
     if (matchRuleRepository.existsByName(name)) {
       throw new IllegalArgumentException("Match rule with name '" + name + "' already exists");
     }
@@ -96,30 +98,28 @@ public class MatchRuleService {
    */
   @Transactional
   public MatchRule updateRule(
-      Long id, String name, String description, Boolean requiresHighHeat, Boolean isActive) {
+      @NonNull Long id,
+      @NonNull String name,
+      @NonNull String description,
+      @NonNull Boolean requiresHighHeat,
+      @NonNull Boolean isActive) {
     MatchRule rule =
         matchRuleRepository
             .findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Match rule not found with ID: " + id));
 
-    if (name != null && !name.equals(rule.getName())) {
+    if (!name.equals(rule.getName())) {
       if (matchRuleRepository.existsByName(name)) {
         throw new IllegalArgumentException("Match rule with name '" + name + "' already exists");
       }
       rule.setName(name);
     }
 
-    if (description != null) {
-      rule.setDescription(description);
-    }
+    rule.setDescription(description);
 
-    if (requiresHighHeat != null) {
-      rule.setRequiresHighHeat(requiresHighHeat);
-    }
+    rule.setRequiresHighHeat(requiresHighHeat);
 
-    if (isActive != null) {
-      rule.setIsActive(isActive);
-    }
+    rule.setIsActive(isActive);
 
     MatchRule savedRule = matchRuleRepository.save(rule);
     log.info("Updated match rule: {}", savedRule.getName());
@@ -132,7 +132,7 @@ public class MatchRuleService {
    * @param id The ID of the match rule to deactivate
    */
   @Transactional
-  public void deactivateRule(Long id) {
+  public void deactivateRule(@NonNull Long id) {
     MatchRule rule =
         matchRuleRepository
             .findById(id)
@@ -149,7 +149,7 @@ public class MatchRuleService {
    * @param name The name to check
    * @return true if a rule with this name exists
    */
-  public boolean existsByName(String name) {
+  public boolean existsByName(@NonNull String name) {
     return matchRuleRepository.existsByName(name);
   }
 
@@ -159,7 +159,7 @@ public class MatchRuleService {
    * @param id The ID of the match rule
    * @return Optional containing the match rule if found
    */
-  public Optional<MatchRule> findById(Long id) {
+  public Optional<MatchRule> findById(@NonNull Long id) {
     return matchRuleRepository.findById(id);
   }
 

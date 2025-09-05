@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,18 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class InjuryService {
 
-  private final InjuryRepository injuryRepository;
-  private final WrestlerRepository wrestlerRepository;
-  private final Clock clock;
-  private final Random random;
-
-  public InjuryService(
-      InjuryRepository injuryRepository, WrestlerRepository wrestlerRepository, Clock clock) {
-    this.injuryRepository = injuryRepository;
-    this.wrestlerRepository = wrestlerRepository;
-    this.clock = clock;
-    this.random = new Random();
-  }
+  @Autowired private InjuryRepository injuryRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private Clock clock;
+  @Autowired private Random random;
 
   /** Create a new injury for a wrestler. */
   public Optional<Injury> createInjury(

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.test.BaseTest;
+import com.github.javydreamercsw.management.config.TestConfig;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.vaadin.stefan.fullcalendar.Entry;
@@ -39,6 +41,7 @@ import org.vaadin.stefan.fullcalendar.dataprovider.EntryQuery;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@Import(TestConfig.class)
 class ShowStyleUIIntegrationTest extends BaseTest {
 
   @Autowired private ShowService showService;
@@ -54,9 +57,9 @@ class ShowStyleUIIntegrationTest extends BaseTest {
 
   @BeforeEach
   void setUp() {
-    showRepository.deleteAll();
-    showTemplateRepository.deleteAll();
-    showTypeRepository.deleteAll();
+    showRepository.deleteAllInBatch();
+    showTemplateRepository.deleteAllInBatch();
+    showTypeRepository.deleteAllInBatch();
 
     ShowType pleType = new ShowType();
     pleType.setName("Premium Live Event (PLE)");

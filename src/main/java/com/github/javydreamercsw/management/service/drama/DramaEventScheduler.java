@@ -4,6 +4,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
 import java.util.Random;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -33,7 +34,7 @@ public class DramaEventScheduler {
    * Generate random drama events every hour. This keeps the storylines dynamic by introducing
    * unexpected events that can affect rivalries, fan counts, and wrestler development.
    */
-  @Scheduled(fixedRate = 3600000) // Every hour (3,600,000 milliseconds)
+  @Scheduled(fixedRate = 3_600_000) // Every hour (3,600,000 milliseconds)
   public void generateRandomDramaEvents() {
     try {
       log.debug("Starting scheduled drama event generation...");
@@ -69,7 +70,7 @@ public class DramaEventScheduler {
    * Process unprocessed drama events every 30 minutes. This ensures that drama events have their
    * impacts applied in a timely manner.
    */
-  @Scheduled(fixedRate = 1800000) // Every 30 minutes (1,800,000 milliseconds)
+  @Scheduled(fixedRate = 1_800_000) // Every 30 minutes (1,800,000 milliseconds)
   public void processUnprocessedEvents() {
     try {
       log.debug("Starting scheduled drama event processing...");
@@ -162,7 +163,7 @@ public class DramaEventScheduler {
   }
 
   /** Generate a single random drama event. */
-  private void generateSingleRandomEvent(List<Wrestler> allWrestlers) {
+  private void generateSingleRandomEvent(@NonNull List<Wrestler> allWrestlers) {
     try {
       // Select a random wrestler
       Wrestler randomWrestler = allWrestlers.get(random.nextInt(allWrestlers.size()));

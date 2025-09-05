@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.season;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,14 +11,15 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -27,14 +29,30 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SeasonServiceTest {
 
   @Mock private SeasonRepository seasonRepository;
+  @Mock private Clock clock;
+  @Mock private ShowTypeService showTypeService;
 
-  private Clock fixedClock;
-  private SeasonService seasonService;
+  @InjectMocks private SeasonService seasonService;
+
+  private ShowType weeklyShowType;
+  private ShowType pleShowType;
 
   @BeforeEach
   void setUp() {
-    fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
-    seasonService = new SeasonService(seasonRepository, fixedClock);
+    lenient().when(clock.instant()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
+
+    weeklyShowType = new ShowType();
+    weeklyShowType.setName("Weekly");
+    weeklyShowType.setDescription("Weekly show type");
+
+    pleShowType = new ShowType();
+    pleShowType.setName("Premium Live Event (PLE)");
+    pleShowType.setDescription("Premium Live Event show type");
+
+    lenient().when(showTypeService.findByName("Weekly")).thenReturn(Optional.of(weeklyShowType));
+    lenient()
+        .when(showTypeService.findByName("Premium Live Event (PLE)"))
+        .thenReturn(Optional.of(pleShowType));
   }
 
   @Test
@@ -163,7 +181,7 @@ class SeasonServiceTest {
   void shouldAddShowToActiveSeason() {
     // Given
     Season activeSeason = createSeason("Active Season", 1);
-    Show show = createShow("Test Show");
+    Show show = createShow("Test Show", weeklyShowType);
 
     when(seasonRepository.findActiveSeason()).thenReturn(Optional.of(activeSeason));
     when(seasonRepository.saveAndFlush(any(Season.class))).thenReturn(activeSeason);
@@ -182,7 +200,7 @@ class SeasonServiceTest {
   @DisplayName("Should return empty when no active season for show addition")
   void shouldReturnEmptyWhenNoActiveSeasonForShowAddition() {
     // Given
-    Show show = createShow("Test Show");
+    Show show = createShow("Test Show", weeklyShowType);
     when(seasonRepository.findActiveSeason()).thenReturn(Optional.empty());
 
     // When
@@ -201,7 +219,7 @@ class SeasonServiceTest {
 
     // Add 3 regular shows
     for (int i = 1; i <= 3; i++) {
-      Show show = createShow("Show " + i);
+      Show show = createShow("Show " + i, weeklyShowType);
       activeSeason.addShow(show);
     }
 
@@ -285,10 +303,9 @@ class SeasonServiceTest {
     season.setShowsPerPpv(3);
 
     // Add shows
-    Show regularShow1 = createShow("Regular Show 1");
-    Show regularShow2 = createShow("Regular Show 2");
-    Show ppvShow = createShow("PPV Show");
-    ppvShow.getType().setName("PPV Event");
+    Show regularShow1 = createShow("Regular Show 1", weeklyShowType);
+    Show regularShow2 = createShow("Regular Show 2", weeklyShowType);
+    Show ppvShow = createShow("PPV Show", pleShowType);
 
     season.addShow(regularShow1);
     season.addShow(regularShow2);
@@ -314,18 +331,14 @@ class SeasonServiceTest {
     season.setName(name);
     season.setShowsPerPpv(5);
     season.setIsActive(true);
-    season.setStartDate(Instant.now(fixedClock));
+    season.setStartDate(Instant.now(clock));
     return season;
   }
 
-  private Show createShow(String name) {
+  private Show createShow(String name, ShowType showType) {
     Show show = new Show();
     show.setName(name);
     show.setDescription("Test show");
-
-    ShowType showType = new ShowType();
-    showType.setName("Regular Show");
-    showType.setDescription("Regular show type");
     show.setType(showType);
 
     return show;

@@ -7,13 +7,13 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +32,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Show Type Sync Service Tests")
-class ShowTypeSyncServiceTest {
+class ShowTypeSyncServiceTest extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
@@ -92,21 +92,5 @@ class ShowTypeSyncServiceTest {
     showPages.add(anotherWeeklyShow);
 
     return showPages;
-  }
-
-  private void setField(Object target, String fieldName, Object value) {
-    try {
-      Field field = target.getClass().getDeclaredField(fieldName);
-      field.setAccessible(true);
-      field.set(target, value);
-    } catch (Exception e) {
-      try {
-        Field superField = target.getClass().getSuperclass().getDeclaredField(fieldName);
-        superField.setAccessible(true);
-        superField.set(target, value);
-      } catch (Exception e2) {
-        throw new RuntimeException("Failed to set field " + fieldName, e2);
-      }
-    }
   }
 }

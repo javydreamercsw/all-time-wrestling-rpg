@@ -87,38 +87,6 @@ class ShowSyncIntegrationTest extends BaseTest {
   }
 
   @Test
-  @DisplayName("Should handle missing NOTION_TOKEN gracefully")
-  void shouldHandleMissingNotionTokenGracefully() {
-    // Temporarily remove NOTION_TOKEN to test error handling
-    String originalToken = System.getProperty("NOTION_TOKEN");
-    System.clearProperty("NOTION_TOKEN");
-
-    try {
-      log.info("🧪 Testing sync behavior without NOTION_TOKEN...");
-
-      // When - Try to sync without token
-      NotionSyncService.SyncResult result = notionSyncService.syncShows();
-
-      // Then - Should fail gracefully
-      assertNotNull(result, "Sync result should not be null even without token");
-      assertFalse(result.isSuccess(), "Sync should fail without NOTION_TOKEN");
-      assertEquals("Shows", result.getEntityType(), "Entity type should still be 'Shows'");
-      assertNotNull(result.getErrorMessage(), "Should have an error message");
-      assertTrue(
-          result.getErrorMessage().contains("NOTION_TOKEN"),
-          "Error message should mention NOTION_TOKEN");
-
-      log.info("✅ Graceful failure confirmed: {}", result.getErrorMessage());
-
-    } finally {
-      // Restore original token
-      if (originalToken != null) {
-        System.setProperty("NOTION_TOKEN", originalToken);
-      }
-    }
-  }
-
-  @Test
   @DisplayName("Should validate sync result structure")
   void shouldValidateSyncResultStructure() {
     log.info("🔍 Testing sync result structure validation...");

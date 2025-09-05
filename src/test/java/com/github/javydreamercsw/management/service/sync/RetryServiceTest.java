@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.sync;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.javydreamercsw.management.config.RetryConfig;
 import java.net.SocketTimeoutException;
@@ -38,10 +39,11 @@ class RetryServiceTest {
     String result =
         retryService.executeWithRetry(
             "test",
-            (attemptNumber) -> {
-              assertThat(attemptNumber).isEqualTo(1);
-              return expectedResult;
-            });
+            (RetryService.AttemptCallable<String>)
+                (attemptNumber) -> {
+                  assertThat(attemptNumber).isEqualTo(1);
+                  return expectedResult;
+                });
 
     // Then
     assertThat(result).isEqualTo(expectedResult);
@@ -57,13 +59,14 @@ class RetryServiceTest {
     String result =
         retryService.executeWithRetry(
             "test",
-            (attemptNumber) -> {
-              int currentAttempt = attemptCount.incrementAndGet();
-              if (currentAttempt < 3) {
-                throw new SocketTimeoutException("Connection timeout");
-              }
-              return expectedResult;
-            });
+            (RetryService.AttemptCallable<String>)
+                (attemptNumber) -> {
+                  int currentAttempt = attemptCount.incrementAndGet();
+                  if (currentAttempt < 3) {
+                    throw new SocketTimeoutException("Connection timeout");
+                  }
+                  return expectedResult;
+                });
 
     // Then
     assertThat(result).isEqualTo(expectedResult);
@@ -80,10 +83,11 @@ class RetryServiceTest {
             () ->
                 retryService.executeWithRetry(
                     "test",
-                    (attemptNumber) -> {
-                      attemptCount.incrementAndGet();
-                      throw new SocketTimeoutException("Connection timeout");
-                    }))
+                    (RetryService.AttemptCallable<String>)
+                        (attemptNumber) -> {
+                          attemptCount.incrementAndGet();
+                          throw new SocketTimeoutException("Connection timeout");
+                        }))
         .isInstanceOf(SocketTimeoutException.class)
         .hasMessage("Connection timeout");
 
@@ -100,10 +104,11 @@ class RetryServiceTest {
             () ->
                 retryService.executeWithRetry(
                     "test",
-                    (attemptNumber) -> {
-                      attemptCount.incrementAndGet();
-                      throw new IllegalArgumentException("Bad request - 400");
-                    }))
+                    (RetryService.AttemptCallable<String>)
+                        (attemptNumber) -> {
+                          attemptCount.incrementAndGet();
+                          throw new IllegalArgumentException("Bad request - 400");
+                        }))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Bad request - 400");
 
@@ -121,13 +126,14 @@ class RetryServiceTest {
     String result =
         retryService.executeWithRetry(
             "shows",
-            (attemptNumber) -> {
-              int currentAttempt = attemptCount.incrementAndGet();
-              if (currentAttempt < 5) {
-                throw new SocketTimeoutException("Connection timeout");
-              }
-              return expectedResult;
-            });
+            (RetryService.AttemptCallable<String>)
+                (attemptNumber) -> {
+                  int currentAttempt = attemptCount.incrementAndGet();
+                  if (currentAttempt < 5) {
+                    throw new SocketTimeoutException("Connection timeout");
+                  }
+                  return expectedResult;
+                });
 
     // Then
     assertThat(result).isEqualTo(expectedResult);

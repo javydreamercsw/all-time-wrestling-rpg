@@ -11,6 +11,7 @@ import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOr
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -31,24 +32,12 @@ class ParallelSyncOrchestratorTest {
   @Mock private ShowTemplateSyncService showTemplateSyncService;
   @Mock private InjurySyncService injurySyncService;
   @Mock private EntitySyncConfiguration entityConfig;
+  @Mock private NpcSyncService npcSyncService;
 
-  private ParallelSyncOrchestrator orchestrator;
+  @InjectMocks private ParallelSyncOrchestrator orchestrator;
 
   @BeforeEach
   void setUp() {
-    orchestrator =
-        new ParallelSyncOrchestrator(
-            showSyncService,
-            wrestlerSyncService,
-            factionSyncService,
-            teamSyncService,
-            matchSyncService,
-            seasonSyncService,
-            showTypeSyncService,
-            showTemplateSyncService,
-            injurySyncService,
-            entityConfig);
-
     // Setup default configuration behavior
     EntitySyncConfiguration.EntitySyncSettings defaults =
         new EntitySyncConfiguration.EntitySyncSettings();
@@ -68,8 +57,8 @@ class ParallelSyncOrchestratorTest {
 
     // Then
     assertTrue(result.isSuccess());
-    assertEquals(9, result.getEntityResults().size());
-    assertEquals(9, result.getSuccessfulSyncs());
+    assertEquals(10, result.getEntityResults().size());
+    assertEquals(10, result.getSuccessfulSyncs());
     assertEquals(0, result.getFailedSyncs());
 
     // Verify all services were called
@@ -82,6 +71,7 @@ class ParallelSyncOrchestratorTest {
     verify(showTypeSyncService).syncShowTypes(anyString());
     verify(showTemplateSyncService).syncShowTemplates(anyString());
     verify(injurySyncService).syncInjuryTypes(anyString());
+    verify(npcSyncService).syncNpcs(anyString());
   }
 
   @Test
@@ -143,14 +133,15 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTemplates", 6, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0));
+    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
 
     // Then
     assertTrue(result.isSuccess()); // Overall success despite some failures
-    assertEquals(9, result.getEntityResults().size());
-    assertEquals(7, result.getSuccessfulSyncs());
+    assertEquals(10, result.getEntityResults().size());
+    assertEquals(8, result.getSuccessfulSyncs());
     assertEquals(2, result.getFailedSyncs());
   }
 
@@ -189,6 +180,7 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTemplates", 1, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0));
+    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 1, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
@@ -228,5 +220,6 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTemplates", 6, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0));
+    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0));
   }
 }

@@ -1,239 +1,181 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import com.github.javydreamercsw.management.config.RetryConfig;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
+import java.net.SocketTimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import notion.api.v1.exception.NotionAPIError;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-/**
- * Service for handling retry logic with exponential backoff and jitter. Provides configurable retry
- * mechanisms for sync operations.
- */
 @Slf4j
 @Service
 public class RetryService {
+  private final RetryConfig config;
+  private static final Pattern RETRY_AFTER_PATTERN =
+      Pattern.compile("retry-after[:\\s]+([0-9]+)", Pattern.CASE_INSENSITIVE);
 
-  private final RetryConfig retryConfig;
-  private final Random random = new Random();
-
-  public RetryService(RetryConfig retryConfig) {
-    this.retryConfig = retryConfig;
+  @Autowired
+  public RetryService(RetryConfig config) {
+    this.config = config;
   }
 
-  /**
-   * Execute an operation with retry logic.
-   *
-   * @param entityType The type of entity being processed
-   * @param operation The operation to execute
-   * @param retryableExceptionPredicate Predicate to determine if exception is retryable
-   * @param <T> Return type of the operation
-   * @return Result of the operation
-   * @throws Exception if all retry attempts fail
-   */
-  public <T> T executeWithRetry(
-      String entityType,
-      RetryableOperation<T> operation,
-      Predicate<Exception> retryableExceptionPredicate)
-      throws Exception {
+  @FunctionalInterface
+  public interface AttemptCallable<T> {
+    T call(int attemptNumber) throws Exception;
+  }
 
-    int maxAttempts = retryConfig.getMaxAttempts(entityType);
-    long initialDelay = retryConfig.getInitialDelayMs(entityType);
-    long maxDelay = retryConfig.getMaxDelayMs(entityType);
-
+  public <T> T executeWithRetry(String entityType, AttemptCallable<T> callable) throws Exception {
+    int maxAttempts = config.getMaxAttempts();
+    // Support entity-specific config
+    if ("shows".equals(entityType)
+        && config.getEntities() != null
+        && config.getEntities().getShows() != null) {
+      maxAttempts = config.getEntities().getShows().getMaxAttempts();
+    }
+    long delay = config.getInitialDelayMs();
+    double backoff = config.getBackoffMultiplier();
     Exception lastException = null;
-
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        log.debug("Executing {} operation, attempt {}/{}", entityType, attempt, maxAttempts);
-        return operation.execute(attempt);
-
-      } catch (Exception e) {
+        return callable.call(attempt);
+      } catch (SocketTimeoutException e) {
         lastException = e;
-
-        // Check if this is the last attempt
-        if (attempt == maxAttempts) {
-          log.error("All {} retry attempts failed for {}", maxAttempts, entityType, e);
-          break;
-        }
-
-        // Check if exception is retryable
-        if (!retryableExceptionPredicate.test(e)) {
-          log.warn("Non-retryable exception for {}, not retrying", entityType, e);
-          throw e;
-        }
-
-        // Calculate delay for next attempt
-        long delay = calculateDelay(attempt, initialDelay, maxDelay);
-
+        if (attempt == maxAttempts) throw e;
         log.warn(
-            "Attempt {}/{} failed for {}, retrying in {}ms: {}",
+            "Attempt {}/{} failed for {} due to timeout, retrying in {}ms: {}",
             attempt,
             maxAttempts,
             entityType,
             delay,
             e.getMessage());
+        Thread.sleep(delay);
+        delay = Math.min((long) (delay * backoff), config.getMaxDelayMs());
+      } catch (NotionAPIError e) {
+        lastException = e;
 
-        try {
-          TimeUnit.MILLISECONDS.sleep(delay);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException("Retry interrupted", ie);
+        // Handle 429 rate limiting with Retry-After header
+        if (isRateLimitError(e)) {
+          if (attempt == maxAttempts) throw e;
+
+          long retryAfterMs = extractRetryAfterDelay(e);
+          if (retryAfterMs > 0) {
+            log.warn(
+                "Attempt {}/{} failed for {} due to rate limiting (429), respecting Retry-After:"
+                    + " {}ms",
+                attempt,
+                maxAttempts,
+                entityType,
+                retryAfterMs);
+            Thread.sleep(retryAfterMs);
+          } else {
+            log.warn(
+                "Attempt {}/{} failed for {} due to rate limiting, retrying in {}ms: {}",
+                attempt,
+                maxAttempts,
+                entityType,
+                delay,
+                e.getMessage());
+            Thread.sleep(delay);
+            delay = Math.min((long) (delay * backoff), config.getMaxDelayMs());
+          }
+        } else if (e.getMessage().contains("rate_limited")) {
+          // Fallback for other rate limiting errors
+          if (attempt == maxAttempts) throw e;
+          log.warn(
+              "Attempt {}/{} failed for {} due to rate limiting, retrying in {}ms: {}",
+              attempt,
+              maxAttempts,
+              entityType,
+              delay,
+              e.getMessage());
+          Thread.sleep(delay);
+          delay = Math.min((long) (delay * backoff), config.getMaxDelayMs());
+        } else {
+          log.error("Non-retryable Notion API error for {}: {}", entityType, e.getMessage());
+          throw e;
         }
+      } catch (Exception e) {
+        log.error("Unexpected error during {}: {}", entityType, e.getMessage());
+        throw e;
       }
     }
-
-    throw lastException;
+    throw lastException != null
+        ? lastException
+        : new RuntimeException(
+            "Failed to complete " + entityType + " after " + maxAttempts + " retries.");
   }
 
-  /** Execute an operation with retry logic using default retryable exception predicate. */
-  public <T> T executeWithRetry(String entityType, RetryableOperation<T> operation)
-      throws Exception {
-    return executeWithRetry(entityType, operation, this::isRetryableException);
-  }
-
-  /** Calculate delay for next retry attempt using exponential backoff with jitter. */
-  private long calculateDelay(int attempt, long initialDelay, long maxDelay) {
-    // Calculate exponential backoff
-    long delay = (long) (initialDelay * Math.pow(retryConfig.getBackoffMultiplier(), attempt - 1));
-
-    // Apply maximum delay limit
-    delay = Math.min(delay, maxDelay);
-
-    // Apply jitter if enabled
-    if (retryConfig.isUseJitter()) {
-      double jitterFactor = retryConfig.getJitterFactor();
-      double jitter =
-          1.0
-              + (random.nextDouble() * 2 - 1)
-                  * jitterFactor; // Random between (1-jitter) and (1+jitter)
-      delay = (long) (delay * jitter);
-    }
-
-    return Math.max(delay, 0);
+  /** Check if the error is a rate limiting error (HTTP 429) */
+  private boolean isRateLimitError(@NonNull NotionAPIError error) {
+    String message = error.getMessage().toLowerCase();
+    return message.contains("429")
+        || message.contains("rate limit")
+        || message.contains("too many requests");
   }
 
   /**
-   * Default predicate to determine if an exception is retryable. Generally, network issues,
-   * timeouts, and temporary service unavailability are retryable.
+   * Extract the Retry-After delay from the error message or headers Returns delay in milliseconds,
+   * or 0 if not found
    */
-  private boolean isRetryableException(Exception e) {
-    String message = e.getMessage();
-    if (message == null) {
-      message = "";
+  private long extractRetryAfterDelay(@NonNull NotionAPIError error) {
+    String message = error.getMessage();
+
+    Matcher matcher = RETRY_AFTER_PATTERN.matcher(message);
+    if (matcher.find()) {
+      try {
+        int seconds = Integer.parseInt(matcher.group(1));
+        return seconds * 1000L; // Convert to milliseconds
+      } catch (NumberFormatException e) {
+        log.warn("Failed to parse Retry-After value: {}", matcher.group(1));
+      }
     }
 
-    // Network and connection issues
-    if (e instanceof java.net.SocketTimeoutException
-        || e instanceof java.net.ConnectException
-        || e instanceof java.net.UnknownHostException
-        || e instanceof java.io.IOException) {
-      return true;
-    }
-
-    // HTTP-related errors that are typically retryable
-    if (message.contains("timeout")
-        || message.contains("connection")
-        || message.contains("network")
-        || message.contains("503")
-        || // Service Unavailable
-        message.contains("502")
-        || // Bad Gateway
-        message.contains("504")
-        || // Gateway Timeout
-        message.contains("429")) { // Too Many Requests
-      return true;
-    }
-
-    // Notion API specific errors that might be retryable
-    if (message.contains("rate limit")
-        || message.contains("temporarily unavailable")
-        || message.contains("internal server error")) {
-      return true;
-    }
-
-    // Authentication and authorization errors are generally not retryable
-    if (message.contains("401")
-        || // Unauthorized
-        message.contains("403")
-        || // Forbidden
-        message.contains("invalid token")
-        || message.contains("authentication")) {
-      return false;
-    }
-
-    // Client errors (4xx) are generally not retryable except for specific cases above
-    if (message.contains("400")
-        || // Bad Request
-        message.contains("404")
-        || // Not Found
-        message.contains("422")) { // Unprocessable Entity
-      return false;
-    }
-
-    // Default to retryable for unknown exceptions
-    return true;
+    return 0;
   }
 
-  /** Create a retry context for tracking retry attempts. */
-  public RetryContext createContext(String entityType, String operationName) {
-    return new RetryContext(entityType, operationName, retryConfig.getMaxAttempts(entityType));
+  public RetryContext createContext(@NonNull String entityType, @NonNull String operationName) {
+    int maxAttempts = config.getMaxAttempts();
+    if ("shows".equals(entityType)
+        && config.getEntities() != null
+        && config.getEntities().getShows() != null) {
+      maxAttempts = config.getEntities().getShows().getMaxAttempts();
+    }
+    return new RetryContext(entityType, operationName, maxAttempts);
   }
 
-  /** Functional interface for retryable operations. */
-  @FunctionalInterface
-  public interface RetryableOperation<T> {
-    T execute(int attemptNumber) throws Exception;
-  }
-
-  /** Context for tracking retry attempts. */
+  @Getter
+  @Setter
   public static class RetryContext {
     private final String entityType;
     private final String operationName;
     private final int maxAttempts;
     private int currentAttempt = 0;
-    private long startTime = System.currentTimeMillis();
     private Exception lastException;
+    private final long startTime = System.currentTimeMillis();
 
-    public RetryContext(String entityType, String operationName, int maxAttempts) {
+    public RetryContext(
+        @NonNull String entityType, @NonNull String operationName, int maxAttempts) {
       this.entityType = entityType;
       this.operationName = operationName;
       this.maxAttempts = maxAttempts;
-    }
-
-    public void recordAttempt(int attemptNumber, Exception exception) {
-      this.currentAttempt = attemptNumber;
-      this.lastException = exception;
-    }
-
-    public boolean hasMoreAttempts() {
-      return currentAttempt < maxAttempts;
     }
 
     public long getElapsedTime() {
       return System.currentTimeMillis() - startTime;
     }
 
-    // Getters
-    public String getEntityType() {
-      return entityType;
+    public void recordAttempt(int attempt, Exception e) {
+      this.currentAttempt = attempt;
+      this.lastException = e;
     }
 
-    public String getOperationName() {
-      return operationName;
-    }
-
-    public int getMaxAttempts() {
-      return maxAttempts;
-    }
-
-    public int getCurrentAttempt() {
-      return currentAttempt;
-    }
-
-    public Exception getLastException() {
-      return lastException;
+    public boolean hasMoreAttempts() {
+      return currentAttempt < maxAttempts;
     }
   }
 }

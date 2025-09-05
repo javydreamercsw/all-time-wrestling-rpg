@@ -167,8 +167,10 @@ public class PerformanceMonitoringService {
     var heapMemory = memoryBean.getHeapMemoryUsage();
     double memoryUsagePercent = (double) heapMemory.getUsed() / heapMemory.getMax() * 100;
     log.info(
-        "   Memory Usage: {:.1f}% ({} MB / {} MB)",
-        memoryUsagePercent, heapMemory.getUsed() / 1024 / 1024, heapMemory.getMax() / 1024 / 1024);
+        "   Memory Usage: {}% ({} MB / {} MB)",
+        String.format("%.1f", memoryUsagePercent),
+        heapMemory.getUsed() / 1024 / 1024,
+        heapMemory.getMax() / 1024 / 1024);
 
     // Log thread count
     log.info("   Active Threads: {}", threadBean.getThreadCount());
@@ -178,7 +180,7 @@ public class PerformanceMonitoringService {
 
     // Warn about performance issues
     if (memoryUsagePercent > 80) {
-      log.warn("⚠️ High memory usage detected: {:.1f}%", memoryUsagePercent);
+      log.warn("⚠️ High memory usage detected: {}%", String.format("%.1f", memoryUsagePercent));
     }
 
     if (threadBean.getThreadCount() > 100) {
