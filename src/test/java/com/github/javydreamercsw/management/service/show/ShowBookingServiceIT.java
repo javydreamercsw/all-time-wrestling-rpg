@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.show;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -22,12 +23,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@Import(com.github.javydreamercsw.management.config.TestConfig.class)
 class ShowBookingServiceIT {
 
   @Autowired ShowBookingService showBookingService;
@@ -38,6 +41,7 @@ class ShowBookingServiceIT {
   @Autowired MatchTypeService matchTypeService;
   @Autowired MatchResultRepository matchResultRepository;
   @Autowired WrestlerRepository wrestlerRepository;
+  @Autowired DeckRepository deckRepository; // Autowire DeckRepository
 
   private Season testSeason;
   private ShowType weeklyShowType;
@@ -178,7 +182,10 @@ class ShowBookingServiceIT {
     // Given - Remove most wrestlers, leaving only 2
     List<Wrestler> allWrestlers = wrestlerRepository.findAll();
     for (int i = 2; i < allWrestlers.size(); i++) {
-      wrestlerRepository.delete(allWrestlers.get(i));
+      Wrestler wrestlerToDelete = allWrestlers.get(i);
+      // Delete associated decks first
+      deckRepository.deleteByWrestler(wrestlerToDelete);
+      wrestlerRepository.delete(wrestlerToDelete);
     }
 
     // When

@@ -4,6 +4,8 @@ import com.github.javydreamercsw.management.config.RetryConfig;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +21,7 @@ public class CircuitBreakerService {
   private final ConcurrentHashMap<String, CircuitBreakerState> circuitStates =
       new ConcurrentHashMap<>();
 
-  public CircuitBreakerService(RetryConfig retryConfig) {
+  public CircuitBreakerService(@NonNull RetryConfig retryConfig) {
     this.retryConfig = retryConfig;
   }
 
@@ -32,7 +34,8 @@ public class CircuitBreakerService {
    * @return Result of the operation
    * @throws CircuitBreakerOpenException if circuit is open
    */
-  public <T> T execute(String entityType, SyncOperation<T> operation) throws Exception {
+  public <T> T execute(@NonNull String entityType, @NonNull SyncOperation<T> operation)
+      throws Exception {
     CircuitBreakerState state = getOrCreateState(entityType);
 
     // Check if circuit is open
@@ -69,7 +72,7 @@ public class CircuitBreakerService {
   }
 
   /** Get the current state of a circuit breaker. */
-  public CircuitBreakerStatus getStatus(String entityType) {
+  public CircuitBreakerStatus getStatus(@NonNull String entityType) {
     CircuitBreakerState state = circuitStates.get(entityType);
     if (state == null) {
       return CircuitBreakerStatus.CLOSED;
@@ -78,7 +81,7 @@ public class CircuitBreakerService {
   }
 
   /** Manually reset a circuit breaker. */
-  public void reset(String entityType) {
+  public void reset(@NonNull String entityType) {
     CircuitBreakerState state = circuitStates.get(entityType);
     if (state != null) {
       state.reset();
@@ -87,7 +90,7 @@ public class CircuitBreakerService {
   }
 
   /** Get or create circuit breaker state for an entity type. */
-  private CircuitBreakerState getOrCreateState(String entityType) {
+  private CircuitBreakerState getOrCreateState(@NonNull String entityType) {
     return circuitStates.computeIfAbsent(
         entityType, k -> new CircuitBreakerState(retryConfig.getCircuitBreaker()));
   }
@@ -107,7 +110,7 @@ public class CircuitBreakerService {
 
   /** Exception thrown when circuit breaker is open. */
   public static class CircuitBreakerOpenException extends RuntimeException {
-    public CircuitBreakerOpenException(String message) {
+    public CircuitBreakerOpenException(@NonNull String message) {
       super(message);
     }
   }
@@ -115,7 +118,7 @@ public class CircuitBreakerService {
   /** Internal state management for circuit breaker. */
   private static class CircuitBreakerState {
     private final RetryConfig.CircuitBreakerConfig config;
-    private volatile CircuitBreakerStatus status = CircuitBreakerStatus.CLOSED;
+    @Getter private volatile CircuitBreakerStatus status = CircuitBreakerStatus.CLOSED;
     private final AtomicInteger failureCount = new AtomicInteger(0);
     private final AtomicInteger successCount = new AtomicInteger(0);
     private final AtomicLong lastFailureTime = new AtomicLong(0);
@@ -195,10 +198,6 @@ public class CircuitBreakerService {
 
     public void reset() {
       close();
-    }
-
-    public CircuitBreakerStatus getStatus() {
-      return status;
     }
   }
 }

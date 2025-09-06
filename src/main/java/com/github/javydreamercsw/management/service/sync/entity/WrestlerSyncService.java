@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.sync.entity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
@@ -16,7 +17,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -70,10 +73,8 @@ public class WrestlerSyncService extends BaseSyncService {
       }
 
       // Initialize progress tracking
-      if (operationId != null) {
-        progressTracker.startOperation(operationId, "Sync Wrestlers", 3);
-        progressTracker.updateProgress(operationId, 1, "Retrieving wrestlers from Notion...");
-      }
+      progressTracker.startOperation(operationId, "Sync Wrestlers", 3);
+      progressTracker.updateProgress(operationId, 1, "Retrieving wrestlers from Notion...");
 
       // Retrieve wrestlers from Notion
       log.info("📥 Retrieving wrestlers from Notion...");
@@ -85,31 +86,27 @@ public class WrestlerSyncService extends BaseSyncService {
             "Wrestlers", "NotionHandler is not available for sync operations");
       }
 
-      List<WrestlerPage> wrestlerPages = notionHandler.loadAllWrestlers();
+      List<WrestlerPage> wrestlerPages = executeWithRateLimit(notionHandler::loadAllWrestlers);
       log.info(
           "✅ Retrieved {} wrestlers in {}ms",
           wrestlerPages.size(),
           System.currentTimeMillis() - retrieveStart);
 
       // Update progress with retrieval results
-      if (operationId != null) {
-        progressTracker.updateProgress(
-            operationId,
-            1,
-            String.format(
-                "✅ Retrieved %d wrestlers from Notion in %dms",
-                wrestlerPages.size(), System.currentTimeMillis() - retrieveStart));
-      }
+      progressTracker.updateProgress(
+          operationId,
+          1,
+          String.format(
+              "✅ Retrieved %d wrestlers from Notion in %dms",
+              wrestlerPages.size(), System.currentTimeMillis() - retrieveStart));
 
       // Convert to DTOs and merge with existing data
-      if (operationId != null) {
-        progressTracker.updateProgress(
-            operationId,
-            2,
-            String.format(
-                "Converting %d wrestlers to DTOs and merging with existing data...",
-                wrestlerPages.size()));
-      }
+      progressTracker.updateProgress(
+          operationId,
+          2,
+          String.format(
+              "Converting %d wrestlers to DTOs and merging with existing data...",
+              wrestlerPages.size()));
       log.info("🔄 Converting wrestlers to DTOs and merging with existing data...");
       long convertStart = System.currentTimeMillis();
       List<WrestlerDTO> wrestlerDTOs = convertAndMergeWrestlerData(wrestlerPages);
@@ -119,22 +116,16 @@ public class WrestlerSyncService extends BaseSyncService {
           System.currentTimeMillis() - convertStart);
 
       // Update progress with conversion results
-      if (operationId != null) {
-        progressTracker.updateProgress(
-            operationId,
-            2,
-            String.format(
-                "✅ Converted and merged %d wrestlers in %dms",
-                wrestlerDTOs.size(), System.currentTimeMillis() - convertStart));
-      }
+      progressTracker.updateProgress(
+          operationId,
+          2,
+          String.format(
+              "✅ Converted and merged %d wrestlers in %dms",
+              wrestlerDTOs.size(), System.currentTimeMillis() - convertStart));
 
       // Save wrestlers to database
-      if (operationId != null) {
-        progressTracker.updateProgress(
-            operationId,
-            3,
-            String.format("Saving %d wrestlers to database...", wrestlerDTOs.size()));
-      }
+      progressTracker.updateProgress(
+          operationId, 3, String.format("Saving %d wrestlers to database...", wrestlerDTOs.size()));
       log.info("🗄️ Saving wrestlers to database...");
       long dbStart = System.currentTimeMillis();
       int savedCount = saveWrestlersToDatabase(wrestlerDTOs, operationId);
@@ -150,13 +141,11 @@ public class WrestlerSyncService extends BaseSyncService {
           totalTime);
 
       // Complete progress tracking
-      if (operationId != null) {
-        progressTracker.completeOperation(
-            operationId,
-            true,
-            String.format("Successfully synced %d wrestlers", wrestlerDTOs.size()),
-            wrestlerDTOs.size());
-      }
+      progressTracker.completeOperation(
+          operationId,
+          true,
+          String.format("Successfully synced %d wrestlers", wrestlerDTOs.size()),
+          wrestlerDTOs.size());
 
       // Record success in health monitor
       healthMonitor.recordSuccess("Wrestlers", totalTime, wrestlerDTOs.size());
@@ -167,9 +156,7 @@ public class WrestlerSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize wrestlers from Notion after {}ms", totalTime, e);
 
-      if (operationId != null) {
-        progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
-      }
+      progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
 
       // Record failure in health monitor
       healthMonitor.recordFailure("Wrestlers", e.getMessage());
@@ -234,7 +221,7 @@ public class WrestlerSyncService extends BaseSyncService {
 
     // Extract and truncate description to fit database constraint (1000 chars)
     String description = extractDescriptionFromPageBody(wrestlerPage);
-    if (description != null && description.length() > 1000) {
+    if (description.length() > 1000) {
       description = description.substring(0, 997) + "...";
       log.debug(
           "Truncated description for wrestler '{}' from {} to 1000 characters",
@@ -249,9 +236,8 @@ public class WrestlerSyncService extends BaseSyncService {
   }
 
   /** Extracts description from the page body/content using NotionBlocksRetriever. */
-  private String extractDescriptionFromPageBody(
-      @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page) {
-    if (page == null || page.getId() == null) {
+  private String extractDescriptionFromPageBody(@NonNull NotionPage page) {
+    if (page.getId() == null) {
       return "";
     }
 
@@ -419,7 +405,7 @@ public class WrestlerSyncService extends BaseSyncService {
       processedCount++;
 
       // Update progress every 5 wrestlers
-      if (operationId != null && processedCount % 5 == 0) {
+      if (processedCount % 5 == 0) {
         progressTracker.updateProgress(
             operationId,
             4,
@@ -543,20 +529,21 @@ public class WrestlerSyncService extends BaseSyncService {
         "Database persistence completed: {} saved/updated, {} skipped", savedCount, skippedCount);
 
     // Final progress update
-    if (operationId != null) {
-      progressTracker.updateProgress(
-          operationId,
-          4,
-          String.format(
-              "✅ Completed database save: %d wrestlers saved/updated, %d skipped",
-              savedCount, skippedCount));
-    }
+    progressTracker.updateProgress(
+        operationId,
+        4,
+        String.format(
+            "✅ Completed database save: %d wrestlers saved/updated, %d skipped",
+            savedCount, skippedCount));
 
     return savedCount;
   }
 
   /** DTO for Wrestler data from Notion. */
+  @Setter
+  @Getter
   public static class WrestlerDTO {
+    // Getters and setters
     private String name;
     private String description;
     private String height;
@@ -575,134 +562,5 @@ public class WrestlerSyncService extends BaseSyncService {
     private Integer bumps;
     private String faction;
     private String creationDate;
-
-    // Getters and setters
-    public String getName() {
-      return name;
-    }
-
-    public void setName(String name) {
-      this.name = name;
-    }
-
-    public String getDescription() {
-      return description;
-    }
-
-    public void setDescription(String description) {
-      this.description = description;
-    }
-
-    public String getHeight() {
-      return height;
-    }
-
-    public void setHeight(String height) {
-      this.height = height;
-    }
-
-    public String getWeight() {
-      return weight;
-    }
-
-    public void setWeight(String weight) {
-      this.weight = weight;
-    }
-
-    public String getHometown() {
-      return hometown;
-    }
-
-    public void setHometown(String hometown) {
-      this.hometown = hometown;
-    }
-
-    public String getExternalId() {
-      return externalId;
-    }
-
-    public void setExternalId(String externalId) {
-      this.externalId = externalId;
-    }
-
-    public Integer getDeckSize() {
-      return deckSize;
-    }
-
-    public void setDeckSize(Integer deckSize) {
-      this.deckSize = deckSize;
-    }
-
-    public Integer getStartingHealth() {
-      return startingHealth;
-    }
-
-    public void setStartingHealth(Integer startingHealth) {
-      this.startingHealth = startingHealth;
-    }
-
-    public Integer getLowHealth() {
-      return lowHealth;
-    }
-
-    public void setLowHealth(Integer lowHealth) {
-      this.lowHealth = lowHealth;
-    }
-
-    public Integer getStartingStamina() {
-      return startingStamina;
-    }
-
-    public void setStartingStamina(Integer startingStamina) {
-      this.startingStamina = startingStamina;
-    }
-
-    public Integer getLowStamina() {
-      return lowStamina;
-    }
-
-    public void setLowStamina(Integer lowStamina) {
-      this.lowStamina = lowStamina;
-    }
-
-    public Long getFans() {
-      return fans;
-    }
-
-    public void setFans(Long fans) {
-      this.fans = fans;
-    }
-
-    public Boolean getIsPlayer() {
-      return isPlayer;
-    }
-
-    public void setIsPlayer(Boolean isPlayer) {
-      this.isPlayer = isPlayer;
-    }
-
-    public Integer getBumps() {
-      return bumps;
-    }
-
-    public void setBumps(Integer bumps) {
-      this.bumps = bumps;
-    }
-
-    public String getFaction() {
-      return faction;
-    }
-
-    public void setFaction(String faction) {
-      this.faction = faction;
-    }
-
-    public String getCreationDate() {
-      return creationDate;
-    }
-
-    public void setCreationDate(String creationDate) {
-      this.creationDate = creationDate;
-    }
   }
 }

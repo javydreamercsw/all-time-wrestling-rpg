@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -41,8 +42,9 @@ class AdvancedRivalryIntegrationServiceTest {
   @Mock private MultiWrestlerFeudService multiWrestlerFeudService;
   @Mock private StorylineBranchingService storylineBranchingService;
 
+  @InjectMocks private AdvancedRivalryIntegrationService advancedRivalryService;
+
   private Clock fixedClock;
-  private AdvancedRivalryIntegrationService advancedRivalryService;
 
   private Wrestler wrestler1;
   private Wrestler wrestler2;
@@ -56,13 +58,6 @@ class AdvancedRivalryIntegrationServiceTest {
   @BeforeEach
   void setUp() {
     fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
-    advancedRivalryService =
-        new AdvancedRivalryIntegrationService(
-            rivalryService,
-            factionService,
-            factionRivalryService,
-            multiWrestlerFeudService,
-            storylineBranchingService);
 
     // Create test wrestlers
     wrestler1 = createWrestler("Stone Cold Steve Austin", 1L);
@@ -111,8 +106,7 @@ class AdvancedRivalryIntegrationServiceTest {
     List<Long> wrestlerIds = List.of(wrestler1.getId(), wrestler2.getId(), wrestler3.getId());
     MultiWrestlerFeud mockFeud = createMultiWrestlerFeud("Triple Threat Feud", 1L);
 
-    when(multiWrestlerFeudService.createFeud(
-            "Triple Threat Feud", "Three-way rivalry", "Complex storyline"))
+    when(multiWrestlerFeudService.createFeud(anyString(), anyString(), anyString()))
         .thenReturn(Optional.of(mockFeud));
     when(multiWrestlerFeudService.addParticipant(eq(1L), anyLong(), any()))
         .thenReturn(Optional.of(mockFeud));

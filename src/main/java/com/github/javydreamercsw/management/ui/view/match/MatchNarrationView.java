@@ -9,12 +9,16 @@ import com.github.javydreamercsw.base.ai.MatchNarrationService.RefereeContext;
 import com.github.javydreamercsw.base.ai.MatchNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.MatchNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -36,10 +40,11 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -57,17 +62,20 @@ public class MatchNarrationView extends Main {
 
   private final WrestlerService wrestlerService;
   private final MatchTypeService matchTypeService;
+  private final NpcService npcService;
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
 
   // Form components
-  private MultiSelectComboBox<Wrestler> wrestlersCombo;
+  private VerticalLayout teamsLayout;
+  private Button addTeamButton;
   private ComboBox<MatchType> matchTypeCombo;
   private TextField venueField;
   private TextField audienceField;
   private TextArea outcomeField;
-  private TextField refereeField;
-  private TextArea commentatorsField;
+  private ComboBox<Npc> refereeField;
+  private MultiSelectComboBox<Npc> commentatorsField;
+  private ComboBox<Npc> ringAnnouncerField;
   private Button generateButton;
   private Button testButton;
 
@@ -77,29 +85,39 @@ public class MatchNarrationView extends Main {
   private Pre narrationDisplay;
   private Div costDisplay;
   private Div providerDisplay;
+  private Checkbox showContextCheckbox;
+  private TextArea contextDisplay;
 
-  public MatchNarrationView(WrestlerService wrestlerService, MatchTypeService matchTypeService) {
+  public MatchNarrationView(
+      WrestlerService wrestlerService, MatchTypeService matchTypeService, NpcService npcService) {
     this.wrestlerService = wrestlerService;
     this.matchTypeService = matchTypeService;
+    this.npcService = npcService;
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
+  }
 
+  @PostConstruct
+  private void init() {
     initializeComponents();
     setupLayout();
   }
 
   private void initializeComponents() {
     // Wrestlers selection
-    wrestlersCombo = new MultiSelectComboBox<>("Select Wrestlers");
-    wrestlersCombo.setItems(wrestlerService.findAll());
-    wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
-    wrestlersCombo.setWidthFull();
-    wrestlersCombo.setRequired(true);
-    wrestlersCombo.setHelperText("Select 2 or more wrestlers for the match");
+    teamsLayout = new VerticalLayout();
+    teamsLayout.setSpacing(true);
+    teamsLayout.setPadding(false);
+
+    addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
+    addTeamButton.addClickListener(e -> addTeamSelector());
+
+    // Add two teams by default
+    addTeamSelector();
+    addTeamSelector();
 
     // Match type selection
     matchTypeCombo = new ComboBox<>("Match Type");
-    matchTypeCombo.setItems(matchTypeService.findAll());
     matchTypeCombo.setItemLabelGenerator(MatchType::getName);
     matchTypeCombo.setWidthFull();
     matchTypeCombo.setRequired(true);
@@ -124,17 +142,19 @@ public class MatchNarrationView extends Main {
     outcomeField.setHelperText("Optional: Specify the match outcome for more controlled narration");
 
     // Referee
-    refereeField = new TextField("Referee");
+    refereeField = new ComboBox<>("Referee");
+    refereeField.setItemLabelGenerator(Npc::getName);
     refereeField.setWidthFull();
-    refereeField.setPlaceholder("e.g., Earl Hebner");
-    refereeField.setValue("Earl Hebner");
 
     // Commentators
-    commentatorsField = new TextArea("Commentators");
+    commentatorsField = new MultiSelectComboBox<>("Commentators");
+    commentatorsField.setItemLabelGenerator(Npc::getName);
     commentatorsField.setWidthFull();
-    commentatorsField.setHeight("80px");
-    commentatorsField.setPlaceholder("e.g., Michael Cole, Tazz");
-    commentatorsField.setValue("Michael Cole (Play-by-Play), Tazz (Color Commentary)");
+
+    // Ring Announcer
+    ringAnnouncerField = new ComboBox<>("Ring Announcer");
+    ringAnnouncerField.setItemLabelGenerator(Npc::getName);
+    ringAnnouncerField.setWidthFull();
 
     // Action buttons
     generateButton = new Button("Generate Match Narration", new Icon(VaadinIcon.PLAY));
@@ -166,10 +186,68 @@ public class MatchNarrationView extends Main {
     providerDisplay = new Div();
     providerDisplay.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.PRIMARY);
 
+    showContextCheckbox = new Checkbox("Show AI Context");
+    contextDisplay = new TextArea("AI Context");
+    contextDisplay.setWidthFull();
+    contextDisplay.setReadOnly(true);
+    contextDisplay.setVisible(false); // Initially hidden
+
+    showContextCheckbox.addValueChangeListener(
+        event -> contextDisplay.setVisible(event.getValue()));
+
     resultsSection = new VerticalLayout();
     resultsSection.setVisible(false);
     resultsSection.setSpacing(true);
     resultsSection.setPadding(false);
+  }
+
+  @Override
+  protected void onAttach(AttachEvent attachEvent) {
+    super.onAttach(attachEvent);
+    // Load data when the view is attached to the UI
+    List<WrestlerDTO> wrestlers = wrestlerService.findAllAsDTO();
+    teamsLayout
+        .getChildren()
+        .forEach(
+            teamSelector -> {
+              MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
+                  (MultiSelectComboBox<WrestlerDTO>)
+                      ((HorizontalLayout) teamSelector).getComponentAt(0);
+              wrestlersCombo.setItems(wrestlers);
+            });
+    matchTypeCombo.setItems(matchTypeService.findAll());
+    refereeField.setItems(npcService.findAllByType("Referee"));
+    commentatorsField.setItems(npcService.findAllByType("Commentator"));
+    ringAnnouncerField.setItems(npcService.findAllByType("Announcer"));
+  }
+
+  private void addTeamSelector() {
+    int teamNumber = teamsLayout.getComponentCount() + 1;
+    MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
+        new MultiSelectComboBox<>("Team " + teamNumber);
+    wrestlersCombo.setItemLabelGenerator(WrestlerDTO::getName);
+    wrestlersCombo.setWidthFull();
+
+    Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
+    removeTeamButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+    HorizontalLayout teamSelector = new HorizontalLayout(wrestlersCombo, removeTeamButton);
+    teamSelector.setFlexGrow(1, wrestlersCombo);
+    removeTeamButton.addClickListener(
+        e -> {
+          teamsLayout.remove(teamSelector);
+          updateTeamLabels();
+        });
+
+    teamsLayout.add(teamSelector);
+  }
+
+  private void updateTeamLabels() {
+    for (int i = 0; i < teamsLayout.getComponentCount(); i++) {
+      HorizontalLayout teamSelector = (HorizontalLayout) teamsLayout.getComponentAt(i);
+      MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
+          (MultiSelectComboBox<WrestlerDTO>) teamSelector.getComponentAt(0);
+      wrestlersCombo.setLabel("Team " + (i + 1));
+    }
   }
 
   private void setupLayout() {
@@ -187,13 +265,15 @@ public class MatchNarrationView extends Main {
     // Configuration form
     FormLayout formLayout = new FormLayout();
     formLayout.add(
-        wrestlersCombo,
+        teamsLayout,
+        addTeamButton,
         matchTypeCombo,
         venueField,
         audienceField,
         outcomeField,
         refereeField,
-        commentatorsField);
+        commentatorsField,
+        ringAnnouncerField);
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
     formLayout.setColspan(outcomeField, 2);
@@ -207,11 +287,20 @@ public class MatchNarrationView extends Main {
     VerticalLayout configSection = new VerticalLayout();
     configSection.setSpacing(true);
     configSection.setPadding(false);
-    configSection.add(new H3("Match Configuration"), formLayout, buttonLayout, progressBar);
+    configSection.add(
+        new H3("Match Configuration"),
+        formLayout,
+        showContextCheckbox, // Moved here
+        buttonLayout,
+        progressBar);
 
     // Results section setup
     resultsSection.add(
-        new H3("Generated Narration"), providerDisplay, costDisplay, narrationDisplay);
+        new H3("Generated Narration"),
+        providerDisplay,
+        costDisplay,
+        narrationDisplay,
+        contextDisplay); // Checkbox removed from here
 
     add(configSection, resultsSection);
   }
@@ -225,6 +314,16 @@ public class MatchNarrationView extends Main {
 
     try {
       MatchNarrationContext context = buildMatchContext();
+
+      // Display the context if the checkbox is checked
+      try {
+        String contextJson =
+            objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context);
+        contextDisplay.setValue(contextJson);
+      } catch (Exception e) {
+        log.error("Error serializing match context to JSON", e);
+        contextDisplay.setValue("Error displaying context: " + e.getMessage());
+      }
 
       // Call the REST API
       ResponseEntity<String> response =
@@ -261,10 +360,19 @@ public class MatchNarrationView extends Main {
   }
 
   private boolean validateForm() {
-    Set<Wrestler> selectedWrestlers = wrestlersCombo.getValue();
-    if (selectedWrestlers == null || selectedWrestlers.size() < 2) {
-      showError("Please select at least 2 wrestlers for the match");
+    if (teamsLayout.getComponentCount() < 2) {
+      showError("Please add at least 2 teams");
       return false;
+    }
+
+    for (int i = 0; i < teamsLayout.getComponentCount(); i++) {
+      HorizontalLayout teamSelector = (HorizontalLayout) teamsLayout.getComponentAt(i);
+      MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
+          (MultiSelectComboBox<WrestlerDTO>) teamSelector.getComponentAt(0);
+      if (wrestlersCombo.getValue().isEmpty()) {
+        showError("Please select at least 1 wrestler for Team " + (i + 1));
+        return false;
+      }
     }
 
     if (matchTypeCombo.getValue() == null) {
@@ -280,12 +388,20 @@ public class MatchNarrationView extends Main {
 
     // Set wrestlers
     List<WrestlerContext> wrestlerContexts = new ArrayList<>();
-    for (Wrestler wrestler : wrestlersCombo.getValue()) {
-      WrestlerContext wc = new WrestlerContext();
-      wc.setName(wrestler.getName());
-      wc.setDescription(
-          wrestler.getDescription() != null ? wrestler.getDescription() : "Determined competitor");
-      wrestlerContexts.add(wc);
+    for (int i = 0; i < teamsLayout.getComponentCount(); i++) {
+      HorizontalLayout teamSelector = (HorizontalLayout) teamsLayout.getComponentAt(i);
+      MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
+          (MultiSelectComboBox<WrestlerDTO>) teamSelector.getComponentAt(0);
+      for (WrestlerDTO wrestler : wrestlersCombo.getValue()) {
+        WrestlerContext wc = new WrestlerContext();
+        wc.setName(wrestler.getName());
+        wc.setDescription(
+            wrestler.getDescription() != null
+                ? wrestler.getDescription()
+                : "Determined competitor");
+        wc.setTeam("Team " + (i + 1));
+        wrestlerContexts.add(wc);
+      }
     }
     context.setWrestlers(wrestlerContexts);
 
@@ -314,24 +430,38 @@ public class MatchNarrationView extends Main {
     }
 
     // Set referee
-    RefereeContext referee = new RefereeContext();
-    referee.setName(refereeField.getValue());
-    referee.setDescription("Experienced wrestling referee");
-    context.setReferee(referee);
-
-    // Set commentators
-    if (!commentatorsField.getValue().trim().isEmpty()) {
-      List<NPCContext> npcs = new ArrayList<>();
-      String[] commentators = commentatorsField.getValue().split(",");
-      for (String commentator : commentators) {
-        NPCContext npc = new NPCContext();
-        npc.setName(commentator.trim());
-        npc.setRole("Commentator");
-        npc.setDescription("Wrestling commentator");
-        npcs.add(npc);
-      }
-      context.setNpcs(npcs);
+    if (refereeField.getValue() != null) {
+      RefereeContext referee = new RefereeContext();
+      referee.setName(refereeField.getValue().getName());
+      referee.setDescription("Experienced wrestling referee");
+      context.setReferee(referee);
     }
+
+    List<NPCContext> npcs = new ArrayList<>();
+    // Set commentators
+    if (!commentatorsField.getValue().isEmpty()) {
+      npcs.addAll(
+          commentatorsField.getValue().stream()
+              .map(
+                  commentator -> {
+                    NPCContext npc = new NPCContext();
+                    npc.setName(commentator.getName());
+                    npc.setRole("Commentator");
+                    npc.setDescription("Wrestling commentator");
+                    return npc;
+                  })
+              .collect(Collectors.toList()));
+    }
+
+    // Set Ring Announcer
+    if (ringAnnouncerField.getValue() != null) {
+      NPCContext npc = new NPCContext();
+      npc.setName(ringAnnouncerField.getValue().getName());
+      npc.setRole("Ring Announcer");
+      npc.setDescription("Wrestling ring announcer");
+      npcs.add(npc);
+    }
+    context.setNpcs(npcs);
 
     return context;
   }
@@ -351,6 +481,20 @@ public class MatchNarrationView extends Main {
       // Extract cost info
       double cost =
           jsonResponse.has("estimatedCost") ? jsonResponse.get("estimatedCost").asDouble() : 0.0;
+
+      // Display context if available in the response
+      if (jsonResponse.has("context")) {
+        try {
+          String contextJson =
+              objectMapper
+                  .writerWithDefaultPrettyPrinter()
+                  .writeValueAsString(jsonResponse.get("context"));
+          contextDisplay.setValue(contextJson);
+        } catch (Exception e) {
+          log.error("Error serializing context from response to JSON", e);
+          contextDisplay.setValue("Error displaying context: " + e.getMessage());
+        }
+      }
 
       // Display results
       narrationDisplay.setText(narration);

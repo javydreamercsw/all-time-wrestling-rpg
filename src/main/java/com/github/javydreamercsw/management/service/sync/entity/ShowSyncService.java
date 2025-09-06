@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync.entity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -58,22 +59,25 @@ public class ShowSyncService extends BaseSyncService {
    * @return SyncResult containing the outcome of the sync operation
    */
   public SyncResult syncShows(@NonNull String operationId) {
-    // Check if already synced in current session
-    if (isAlreadySyncedInSession("shows")) {
-      log.info("⏭️ Shows already synced in current session, skipping");
-      return SyncResult.success("Shows", 0, 0);
-    }
-
-    try {
-      SyncResult result = performShowsSync(operationId);
-      if (result.isSuccess()) {
-        markAsSyncedInSession("shows");
+    if (EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      // Check if already synced in current session
+      if (isAlreadySyncedInSession("shows")) {
+        log.info("⏭️ Shows already synced in current session, skipping");
+        return SyncResult.success("Shows", 0, 0);
       }
-      return result;
-    } catch (Exception e) {
-      log.error("Failed to sync shows", e);
-      return SyncResult.failure("Shows", e.getMessage());
+
+      try {
+        SyncResult result = performShowsSync(operationId);
+        if (result.isSuccess()) {
+          markAsSyncedInSession("shows");
+        }
+        return result;
+      } catch (Exception e) {
+        log.error("Failed to sync shows", e);
+        return SyncResult.failure("Shows", e.getMessage());
+      }
     }
+    return SyncResult.failure("Shows", "Notion Token was not provided!");
   }
 
   /** Internal method to perform the actual shows sync logic. */
@@ -155,7 +159,7 @@ public class ShowSyncService extends BaseSyncService {
             progressTracker.updateProgress(
                 operationId, 3, "Retrieving shows from Notion database...");
 
-            List<ShowPage> notionShows = getAllShowsFromNotion();
+            List<ShowPage> notionShows = executeWithRateLimit(notionHandler::loadAllShowsForSync);
             long retrieveTime = System.currentTimeMillis() - startTime;
             log.info("✅ Retrieved {} shows from Notion in {}ms", notionShows.size(), retrieveTime);
 
@@ -163,7 +167,7 @@ public class ShowSyncService extends BaseSyncService {
             log.info("🔄 Converting shows to DTOs...");
             progressTracker.updateProgress(operationId, 5, "Converting shows to DTOs...");
 
-            List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows);
+            List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows, operationId);
             long convertTime = System.currentTimeMillis() - startTime - retrieveTime;
             log.info("✅ Converted {} shows to DTOs in {}ms", showDTOs.size(), convertTime);
 
@@ -195,27 +199,15 @@ public class ShowSyncService extends BaseSyncService {
         });
   }
 
-  /** Retrieves all shows from the Notion Shows database. */
-  private List<ShowPage> getAllShowsFromNotion() {
-    log.debug("Retrieving all shows from Notion Shows database");
-
-    if (!isNotionHandlerAvailable()) {
-      log.warn("NotionHandler not available. Cannot sync from Notion.");
-      throw new IllegalStateException("NotionHandler is not available for sync operations");
-    }
-
-    return notionHandler.loadAllShowsForSync();
-  }
-
-  /** Converts ShowPage objects from Notion to ShowDTO objects. */
-  private List<ShowDTO> convertShowPagesToDTO(@NonNull List<ShowPage> showPages) {
-    log.info("Converting {} shows to DTOs using parallel processing", showPages.size());
-
-    List<ShowDTO> showDTOs =
-        showPages.parallelStream().map(this::convertShowPageToDTO).collect(Collectors.toList());
-
-    log.info("Successfully converted {} shows to DTOs", showDTOs.size());
-    return showDTOs;
+  private List<ShowDTO> convertShowPagesToDTO(
+      @NonNull List<ShowPage> showPages, String operationId) {
+    return processWithControlledParallelism(
+        showPages,
+        this::convertShowPageToDTO,
+        10, // Batch size
+        operationId,
+        5, // Progress step
+        "Converted %d/%d shows");
   }
 
   /** Converts a single ShowPage to ShowDTO. */
@@ -373,7 +365,6 @@ public class ShowSyncService extends BaseSyncService {
 
       if (show == null) {
         show = new Show();
-        isNewShow = true;
         log.debug("Creating new show: {} with external ID: {}", dto.getName(), dto.getExternalId());
       }
 
@@ -500,7 +491,7 @@ public class ShowSyncService extends BaseSyncService {
         }
 
         if (!seasonStr.isEmpty()
-            && !seasonStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+            && !seasonStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[^w-z]{4}-[0-9a-f]{12}")) {
           return seasonStr;
         }
       }

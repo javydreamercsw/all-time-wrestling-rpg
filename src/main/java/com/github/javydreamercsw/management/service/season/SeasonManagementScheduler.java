@@ -1,7 +1,11 @@
 package com.github.javydreamercsw.management.service.season;
 
 import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.storyline.StorylineContinuityService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -10,6 +14,7 @@ import java.util.Optional;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -24,20 +29,19 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(
-    name = "season.management.scheduler.enabled",
-    havingValue = "true",
-    matchIfMissing = false)
+@ConditionalOnProperty(name = "season.management.scheduler.enabled", havingValue = "true")
 public class SeasonManagementScheduler {
 
-  private final SeasonService seasonService;
-  private final SeasonProgressionService seasonProgressionService;
-  private final ShowBookingService showBookingService;
-  private final StorylineContinuityService storylineContinuityService;
-  private final Random random = new Random();
+  @Autowired private SeasonService seasonService;
+  @Autowired private ShowTypeService showTypeService;
+  @Autowired private ShowTemplateService showTemplateService;
+  @Autowired private SeasonProgressionService seasonProgressionService;
+  @Autowired private ShowBookingService showBookingService;
+  @Autowired private StorylineContinuityService storylineContinuityService;
+  @Autowired private Random random = new Random();
 
   /** Book weekly shows automatically. Runs every 3 days to simulate regular show scheduling. */
-  @Scheduled(fixedRate = 259200000) // Every 3 days (259,200,000 milliseconds)
+  @Scheduled(fixedRate = 259_200_000) // Every 3 days (259,200,000 milliseconds)
   public void scheduleWeeklyShows() {
     try {
       log.debug("Starting automated weekly show booking...");
@@ -52,9 +56,9 @@ public class SeasonManagementScheduler {
 
       // Check if it's time for a PPV
       if (activeSeason.isTimeForPpv()) {
-        bookPPVShow(activeSeason);
+        bookPPVShow();
       } else {
-        bookRegularShow(activeSeason);
+        bookRegularShow();
       }
 
       log.info("Completed automated show booking for season: {}", activeSeason.getName());
@@ -156,9 +160,9 @@ public class SeasonManagementScheduler {
             stats.regularShows(),
             stats.ppvShows());
         log.info(
-            "Matches: {} total (Avg Rating: {:.1f})",
+            "Matches: {} total (Avg Rating: {})",
             stats.totalMatches(),
-            stats.averageMatchRating());
+            String.format("%.1f", stats.averageMatchRating()));
         log.info("Wrestlers: {} unique", stats.uniqueWrestlers());
         log.info("Most Active: {}", stats.mostActiveWrestler());
         log.info("Most Successful: {}", stats.mostSuccessfulWrestler());
@@ -182,8 +186,8 @@ public class SeasonManagementScheduler {
 
   // ==================== PRIVATE HELPER METHODS ====================
 
-  private void bookRegularShow(Season activeSeason) {
-    String showName = generateShowName(activeSeason);
+  private void bookRegularShow() {
+    String showName = generateShowName();
     String showDescription =
         "Regular weekly wrestling show featuring exciting matches and storyline development";
 
@@ -198,18 +202,18 @@ public class SeasonManagementScheduler {
     if (result.isPresent()) {
       ShowBookingService.ShowStatistics stats = result.get();
       log.info(
-          "Booked regular show '{}' - {} matches, {} wrestlers, avg rating: {:.1f}",
+          "Booked regular show '{}' - {} matches, {} wrestlers, avg rating: {}",
           showName,
           stats.totalMatches(),
           stats.totalWrestlers(),
-          stats.averageRating());
+          String.format("%.1f", stats.averageRating()));
     } else {
       log.warn("Failed to book regular show '{}'", showName);
     }
   }
 
-  private void bookPPVShow(Season activeSeason) {
-    String ppvName = generatePPVName(activeSeason);
+  private void bookPPVShow() {
+    String ppvName = generatePPVName();
     String ppvDescription =
         "Special pay-per-view event featuring the biggest matches and storyline conclusions";
 
@@ -221,11 +225,11 @@ public class SeasonManagementScheduler {
     if (result.isPresent()) {
       ShowBookingService.ShowStatistics stats = result.get();
       log.info(
-          "Booked PPV '{}' - {} matches, {} wrestlers, avg rating: {:.1f}",
+          "Booked PPV '{}' - {} matches, {} wrestlers, avg rating: {}",
           ppvName,
           stats.totalMatches(),
           stats.totalWrestlers(),
-          stats.averageRating());
+          String.format("%.1f", stats.averageRating()));
     } else {
       log.warn("Failed to book PPV '{}'", ppvName);
     }
@@ -244,7 +248,7 @@ public class SeasonManagementScheduler {
       log.info("SEASON PROGRESSION: Started new season '{}'", newSeason.getName());
 
       // Book inaugural show for new season
-      bookRegularShow(newSeason);
+      bookRegularShow();
     } else {
       log.error("Failed to progress to next season");
     }
@@ -254,18 +258,17 @@ public class SeasonManagementScheduler {
     Optional<SeasonProgressionService.SeasonStatistics> statsOpt =
         seasonProgressionService.getActiveSeasonStatistics();
 
-    if (statsOpt.isPresent()) {
-      SeasonProgressionService.SeasonStatistics stats = statsOpt.get();
-      log.info(
-          "Season Health Check - '{}': {} shows, {:.1f} avg rating, {} days running",
-          stats.seasonName(),
-          stats.totalShows(),
-          stats.averageMatchRating(),
-          stats.durationDays());
-    }
+    statsOpt.ifPresent(
+        stats ->
+            log.info(
+                "Season Health Check - '{}': {} shows, {} avg rating, {} days running",
+                stats.seasonName(),
+                stats.totalShows(),
+                String.format("%.1f", stats.averageMatchRating()),
+                stats.durationDays()));
   }
 
-  private String generateShowName(Season season) {
+  private String generateShowName() {
     String[] showPrefixes = {
       "Monday Night Wrestling",
       "Wrestling Showcase",
@@ -274,14 +277,24 @@ public class SeasonManagementScheduler {
       "Wrestling Mayhem",
       "Battle Arena"
     };
-
+    Optional<ShowType> weekly = showTypeService.findByName("Weekly");
+    if (weekly.isPresent()) {
+      List<ShowTemplate> templates =
+          showTemplateService.getTemplatesByShowType(weekly.get().getName());
+      if (templates != null && !templates.isEmpty()) {
+        showPrefixes =
+            templates.stream()
+                .map(ShowTemplate::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .toArray(String[]::new);
+      }
+    }
     String prefix = showPrefixes[random.nextInt(showPrefixes.length)];
     String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM dd"));
-
     return prefix + " - " + date;
   }
 
-  private String generatePPVName(Season season) {
+  private String generatePPVName() {
     String[] ppvNames = {
       "Clash of Champions",
       "Ultimate Showdown",
@@ -293,6 +306,19 @@ public class SeasonManagementScheduler {
       "Title Tournament",
       "Grand Slam Wrestling"
     };
+
+    Optional<ShowType> weekly = showTypeService.findByName("Premium Live Event (PLE)");
+    if (weekly.isPresent()) {
+      List<ShowTemplate> templates =
+          showTemplateService.getTemplatesByShowType(weekly.get().getName());
+      if (templates != null && !templates.isEmpty()) {
+        ppvNames =
+            templates.stream()
+                .map(ShowTemplate::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .toArray(String[]::new);
+      }
+    }
 
     return ppvNames[random.nextInt(ppvNames.length)]
         + " "
