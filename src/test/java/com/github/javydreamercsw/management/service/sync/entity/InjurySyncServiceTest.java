@@ -10,7 +10,6 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
-import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
@@ -42,7 +41,6 @@ class InjurySyncServiceTest {
 
   @Mock private InjuryTypeService injuryTypeService;
   @Mock private InjuryTypeRepository injuryTypeRepository;
-  @Mock private InjuryService injuryService;
   @Mock private NotionHandler notionHandler;
   @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncProgressTracker progressTracker;
@@ -71,10 +69,6 @@ class InjurySyncServiceTest {
           InjurySyncService.class.getDeclaredField("injuryTypeRepository");
       injuryTypeRepositoryField.setAccessible(true);
       injuryTypeRepositoryField.set(injurySyncService, injuryTypeRepository);
-
-      var injuryServiceField = InjurySyncService.class.getDeclaredField("injuryService");
-      injuryServiceField.setAccessible(true);
-      injuryServiceField.set(injurySyncService, injuryService);
 
       // Inject base service dependencies
       var notionHandlerField =
