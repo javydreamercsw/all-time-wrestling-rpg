@@ -48,7 +48,7 @@ public abstract class BaseSyncService {
   private final ThreadLocal<Set<String>> currentSyncSession = ThreadLocal.withInitial(HashSet::new);
 
   // Controlled parallelism executor for all sync operations
-  private final ExecutorService syncExecutorService = Executors.newFixedThreadPool(3);
+  private final ExecutorService syncExecutorService;
 
   // Optional NotionHandler for integration tests
   @Autowired(required = false)
@@ -67,6 +67,7 @@ public abstract class BaseSyncService {
   protected BaseSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     this.objectMapper = objectMapper;
     this.syncProperties = syncProperties;
+    this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
   }
 
   /**

@@ -15,6 +15,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -326,9 +327,10 @@ public class MatchNarrationView extends Main {
       }
 
       // Call the REST API
+      String baseUrl = UrlUtil.getBaseUrl();
       ResponseEntity<String> response =
           restTemplate.postForEntity(
-              "http://localhost:8080/api/match-narration/narrate", context, String.class);
+              baseUrl + "/api/match-narration/narrate", context, String.class);
 
       handleNarrationResponse(response.getBody());
 
@@ -345,9 +347,9 @@ public class MatchNarrationView extends Main {
 
     try {
       // Call the test endpoint using POST method
+      String baseUrl = UrlUtil.getBaseUrl();
       ResponseEntity<String> response =
-          restTemplate.postForEntity(
-              "http://localhost:8080/api/match-narration/test", null, String.class);
+          restTemplate.postForEntity(baseUrl + "/api/match-narration/test", null, String.class);
 
       handleNarrationResponse(response.getBody());
 
