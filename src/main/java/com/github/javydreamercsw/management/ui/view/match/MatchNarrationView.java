@@ -18,6 +18,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -84,6 +85,8 @@ public class MatchNarrationView extends Main {
   private Pre narrationDisplay;
   private Div costDisplay;
   private Div providerDisplay;
+  private Checkbox showContextCheckbox;
+  private TextArea contextDisplay;
 
   public MatchNarrationView(
       WrestlerService wrestlerService, MatchTypeService matchTypeService, NpcService npcService) {
@@ -183,6 +186,15 @@ public class MatchNarrationView extends Main {
     providerDisplay = new Div();
     providerDisplay.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.PRIMARY);
 
+    showContextCheckbox = new Checkbox("Show AI Context");
+    contextDisplay = new TextArea("AI Context");
+    contextDisplay.setWidthFull();
+    contextDisplay.setReadOnly(true);
+    contextDisplay.setVisible(false); // Initially hidden
+
+    showContextCheckbox.addValueChangeListener(
+        event -> contextDisplay.setVisible(event.getValue()));
+
     resultsSection = new VerticalLayout();
     resultsSection.setVisible(false);
     resultsSection.setSpacing(true);
@@ -275,11 +287,20 @@ public class MatchNarrationView extends Main {
     VerticalLayout configSection = new VerticalLayout();
     configSection.setSpacing(true);
     configSection.setPadding(false);
-    configSection.add(new H3("Match Configuration"), formLayout, buttonLayout, progressBar);
+    configSection.add(
+        new H3("Match Configuration"),
+        formLayout,
+        showContextCheckbox, // Moved here
+        buttonLayout,
+        progressBar);
 
     // Results section setup
     resultsSection.add(
-        new H3("Generated Narration"), providerDisplay, costDisplay, narrationDisplay);
+        new H3("Generated Narration"),
+        providerDisplay,
+        costDisplay,
+        narrationDisplay,
+        contextDisplay); // Checkbox removed from here
 
     add(configSection, resultsSection);
   }
@@ -293,6 +314,16 @@ public class MatchNarrationView extends Main {
 
     try {
       MatchNarrationContext context = buildMatchContext();
+
+      // Display the context if the checkbox is checked
+      try {
+        String contextJson =
+            objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context);
+        contextDisplay.setValue(contextJson);
+      } catch (Exception e) {
+        log.error("Error serializing match context to JSON", e);
+        contextDisplay.setValue("Error displaying context: " + e.getMessage());
+      }
 
       // Call the REST API
       ResponseEntity<String> response =
@@ -450,6 +481,20 @@ public class MatchNarrationView extends Main {
       // Extract cost info
       double cost =
           jsonResponse.has("estimatedCost") ? jsonResponse.get("estimatedCost").asDouble() : 0.0;
+
+      // Display context if available in the response
+      if (jsonResponse.has("context")) {
+        try {
+          String contextJson =
+              objectMapper
+                  .writerWithDefaultPrettyPrinter()
+                  .writeValueAsString(jsonResponse.get("context"));
+          contextDisplay.setValue(contextJson);
+        } catch (Exception e) {
+          log.error("Error serializing context from response to JSON", e);
+          contextDisplay.setValue("Error displaying context: " + e.getMessage());
+        }
+      }
 
       // Display results
       narrationDisplay.setText(narration);
