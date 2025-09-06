@@ -6,7 +6,9 @@ import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import java.time.Clock;
 import java.util.List;
+import java.util.Optional;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -16,15 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 public class CardService {
 
-  private final CardRepository cardRepository;
-  private final CardSetRepository cardSetRepository;
-  private final Clock clock;
-
-  CardService(CardRepository cardRepository, CardSetRepository cardSetRepository, Clock clock) {
-    this.cardRepository = cardRepository;
-    this.cardSetRepository = cardSetRepository;
-    this.clock = clock;
-  }
+  @Autowired private CardRepository cardRepository;
+  @Autowired private CardSetRepository cardSetRepository;
+  @Autowired private Clock clock;
 
   public void createCard(@NonNull String name) {
     Card card = new Card();
@@ -63,5 +59,9 @@ public class CardService {
 
   public List<Card> findAll() {
     return cardRepository.findAll();
+  }
+
+  public Optional<Card> findByNumberAndSet(Integer number, String setName) {
+    return cardRepository.findByNumberAndSetName(number, setName);
   }
 }

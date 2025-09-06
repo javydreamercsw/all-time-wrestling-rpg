@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,9 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class FactionService {
 
-  private final FactionRepository factionRepository;
-  private final WrestlerRepository wrestlerRepository;
-  private final Clock clock;
+  @Autowired private FactionRepository factionRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private Clock clock;
 
   /** Get all factions. */
   @Transactional(readOnly = true)
@@ -128,16 +129,14 @@ public class FactionService {
     faction.setCreationDate(clock.instant());
 
     // Set leader if provided
-    if (leaderId != null) {
-      Optional<Wrestler> leaderOpt = wrestlerRepository.findById(leaderId);
-      if (leaderOpt.isPresent()) {
-        Wrestler leader = leaderOpt.get();
-        faction.setLeader(leader);
-        // Add leader as first member
-        faction.addMember(leader);
-      } else {
-        log.warn("Leader with ID {} not found for faction '{}'", leaderId, name);
-      }
+    Optional<Wrestler> leaderOpt = wrestlerRepository.findById(leaderId);
+    if (leaderOpt.isPresent()) {
+      Wrestler leader = leaderOpt.get();
+      faction.setLeader(leader);
+      // Add leader as first member
+      faction.addMember(leader);
+    } else {
+      log.warn("Leader with ID {} not found for faction '{}'", leaderId, name);
     }
 
     Faction savedFaction = factionRepository.saveAndFlush(faction);
@@ -150,7 +149,7 @@ public class FactionService {
   }
 
   /** Add a member to a faction. */
-  public Optional<Faction> addMemberToFaction(Long factionId, Long wrestlerId) {
+  public Optional<Faction> addMemberToFaction(@NonNull Long factionId, @NonNull Long wrestlerId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -189,7 +188,8 @@ public class FactionService {
   }
 
   /** Remove a member from a faction. */
-  public Optional<Faction> removeMemberFromFaction(Long factionId, Long wrestlerId, String reason) {
+  public Optional<Faction> removeMemberFromFaction(
+      @NonNull Long factionId, @NonNull Long wrestlerId, @NonNull String reason) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -225,7 +225,7 @@ public class FactionService {
   }
 
   /** Change faction leader. */
-  public Optional<Faction> changeFactionLeader(Long factionId, Long newLeaderId) {
+  public Optional<Faction> changeFactionLeader(@NonNull Long factionId, @NonNull Long newLeaderId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> newLeaderOpt = wrestlerRepository.findById(newLeaderId);
 
@@ -259,7 +259,7 @@ public class FactionService {
   }
 
   /** Disband a faction. */
-  public Optional<Faction> disbandFaction(Long factionId, String reason) {
+  public Optional<Faction> disbandFaction(@NonNull Long factionId, @NonNull String reason) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
 
     if (factionOpt.isEmpty()) {
@@ -283,7 +283,7 @@ public class FactionService {
 
   /** Get faction for a wrestler. */
   @Transactional(readOnly = true)
-  public Optional<Faction> getFactionForWrestler(Long wrestlerId) {
+  public Optional<Faction> getFactionForWrestler(@NonNull Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
     if (wrestlerOpt.isEmpty()) {
@@ -301,7 +301,7 @@ public class FactionService {
 
   /** Get factions by type (singles, tag team, stable). */
   @Transactional(readOnly = true)
-  public List<Faction> getFactionsByType(String type) {
+  public List<Faction> getFactionsByType(@NonNull String type) {
     return switch (type.toLowerCase()) {
       case "singles" -> factionRepository.findSinglesFactions();
       case "tag", "tagteam", "tag_team" -> factionRepository.findTagTeamFactions();
@@ -318,7 +318,7 @@ public class FactionService {
 
   /** Check if two factions can have a rivalry. */
   @Transactional(readOnly = true)
-  public boolean canHaveRivalry(Long faction1Id, Long faction2Id) {
+  public boolean canHaveRivalry(@NonNull Long faction1Id, @NonNull Long faction2Id) {
     Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
     Optional<Faction> faction2Opt = factionRepository.findById(faction2Id);
 
@@ -344,7 +344,7 @@ public class FactionService {
   }
 
   /** Save a faction. */
-  public Faction save(Faction faction) {
+  public Faction save(@NonNull Faction faction) {
     if (faction.getId() == null) {
       // New faction
       faction.setCreationDate(clock.instant());
@@ -356,20 +356,20 @@ public class FactionService {
   }
 
   /** Delete a faction. */
-  public void delete(Faction faction) {
+  public void delete(@NonNull Faction faction) {
     log.info("Deleting faction: {}", faction.getName());
     factionRepository.delete(faction);
   }
 
   /** Delete a faction by ID. */
-  public void deleteById(Long id) {
+  public void deleteById(@NonNull Long id) {
     log.info("Deleting faction with ID: {}", id);
     factionRepository.deleteById(id);
   }
 
   /** Check if a faction exists by ID. */
   @Transactional(readOnly = true)
-  public boolean existsById(Long id) {
+  public boolean existsById(@NonNull Long id) {
     return factionRepository.existsById(id);
   }
 
