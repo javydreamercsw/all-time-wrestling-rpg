@@ -25,6 +25,9 @@ public class NotionSyncProperties {
   /** Backup configuration for protecting original files. */
   private Backup backup = new Backup();
 
+  /** Number of threads to use for parallel processing during sync. */
+  private int parallelThreads = 3;
+
   /** Scheduler-specific configuration properties. */
   @Data
   public static class Scheduler {

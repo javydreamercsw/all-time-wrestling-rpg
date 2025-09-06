@@ -2,10 +2,12 @@ package com.github.javydreamercsw.management.service.sync.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.service.match.MatchResultService;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -15,7 +17,8 @@ import org.springframework.test.context.TestPropertySource;
 @ActiveProfiles("test")
 @TestPropertySource(
     properties = {"notion.sync.scheduler.enabled=false", "notion.databases.show-types=test-db-id"})
-class MatchSyncServiceIT {
+@EnabledIf("isNotionTokenAvailable")
+class MatchSyncServiceIT extends BaseTest {
 
   @Autowired private MatchSyncService matchSyncService;
   @Autowired private SeasonSyncService seasonSyncService;

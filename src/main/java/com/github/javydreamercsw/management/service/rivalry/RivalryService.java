@@ -170,6 +170,12 @@ public class RivalryService {
     return rivalryRepository.findByIsActiveTrue();
   }
 
+  /** Get active rivalries between two dates. */
+  @Transactional(readOnly = true)
+  public List<Rivalry> getActiveRivalriesBetween(Instant startDate, Instant endDate) {
+    return rivalryRepository.findActiveRivalriesBetween(startDate, endDate);
+  }
+
   /** Get rivalries for a specific wrestler. */
   @Transactional(readOnly = true)
   public List<Rivalry> getRivalriesForWrestler(@NonNull Long wrestlerId) {
