@@ -70,6 +70,9 @@ public interface MatchResultRepository
   /** Find matches after a specific date. */
   List<MatchResult> findByMatchDateAfter(Instant date);
 
+  /** Find matches between two dates. */
+  List<MatchResult> findByMatchDateBetween(Instant startDate, Instant endDate);
+
   /** Count wins for a wrestler. */
   @Query(
       """

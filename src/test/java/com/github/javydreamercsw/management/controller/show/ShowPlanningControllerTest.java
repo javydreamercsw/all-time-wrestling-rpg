@@ -1,0 +1,62 @@
+package com.github.javydreamercsw.management.controller.show;
+
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningContext;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+@WebMvcTest(ShowPlanningController.class)
+class ShowPlanningControllerTest {
+
+  @Autowired private MockMvc mockMvc;
+
+  @Autowired private ObjectMapper objectMapper;
+
+  @MockBean private ShowPlanningService showPlanningService;
+
+  @MockBean private ShowPlanningAiService showPlanningAiService;
+
+  @MockBean private ShowService showService;
+
+  @Test
+  void getShowPlanningContext() throws Exception {
+    // Given
+    Show show = new Show();
+    show.setId(1L);
+    when(showService.getShowById(1L)).thenReturn(Optional.of(show));
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContext());
+
+    // When & Then
+    mockMvc.perform(get("/api/show-planning/context/1")).andExpect(status().isOk());
+  }
+
+  @Test
+  void planShow() throws Exception {
+    // Given
+    ShowPlanningContext context = new ShowPlanningContext();
+    when(showPlanningAiService.planShow(context)).thenReturn(new ProposedShow());
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/show-planning/plan")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(context)))
+        .andExpect(status().isOk());
+  }
+}

@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.domain.rivalry;
 
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -86,4 +87,13 @@ public interface RivalryRepository
       AND r.isActive = true
       """)
   long countActiveRivalriesForWrestler(@Param("wrestler") Wrestler wrestler);
+
+  @Query(
+      """
+      SELECT r FROM Rivalry r
+      WHERE (r.isActive = true AND r.startedDate <= :endDate) OR
+            (r.startedDate <= :endDate AND (r.endedDate IS NULL OR r.endedDate >= :startDate))
+      """)
+  List<Rivalry> findActiveRivalriesBetween(
+      @Param("startDate") Instant startDate, @Param("endDate") Instant endDate);
 }
