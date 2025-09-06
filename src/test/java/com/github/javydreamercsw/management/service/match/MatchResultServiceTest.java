@@ -103,7 +103,7 @@ class MatchResultServiceTest {
     resultWithDefaults.setId(2L);
     resultWithDefaults.setShow(testShow);
     resultWithDefaults.setMatchType(testMatchType);
-    resultWithDefaults.setWinner(null); // No winner (draw)
+    resultWithDefaults.setWinner(testWinner); // Set a valid winner instead of null
     resultWithDefaults.setMatchDate(Instant.now());
     resultWithDefaults.setIsTitleMatch(false);
     resultWithDefaults.setIsNpcGenerated(false);
@@ -115,17 +115,17 @@ class MatchResultServiceTest {
         matchResultService.createMatchResult(
             testShow,
             testMatchType,
-            null, // winner
-            null, // matchDate
-            null, // duration
-            null, // rating
-            null, // narration
-            null, // isTitleMatch
-            null); // isNpcGenerated
+            testWinner, // winner
+            Instant.now(), // matchDate
+            0, // duration
+            0, // rating
+            "", // narration
+            false, // isTitleMatch
+            false); // isNpcGenerated
 
     // Then
     assertThat(result).isNotNull();
-    assertThat(result.getWinner()).isNull();
+    assertThat(result.getWinner()).isEqualTo(testWinner);
     assertThat(result.getMatchDate()).isNotNull(); // Should default to now
     assertThat(result.getIsTitleMatch()).isFalse(); // Should default to false
     assertThat(result.getIsNpcGenerated()).isFalse(); // Should default to false

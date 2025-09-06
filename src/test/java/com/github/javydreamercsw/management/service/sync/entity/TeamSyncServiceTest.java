@@ -7,17 +7,18 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
+import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,7 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TeamSyncServiceTest {
+class TeamSyncServiceTest extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
@@ -41,6 +42,7 @@ class TeamSyncServiceTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
+  @Mock private NotionRateLimitService rateLimitService;
 
   private TeamSyncService teamSyncService;
 
@@ -55,6 +57,7 @@ class TeamSyncServiceTest {
     setField(teamSyncService, "wrestlerService", wrestlerService);
     setField(teamSyncService, "teamService", teamService);
     setField(teamSyncService, "teamRepository", teamRepository);
+    setField(teamSyncService, "rateLimitService", rateLimitService);
   }
 
   @Test
@@ -235,25 +238,5 @@ class TeamSyncServiceTest {
     team.setStatus(TeamStatus.ACTIVE);
     team.setFormedDate(Instant.now());
     return team;
-  }
-
-  /**
-   * Helper method to set private fields via reflection for testing. This is needed because we
-   * switched from constructor injection to field injection.
-   */
-  private void setField(Object target, String fieldName, Object value) {
-    try {
-      Field field = target.getClass().getDeclaredField(fieldName);
-      field.setAccessible(true);
-      field.set(target, value);
-    } catch (Exception e) {
-      try {
-        Field superField = target.getClass().getSuperclass().getDeclaredField(fieldName);
-        superField.setAccessible(true);
-        superField.set(target, value);
-      } catch (Exception e2) {
-        throw new RuntimeException("Failed to set field " + fieldName, e2);
-      }
-    }
   }
 }

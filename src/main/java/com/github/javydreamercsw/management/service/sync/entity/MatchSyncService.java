@@ -1,8 +1,8 @@
 package com.github.javydreamercsw.management.service.sync.entity;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.MatchPage;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.base.ai.notion.NotionPage;
+import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
@@ -11,8 +11,7 @@ import com.github.javydreamercsw.management.dto.MatchDTO;
 import com.github.javydreamercsw.management.service.match.MatchResultService;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.SyncValidationService;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
@@ -26,96 +25,90 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class MatchSyncService {
+public class MatchSyncService extends BaseSyncService {
 
-  private final NotionHandler notionHandler;
-  private final MatchResultService matchResultService;
-  private final ShowService showService;
-  private final WrestlerService wrestlerService;
-  private final MatchTypeService matchTypeService;
-  private final SyncProgressTracker syncProgressTracker;
-  private final SyncValidationService syncValidationService;
+  @Autowired private MatchResultService matchResultService;
+  @Autowired private ShowService showService;
+  @Autowired private WrestlerService wrestlerService;
+  @Autowired private MatchTypeService matchTypeService;
 
-  public MatchSyncService(
-      NotionHandler notionHandler,
-      MatchResultService matchResultService,
-      ShowService showService,
-      WrestlerService wrestlerService,
-      MatchTypeService matchTypeService,
-      SyncProgressTracker syncProgressTracker,
-      SyncValidationService syncValidationService) {
-    this.notionHandler = notionHandler;
-    this.matchResultService = matchResultService;
-    this.showService = showService;
-    this.wrestlerService = wrestlerService;
-    this.matchTypeService = matchTypeService;
-    this.syncProgressTracker = syncProgressTracker;
-    this.syncValidationService = syncValidationService;
+  public MatchSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
+    super(objectMapper, syncProperties);
   }
 
   @Transactional
   public SyncResult syncMatches(@NonNull String operationId) {
     log.info("🤼 Starting matches synchronization from Notion with operation ID: {}", operationId);
-    syncProgressTracker.startOperation(operationId, "Matches Sync", 4);
+    progressTracker.startOperation(operationId, "Matches Sync", 4);
 
     try {
-      // 1. Load all match pages from Notion
-      syncProgressTracker.updateProgress(operationId, 1, "Loading matches from Notion");
-      List<MatchPage> notionMatches = notionHandler.loadAllMatches();
-      if (notionMatches.isEmpty()) {
-        log.info("No matches found in Notion database");
-        syncProgressTracker.completeOperation(operationId, true, "No matches found in Notion", 0);
-        return SyncResult.success("Matches", 0, 0);
-      }
-      log.info("📥 Loaded {} matches from Notion", notionMatches.size());
-
-      // 2. Convert Notion match pages to DTOs and merge with existing data
-      syncProgressTracker.updateProgress(operationId, 2, "Converting Notion pages to DTOs");
-      List<MatchDTO> matchDTOs =
-          notionMatches.parallelStream()
-              .map(this::convertNotionPageToDTO)
-              .filter(Optional::isPresent)
-              .map(Optional::get)
-              .collect(Collectors.toList());
-      log.info("🔄 Converted {} matches to DTOs", matchDTOs.size());
-
-      // 3. Save/update matches in the local database
-      syncProgressTracker.updateProgress(operationId, 3, "Saving matches to database");
-      int savedCount = saveMatchesToDatabase(matchDTOs);
-      log.info("✅ Saved {} matches to database", savedCount);
-
-      // 4. Validate sync process
-      syncProgressTracker.updateProgress(operationId, 4, "Validating sync process");
-      // boolean success = syncValidationService.validateMatchSync(notionMatches.size(),
-      // savedCount);
-      boolean success = true; // Placeholder
-      if (success) {
-        String message =
-            String.format("Matches sync completed successfully. Synced %d matches.", savedCount);
-        log.info(message);
-        syncProgressTracker.completeOperation(operationId, true, message, savedCount);
-        return SyncResult.success("Matches", savedCount, 0);
-      } else {
-        String message = "Matches sync completed with validation errors";
-        log.warn(message);
-        syncProgressTracker.completeOperation(operationId, false, message, savedCount);
-        return SyncResult.failure("Matches", message);
-      }
-
+      return performMatchSyncInternal(operationId);
     } catch (Exception e) {
       String errorMessage = "Failed to synchronize matches from Notion: " + e.getMessage();
       log.error(errorMessage, e);
-      syncProgressTracker.failOperation(operationId, errorMessage);
-      throw new RuntimeException(errorMessage, e);
+      progressTracker.failOperation(operationId, errorMessage);
+      return SyncResult.failure("Matches", errorMessage);
     }
   }
 
-  private Optional<MatchDTO> convertNotionPageToDTO(MatchPage matchPage) {
+  private SyncResult performMatchSyncInternal(@NonNull String operationId) throws Exception {
+    // 1. Load all match pages from Notion with rate limiting
+    progressTracker.updateProgress(operationId, 1, "Loading matches from Notion");
+    List<MatchPage> notionMatches = executeWithRateLimit(notionHandler::loadAllMatches);
+
+    if (notionMatches.isEmpty()) {
+      log.info("No matches found in Notion database");
+      progressTracker.completeOperation(operationId, true, "No matches found in Notion", 0);
+      return SyncResult.success("Matches", 0, 0);
+    }
+    log.info("📥 Loaded {} matches from Notion", notionMatches.size());
+
+    // 2. Convert Notion match pages to DTOs with controlled parallel processing
+    progressTracker.updateProgress(operationId, 2, "Converting Notion pages to DTOs");
+    List<MatchDTO> matchDTOs = convertMatchesWithRateLimit(notionMatches, operationId);
+    log.info("🔄 Converted {} matches to DTOs", matchDTOs.size());
+
+    // 3. Save/update matches in the local database
+    progressTracker.updateProgress(operationId, 3, "Saving matches to database");
+    int savedCount = saveMatchesToDatabase(matchDTOs);
+    log.info("✅ Saved {} matches to database", savedCount);
+
+    // 4. Validate sync process
+    progressTracker.updateProgress(operationId, 4, "Validating sync process");
+    boolean success = true; // Placeholder for validation
+
+    if (success) {
+      String message =
+          String.format("Matches sync completed successfully. Synced %d matches.", savedCount);
+      log.info(message);
+      progressTracker.completeOperation(operationId, true, message, savedCount);
+      return SyncResult.success("Matches", savedCount, 0);
+    } else {
+      String message = "Matches sync completed with validation errors";
+      log.warn(message);
+      progressTracker.completeOperation(operationId, false, message, savedCount);
+      return SyncResult.failure("Matches", message);
+    }
+  }
+
+  private List<MatchDTO> convertMatchesWithRateLimit(
+      List<MatchPage> notionMatches, String operationId) {
+    return processWithControlledParallelism(
+        notionMatches,
+        this::convertNotionPageToDTO,
+        10, // Batch size
+        operationId,
+        2, // Progress step
+        "Converted %d/%d matches");
+  }
+
+  private MatchDTO convertNotionPageToDTO(@NonNull MatchPage matchPage) {
     try {
       MatchDTO matchDTO = new MatchDTO();
       matchDTO.setExternalId(matchPage.getId());
@@ -123,15 +116,10 @@ public class MatchSyncService {
       matchDTO.setCreatedTime(Instant.parse(matchPage.getCreated_time()));
       matchDTO.setLastEditedTime(Instant.parse(matchPage.getLast_edited_time()));
 
-      Object showsProperty = matchPage.getRawProperties().get("Shows");
-      if (showsProperty instanceof NotionPage.Property) {
-        NotionPage.Property notionProperty = (NotionPage.Property) showsProperty;
-        if (notionProperty.getRelation() != null && !notionProperty.getRelation().isEmpty()) {
-          matchDTO.setShowExternalId(notionProperty.getRelation().get(0).getId());
-        }
-      } else if (showsProperty instanceof String && !((String) showsProperty).isEmpty()) {
-        // Fallback for old data or if Notion API changes
-        matchDTO.setShowName(((String) showsProperty).split(",")[0].trim());
+      if (matchPage.getProperties().getShows() != null
+          && !matchPage.getProperties().getShows().getRelation().isEmpty()) {
+        matchDTO.setShowExternalId(
+            matchPage.getProperties().getShows().getRelation().get(0).getId());
       }
 
       Object participantsProperty = matchPage.getRawProperties().get("Participants");
@@ -160,9 +148,12 @@ public class MatchSyncService {
       }
 
       Object dateProperty = matchPage.getRawProperties().get("Date");
-      if (dateProperty instanceof String && !((String) dateProperty).isEmpty()) {
+      if (dateProperty instanceof String dateString && !((String) dateProperty).isEmpty()) {
+        if (dateString.startsWith("@")) {
+          dateString = dateString.substring(1);
+        }
         try {
-          LocalDate localDate = LocalDate.parse((String) dateProperty);
+          LocalDate localDate = LocalDate.parse(dateString);
           matchDTO.setMatchDate(localDate.atStartOfDay(ZoneOffset.UTC).toInstant());
         } catch (DateTimeParseException e) {
           log.warn(
@@ -174,18 +165,18 @@ public class MatchSyncService {
         }
       }
 
-      return Optional.of(matchDTO);
+      return matchDTO;
     } catch (Exception e) {
       log.error(
           "Error converting Notion MatchPage to DTO for page {}: {}",
           matchPage.getId(),
           e.getMessage(),
           e);
-      return Optional.empty();
+      return null;
     }
   }
 
-  private int saveMatchesToDatabase(List<MatchDTO> matchDTOs) {
+  private int saveMatchesToDatabase(@NonNull List<MatchDTO> matchDTOs) {
     int savedCount = 0;
     for (MatchDTO matchDTO : matchDTOs) {
       try {

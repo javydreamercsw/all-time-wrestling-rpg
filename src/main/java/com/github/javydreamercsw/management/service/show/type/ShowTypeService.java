@@ -6,6 +6,7 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -14,15 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 public class ShowTypeService {
-  private final ShowTypeRepository showTypeRepository;
-  private final Clock clock;
+  @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private Clock clock;
 
-  ShowTypeService(ShowTypeRepository showTypeRepository, Clock clock) {
-    this.showTypeRepository = showTypeRepository;
-    this.clock = clock;
-  }
-
-  public List<ShowType> list(Pageable pageable) {
+  public List<ShowType> list(@NonNull Pageable pageable) {
     return showTypeRepository.findAllBy(pageable).toList();
   }
 

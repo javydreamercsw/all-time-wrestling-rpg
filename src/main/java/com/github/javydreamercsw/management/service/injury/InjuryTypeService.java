@@ -4,8 +4,11 @@ import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class InjuryTypeService {
 
-  private final InjuryTypeRepository injuryTypeRepository;
+  @Autowired private InjuryTypeRepository injuryTypeRepository;
 
   // ==================== CRUD OPERATIONS ====================
 
@@ -83,7 +86,7 @@ public class InjuryTypeService {
   }
 
   /** Updates an existing injury type. */
-  public InjuryType updateInjuryType(InjuryType injuryType) {
+  public InjuryType updateInjuryType(@NonNull InjuryType injuryType) {
     log.debug("Updating injury type: {}", injuryType.getInjuryName());
 
     if (!injuryTypeRepository.existsById(injuryType.getId())) {
@@ -132,14 +135,14 @@ public class InjuryTypeService {
 
   /** Gets injury type by ID (alias for findById for consistency with other services). */
   @Transactional(readOnly = true)
-  public Optional<InjuryType> getInjuryTypeById(Long id) {
+  public Optional<InjuryType> getInjuryTypeById(@NonNull Long id) {
     return findById(id);
   }
 
   /** Gets all injury types with pagination. */
   @Transactional(readOnly = true)
   public org.springframework.data.domain.Page<InjuryType> getAllInjuryTypes(
-      org.springframework.data.domain.Pageable pageable) {
+      @NonNull Pageable pageable) {
     return injuryTypeRepository.findAll(pageable);
   }
 
@@ -151,19 +154,19 @@ public class InjuryTypeService {
 
   /** Finds injury type by name. */
   @Transactional(readOnly = true)
-  public Optional<InjuryType> findByName(String injuryName) {
+  public Optional<InjuryType> findByName(@NonNull String injuryName) {
     return injuryTypeRepository.findByInjuryName(injuryName);
   }
 
   /** Finds injury type by external ID. */
   @Transactional(readOnly = true)
-  public Optional<InjuryType> findByExternalId(String externalId) {
+  public Optional<InjuryType> findByExternalId(@NonNull String externalId) {
     return injuryTypeRepository.findByExternalId(externalId);
   }
 
   /** Checks if injury type exists by external ID. */
   @Transactional(readOnly = true)
-  public boolean existsByExternalId(String externalId) {
+  public boolean existsByExternalId(@NonNull String externalId) {
     return injuryTypeRepository.existsByExternalId(externalId);
   }
 

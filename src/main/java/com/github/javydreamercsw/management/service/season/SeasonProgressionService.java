@@ -6,7 +6,6 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
 import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.show.ShowBookingService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -32,7 +31,6 @@ public class SeasonProgressionService {
 
   private final SeasonRepository seasonRepository;
   private final MatchResultRepository matchResultRepository;
-  private final ShowBookingService showBookingService;
   private final Clock clock;
 
   /**

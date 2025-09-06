@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,12 +36,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class StorylineContinuityService {
 
-  private final SeasonRepository seasonRepository;
-  private final ShowRepository showRepository;
-  private final MatchResultRepository matchResultRepository;
-  private final DramaEventRepository dramaEventRepository;
-  private final RivalryService rivalryService;
-  private final Clock clock;
+  @Autowired private final SeasonRepository seasonRepository;
+  @Autowired private final ShowRepository showRepository;
+  @Autowired private final MatchResultRepository matchResultRepository;
+  @Autowired private final DramaEventRepository dramaEventRepository;
+  @Autowired private final RivalryService rivalryService;
+  @Autowired private final Clock clock;
 
   /**
    * Get active storylines for the current season.
@@ -59,7 +60,7 @@ public class StorylineContinuityService {
     // 1. Rivalry-based storylines
     List<Rivalry> activeRivalries = rivalryService.getActiveRivalries();
     for (Rivalry rivalry : activeRivalries) {
-      storylines.add(createRivalryStoryline(rivalry, activeSeason));
+      storylines.add(createRivalryStoryline(rivalry));
     }
 
     // 2. Drama event storylines
@@ -252,7 +253,7 @@ public class StorylineContinuityService {
 
   // ==================== PRIVATE HELPER METHODS ====================
 
-  private ActiveStoryline createRivalryStoryline(Rivalry rivalry, Season season) {
+  private ActiveStoryline createRivalryStoryline(@NonNull Rivalry rivalry) {
     String description =
         String.format(
             "Rivalry between %s and %s (Heat: %d)",
@@ -275,7 +276,8 @@ public class StorylineContinuityService {
         rivalry.getCreationDate());
   }
 
-  private ActiveStoryline createDramaStoryline(Wrestler wrestler, List<DramaEvent> events) {
+  private ActiveStoryline createDramaStoryline(
+      @NonNull Wrestler wrestler, @NonNull List<DramaEvent> events) {
     String description =
         String.format("%s involved in %d recent drama events", wrestler.getName(), events.size());
 
@@ -290,7 +292,7 @@ public class StorylineContinuityService {
         events.get(0).getEventDate());
   }
 
-  private List<StorylineSuggestion> getRivalryEscalationSuggestions(Rivalry rivalry) {
+  private List<StorylineSuggestion> getRivalryEscalationSuggestions(@NonNull Rivalry rivalry) {
     List<StorylineSuggestion> suggestions = new ArrayList<>();
 
     if (rivalry.getHeat() >= 20 && rivalry.getHeat() < 30) {
@@ -316,7 +318,7 @@ public class StorylineContinuityService {
     return suggestions;
   }
 
-  private List<StorylineSuggestion> getDramaFollowUpSuggestions(DramaEvent event) {
+  private List<StorylineSuggestion> getDramaFollowUpSuggestions(@NonNull DramaEvent event) {
     List<StorylineSuggestion> suggestions = new ArrayList<>();
 
     if (event.getRivalryCreated()) {
@@ -338,24 +340,28 @@ public class StorylineContinuityService {
   // ==================== RECORD CLASSES ====================
 
   public record ActiveStoryline(
-      String title,
-      StorylineType type,
-      String description,
-      List<Wrestler> involvedWrestlers,
-      List<String> keyEvents,
-      Instant startDate) {}
+      @NonNull String title,
+      @NonNull StorylineType type,
+      @NonNull String description,
+      @NonNull List<Wrestler> involvedWrestlers,
+      @NonNull List<String> keyEvents,
+      @NonNull Instant startDate) {}
 
-  public record StorylineSuggestion(String title, String description, StorylinePriority priority) {}
+  public record StorylineSuggestion(
+      @NonNull String title, @NonNull String description, @NonNull StorylinePriority priority) {}
 
   public record StorylineProgression(
       int totalMatches,
       int rivalryMatches,
       int storylineAdvancement,
       int dramaEvents,
-      List<String> progressionNotes) {}
+      @NonNull List<String> progressionNotes) {}
 
   public record StorylineContinuityHealth(
-      int healthScore, int activeRivalries, int recentDramaEvents, List<String> recommendations) {}
+      int healthScore,
+      int activeRivalries,
+      int recentDramaEvents,
+      @NonNull List<String> recommendations) {}
 
   public enum StorylineType {
     DEVELOPING_RIVALRY,

@@ -61,7 +61,7 @@ class NotionSyncIntegrationTest extends BaseTest {
     if (result.isSuccess()) {
       log.info(
           "✅ Successfully processed show types (fallback behavior when NotionHandler unavailable)");
-      assertThat(result.getEntityType()).isEqualTo("ShowTypes");
+      assertThat(result.getEntityType()).isEqualTo("Show Types");
       // When NotionHandler is unavailable, sync falls back to ensuring defaults exist
       assertThat(result.getSyncedCount()).isGreaterThanOrEqualTo(0);
     } else {
