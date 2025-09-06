@@ -14,7 +14,6 @@ import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -62,7 +61,7 @@ public class TeamSyncService extends BaseSyncService {
         return SyncResult.failure("Teams", "NotionHandler is not available for sync operations");
       }
 
-      List<TeamPage> teamPages = notionHandler.loadAllTeams();
+      List<TeamPage> teamPages = executeWithRateLimit(notionHandler::loadAllTeams);
 
       if (teamPages.isEmpty()) {
         progressTracker.addLogMessage(operationId, "⚠️ No teams found in Notion database", "WARN");
@@ -79,22 +78,14 @@ public class TeamSyncService extends BaseSyncService {
           operationId, String.format("📋 Found %d teams in Notion", teamPages.size()), "INFO");
 
       // Convert to DTOs
-      List<TeamDTO> teamDTOs = new ArrayList<>();
-      for (TeamPage teamPage : teamPages) {
-        try {
-          TeamDTO teamDTO = convertTeamPageToDTO(teamPage);
-          if (teamDTO != null) {
-            teamDTOs.add(teamDTO);
-          }
-        } catch (Exception e) {
-          String teamName = extractNameFromNotionPage(teamPage);
-          log.warn("Failed to convert team page to DTO: {}", teamName, e);
-          progressTracker.addLogMessage(
+      List<TeamDTO> teamDTOs =
+          processWithControlledParallelism(
+              teamPages,
+              this::convertTeamPageToDTO,
+              10, // Batch size
               operationId,
-              String.format("⚠️ Failed to convert team: %s - %s", teamName, e.getMessage()),
-              "WARN");
-        }
-      }
+              2, // Progress step
+              "Converted %d/%d teams");
 
       progressTracker.addLogMessage(
           operationId,
@@ -103,21 +94,18 @@ public class TeamSyncService extends BaseSyncService {
 
       // Save teams to database
       progressTracker.addLogMessage(operationId, "💾 Saving teams to database...", "INFO");
-      int savedCount = 0;
-      for (TeamDTO teamDTO : teamDTOs) {
-        try {
-          boolean saved = saveOrUpdateTeam(teamDTO);
-          if (saved) {
-            savedCount++;
-          }
-        } catch (Exception e) {
-          log.warn("Failed to save team: {}", teamDTO.getName(), e);
-          progressTracker.addLogMessage(
-              operationId,
-              String.format("⚠️ Failed to save team: %s - %s", teamDTO.getName(), e.getMessage()),
-              "WARN");
-        }
-      }
+      int savedCount =
+          (int)
+              processWithControlledParallelism(
+                      teamDTOs,
+                      this::saveOrUpdateTeam,
+                      10, // Batch size
+                      operationId,
+                      3, // Progress step
+                      "Saved %d/%d teams")
+                  .stream()
+                  .filter(java.util.Objects::nonNull)
+                  .count();
 
       // Complete progress tracking
       progressTracker.completeOperation(
@@ -342,10 +330,10 @@ public class TeamSyncService extends BaseSyncService {
   }
 
   /** Saves or updates a team in the database. */
-  private boolean saveOrUpdateTeam(TeamDTO dto) {
+  private Team saveOrUpdateTeam(TeamDTO dto) {
     if (dto == null || dto.getName() == null || dto.getName().trim().isEmpty()) {
       log.warn("Cannot save team: DTO is null or has no name");
-      return false;
+      return null;
     }
 
     try {
@@ -404,12 +392,12 @@ public class TeamSyncService extends BaseSyncService {
 
           teamRepository.saveAndFlush(existingTeam);
           log.info("✅ Updated team metadata: {}", dto.getName());
-          return true;
+          return existingTeam;
         } else {
           // Can't create new team without wrestlers
           log.warn(
               "Cannot create new team '{}' without resolved wrestler relations", dto.getName());
-          return false;
+          return null;
         }
       }
 
@@ -471,7 +459,7 @@ public class TeamSyncService extends BaseSyncService {
 
           teamRepository.saveAndFlush(existingTeam);
           log.info("✅ Updated team metadata: {}", dto.getName());
-          return true;
+          return existingTeam;
         } else {
           String missingWrestlers =
               (wrestler1 == null
@@ -486,7 +474,7 @@ public class TeamSyncService extends BaseSyncService {
               "⚠️ Skipping team '{}' due to missing required wrestlers: {}",
               dto.getName(),
               missingWrestlers);
-          return false;
+          return null;
         }
       }
 
@@ -523,7 +511,7 @@ public class TeamSyncService extends BaseSyncService {
 
         teamRepository.saveAndFlush(existingTeam);
         log.info("✅ Updated team: {}", dto.getName());
-        return true;
+        return existingTeam;
 
       } else {
         // Create new team using TeamService
@@ -575,10 +563,10 @@ public class TeamSyncService extends BaseSyncService {
           }
 
           log.info("✅ Created new team: {}", dto.getName());
-          return true;
+          return newTeam;
         } else {
           log.warn("Failed to create team '{}' - TeamService validation failed", dto.getName());
-          return false;
+          return null;
         }
       }
 

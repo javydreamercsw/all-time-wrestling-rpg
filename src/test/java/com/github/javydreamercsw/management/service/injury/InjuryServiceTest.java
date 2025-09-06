@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.injury;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,10 +17,12 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -27,17 +30,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("InjuryService Tests")
 class InjuryServiceTest {
-
   @Mock private InjuryRepository injuryRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private Clock clock;
+  @Mock private Random random;
+  @InjectMocks private InjuryService injuryService;
 
   private Clock fixedClock;
-  private InjuryService injuryService;
 
   @BeforeEach
   void setUp() {
     fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
-    injuryService = new InjuryService(injuryRepository, wrestlerRepository, fixedClock);
+    lenient().when(clock.instant()).thenReturn(fixedClock.instant());
+    lenient().when(clock.getZone()).thenReturn(fixedClock.getZone());
   }
 
   @Test

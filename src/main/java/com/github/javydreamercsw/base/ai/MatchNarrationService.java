@@ -112,6 +112,7 @@ public interface MatchNarrationService {
   class WrestlerContext {
     private String name;
     private String description;
+    private String team;
     private MoveSet moveSet;
     private List<String> feudsAndHeat;
     private List<String> recentMatches;
@@ -132,6 +133,14 @@ public interface MatchNarrationService {
 
     public void setDescription(String description) {
       this.description = description;
+    }
+
+    public String getTeam() {
+      return team;
+    }
+
+    public void setTeam(String team) {
+      this.team = team;
     }
 
     public MoveSet getMoveSet() {

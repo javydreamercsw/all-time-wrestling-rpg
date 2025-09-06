@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.team;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,8 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class TeamService {
 
-  private final TeamRepository teamRepository;
-  private final WrestlerRepository wrestlerRepository;
+  @Autowired private TeamRepository teamRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private FactionRepository factionRepository;
 
   // ==================== CRUD OPERATIONS ====================
 
@@ -103,7 +106,7 @@ public class TeamService {
     // Set faction if provided
     if (factionId != null) {
       // Note: We'd need FactionRepository here, but keeping it simple for now
-      // team.setFaction(factionRepository.findById(factionId).orElse(null));
+      team.setFaction(factionRepository.findById(factionId).orElse(null));
     }
 
     Team savedTeam = teamRepository.saveAndFlush(team);

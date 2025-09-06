@@ -8,7 +8,6 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -78,6 +77,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
             "ShowTemplates", "NotionHandler is not available for sync operations");
       }
 
+      rateLimitService.acquirePermit();
       List<ShowTemplatePage> templatePages = notionHandler.loadAllShowTemplates();
       log.info(
           "✅ Retrieved {} show templates in {}ms",
@@ -91,7 +91,8 @@ public class ShowTemplateSyncService extends BaseSyncService {
           String.format("Converting %d show templates to DTOs...", templatePages.size()));
       log.info("🔄 Converting show templates to DTOs...");
       long convertStart = System.currentTimeMillis();
-      List<ShowTemplateDTO> templateDTOs = convertShowTemplatePagesToDTOs(templatePages);
+      List<ShowTemplateDTO> templateDTOs =
+          convertShowTemplatePagesToDTOs(templatePages, operationId);
       log.info(
           "✅ Converted {} show templates in {}ms",
           templateDTOs.size(),
@@ -137,12 +138,15 @@ public class ShowTemplateSyncService extends BaseSyncService {
     }
   }
 
-  /** Converts ShowTemplatePage objects to ShowTemplateDTO objects. */
   private List<ShowTemplateDTO> convertShowTemplatePagesToDTOs(
-      @NonNull List<ShowTemplatePage> templatePages) {
-    return templatePages.parallelStream()
-        .map(this::convertShowTemplatePageToDTO)
-        .collect(Collectors.toList());
+      @NonNull List<ShowTemplatePage> templatePages, String operationId) {
+    return processWithControlledParallelism(
+        templatePages,
+        this::convertShowTemplatePageToDTO,
+        10, // Batch size
+        operationId,
+        2, // Progress step
+        "Converted %d/%d show templates");
   }
 
   /** Converts a single ShowTemplatePage to ShowTemplateDTO. */

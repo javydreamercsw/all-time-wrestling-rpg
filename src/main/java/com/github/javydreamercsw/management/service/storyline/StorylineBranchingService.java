@@ -6,8 +6,10 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,8 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class StorylineBranchingService {
 
-  private final StorylineBranchRepository storylineBranchRepository;
-  private final Clock clock;
+  @Autowired private final StorylineBranchRepository storylineBranchRepository;
+  @Autowired private final Clock clock;
 
   /** Get all storyline branches with pagination. */
   @Transactional(readOnly = true)
@@ -34,7 +36,7 @@ public class StorylineBranchingService {
 
   /** Get storyline branch by ID. */
   @Transactional(readOnly = true)
-  public Optional<StorylineBranch> getBranchById(Long id) {
+  public Optional<StorylineBranch> getBranchById(@NonNull Long id) {
     return storylineBranchRepository.findById(id);
   }
 
@@ -46,13 +48,16 @@ public class StorylineBranchingService {
 
   /** Get branches by type. */
   @Transactional(readOnly = true)
-  public List<StorylineBranch> getBranchesByType(StorylineBranchType branchType) {
+  public List<StorylineBranch> getBranchesByType(@NonNull StorylineBranchType branchType) {
     return storylineBranchRepository.findByIsActiveTrueAndBranchType(branchType);
   }
 
   /** Create a new storyline branch. */
   public Optional<StorylineBranch> createBranch(
-      String name, String description, StorylineBranchType branchType, int priority) {
+      @NonNull String name,
+      @NonNull String description,
+      @NonNull StorylineBranchType branchType,
+      int priority) {
     StorylineBranch branch = new StorylineBranch();
     branch.setName(name);
     branch.setDescription(description);
@@ -74,11 +79,11 @@ public class StorylineBranchingService {
 
   /** Add a condition to a storyline branch. */
   public Optional<StorylineBranch> addCondition(
-      Long branchId,
-      String conditionType,
-      String conditionKey,
-      String conditionValue,
-      String description) {
+      @NonNull Long branchId,
+      @NonNull String conditionType,
+      @NonNull String conditionKey,
+      @NonNull String conditionValue,
+      @NonNull String description) {
     Optional<StorylineBranch> branchOpt = storylineBranchRepository.findById(branchId);
 
     if (branchOpt.isEmpty()) {
@@ -105,11 +110,11 @@ public class StorylineBranchingService {
 
   /** Add an effect to a storyline branch. */
   public Optional<StorylineBranch> addEffect(
-      Long branchId,
-      String effectType,
-      String effectKey,
-      String effectValue,
-      String description,
+      @NonNull Long branchId,
+      @NonNull String effectType,
+      @NonNull String effectKey,
+      @NonNull String effectValue,
+      @NonNull String description,
       int executionOrder) {
     Optional<StorylineBranch> branchOpt = storylineBranchRepository.findById(branchId);
 
@@ -155,7 +160,8 @@ public class StorylineBranchingService {
   }
 
   /** Activate a storyline branch. */
-  public Optional<StorylineBranch> activateBranch(Long branchId, MatchResult triggeringMatch) {
+  public Optional<StorylineBranch> activateBranch(
+      @NonNull Long branchId, MatchResult triggeringMatch) {
     Optional<StorylineBranch> branchOpt = storylineBranchRepository.findById(branchId);
 
     if (branchOpt.isEmpty()) {
@@ -186,7 +192,7 @@ public class StorylineBranchingService {
   }
 
   /** Complete a storyline branch. */
-  public Optional<StorylineBranch> completeBranch(Long branchId, String reason) {
+  public Optional<StorylineBranch> completeBranch(@NonNull Long branchId, @NonNull String reason) {
     Optional<StorylineBranch> branchOpt = storylineBranchRepository.findById(branchId);
 
     if (branchOpt.isEmpty()) {
@@ -208,7 +214,7 @@ public class StorylineBranchingService {
   }
 
   /** Process match outcome for storyline branching. */
-  public void processMatchOutcome(MatchResult matchResult) {
+  public void processMatchOutcome(@NonNull MatchResult matchResult) {
     log.info("Processing match outcome for storyline branching: Match ID {}", matchResult.getId());
 
     // Get all match outcome branches
@@ -227,7 +233,7 @@ public class StorylineBranchingService {
   }
 
   /** Process rivalry escalation branches. */
-  private void processRivalryEscalationBranches(MatchResult matchResult) {
+  private void processRivalryEscalationBranches(@NonNull MatchResult matchResult) {
     List<StorylineBranch> rivalryBranches =
         getBranchesByType(StorylineBranchType.RIVALRY_ESCALATION);
 
@@ -239,7 +245,7 @@ public class StorylineBranchingService {
   }
 
   /** Process title change branches. */
-  private void processTitleChangeBranches(MatchResult matchResult) {
+  private void processTitleChangeBranches(@NonNull MatchResult matchResult) {
     if (!matchResult.getIsTitleMatch()) {
       return; // Not a title match
     }

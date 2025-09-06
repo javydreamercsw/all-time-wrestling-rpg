@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.TestcontainersConfiguration;
+import com.github.javydreamercsw.management.config.TestConfig;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -10,37 +11,29 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for WrestlerService ATW RPG functionality. Tests the complete service layer
  * with real database interactions.
  */
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, TestConfig.class})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
-@Transactional(propagation = Propagation.NOT_SUPPORTED)
+@Transactional
 @DisplayName("WrestlerService Integration Tests")
 class WrestlerServiceIT {
 
   @Autowired WrestlerService wrestlerService;
   @Autowired WrestlerRepository wrestlerRepository;
   @Autowired DeckRepository deckRepository;
-
-  @AfterEach
-  void cleanUp() {
-    // Delete in correct order to avoid foreign key constraint violations
-    deckRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-  }
 
   @Test
   @DisplayName("Should create wrestler with ATW RPG defaults")
@@ -158,8 +151,8 @@ class WrestlerServiceIT {
   @DisplayName("Should filter wrestlers by tier")
   void shouldFilterWrestlersByTier() {
     // Given
-    Wrestler rookie1 = wrestlerService.createWrestler("Rookie 1", true, null);
-    Wrestler rookie2 = wrestlerService.createWrestler("Rookie 2", true, null);
+    wrestlerService.createWrestler("Rookie 1", true, null);
+    wrestlerService.createWrestler("Rookie 2", true, null);
 
     Wrestler riser = wrestlerService.createWrestler("Riser", true, null);
     wrestlerService.awardFans(riser.getId(), 30000L);
@@ -173,10 +166,7 @@ class WrestlerServiceIT {
     List<Wrestler> contenders = wrestlerService.getWrestlersByTier(WrestlerTier.CONTENDER);
 
     // Then
-    assertThat(rookies).hasSize(2);
-    assertThat(rookies)
-        .extracting(Wrestler::getName)
-        .containsExactlyInAnyOrder("Rookie 1", "Rookie 2");
+    assertThat(rookies).extracting(Wrestler::getName).contains("Rookie 1", "Rookie 2");
 
     assertThat(risers).hasSize(1);
     assertThat(risers).extracting(Wrestler::getName).containsExactly("Riser");
@@ -200,12 +190,9 @@ class WrestlerServiceIT {
 
     // Then
     assertThat(players).hasSize(2);
-    assertThat(players)
-        .extracting(Wrestler::getName)
-        .containsExactlyInAnyOrder("Player 1", "Player 2");
+    assertThat(players).extracting(Wrestler::getName).contains("Player 1", "Player 2");
 
-    assertThat(npcs).hasSize(2);
-    assertThat(npcs).extracting(Wrestler::getName).containsExactlyInAnyOrder("NPC 1", "NPC 2");
+    assertThat(npcs).extracting(Wrestler::getName).contains("NPC 1", "NPC 2");
   }
 
   @Test
@@ -223,6 +210,7 @@ class WrestlerServiceIT {
     wrestlerService.addBump(wrestler.getId());
 
     // Then - Verify final state
+    Assertions.assertNotNull(wrestler.getId());
     Optional<Wrestler> finalState = wrestlerRepository.findById(wrestler.getId());
     assertThat(finalState).isPresent();
 

@@ -6,6 +6,7 @@ import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_S
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
@@ -13,6 +14,7 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
@@ -23,15 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class WrestlerService {
 
-  private final WrestlerRepository wrestlerRepository;
-  private final Clock clock;
-  private final InjuryService injuryService;
-
-  WrestlerService(WrestlerRepository wrestlerRepository, Clock clock, InjuryService injuryService) {
-    this.wrestlerRepository = wrestlerRepository;
-    this.clock = clock;
-    this.injuryService = injuryService;
-  }
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private Clock clock;
+  @Autowired private InjuryService injuryService;
 
   public void createCard(@NonNull String name) {
     Wrestler wrestler = new Wrestler();
@@ -49,7 +45,7 @@ public class WrestlerService {
     save(wrestler);
   }
 
-  public List<Wrestler> list(Pageable pageable) {
+  public List<Wrestler> list(@NonNull Pageable pageable) {
     return wrestlerRepository.findAllBy(pageable).toList();
   }
 
@@ -110,7 +106,7 @@ public class WrestlerService {
    * @param fanGain The number of fans to award (can be negative for losses)
    * @return The updated wrestler
    */
-  public Optional<Wrestler> awardFans(Long wrestlerId, Long fanGain) {
+  public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fanGain) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
@@ -126,7 +122,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
-  public Optional<Wrestler> addBump(Long wrestlerId) {
+  public Optional<Wrestler> addBump(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
@@ -161,7 +157,7 @@ public class WrestlerService {
    * @param titleTier The title tier to check eligibility for
    * @return List of eligible wrestlers
    */
-  public List<Wrestler> getEligibleWrestlers(TitleTier titleTier) {
+  public List<Wrestler> getEligibleWrestlers(@NonNull TitleTier titleTier) {
     return wrestlerRepository.findAll().stream()
         .filter(wrestler -> wrestler.isEligibleForTitle(titleTier))
         .toList();
@@ -246,5 +242,9 @@ public class WrestlerService {
     wrestler.setDescription(description);
 
     return save(wrestler);
+  }
+
+  public List<WrestlerDTO> findAllAsDTO() {
+    return findAll().stream().map(WrestlerDTO::new).toList();
   }
 }

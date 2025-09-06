@@ -13,6 +13,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import lombok.Getter;
+import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
@@ -23,42 +25,24 @@ public class ShowType extends AbstractEntity<Long> {
   @Column(name = "show_type_id")
   private Long id;
 
+  @Setter
+  @Getter
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;
 
+  @Setter
+  @Getter
   @Column(name = "description", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String description;
 
+  @Setter
+  @Getter
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
   @Override
   public @Nullable Long getId() {
     return id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public void setCreationDate(Instant creationDate) {
-    this.creationDate = creationDate;
-  }
-
-  public Instant getCreationDate() {
-    return creationDate;
   }
 
   /** Ensure default values before persisting. */

@@ -31,7 +31,7 @@ public class MatchTeam {
       throw new IllegalArgumentException("Team must have at least one member");
     }
     this.members = new ArrayList<>(wrestlers);
-    this.teamName = teamName != null ? teamName : generateTeamName(wrestlers);
+    this.teamName = teamName != null ? teamName : generateTeamName();
   }
 
   /** Create a team with multiple wrestlers (auto-generated team name). */
@@ -40,18 +40,19 @@ public class MatchTeam {
   }
 
   /** Generate a team name from wrestler names. */
-  private String generateTeamName(List<Wrestler> wrestlers) {
-    if (wrestlers.size() == 1) {
-      return wrestlers.get(0).getName();
-    } else if (wrestlers.size() == 2) {
-      return wrestlers.get(0).getName() + " & " + wrestlers.get(1).getName();
+  private String generateTeamName() {
+    if (members.size() == 1) {
+      return members.get(0).getName();
+    } else if (members.size() == 2) {
+      return members.get(0).getName() + " & " + members.get(1).getName();
     } else {
-      return wrestlers.get(0).getName() + " & " + (wrestlers.size() - 1) + " others";
+      return "the team of " + getMemberNames();
     }
   }
 
   /** Calculate team statistics for match resolution. */
-  public void calculateTeamStats(NPCMatchResolutionService.TeamStatsCalculator calculator) {
+  public void calculateTeamStats(
+      @NonNull NPCMatchResolutionService.TeamStatsCalculator calculator) {
     this.totalWeight = calculator.calculateTeamWeight(this);
     this.averageTierBonus = calculator.calculateAverageTierBonus(this);
     this.totalHealthPenalty = calculator.calculateTeamHealthPenalty(this);
@@ -88,7 +89,7 @@ public class MatchTeam {
   }
 
   /** Check if the team contains a specific wrestler. */
-  public boolean containsWrestler(Wrestler wrestler) {
+  public boolean containsWrestler(@NonNull Wrestler wrestler) {
     return members.contains(wrestler);
   }
 

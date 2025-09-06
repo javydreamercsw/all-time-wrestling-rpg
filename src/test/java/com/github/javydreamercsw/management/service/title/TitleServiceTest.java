@@ -12,7 +12,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,20 +30,22 @@ class TitleServiceTest {
 
   @Mock private TitleRepository titleRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private Clock clock;
 
-  private Clock fixedClock;
-  private TitleService titleService;
+  @InjectMocks private TitleService titleService;
+
+  private final Instant fixedInstant = Instant.parse("2024-01-01T00:00:00Z");
 
   @BeforeEach
   void setUp() {
-    fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
-    titleService = new TitleService(titleRepository, wrestlerRepository, fixedClock);
+    // No general setup needed, stubbing moved to specific tests.
   }
 
   @Test
   @DisplayName("Should create new title")
   void shouldCreateNewTitle() {
     // Given
+    when(clock.instant()).thenReturn(fixedInstant);
     when(titleRepository.saveAndFlush(any(Title.class)))
         .thenAnswer(
             invocation -> {
@@ -316,7 +318,7 @@ class TitleServiceTest {
     title.setTier(tier);
     title.setIsActive(true);
     title.setIsVacant(true);
-    title.setCreationDate(Instant.now(fixedClock));
+    title.setCreationDate(fixedInstant);
     return title;
   }
 

@@ -23,6 +23,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 17
@@ -36,7 +39,7 @@ jobs:
       run: mvn spotless:apply
 
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B package -DskipTests=true --file pom.xml
 
     - name: Run tests with coverage
       run: mvn clean verify -Pcoverage

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -301,7 +302,7 @@ public class SyncValidationService {
 
   /** Result of a validation operation. */
   public static class ValidationResult {
-    private final boolean valid;
+    @Getter private final boolean valid;
     private final List<String> errors;
     private final List<String> warnings;
 
@@ -309,10 +310,6 @@ public class SyncValidationService {
       this.valid = valid;
       this.errors = new ArrayList<>(errors);
       this.warnings = new ArrayList<>(warnings);
-    }
-
-    public boolean isValid() {
-      return valid;
     }
 
     public List<String> getErrors() {
