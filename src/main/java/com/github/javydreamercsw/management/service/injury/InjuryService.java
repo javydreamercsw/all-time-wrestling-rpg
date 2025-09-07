@@ -60,24 +60,27 @@ public class InjuryService {
    * Create injury from bump system (3 bumps = 1 injury). This method should only be called when an
    * injury should be created (bumps already reset by Wrestler.addBump()).
    */
-  public Optional<Injury> createInjuryFromBumps(Long wrestlerId) {
-    return wrestlerRepository
-        .findById(wrestlerId)
-        .map(
-            wrestler -> {
-              // Create injury with severity based on wrestler tier
-              InjurySeverity severity = getRandomInjurySeverityForWrestler(wrestler);
-              String injuryName = generateInjuryName(severity);
-              String description = generateInjuryDescription(severity);
+  public Injury createInjuryFromBumps(Wrestler wrestler) {
+    InjurySeverity severity = getRandomInjurySeverityForWrestler(wrestler);
+    String injuryName = generateInjuryName(severity);
+    String description = generateInjuryDescription(severity);
 
-              return createInjury(
-                      wrestlerId,
-                      injuryName,
-                      description,
-                      severity,
-                      "Generated from bump accumulation (tier: " + wrestler.getTier().name() + ")")
-                  .orElse(null);
-            });
+    Injury injury = new Injury();
+    injury.setWrestler(wrestler);
+    injury.setName(injuryName);
+    injury.setDescription(description);
+    injury.setSeverity(severity);
+    injury.setHealthPenalty(severity.getRandomHealthPenalty());
+    injury.setHealingCost(severity.getBaseHealingCost());
+    injury.setIsActive(true);
+    injury.setInjuryDate(Instant.now(clock));
+    injury.setInjuryNotes(
+        "Generated from bump accumulation (tier: " + wrestler.getTier().name() + ")");
+    injury.setCreationDate(Instant.now(clock));
+
+    wrestler.getInjuries().add(injury);
+
+    return injuryRepository.saveAndFlush(injury);
   }
 
   /** Attempt to heal an injury. */

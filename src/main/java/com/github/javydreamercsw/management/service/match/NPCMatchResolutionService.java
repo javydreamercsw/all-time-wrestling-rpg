@@ -64,20 +64,16 @@ public class NPCMatchResolutionService {
         show.getName(),
         finalStipulation);
 
-    // Refresh all wrestlers from database to ensure lazy collections are loaded
-    MatchTeam freshTeam1 = refreshTeam(team1);
-    MatchTeam freshTeam2 = refreshTeam(team2);
-
     // Calculate team statistics
     TeamStatsCalculator calculator = new TeamStatsCalculator();
-    freshTeam1.calculateTeamStats(calculator);
-    freshTeam2.calculateTeamStats(calculator);
+    team1.calculateTeamStats(calculator);
+    team2.calculateTeamStats(calculator);
 
     // Calculate win probabilities based on team stats
-    TeamMatchProbabilities probabilities = calculateTeamMatchProbabilities(freshTeam1, freshTeam2);
+    TeamMatchProbabilities probabilities = calculateTeamMatchProbabilities(team1, team2);
 
     // Determine winning team using weighted random selection
-    MatchTeam winningTeam = determineWinningTeam(freshTeam1, freshTeam2, probabilities);
+    MatchTeam winningTeam = determineWinningTeam(team1, team2, probabilities);
 
     // Create match
     Match result = new Match();
@@ -88,12 +84,14 @@ public class NPCMatchResolutionService {
     result.setIsNpcGenerated(true);
 
     // Add all participants from both teams
-    addTeamParticipants(result, freshTeam1);
-    addTeamParticipants(result, freshTeam2);
-    result.setWinner(winningTeam.getPrimaryWrestler());
+    addTeamParticipants(result, team1);
+    addTeamParticipants(result, team2);
+    wrestlerRepository
+        .findById(winningTeam.getPrimaryWrestler().getId())
+        .ifPresent(result::setWinner);
 
     // Generate match details based on team composition
-    generateTeamMatchDetails(result, freshTeam1, freshTeam2, probabilities);
+    generateTeamMatchDetails(result, team1, team2, probabilities);
 
     // Save and return
     Match savedResult = matchRepository.save(result);
@@ -101,8 +99,8 @@ public class NPCMatchResolutionService {
     log.info(
         "Team match resolved: {} defeated {} ({}% probability)",
         winningTeam.getTeamName(),
-        winningTeam.equals(freshTeam1) ? freshTeam2.getTeamName() : freshTeam1.getTeamName(),
-        winningTeam.equals(freshTeam1)
+        winningTeam.equals(team1) ? team2.getTeamName() : team1.getTeamName(),
+        winningTeam.equals(team1)
             ? probabilities.team1WinProbability()
             : probabilities.team2WinProbability());
 
@@ -141,15 +139,12 @@ public class NPCMatchResolutionService {
         finalStipulation,
         teams.stream().map(MatchTeam::getTeamName).toList());
 
-    // Refresh all teams from database
-    List<MatchTeam> freshTeams = teams.stream().map(this::refreshTeam).toList();
-
     // Calculate team statistics
     TeamStatsCalculator calculator = new TeamStatsCalculator();
-    freshTeams.forEach(team -> team.calculateTeamStats(calculator));
+    teams.forEach(team -> team.calculateTeamStats(calculator));
 
     // Determine winning team using weighted random selection
-    MatchTeam winningTeam = determineMultiTeamWinner(freshTeams);
+    MatchTeam winningTeam = determineMultiTeamWinner(teams);
 
     // Create match
     Match result = new Match();
@@ -160,13 +155,15 @@ public class NPCMatchResolutionService {
     result.setIsNpcGenerated(true);
 
     // Add all participants from all teams
-    for (MatchTeam team : freshTeams) {
+    for (MatchTeam team : teams) {
       addTeamParticipants(result, team);
     }
-    result.setWinner(winningTeam.getPrimaryWrestler());
+    wrestlerRepository
+        .findById(winningTeam.getPrimaryWrestler().getId())
+        .ifPresent(result::setWinner);
 
     // Generate match details based on team composition
-    generateMultiTeamMatchDetails(result, freshTeams);
+    generateMultiTeamMatchDetails(result, teams);
 
     // Save and return
     Match savedResult = matchRepository.save(result);
@@ -174,7 +171,7 @@ public class NPCMatchResolutionService {
     log.info(
         "Multi-team match resolved: {} defeated {} other teams",
         winningTeam.getTeamName(),
-        freshTeams.size() - 1);
+        teams.size() - 1);
 
     return savedResult;
   }
@@ -205,19 +202,15 @@ public class NPCMatchResolutionService {
     return penalty;
   }
 
-  /** Refresh a team by reloading all wrestlers from database. */
-  private MatchTeam refreshTeam(@NonNull MatchTeam team) {
-    List<Wrestler> refreshedWrestlers =
-        team.getMembers().stream()
-            .map(w -> wrestlerRepository.findById(w.getId()).orElse(w))
-            .toList();
-    return new MatchTeam(refreshedWrestlers, team.getTeamName());
-  }
-
   /** Add all team members as participants in the match. */
   private void addTeamParticipants(@NonNull Match result, @NonNull MatchTeam team) {
     for (Wrestler wrestler : team.getMembers()) {
-      result.addParticipant(wrestler);
+      wrestlerRepository
+          .findById(wrestler.getId())
+          .ifPresent(
+              managedWrestler -> {
+                result.addParticipant(managedWrestler);
+              });
     }
   }
 

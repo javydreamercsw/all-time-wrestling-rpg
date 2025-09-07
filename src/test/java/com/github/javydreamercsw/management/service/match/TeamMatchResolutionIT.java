@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.match;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.TestcontainersConfiguration;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.match.Match;
@@ -42,6 +43,7 @@ class TeamMatchResolutionIT {
   @Autowired ShowRepository showRepository;
   @Autowired ShowTypeRepository showTypeRepository;
   @Autowired MatchRuleService matchRuleService;
+  @Autowired DeckRepository deckRepository; // Autowire DeckRepository
 
   private Wrestler rookie1;
   private Wrestler rookie2;
@@ -71,14 +73,9 @@ class TeamMatchResolutionIT {
     contender1 = wrestlerRepository.findById(contender1.getId()).orElseThrow();
     contender2 = wrestlerRepository.findById(contender2.getId()).orElseThrow();
 
-    // Create match types
-    tagTeamMatchType = new MatchType();
-    tagTeamMatchType.setName("Tag Team Match");
-    tagTeamMatchType = matchTypeRepository.save(tagTeamMatchType);
-
-    handicapMatchType = new MatchType();
-    handicapMatchType.setName("Handicap Match");
-    handicapMatchType = matchTypeRepository.save(handicapMatchType);
+    // Create match types (rely on DataInitializer for these)
+    tagTeamMatchType = matchTypeRepository.findByName("Tag Team Match").orElseThrow();
+    handicapMatchType = matchTypeRepository.findByName("Handicap Match").orElseThrow();
 
     // Create match rules for testing
     matchRuleService.createOrUpdateRule(
@@ -100,6 +97,7 @@ class TeamMatchResolutionIT {
   @AfterEach
   void cleanUp() {
     matchRepository.deleteAll();
+    deckRepository.deleteAll(); // Delete decks before wrestlers
     wrestlerRepository.deleteAll();
     matchTypeRepository.deleteAll();
     showRepository.deleteAll();
