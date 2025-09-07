@@ -6,8 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.javydreamercsw.TestcontainersConfiguration;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.match.Match;
+import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -38,7 +38,7 @@ class NPCMatchResolutionServiceIT {
   @Autowired NPCMatchResolutionService npcMatchResolutionService;
   @Autowired WrestlerService wrestlerService;
   @Autowired WrestlerRepository wrestlerRepository;
-  @Autowired MatchResultRepository matchResultRepository;
+  @Autowired MatchRepository matchRepository;
   @Autowired MatchTypeRepository matchTypeRepository;
   @Autowired ShowRepository showRepository;
   @Autowired ShowTypeRepository showTypeRepository;
@@ -92,7 +92,7 @@ class NPCMatchResolutionServiceIT {
 
   @AfterEach
   void cleanUp() {
-    matchResultRepository.deleteAll();
+    matchRepository.deleteAll();
     wrestlerRepository.deleteAll();
     matchTypeRepository.deleteAll();
     showRepository.deleteAll();
@@ -105,7 +105,7 @@ class NPCMatchResolutionServiceIT {
     // When
     MatchTeam team1 = new MatchTeam(rookie1);
     MatchTeam team2 = new MatchTeam(rookie2);
-    MatchResult result =
+    Match result =
         npcMatchResolutionService.resolveTeamMatch(
             team1, team2, singlesMatchType, testShow, "Standard Match");
 
@@ -136,7 +136,7 @@ class NPCMatchResolutionServiceIT {
     for (int i = 0; i < totalMatches; i++) {
       MatchTeam team1 = new MatchTeam(rookie1);
       MatchTeam team2 = new MatchTeam(contender);
-      MatchResult result =
+      Match result =
           npcMatchResolutionService.resolveTeamMatch(
               team1, team2, singlesMatchType, testShow, "Test Match " + i);
 
@@ -158,7 +158,7 @@ class NPCMatchResolutionServiceIT {
     // When
     List<MatchTeam> teams =
         Arrays.asList(new MatchTeam(rookie1), new MatchTeam(rookie2), new MatchTeam(contender));
-    MatchResult result =
+    Match result =
         npcMatchResolutionService.resolveMultiTeamMatch(
             teams, tripleThreadType, testShow, "Triple Threat Match");
 
@@ -209,7 +209,7 @@ class NPCMatchResolutionServiceIT {
     for (int i = 0; i < totalMatches; i++) {
       MatchTeam team1 = new MatchTeam(rookie1);
       MatchTeam team2 = new MatchTeam(rookie2);
-      MatchResult result =
+      Match result =
           npcMatchResolutionService.resolveTeamMatch(
               team1, team2, singlesMatchType, testShow, "Injury Test " + i);
 
@@ -234,7 +234,7 @@ class NPCMatchResolutionServiceIT {
     // When
     MatchTeam team1 = new MatchTeam(rookie1);
     MatchTeam team2 = new MatchTeam(rookie2);
-    MatchResult result =
+    Match result =
         npcMatchResolutionService.resolveTeamMatch(
             team1, team2, singlesMatchType, testShow, stipulation);
 
@@ -242,7 +242,7 @@ class NPCMatchResolutionServiceIT {
     assertThat(result.getMatchRulesAsString()).contains("Steel Cage");
 
     // Verify persistence
-    MatchResult savedResult = matchResultRepository.findById(result.getId()).orElseThrow();
+    Match savedResult = matchRepository.findById(result.getId()).orElseThrow();
     assertThat(savedResult.getMatchRulesAsString()).contains("Steel Cage");
   }
 
@@ -253,7 +253,7 @@ class NPCMatchResolutionServiceIT {
     for (int i = 0; i < 10; i++) {
       MatchTeam team1 = new MatchTeam(rookie1);
       MatchTeam team2 = new MatchTeam(contender);
-      MatchResult result =
+      Match result =
           npcMatchResolutionService.resolveTeamMatch(
               team1, team2, singlesMatchType, testShow, "Standard Match");
 

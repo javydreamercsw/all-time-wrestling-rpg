@@ -32,8 +32,7 @@ public class ShowPlanningService {
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
     Instant lastMonth = showDate.minus(30, ChronoUnit.DAYS);
     log.debug("Getting matches between {} and {}", lastMonth, showDate);
-    List<Match> lastMonthMatches =
-        matchRepository.findByMatchDateBetween(lastMonth, showDate);
+    List<Match> lastMonthMatches = matchRepository.findByMatchDateBetween(lastMonth, showDate);
     log.debug("Found {} matches", lastMonthMatches.size());
     context.setLastMonthMatches(lastMonthMatches);
 

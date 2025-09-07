@@ -76,9 +76,7 @@ class MatchServiceTest {
     when(matchRepository.save(any(Match.class))).thenReturn(testMatch);
 
     // When
-    Match result =
-        matchService.createMatch(
-            testShow, testMatchType, testDate, false);
+    Match result = matchService.createMatch(testShow, testMatchType, testDate, false);
 
     // Then
     assertThat(result).isNotNull();
@@ -175,8 +173,7 @@ class MatchServiceTest {
     when(matchRepository.findByWrestlerParticipation(testWinner)).thenReturn(matches);
 
     // When
-    List<Match> result =
-        matchService.getMatchesByWrestlerParticipation(testWinner);
+    List<Match> result = matchService.getMatchesByWrestlerParticipation(testWinner);
 
     // Then
     assertThat(result).hasSize(1);
@@ -317,8 +314,7 @@ class MatchServiceTest {
   @DisplayName("Should find match by external ID")
   void shouldFindMatchByExternalId() {
     // Given
-    when(matchRepository.findByExternalId("notion-123"))
-        .thenReturn(Optional.of(testMatch));
+    when(matchRepository.findByExternalId("notion-123")).thenReturn(Optional.of(testMatch));
 
     // When
     Optional<Match> result = matchService.findByExternalId("notion-123");

@@ -551,8 +551,7 @@ public class ShowBookingService {
             .filter(segment -> !promoBookingService.isPromoSegment(segment))
             .toList();
 
-    List<Match> promos =
-        allSegments.stream().filter(promoBookingService::isPromoSegment).toList();
+    List<Match> promos = allSegments.stream().filter(promoBookingService::isPromoSegment).toList();
 
     int totalMatches = matches.size();
     int totalPromos = promos.size();

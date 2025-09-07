@@ -104,14 +104,13 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
   @Override
   public void setParameter(BeforeEvent event, Long showId) {
     // Detect referrer from query parameters or referer header
-    String refererParam =
+    this.referrer =
         event
             .getLocation()
             .getQueryParameters()
             .getParameters()
-            .getOrDefault("ref", java.util.List.of("shows"))
+            .getOrDefault("ref", List.of("shows"))
             .get(0);
-    this.referrer = refererParam;
 
     if (showId != null) {
       loadShow(showId);
@@ -232,7 +231,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       HorizontalLayout dateLayout =
           createDetailRow(
               "Show Date:",
-              show.getShowDate().format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy"))); 
+              show.getShowDate().format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")));
       detailsLayout.add(dateLayout);
     } else {
       HorizontalLayout dateLayout = createDetailRow("Show Date:", "Not scheduled");
@@ -427,7 +426,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     grid.addColumn(
             match -> {
               List<String> wrestlerNames =
-                  match.getWrestlers().stream().map(wrestler -> wrestler.getName()).toList();
+                  match.getWrestlers().stream().map(Wrestler::getName).toList();
               return String.join(" vs ", wrestlerNames);
             })
         .setHeader("Participants")
@@ -573,7 +572,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
     if (wrestlers == null || wrestlers.isEmpty()) {
       Notification.show("Please select at least one wrestler", 3000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.Lumo_ERROR);
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return false;
     }
 
@@ -605,9 +604,9 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       for (Wrestler wrestler : wrestlers) {
         match.addParticipant(wrestler);
       }
-      
-      if(winner != null){
-          match.setWinner(winner);
+
+      if (winner != null) {
+        match.setWinner(winner);
       }
 
       // Save the match
