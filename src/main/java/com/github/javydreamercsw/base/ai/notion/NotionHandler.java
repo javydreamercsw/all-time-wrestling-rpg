@@ -1808,6 +1808,13 @@ public class NotionHandler {
         extractAndLogProperties(pageData, entityName, entityType, resolveRelationships);
     setRawProperties(entityPage, processedProperties);
 
+    // If entity is TeamPage, set typed properties using original PageProperty map
+    if (entityPage instanceof TeamPage teamPage) {
+        Map<String, notion.api.v1.model.pages.PageProperty> notionProperties = pageData.getProperties();
+      TeamPage.NotionProperties props = mapPagePropertiesToNotionProperties(notionProperties);
+      teamPage.setProperties(props);
+    }
+
     log.debug("Mapped {}Page for: {} with ID: {}", entityType, entityName, pageData.getId());
 
     return entityPage;
@@ -2007,5 +2014,53 @@ public class NotionHandler {
       log.error("Error creating Notion client for match extraction: {}", e.getMessage());
       return null;
     }
+  }
+
+  /** Maps raw properties to TeamPage.NotionProperties. */
+  private TeamPage.NotionProperties mapPagePropertiesToNotionProperties(Map<String, notion.api.v1.model.pages.PageProperty> notionProperties) {
+    TeamPage.NotionProperties props = new TeamPage.NotionProperties();
+    if (notionProperties == null) return props;
+    if (notionProperties.containsKey("Member 1")) props.setMembers(toProperty(notionProperties.get("Member 1")));
+    if (notionProperties.containsKey("Leader")) props.setLeader(toProperty(notionProperties.get("Leader")));
+    if (notionProperties.containsKey("TeamType")) props.setTeamType(toProperty(notionProperties.get("TeamType")));
+    if (notionProperties.containsKey("Status")) props.setStatus(toProperty(notionProperties.get("Status")));
+    if (notionProperties.containsKey("FormedDate")) props.setFormedDate(toProperty(notionProperties.get("FormedDate")));
+    if (notionProperties.containsKey("DisbandedDate")) props.setDisbandedDate(toProperty(notionProperties.get("DisbandedDate")));
+    if (notionProperties.containsKey("Faction")) props.setFaction(toProperty(notionProperties.get("Faction")));
+    return props;
+  }
+
+  /**
+   * Converts a Notion PageProperty to a TeamPage.Property.
+   */
+  private TeamPage.Property toProperty(notion.api.v1.model.pages.PageProperty pageProperty) {
+    if (pageProperty == null) return null;
+    TeamPage.Property property = new TeamPage.Property();
+    property.setId(pageProperty.getId());
+    property.setType(pageProperty.getType() != null ? pageProperty.getType().getValue() : null);
+    property.setTitle(pageProperty.getTitle());
+    property.setRich_text(pageProperty.getRichText());
+    property.setDate(pageProperty.getDate());
+    property.setSelect(pageProperty.getSelect());
+    // Map relations
+    if (pageProperty.getRelation() != null) {
+      List<TeamPage.Relation> relations = new java.util.ArrayList<>();
+      pageProperty.getRelation().forEach(ref -> {
+        TeamPage.Relation rel = new TeamPage.Relation();
+        rel.setId(ref.getId());
+        relations.add(rel);
+      });
+      property.setRelation(relations);
+    }
+    property.setPeople(pageProperty.getPeople());
+    property.setNumber(pageProperty.getNumber());
+    property.setCreated_time(pageProperty.getCreatedTime());
+    property.setLast_edited_time(pageProperty.getLastEditedTime());
+    property.setCreated_by(pageProperty.getCreatedBy());
+    property.setLast_edited_by(pageProperty.getLastEditedBy());
+    property.setUnique_id(pageProperty.getUniqueId());
+    property.setFormula(pageProperty.getFormula());
+    property.setHas_more(pageProperty.getHasMore());
+    return property;
   }
 }
