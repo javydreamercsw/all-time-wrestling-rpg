@@ -38,7 +38,7 @@ class InjurySyncServiceRefactoredTest extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
-  @Mock private NotionSyncProperties syncProperties;
+  private NotionSyncProperties syncProperties; // Declare without @Mock
   @Mock private InjuryTypeService injuryTypeService;
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private SyncProgressTracker progressTracker;
@@ -47,6 +47,12 @@ class InjurySyncServiceRefactoredTest extends BaseTest {
 
   private InjurySyncService injurySyncService;
   private ObjectMapper realObjectMapper;
+
+  // Constructor to configure the mock before setUp()
+  public InjurySyncServiceRefactoredTest() {
+    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+  }
 
   @BeforeEach
   void setUp() {

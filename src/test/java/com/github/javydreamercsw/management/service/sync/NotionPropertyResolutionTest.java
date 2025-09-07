@@ -21,8 +21,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -38,7 +38,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @DisplayName("Notion Property Resolution Tests")
 class NotionPropertyResolutionTest {
 
-  @InjectMocks private NotionSyncService notionSyncService;
+  @Autowired private NotionSyncService notionSyncService; // Changed from @InjectMocks
+
+  // REMOVED: @Mock private NotionSyncProperties notionSyncProperties;
 
   @MockitoBean private NotionHandler notionHandler;
   @MockitoBean private ShowService showService;

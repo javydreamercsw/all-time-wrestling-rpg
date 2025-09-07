@@ -37,6 +37,7 @@ public class MatchSyncService extends BaseSyncService {
   @Autowired private ShowService showService;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private MatchTypeService matchTypeService;
+  @Autowired private ShowSyncService showSyncService;
 
   public MatchSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -195,10 +196,29 @@ public class MatchSyncService extends BaseSyncService {
         Optional<Show> showOpt = showService.findByExternalId(matchDTO.getShowExternalId());
         if (showOpt.isEmpty()) {
           log.warn(
-              "Skipping match {} as show '{}' was not found.",
-              matchDTO.getName(),
-              matchDTO.getShowName());
-          continue;
+              "Show '{}' for match {} was not found locally. Attempting to sync it.",
+              matchDTO.getShowName(),
+              matchDTO.getName());
+          // Attempt to sync the missing show
+          SyncResult showSyncResult = showSyncService.syncShow(matchDTO.getShowExternalId());
+          if (showSyncResult.isSuccess()) {
+            log.info("Successfully synced show '{}'. Retrying lookup.", matchDTO.getShowName());
+            showOpt = showService.findByExternalId(matchDTO.getShowExternalId());
+          } else {
+            log.error(
+                "Failed to sync show '{}' for match {}: {}",
+                matchDTO.getShowName(),
+                matchDTO.getName(),
+                showSyncResult.getErrorMessage());
+          }
+
+          if (showOpt.isEmpty()) {
+            log.warn(
+                "Skipping match {} as show '{}' could not be found or synced.",
+                matchDTO.getName(),
+                matchDTO.getShowName());
+            continue;
+          }
         }
         matchResult.setShow(showOpt.get());
 

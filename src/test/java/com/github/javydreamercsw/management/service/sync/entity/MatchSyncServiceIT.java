@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.service.match.MatchResultService;
-import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,20 +27,11 @@ class MatchSyncServiceIT extends BaseTest {
 
   @Autowired private MatchResultService matchResultService;
 
-  @BeforeEach
-  void setup() {
-    seasonSyncService.syncSeasons(UUID.randomUUID().toString());
-    wrestlerSyncService.syncWrestlers(UUID.randomUUID().toString());
-    showTemplateSyncService.syncShowTemplates(UUID.randomUUID().toString());
-    showTypeSyncService.syncShowTypes(UUID.randomUUID().toString());
-    showSyncService.syncShows(UUID.randomUUID().toString());
-  }
-
   @Test
-  void testSyncMatches() {
+  void testSyncMatch() {
     // Make sure we have data to test against.
     // Assuming the Notion database has at least one match.
-    matchSyncService.syncMatches(UUID.randomUUID().toString());
+    matchSyncService.syncMatch(matchSyncService.getMatchIds().get(0));
     assertThat(
             matchResultService
                 .getAllMatchResults(org.springframework.data.domain.Pageable.unpaged())

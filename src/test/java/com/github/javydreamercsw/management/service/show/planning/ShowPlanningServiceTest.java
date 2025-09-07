@@ -11,6 +11,7 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -43,13 +44,18 @@ class ShowPlanningServiceTest {
     // Given
     Show show = new Show();
     show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
 
     Instant lastMonth = clock.instant().minus(30, ChronoUnit.DAYS);
     List<MatchResult> matches = Collections.singletonList(new MatchResult());
-    when(matchResultRepository.findByMatchDateAfter(lastMonth)).thenReturn(matches);
+    // MODIFIED: Mock findByMatchDateBetween instead of findByMatchDateAfter
+    when(matchResultRepository.findByMatchDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(matches);
 
     List<Rivalry> rivalries = Collections.singletonList(new Rivalry());
-    when(rivalryService.getActiveRivalries()).thenReturn(rivalries);
+    // MODIFIED: Mock getActiveRivalriesBetween instead of getActiveRivalries
+    when(rivalryService.getActiveRivalriesBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(rivalries);
 
     when(promoBookingService.isPromoSegment(any())).thenReturn(true);
 
