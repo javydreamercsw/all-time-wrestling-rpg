@@ -24,7 +24,7 @@ import org.jspecify.annotations.Nullable;
  * multiple rules applied to it.
  */
 @Entity
-@Table(name = "match_rule", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
+@Table(name = "match_stipulation", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
 public class MatchRule extends AbstractEntity<Long> {

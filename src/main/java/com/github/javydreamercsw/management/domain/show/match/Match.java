@@ -76,7 +76,7 @@ public class Match extends AbstractEntity<Long> {
   // Match rules (many-to-many relationship)
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
-      name = "match_rule",
+      name = "match_match_rule",
       joinColumns = @JoinColumn(name = "match_id"),
       inverseJoinColumns = @JoinColumn(name = "match_rule_id"))
   @JsonIgnoreProperties({"description", "creationDate"})
