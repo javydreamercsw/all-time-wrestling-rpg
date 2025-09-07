@@ -117,21 +117,21 @@ class RivalryTest {
   }
 
   @Test
-  @DisplayName("Should determine when rivalry requires stipulation match")
+  @DisplayName("Should determine when rivalry requires rule match")
   void shouldDetermineWhenRivalryRequiresStipulationMatch() {
-    // Below 30 heat - no stipulation required
+    // Below 30 heat - no rule required
     rivalry.setHeat(29);
     assertThat(rivalry.requiresStipulationMatch()).isFalse();
 
-    // At 30 heat - stipulation required
+    // At 30 heat - rule required
     rivalry.setHeat(30);
     assertThat(rivalry.requiresStipulationMatch()).isTrue();
 
-    // Above 30 heat - stipulation required
+    // Above 30 heat - rule required
     rivalry.setHeat(35);
     assertThat(rivalry.requiresStipulationMatch()).isTrue();
 
-    // Inactive rivalry - no stipulation required
+    // Inactive rivalry - no rule required
     rivalry.setIsActive(false);
     assertThat(rivalry.requiresStipulationMatch()).isFalse();
   }

@@ -197,7 +197,7 @@ public class RivalryService {
     return rivalryRepository.findRivalriesEligibleForResolution();
   }
 
-  /** Get rivalries requiring stipulation matches (30+ heat). */
+  /** Get rivalries requiring rule matches (30+ heat). */
   @Transactional(readOnly = true)
   public List<Rivalry> getRivalriesRequiringStipulationMatches() {
     return rivalryRepository.findRivalriesRequiringStipulationMatches();

@@ -2,8 +2,8 @@ package com.github.javydreamercsw.management.service.match;
 
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.match.Match;
+import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class NPCMatchResolutionService {
 
-  @Autowired private MatchResultRepository matchResultRepository;
+  @Autowired private MatchRepository matchRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private MatchRuleService matchRuleService;
   @Autowired private Clock clock;
@@ -42,18 +42,18 @@ public class NPCMatchResolutionService {
    * @param team2 Second team (can have 1+ members)
    * @param matchType Type of match
    * @param show Show where the match takes place
-   * @param stipulation Optional match stipulation
-   * @return MatchResult with determined winner and details
+   * @param stipulation Optional match rule
+   * @return Match with determined winner and details
    */
   @Transactional
-  public MatchResult resolveTeamMatch(
+  public Match resolveTeamMatch(
       @NonNull MatchTeam team1,
       @NonNull MatchTeam team2,
       @NonNull MatchType matchType,
       @NonNull Show show,
       String stipulation) {
 
-    // Default to "Standard Match" if no stipulation provided
+    // Default to "Standard Match" if no rule provided
     String finalStipulation =
         (stipulation != null && !stipulation.trim().isEmpty()) ? stipulation : "Standard Match";
 
@@ -79,24 +79,24 @@ public class NPCMatchResolutionService {
     // Determine winning team using weighted random selection
     MatchTeam winningTeam = determineWinningTeam(freshTeam1, freshTeam2, probabilities);
 
-    // Create match result
-    MatchResult result = new MatchResult();
+    // Create match
+    Match result = new Match();
     result.setShow(show);
     result.setMatchType(matchType);
-    result.setWinner(winningTeam.getPrimaryWrestler()); // Use primary wrestler as winner
     result.setMatchDate(clock.instant());
     applyMatchRules(result, finalStipulation);
     result.setIsNpcGenerated(true);
 
     // Add all participants from both teams
-    addTeamParticipants(result, freshTeam1, winningTeam.equals(freshTeam1));
-    addTeamParticipants(result, freshTeam2, winningTeam.equals(freshTeam2));
+    addTeamParticipants(result, freshTeam1);
+    addTeamParticipants(result, freshTeam2);
+    result.setWinner(winningTeam.getPrimaryWrestler());
 
     // Generate match details based on team composition
     generateTeamMatchDetails(result, freshTeam1, freshTeam2, probabilities);
 
     // Save and return
-    MatchResult savedResult = matchResultRepository.save(result);
+    Match savedResult = matchRepository.save(result);
 
     log.info(
         "Team match resolved: {} defeated {} ({}% probability)",
@@ -116,11 +116,11 @@ public class NPCMatchResolutionService {
    * @param teams List of teams participating (each team can have 1+ members)
    * @param matchType Type of match
    * @param show Show where the match takes place
-   * @param stipulation Optional match stipulation
-   * @return MatchResult with determined winner and details
+   * @param stipulation Optional match rule
+   * @return Match with determined winner and details
    */
   @Transactional
-  public MatchResult resolveMultiTeamMatch(
+  public Match resolveMultiTeamMatch(
       @NonNull List<MatchTeam> teams,
       @NonNull MatchType matchType,
       @NonNull Show show,
@@ -130,7 +130,7 @@ public class NPCMatchResolutionService {
       throw new IllegalArgumentException("Multi-team match requires at least 3 teams");
     }
 
-    // Default to "Standard Match" if no stipulation provided
+    // Default to "Standard Match" if no rule provided
     String finalStipulation =
         (stipulation != null && !stipulation.trim().isEmpty()) ? stipulation : "Standard Match";
 
@@ -151,25 +151,25 @@ public class NPCMatchResolutionService {
     // Determine winning team using weighted random selection
     MatchTeam winningTeam = determineMultiTeamWinner(freshTeams);
 
-    // Create match result
-    MatchResult result = new MatchResult();
+    // Create match
+    Match result = new Match();
     result.setShow(show);
     result.setMatchType(matchType);
-    result.setWinner(winningTeam.getPrimaryWrestler());
     result.setMatchDate(clock.instant());
     applyMatchRules(result, finalStipulation);
     result.setIsNpcGenerated(true);
 
     // Add all participants from all teams
     for (MatchTeam team : freshTeams) {
-      addTeamParticipants(result, team, team.equals(winningTeam));
+      addTeamParticipants(result, team);
     }
+    result.setWinner(winningTeam.getPrimaryWrestler());
 
     // Generate match details based on team composition
     generateMultiTeamMatchDetails(result, freshTeams);
 
     // Save and return
-    MatchResult savedResult = matchResultRepository.save(result);
+    Match savedResult = matchRepository.save(result);
 
     log.info(
         "Multi-team match resolved: {} defeated {} other teams",
@@ -214,11 +214,11 @@ public class NPCMatchResolutionService {
     return new MatchTeam(refreshedWrestlers, team.getTeamName());
   }
 
-  /** Add all team members as participants in the match result. */
+  /** Add all team members as participants in the match. */
   private void addTeamParticipants(
-      @NonNull MatchResult result, @NonNull MatchTeam team, boolean isWinningTeam) {
+      @NonNull Match result, @NonNull MatchTeam team) {
     for (Wrestler wrestler : team.getMembers()) {
-      result.addParticipant(wrestler, isWinningTeam);
+      result.addParticipant(wrestler);
     }
   }
 
@@ -234,8 +234,7 @@ public class NPCMatchResolutionService {
     double team2Probability = (double) team2TotalWeight / totalWeight * 100;
 
     log.debug(
-        "Team match probabilities calculated - {}: {}% (TW:{}, ATB:{}, THP:{}), {}: {}% (TW:{},"
-            + " ATB:{}, THP:{})",
+        "Team match probabilities calculated - {}: {}% (TW:{}, ATB:{}, THP:{}), {}: {}% (TW:{},"            + " ATB:{}, THP:{})",
         team1.getTeamName(),
         String.format("%.1f", team1Probability),
         team1TotalWeight,
@@ -283,7 +282,7 @@ public class NPCMatchResolutionService {
 
   /** Generate match details based on team composition and statistics. */
   private void generateTeamMatchDetails(
-      @NonNull MatchResult result,
+      @NonNull Match result,
       @NonNull MatchTeam team1,
       @NonNull MatchTeam team2,
       @NonNull TeamMatchProbabilities probabilities) {
@@ -314,7 +313,7 @@ public class NPCMatchResolutionService {
 
   /** Generate match details for multi-team matches. */
   private void generateMultiTeamMatchDetails(
-      @NonNull MatchResult result, @NonNull List<MatchTeam> teams) {
+      @NonNull Match result, @NonNull List<MatchTeam> teams) {
     // Calculate total participants across all teams
     int totalParticipants = teams.stream().mapToInt(MatchTeam::getSize).sum();
 
@@ -342,8 +341,8 @@ public class NPCMatchResolutionService {
     result.setMatchRating(rating);
   }
 
-  /** Apply match rules to a match result based on stipulation string. */
-  private void applyMatchRules(@NonNull MatchResult result, String stipulation) {
+  /** Apply match rules to a match based on rule string. */
+  private void applyMatchRules(@NonNull Match result, String stipulation) {
     if (stipulation == null
         || stipulation.trim().isEmpty()
         || "Standard Match".equals(stipulation)) {
@@ -351,12 +350,12 @@ public class NPCMatchResolutionService {
       return;
     }
 
-    // Try to find exact match rule by stipulation name
+    // Try to find exact match rule by rule name
     matchRuleService.findByName(stipulation).ifPresent(result::addMatchRule);
 
     // If no rules were applied and it's not a standard match, log a warning
     if (result.getMatchRules().isEmpty()) {
-      log.warn("No match rules found for stipulation: {}", stipulation);
+      log.warn("No match rules found for rule: {}", stipulation);
     }
   }
 
@@ -389,7 +388,7 @@ public class NPCMatchResolutionService {
 
   /** Generate match details for multi-person matches. */
   private void generateMultiPersonMatchDetails(
-      @NonNull MatchResult result, @NonNull List<WrestlerWeight> wrestlerWeights) {
+      @NonNull Match result, @NonNull List<WrestlerWeight> wrestlerWeights) {
     // Multi-person matches tend to be longer and more chaotic
     int baseDuration = 12 + random.nextInt(15); // 12-26 minutes base
     int maxTierBonus = wrestlerWeights.stream().mapToInt(WrestlerWeight::tierBonus).max().orElse(0);
@@ -421,7 +420,7 @@ public class NPCMatchResolutionService {
 
   /** Result data class for match resolution. */
   public record MatchResolutionResult(
-      @NonNull MatchResult matchResult,
+      @NonNull Match match,
       @NonNull TeamMatchProbabilities probabilities,
       String summary) {}
 

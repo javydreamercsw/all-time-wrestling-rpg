@@ -90,7 +90,7 @@ class RivalryIntensityTest {
     assertThat(explosive.getEmoji()).isEqualTo("🌋");
     assertThat(explosive.getMinHeat()).isEqualTo(30);
     assertThat(explosive.getMaxHeat()).isEqualTo(Integer.MAX_VALUE);
-    assertThat(explosive.getDescription()).contains("Requires stipulation match");
+    assertThat(explosive.getDescription()).contains("Requires rule match");
     assertThat(explosive.getDisplayWithEmoji()).isEqualTo("🌋 Explosive");
     assertThat(explosive.getHeatRangeDisplay()).isEqualTo("30+ heat");
   }
@@ -110,7 +110,7 @@ class RivalryIntensityTest {
   }
 
   @ParameterizedTest
-  @DisplayName("Should correctly check if requires stipulation match")
+  @DisplayName("Should correctly check if requires rule match")
   @CsvSource({"SIMMERING, false", "HEATED, false", "INTENSE, false", "EXPLOSIVE, true"})
   void shouldCorrectlyCheckIfRequiresStipulationMatch(
       RivalryIntensity intensity, boolean expected) {

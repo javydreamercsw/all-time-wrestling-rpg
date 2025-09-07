@@ -218,7 +218,7 @@ public class MultiWrestlerFeudService {
     return multiWrestlerFeudRepository.findFeudsEligibleForResolution();
   }
 
-  /** Get feuds requiring stipulation matches. */
+  /** Get feuds requiring rule matches. */
   @Transactional(readOnly = true)
   public List<MultiWrestlerFeud> getFeudsRequiringStipulationMatches() {
     return multiWrestlerFeudRepository.findFeudsRequiringStipulationMatches();

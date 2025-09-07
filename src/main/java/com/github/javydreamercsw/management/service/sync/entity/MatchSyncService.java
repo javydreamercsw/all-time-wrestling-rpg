@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.MatchPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
+import com.github.javydreamercsw.management.domain.show.match.Match;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.MatchDTO;
-import com.github.javydreamercsw.management.service.match.MatchResultService;
+import com.github.javydreamercsw.management.service.match.MatchService;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -33,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class MatchSyncService extends BaseSyncService {
 
-  @Autowired private MatchResultService matchResultService;
+  @Autowired private MatchService matchService;
   @Autowired private ShowService showService;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private MatchTypeService matchTypeService;
@@ -181,16 +181,16 @@ public class MatchSyncService extends BaseSyncService {
     int savedCount = 0;
     for (MatchDTO matchDTO : matchDTOs) {
       try {
-        Optional<MatchResult> existingMatchResultOpt =
-            matchResultService.findByExternalId(matchDTO.getExternalId());
+        Optional<Match> existingMatchOpt =
+            matchService.findByExternalId(matchDTO.getExternalId());
 
-        MatchResult matchResult = existingMatchResultOpt.orElseGet(MatchResult::new);
+        Match match = existingMatchOpt.orElseGet(Match::new);
 
-        if (matchResult.getId() == null) {
+        if (match.getId() == null) {
           log.debug("Creating new match: {}", matchDTO.getName());
-          matchResult.setExternalId(matchDTO.getExternalId());
+          match.setExternalId(matchDTO.getExternalId());
         } else {
-          log.debug("Updating existing match: {}", matchResult.getId());
+          log.debug("Updating existing match: {}", match.getId());
         }
 
         Optional<Show> showOpt = showService.findByExternalId(matchDTO.getShowExternalId());
@@ -220,7 +220,7 @@ public class MatchSyncService extends BaseSyncService {
             continue;
           }
         }
-        matchResult.setShow(showOpt.get());
+        match.setShow(showOpt.get());
 
         Optional<MatchType> matchTypeOpt = matchTypeService.findByName(matchDTO.getMatchTypeName());
         if (matchTypeOpt.isEmpty()) {
@@ -230,7 +230,7 @@ public class MatchSyncService extends BaseSyncService {
               matchDTO.getMatchTypeName());
           continue;
         }
-        matchResult.setMatchType(matchTypeOpt.get());
+        match.setMatchType(matchTypeOpt.get());
 
         List<Wrestler> participants = new ArrayList<>();
         for (String participantName : matchDTO.getParticipantNames()) {
@@ -242,14 +242,18 @@ public class MatchSyncService extends BaseSyncService {
           wrestlerService.findByName(winnerName).ifPresent(winners::add);
         }
 
-        matchResult.getParticipants().clear();
+        match.getParticipants().clear();
         for (Wrestler participant : participants) {
-          matchResult.addParticipant(participant, winners.contains(participant));
+          match.addParticipant(participant);
+        }
+        
+        if (!winners.isEmpty()){
+            match.setWinner(winners.get(0));
         }
 
-        matchResult.setMatchDate(matchDTO.getMatchDate());
+        match.setMatchDate(matchDTO.getMatchDate());
 
-        matchResultService.updateMatchResult(matchResult);
+        matchService.updateMatch(match);
         savedCount++;
       } catch (Exception e) {
         log.error("Failed to process match DTO {}: {}", matchDTO.getName(), e.getMessage(), e);

@@ -49,7 +49,7 @@ class AbstractMatchNarrationServiceTest {
   }
 
   @Test
-  @DisplayName("Should include match type and stipulation in prompt")
+  @DisplayName("Should include match type and rule in prompt")
   void shouldIncludeMatchTypeAndStipulationInPrompt() {
     String prompt = service.buildTestPrompt(testContext);
 
