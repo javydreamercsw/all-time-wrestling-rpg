@@ -532,6 +532,32 @@ public class NotionHandler {
   }
 
   /**
+   * Gets all page IDs from a given database.
+   *
+   * @param databaseName The name of the database
+   * @return List of page IDs
+   */
+  public List<String> getDatabasePageIds(@NonNull String databaseName) {
+    log.debug("Loading all page IDs from database: '{}'", databaseName);
+
+    String dbId = getDatabaseId(databaseName);
+    if (dbId == null) {
+      log.warn("'{}' database not found in workspace", databaseName);
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        return new ArrayList<>();
+      }
+      return loadAllEntitiesFromDatabase(client, dbId, databaseName, (page, name) -> page.getId());
+    } catch (Exception e) {
+      log.error("Failed to load all page IDs from database '{}'", databaseName, e);
+      return new ArrayList<>();
+    }
+  }
+
+  /**
    * Gets all loaded databases as a map of name -> ID.
    *
    * @return A copy of the database map
@@ -869,6 +895,17 @@ public class NotionHandler {
     }
   }
 
+  /**
+   * Loads a show from the Notion database by ID.
+   *
+   * @param showId The ID of the show to load.
+   * @return Optional containing the ShowPage object if found, empty otherwise.
+   */
+  public Optional<ShowPage> loadShowById(@NonNull String showId) {
+    log.debug("Loading show with ID: '{}'", showId);
+    return loadPage(showId).map(page -> mapPageToShowPage(page, ""));
+  }
+
   /** Static convenience method to load a show. */
   public static Optional<ShowPage> loadShowStatic(String showName) {
     return getInstance().loadShow(showName);
@@ -1086,6 +1123,17 @@ public class NotionHandler {
       log.error("Failed to load match: {}", matchName, e);
       return Optional.empty();
     }
+  }
+
+  /**
+   * Loads a match from the Notion database by ID.
+   *
+   * @param matchId The ID of the match to load.
+   * @return Optional containing the MatchPage object if found, empty otherwise.
+   */
+  public Optional<MatchPage> loadMatchById(@NonNull String matchId) {
+    log.debug("Loading match with ID: '{}'", matchId);
+    return loadPage(matchId).map(page -> mapPageToMatchPage(page, ""));
   }
 
   /** Static convenience method to load a match. */
@@ -1393,6 +1441,26 @@ public class NotionHandler {
   }
 
   // ==================== GENERIC HELPER METHODS ====================
+
+  /**
+   * Loads a Notion page by its ID.
+   *
+   * @param pageId The ID of the page to load.
+   * @return Optional containing the Page object if found, empty otherwise.
+   */
+  public Optional<Page> loadPage(@NonNull String pageId) {
+    log.debug("Loading page with ID: '{}'", pageId);
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        return Optional.empty();
+      }
+      return Optional.of(
+          executeWithRetry(() -> client.retrievePage(pageId, Collections.emptyList())));
+    } catch (Exception e) {
+      log.error("Failed to load page with ID: {}", pageId, e);
+      return Optional.empty();
+    }
+  }
 
   /**
    * Creates a NotionClient safely, checking for token availability.
@@ -1810,7 +1878,7 @@ public class NotionHandler {
 
     // If entity is TeamPage, set typed properties using original PageProperty map
     if (entityPage instanceof TeamPage teamPage) {
-        Map<String, notion.api.v1.model.pages.PageProperty> notionProperties = pageData.getProperties();
+      Map<String, PageProperty> notionProperties = pageData.getProperties();
       TeamPage.NotionProperties props = mapPagePropertiesToNotionProperties(notionProperties);
       teamPage.setProperties(props);
     }
@@ -2017,22 +2085,28 @@ public class NotionHandler {
   }
 
   /** Maps raw properties to TeamPage.NotionProperties. */
-  private TeamPage.NotionProperties mapPagePropertiesToNotionProperties(Map<String, notion.api.v1.model.pages.PageProperty> notionProperties) {
+  private TeamPage.NotionProperties mapPagePropertiesToNotionProperties(
+      Map<String, notion.api.v1.model.pages.PageProperty> notionProperties) {
     TeamPage.NotionProperties props = new TeamPage.NotionProperties();
     if (notionProperties == null) return props;
-    if (notionProperties.containsKey("Member 1")) props.setMembers(toProperty(notionProperties.get("Member 1")));
-    if (notionProperties.containsKey("Leader")) props.setLeader(toProperty(notionProperties.get("Leader")));
-    if (notionProperties.containsKey("TeamType")) props.setTeamType(toProperty(notionProperties.get("TeamType")));
-    if (notionProperties.containsKey("Status")) props.setStatus(toProperty(notionProperties.get("Status")));
-    if (notionProperties.containsKey("FormedDate")) props.setFormedDate(toProperty(notionProperties.get("FormedDate")));
-    if (notionProperties.containsKey("DisbandedDate")) props.setDisbandedDate(toProperty(notionProperties.get("DisbandedDate")));
-    if (notionProperties.containsKey("Faction")) props.setFaction(toProperty(notionProperties.get("Faction")));
+    if (notionProperties.containsKey("Member 1"))
+      props.setMembers(toProperty(notionProperties.get("Member 1")));
+    if (notionProperties.containsKey("Leader"))
+      props.setLeader(toProperty(notionProperties.get("Leader")));
+    if (notionProperties.containsKey("TeamType"))
+      props.setTeamType(toProperty(notionProperties.get("TeamType")));
+    if (notionProperties.containsKey("Status"))
+      props.setStatus(toProperty(notionProperties.get("Status")));
+    if (notionProperties.containsKey("FormedDate"))
+      props.setFormedDate(toProperty(notionProperties.get("FormedDate")));
+    if (notionProperties.containsKey("DisbandedDate"))
+      props.setDisbandedDate(toProperty(notionProperties.get("DisbandedDate")));
+    if (notionProperties.containsKey("Faction"))
+      props.setFaction(toProperty(notionProperties.get("Faction")));
     return props;
   }
 
-  /**
-   * Converts a Notion PageProperty to a TeamPage.Property.
-   */
+  /** Converts a Notion PageProperty to a TeamPage.Property. */
   private TeamPage.Property toProperty(notion.api.v1.model.pages.PageProperty pageProperty) {
     if (pageProperty == null) return null;
     TeamPage.Property property = new TeamPage.Property();
@@ -2045,11 +2119,14 @@ public class NotionHandler {
     // Map relations
     if (pageProperty.getRelation() != null) {
       List<TeamPage.Relation> relations = new java.util.ArrayList<>();
-      pageProperty.getRelation().forEach(ref -> {
-        TeamPage.Relation rel = new TeamPage.Relation();
-        rel.setId(ref.getId());
-        relations.add(rel);
-      });
+      pageProperty
+          .getRelation()
+          .forEach(
+              ref -> {
+                TeamPage.Relation rel = new TeamPage.Relation();
+                rel.setId(ref.getId());
+                relations.add(rel);
+              });
       property.setRelation(relations);
     }
     property.setPeople(pageProperty.getPeople());

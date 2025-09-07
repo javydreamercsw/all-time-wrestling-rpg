@@ -81,6 +81,44 @@ public class NotionSyncService extends BaseSyncService {
   // ==================== INDIVIDUAL ENTITY SYNC OPERATIONS ====================
 
   /**
+   * Synchronizes a single show from Notion by its ID.
+   *
+   * @param showId The Notion ID of the show to sync.
+   * @return SyncResult containing the outcome of the sync operation.
+   */
+  public SyncResult syncShow(@NonNull String showId) {
+    return showSyncService.syncShow(showId);
+  }
+
+  /**
+   * Gets all show IDs from the Notion database.
+   *
+   * @return List of all show IDs.
+   */
+  public java.util.List<String> getAllShowIds() {
+    return showSyncService.getShowIds();
+  }
+
+  /**
+   * Synchronizes a single match from Notion by its ID.
+   *
+   * @param matchId The Notion ID of the match to sync.
+   * @return SyncResult containing the outcome of the sync operation.
+   */
+  public SyncResult syncMatch(@NonNull String matchId) {
+    return matchSyncService.syncMatch(matchId);
+  }
+
+  /**
+   * Gets all match IDs from the Notion database.
+   *
+   * @return List of all match IDs.
+   */
+  public java.util.List<String> getAllMatchIds() {
+    return matchSyncService.getMatchIds();
+  }
+
+  /**
    * Synchronizes shows from Notion Shows database directly to the database.
    *
    * @return SyncResult containing the outcome of the sync operation
