@@ -32,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("test")
 @TestPropertySource(
     properties = {
-      "notion.sync.enabled=true",
       "notion.sync.scheduler.enabled=false",
       "notion.token=${notion.token:test-token}",
       "notion.databases.show-types=${notion.databases.show-types:test-db-id}"
@@ -40,7 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Slf4j
 @DisplayName("Show Type Sync Integration Tests")
-class ShowTypeSyncITTest extends BaseTest {
+class ShowTypeSyncITTestShowTypeSyncITTest extends BaseTest {
 
   @Autowired private ShowTypeSyncService showTypeSyncService;
   @Autowired private ShowTypeService showTypeService;

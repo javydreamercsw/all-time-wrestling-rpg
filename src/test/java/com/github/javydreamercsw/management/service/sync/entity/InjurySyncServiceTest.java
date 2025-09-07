@@ -42,13 +42,20 @@ class InjurySyncServiceTest {
   @Mock private InjuryTypeService injuryTypeService;
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private NotionHandler notionHandler;
-  @Mock private NotionSyncProperties syncProperties;
+  private NotionSyncProperties syncProperties; // Declare without @Mock
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionRateLimitService rateLimitService;
 
   private InjurySyncService injurySyncService;
+
+  // Constructor to configure the mock before setUp()
+  public InjurySyncServiceTest() {
+    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+  }
 
   @BeforeEach
   void setUp() {

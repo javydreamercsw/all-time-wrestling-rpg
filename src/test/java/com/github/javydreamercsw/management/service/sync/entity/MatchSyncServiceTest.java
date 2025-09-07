@@ -3,6 +3,8 @@ package com.github.javydreamercsw.management.service.sync.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,12 +44,19 @@ class MatchSyncServiceTest extends BaseTest {
   @Mock private MatchResultService matchResultService;
   @Mock private ShowService showService;
   @Mock private MatchTypeService matchTypeService;
-  @Mock private NotionSyncProperties syncProperties;
+  private NotionSyncProperties syncProperties; // Declare without @Mock
   @Mock private ObjectMapper objectMapper;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private NotionRateLimitService rateLimitService;
+  @Mock private ShowSyncService showSyncService;
 
   private MatchSyncService matchSyncService;
+
+  // Constructor to configure the mock before setUp()
+  public MatchSyncServiceTest() {
+    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+  }
 
   @BeforeEach
   void setUp() {
@@ -60,6 +69,7 @@ class MatchSyncServiceTest extends BaseTest {
     setField(matchSyncService, "matchResultService", matchResultService);
     setField(matchSyncService, "showService", showService);
     setField(matchSyncService, "matchTypeService", matchTypeService);
+    setField(matchSyncService, "showSyncService", showSyncService);
   }
 
   @Test
@@ -154,6 +164,73 @@ class MatchSyncServiceTest extends BaseTest {
     verify(matchResultService, times(1)).updateMatchResult(any(MatchResult.class));
     assertThat(result.isSuccess()).isTrue();
     assertThat(result.getSyncedCount()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("Should sync missing show when processing match")
+  void shouldSyncMissingShowWhenProcessingMatch() {
+    // Given
+    String matchId = "match-with-missing-show";
+    String missingShowExternalId = "missing-show-id";
+    String matchName = "Test Match with Missing Show";
+
+    MatchPage matchPage = new MatchPage();
+    matchPage.setId(matchId);
+    matchPage.setCreated_time(Instant.now().toString());
+    matchPage.setLast_edited_time(Instant.now().toString());
+    matchPage.setProperties(new MatchPage.NotionProperties());
+    matchPage
+        .getProperties()
+        .setShows(
+            new MatchPage.Property() {
+              {
+                setType("relation");
+                setRelation(
+                    List.of(
+                        new NotionPage.Relation() {
+                          {
+                            setId(missingShowExternalId);
+                          }
+                        }));
+              }
+            });
+    matchPage.setRawProperties(
+        Map.of("Name", matchName, "Match Type", "Singles", "Participants", "", "Winners", ""));
+
+    // Mock NotionHandler to return the match page
+    when(notionHandler.loadMatchById(matchId)).thenReturn(Optional.of(matchPage));
+
+    // Mock matchResultService to return empty (new match)
+    when(matchResultService.findByExternalId(anyString())).thenReturn(Optional.empty());
+
+    // Mock showService to initially return empty, then return a show after sync
+    Show syncedShow = new Show();
+    syncedShow.setExternalId(missingShowExternalId);
+    syncedShow.setName("Synced Show");
+    when(showService.findByExternalId(missingShowExternalId))
+        .thenReturn(Optional.empty()) // First call: show not found
+        .thenReturn(Optional.of(syncedShow)); // Second call: show found after sync
+
+    // Mock showSyncService to return success
+    when(showSyncService.syncShow(missingShowExternalId))
+        .thenReturn(SyncResult.success("Show", 1, 0));
+
+    // Mock other dependencies
+    when(matchTypeService.findByName(anyString())).thenReturn(Optional.of(new MatchType()));
+
+    // When
+    SyncResult result = matchSyncService.syncMatch(matchId);
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.isSuccess()).isTrue();
+    assertThat(result.getSyncedCount()).isEqualTo(1);
+
+    // Verify interactions
+    verify(notionHandler).loadMatchById(matchId);
+    verify(showService, times(2)).findByExternalId(missingShowExternalId); // Called twice
+    verify(showSyncService).syncShow(missingShowExternalId); // Called once to sync
+    verify(matchResultService, times(1)).updateMatchResult(any(MatchResult.class));
   }
 
   @DisplayName("Should handle no match found in Notion")

@@ -11,6 +11,7 @@ import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -36,12 +37,20 @@ class ShowTypeSyncServiceTest extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
-  @Mock private NotionSyncProperties syncProperties;
+  private final NotionSyncProperties syncProperties; // Declare without @Mock
   @Mock private ShowTypeService showTypeService;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
+  @Mock public NotionRateLimitService rateLimitService;
 
   private ShowTypeSyncService showTypeSyncService;
+
+  // Constructor to configure the mock before setUp()
+  public ShowTypeSyncServiceTest() {
+    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+  }
 
   @BeforeEach
   void setUp() {
@@ -50,6 +59,7 @@ class ShowTypeSyncServiceTest extends BaseTest {
     setField(showTypeSyncService, "progressTracker", progressTracker);
     setField(showTypeSyncService, "healthMonitor", healthMonitor);
     setField(showTypeSyncService, "showTypeService", showTypeService);
+    setField(showTypeSyncService, "rateLimitService", rateLimitService);
   }
 
   @Test
