@@ -75,13 +75,11 @@ class InjuryServiceTest {
   }
 
   @Test
-  @DisplayName("Should create injury from bumps when wrestler has 3+ bumps")
-  void shouldCreateInjuryFromBumpsWhenWrestlerHas3PlusBumps() {
+  @DisplayName("Should create injury from bumps")
+  void shouldCreateInjuryFromBumps() {
     // Given
     Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
-    wrestler.setBumps(3);
 
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
     when(injuryRepository.saveAndFlush(any(Injury.class)))
         .thenAnswer(
             invocation -> {
@@ -91,31 +89,14 @@ class InjuryServiceTest {
             });
 
     // When
-    Optional<Injury> result = injuryService.createInjuryFromBumps(1L);
+    Injury result = injuryService.createInjuryFromBumps(wrestler);
 
     // Then
-    assertThat(result).isPresent();
-    assertThat(wrestler.getBumps())
-        .isEqualTo(3); // Bumps are not reset by this method (handled by Wrestler.addBump())
-    assertThat(result.get().getWrestler()).isEqualTo(wrestler);
-    assertThat(result.get().getIsActive()).isTrue();
+    assertThat(result).isNotNull();
+    assertThat(result.getWrestler()).isEqualTo(wrestler);
+    assertThat(result.getIsActive()).isTrue();
+    assertThat(wrestler.getInjuries()).contains(result);
     verify(injuryRepository).saveAndFlush(any(Injury.class));
-  }
-
-  @Test
-  @DisplayName("Should not create injury from bumps when wrestler has less than 3 bumps")
-  void shouldNotCreateInjuryFromBumpsWhenWrestlerHasLessThan3Bumps() {
-    // Given
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
-    wrestler.setBumps(2);
-
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-
-    // When
-    Optional<Injury> result = injuryService.createInjuryFromBumps(1L);
-
-    // Then
-    assertThat(result).isEmpty();
   }
 
   @Test

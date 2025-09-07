@@ -74,6 +74,7 @@ class AdvancedRivalryIntegrationServiceTest {
     testShow.setName("Test Show");
     testShow.setShowDate(java.time.LocalDate.now());
 
+    // Match types are loaded by DataInitializer, no need to create here
     singlesMatchType = new MatchType();
     singlesMatchType.setName("Singles Match");
   }

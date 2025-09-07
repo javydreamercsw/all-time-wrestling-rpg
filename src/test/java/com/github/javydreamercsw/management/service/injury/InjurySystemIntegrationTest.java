@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.injury;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.TestcontainersConfiguration;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
@@ -50,6 +51,7 @@ class InjurySystemIntegrationTest {
   @Autowired private MatchTypeRepository matchTypeRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private DeckRepository deckRepository;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -63,6 +65,7 @@ class InjurySystemIntegrationTest {
     // Clean up
     matchRepository.deleteAll();
     injuryRepository.deleteAll();
+    deckRepository.deleteAll();
     wrestlerRepository.deleteAll();
     showRepository.deleteAll();
     showTypeRepository.deleteAll();

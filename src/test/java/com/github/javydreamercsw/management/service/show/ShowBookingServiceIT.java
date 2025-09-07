@@ -18,6 +18,7 @@ import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -69,18 +70,6 @@ class ShowBookingServiceIT {
     ppvShowType.setName("PPV");
     ppvShowType.setDescription("Pay-Per-View special event");
     ppvShowType = showTypeRepository.save(ppvShowType);
-
-    // Create match types from JSON data
-    matchTypeService.createOrUpdateMatchType(
-        "One on One", "Traditional singles wrestling match between two competitors");
-    matchTypeService.createOrUpdateMatchType(
-        "Tag Team", "Team-based wrestling match with tag-in/tag-out mechanics");
-    matchTypeService.createOrUpdateMatchType(
-        "Free-for-All", "Multi-person match where everyone fights at once");
-    matchTypeService.createOrUpdateMatchType(
-        "Abu Dhabi Rumble", "Large-scale elimination match with timed entries");
-    matchTypeService.createOrUpdateMatchType(
-        "Promo", "Non-wrestling segment for storyline development and character work");
 
     // Get the singles match type for tests
     singlesMatchType = matchTypeRepository.findByName("One on One").orElseThrow();
@@ -254,6 +243,7 @@ class ShowBookingServiceIT {
     Show show = result.get();
 
     // Verify show was added to the active season
+    Assertions.assertNotNull(testSeason.getId());
     Season updatedSeason = seasonRepository.findById(testSeason.getId()).orElseThrow();
     assertThat(updatedSeason.getShows()).contains(show);
   }
