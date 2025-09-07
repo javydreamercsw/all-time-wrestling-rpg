@@ -34,7 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class NotionSyncServiceTest extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;
-  @Mock private NotionSyncProperties syncProperties;
+  private NotionSyncProperties syncProperties; // Declare as a real instance
 
   // Mock entity-specific sync services
   @Mock private ShowSyncService showSyncService;
@@ -49,14 +49,30 @@ class NotionSyncServiceTest extends BaseTest {
 
   // Mock parallel sync components
   @Mock private ParallelSyncOrchestrator parallelSyncOrchestrator;
-  @Mock private EntitySyncConfiguration entitySyncConfiguration;
+  // @Mock private EntitySyncConfiguration entitySyncConfiguration; // Removed mock
 
   private NotionSyncService notionSyncService;
 
   @BeforeEach
   void setUp() throws Exception {
+    // Instantiate a real NotionSyncProperties
+    syncProperties = new NotionSyncProperties();
+    syncProperties.setParallelThreads(1); // Explicitly set for test consistency
+
     // Create the service with constructor injection
     notionSyncService = new NotionSyncService(objectMapper, syncProperties);
+
+    // Create and configure a real EntitySyncConfiguration instance
+    EntitySyncConfiguration entitySyncConfiguration = new EntitySyncConfiguration();
+    entitySyncConfiguration.getDefaults().setEnabled(true);
+    entitySyncConfiguration.getDefaults().setBatchSize(50);
+    entitySyncConfiguration.getDefaults().setParallelProcessing(true);
+    entitySyncConfiguration.getDefaults().setMaxThreads(4);
+    entitySyncConfiguration.getDefaults().setTimeoutSeconds(300);
+    entitySyncConfiguration.getDefaults().setRetryAttempts(3);
+    entitySyncConfiguration.getDefaults().setRetryDelayMs(1000);
+    entitySyncConfiguration.getDefaults().setValidationEnabled(true);
+    entitySyncConfiguration.getDefaults().setSkipOnError(true);
 
     // Inject the mocked sync services using reflection
     setField(notionSyncService, "showSyncService", showSyncService);
