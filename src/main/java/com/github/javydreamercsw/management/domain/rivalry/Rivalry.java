@@ -91,7 +91,7 @@ public class Rivalry extends AbstractEntity<Long> {
     return isActive && heat >= 20;
   }
 
-  /** Check if rivalry requires stipulation match (30+ heat). */
+  /** Check if rivalry requires rule match (30+ heat). */
   public boolean requiresStipulationMatch() {
     return isActive && heat >= 30;
   }

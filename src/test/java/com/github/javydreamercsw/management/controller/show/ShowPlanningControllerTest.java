@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(ShowPlanningController.class)
@@ -27,11 +28,11 @@ class ShowPlanningControllerTest {
 
   @Autowired private ObjectMapper objectMapper;
 
-  @MockBean private ShowPlanningService showPlanningService;
+  @MockitoBean private ShowPlanningService showPlanningService;
 
-  @MockBean private ShowPlanningAiService showPlanningAiService;
+  @MockitoBean private ShowPlanningAiService showPlanningAiService;
 
-  @MockBean private ShowService showService;
+  @MockitoBean private ShowService showService;
 
   @Test
   void getShowPlanningContext() throws Exception {

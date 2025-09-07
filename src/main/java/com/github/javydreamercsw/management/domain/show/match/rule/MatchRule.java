@@ -1,6 +1,4 @@
-package com.github.javydreamercsw.management.domain.show.match.stipulation;
-
-import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
+package com.github.javydreamercsw.management.domain.show.match.rule;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.Column;

@@ -5,7 +5,7 @@ import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
+import com.github.javydreamercsw.management.domain.show.match.Match;
 import com.github.javydreamercsw.management.domain.storyline.StorylineBranch;
 import com.github.javydreamercsw.management.domain.storyline.StorylineBranchType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -39,24 +39,24 @@ public class AdvancedRivalryIntegrationService {
   @Autowired private StorylineBranchingService storylineBranchingService;
 
   /**
-   * Process a match result and trigger all relevant rivalry systems. This is the main entry point
+   * Process a match outcome and trigger all relevant rivalry systems. This is the main entry point
    * for match outcome processing.
    */
-  public void processMatchOutcome(@NonNull MatchResult matchResult) {
+  public void processMatchOutcome(@NonNull Match match) {
     log.info(
-        "Processing match outcome for advanced rivalry systems: Match ID {}", matchResult.getId());
+        "Processing match outcome for advanced rivalry systems: Match ID {}", match.getId());
 
     // Process individual wrestler rivalries
-    processIndividualRivalries(matchResult);
+    processIndividualRivalries(match);
 
     // Process faction rivalries
-    processFactionRivalries(matchResult);
+    processFactionRivalries(match);
 
     // Process multi-wrestler feuds
-    processMultiWrestlerFeuds(matchResult);
+    processMultiWrestlerFeuds(match);
 
     // Process storyline branching
-    storylineBranchingService.processMatchOutcome(matchResult);
+    storylineBranchingService.processMatchOutcome(match);
 
     log.info("Completed processing match outcome for all rivalry systems");
   }
@@ -209,8 +209,8 @@ public class AdvancedRivalryIntegrationService {
 
   // ==================== PRIVATE HELPER METHODS ====================
 
-  private void processIndividualRivalries(@NonNull MatchResult matchResult) {
-    List<Wrestler> wrestlers = matchResult.getWrestlers();
+  private void processIndividualRivalries(@NonNull Match match) {
+    List<Wrestler> wrestlers = match.getWrestlers();
 
     // Add heat between all participants (for multi-person matches)
     for (int i = 0; i < wrestlers.size(); i++) {
@@ -219,20 +219,20 @@ public class AdvancedRivalryIntegrationService {
         Wrestler wrestler2 = wrestlers.get(j);
 
         // Add heat based on match outcome
-        int heatGain = calculateHeatGain(matchResult, wrestler1, wrestler2);
+        int heatGain = calculateHeatGain(match, wrestler1, wrestler2);
         if (heatGain > 0) {
           rivalryService.addHeatBetweenWrestlers(
               wrestler1.getId(),
               wrestler2.getId(),
               heatGain,
-              "Match outcome: " + matchResult.getMatchRulesAsString());
+              "Match outcome: " + match.getMatchRulesAsString());
         }
       }
     }
   }
 
-  private void processFactionRivalries(@NonNull MatchResult matchResult) {
-    List<Wrestler> wrestlers = matchResult.getWrestlers();
+  private void processFactionRivalries(@NonNull Match match) {
+    List<Wrestler> wrestlers = match.getWrestlers();
 
     // Check for faction involvement
     for (int i = 0; i < wrestlers.size(); i++) {
@@ -250,14 +250,14 @@ public class AdvancedRivalryIntegrationService {
               faction1.get().getId(),
               faction2.get().getId(),
               1,
-              "Faction members competed: " + matchResult.getMatchRulesAsString());
+              "Faction members competed: " + match.getMatchRulesAsString());
         }
       }
     }
   }
 
-  private void processMultiWrestlerFeuds(@NonNull MatchResult matchResult) {
-    List<Wrestler> wrestlers = matchResult.getWrestlers();
+  private void processMultiWrestlerFeuds(@NonNull Match match) {
+    List<Wrestler> wrestlers = match.getWrestlers();
 
     // Find feuds involving match participants
     for (Wrestler wrestler : wrestlers) {
@@ -273,7 +273,7 @@ public class AdvancedRivalryIntegrationService {
           multiWrestlerFeudService.addHeat(
               feud.getId(),
               heatGain,
-              "Multiple feud participants in match: " + matchResult.getMatchRulesAsString());
+              "Multiple feud participants in match: " + match.getMatchRulesAsString());
         }
       }
     }
@@ -339,23 +339,23 @@ public class AdvancedRivalryIntegrationService {
   }
 
   private int calculateHeatGain(
-      @NonNull MatchResult matchResult, @NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2) {
+      @NonNull Match match, @NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2) {
     int baseHeat = 2; // Base heat for participating in a match together
 
     // More heat if it was a title match
-    if (matchResult.getIsTitleMatch()) {
+    if (match.getIsTitleMatch()) {
       baseHeat += 3;
     }
 
     // More heat if there were stipulations
-    if (matchResult.hasMatchRules()) {
+    if (match.hasMatchRules()) {
       baseHeat += 2;
     }
 
     // More heat if one wrestler won
-    if (matchResult.getWinner() != null
-        && (matchResult.getWinner().equals(wrestler1)
-            || matchResult.getWinner().equals(wrestler2))) {
+    if (match.getWinner() != null
+        && (match.getWinner().equals(wrestler1)
+            || match.getWinner().equals(wrestler2))) {
       baseHeat += 1;
     }
 

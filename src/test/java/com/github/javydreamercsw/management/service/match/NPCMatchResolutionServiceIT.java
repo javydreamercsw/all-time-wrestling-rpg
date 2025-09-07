@@ -226,7 +226,7 @@ class NPCMatchResolutionServiceIT {
   }
 
   @Test
-  @DisplayName("Should save match with stipulation")
+  @DisplayName("Should save match with rule")
   void shouldSaveMatchWithStipulation() {
     // Given
     String stipulation = "Steel Cage Match";
