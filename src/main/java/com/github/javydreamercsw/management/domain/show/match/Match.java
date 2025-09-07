@@ -33,8 +33,8 @@ import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Represents a wrestling match in the ATW RPG system. Tracks participants, winner,
- * and match details for storyline continuity and statistics.
+ * Represents a wrestling match in the ATW RPG system. Tracks participants, winner, and match
+ * details for storyline continuity and statistics.
  */
 @Entity
 @Table(name = "match")
@@ -118,7 +118,7 @@ public class Match extends AbstractEntity<Long> {
       isNpcGenerated = false;
     }
     if (status == null) {
-        status = MatchStatus.BOOKED;
+      status = MatchStatus.BOOKED;
     }
   }
 
@@ -135,7 +135,7 @@ public class Match extends AbstractEntity<Long> {
   public void setWinner(Wrestler wrestler) {
     this.winner = wrestler;
     for (MatchParticipant participant : participants) {
-        participant.setIsWinner(participant.getWrestler().equals(wrestler));
+      participant.setIsWinner(participant.getWrestler().equals(wrestler));
     }
     this.status = MatchStatus.COMPLETED;
   }

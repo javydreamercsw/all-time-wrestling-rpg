@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.TestcontainersConfiguration;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.match.Match;
+import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -37,7 +37,7 @@ class TeamMatchResolutionIT {
   @Autowired NPCMatchResolutionService npcMatchResolutionService;
   @Autowired WrestlerService wrestlerService;
   @Autowired WrestlerRepository wrestlerRepository;
-  @Autowired MatchResultRepository matchResultRepository;
+  @Autowired MatchRepository matchRepository;
   @Autowired MatchTypeRepository matchTypeRepository;
   @Autowired ShowRepository showRepository;
   @Autowired ShowTypeRepository showTypeRepository;
@@ -99,7 +99,7 @@ class TeamMatchResolutionIT {
 
   @AfterEach
   void cleanUp() {
-    matchResultRepository.deleteAll();
+    matchRepository.deleteAll();
     wrestlerRepository.deleteAll();
     matchTypeRepository.deleteAll();
     showRepository.deleteAll();
@@ -114,7 +114,7 @@ class TeamMatchResolutionIT {
     MatchTeam team2 = new MatchTeam(Arrays.asList(rookie3, rookie4), "The Newbies");
 
     // When
-    MatchResult result =
+    Match result =
         npcMatchResolutionService.resolveTeamMatch(
             team1, team2, tagTeamMatchType, testShow, "Tag Team Match");
 
@@ -142,7 +142,7 @@ class TeamMatchResolutionIT {
     MatchTeam handicapTeam = new MatchTeam(Arrays.asList(rookie1, rookie2), "Rookie Alliance");
 
     // When
-    MatchResult result =
+    Match result =
         npcMatchResolutionService.resolveTeamMatch(
             soloTeam, handicapTeam, handicapMatchType, testShow, "Handicap Match");
 
@@ -169,7 +169,7 @@ class TeamMatchResolutionIT {
     int totalMatches = 50;
 
     for (int i = 0; i < totalMatches; i++) {
-      MatchResult result =
+      Match result =
           npcMatchResolutionService.resolveTeamMatch(
               rookieTeam, contenderTeam, tagTeamMatchType, testShow, "Test Match " + i);
 
@@ -194,7 +194,7 @@ class TeamMatchResolutionIT {
     MatchTeam smallTeam = new MatchTeam(Arrays.asList(contender1, contender2), "The Elite");
 
     // When
-    MatchResult result =
+    Match result =
         npcMatchResolutionService.resolveTeamMatch(
             bigTeam, smallTeam, handicapMatchType, testShow, "3v2 Elimination");
 
@@ -218,7 +218,7 @@ class TeamMatchResolutionIT {
     MatchTeam team2 = new MatchTeam(contender1);
 
     // When
-    MatchResult result =
+    Match result =
         npcMatchResolutionService.resolveTeamMatch(
             team1, team2, tagTeamMatchType, testShow, "Singles Match via Team Interface");
 
@@ -239,7 +239,7 @@ class TeamMatchResolutionIT {
     MatchTeam tagTeam2 = new MatchTeam(Arrays.asList(rookie3, rookie4));
 
     // When
-    MatchResult result =
+    Match result =
         npcMatchResolutionService.resolveTeamMatch(
             tagTeam1, tagTeam2, tagTeamMatchType, testShow, "Tag Team Championship");
 

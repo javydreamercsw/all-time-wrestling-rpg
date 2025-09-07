@@ -215,8 +215,7 @@ public class NPCMatchResolutionService {
   }
 
   /** Add all team members as participants in the match. */
-  private void addTeamParticipants(
-      @NonNull Match result, @NonNull MatchTeam team) {
+  private void addTeamParticipants(@NonNull Match result, @NonNull MatchTeam team) {
     for (Wrestler wrestler : team.getMembers()) {
       result.addParticipant(wrestler);
     }
@@ -234,7 +233,8 @@ public class NPCMatchResolutionService {
     double team2Probability = (double) team2TotalWeight / totalWeight * 100;
 
     log.debug(
-        "Team match probabilities calculated - {}: {}% (TW:{}, ATB:{}, THP:{}), {}: {}% (TW:{},"            + " ATB:{}, THP:{})",
+        "Team match probabilities calculated - {}: {}% (TW:{}, ATB:{}, THP:{}), {}: {}% (TW:{},"
+            + " ATB:{}, THP:{})",
         team1.getTeamName(),
         String.format("%.1f", team1Probability),
         team1TotalWeight,
@@ -420,9 +420,7 @@ public class NPCMatchResolutionService {
 
   /** Result data class for match resolution. */
   public record MatchResolutionResult(
-      @NonNull Match match,
-      @NonNull TeamMatchProbabilities probabilities,
-      String summary) {}
+      @NonNull Match match, @NonNull TeamMatchProbabilities probabilities, String summary) {}
 
   /** Calculator for team statistics used in match resolution. */
   public class TeamStatsCalculator {

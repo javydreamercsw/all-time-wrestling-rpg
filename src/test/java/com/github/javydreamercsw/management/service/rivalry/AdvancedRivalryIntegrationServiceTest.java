@@ -8,7 +8,7 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
+import com.github.javydreamercsw.management.domain.show.match.Match;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
@@ -128,23 +128,23 @@ class AdvancedRivalryIntegrationServiceTest {
   @Test
   void testProcessMatchOutcome() {
     // Given
-    MatchResult matchResult = new MatchResult();
-    matchResult.setShow(testShow);
-    matchResult.setMatchType(singlesMatchType);
-    matchResult.setWinner(wrestler1);
-    matchResult.setMatchDate(fixedClock.instant());
-    matchResult.setIsTitleMatch(false);
-    matchResult.setIsNpcGenerated(false);
+    Match match = new Match();
+    match.setShow(testShow);
+    match.setMatchType(singlesMatchType);
+    match.setMatchDate(fixedClock.instant());
+    match.setIsTitleMatch(false);
+    match.setIsNpcGenerated(false);
 
     // Add participants
-    matchResult.addParticipant(wrestler1, true);
-    matchResult.addParticipant(wrestler2, false);
+    match.addParticipant(wrestler1);
+    match.addParticipant(wrestler2);
+    match.setWinner(wrestler1);
 
     // When
-    advancedRivalryService.processMatchOutcome(matchResult);
+    advancedRivalryService.processMatchOutcome(match);
 
     // Then - Verify that the storyline branching service was called
-    verify(storylineBranchingService).processMatchOutcome(matchResult);
+    verify(storylineBranchingService).processMatchOutcome(match);
   }
 
   @Test

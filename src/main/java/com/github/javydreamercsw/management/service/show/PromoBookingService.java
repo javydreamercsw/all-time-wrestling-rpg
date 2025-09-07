@@ -90,8 +90,7 @@ public class PromoBookingService {
       // Check if both wrestlers are available
       if (availableWrestlers.contains(wrestler1) && availableWrestlers.contains(wrestler2)) {
         String promoType = selectRivalryPromoType(rivalry.getHeat());
-        Optional<Match> promo =
-            bookPromoSegment(show, List.of(wrestler1, wrestler2), promoType);
+        Optional<Match> promo = bookPromoSegment(show, List.of(wrestler1, wrestler2), promoType);
 
         if (promo.isPresent()) {
           promos.add(promo.get());
@@ -308,8 +307,7 @@ public class PromoBookingService {
 
   /** Check if a match is a promo segment. */
   public boolean isPromoSegment(@NonNull Match match) {
-    return match.getMatchType() != null
-        && "Promo".equals(match.getMatchType().getName());
+    return match.getMatchType() != null && "Promo".equals(match.getMatchType().getName());
   }
 
   /** Get all promo segments for a show. */

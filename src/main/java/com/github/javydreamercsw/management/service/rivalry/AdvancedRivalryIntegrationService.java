@@ -43,8 +43,7 @@ public class AdvancedRivalryIntegrationService {
    * for match outcome processing.
    */
   public void processMatchOutcome(@NonNull Match match) {
-    log.info(
-        "Processing match outcome for advanced rivalry systems: Match ID {}", match.getId());
+    log.info("Processing match outcome for advanced rivalry systems: Match ID {}", match.getId());
 
     // Process individual wrestler rivalries
     processIndividualRivalries(match);
@@ -354,8 +353,7 @@ public class AdvancedRivalryIntegrationService {
 
     // More heat if one wrestler won
     if (match.getWinner() != null
-        && (match.getWinner().equals(wrestler1)
-            || match.getWinner().equals(wrestler2))) {
+        && (match.getWinner().equals(wrestler1) || match.getWinner().equals(wrestler2))) {
       baseHeat += 1;
     }
 
