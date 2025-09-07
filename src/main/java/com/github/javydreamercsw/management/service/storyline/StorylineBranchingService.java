@@ -160,8 +160,7 @@ public class StorylineBranchingService {
   }
 
   /** Activate a storyline branch. */
-  public Optional<StorylineBranch> activateBranch(
-      @NonNull Long branchId, Match triggeringMatch) {
+  public Optional<StorylineBranch> activateBranch(@NonNull Long branchId, Match triggeringMatch) {
     Optional<StorylineBranch> branchOpt = storylineBranchRepository.findById(branchId);
 
     if (branchOpt.isEmpty()) {

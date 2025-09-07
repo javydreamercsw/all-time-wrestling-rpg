@@ -181,8 +181,7 @@ public class MatchSyncService extends BaseSyncService {
     int savedCount = 0;
     for (MatchDTO matchDTO : matchDTOs) {
       try {
-        Optional<Match> existingMatchOpt =
-            matchService.findByExternalId(matchDTO.getExternalId());
+        Optional<Match> existingMatchOpt = matchService.findByExternalId(matchDTO.getExternalId());
 
         Match match = existingMatchOpt.orElseGet(Match::new);
 
@@ -246,9 +245,9 @@ public class MatchSyncService extends BaseSyncService {
         for (Wrestler participant : participants) {
           match.addParticipant(participant);
         }
-        
-        if (!winners.isEmpty()){
-            match.setWinner(winners.get(0));
+
+        if (!winners.isEmpty()) {
+          match.setWinner(winners.get(0));
         }
 
         match.setMatchDate(matchDTO.getMatchDate());

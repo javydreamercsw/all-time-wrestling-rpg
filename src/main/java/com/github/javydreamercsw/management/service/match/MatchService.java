@@ -18,8 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service for managing matches in the ATW RPG system. Provides CRUD operations and business
- * logic for matches.
+ * Service for managing matches in the ATW RPG system. Provides CRUD operations and business logic
+ * for matches.
  */
 @Service
 @RequiredArgsConstructor
@@ -130,8 +130,7 @@ public class MatchService {
    * @return List of Match objects between the two wrestlers
    */
   @Transactional(readOnly = true)
-  public List<Match> getMatchesBetween(
-      @NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2) {
+  public List<Match> getMatchesBetween(@NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2) {
     return matchRepository.findMatchesBetween(wrestler1, wrestler2);
   }
 

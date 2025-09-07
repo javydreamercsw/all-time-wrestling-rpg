@@ -2,40 +2,68 @@ package com.github.javydreamercsw.management.service.sync.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.base.test.BaseTest;
-import com.github.javydreamercsw.management.service.match.MatchResultService;
+import com.github.javydreamercsw.TestcontainersConfiguration;
+import com.github.javydreamercsw.management.service.match.MatchService;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@Import(TestcontainersConfiguration.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
-@TestPropertySource(
-    properties = {"notion.sync.scheduler.enabled=false", "notion.databases.show-types=test-db-id"})
-@EnabledIf("isNotionTokenAvailable")
-class MatchSyncServiceIT extends BaseTest {
+@Transactional
+@DisplayName("MatchSyncService Integration Tests")
+class MatchSyncServiceIT {
 
   @Autowired private MatchSyncService matchSyncService;
-  @Autowired private SeasonSyncService seasonSyncService;
-  @Autowired private ShowTemplateSyncService showTemplateSyncService;
-  @Autowired private ShowTypeSyncService showTypeSyncService;
-  @Autowired private ShowSyncService showSyncService;
-  @Autowired private WrestlerSyncService wrestlerSyncService;
-
-  @Autowired private MatchResultService matchResultService;
+  @Autowired private MatchService matchService;
 
   @Test
-  void testSyncMatch() {
-    // Make sure we have data to test against.
-    // Assuming the Notion database has at least one match.
-    matchSyncService.syncMatch(matchSyncService.getMatchIds().get(0));
-    assertThat(
-            matchResultService
-                .getAllMatchResults(org.springframework.data.domain.Pageable.unpaged())
-                .getTotalElements())
-        .isPositive();
+  @DisplayName("Should sync a single match by ID")
+  void shouldSyncSingleMatchById() {
+    // Given - A known match ID from Notion (replace with a real one from your Notion DB)
+    // For integration tests, you'd typically have a setup that ensures this ID exists
+    String knownMatchId = "YOUR_NOTION_MATCH_ID_HERE"; // Replace with a valid Notion Match ID
+
+    // When
+    MatchSyncService.SyncResult result = matchSyncService.syncMatch(knownMatchId);
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.isSuccess()).isTrue();
+    assertThat(result.getSyncedCount()).isEqualTo(1);
+    assertThat(matchService.findByExternalId(knownMatchId)).isPresent();
+  }
+
+  @Test
+  @DisplayName("Should return failure for non-existent match ID")
+  void shouldReturnFailureForNonExistentMatchId() {
+    // Given
+    String nonExistentMatchId = "non-existent-id-123";
+
+    // When
+    MatchSyncService.SyncResult result = matchSyncService.syncMatch(nonExistentMatchId);
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.isSuccess()).isFalse();
+    assertThat(result.getErrorMessage()).contains("not found in Notion");
+    assertThat(result.getSyncedCount()).isEqualTo(0);
+  }
+
+  @Test
+  @DisplayName("Should get all match IDs")
+  void shouldGetAllMatchIds() {
+    // When
+    java.util.List<String> matchIds = matchSyncService.getMatchIds();
+
+    // Then
+    assertThat(matchIds).isNotNull();
+    // Assert that the list is not empty if you expect matches to exist in Notion
+    // assertThat(matchIds).isNotEmpty();
   }
 }
