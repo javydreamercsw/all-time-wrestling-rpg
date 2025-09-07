@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.management.domain.show.match.stipulation;
+package com.github.javydreamercsw.management.domain.show.match.rule;
 
 import java.util.List;
 import java.util.Optional;

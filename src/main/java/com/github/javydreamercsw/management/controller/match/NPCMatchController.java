@@ -2,8 +2,8 @@ package com.github.javydreamercsw.management.controller.match;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.match.Match;
+import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -38,7 +38,7 @@ public class NPCMatchController {
   private final WrestlerRepository wrestlerRepository;
   private final MatchTypeRepository matchTypeRepository;
   private final ShowRepository showRepository;
-  private final MatchResultRepository matchResultRepository;
+  private final MatchRepository matchRepository;
 
   /** Resolve a team-based match (supports singles, tag team, handicap, etc.). */
   @PostMapping("/team")
@@ -85,7 +85,7 @@ public class NPCMatchController {
       MatchTeam team2 = new MatchTeam(team2Wrestlers, request.team2Name());
 
       // Resolve match
-      MatchResult result =
+      Match result =
           npcMatchResolutionService.resolveTeamMatch(
               team1, team2, matchTypeOpt.get(), showOpt.get(), request.stipulation());
 
@@ -114,14 +114,14 @@ public class NPCMatchController {
 
   /** Get match results for a specific show. */
   @GetMapping("/show/{showId}")
-  public ResponseEntity<?> getMatchResultsByShow(@PathVariable Long showId) {
+  public ResponseEntity<?> getMatchesByShow(@PathVariable Long showId) {
     try {
       Optional<Show> showOpt = showRepository.findById(showId);
       if (showOpt.isEmpty()) {
         return ResponseEntity.badRequest().body(Map.of("error", "Show not found"));
       }
 
-      List<MatchResult> results = matchResultRepository.findByShow(showOpt.get());
+      List<Match> results = matchRepository.findByShow(showOpt.get());
       return ResponseEntity.ok(
           Map.of(
               "show", showOpt.get().getName(), "matchCount", results.size(), "matches", results));
@@ -142,13 +142,13 @@ public class NPCMatchController {
         return ResponseEntity.badRequest().body(Map.of("error", "Wrestler not found"));
       }
 
-      List<MatchResult> matches =
-          matchResultRepository.findByWrestlerParticipation(wrestlerOpt.get()).stream()
+      List<Match> matches =
+          matchRepository.findByWrestlerParticipation(wrestlerOpt.get()).stream()
               .limit(limit)
               .toList();
 
-      long totalMatches = matchResultRepository.countMatchesByWrestler(wrestlerOpt.get());
-      long wins = matchResultRepository.countWinsByWrestler(wrestlerOpt.get());
+      long totalMatches = matchRepository.countMatchesByWrestler(wrestlerOpt.get());
+      long wins = matchRepository.countWinsByWrestler(wrestlerOpt.get());
 
       return ResponseEntity.ok(
           Map.of(
@@ -175,7 +175,7 @@ public class NPCMatchController {
   @GetMapping("/npc-generated")
   public ResponseEntity<?> getNpcGeneratedMatches() {
     try {
-      List<MatchResult> matches = matchResultRepository.findByIsNpcGeneratedTrue();
+      List<Match> matches = matchRepository.findByIsNpcGeneratedTrue();
       return ResponseEntity.ok(Map.of("npcGeneratedMatches", matches, "count", matches.size()));
 
     } catch (Exception e) {

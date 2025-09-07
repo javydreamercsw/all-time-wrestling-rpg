@@ -1,14 +1,14 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
+import com.github.javydreamercsw.management.domain.show.match.Match;
 import java.util.List;
 import lombok.Data;
 
 @Data
 public class ShowPlanningContext {
-  private List<MatchResult> lastMonthMatches;
+  private List<Match> lastMonthMatches;
   private List<Rivalry> currentRivalries;
-  private List<MatchResult> lastMonthPromos;
+  private List<Match> lastMonthPromos;
   private ShowTemplate showTemplate;
 }

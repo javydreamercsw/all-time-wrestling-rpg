@@ -4,7 +4,7 @@ import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_M
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
+import com.github.javydreamercsw.management.domain.show.match.Match;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
@@ -58,7 +58,7 @@ public class StorylineBranch extends AbstractEntity<Long> {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "triggering_match_id")
   @JsonIgnoreProperties({"participants", "show"})
-  private MatchResult triggeringMatch;
+  private Match triggeringMatch;
 
   // Conditions that must be met for this branch to activate
   @OneToMany(mappedBy = "storylineBranch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -106,7 +106,7 @@ public class StorylineBranch extends AbstractEntity<Long> {
   }
 
   /** Activate this storyline branch. */
-  public void activate(MatchResult triggeringMatch) {
+  public void activate(Match triggeringMatch) {
     if (!isActive || activatedDate != null) {
       return; // Already activated or inactive
     }
