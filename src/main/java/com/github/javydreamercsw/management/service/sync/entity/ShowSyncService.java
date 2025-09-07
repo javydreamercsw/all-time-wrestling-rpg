@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -521,5 +522,37 @@ public class ShowSyncService extends BaseSyncService {
     }
 
     return null;
+  }
+
+  public List<String> getShowIds() {
+    return notionHandler.getDatabasePageIds("Shows");
+  }
+
+  public SyncResult syncShow(@NonNull String showId) {
+    log.info("Starting show synchronization from Notion for ID: {}", showId);
+    String operationId = "show-sync-" + showId;
+    progressTracker.startOperation(operationId, "Show Sync", 4);
+
+    try {
+      Optional<ShowPage> showPage = notionHandler.loadShowById(showId);
+      if (showPage.isEmpty()) {
+        String errorMessage = "Show with ID " + showId + " not found in Notion.";
+        log.error(errorMessage);
+        progressTracker.failOperation(operationId, errorMessage);
+        return SyncResult.failure("Show", errorMessage);
+      }
+
+      List<ShowDTO> showDTOs = convertShowPagesToDTO(List.of(showPage.get()), operationId);
+      int savedCount = saveShowsToDatabase(showDTOs);
+      String message = "Show sync completed successfully. Synced " + savedCount + " show.";
+      log.info(message);
+      progressTracker.completeOperation(operationId, true, message, savedCount);
+      return SyncResult.success("Show", savedCount, 0);
+    } catch (Exception e) {
+      String errorMessage = "Failed to synchronize show from Notion: " + e.getMessage();
+      log.error(errorMessage, e);
+      progressTracker.failOperation(operationId, errorMessage);
+      return SyncResult.failure("Show", errorMessage);
+    }
   }
 }

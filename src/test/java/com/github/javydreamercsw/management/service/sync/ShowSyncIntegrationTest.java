@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,11 +47,19 @@ class ShowSyncIntegrationTest extends BaseTest {
     log.info("🚀 Starting real show sync integration test...");
 
     // When - Perform real sync with real services
-    NotionSyncService.SyncResult result = notionSyncService.syncShows();
+    List<String> showIds = notionSyncService.getAllShowIds();
+    if (showIds.isEmpty()) {
+      log.warn("⏭️ Skipping real integration test - no shows found in Notion");
+      return;
+    }
+    String showIdToSync = showIds.get(0); // Or a random one
+    log.info("🚀 Starting real show sync integration test for show ID: {}", showIdToSync);
+
+    NotionSyncService.SyncResult result = notionSyncService.syncShow(showIdToSync);
 
     // Then - Verify the sync result
     assertNotNull(result, "Sync result should not be null");
-    assertEquals("Shows", result.getEntityType(), "Entity type should be 'Shows'");
+    assertEquals("Show", result.getEntityType(), "Entity type should be 'Show'");
 
     if (result.isSuccess()) {
       log.info("✅ Show sync completed successfully!");
@@ -92,12 +101,18 @@ class ShowSyncIntegrationTest extends BaseTest {
     log.info("🔍 Testing sync result structure validation...");
 
     // When - Perform sync (with or without token)
-    NotionSyncService.SyncResult result = notionSyncService.syncShows();
+    List<String> showIds = notionSyncService.getAllShowIds();
+    if (showIds.isEmpty()) {
+      log.warn("⏭️ Skipping real integration test - no shows found in Notion");
+      return;
+    }
+    String showIdToSync = showIds.get(0);
+    NotionSyncService.SyncResult result = notionSyncService.syncShow(showIdToSync);
 
     // Then - Verify result structure is always valid
     assertNotNull(result, "Sync result should never be null");
     assertNotNull(result.getEntityType(), "Entity type should never be null");
-    assertEquals("Shows", result.getEntityType(), "Entity type should be 'Shows'");
+    assertEquals("Show", result.getEntityType(), "Entity type should be 'Show'");
 
     // Verify numeric fields are valid
     assertTrue(result.getSyncedCount() >= 0, "Synced count should be non-negative");

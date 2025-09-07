@@ -237,4 +237,37 @@ public class MatchSyncService extends BaseSyncService {
     }
     return savedCount;
   }
+
+  public List<String> getMatchIds() {
+    return notionHandler.getDatabasePageIds("Matches");
+  }
+
+  @Transactional
+  public SyncResult syncMatch(@NonNull String matchId) {
+    log.info("🤼 Starting match synchronization from Notion for ID: {}", matchId);
+    String operationId = "match-sync-" + matchId;
+    progressTracker.startOperation(operationId, "Match Sync", 4);
+
+    try {
+      Optional<MatchPage> matchPage = notionHandler.loadMatchById(matchId);
+      if (matchPage.isEmpty()) {
+        String errorMessage = "Match with ID " + matchId + " not found in Notion.";
+        log.error(errorMessage);
+        progressTracker.failOperation(operationId, errorMessage);
+        return SyncResult.failure("Match", errorMessage);
+      }
+
+      List<MatchDTO> matchDTOs = convertMatchesWithRateLimit(List.of(matchPage.get()), operationId);
+      int savedCount = saveMatchesToDatabase(matchDTOs);
+      String message = "Match sync completed successfully. Synced " + savedCount + " match.";
+      log.info(message);
+      progressTracker.completeOperation(operationId, true, message, savedCount);
+      return SyncResult.success("Match", savedCount, 0);
+    } catch (Exception e) {
+      String errorMessage = "Failed to synchronize match from Notion: " + e.getMessage();
+      log.error(errorMessage, e);
+      progressTracker.failOperation(operationId, errorMessage);
+      return SyncResult.failure("Match", errorMessage);
+    }
+  }
 }

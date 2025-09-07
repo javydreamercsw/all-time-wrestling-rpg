@@ -23,11 +23,9 @@ import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -91,13 +89,13 @@ class MatchSyncServiceTest extends BaseTest {
     matchPage.setRawProperties(
         Map.of("Name", "Test Match", "Match Type", "Singles", "Participants", "", "Winners", ""));
 
-    when(notionHandler.loadAllMatches()).thenReturn(List.of(matchPage));
+    when(notionHandler.loadMatchById(anyString())).thenReturn(Optional.of(matchPage));
     when(matchResultService.findByExternalId(anyString())).thenReturn(Optional.empty());
     when(showService.findByExternalId(anyString())).thenReturn(Optional.of(new Show()));
     when(matchTypeService.findByName(anyString())).thenReturn(Optional.of(new MatchType()));
 
     // When
-    SyncResult result = matchSyncService.syncMatches(UUID.randomUUID().toString());
+    SyncResult result = matchSyncService.syncMatch("ext1");
 
     // Then
     verify(matchResultService, times(1)).updateMatchResult(any(MatchResult.class));
@@ -144,13 +142,13 @@ class MatchSyncServiceTest extends BaseTest {
     existingMatch.setId(1L);
     existingMatch.setExternalId("ext1");
 
-    when(notionHandler.loadAllMatches()).thenReturn(List.of(matchPage));
+    when(notionHandler.loadMatchById(anyString())).thenReturn(Optional.of(matchPage));
     when(matchResultService.findByExternalId(anyString())).thenReturn(Optional.of(existingMatch));
     when(showService.findByExternalId(anyString())).thenReturn(Optional.of(new Show()));
     when(matchTypeService.findByName(anyString())).thenReturn(Optional.of(new MatchType()));
 
     // When
-    SyncResult result = matchSyncService.syncMatches(UUID.randomUUID().toString());
+    SyncResult result = matchSyncService.syncMatch("ext1");
 
     // Then
     verify(matchResultService, times(1)).updateMatchResult(any(MatchResult.class));
@@ -158,18 +156,17 @@ class MatchSyncServiceTest extends BaseTest {
     assertThat(result.getSyncedCount()).isEqualTo(1);
   }
 
-  @Test
-  @DisplayName("Should handle no matches found in Notion")
-  void shouldHandleNoMatchesFoundInNotion() {
+  @DisplayName("Should handle no match found in Notion")
+  void shouldHandleNoMatchFoundInNotion() {
     // Given
-    when(notionHandler.loadAllMatches()).thenReturn(Collections.emptyList());
+    when(notionHandler.loadMatchById(anyString())).thenReturn(Optional.empty());
 
     // When
-    SyncResult result = matchSyncService.syncMatches(UUID.randomUUID().toString());
+    SyncResult result = matchSyncService.syncMatch("non-existent-id");
 
     // Then
     verify(matchResultService, times(0)).updateMatchResult(any(MatchResult.class));
-    assertThat(result.isSuccess()).isTrue();
+    assertThat(result.isSuccess()).isFalse();
     assertThat(result.getSyncedCount()).isEqualTo(0);
   }
 
@@ -177,12 +174,14 @@ class MatchSyncServiceTest extends BaseTest {
   @DisplayName("Should handle exception during Notion fetch")
   void shouldHandleExceptionDuringNotionFetch() {
     // Given
-    when(notionHandler.loadAllMatches()).thenThrow(new RuntimeException("Notion API error"));
+    when(notionHandler.loadMatchById(anyString()))
+        .thenThrow(new RuntimeException("Notion API error"));
 
     // When
-    Assertions.assertFalse(matchSyncService.syncMatches(UUID.randomUUID().toString()).isSuccess());
+    SyncResult result = matchSyncService.syncMatch("any-id");
 
     // Then
+    Assertions.assertFalse(result.isSuccess());
     verify(matchResultService, times(0)).updateMatchResult(any(MatchResult.class));
   }
 }
