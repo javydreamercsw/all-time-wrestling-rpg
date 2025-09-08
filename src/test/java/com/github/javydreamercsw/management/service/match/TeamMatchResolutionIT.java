@@ -18,6 +18,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,13 +26,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
-@Transactional(propagation = Propagation.NOT_SUPPORTED)
+@Transactional
 @DisplayName("Team Match Resolution Integration Tests")
 class TeamMatchResolutionIT {
 
@@ -57,19 +57,56 @@ class TeamMatchResolutionIT {
 
   @BeforeEach
   void setUp() {
-    // Create test wrestlers
-    rookie1 = wrestlerService.createWrestler("Rookie One", true, null);
-    rookie2 = wrestlerService.createWrestler("Rookie Two", true, null);
-    rookie3 = wrestlerService.createWrestler("Rookie Three", true, null);
-    rookie4 = wrestlerService.createWrestler("Rookie Four", true, null);
-    contender1 = wrestlerService.createWrestler("Contender One", true, null);
-    contender2 = wrestlerService.createWrestler("Contender Two", true, null);
+    // Create and save test wrestlers
+    rookie1 = new Wrestler();
+    rookie1.setName("Rookie One");
+    rookie1.setIsPlayer(true);
+    rookie1.setDeckSize(0);
+    rookie1.setStartingStamina(100);
+    rookie1.setLowStamina(25);
+    rookie1.setStartingHealth(100);
+    rookie1.setLowHealth(25);
+    rookie1 = wrestlerRepository.saveAndFlush(rookie1);
+
+    rookie2 = new Wrestler();
+    rookie2.setName("Rookie Two");
+    rookie2.setIsPlayer(true);
+    rookie2.setDeckSize(0);
+    rookie2 = wrestlerRepository.saveAndFlush(rookie2);
+
+    rookie3 = new Wrestler();
+    rookie3.setName("Rookie Three");
+    rookie3.setIsPlayer(true);
+    rookie3.setDeckSize(0);
+    rookie3 = wrestlerRepository.saveAndFlush(rookie3);
+
+    rookie4 = new Wrestler();
+    rookie4.setName("Rookie Four");
+    rookie4.setIsPlayer(true);
+    rookie4.setDeckSize(0);
+    rookie4 = wrestlerRepository.saveAndFlush(rookie4);
+
+    contender1 = new Wrestler();
+    contender1.setName("Contender One");
+    contender1.setIsPlayer(true);
+    contender1.setDeckSize(0);
+    contender1 = wrestlerRepository.saveAndFlush(contender1);
+
+    contender2 = new Wrestler();
+    contender2.setName("Contender Two");
+    contender2.setIsPlayer(true);
+    contender2.setDeckSize(0);
+    contender2 = wrestlerRepository.saveAndFlush(contender2);
 
     // Award fans to create tier differences
-    wrestlerService.awardFans(contender1.getId(), 45000L); // CONTENDER tier
-    wrestlerService.awardFans(contender2.getId(), 45000L); // CONTENDER tier
+    // Now that wrestlers are saved, their IDs are available and they are managed
+    Assertions.assertNotNull(contender1.getId());
+    wrestlerService.awardFans(contender1.getId(), 45_000L); // CONTENDER tier
+    Assertions.assertNotNull(contender2.getId());
+    wrestlerService.awardFans(contender2.getId(), 45_000L); // CONTENDER tier
 
     // Refresh wrestler entities from database to get updated fan counts
+    // These should now be found as they were explicitly saved and flushed
     contender1 = wrestlerRepository.findById(contender1.getId()).orElseThrow();
     contender2 = wrestlerRepository.findById(contender2.getId()).orElseThrow();
 
