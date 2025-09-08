@@ -18,4 +18,8 @@
   "name" : "Promo",
   "description" : "Non-wrestling segment for storyline development and character work",
   "playerAmount" : -1
+}, {
+  "name" : "Handicap Match",
+  "description" : "A match with uneven teams, where one side has a numerical disadvantage",
+  "playerAmount" : -1
 } ]

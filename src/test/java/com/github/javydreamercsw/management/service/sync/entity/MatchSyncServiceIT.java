@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.TestcontainersConfiguration;
 import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.service.match.MatchService;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,13 +41,8 @@ class MatchSyncServiceIT extends BaseTest {
   @Test
   @DisplayName("Should return failure for non-existent match ID")
   void shouldReturnFailureForNonExistentMatchId() {
-    // Given
-    String nonExistentMatchId = "non-existent-id-123";
+    MatchSyncService.SyncResult result = matchSyncService.syncMatch(UUID.randomUUID().toString());
 
-    // When
-    MatchSyncService.SyncResult result = matchSyncService.syncMatch(nonExistentMatchId);
-
-    // Then
     assertThat(result).isNotNull();
     assertThat(result.isSuccess()).isFalse();
     assertThat(result.getErrorMessage()).contains("not found in Notion");
