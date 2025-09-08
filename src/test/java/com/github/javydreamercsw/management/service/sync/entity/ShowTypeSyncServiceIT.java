@@ -33,7 +33,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Show Type Sync Service Tests")
-class ShowTypeSyncServiceTest extends BaseTest {
+class ShowTypeSyncServiceIT extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
@@ -46,7 +46,7 @@ class ShowTypeSyncServiceTest extends BaseTest {
   private ShowTypeSyncService showTypeSyncService;
 
   // Constructor to configure the mock before setUp()
-  public ShowTypeSyncServiceTest() {
+  public ShowTypeSyncServiceIT() {
     syncProperties = mock(NotionSyncProperties.class); // Manually create mock
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
