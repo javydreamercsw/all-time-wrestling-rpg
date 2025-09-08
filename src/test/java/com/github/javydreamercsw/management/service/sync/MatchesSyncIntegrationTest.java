@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.base.test.BaseTest;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.match.MatchResult;
@@ -41,6 +42,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private MatchTypeRepository matchTypeRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private DeckRepository deckRepository;
 
   private Show testShow;
   private MatchType testMatchType;
@@ -52,6 +54,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
     // Clean up existing data
     matchResultRepository.deleteAll();
     showRepository.deleteAll();
+    deckRepository.deleteAll(); // Add this
     wrestlerRepository.deleteAll();
     matchTypeRepository.deleteAll();
     showTypeRepository.deleteAll();
@@ -75,14 +78,14 @@ class MatchesSyncIntegrationTest extends BaseTest {
     System.out.println(
         "DEBUG: Found show by name: "
             + foundShow.isPresent()
-            + (foundShow.isPresent() ? " (ID: " + foundShow.get().getId() + ")" : ""));
+            + (foundShow.map(show -> " (ID: " + show.getId() + ")").orElse("")));
 
     // Test ShowService directly
     Optional<Show> foundByService = showService.findByName("Test Show");
     System.out.println(
         "DEBUG: Found show by service: "
             + foundByService.isPresent()
-            + (foundByService.isPresent() ? " (ID: " + foundByService.get().getId() + ")" : ""));
+            + (foundByService.map(show -> " (ID: " + show.getId() + ")").orElse("")));
 
     testMatchType = new MatchType();
     testMatchType.setName("Singles");

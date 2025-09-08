@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -46,7 +47,7 @@ class NpcSyncServiceTest extends BaseTest {
   @Mock private DataIntegrityChecker integrityChecker;
   @Mock private NotionRateLimitService rateLimitService;
 
-  private NpcSyncService npcSyncService;
+  @InjectMocks NpcSyncService npcSyncService;
 
   // Constructor to configure the mock before setUp()
   public NpcSyncServiceTest() {
@@ -57,9 +58,8 @@ class NpcSyncServiceTest extends BaseTest {
 
   @BeforeEach
   void setUp() {
-    npcSyncService = new NpcSyncService(objectMapper, syncProperties); // Manually create instance
-
     // Manually inject all mocked dependencies using reflection
+    setField(npcSyncService, "npcService", npcService); // Add this line
     setField(npcSyncService, "notionHandler", notionHandler);
     setField(npcSyncService, "progressTracker", progressTracker);
     setField(npcSyncService, "healthMonitor", healthMonitor);
