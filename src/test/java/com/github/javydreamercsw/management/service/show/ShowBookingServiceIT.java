@@ -108,8 +108,11 @@ class ShowBookingServiceIT {
 
     // Verify all segments have valid participants
     for (Match segment : allSegments) {
+      System.out.println(segment);
       assertThat(segment.getWrestlers()).isNotEmpty();
-      assertThat(segment.getWinner()).isNotNull();
+      if (!segment.getMatchType().getName().equals("Promo")) {
+        assertThat(segment.getWinner()).isNotNull();
+      }
       assertThat(segment.getShow()).isEqualTo(show);
     }
   }
@@ -266,7 +269,9 @@ class ShowBookingServiceIT {
 
     for (Match segment : allSegments) {
       // Each segment should have basic required fields
-      assertThat(segment.getWinner()).isNotNull();
+      if (!segment.getMatchType().getName().equals("Promo")) { // Only matches have winners
+        assertThat(segment.getWinner()).isNotNull();
+      }
       assertThat(segment.getMatchDate()).isNotNull();
       assertThat(segment.getMatchRating()).isBetween(1, 5);
       assertThat(segment.getShow()).isEqualTo(show);
