@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.TestcontainersConfiguration;
 import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.service.match.MatchService;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,15 +30,19 @@ class MatchSyncServiceIT extends BaseTest {
   @Test
   @DisplayName("Should sync a single match by ID")
   void shouldSyncSingleMatchById() {
-    String knownMatchId = matchSyncService.getMatchIds().get(0);
-
-    // When
-    MatchSyncService.SyncResult result = matchSyncService.syncMatch(knownMatchId);
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(1);
-    assertThat(matchService.findByExternalId(knownMatchId)).isPresent();
+    List<String> matchIds = matchSyncService.getMatchIds();
+    Random r = new Random();
+    Arrays.asList(
+            matchIds.get(r.nextInt(matchIds.size())), matchIds.get(r.nextInt(matchIds.size())))
+        .forEach(
+            knownMatchId -> { // When
+              MatchSyncService.SyncResult result = matchSyncService.syncMatch(knownMatchId);
+              // Then
+              assertThat(result).isNotNull();
+              assertThat(result.isSuccess()).isTrue();
+              assertThat(result.getSyncedCount()).isEqualTo(1);
+              assertThat(matchService.findByExternalId(knownMatchId)).isPresent();
+            });
   }
 
   @Test

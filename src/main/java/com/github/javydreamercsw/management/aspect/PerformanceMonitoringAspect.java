@@ -9,14 +9,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
 /**
  * Aspect for monitoring performance of critical operations. Automatically tracks execution times
  * and logs slow operations.
  */
-@Aspect
+// @Aspect
 @Component
 @RequiredArgsConstructor
 @Slf4j
