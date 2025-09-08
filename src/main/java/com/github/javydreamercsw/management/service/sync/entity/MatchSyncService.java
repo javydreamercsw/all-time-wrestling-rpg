@@ -27,6 +27,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -201,7 +202,12 @@ public class MatchSyncService extends BaseSyncService {
     int savedCount = 0;
     for (MatchDTO matchDTO : matchDTOs) {
       try {
-        Optional<Match> existingMatchOpt = matchService.findByExternalId(matchDTO.getExternalId());
+        Optional<Match> existingMatchOpt;
+        if (matchDTO.getExternalId() == null) {
+          existingMatchOpt = Optional.empty();
+        } else {
+          existingMatchOpt = matchService.findByExternalId(matchDTO.getExternalId());
+        }
 
         Match match = existingMatchOpt.orElseGet(Match::new);
 
@@ -288,7 +294,7 @@ public class MatchSyncService extends BaseSyncService {
     return notionHandler.getDatabasePageIds("Matches");
   }
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public SyncResult syncMatch(@NonNull String matchId) {
     log.info("🤼 Starting match synchronization from Notion for ID: {}", matchId);
     String operationId = "match-sync-" + matchId;
