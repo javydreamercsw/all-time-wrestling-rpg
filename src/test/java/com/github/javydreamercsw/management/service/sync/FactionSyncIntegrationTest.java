@@ -10,7 +10,7 @@ import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -43,8 +43,8 @@ class FactionSyncIntegrationTest extends BaseTest {
   @Autowired private FactionRepository factionRepository;
   @Autowired private WrestlerSyncService wrestlerSyncService;
 
-  @BeforeClass
-  public void synceWrestlers() {
+  @BeforeEach
+  public void syncWrestlers() {
     wrestlerSyncService.syncWrestlers("sync-test");
   }
 
@@ -103,7 +103,7 @@ class FactionSyncIntegrationTest extends BaseTest {
                     "\n  - Faction '%s' (ID: %d) has no members",
                     faction.getName(), faction.getId()));
           }
-          log.error("❌ {}", errorMessage.toString());
+          log.error("❌ {}", errorMessage);
           fail(errorMessage.toString());
         }
 

@@ -204,7 +204,7 @@ class NPCMatchResolutionServiceIT {
 
     // When - Run multiple matches to test impact
     int rookie2Wins = 0;
-    int totalMatches = 50;
+    int totalMatches = 100;
 
     for (int i = 0; i < totalMatches; i++) {
       MatchTeam team1 = new MatchTeam(rookie1);

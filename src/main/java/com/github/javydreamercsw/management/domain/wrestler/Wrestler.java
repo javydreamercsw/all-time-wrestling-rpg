@@ -99,6 +99,11 @@ public class Wrestler extends AbstractEntity<Long> {
   @JsonIgnore
   private List<Rivalry> rivalriesAsWrestler2 = new ArrayList<>();
 
+  /** Decks associated with this wrestler */
+  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonIgnore
+  private List<com.github.javydreamercsw.management.domain.deck.Deck> decks = new ArrayList<>();
+
   /** Faction this wrestler belongs to (if any) */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "faction_id")
