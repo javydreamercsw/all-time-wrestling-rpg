@@ -1,6 +1,6 @@
 package com.github.javydreamercsw.management.domain.storyline;
 
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
+import com.github.javydreamercsw.management.domain.show.match.Match;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -38,7 +38,7 @@ public interface StorylineBranchRepository
   List<StorylineBranch> findByCompletedDateIsNotNull();
 
   /** Find branches triggered by a specific match. */
-  List<StorylineBranch> findByTriggeringMatch(MatchResult matchResult);
+  List<StorylineBranch> findByTriggeringMatch(Match matchResult);
 
   /** Find branches by priority range. */
   @Query(

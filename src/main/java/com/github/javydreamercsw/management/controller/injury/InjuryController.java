@@ -95,10 +95,10 @@ public class InjuryController {
           .body(new ErrorResponse("Wrestler has less than 3 bumps (" + wrestler.getBumps() + ")"));
     }
 
-    Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestlerId);
+    Injury injury = injuryService.createInjuryFromBumps(wrestler);
 
-    if (injury.isPresent()) {
-      return ResponseEntity.status(HttpStatus.CREATED).body(injury.get());
+    if (injury != null) {
+      return ResponseEntity.status(HttpStatus.CREATED).body(injury);
     } else {
       return ResponseEntity.badRequest().body(new ErrorResponse("Failed to create injury"));
     }

@@ -7,8 +7,8 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.match.Match;
+import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import java.time.Clock;
@@ -38,7 +38,7 @@ public class StorylineContinuityService {
 
   @Autowired private final SeasonRepository seasonRepository;
   @Autowired private final ShowRepository showRepository;
-  @Autowired private final MatchResultRepository matchResultRepository;
+  @Autowired private final MatchRepository matchRepository;
   @Autowired private final DramaEventRepository dramaEventRepository;
   @Autowired private final RivalryService rivalryService;
   @Autowired private final Clock clock;
@@ -116,14 +116,14 @@ public class StorylineContinuityService {
    * @return Storyline progression analysis
    */
   public StorylineProgression analyzeStorylineProgression(@NonNull Long showId) {
-    List<MatchResult> matches =
-        showRepository.findById(showId).map(matchResultRepository::findByShow).orElse(List.of());
+    List<Match> matches =
+        showRepository.findById(showId).map(matchRepository::findByShow).orElse(List.of());
 
     int rivalryMatches = 0;
     int storylineAdvancement = 0;
     List<String> progressionNotes = new ArrayList<>();
 
-    for (MatchResult match : matches) {
+    for (Match match : matches) {
       // Check if match involves rivalry
       List<Wrestler> wrestlers = match.getWrestlers();
       if (wrestlers.size() == 2) {
@@ -223,7 +223,7 @@ public class StorylineContinuityService {
             .filter(
                 show -> {
                   // Get first match date as proxy for show date
-                  List<MatchResult> matches = matchResultRepository.findByShow(show);
+                  List<Match> matches = matchRepository.findByShow(show);
                   if (matches.isEmpty()) return false;
 
                   Instant showDate = matches.get(0).getMatchDate();
@@ -232,7 +232,7 @@ public class StorylineContinuityService {
             .toList();
 
     int totalRecentMatches =
-        recentShows.stream().mapToInt(show -> matchResultRepository.findByShow(show).size()).sum();
+        recentShows.stream().mapToInt(show -> matchRepository.findByShow(show).size()).sum();
 
     if (totalRecentMatches < 10) {
       issues.add("Low match activity in recent shows");
@@ -302,7 +302,7 @@ public class StorylineContinuityService {
                   + rivalry.getWrestler1().getName()
                   + " vs "
                   + rivalry.getWrestler2().getName(),
-              "Book a high-stakes match with special stipulation",
+              "Book a high-stakes match with special rule",
               StorylinePriority.HIGH));
     } else if (rivalry.getHeat() >= 10 && rivalry.getHeat() < 20) {
       suggestions.add(

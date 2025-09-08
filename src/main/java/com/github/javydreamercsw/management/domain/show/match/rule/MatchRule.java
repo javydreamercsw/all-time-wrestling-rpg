@@ -1,6 +1,4 @@
-package com.github.javydreamercsw.management.domain.show.match.stipulation;
-
-import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
+package com.github.javydreamercsw.management.domain.show.match.rule;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.Column;
@@ -26,7 +24,7 @@ import org.jspecify.annotations.Nullable;
  * multiple rules applied to it.
  */
 @Entity
-@Table(name = "match_rule", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
+@Table(name = "match_stipulation", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
 public class MatchRule extends AbstractEntity<Long> {

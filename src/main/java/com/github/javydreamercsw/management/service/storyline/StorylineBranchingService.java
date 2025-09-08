@@ -1,6 +1,6 @@
 package com.github.javydreamercsw.management.service.storyline;
 
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
+import com.github.javydreamercsw.management.domain.show.match.Match;
 import com.github.javydreamercsw.management.domain.storyline.*;
 import java.time.Clock;
 import java.time.Instant;
@@ -160,8 +160,7 @@ public class StorylineBranchingService {
   }
 
   /** Activate a storyline branch. */
-  public Optional<StorylineBranch> activateBranch(
-      @NonNull Long branchId, MatchResult triggeringMatch) {
+  public Optional<StorylineBranch> activateBranch(@NonNull Long branchId, Match triggeringMatch) {
     Optional<StorylineBranch> branchOpt = storylineBranchRepository.findById(branchId);
 
     if (branchOpt.isEmpty()) {
@@ -214,8 +213,8 @@ public class StorylineBranchingService {
   }
 
   /** Process match outcome for storyline branching. */
-  public void processMatchOutcome(@NonNull MatchResult matchResult) {
-    log.info("Processing match outcome for storyline branching: Match ID {}", matchResult.getId());
+  public void processMatchOutcome(@NonNull Match match) {
+    log.info("Processing match outcome for storyline branching: Match ID {}", match.getId());
 
     // Get all match outcome branches
     List<StorylineBranch> matchOutcomeBranches =
@@ -223,30 +222,30 @@ public class StorylineBranchingService {
 
     for (StorylineBranch branch : matchOutcomeBranches) {
       if (branch.areConditionsMet()) {
-        activateBranch(branch.getId(), matchResult);
+        activateBranch(branch.getId(), match);
       }
     }
 
     // Check for other branch types that might be triggered by match outcomes
-    processRivalryEscalationBranches(matchResult);
-    processTitleChangeBranches(matchResult);
+    processRivalryEscalationBranches(match);
+    processTitleChangeBranches(match);
   }
 
   /** Process rivalry escalation branches. */
-  private void processRivalryEscalationBranches(@NonNull MatchResult matchResult) {
+  private void processRivalryEscalationBranches(@NonNull Match match) {
     List<StorylineBranch> rivalryBranches =
         getBranchesByType(StorylineBranchType.RIVALRY_ESCALATION);
 
     for (StorylineBranch branch : rivalryBranches) {
       if (branch.areConditionsMet()) {
-        activateBranch(branch.getId(), matchResult);
+        activateBranch(branch.getId(), match);
       }
     }
   }
 
   /** Process title change branches. */
-  private void processTitleChangeBranches(@NonNull MatchResult matchResult) {
-    if (!matchResult.getIsTitleMatch()) {
+  private void processTitleChangeBranches(@NonNull Match match) {
+    if (!match.getIsTitleMatch()) {
       return; // Not a title match
     }
 
@@ -254,7 +253,7 @@ public class StorylineBranchingService {
 
     for (StorylineBranch branch : titleBranches) {
       if (branch.areConditionsMet()) {
-        activateBranch(branch.getId(), matchResult);
+        activateBranch(branch.getId(), match);
       }
     }
   }

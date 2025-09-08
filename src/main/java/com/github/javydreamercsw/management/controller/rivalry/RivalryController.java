@@ -183,9 +183,9 @@ public class RivalryController {
   }
 
   @Operation(
-      summary = "Get rivalries requiring stipulation matches",
-      description = "Gets rivalries requiring stipulation matches (30+ heat)")
-  @GetMapping("/requiring-stipulation")
+      summary = "Get rivalries requiring rule matches",
+      description = "Gets rivalries requiring rule matches (30+ heat)")
+  @GetMapping("/requiring-rule")
   public ResponseEntity<List<Rivalry>> getRivalriesRequiringStipulationMatches() {
     List<Rivalry> rivalries = rivalryService.getRivalriesRequiringStipulationMatches();
     return ResponseEntity.ok(rivalries);

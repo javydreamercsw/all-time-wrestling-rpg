@@ -5,8 +5,8 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.match.Match;
+import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import java.time.Clock;
@@ -25,7 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ShowPlanningServiceTest {
 
-  @Mock private MatchResultRepository matchResultRepository;
+  @Mock private MatchRepository matchRepository;
   @Mock private RivalryService rivalryService;
   @Mock private PromoBookingService promoBookingService;
 
@@ -36,7 +36,7 @@ class ShowPlanningServiceTest {
   void setUp() {
     clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
     showPlanningService =
-        new ShowPlanningService(matchResultRepository, rivalryService, promoBookingService, clock);
+        new ShowPlanningService(matchRepository, rivalryService, promoBookingService, clock);
   }
 
   @Test
@@ -47,15 +47,11 @@ class ShowPlanningServiceTest {
     show.setShowDate(LocalDate.now());
 
     Instant lastMonth = clock.instant().minus(30, ChronoUnit.DAYS);
-    List<MatchResult> matches = Collections.singletonList(new MatchResult());
-    // MODIFIED: Mock findByMatchDateBetween instead of findByMatchDateAfter
-    when(matchResultRepository.findByMatchDateBetween(any(Instant.class), any(Instant.class)))
-        .thenReturn(matches);
+    List<Match> matches = Collections.singletonList(new Match());
+    when(matchRepository.findByMatchDateBetween(any(), any())).thenReturn(matches);
 
     List<Rivalry> rivalries = Collections.singletonList(new Rivalry());
-    // MODIFIED: Mock getActiveRivalriesBetween instead of getActiveRivalries
-    when(rivalryService.getActiveRivalriesBetween(any(Instant.class), any(Instant.class)))
-        .thenReturn(rivalries);
+    when(rivalryService.getActiveRivalriesBetween(any(), any())).thenReturn(rivalries);
 
     when(promoBookingService.isPromoSegment(any())).thenReturn(true);
 

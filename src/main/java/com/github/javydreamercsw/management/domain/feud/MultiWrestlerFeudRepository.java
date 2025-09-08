@@ -55,7 +55,7 @@ public interface MultiWrestlerFeudRepository
   @Query("SELECT f FROM MultiWrestlerFeud f WHERE f.isActive = true AND f.heat >= 20")
   List<MultiWrestlerFeud> findFeudsEligibleForResolution();
 
-  /** Find feuds requiring stipulation matches (30+ heat). */
+  /** Find feuds requiring rule matches (30+ heat). */
   @Query("SELECT f FROM MultiWrestlerFeud f WHERE f.isActive = true AND f.heat >= 30")
   List<MultiWrestlerFeud> findFeudsRequiringStipulationMatches();
 

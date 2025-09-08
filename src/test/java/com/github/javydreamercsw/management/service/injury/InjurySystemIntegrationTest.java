@@ -3,12 +3,13 @@ package com.github.javydreamercsw.management.service.injury;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.TestcontainersConfiguration;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -46,10 +47,11 @@ class InjurySystemIntegrationTest {
   @Autowired private NPCMatchResolutionService npcMatchResolutionService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private InjuryRepository injuryRepository;
-  @Autowired private MatchResultRepository matchResultRepository;
+  @Autowired private MatchRepository matchRepository;
   @Autowired private MatchTypeRepository matchTypeRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private DeckRepository deckRepository;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -61,8 +63,9 @@ class InjurySystemIntegrationTest {
   @BeforeEach
   void setUp() {
     // Clean up
-    matchResultRepository.deleteAll();
+    matchRepository.deleteAll();
     injuryRepository.deleteAll();
+    deckRepository.deleteAll();
     wrestlerRepository.deleteAll();
     showRepository.deleteAll();
     showTypeRepository.deleteAll();

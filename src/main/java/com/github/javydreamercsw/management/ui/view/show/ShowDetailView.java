@@ -2,8 +2,8 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.match.Match;
+import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -51,7 +51,7 @@ import java.util.Optional;
 public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   private final ShowService showService;
-  private final MatchResultRepository matchResultRepository;
+  private final MatchRepository matchRepository;
   private final MatchTypeRepository matchTypeRepository;
   private final WrestlerRepository wrestlerRepository;
   private Show currentShow;
@@ -62,11 +62,11 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   public ShowDetailView(
       ShowService showService,
-      MatchResultRepository matchResultRepository,
+      MatchRepository matchRepository,
       MatchTypeRepository matchTypeRepository,
       WrestlerRepository wrestlerRepository) {
     this.showService = showService;
-    this.matchResultRepository = matchResultRepository;
+    this.matchRepository = matchRepository;
     this.matchTypeRepository = matchTypeRepository;
     this.wrestlerRepository = wrestlerRepository;
     initializeComponents();
@@ -104,14 +104,13 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
   @Override
   public void setParameter(BeforeEvent event, Long showId) {
     // Detect referrer from query parameters or referer header
-    String refererParam =
+    this.referrer =
         event
             .getLocation()
             .getQueryParameters()
             .getParameters()
-            .getOrDefault("ref", java.util.List.of("shows"))
+            .getOrDefault("ref", List.of("shows"))
             .get(0);
-    this.referrer = refererParam;
 
     if (showId != null) {
       loadShow(showId);
@@ -386,7 +385,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     header.add(matchesTitle, addMatchBtn);
 
     // Get matches for this show
-    List<MatchResult> matches = matchResultRepository.findByShow(show);
+    List<Match> matches = matchRepository.findByShow(show);
 
     VerticalLayout matchesLayout = new VerticalLayout();
     matchesLayout.setSpacing(false);
@@ -400,7 +399,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       matchesLayout.add(noMatches);
     } else {
       // Create matches grid
-      Grid<MatchResult> matchesGrid = createMatchesGrid(matches);
+      Grid<Match> matchesGrid = createMatchesGrid(matches);
       matchesGrid.setHeight("400px"); // Set a reasonable height for the grid
       matchesLayout.add(matchesGrid);
       matchesLayout.setFlexGrow(1, matchesGrid); // Let grid expand
@@ -410,8 +409,8 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     return card;
   }
 
-  private Grid<MatchResult> createMatchesGrid(List<MatchResult> matches) {
-    Grid<MatchResult> grid = new Grid<>(MatchResult.class, false);
+  private Grid<Match> createMatchesGrid(List<Match> matches) {
+    Grid<Match> grid = new Grid<>(Match.class, false);
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.setItems(matches);
     grid.setSizeFull(); // Make grid use full available space
@@ -427,7 +426,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     grid.addColumn(
             match -> {
               List<String> wrestlerNames =
-                  match.getWrestlers().stream().map(wrestler -> wrestler.getName()).toList();
+                  match.getWrestlers().stream().map(Wrestler::getName).toList();
               return String.join(" vs ", wrestlerNames);
             })
         .setHeader("Participants")
@@ -591,24 +590,27 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     }
 
     try {
-      // Create match result
-      MatchResult matchResult = new MatchResult();
-      matchResult.setShow(show);
-      matchResult.setMatchType(matchType);
-      matchResult.setWinner(winner);
-      matchResult.setMatchDate(java.time.Instant.now());
-      matchResult.setMatchRating(rating);
-      matchResult.setDurationMinutes(duration);
-      matchResult.setIsTitleMatch(false);
-      matchResult.setIsNpcGenerated(false);
+      // Create match
+      Match match = new Match();
+      match.setShow(show);
+      match.setMatchType(matchType);
+      match.setMatchDate(java.time.Instant.now());
+      match.setMatchRating(rating);
+      match.setDurationMinutes(duration);
+      match.setIsTitleMatch(false);
+      match.setIsNpcGenerated(false);
 
       // Add participants
       for (Wrestler wrestler : wrestlers) {
-        matchResult.addParticipant(wrestler, wrestler.equals(winner));
+        match.addParticipant(wrestler);
+      }
+
+      if (winner != null) {
+        match.setWinner(winner);
       }
 
       // Save the match
-      matchResultRepository.save(matchResult);
+      matchRepository.save(match);
 
       Notification.show("Match added successfully!", 3000, Notification.Position.BOTTOM_START)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
