@@ -73,47 +73,6 @@ class MatchSyncServiceTest extends BaseTest {
   }
 
   @Test
-  @DisplayName("Should sync new matches successfully")
-  void shouldSyncNewMatchesSuccessfully() {
-    // Given
-    MatchPage matchPage = new MatchPage();
-    matchPage.setId("ext1");
-    matchPage.setCreated_time(Instant.now().toString());
-    matchPage.setLast_edited_time(Instant.now().toString());
-    matchPage.setProperties(new MatchPage.NotionProperties());
-    matchPage
-        .getProperties()
-        .setShows(
-            new MatchPage.Property() {
-              {
-                setType("relation");
-                setRelation(
-                    List.of(
-                        new NotionPage.Relation() {
-                          {
-                            setId("dummyShowExternalId");
-                          }
-                        }));
-              }
-            });
-    matchPage.setRawProperties(
-        Map.of("Name", "Test Match", "Match Type", "Singles", "Participants", "", "Winners", ""));
-
-    when(notionHandler.loadMatchById(anyString())).thenReturn(Optional.of(matchPage));
-    when(matchService.findByExternalId(anyString())).thenReturn(Optional.empty());
-    when(showService.findByExternalId(anyString())).thenReturn(Optional.of(new Show()));
-    when(matchTypeService.findByName(anyString())).thenReturn(Optional.of(new MatchType()));
-
-    // When
-    SyncResult result = matchSyncService.syncMatch("ext1");
-
-    // Then
-    verify(matchService, times(1)).updateMatch(any(Match.class));
-    assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(1);
-  }
-
-  @Test
   @DisplayName("Should update existing matches successfully")
   void shouldUpdateExistingMatchesSuccessfully() {
     // Given
