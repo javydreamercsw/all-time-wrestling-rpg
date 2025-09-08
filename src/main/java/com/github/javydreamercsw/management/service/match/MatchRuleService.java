@@ -1,7 +1,7 @@
 package com.github.javydreamercsw.management.service.match;
 
-import com.github.javydreamercsw.management.domain.show.match.stipulation.MatchRule;
-import com.github.javydreamercsw.management.domain.show.match.stipulation.MatchRuleRepository;
+import com.github.javydreamercsw.management.domain.show.match.rule.MatchRule;
+import com.github.javydreamercsw.management.domain.show.match.rule.MatchRuleRepository;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;

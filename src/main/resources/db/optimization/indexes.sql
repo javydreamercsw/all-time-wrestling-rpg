@@ -167,13 +167,13 @@ CREATE INDEX IF NOT EXISTS idx_show_template_type ON show_template(show_type_id)
 -- Index for template external ID (Notion sync)
 CREATE INDEX IF NOT EXISTS idx_show_template_external_id ON show_template(external_id);
 
--- ==================== MATCH RULE TABLE INDEXES ====================
+-- ==================== MATCH STIPULATION TABLE INDEXES ====================
 
--- Index for match rule name searches
-CREATE INDEX IF NOT EXISTS idx_match_rule_name ON match_rule(name);
+-- Index for match stipulation name searches
+CREATE INDEX IF NOT EXISTS idx_match_stipulation_name ON match_stipulation(name);
 
--- Index for high heat match rules
-CREATE INDEX IF NOT EXISTS idx_match_rule_high_heat ON match_rule(requires_high_heat);
+-- Index for high heat match stipulations
+CREATE INDEX IF NOT EXISTS idx_match_stipulation_high_heat ON match_stipulation(requires_high_heat);
 
 -- ==================== MATCH TYPE TABLE INDEXES ====================
 

@@ -31,9 +31,9 @@ public class MatchParticipant extends AbstractEntity<Long> {
   private Long id;
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
-  @JoinColumn(name = "match_result_id", nullable = false)
+  @JoinColumn(name = "match_id", nullable = false)
   @JsonIgnoreProperties({"participants"})
-  private MatchResult matchResult;
+  private Match match;
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "wrestler_id", nullable = false)

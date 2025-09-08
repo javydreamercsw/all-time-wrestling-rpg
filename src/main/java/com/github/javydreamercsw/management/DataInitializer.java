@@ -7,7 +7,9 @@ import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
-import com.github.javydreamercsw.management.domain.show.match.stipulation.MatchRuleRepository;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.show.match.rule.MatchRule;
+import com.github.javydreamercsw.management.domain.show.match.rule.MatchRuleRepository;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -26,6 +28,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.NonNull;
@@ -33,18 +36,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
 
 @Slf4j
-@Configuration
+@Component
 public class DataInitializer {
 
   @Autowired private CardRepository cardRepository;
   @Autowired private CardSetRepository cardSetRepository;
   @Autowired private MatchRuleRepository matchRuleRepository;
   @Autowired private ShowTemplateRepository showTemplateRepository;
+  @Autowired private DeckRepository deckRepository;
 
   @Bean
   @Order(-1)
@@ -58,10 +62,16 @@ public class DataInitializer {
           var matchRulesFromFile = mapper.readValue(is, new TypeReference<List<MatchRuleDTO>>() {});
 
           for (MatchRuleDTO dto : matchRulesFromFile) {
-            matchRuleService.createOrUpdateRule(
-                dto.getName(), dto.getDescription(), dto.isRequiresHighHeat());
-            log.info(
-                "Loaded match rule: {} (High Heat: {})", dto.getName(), dto.isRequiresHighHeat());
+            // Only create if it doesn't exist
+            Optional<MatchRule> existingRule = matchRuleService.findByName(dto.getName());
+            if (existingRule.isEmpty()) {
+              matchRuleService.createOrUpdateRule(
+                  dto.getName(), dto.getDescription(), dto.isRequiresHighHeat());
+              log.info(
+                  "Loaded match rule: {} (High Heat: {})", dto.getName(), dto.isRequiresHighHeat());
+            } else {
+              log.debug("Match rule {} already exists, skipping creation.", dto.getName());
+            }
           }
           matchRuleRepository.flush();
           log.info("Match rule loading completed - {} rules loaded", matchRulesFromFile.size());
@@ -135,12 +145,18 @@ public class DataInitializer {
           var matchTypesFromFile = mapper.readValue(is, new TypeReference<List<MatchTypeDTO>>() {});
 
           for (MatchTypeDTO dto : matchTypesFromFile) {
-            MatchType matchType =
-                matchTypeService.createOrUpdateMatchType(dto.getName(), dto.getDescription());
-            log.info(
-                "Loaded match type: {} (Players: {})",
-                matchType.getName(),
-                dto.isUnlimited() ? "Unlimited" : dto.getPlayerAmount());
+            // Only create if it doesn't exist
+            Optional<MatchType> existingType = matchTypeService.findByName(dto.getName());
+            if (existingType.isEmpty()) {
+              MatchType matchType =
+                  matchTypeService.createOrUpdateMatchType(dto.getName(), dto.getDescription());
+              log.info(
+                  "Loaded match type: {} (Players: {})",
+                  matchType.getName(),
+                  dto.isUnlimited() ? "Unlimited" : dto.getPlayerAmount());
+            } else {
+              log.debug("Match type {} already exists, skipping creation.", dto.getName());
+            }
           }
 
           log.info("Match type loading completed");

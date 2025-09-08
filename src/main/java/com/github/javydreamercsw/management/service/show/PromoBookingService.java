@@ -2,8 +2,8 @@ package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.match.Match;
+import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -32,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class PromoBookingService {
 
-  private final MatchResultRepository matchResultRepository;
+  private final MatchRepository matchRepository;
   private final MatchTypeRepository matchTypeRepository;
   private final WrestlerRepository wrestlerRepository;
   private final RivalryService rivalryService;
@@ -49,9 +49,9 @@ public class PromoBookingService {
    * @return List of booked promo segments
    */
   @Transactional
-  public List<MatchResult> bookPromosForShow(
+  public List<Match> bookPromosForShow(
       @NonNull Show show, @NonNull List<Wrestler> availableWrestlers, int maxPromos) {
-    List<MatchResult> promos = new ArrayList<>();
+    List<Match> promos = new ArrayList<>();
 
     if (availableWrestlers.isEmpty() || maxPromos <= 0) {
       return promos;
@@ -75,9 +75,9 @@ public class PromoBookingService {
   }
 
   /** Book rivalry-based confrontation promos. */
-  private List<MatchResult> bookRivalryPromos(
+  private List<Match> bookRivalryPromos(
       @NonNull Show show, @NonNull List<Wrestler> availableWrestlers, int maxPromos) {
-    List<MatchResult> promos = new ArrayList<>();
+    List<Match> promos = new ArrayList<>();
     List<Rivalry> activeRivalries = rivalryService.getActiveRivalries();
 
     int bookedPromos = 0;
@@ -90,8 +90,7 @@ public class PromoBookingService {
       // Check if both wrestlers are available
       if (availableWrestlers.contains(wrestler1) && availableWrestlers.contains(wrestler2)) {
         String promoType = selectRivalryPromoType(rivalry.getHeat());
-        Optional<MatchResult> promo =
-            bookPromoSegment(show, List.of(wrestler1, wrestler2), promoType);
+        Optional<Match> promo = bookPromoSegment(show, List.of(wrestler1, wrestler2), promoType);
 
         if (promo.isPresent()) {
           promos.add(promo.get());
@@ -113,9 +112,9 @@ public class PromoBookingService {
   }
 
   /** Book character development and storyline promos. */
-  private List<MatchResult> bookCharacterPromos(
+  private List<Match> bookCharacterPromos(
       Show show, List<Wrestler> availableWrestlers, int maxPromos) {
-    List<MatchResult> promos = new ArrayList<>();
+    List<Match> promos = new ArrayList<>();
 
     for (int i = 0; i < maxPromos && !availableWrestlers.isEmpty(); i++) {
       // Decide between solo promo or group promo
@@ -125,7 +124,7 @@ public class PromoBookingService {
         // Book solo promo
         Wrestler wrestler = availableWrestlers.remove(0);
         String promoType = selectSoloPromoType();
-        Optional<MatchResult> promo = bookPromoSegment(show, List.of(wrestler), promoType);
+        Optional<Match> promo = bookPromoSegment(show, List.of(wrestler), promoType);
 
         if (promo.isPresent()) {
           promos.add(promo.get());
@@ -143,7 +142,7 @@ public class PromoBookingService {
         }
 
         String promoType = selectGroupPromoType();
-        Optional<MatchResult> promo = bookPromoSegment(show, groupWrestlers, promoType);
+        Optional<Match> promo = bookPromoSegment(show, groupWrestlers, promoType);
 
         if (promo.isPresent()) {
           promos.add(promo.get());
@@ -161,22 +160,22 @@ public class PromoBookingService {
   }
 
   /** Book a promo segment as a match with promo rules. */
-  private Optional<MatchResult> bookPromoSegment(
+  private Optional<Match> bookPromoSegment(
       @NonNull Show show, @NonNull List<Wrestler> wrestlers, @NonNull String promoType) {
     try {
       // Get promo match type (create if doesn't exist)
       MatchType promoMatchType = getOrCreatePromoMatchType();
 
-      // Create the promo "match" result
-      MatchResult promo = new MatchResult();
+      // Create the promo "match"
+      Match promo = new Match();
       promo.setShow(show);
       promo.setMatchType(promoMatchType);
       promo.setMatchDate(clock.instant());
       promo.setIsNpcGenerated(true);
 
-      // Add wrestlers as participants (first wrestler is "winner" for data consistency)
-      for (int i = 0; i < wrestlers.size(); i++) {
-        promo.addParticipant(wrestlers.get(i), i == 0); // First wrestler is "winner"
+      // Add wrestlers as participants
+      for (Wrestler wrestler : wrestlers) {
+        promo.addParticipant(wrestler);
       }
 
       // Apply promo rule
@@ -186,7 +185,7 @@ public class PromoBookingService {
       int promoRating = calculatePromoRating(wrestlers);
       promo.setMatchRating(promoRating);
 
-      MatchResult savedPromo = matchResultRepository.save(promo);
+      Match savedPromo = matchRepository.save(promo);
       return Optional.of(savedPromo);
 
     } catch (Exception e) {
@@ -306,14 +305,13 @@ public class PromoBookingService {
     return Math.min(5, baseRating + popularityBonus + groupBonus);
   }
 
-  /** Check if a match result is a promo segment. */
-  public boolean isPromoSegment(@NonNull MatchResult matchResult) {
-    return matchResult.getMatchType() != null
-        && "Promo".equals(matchResult.getMatchType().getName());
+  /** Check if a match is a promo segment. */
+  public boolean isPromoSegment(@NonNull Match match) {
+    return match.getMatchType() != null && "Promo".equals(match.getMatchType().getName());
   }
 
   /** Get all promo segments for a show. */
-  public List<MatchResult> getPromosForShow(@NonNull Show show) {
-    return matchResultRepository.findByShow(show).stream().filter(this::isPromoSegment).toList();
+  public List<Match> getPromosForShow(@NonNull Show show) {
+    return matchRepository.findByShow(show).stream().filter(this::isPromoSegment).toList();
   }
 }

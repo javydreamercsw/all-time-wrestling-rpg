@@ -16,9 +16,9 @@ import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
+import com.github.javydreamercsw.management.domain.show.match.Match;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
-import com.github.javydreamercsw.management.service.match.MatchResultService;
+import com.github.javydreamercsw.management.service.match.MatchService;
 import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
@@ -41,7 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MatchSyncServiceTest extends BaseTest {
 
   @Mock private NotionHandler notionHandler;
-  @Mock private MatchResultService matchResultService;
+  @Mock private MatchService matchService;
   @Mock private ShowService showService;
   @Mock private MatchTypeService matchTypeService;
   private NotionSyncProperties syncProperties; // Declare without @Mock
@@ -66,7 +66,7 @@ class MatchSyncServiceTest extends BaseTest {
     setField(matchSyncService, "notionHandler", notionHandler);
     setField(matchSyncService, "progressTracker", progressTracker);
     setField(matchSyncService, "rateLimitService", rateLimitService);
-    setField(matchSyncService, "matchResultService", matchResultService);
+    setField(matchSyncService, "matchService", matchService);
     setField(matchSyncService, "showService", showService);
     setField(matchSyncService, "matchTypeService", matchTypeService);
     setField(matchSyncService, "showSyncService", showSyncService);
@@ -100,7 +100,7 @@ class MatchSyncServiceTest extends BaseTest {
         Map.of("Name", "Test Match", "Match Type", "Singles", "Participants", "", "Winners", ""));
 
     when(notionHandler.loadMatchById(anyString())).thenReturn(Optional.of(matchPage));
-    when(matchResultService.findByExternalId(anyString())).thenReturn(Optional.empty());
+    when(matchService.findByExternalId(anyString())).thenReturn(Optional.empty());
     when(showService.findByExternalId(anyString())).thenReturn(Optional.of(new Show()));
     when(matchTypeService.findByName(anyString())).thenReturn(Optional.of(new MatchType()));
 
@@ -108,7 +108,7 @@ class MatchSyncServiceTest extends BaseTest {
     SyncResult result = matchSyncService.syncMatch("ext1");
 
     // Then
-    verify(matchResultService, times(1)).updateMatchResult(any(MatchResult.class));
+    verify(matchService, times(1)).updateMatch(any(Match.class));
     assertThat(result.isSuccess()).isTrue();
     assertThat(result.getSyncedCount()).isEqualTo(1);
   }
@@ -148,12 +148,12 @@ class MatchSyncServiceTest extends BaseTest {
             "Winners",
             ""));
 
-    MatchResult existingMatch = new MatchResult();
+    Match existingMatch = new Match();
     existingMatch.setId(1L);
     existingMatch.setExternalId("ext1");
 
     when(notionHandler.loadMatchById(anyString())).thenReturn(Optional.of(matchPage));
-    when(matchResultService.findByExternalId(anyString())).thenReturn(Optional.of(existingMatch));
+    when(matchService.findByExternalId(anyString())).thenReturn(Optional.of(existingMatch));
     when(showService.findByExternalId(anyString())).thenReturn(Optional.of(new Show()));
     when(matchTypeService.findByName(anyString())).thenReturn(Optional.of(new MatchType()));
 
@@ -161,7 +161,7 @@ class MatchSyncServiceTest extends BaseTest {
     SyncResult result = matchSyncService.syncMatch("ext1");
 
     // Then
-    verify(matchResultService, times(1)).updateMatchResult(any(MatchResult.class));
+    verify(matchService, times(1)).updateMatch(any(Match.class));
     assertThat(result.isSuccess()).isTrue();
     assertThat(result.getSyncedCount()).isEqualTo(1);
   }
@@ -201,7 +201,7 @@ class MatchSyncServiceTest extends BaseTest {
     when(notionHandler.loadMatchById(matchId)).thenReturn(Optional.of(matchPage));
 
     // Mock matchResultService to return empty (new match)
-    when(matchResultService.findByExternalId(anyString())).thenReturn(Optional.empty());
+    when(matchService.findByExternalId(anyString())).thenReturn(Optional.empty());
 
     // Mock showService to initially return empty, then return a show after sync
     Show syncedShow = new Show();
@@ -230,7 +230,7 @@ class MatchSyncServiceTest extends BaseTest {
     verify(notionHandler).loadMatchById(matchId);
     verify(showService, times(2)).findByExternalId(missingShowExternalId); // Called twice
     verify(showSyncService).syncShow(missingShowExternalId); // Called once to sync
-    verify(matchResultService, times(1)).updateMatchResult(any(MatchResult.class));
+    verify(matchService, times(1)).updateMatch(any(Match.class));
   }
 
   @DisplayName("Should handle no match found in Notion")
@@ -242,7 +242,7 @@ class MatchSyncServiceTest extends BaseTest {
     SyncResult result = matchSyncService.syncMatch("non-existent-id");
 
     // Then
-    verify(matchResultService, times(0)).updateMatchResult(any(MatchResult.class));
+    verify(matchService, times(0)).updateMatch(any(Match.class));
     assertThat(result.isSuccess()).isFalse();
     assertThat(result.getSyncedCount()).isEqualTo(0);
   }
@@ -259,6 +259,6 @@ class MatchSyncServiceTest extends BaseTest {
 
     // Then
     Assertions.assertFalse(result.isSuccess());
-    verify(matchResultService, times(0)).updateMatchResult(any(MatchResult.class));
+    verify(matchService, times(0)).updateMatch(any(Match.class));
   }
 }

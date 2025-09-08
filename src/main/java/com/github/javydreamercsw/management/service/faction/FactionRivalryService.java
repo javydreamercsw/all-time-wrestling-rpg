@@ -247,7 +247,7 @@ public class FactionRivalryService {
     return factionRivalryRepository.findRivalriesEligibleForResolution();
   }
 
-  /** Get faction rivalries requiring stipulation matches. */
+  /** Get faction rivalries requiring rule matches. */
   @Transactional(readOnly = true)
   public List<FactionRivalry> getRivalriesRequiringStipulationMatches() {
     return factionRivalryRepository.findRivalriesRequiringStipulationMatches();

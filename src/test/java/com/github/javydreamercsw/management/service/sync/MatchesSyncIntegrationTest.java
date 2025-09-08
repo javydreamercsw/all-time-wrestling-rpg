@@ -6,8 +6,8 @@ import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.match.Match;
+import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -37,7 +37,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private ShowService showService;
 
-  @Autowired private MatchResultRepository matchResultRepository;
+  @Autowired private MatchRepository matchRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private MatchTypeRepository matchTypeRepository;
@@ -52,7 +52,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @BeforeEach
   void setUp() {
     // Clean up existing data
-    matchResultRepository.deleteAll();
+    matchRepository.deleteAll();
     showRepository.deleteAll();
     deckRepository.deleteAll(); // Add this
     wrestlerRepository.deleteAll();
@@ -123,7 +123,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @DisplayName("Should sync matches from Notion to database successfully")
   void shouldSyncMatchesFromNotionToDatabaseSuccessfully() {
     // Given - Real integration test with actual Notion API
-    int initialMatchCount = matchResultRepository.findAll().size();
+    int initialMatchCount = matchRepository.findAll().size();
 
     // When - Sync matches from real Notion database
     NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-123");
@@ -142,7 +142,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
     assertThat(syncSuccessful).isTrue();
 
     // Verify database state is consistent
-    List<MatchResult> finalMatches = matchResultRepository.findAll();
+    List<Match> finalMatches = matchRepository.findAll();
     assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
 
     System.out.println(
@@ -158,17 +158,17 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @DisplayName("Should handle duplicate detection during real sync")
   void shouldSkipDuplicateMatchesDuringSync() {
     // Given - Run sync twice to test duplicate handling
-    int initialMatchCount = matchResultRepository.findAll().size();
+    int initialMatchCount = matchRepository.findAll().size();
 
     // When - First sync
     NotionSyncService.SyncResult firstResult =
         notionSyncService.syncMatches("test-operation-456-first");
-    int afterFirstSync = matchResultRepository.findAll().size();
+    int afterFirstSync = matchRepository.findAll().size();
 
     // Second sync (should detect duplicates)
     NotionSyncService.SyncResult secondResult =
         notionSyncService.syncMatches("test-operation-456-second");
-    int afterSecondSync = matchResultRepository.findAll().size();
+    int afterSecondSync = matchRepository.findAll().size();
 
     // Then - Verify duplicate handling works
     assertThat(firstResult).isNotNull();
@@ -194,7 +194,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @DisplayName("Should handle missing dependencies gracefully during real sync")
   void shouldHandleMissingShowGracefully() {
     // Given - Real sync that may encounter missing dependencies
-    int initialMatchCount = matchResultRepository.findAll().size();
+    int initialMatchCount = matchRepository.findAll().size();
 
     // When - Sync with real Notion data (may have missing shows/wrestlers/match types)
     NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-789");
@@ -216,7 +216,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
     assertThat(handledGracefully).isTrue();
 
     // Verify database remains consistent
-    List<MatchResult> finalMatches = matchResultRepository.findAll();
+    List<Match> finalMatches = matchRepository.findAll();
     assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
 
     System.out.println(
@@ -230,7 +230,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @DisplayName("Should handle missing match type gracefully during real sync")
   void shouldHandleMissingMatchTypeGracefully() {
     // Given - Real sync that may encounter missing match types
-    int initialMatchCount = matchResultRepository.findAll().size();
+    int initialMatchCount = matchRepository.findAll().size();
 
     // When - Sync with real Notion data
     NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-101");
@@ -249,7 +249,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
     assertThat(handledGracefully).isTrue();
 
     // Verify database consistency
-    List<MatchResult> finalMatches = matchResultRepository.findAll();
+    List<Match> finalMatches = matchRepository.findAll();
     assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
 
     System.out.println(
@@ -263,7 +263,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @DisplayName("Should handle missing winner gracefully (draw scenario)")
   void shouldHandleMissingWinnerGracefully() {
     // Given - Real sync that may encounter matches with no winner (draws)
-    int initialMatchCount = matchResultRepository.findAll().size();
+    int initialMatchCount = matchRepository.findAll().size();
 
     // When - Sync with real Notion data
     NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-202");
@@ -281,7 +281,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
     assertThat(handledGracefully).isTrue();
 
     // Verify database consistency
-    List<MatchResult> finalMatches = matchResultRepository.findAll();
+    List<Match> finalMatches = matchRepository.findAll();
     assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
 
     System.out.println(
@@ -295,7 +295,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @DisplayName("Should handle empty match list from Notion")
   void shouldHandleEmptyMatchListFromNotion() {
     // Given - Real sync that may encounter empty results
-    int initialMatchCount = matchResultRepository.findAll().size();
+    int initialMatchCount = matchRepository.findAll().size();
 
     // When - Sync with real Notion data (may be empty)
     NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-303");
@@ -312,7 +312,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
     assertThat(handledGracefully).isTrue();
 
     // Verify database remains consistent
-    List<MatchResult> finalMatches = matchResultRepository.findAll();
+    List<Match> finalMatches = matchRepository.findAll();
     assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
 
     System.out.println(
@@ -326,7 +326,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @DisplayName("Should handle Notion handler exception gracefully")
   void shouldHandleNotionHandlerExceptionGracefully() {
     // Given - Real sync that may encounter API errors
-    int initialMatchCount = matchResultRepository.findAll().size();
+    int initialMatchCount = matchRepository.findAll().size();
 
     // When - Sync with real Notion data (may encounter errors)
     NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-404");
@@ -345,7 +345,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
     assertThat(handledGracefully).isTrue();
 
     // Verify database remains consistent
-    List<MatchResult> finalMatches = matchResultRepository.findAll();
+    List<Match> finalMatches = matchRepository.findAll();
     assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
 
     System.out.println(
@@ -359,7 +359,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @DisplayName("Should sync multiple matches correctly")
   void shouldSyncMultipleMatchesCorrectly() {
     // Given - Real sync that may encounter multiple matches
-    int initialMatchCount = matchResultRepository.findAll().size();
+    int initialMatchCount = matchRepository.findAll().size();
 
     // When - Sync with real Notion data (may contain multiple matches)
     NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-505");
@@ -377,7 +377,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
     assertThat(handledGracefully).isTrue();
 
     // Verify database consistency
-    List<MatchResult> finalMatches = matchResultRepository.findAll();
+    List<Match> finalMatches = matchRepository.findAll();
     assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
 
     // Verify sync metrics are reasonable
@@ -396,7 +396,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
   @DisplayName("Should validate sync results correctly during real sync")
   void shouldValidateSyncResultsCorrectly() {
     // Given - Real sync with validation
-    int initialMatchCount = matchResultRepository.findAll().size();
+    int initialMatchCount = matchRepository.findAll().size();
 
     // When - Sync with real Notion data and validate results
     NotionSyncService.SyncResult result = notionSyncService.syncMatches("test-operation-606");
@@ -418,7 +418,7 @@ class MatchesSyncIntegrationTest extends BaseTest {
     assertThat(validationWorked).isTrue();
 
     // Verify database state is consistent after validation
-    List<MatchResult> finalMatches = matchResultRepository.findAll();
+    List<Match> finalMatches = matchRepository.findAll();
     assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
 
     // Verify sync metrics are reasonable

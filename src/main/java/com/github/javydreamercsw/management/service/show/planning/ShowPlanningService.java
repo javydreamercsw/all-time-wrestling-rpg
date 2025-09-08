@@ -2,8 +2,8 @@ package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.match.Match;
+import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import java.time.Clock;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ShowPlanningService {
 
-  private final MatchResultRepository matchResultRepository;
+  private final MatchRepository matchRepository;
   private final RivalryService rivalryService;
   private final PromoBookingService promoBookingService;
   private final Clock clock;
@@ -32,8 +32,7 @@ public class ShowPlanningService {
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
     Instant lastMonth = showDate.minus(30, ChronoUnit.DAYS);
     log.debug("Getting matches between {} and {}", lastMonth, showDate);
-    List<MatchResult> lastMonthMatches =
-        matchResultRepository.findByMatchDateBetween(lastMonth, showDate);
+    List<Match> lastMonthMatches = matchRepository.findByMatchDateBetween(lastMonth, showDate);
     log.debug("Found {} matches", lastMonthMatches.size());
     context.setLastMonthMatches(lastMonthMatches);
 
@@ -43,7 +42,7 @@ public class ShowPlanningService {
     context.setCurrentRivalries(currentRivalries);
 
     // Get promos from the last month
-    List<MatchResult> lastMonthPromos =
+    List<Match> lastMonthPromos =
         lastMonthMatches.stream()
             .filter(promoBookingService::isPromoSegment)
             .collect(Collectors.toList());

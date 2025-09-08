@@ -51,7 +51,7 @@ public interface RivalryRepository
   @Query("SELECT r FROM Rivalry r WHERE r.isActive = true AND r.heat >= 20")
   List<Rivalry> findRivalriesEligibleForResolution();
 
-  /** Find rivalries requiring stipulation matches (30+ heat). */
+  /** Find rivalries requiring rule matches (30+ heat). */
   @Query("SELECT r FROM Rivalry r WHERE r.isActive = true AND r.heat >= 30")
   List<Rivalry> findRivalriesRequiringStipulationMatches();
 

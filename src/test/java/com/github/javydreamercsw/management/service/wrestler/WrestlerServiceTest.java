@@ -2,7 +2,6 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -129,7 +128,7 @@ class WrestlerServiceTest {
     Injury mockInjury = new Injury();
     mockInjury.setName("Test Injury");
     mockInjury.setSeverity(InjurySeverity.MINOR);
-    when(injuryService.createInjuryFromBumps(anyLong())).thenReturn(Optional.of(mockInjury));
+    when(injuryService.createInjuryFromBumps(any(Wrestler.class))).thenReturn(mockInjury);
 
     // When
     Optional<Wrestler> result = wrestlerService.addBump(1L);
@@ -138,7 +137,7 @@ class WrestlerServiceTest {
     assertThat(result).isPresent();
     assertThat(result.get().getBumps()).isEqualTo(0); // Reset after injury
     verify(wrestlerRepository).saveAndFlush(testWrestler);
-    verify(injuryService).createInjuryFromBumps(1L); // Verify injury service was called
+    verify(injuryService).createInjuryFromBumps(testWrestler); // Verify injury service was called
   }
 
   @Test

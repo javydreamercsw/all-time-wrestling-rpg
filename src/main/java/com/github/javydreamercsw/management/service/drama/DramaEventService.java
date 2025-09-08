@@ -346,7 +346,7 @@ public class DramaEventService {
 
     // If injury occurred (3 bumps reached), create injury
     if (injuryOccurred) {
-      injuryService.createInjuryFromBumps(wrestler.getId());
+      injuryService.createInjuryFromBumps(wrestler);
       notes.append("Injury created from bumps; ");
     } else {
       notes.append("Bump added; ");

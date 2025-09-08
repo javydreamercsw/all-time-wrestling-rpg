@@ -78,9 +78,9 @@ public class FactionRivalryController {
   }
 
   @Operation(
-      summary = "Get rivalries requiring stipulation matches",
-      description = "Retrieve rivalries requiring stipulation matches")
-  @GetMapping("/requiring-stipulation")
+      summary = "Get rivalries requiring rule matches",
+      description = "Retrieve rivalries requiring rule matches")
+  @GetMapping("/requiring-rule")
   public ResponseEntity<List<FactionRivalry>> getRivalriesRequiringStipulationMatches() {
     List<FactionRivalry> rivalries =
         factionRivalryService.getRivalriesRequiringStipulationMatches();
