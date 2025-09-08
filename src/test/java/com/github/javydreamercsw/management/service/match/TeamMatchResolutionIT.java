@@ -17,6 +17,8 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.List;
+
+import lombok.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,48 +57,33 @@ class TeamMatchResolutionIT {
   private MatchType handicapMatchType;
   private Show testShow;
 
+  private Wrestler createWrestler(@NonNull String name){
+      Wrestler w = new Wrestler();
+      w.setName("Rookie One");
+      w.setIsPlayer(true);
+      w.setDeckSize(0);
+      w.setStartingStamina(100);
+      w.setLowStamina(25);
+      w.setStartingHealth(100);
+      w.setLowHealth(25);
+      w = wrestlerRepository.saveAndFlush(w);
+      return w;
+  }
+
   @BeforeEach
   void setUp() {
     // Create and save test wrestlers
-    rookie1 = new Wrestler();
-    rookie1.setName("Rookie One");
-    rookie1.setIsPlayer(true);
-    rookie1.setDeckSize(0);
-    rookie1.setStartingStamina(100);
-    rookie1.setLowStamina(25);
-    rookie1.setStartingHealth(100);
-    rookie1.setLowHealth(25);
-    rookie1 = wrestlerRepository.saveAndFlush(rookie1);
+    rookie1 = createWrestler("Rookie One");
 
-    rookie2 = new Wrestler();
-    rookie2.setName("Rookie Two");
-    rookie2.setIsPlayer(true);
-    rookie2.setDeckSize(0);
-    rookie2 = wrestlerRepository.saveAndFlush(rookie2);
+    rookie2=createWrestler("Rookie Two");
 
-    rookie3 = new Wrestler();
-    rookie3.setName("Rookie Three");
-    rookie3.setIsPlayer(true);
-    rookie3.setDeckSize(0);
-    rookie3 = wrestlerRepository.saveAndFlush(rookie3);
+    rookie3 = createWrestler("Rookie Three");
 
-    rookie4 = new Wrestler();
-    rookie4.setName("Rookie Four");
-    rookie4.setIsPlayer(true);
-    rookie4.setDeckSize(0);
-    rookie4 = wrestlerRepository.saveAndFlush(rookie4);
+    rookie4 = createWrestler("Rookie Four");
 
-    contender1 = new Wrestler();
-    contender1.setName("Contender One");
-    contender1.setIsPlayer(true);
-    contender1.setDeckSize(0);
-    contender1 = wrestlerRepository.saveAndFlush(contender1);
+    contender1 = createWrestler("Contender One");
 
-    contender2 = new Wrestler();
-    contender2.setName("Contender Two");
-    contender2.setIsPlayer(true);
-    contender2.setDeckSize(0);
-    contender2 = wrestlerRepository.saveAndFlush(contender2);
+    contender2 = createWrestler("Contender Two");
 
     // Award fans to create tier differences
     // Now that wrestlers are saved, their IDs are available and they are managed
@@ -111,7 +98,7 @@ class TeamMatchResolutionIT {
     contender2 = wrestlerRepository.findById(contender2.getId()).orElseThrow();
 
     // Create match types (rely on DataInitializer for these)
-    tagTeamMatchType = matchTypeRepository.findByName("Tag Team Match").orElseThrow();
+    tagTeamMatchType = matchTypeRepository.findByName("Tag Team").orElseThrow();
     handicapMatchType = matchTypeRepository.findByName("Handicap Match").orElseThrow();
 
     // Create match rules for testing
