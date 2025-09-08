@@ -60,38 +60,55 @@ public class MatchSyncService extends BaseSyncService {
 
   private SyncResult performMatchSyncInternal(@NonNull String operationId) throws Exception {
     // 1. Load all match pages from Notion with rate limiting
-    progressTracker.updateProgress(operationId, 1, "Loading matches from Notion");
-    List<MatchPage> notionMatches = executeWithRateLimit(notionHandler::loadAllMatches);
+    progressTracker.updateProgress(operationId, 1, "Loading match IDs from Notion");
+    List<String> notionMatchIds =
+        executeWithRateLimit(() -> notionHandler.getDatabasePageIds("Matches"));
 
-    if (notionMatches.isEmpty()) {
+    if (notionMatchIds.isEmpty()) {
       log.info("No matches found in Notion database");
       progressTracker.completeOperation(operationId, true, "No matches found in Notion", 0);
       return SyncResult.success("Matches", 0, 0);
     }
-    log.info("📥 Loaded {} matches from Notion", notionMatches.size());
+    log.info("📥 Loaded {} match IDs from Notion", notionMatchIds.size());
 
-    // 2. Convert Notion match pages to DTOs with controlled parallel processing
-    progressTracker.updateProgress(operationId, 2, "Converting Notion pages to DTOs");
-    List<MatchDTO> matchDTOs = convertMatchesWithRateLimit(notionMatches, operationId);
-    log.info("🔄 Converted {} matches to DTOs", matchDTOs.size());
+    // 2. Sync each match individually
+    progressTracker.updateProgress(operationId, 2, "Syncing individual matches");
+    int savedCount = 0;
+    int errorCount = 0;
+    for (int i = 0; i < notionMatchIds.size(); i++) {
+      String matchId = notionMatchIds.get(i);
+      try {
+        SyncResult result = syncMatch(matchId);
+        if (result.isSuccess()) {
+          savedCount++;
+        } else {
+          errorCount++;
+        }
+        double progressPercent = (double) (i + 1) / notionMatchIds.size() * 100;
+        progressTracker.updateProgress(
+            operationId,
+            2,
+            String.format(
+                "Synced %d/%d matches (%.1f%%)", (i + 1), notionMatchIds.size(), progressPercent));
+      } catch (Exception e) {
+        log.error("Failed to sync match with ID {}: {}", matchId, e.getMessage(), e);
+        errorCount++;
+      }
+    }
+    log.info("✅ Synced {} matches with {} errors", savedCount, errorCount);
 
-    // 3. Save/update matches in the local database
-    progressTracker.updateProgress(operationId, 3, "Saving matches to database");
-    int savedCount = saveMatchesToDatabase(matchDTOs);
-    log.info("✅ Saved {} matches to database", savedCount);
-
-    // 4. Validate sync process
-    progressTracker.updateProgress(operationId, 4, "Validating sync process");
-    boolean success = true; // Placeholder for validation
+    // 3. Validate sync process
+    progressTracker.updateProgress(operationId, 3, "Validating sync process");
+    boolean success = errorCount == 0;
 
     if (success) {
       String message =
           String.format("Matches sync completed successfully. Synced %d matches.", savedCount);
       log.info(message);
       progressTracker.completeOperation(operationId, true, message, savedCount);
-      return SyncResult.success("Matches", savedCount, 0);
+      return SyncResult.success("Matches", savedCount, errorCount);
     } else {
-      String message = "Matches sync completed with validation errors";
+      String message = String.format("Matches sync completed with %d errors", errorCount);
       log.warn(message);
       progressTracker.completeOperation(operationId, false, message, savedCount);
       return SyncResult.failure("Matches", message);
@@ -154,7 +171,10 @@ public class MatchSyncService extends BaseSyncService {
           dateString = dateString.substring(1);
         }
         try {
-          LocalDate localDate = LocalDate.parse(dateString);
+          // The date from Notion is in the format "MMMM d, yyyy"
+          java.time.format.DateTimeFormatter formatter =
+              java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy");
+          LocalDate localDate = LocalDate.parse(dateString, formatter);
           matchDTO.setMatchDate(localDate.atStartOfDay(ZoneOffset.UTC).toInstant());
         } catch (DateTimeParseException e) {
           log.warn(
@@ -186,10 +206,13 @@ public class MatchSyncService extends BaseSyncService {
         Match match = existingMatchOpt.orElseGet(Match::new);
 
         if (match.getId() == null) {
-          log.debug("Creating new match: {}", matchDTO.getName());
+          log.debug(
+              "Creating new match: {} (External ID: {})",
+              matchDTO.getName(),
+              matchDTO.getExternalId());
           match.setExternalId(matchDTO.getExternalId());
         } else {
-          log.debug("Updating existing match: {}", match.getId());
+          log.debug("Updating existing match: {} (ID: {})", matchDTO.getName(), match.getId());
         }
 
         Optional<Show> showOpt = showService.findByExternalId(matchDTO.getShowExternalId());

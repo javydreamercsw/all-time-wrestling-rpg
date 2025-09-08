@@ -12,6 +12,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -62,9 +63,46 @@ public class MatchService {
    * @return The updated Match
    */
   public Match updateMatch(@NonNull Match match) {
-    Match updated = matchRepository.save(match);
-    log.info("Updated match with ID: {}", updated.getId());
-    return updated;
+    try {
+      return matchRepository.save(match);
+    } catch (DataIntegrityViolationException e) {
+      log.error(
+          "Data integrity violation when saving match with external ID {}: {}",
+          match.getExternalId(),
+          e.getMessage());
+      // Attempt to find by external ID and update if it's a unique constraint violation
+      if (e.getMessage() != null && e.getMessage().contains("unique constraint")) {
+        Optional<Match> existingMatch = matchRepository.findByExternalId(match.getExternalId());
+        if (existingMatch.isPresent()) {
+          log.warn(
+              "Match with external ID {} already exists, attempting to merge.",
+              match.getExternalId());
+          // Copy properties from the new match to the existing one
+          Match foundMatch = existingMatch.get();
+          // BeanUtils.copyProperties(match, foundMatch, "id"); // Exclude ID
+          foundMatch.setShow(match.getShow());
+          foundMatch.setMatchType(match.getMatchType());
+          foundMatch.setWinner(match.getWinner());
+          foundMatch.setMatchDate(match.getMatchDate());
+          foundMatch.setDurationMinutes(match.getDurationMinutes());
+          foundMatch.setMatchRating(match.getMatchRating());
+          foundMatch.setStatus(match.getStatus());
+          foundMatch.setNarration(match.getNarration());
+          foundMatch.setIsTitleMatch(match.getIsTitleMatch());
+          foundMatch.setIsNpcGenerated(match.getIsNpcGenerated());
+          // Clear and re-add participants and rules to ensure they are updated
+          foundMatch.getParticipants().clear();
+          match
+              .getParticipants()
+              .forEach(participant -> foundMatch.addParticipant(participant.getWrestler()));
+          foundMatch.getMatchRules().clear();
+          match.getMatchRules().forEach(foundMatch::addMatchRule);
+
+          return matchRepository.save(foundMatch);
+        }
+      }
+      throw e; // Re-throw if not a unique constraint violation or cannot be handled
+    }
   }
 
   /**
