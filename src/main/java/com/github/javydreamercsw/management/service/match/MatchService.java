@@ -5,6 +5,8 @@ import com.github.javydreamercsw.management.domain.show.match.Match;
 import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
 import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MatchService {
 
   @Autowired private MatchRepository matchRepository;
+  @PersistenceContext private EntityManager entityManager;
 
   /**
    * Creates a new match.
@@ -72,6 +75,9 @@ public class MatchService {
           e.getMessage());
       // Attempt to find by external ID and update if it's a unique constraint violation
       if (e.getMessage() != null && e.getMessage().contains("unique constraint")) {
+        // Detach the problematic entity from the session
+        entityManager.detach(match);
+
         Optional<Match> existingMatch = matchRepository.findByExternalId(match.getExternalId());
         if (existingMatch.isPresent()) {
           log.warn(

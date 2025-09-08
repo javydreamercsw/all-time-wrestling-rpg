@@ -98,7 +98,11 @@ public class Match extends AbstractEntity<Long> {
   private String externalId;
 
   // Match participants
-  @OneToMany(mappedBy = "match", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @OneToMany(
+      mappedBy = "match",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"match"})
   private List<MatchParticipant> participants = new ArrayList<>();
 

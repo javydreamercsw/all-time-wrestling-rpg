@@ -28,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Service responsible for synchronizing shows from Notion to the database. */
 @Service
@@ -146,58 +148,47 @@ public class ShowSyncService extends BaseSyncService {
   /** Performs the actual shows sync operation with enhanced error handling. */
   @SneakyThrows
   private SyncResult performShowsSyncInternal(@NonNull String operationId, long startTime) {
-    return syncTransactionManager.executeInTransaction(
-        operationId,
-        "shows",
-        (transaction) -> {
-          try {
-            // Step 1: Validate sync prerequisites
-            log.info("🔍 Validating sync prerequisites...");
-            progressTracker.updateProgress(operationId, 1, "Validating sync prerequisites...");
+    try {
+      // Step 1: Validate sync prerequisites
+      log.info("🔍 Validating sync prerequisites...");
+      progressTracker.updateProgress(operationId, 1, "Validating sync prerequisites...");
 
-            // Step 2: Get all shows from Notion
-            log.info("📥 Retrieving shows from Notion...");
-            progressTracker.updateProgress(
-                operationId, 3, "Retrieving shows from Notion database...");
+      // Step 2: Get all shows from Notion
+      log.info("📥 Retrieving shows from Notion...");
+      progressTracker.updateProgress(operationId, 3, "Retrieving shows from Notion database...");
 
-            List<ShowPage> notionShows = executeWithRateLimit(notionHandler::loadAllShowsForSync);
-            long retrieveTime = System.currentTimeMillis() - startTime;
-            log.info("✅ Retrieved {} shows from Notion in {}ms", notionShows.size(), retrieveTime);
+      List<ShowPage> notionShows = executeWithRateLimit(notionHandler::loadAllShowsForSync);
+      long retrieveTime = System.currentTimeMillis() - startTime;
+      log.info("✅ Retrieved {} shows from Notion in {}ms", notionShows.size(), retrieveTime);
 
-            // Step 3: Convert to DTOs
-            log.info("🔄 Converting shows to DTOs...");
-            progressTracker.updateProgress(operationId, 5, "Converting shows to DTOs...");
+      // Step 3: Convert to DTOs
+      log.info("🔄 Converting shows to DTOs...");
+      progressTracker.updateProgress(operationId, 5, "Converting shows to DTOs...");
 
-            List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows, operationId);
-            long convertTime = System.currentTimeMillis() - startTime - retrieveTime;
-            log.info("✅ Converted {} shows to DTOs in {}ms", showDTOs.size(), convertTime);
+      List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows, operationId);
+      long convertTime = System.currentTimeMillis() - startTime - retrieveTime;
+      log.info("✅ Converted {} shows to DTOs in {}ms", showDTOs.size(), convertTime);
 
-            // Step 4: Save to database
-            log.info("💾 Saving shows to database...");
-            progressTracker.updateProgress(operationId, 6, "Saving shows to database...");
+      // Step 4: Save to database
+      log.info("💾 Saving shows to database...");
+      progressTracker.updateProgress(operationId, 6, "Saving shows to database...");
 
-            int savedCount = saveShowsToDatabase(showDTOs);
+      int savedCount = saveShowsToDatabase(showDTOs);
 
-            long totalTime = System.currentTimeMillis() - startTime;
-            log.info(
-                "🎉 Successfully synchronized {} shows to database in {}ms total",
-                savedCount,
-                totalTime);
+      long totalTime = System.currentTimeMillis() - startTime;
+      log.info(
+          "🎉 Successfully synchronized {} shows to database in {}ms total", savedCount, totalTime);
 
-            progressTracker.completeOperation(
-                operationId,
-                true,
-                String.format("Successfully synced %d shows", savedCount),
-                savedCount);
+      progressTracker.completeOperation(
+          operationId, true, String.format("Successfully synced %d shows", savedCount), savedCount);
 
-            // Record success in health monitor
-            healthMonitor.recordSuccess("Shows", totalTime, savedCount);
-            return SyncResult.success("Shows", savedCount, 0);
+      // Record success in health monitor
+      healthMonitor.recordSuccess("Shows", totalTime, savedCount);
+      return SyncResult.success("Shows", savedCount, 0);
 
-          } catch (Exception e) {
-            throw new RuntimeException("Shows sync operation failed: " + e.getMessage(), e);
-          }
-        });
+    } catch (Exception e) {
+      throw new RuntimeException("Shows sync operation failed: " + e.getMessage(), e);
+    }
   }
 
   private List<ShowDTO> convertShowPagesToDTO(
@@ -332,7 +323,8 @@ public class ShowSyncService extends BaseSyncService {
   }
 
   /** Process a single show with error handling. */
-  private boolean processSingleShow(
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public boolean processSingleShow(
       @NonNull ShowDTO dto,
       @NonNull Map<String, ShowType> showTypes,
       @NonNull Map<String, Season> seasons,

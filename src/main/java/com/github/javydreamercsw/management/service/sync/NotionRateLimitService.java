@@ -1,8 +1,10 @@
 package com.github.javydreamercsw.management.service.sync;
 
+import jakarta.annotation.PreDestroy;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -14,19 +16,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class NotionRateLimitService {
 
-  // Notion's documented rate limits (conservative values)
-  private static final int MAX_REQUESTS_PER_SECOND = 3; // Conservative limit
+  private static final int MAX_REQUESTS_PER_SECOND = 3; // Notion's documented rate limit
   private static final int BURST_CAPACITY = 10; // Allow small bursts
-  private static final long REFILL_INTERVAL_MS = 1000; // 1 second
 
   private final Semaphore permits;
-  private final AtomicLong lastRefillTime;
-  private volatile int availableTokens;
+  private final ScheduledExecutorService scheduler;
 
   public NotionRateLimitService() {
     this.permits = new Semaphore(BURST_CAPACITY, true); // Fair semaphore
-    this.lastRefillTime = new AtomicLong(System.currentTimeMillis());
-    this.availableTokens = BURST_CAPACITY;
+    this.scheduler = Executors.newScheduledThreadPool(1);
+    // Schedule a task to add permits every second, starting after an initial delay
+    this.scheduler.scheduleAtFixedRate(this::refillPermits, 1, 1, TimeUnit.SECONDS);
   }
 
   /**
@@ -36,8 +36,6 @@ public class NotionRateLimitService {
    * @throws InterruptedException if interrupted while waiting
    */
   public void acquirePermit() throws InterruptedException {
-    refillTokens();
-
     // Try to acquire permit with timeout to avoid infinite blocking
     boolean acquired = permits.tryAcquire(10, TimeUnit.SECONDS);
     if (!acquired) {
@@ -57,7 +55,6 @@ public class NotionRateLimitService {
    * @throws InterruptedException if interrupted while waiting
    */
   public boolean tryAcquirePermit(long timeout, TimeUnit unit) throws InterruptedException {
-    refillTokens();
     return permits.tryAcquire(timeout, unit);
   }
 
@@ -86,9 +83,6 @@ public class NotionRateLimitService {
 
     // Wait for the specified delay
     Thread.sleep(delayMs);
-
-    // Refill tokens after waiting
-    refillTokens();
   }
 
   /** Get the current number of available permits. */
@@ -100,37 +94,29 @@ public class NotionRateLimitService {
   public void reset() {
     permits.drainPermits();
     permits.release(BURST_CAPACITY);
-    lastRefillTime.set(System.currentTimeMillis());
-    availableTokens = BURST_CAPACITY;
     log.info("Rate limiter reset");
   }
 
-  /** Refill tokens based on elapsed time (token bucket algorithm). */
-  private void refillTokens() {
-    long now = System.currentTimeMillis();
-    long lastRefill = lastRefillTime.get();
-    long elapsed = now - lastRefill;
+  /** Refill permits periodically. */
+  private void refillPermits() {
+    try {
+      int permitsToRelease = MAX_REQUESTS_PER_SECOND;
+      int currentAvailable = permits.availablePermits();
 
-    if (elapsed >= REFILL_INTERVAL_MS) {
-      // Calculate how many tokens to add
-      int tokensToAdd = (int) (elapsed / REFILL_INTERVAL_MS) * MAX_REQUESTS_PER_SECOND;
-
-      if (tokensToAdd > 0) {
-        // Release permits up to the burst capacity
-        int currentPermits = permits.availablePermits();
-        int permitsToRelease = Math.min(tokensToAdd, BURST_CAPACITY - currentPermits);
-
-        if (permitsToRelease > 0) {
-          permits.release(permitsToRelease);
-          log.debug(
-              "Refilled {} rate limit tokens. Total available: {}",
-              permitsToRelease,
-              permits.availablePermits());
-        }
-
-        // Update last refill time
-        lastRefillTime.set(now);
+      // Do not exceed burst capacity
+      if (currentAvailable + permitsToRelease > BURST_CAPACITY) {
+        permitsToRelease = BURST_CAPACITY - currentAvailable;
       }
+
+      if (permitsToRelease > 0) {
+        permits.release(permitsToRelease);
+        log.debug(
+            "Refilled {} rate limit tokens. Total available: {}",
+            permitsToRelease,
+            permits.availablePermits());
+      }
+    } catch (Exception e) {
+      log.error("Error refilling rate limit permits", e);
     }
   }
 
@@ -143,5 +129,19 @@ public class NotionRateLimitService {
     double jitter = 0.1 + (Math.random() * 0.2); // 10-30% jitter
 
     return (long) (baseDelay * (1 + jitter));
+  }
+
+  /** Shutdown the scheduler (should be called during application shutdown). */
+  @PreDestroy
+  public void shutdown() {
+    scheduler.shutdown();
+    try {
+      if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+        scheduler.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+      scheduler.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
   }
 }
