@@ -32,7 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NpcSyncServiceTest extends BaseTest {
+class NpcSyncServiceIT extends BaseTest {
 
   @Mock private NpcService npcService;
   @Mock private ObjectMapper objectMapper;
@@ -50,7 +50,7 @@ class NpcSyncServiceTest extends BaseTest {
   @InjectMocks NpcSyncService npcSyncService;
 
   // Constructor to configure the mock before setUp()
-  public NpcSyncServiceTest() {
+  public NpcSyncServiceIT() {
     syncProperties = mock(NotionSyncProperties.class); // Manually create mock
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);

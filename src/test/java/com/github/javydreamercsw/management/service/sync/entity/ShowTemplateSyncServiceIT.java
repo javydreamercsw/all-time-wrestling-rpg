@@ -34,7 +34,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Show Template Sync Service Unit Tests")
 @Slf4j
-class ShowTemplateSyncServiceTest {
+class ShowTemplateSyncServiceIT {
 
   @Mock private ShowTemplateService showTemplateService;
   @Mock private ObjectMapper objectMapper;
@@ -47,7 +47,7 @@ class ShowTemplateSyncServiceTest {
   private ShowTemplateSyncService syncService;
 
   // Constructor to configure the mock before setUp()
-  public ShowTemplateSyncServiceTest() {
+  public ShowTemplateSyncServiceIT() {
     syncProperties = mock(NotionSyncProperties.class); // Manually create mock
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);

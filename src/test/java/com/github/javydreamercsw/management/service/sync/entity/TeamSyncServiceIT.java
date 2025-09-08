@@ -34,7 +34,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @ExtendWith(MockitoExtension.class)
 @TestPropertySource(properties = "notion.sync.enabled=false")
-class TeamSyncServiceTest extends BaseTest {
+class TeamSyncServiceIT extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
@@ -49,7 +49,7 @@ class TeamSyncServiceTest extends BaseTest {
   private TeamSyncService teamSyncService;
 
   // Constructor to configure the mock before setUp()
-  public TeamSyncServiceTest() {
+  public TeamSyncServiceIT() {
     syncProperties = mock(NotionSyncProperties.class); // Manually create mock
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);

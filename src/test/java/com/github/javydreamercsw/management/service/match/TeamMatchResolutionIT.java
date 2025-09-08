@@ -17,7 +17,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.List;
-
 import lombok.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -57,17 +56,17 @@ class TeamMatchResolutionIT {
   private MatchType handicapMatchType;
   private Show testShow;
 
-  private Wrestler createWrestler(@NonNull String name){
-      Wrestler w = new Wrestler();
-      w.setName("Rookie One");
-      w.setIsPlayer(true);
-      w.setDeckSize(0);
-      w.setStartingStamina(100);
-      w.setLowStamina(25);
-      w.setStartingHealth(100);
-      w.setLowHealth(25);
-      w = wrestlerRepository.saveAndFlush(w);
-      return w;
+  private Wrestler createWrestler(@NonNull String name) {
+    Wrestler w = new Wrestler();
+    w.setName("Rookie One");
+    w.setIsPlayer(true);
+    w.setDeckSize(0);
+    w.setStartingStamina(100);
+    w.setLowStamina(25);
+    w.setStartingHealth(100);
+    w.setLowHealth(25);
+    w = wrestlerRepository.saveAndFlush(w);
+    return w;
   }
 
   @BeforeEach
@@ -75,7 +74,7 @@ class TeamMatchResolutionIT {
     // Create and save test wrestlers
     rookie1 = createWrestler("Rookie One");
 
-    rookie2=createWrestler("Rookie Two");
+    rookie2 = createWrestler("Rookie Two");
 
     rookie3 = createWrestler("Rookie Three");
 
