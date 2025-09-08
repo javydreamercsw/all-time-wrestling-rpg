@@ -250,6 +250,12 @@ public class Wrestler extends AbstractEntity<Long> {
     if (currentHealth == null) {
       currentHealth = startingHealth;
     }
+    if (lowHealth == null) {
+      lowHealth = startingHealth;
+    }
+    if (lowStamina == null) {
+      lowStamina = startingStamina;
+    }
     if (fans == null) {
       fans = 0L;
     }
