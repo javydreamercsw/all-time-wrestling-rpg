@@ -50,11 +50,7 @@ class NotionSyncViewTest {
 
     notionSyncView =
         new NotionSyncView(
-            notionSyncService,
-            notionSyncScheduler,
-            syncProperties,
-            progressTracker,
-            dependencyAnalyzer);
+            notionSyncScheduler, syncProperties, progressTracker, dependencyAnalyzer);
   }
 
   @Test
@@ -90,11 +86,7 @@ class NotionSyncViewTest {
 
     NotionSyncView disabledView =
         new NotionSyncView(
-            notionSyncService,
-            notionSyncScheduler,
-            syncProperties,
-            progressTracker,
-            dependencyAnalyzer);
+            notionSyncScheduler, syncProperties, progressTracker, dependencyAnalyzer);
 
     assertNotNull(disabledView);
   }
@@ -107,11 +99,7 @@ class NotionSyncViewTest {
 
     NotionSyncView emptyEntitiesView =
         new NotionSyncView(
-            notionSyncService,
-            notionSyncScheduler,
-            syncProperties,
-            progressTracker,
-            dependencyAnalyzer);
+            notionSyncScheduler, syncProperties, progressTracker, dependencyAnalyzer);
 
     assertNotNull(emptyEntitiesView);
   }
@@ -132,11 +120,7 @@ class NotionSyncViewTest {
     assertDoesNotThrow(
         () -> {
           new NotionSyncView(
-              notionSyncService,
-              notionSyncScheduler,
-              syncProperties,
-              progressTracker,
-              dependencyAnalyzer);
+              notionSyncScheduler, syncProperties, progressTracker, dependencyAnalyzer);
         });
   }
 }
