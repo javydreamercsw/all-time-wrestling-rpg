@@ -1,10 +1,13 @@
 package com.github.javydreamercsw.management.config;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.concurrent.ConcurrentMapCache;
+import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,10 +35,13 @@ public class CacheConfig {
   public static final String WRESTLER_STATS_CACHE = "wrestlerStats";
   public static final String CALENDAR_CACHE = "calendar";
   public static final String NOTION_SYNC_CACHE = "notionSync";
+  public static final String NOTION_PAGES_CACHE = "notionPages"; // Cache for Notion pages
+  public static final String NOTION_QUERIES_CACHE =
+      "notionQueries"; // Cache for Notion database queries
 
   /**
-   * Configures the cache manager with optimized cache settings. Uses concurrent maps for
-   * thread-safe caching with reasonable TTL values.
+   * Configures the cache manager with optimized cache settings. Uses Caffeine for thread-safe
+   * caching with reasonable TTL values.
    */
   @Bean
   public CacheManager cacheManager() {
@@ -47,38 +53,50 @@ public class CacheConfig {
     cacheManager.setCaches(
         Arrays.asList(
             // Frequently accessed, rarely changed data - longer TTL
-            createCache(WRESTLERS_CACHE, 1000), // Up to 1000 wrestlers
-            createCache(SHOW_TYPES_CACHE, 50), // Limited number of show types
-            createCache(SEASONS_CACHE, 100), // Limited number of seasons
-            createCache(TITLES_CACHE, 100), // Limited number of titles
-            createCache(MATCH_TYPES_CACHE, 50), // Limited number of match types
-            createCache(MATCH_RULES_CACHE, 100), // Limited number of match rules
+            createCaffeineCache(WRESTLERS_CACHE, 100, 60), // Up to 1000 wrestlers, 10 min TTL
+            createCaffeineCache(
+                SHOW_TYPES_CACHE, 1_000, 60), // Limited number of show types, 60 min TTL
+            createCaffeineCache(SEASONS_CACHE, 100, 60), // Limited number of seasons, 60 min TTL
+            createCaffeineCache(TITLES_CACHE, 100, 60), // Limited number of titles, 60 min TTL
+            createCaffeineCache(
+                MATCH_TYPES_CACHE, 50, 60), // Limited number of match types, 60 min TTL
+            createCaffeineCache(
+                MATCH_RULES_CACHE, 100, 60), // Limited number of match rules, 60 min TTL
 
             // Moderately accessed data - medium TTL
-            createCache(SHOWS_CACHE, 2000), // Up to 2000 shows
-            createCache(SHOW_TEMPLATES_CACHE, 200), // Limited number of templates
-            createCache(RIVALRIES_CACHE, 500), // Up to 500 active rivalries
+            createCaffeineCache(SHOWS_CACHE, 2000, 5), // Up to 2000 shows, 5 min TTL
+            createCaffeineCache(
+                SHOW_TEMPLATES_CACHE, 100, 30), // Limited number of templates, 30 min TTL
+            createCaffeineCache(RIVALRIES_CACHE, 500, 15), // Up to 500 active rivalries, 15 min TTL
 
             // Frequently changing data - shorter TTL
-            createCache(INJURIES_CACHE, 1000), // Injuries change frequently
-            createCache(WRESTLER_STATS_CACHE, 1000), // Stats updated after matches
+            createCaffeineCache(INJURIES_CACHE, 1000, 2), // Injuries change frequently, 2 min TTL
+            createCaffeineCache(
+                WRESTLER_STATS_CACHE, 1000, 1), // Stats updated after matches, 1 min TTL
 
             // Computed/aggregated data - can be expensive to recalculate
-            createCache(CALENDAR_CACHE, 100), // Calendar views
-            createCache(NOTION_SYNC_CACHE, 50) // Notion sync status
+            createCaffeineCache(CALENDAR_CACHE, 100, 5), // Calendar views, 5 min TTL
+            createCaffeineCache(NOTION_SYNC_CACHE, 50, 1), // Notion sync status, 1 min TTL
+
+            // Notion API Caches
+            createCaffeineCache(NOTION_PAGES_CACHE, 5000, 5), // Cache Notion pages for 5 minutes
+            createCaffeineCache(NOTION_QUERIES_CACHE, 1000, 2) // Cache Notion queries for 2 minutes
             ));
 
     log.info("✅ Cache manager initialized with {} caches", cacheManager.getCacheNames().size());
     return cacheManager;
   }
 
-  /**
-   * Creates a cache with the specified name and maximum size. Uses ConcurrentMapCache for
-   * thread-safe operations.
-   */
-  private ConcurrentMapCache createCache(String name, int maxSize) {
-    log.debug("Creating cache: {} (max size: {})", name, maxSize);
-    return new ConcurrentMapCache(name);
+  /** Creates a Caffeine cache with the specified name, maximum size, and TTL. */
+  private Cache createCaffeineCache(String name, int maxSize, int ttlMinutes) {
+    log.debug("Creating Caffeine cache: {} (max size: {}, TTL: {} min)", name, maxSize, ttlMinutes);
+    return new CaffeineCache(
+        name,
+        Caffeine.newBuilder()
+            .maximumSize(maxSize)
+            .expireAfterWrite(ttlMinutes, TimeUnit.MINUTES)
+            .recordStats()
+            .build());
   }
 
   /** Cache statistics and monitoring bean. Provides insights into cache performance. */
@@ -104,15 +122,14 @@ public class CacheConfig {
           .forEach(
               cacheName -> {
                 var cache = cacheManager.getCache(cacheName);
-                if (cache != null) {
-                  // For ConcurrentMapCache, we can get the native cache
-                  if (cache.getNativeCache() instanceof java.util.concurrent.ConcurrentHashMap) {
-                    var nativeCache =
-                        (java.util.concurrent.ConcurrentHashMap<?, ?>) cache.getNativeCache();
-                    log.info("   - {}: {} entries", cacheName, nativeCache.size());
-                  } else {
-                    log.info("   - {}: active", cacheName);
-                  }
+                if (cache instanceof CaffeineCache caffeineCache) {
+                  log.info(
+                      "   - {}: {} entries (Hit Rate: {})",
+                      cacheName,
+                      caffeineCache.getNativeCache().estimatedSize(),
+                      String.format("%.2f", caffeineCache.getNativeCache().stats().hitRate()));
+                } else if (cache != null) {
+                  log.info("   - {}: active (non-Caffeine cache)", cacheName);
                 }
               });
     }
