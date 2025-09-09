@@ -35,7 +35,7 @@ public class MatchParticipant extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"participants"})
   private Match match;
 
-  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @ManyToOne(optional = false, fetch = FetchType.EAGER)
   @JoinColumn(name = "wrestler_id", nullable = false)
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns"})
   private Wrestler wrestler;

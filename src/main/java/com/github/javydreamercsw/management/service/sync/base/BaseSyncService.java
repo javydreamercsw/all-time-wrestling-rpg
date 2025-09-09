@@ -379,7 +379,7 @@ public abstract class BaseSyncService {
                 .map(
                     future -> {
                       try {
-                        return future.get(30, TimeUnit.SECONDS);
+                        return future.get(2, TimeUnit.MINUTES);
                       } catch (Exception e) {
                         log.error("Failed to complete processing future: {}", e.getMessage());
                         throw new RuntimeException("Future completion failed", e);

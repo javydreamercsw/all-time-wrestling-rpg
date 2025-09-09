@@ -15,6 +15,7 @@ import lombok.NonNull;
 import notion.api.v1.NotionClient;
 import notion.api.v1.exception.NotionAPIError;
 import notion.api.v1.model.databases.DatabaseProperty;
+import notion.api.v1.model.databases.QueryResults;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.model.search.DatabaseSearchResult;
@@ -1499,19 +1500,34 @@ public class NotionHandler {
     List<T> entities = new ArrayList<>();
     try {
       log.debug("Loading all {} entities from database {}", entityType, databaseId);
+      String nextCursor = null;
+      boolean hasMore;
 
-      QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
+      List<Page> results = new ArrayList<>();
 
-      List<Page> results = executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
+      do {
+        QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
+        queryRequest.setStartCursor(nextCursor);
 
-      log.debug("Found {} pages in {} database", results.size(), entityType);
+        QueryResults queryResults = executeWithRetry(() -> client.queryDatabase(queryRequest));
+        results.addAll(queryResults.getResults());
+        hasMore = queryResults.getHasMore();
+        nextCursor = queryResults.getNextCursor();
 
-      for (Page page : results) {
-        T entity = mapPageToEntity(page, client, entityType, mapper);
-        if (entity != null) {
-          entities.add(entity);
-        }
-      }
+        log.debug(
+            "Found {} pages in {} database (hasMore: {}, nextCursor: {})",
+            results.size(),
+            entityType,
+            hasMore,
+            nextCursor);
+      } while (hasMore);
+
+      // Parallelize the mapping of pages to entities to improve performance
+      entities =
+          results.parallelStream()
+              .map(page -> mapPageToEntity(page, client, entityType, mapper))
+              .filter(java.util.Objects::nonNull)
+              .collect(java.util.stream.Collectors.toList());
 
       log.debug("Successfully loaded {} {} entities from database", entities.size(), entityType);
       return entities;
