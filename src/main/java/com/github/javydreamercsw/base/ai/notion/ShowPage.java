@@ -1,7 +1,5 @@
 package com.github.javydreamercsw.base.ai.notion;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,11 +41,11 @@ public class ShowPage extends NotionPage {
 
     try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
       // Get the original page data to access properties
-      PrintStream originalOut = System.out;
+      // PrintStream originalOut = System.out;
       try {
-        System.setOut(new PrintStream(new ByteArrayOutputStream()));
+        // System.setOut(new PrintStream(new ByteArrayOutputStream()));
         Page pageData = client.retrievePage(this.getId(), Collections.emptyList());
-        System.setOut(originalOut);
+        // System.setOut(originalOut);
 
         Map<String, PageProperty> properties = pageData.getProperties();
 
@@ -68,9 +66,9 @@ public class ShowPage extends NotionPage {
               log.debug("Processing match ID: {}", matchId);
 
               // Retrieve the match page to get its details
-              System.setOut(new PrintStream(new ByteArrayOutputStream()));
+              // System.setOut(new PrintStream(new ByteArrayOutputStream()));
               Page matchPageData = client.retrievePage(matchId, Collections.emptyList());
-              System.setOut(originalOut);
+              // System.setOut(originalOut);
 
               // Create and populate MatchPage object
               MatchPage matchPage = mapPageToMatchPage(matchPageData);
@@ -79,7 +77,7 @@ public class ShowPage extends NotionPage {
               log.debug("Added match: {} (ID: {})", getMatchName(matchPageData), matchId);
 
             } catch (Exception e) {
-              System.setOut(originalOut);
+              // System.setOut(originalOut);
               log.error("Failed to process match relation: {}", e.getMessage());
             }
           }
@@ -88,10 +86,10 @@ public class ShowPage extends NotionPage {
         }
 
       } catch (Exception e) {
-        System.setOut(originalOut);
+        // System.setOut(originalOut);
         log.error("Error loading matches for show: {}", e.getMessage());
       } finally {
-        System.setOut(originalOut);
+        // System.setOut(originalOut);
       }
     } catch (Exception e) {
       log.error("Error creating Notion client for match loading: {}", e.getMessage());

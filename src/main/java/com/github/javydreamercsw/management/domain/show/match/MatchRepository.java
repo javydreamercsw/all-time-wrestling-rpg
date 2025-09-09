@@ -95,4 +95,8 @@ public interface MatchRepository
 
   /** Find a match result by external ID. */
   Optional<Match> findByExternalId(String externalId);
+
+  /** Find all external IDs. */
+  @Query("SELECT m.externalId FROM Match m WHERE m.externalId IS NOT NULL")
+  List<String> findAllExternalIds();
 }

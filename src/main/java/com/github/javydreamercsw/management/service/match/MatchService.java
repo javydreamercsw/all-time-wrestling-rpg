@@ -262,4 +262,14 @@ public class MatchService {
   public Optional<Match> findByExternalId(@NonNull String externalId) {
     return matchRepository.findByExternalId(externalId);
   }
+
+  /**
+   * Gets all external IDs of all matches.
+   *
+   * @return List of all external IDs.
+   */
+  @Transactional(readOnly = true)
+  public List<String> getAllExternalIds() {
+    return matchRepository.findAllExternalIds();
+  }
 }
