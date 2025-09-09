@@ -149,43 +149,76 @@ public class ShowSyncService extends BaseSyncService {
   @SneakyThrows
   private SyncResult performShowsSyncInternal(@NonNull String operationId, long startTime) {
     try {
-      // Step 1: Validate sync prerequisites
-      log.info("🔍 Validating sync prerequisites...");
-      progressTracker.updateProgress(operationId, 1, "Validating sync prerequisites...");
+      // Step 1: Get all local external IDs
+      progressTracker.updateProgress(operationId, 1, "Fetching local show IDs");
+      List<String> localExternalIds = showService.getAllExternalIds();
+      log.info("Found {} shows in the local database.", localExternalIds.size());
 
-      // Step 2: Get all shows from Notion
-      log.info("📥 Retrieving shows from Notion...");
-      progressTracker.updateProgress(operationId, 3, "Retrieving shows from Notion database...");
+      // Step 2: Get all Notion page IDs
+      progressTracker.updateProgress(operationId, 2, "Fetching Notion show IDs");
+      List<String> notionShowIds =
+          executeWithRateLimit(() -> notionHandler.getDatabasePageIds("Shows"));
+      log.info("Found {} shows in Notion.", notionShowIds.size());
 
-      List<ShowPage> notionShows = executeWithRateLimit(notionHandler::loadAllShowsForSync);
-      long retrieveTime = System.currentTimeMillis() - startTime;
-      log.info("✅ Retrieved {} shows from Notion in {}ms", notionShows.size(), retrieveTime);
+      // Step 3: Calculate the difference
+      List<String> newShowIds =
+          notionShowIds.stream()
+              .filter(id -> !localExternalIds.contains(id))
+              .collect(java.util.stream.Collectors.toList());
 
-      // Step 3: Convert to DTOs
-      log.info("🔄 Converting shows to DTOs...");
-      progressTracker.updateProgress(operationId, 5, "Converting shows to DTOs...");
+      if (newShowIds.isEmpty()) {
+        log.info("No new shows to sync from Notion.");
+        progressTracker.completeOperation(operationId, true, "No new shows to sync.", 0);
+        return SyncResult.success("Shows", 0, 0);
+      }
+      log.info("Found {} new shows to sync from Notion.", newShowIds.size());
 
-      List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows, operationId);
-      long convertTime = System.currentTimeMillis() - startTime - retrieveTime;
-      log.info("✅ Converted {} shows to DTOs in {}ms", showDTOs.size(), convertTime);
+      // Step 4: Load only the new ShowPage objects in parallel
+      progressTracker.updateProgress(operationId, 3, "Loading new show pages from Notion");
+      List<ShowPage> showPages =
+          processWithControlledParallelism(
+              newShowIds,
+              (id) -> {
+                try {
+                  return notionHandler.loadShowById(id).orElse(null);
+                } catch (Exception e) {
+                  log.error("Failed to load show page for id: {}", id, e);
+                  return null;
+                }
+              },
+              10,
+              operationId,
+              3,
+              "Loaded");
 
-      // Step 4: Save to database
-      log.info("💾 Saving shows to database...");
-      progressTracker.updateProgress(operationId, 6, "Saving shows to database...");
+      List<ShowPage> validShowPages =
+          showPages.stream()
+              .filter(java.util.Objects::nonNull)
+              .collect(java.util.stream.Collectors.toList());
 
+      // Step 5: Convert to DTOs
+      progressTracker.updateProgress(operationId, 4, "Converting new shows to DTOs");
+      List<ShowDTO> showDTOs = convertShowPagesToDTO(validShowPages, operationId);
+
+      // Step 6: Save to database
+      progressTracker.updateProgress(operationId, 5, "Saving new shows to database");
       int savedCount = saveShowsToDatabase(showDTOs);
 
-      long totalTime = System.currentTimeMillis() - startTime;
-      log.info(
-          "🎉 Successfully synchronized {} shows to database in {}ms total", savedCount, totalTime);
+      int errorCount = newShowIds.size() - savedCount;
+      log.info("✅ Synced {} new shows with {} errors", savedCount, errorCount);
 
-      progressTracker.completeOperation(
-          operationId, true, String.format("Successfully synced %d shows", savedCount), savedCount);
+      boolean success = errorCount == 0;
+      String message =
+          success
+              ? "Delta-sync for shows completed successfully."
+              : "Delta-sync for shows completed with errors.";
+      progressTracker.completeOperation(operationId, success, message, savedCount);
 
-      // Record success in health monitor
-      healthMonitor.recordSuccess("Shows", totalTime, savedCount);
-      return SyncResult.success("Shows", savedCount, 0);
-
+      if (success) {
+        return SyncResult.success("Shows", savedCount, errorCount);
+      } else {
+        return SyncResult.failure("Shows", "Some new shows failed to sync.");
+      }
     } catch (Exception e) {
       throw new RuntimeException("Shows sync operation failed: " + e.getMessage(), e);
     }

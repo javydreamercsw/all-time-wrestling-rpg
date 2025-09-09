@@ -14,15 +14,8 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,59 +53,75 @@ public class MatchSyncService extends BaseSyncService {
   }
 
   private SyncResult performMatchSyncInternal(@NonNull String operationId) throws Exception {
-    // 1. Load all match pages from Notion with rate limiting
-    progressTracker.updateProgress(operationId, 1, "Loading match IDs from Notion");
+    // 1. Get all local external IDs
+    progressTracker.updateProgress(operationId, 1, "Fetching local match IDs");
+    List<String> localExternalIds = matchService.getAllExternalIds();
+    log.info("Found {} matches in the local database.", localExternalIds.size());
+
+    // 2. Get all Notion page IDs
+    progressTracker.updateProgress(operationId, 2, "Fetching Notion match IDs");
     List<String> notionMatchIds =
         executeWithRateLimit(() -> notionHandler.getDatabasePageIds("Matches"));
+    log.info("Found {} matches in Notion.", notionMatchIds.size());
 
-    if (notionMatchIds.isEmpty()) {
-      log.info("No matches found in Notion database");
-      progressTracker.completeOperation(operationId, true, "No matches found in Notion", 0);
+    // 3. Calculate the difference
+    List<String> newMatchIds =
+        notionMatchIds.stream()
+            .filter(id -> !localExternalIds.contains(id))
+            .collect(java.util.stream.Collectors.toList());
+
+    if (newMatchIds.isEmpty()) {
+      log.info("No new matches to sync from Notion.");
+      progressTracker.completeOperation(operationId, true, "No new matches to sync.", 0);
       return SyncResult.success("Matches", 0, 0);
     }
-    log.info("📥 Loaded {} match IDs from Notion", notionMatchIds.size());
+    log.info("Found {} new matches to sync from Notion.", newMatchIds.size());
 
-    // 2. Sync each match individually
-    progressTracker.updateProgress(operationId, 2, "Syncing individual matches");
-    int savedCount = 0;
-    int errorCount = 0;
-    for (int i = 0; i < notionMatchIds.size(); i++) {
-      String matchId = notionMatchIds.get(i);
-      try {
-        SyncResult result = syncMatch(matchId);
-        if (result.isSuccess()) {
-          savedCount++;
-        } else {
-          errorCount++;
-        }
-        double progressPercent = (double) (i + 1) / notionMatchIds.size() * 100;
-        progressTracker.updateProgress(
+    // 4. Load only the new MatchPage objects in parallel
+    progressTracker.updateProgress(operationId, 3, "Loading new match pages from Notion");
+    List<MatchPage> matchPages =
+        processWithControlledParallelism(
+            newMatchIds,
+            (id) -> {
+              try {
+                return notionHandler.loadMatchById(id).orElse(null);
+              } catch (Exception e) {
+                log.error("Failed to load match page for id: {}", id, e);
+                return null;
+              }
+            },
+            10,
             operationId,
-            2,
-            String.format(
-                "Synced %d/%d matches (%.1f%%)", (i + 1), notionMatchIds.size(), progressPercent));
-      } catch (Exception e) {
-        log.error("Failed to sync match with ID {}: {}", matchId, e.getMessage(), e);
-        errorCount++;
-      }
-    }
-    log.info("✅ Synced {} matches with {} errors", savedCount, errorCount);
+            3,
+            "Loaded");
 
-    // 3. Validate sync process
-    progressTracker.updateProgress(operationId, 3, "Validating sync process");
+    List<MatchPage> validMatchPages =
+        matchPages.stream()
+            .filter(java.util.Objects::nonNull)
+            .collect(java.util.stream.Collectors.toList());
+
+    // 5. Convert to DTOs
+    progressTracker.updateProgress(operationId, 4, "Converting new matches to DTOs");
+    List<MatchDTO> matchDTOs = convertMatchesWithRateLimit(validMatchPages, operationId);
+
+    // 6. Save to database
+    progressTracker.updateProgress(operationId, 5, "Saving new matches to database");
+    int savedCount = saveMatchesToDatabase(matchDTOs);
+
+    int errorCount = newMatchIds.size() - savedCount;
+    log.info("✅ Synced {} new matches with {} errors", savedCount, errorCount);
+
     boolean success = errorCount == 0;
+    String message =
+        success
+            ? "Delta-sync for matches completed successfully."
+            : "Delta-sync for matches completed with errors.";
+    progressTracker.completeOperation(operationId, success, message, savedCount);
 
     if (success) {
-      String message =
-          String.format("Matches sync completed successfully. Synced %d matches.", savedCount);
-      log.info(message);
-      progressTracker.completeOperation(operationId, true, message, savedCount);
       return SyncResult.success("Matches", savedCount, errorCount);
     } else {
-      String message = String.format("Matches sync completed with %d errors", errorCount);
-      log.warn(message);
-      progressTracker.completeOperation(operationId, false, message, savedCount);
-      return SyncResult.failure("Matches", message);
+      return SyncResult.failure("Matches", "Some new matches failed to sync.");
     }
   }
 
@@ -132,8 +141,8 @@ public class MatchSyncService extends BaseSyncService {
       MatchDTO matchDTO = new MatchDTO();
       matchDTO.setExternalId(matchPage.getId());
       matchDTO.setName(matchPage.getRawProperties().get("Name").toString());
-      matchDTO.setCreatedTime(Instant.parse(matchPage.getCreated_time()));
-      matchDTO.setLastEditedTime(Instant.parse(matchPage.getLast_edited_time()));
+      matchDTO.setCreatedTime(java.time.Instant.parse(matchPage.getCreated_time()));
+      matchDTO.setLastEditedTime(java.time.Instant.parse(matchPage.getLast_edited_time()));
 
       if (matchPage.getProperties().getShows() != null
           && !matchPage.getProperties().getShows().getRelation().isEmpty()) {
@@ -144,21 +153,21 @@ public class MatchSyncService extends BaseSyncService {
       Object participantsProperty = matchPage.getRawProperties().get("Participants");
       if (participantsProperty instanceof String && !((String) participantsProperty).isEmpty()) {
         matchDTO.setParticipantNames(
-            Stream.of(((String) participantsProperty).split(","))
+            java.util.stream.Stream.of(((String) participantsProperty).split(","))
                 .map(String::trim)
-                .collect(Collectors.toList()));
+                .collect(java.util.stream.Collectors.toList()));
       } else {
-        matchDTO.setParticipantNames(new ArrayList<>());
+        matchDTO.setParticipantNames(new java.util.ArrayList<>());
       }
 
       Object winnersProperty = matchPage.getRawProperties().get("Winners");
       if (winnersProperty instanceof String && !((String) winnersProperty).isEmpty()) {
         matchDTO.setWinnerNames(
-            Stream.of(((String) winnersProperty).split(","))
+            java.util.stream.Stream.of(((String) winnersProperty).split(","))
                 .map(String::trim)
-                .collect(Collectors.toList()));
+                .collect(java.util.stream.Collectors.toList()));
       } else {
-        matchDTO.setWinnerNames(new ArrayList<>());
+        matchDTO.setWinnerNames(new java.util.ArrayList<>());
       }
 
       Object matchTypeProperty = matchPage.getRawProperties().get("Match Type");
@@ -175,9 +184,9 @@ public class MatchSyncService extends BaseSyncService {
           // The date from Notion is in the format "MMMM d, yyyy"
           java.time.format.DateTimeFormatter formatter =
               java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy");
-          LocalDate localDate = LocalDate.parse(dateString, formatter);
-          matchDTO.setMatchDate(localDate.atStartOfDay(ZoneOffset.UTC).toInstant());
-        } catch (DateTimeParseException e) {
+          java.time.LocalDate localDate = java.time.LocalDate.parse(dateString, formatter);
+          matchDTO.setMatchDate(localDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
+        } catch (java.time.format.DateTimeParseException e) {
           log.warn(
               "Could not parse date '{}' for match {}: {}",
               dateProperty,
@@ -202,92 +211,101 @@ public class MatchSyncService extends BaseSyncService {
     int savedCount = 0;
     for (MatchDTO matchDTO : matchDTOs) {
       try {
-        Optional<Match> existingMatchOpt;
-        if (matchDTO.getExternalId() == null) {
-          existingMatchOpt = Optional.empty();
-        } else {
-          existingMatchOpt = matchService.findByExternalId(matchDTO.getExternalId());
+        if (processSingleMatch(matchDTO)) {
+          savedCount++;
         }
-
-        Match match = existingMatchOpt.orElseGet(Match::new);
-
-        if (match.getId() == null) {
-          log.debug(
-              "Creating new match: {} (External ID: {})",
-              matchDTO.getName(),
-              matchDTO.getExternalId());
-          match.setExternalId(matchDTO.getExternalId());
-        } else {
-          log.debug("Updating existing match: {} (ID: {})", matchDTO.getName(), match.getId());
-        }
-
-        Optional<Show> showOpt = showService.findByExternalId(matchDTO.getShowExternalId());
-        if (showOpt.isEmpty()) {
-          log.warn(
-              "Show '{}' for match {} was not found locally. Attempting to sync it.",
-              matchDTO.getShowName(),
-              matchDTO.getName());
-          // Attempt to sync the missing show
-          SyncResult showSyncResult = showSyncService.syncShow(matchDTO.getShowExternalId());
-          if (showSyncResult.isSuccess()) {
-            log.info("Successfully synced show '{}'. Retrying lookup.", matchDTO.getShowName());
-            showOpt = showService.findByExternalId(matchDTO.getShowExternalId());
-          } else {
-            log.error(
-                "Failed to sync show '{}' for match {}: {}",
-                matchDTO.getShowName(),
-                matchDTO.getName(),
-                showSyncResult.getErrorMessage());
-          }
-
-          if (showOpt.isEmpty()) {
-            log.warn(
-                "Skipping match {} as show '{}' could not be found or synced.",
-                matchDTO.getName(),
-                matchDTO.getShowName());
-            continue;
-          }
-        }
-        match.setShow(showOpt.get());
-
-        Optional<MatchType> matchTypeOpt = matchTypeService.findByName(matchDTO.getMatchTypeName());
-        if (matchTypeOpt.isEmpty()) {
-          log.warn(
-              "Skipping match {} as match type '{}' was not found.",
-              matchDTO.getName(),
-              matchDTO.getMatchTypeName());
-          continue;
-        }
-        match.setMatchType(matchTypeOpt.get());
-
-        List<Wrestler> participants = new ArrayList<>();
-        for (String participantName : matchDTO.getParticipantNames()) {
-          wrestlerService.findByName(participantName).ifPresent(participants::add);
-        }
-
-        List<Wrestler> winners = new ArrayList<>();
-        for (String winnerName : matchDTO.getWinnerNames()) {
-          wrestlerService.findByName(winnerName).ifPresent(winners::add);
-        }
-
-        match.getParticipants().clear();
-        for (Wrestler participant : participants) {
-          match.addParticipant(participant);
-        }
-
-        if (!winners.isEmpty()) {
-          match.setWinner(winners.get(0));
-        }
-
-        match.setMatchDate(matchDTO.getMatchDate());
-
-        matchService.updateMatch(match);
-        savedCount++;
       } catch (Exception e) {
         log.error("Failed to process match DTO {}: {}", matchDTO.getName(), e.getMessage(), e);
       }
     }
     return savedCount;
+  }
+
+  @org.springframework.transaction.annotation.Transactional(
+      propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+  public boolean processSingleMatch(@NonNull MatchDTO matchDTO) {
+    try {
+      Optional<Match> existingMatchOpt =
+          Optional.ofNullable(matchDTO.getExternalId()).flatMap(matchService::findByExternalId);
+
+      Match match = existingMatchOpt.orElseGet(Match::new);
+
+      if (match.getId() == null) {
+        log.debug(
+            "Creating new match: {} (External ID: {})",
+            matchDTO.getName(),
+            matchDTO.getExternalId());
+        match.setExternalId(matchDTO.getExternalId());
+      } else {
+        log.debug("Updating existing match: {} (ID: {})", matchDTO.getName(), match.getId());
+      }
+
+      Optional<Show> showOpt = showService.findByExternalId(matchDTO.getShowExternalId());
+      if (showOpt.isEmpty()) {
+        log.warn(
+            "Show '{}' for match {} was not found locally. Attempting to sync it.",
+            matchDTO.getShowName(),
+            matchDTO.getName());
+        // Attempt to sync the missing show
+        SyncResult showSyncResult = showSyncService.syncShow(matchDTO.getShowExternalId());
+        if (showSyncResult.isSuccess()) {
+          log.info("Successfully synced show '{}'. Retrying lookup.", matchDTO.getShowName());
+          showOpt = showService.findByExternalId(matchDTO.getShowExternalId());
+        } else {
+          log.error(
+              "Failed to sync show '{}' for match {}: {}",
+              matchDTO.getShowName(),
+              matchDTO.getName(),
+              showSyncResult.getErrorMessage());
+        }
+
+        if (showOpt.isEmpty()) {
+          log.warn(
+              "Skipping match {} as show '{}' could not be found or synced.",
+              matchDTO.getName(),
+              matchDTO.getShowName());
+          return false;
+        }
+      }
+      match.setShow(showOpt.get());
+
+      Optional<MatchType> matchTypeOpt = matchTypeService.findByName(matchDTO.getMatchTypeName());
+      if (matchTypeOpt.isEmpty()) {
+        log.warn(
+            "Skipping match {} as match type '{}' was not found.",
+            matchDTO.getName(),
+            matchDTO.getMatchTypeName());
+        return false;
+      }
+      match.setMatchType(matchTypeOpt.get());
+
+      List<Wrestler> participants = new java.util.ArrayList<>();
+      for (String participantName : matchDTO.getParticipantNames()) {
+        wrestlerService.findByName(participantName).ifPresent(participants::add);
+      }
+
+      List<Wrestler> winners = new java.util.ArrayList<>();
+      for (String winnerName : matchDTO.getWinnerNames()) {
+        wrestlerService.findByName(winnerName).ifPresent(winners::add);
+      }
+
+      match.getParticipants().clear();
+      for (Wrestler participant : participants) {
+        match.addParticipant(participant);
+      }
+
+      if (!winners.isEmpty()) {
+        match.setWinner(winners.get(0));
+      }
+
+      match.setMatchDate(matchDTO.getMatchDate());
+
+      matchService.updateMatch(match);
+      return true;
+    } catch (Exception e) {
+      log.error("Failed to process match DTO {}: {}", matchDTO.getName(), e.getMessage(), e);
+      return false;
+    }
   }
 
   public List<String> getMatchIds() {
@@ -301,20 +319,28 @@ public class MatchSyncService extends BaseSyncService {
     progressTracker.startOperation(operationId, "Match Sync", 4);
 
     try {
-      Optional<MatchPage> matchPage = notionHandler.loadMatchById(matchId);
-      if (matchPage.isEmpty()) {
+      Optional<MatchPage> matchPageOpt = notionHandler.loadMatchById(matchId);
+      if (matchPageOpt.isEmpty()) {
         String errorMessage = "Match with ID " + matchId + " not found in Notion.";
         log.error(errorMessage);
         progressTracker.failOperation(operationId, errorMessage);
         return SyncResult.failure("Match", errorMessage);
       }
 
-      List<MatchDTO> matchDTOs = convertMatchesWithRateLimit(List.of(matchPage.get()), operationId);
-      int savedCount = saveMatchesToDatabase(matchDTOs);
-      String message = "Match sync completed successfully. Synced " + savedCount + " match.";
-      log.info(message);
-      progressTracker.completeOperation(operationId, true, message, savedCount);
-      return SyncResult.success("Match", savedCount, 0);
+      MatchPage matchPage = matchPageOpt.get();
+      MatchDTO matchDTO = convertNotionPageToDTO(matchPage);
+
+      if (processSingleMatch(matchDTO)) {
+        String message = "Match sync completed successfully. Synced 1 match.";
+        log.info(message);
+        progressTracker.completeOperation(operationId, true, message, 1);
+        return SyncResult.success("Match", 1, 0);
+      } else {
+        String errorMessage = "Failed to process match with ID " + matchId;
+        log.error(errorMessage);
+        progressTracker.failOperation(operationId, errorMessage);
+        return SyncResult.failure("Match", errorMessage);
+      }
     } catch (Exception e) {
       String errorMessage = "Failed to synchronize match from Notion: " + e.getMessage();
       log.error(errorMessage, e);
