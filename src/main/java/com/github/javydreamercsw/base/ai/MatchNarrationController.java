@@ -65,7 +65,7 @@ public class MatchNarrationController {
 
   /** Checks if the test profile is active. */
   private boolean isTestProfile() {
-    return environment.acceptsProfiles("test");
+    return environment.matchesProfiles("test");
   }
 
   @Operation(
@@ -625,7 +625,7 @@ public class MatchNarrationController {
         Arrays.asList(
             "Defeated Sabu in hardcore match", "Earned title shot by beating Kurt Angle"));
 
-    context.setWrestlers(Arrays.asList(rvd));
+    context.setWrestlers(List.of(rvd));
 
     // Venue
     VenueContext venue = new VenueContext();
