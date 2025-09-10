@@ -26,7 +26,7 @@ class ParallelSyncOrchestratorTest {
   @Mock private WrestlerSyncService wrestlerSyncService;
   @Mock private FactionSyncService factionSyncService;
   @Mock private TeamSyncService teamSyncService;
-  @Mock private MatchSyncService matchSyncService;
+  @Mock private SegmentSyncService segmentSyncService;
   @Mock private SeasonSyncService seasonSyncService;
   @Mock private ShowTypeSyncService showTypeSyncService;
   @Mock private ShowTemplateSyncService showTemplateSyncService;
@@ -66,7 +66,7 @@ class ParallelSyncOrchestratorTest {
     verify(wrestlerSyncService).syncWrestlers(anyString());
     verify(factionSyncService).syncFactions(anyString());
     verify(teamSyncService).syncTeams(anyString());
-    verify(matchSyncService).syncMatches(anyString());
+    verify(segmentSyncService).syncSegments(anyString());
     verify(seasonSyncService).syncSeasons(anyString());
     verify(showTypeSyncService).syncShowTypes(anyString());
     verify(showTemplateSyncService).syncShowTemplates(anyString());
@@ -124,7 +124,8 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("Factions", 3, 0));
     when(teamSyncService.syncTeams(anyString()))
         .thenReturn(SyncResult.failure("Teams", "Notion API error"));
-    when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 8, 0));
+    when(segmentSyncService.syncSegments(anyString()))
+        .thenReturn(SyncResult.success("Matches", 8, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 2, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
@@ -171,7 +172,8 @@ class ParallelSyncOrchestratorTest {
     when(factionSyncService.syncFactions(anyString()))
         .thenReturn(SyncResult.success("Factions", 1, 0));
     when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 1, 0));
-    when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 1, 0));
+    when(segmentSyncService.syncSegments(anyString()))
+        .thenReturn(SyncResult.success("Matches", 1, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 1, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
@@ -211,7 +213,8 @@ class ParallelSyncOrchestratorTest {
     when(factionSyncService.syncFactions(anyString()))
         .thenReturn(SyncResult.success("Factions", 3, 0));
     when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 7, 0));
-    when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 8, 0));
+    when(segmentSyncService.syncSegments(anyString()))
+        .thenReturn(SyncResult.success("Matches", 8, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 2, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))

@@ -61,7 +61,7 @@ class InjuryControllerIntegrationTest {
             "Knee Injury",
             "Torn ACL",
             InjurySeverity.SEVERE,
-            "Occurred during match");
+            "Occurred during segment");
 
     mockMvc
         .perform(

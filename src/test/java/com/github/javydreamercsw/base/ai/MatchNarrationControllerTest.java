@@ -7,8 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.MatchNarrationContext;
-import com.github.javydreamercsw.base.service.match.MatchOutcomeProvider;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
+import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,30 +16,30 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(MatchNarrationController.class)
+@WebMvcTest(SegmentNarrationController.class)
 class MatchNarrationControllerTest {
 
   @Autowired private MockMvc mockMvc;
 
-  @MockitoBean private MatchNarrationServiceFactory serviceFactory;
-  @MockitoBean private MatchNarrationConfig config;
-  @MockitoBean private MatchOutcomeProvider matchOutcomeService;
+  @MockitoBean private SegmentNarrationServiceFactory serviceFactory;
+  @MockitoBean private SegmentNarrationConfig config;
+  @MockitoBean private SegmentOutcomeProvider matchOutcomeService;
 
   @Test
   void testNarrateMatch() throws Exception {
     // Given
-    MatchNarrationService service = mock(MatchNarrationService.class);
+    SegmentNarrationService service = mock(SegmentNarrationService.class);
     when(serviceFactory.getBestAvailableService()).thenReturn(service);
-    when(service.narrateMatch(any(MatchNarrationContext.class))).thenReturn("Test narration");
-    when(matchOutcomeService.determineOutcomeIfNeeded(any(MatchNarrationContext.class)))
+    when(service.narrateSegment(any(SegmentNarrationContext.class))).thenReturn("Test narration");
+    when(matchOutcomeService.determineOutcomeIfNeeded(any(SegmentNarrationContext.class)))
         .thenAnswer(i -> i.getArguments()[0]);
 
-    MatchNarrationContext context = new MatchNarrationContext();
+    SegmentNarrationContext context = new SegmentNarrationContext();
 
     // When & Then
     mockMvc
         .perform(
-            post("/api/match-narration/narrate")
+            post("/api/segment-narration/narrate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(context)))
         .andExpect(status().isOk());

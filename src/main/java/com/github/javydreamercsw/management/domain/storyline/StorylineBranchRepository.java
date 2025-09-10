@@ -1,6 +1,6 @@
 package com.github.javydreamercsw.management.domain.storyline;
 
-import com.github.javydreamercsw.management.domain.show.match.Match;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -37,8 +37,8 @@ public interface StorylineBranchRepository
   /** Find branches that have been completed. */
   List<StorylineBranch> findByCompletedDateIsNotNull();
 
-  /** Find branches triggered by a specific match. */
-  List<StorylineBranch> findByTriggeringMatch(Match matchResult);
+  /** Find branches triggered by a specific segment. */
+  List<StorylineBranch> findByTriggeringSegment(Segment segmentResult);
 
   /** Find branches by priority range. */
   @Query(
@@ -184,7 +184,7 @@ public interface StorylineBranchRepository
       """)
   List<StorylineBranch> findBranchesWithEffectType(@Param("effectType") String effectType);
 
-  /** Find match outcome branches. */
+  /** Find segment outcome branches. */
   List<StorylineBranch> findByBranchTypeAndIsActiveTrue(StorylineBranchType branchType);
 
   /** Find expired branches (created long ago but never activated). */

@@ -8,8 +8,8 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.Match;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -53,7 +53,7 @@ class AdvancedRivalryIntegrationServiceTest {
   private Faction faction1;
   private Faction faction2;
   private Show testShow;
-  private MatchType singlesMatchType;
+  private SegmentType singlesSegmentType;
 
   @BeforeEach
   void setUp() {
@@ -69,14 +69,14 @@ class AdvancedRivalryIntegrationServiceTest {
     faction1 = createFaction("The Corporation", 1L);
     faction2 = createFaction("D-Generation X", 2L);
 
-    // Create test show and match type
+    // Create test show and segment type
     testShow = new Show();
     testShow.setName("Test Show");
     testShow.setShowDate(java.time.LocalDate.now());
 
     // Match types are loaded by DataInitializer, no need to create here
-    singlesMatchType = new MatchType();
-    singlesMatchType.setName("Singles Match");
+    singlesSegmentType = new SegmentType();
+    singlesSegmentType.setName("Singles Match");
   }
 
   @Test
@@ -127,25 +127,25 @@ class AdvancedRivalryIntegrationServiceTest {
   }
 
   @Test
-  void testProcessMatchOutcome() {
+  void testProcessSegmentOutcome() {
     // Given
-    Match match = new Match();
-    match.setShow(testShow);
-    match.setMatchType(singlesMatchType);
-    match.setMatchDate(fixedClock.instant());
-    match.setIsTitleMatch(false);
-    match.setIsNpcGenerated(false);
+    Segment segment = new Segment();
+    segment.setShow(testShow);
+    segment.setSegmentType(singlesSegmentType);
+    segment.setSegmentDate(fixedClock.instant());
+    segment.setIsTitleSegment(false);
+    segment.setIsNpcGenerated(false);
 
     // Add participants
-    match.addParticipant(wrestler1);
-    match.addParticipant(wrestler2);
-    match.setWinner(wrestler1);
+    segment.addParticipant(wrestler1);
+    segment.addParticipant(wrestler2);
+    segment.setWinner(wrestler1);
 
     // When
-    advancedRivalryService.processMatchOutcome(match);
+    advancedRivalryService.processSegmentOutcome(segment);
 
     // Then - Verify that the storyline branching service was called
-    verify(storylineBranchingService).processMatchOutcome(match);
+    verify(storylineBranchingService).processSegmentOutcome(segment);
   }
 
   @Test

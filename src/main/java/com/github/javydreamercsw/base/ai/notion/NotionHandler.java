@@ -1057,9 +1057,9 @@ public class NotionHandler {
 
   // ==================== MATCH LOADING METHODS ====================
 
-  /** Loads a match from the Notion database by name. */
-  public Optional<MatchPage> loadMatch(@NonNull String matchName) {
-    log.debug("Loading match: '{}'", matchName);
+  /** Loads a segment from the Notion database by name. */
+  public Optional<SegmentPage> loadSegment(@NonNull String segmentName) {
+    log.debug("Loading segment: '{}'", segmentName);
 
     String matchDbId = getDatabaseId("Matches");
     if (matchDbId == null) {
@@ -1069,27 +1069,22 @@ public class NotionHandler {
 
     try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
       return loadEntityFromDatabase(
-          client, matchDbId, matchName, "Match", this::mapPageToMatchPage);
+          client, matchDbId, segmentName, "Match", this::mapPageToMatchPage);
     } catch (Exception e) {
-      log.error("Failed to load match: {}", matchName, e);
+      log.error("Failed to load segment: {}", segmentName, e);
       return Optional.empty();
     }
   }
 
   /**
-   * Loads a match from the Notion database by ID.
+   * Loads a segment from the Notion database by ID.
    *
-   * @param matchId The ID of the match to load.
+   * @param segment The ID of the segment to load.
    * @return Optional containing the MatchPage object if found, empty otherwise.
    */
-  public Optional<MatchPage> loadMatchById(@NonNull String matchId) {
-    log.debug("Loading match with ID: '{}'", matchId);
-    return loadPage(matchId).map(page -> mapPageToMatchPage(page, ""));
-  }
-
-  /** Static convenience method to load a match. */
-  public static Optional<MatchPage> loadMatchStatic(@NonNull String matchName) {
-    return getInstance().loadMatch(matchName);
+  public Optional<SegmentPage> loadSegmentById(@NonNull String segment) {
+    log.debug("Loading segment with ID: '{}'", segment);
+    return loadPage(segment).map(page -> mapPageToMatchPage(page, ""));
   }
 
   /**
@@ -1097,7 +1092,7 @@ public class NotionHandler {
    *
    * @return List of all MatchPage objects from the Matches database
    */
-  public List<MatchPage> loadAllMatches() {
+  public List<SegmentPage> loadAllSegments() {
     log.debug("Loading all matches from Matches database");
 
     // Check if NOTION_TOKEN is available first
@@ -1700,20 +1695,20 @@ public class NotionHandler {
   }
 
   /** Maps a Notion page to a MatchPage object. */
-  private MatchPage mapPageToMatchPage(@NonNull Page pageData, @NonNull String matchName) {
-    MatchPage matchPage =
+  private SegmentPage mapPageToMatchPage(@NonNull Page pageData, @NonNull String matchName) {
+    SegmentPage matchPage =
         mapPageToGenericEntity(
-            pageData, matchName, "Match", MatchPage::new, MatchPage.NotionParent::new);
+            pageData, matchName, "Match", SegmentPage::new, SegmentPage.NotionParent::new);
 
     // Extract and set specific MatchPage properties
-    MatchPage.NotionProperties properties = new MatchPage.NotionProperties();
+    SegmentPage.NotionProperties properties = new SegmentPage.NotionProperties();
     Map<String, PageProperty> notionProperties = pageData.getProperties();
 
     try (NotionClient client = createNotionClient()) {
       properties.setParticipants(createProperty(notionProperties, "Participants", client));
       properties.setWinners(createProperty(notionProperties, "Winners", client));
       properties.setShows(createProperty(notionProperties, "Shows", client));
-      properties.setMatch_Type(createProperty(notionProperties, "Match Type", client));
+      properties.setSegment_Type(createProperty(notionProperties, "Match Type", client));
       properties.setReferee_s(createProperty(notionProperties, "Referee(s)", client));
       properties.setRules(createProperty(notionProperties, "Rules", client));
       properties.setTitle_s(createProperty(notionProperties, "Title(s)", client));
@@ -1962,17 +1957,18 @@ public class NotionHandler {
   }
 
   /**
-   * Extracts the first match name from a show's matches relation property.
+   * Extracts the first segment name from a show's matches relation property.
    *
    * @param showPage The ShowPage object to extract matches from
-   * @return The name of the first match, or null if no matches found
+   * @return The name of the first segment, or null if no matches found
    */
   public String extractFirstMatchFromShow(@NonNull ShowPage showPage) {
-    log.debug("Extracting first match from show: {}", showPage.getId());
+    log.debug("Extracting first segment from show: {}", showPage.getId());
 
     String notionToken = System.getenv("NOTION_TOKEN");
     if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("NOTION_TOKEN not available. Cannot extract match from show: {}", showPage.getId());
+      log.warn(
+          "NOTION_TOKEN not available. Cannot extract segment from show: {}", showPage.getId());
       return null;
     }
 
@@ -1988,7 +1984,7 @@ public class NotionHandler {
         if (matchesProperty != null
             && matchesProperty.getRelation() != null
             && !matchesProperty.getRelation().isEmpty()) {
-          // Get the first related match - using generic approach since Relation type may not be
+          // Get the first related segment - using generic approach since Relation type may not be
           // accessible
           Object firstMatch = matchesProperty.getRelation().get(0);
           String matchId = null;
@@ -1997,23 +1993,23 @@ public class NotionHandler {
           try {
             matchId = (String) firstMatch.getClass().getMethod("getId").invoke(firstMatch);
           } catch (Exception e) {
-            log.error("Failed to extract match ID from relation: {}", e.getMessage());
+            log.error("Failed to extract segment ID from relation: {}", e.getMessage());
             return null;
           }
 
-          log.debug("Found first match ID: {}", matchId);
+          log.debug("Found first segment ID: {}", matchId);
 
           final String finalMatchId = matchId;
           Page matchPage =
               executeWithRetry(() -> client.retrievePage(finalMatchId, Collections.emptyList()));
 
-          // Get the match name from the Name property
+          // Get the segment name from the Name property
           PageProperty nameProperty = matchPage.getProperties().get("Name");
           if (nameProperty != null
               && nameProperty.getTitle() != null
               && !nameProperty.getTitle().isEmpty()) {
             String matchName = nameProperty.getTitle().get(0).getPlainText();
-            log.debug("Extracted match name: {}", matchName);
+            log.debug("Extracted segment name: {}", matchName);
             return matchName;
           }
         }
@@ -2022,11 +2018,11 @@ public class NotionHandler {
         return null;
 
       } catch (Exception e) {
-        log.error("Error extracting match from show: {}", e.getMessage());
+        log.error("Error extracting segment from show: {}", e.getMessage());
         return null;
       }
     } catch (Exception e) {
-      log.error("Error creating Notion client for match extraction: {}", e.getMessage());
+      log.error("Error creating Notion client for segment extraction: {}", e.getMessage());
       return null;
     }
   }

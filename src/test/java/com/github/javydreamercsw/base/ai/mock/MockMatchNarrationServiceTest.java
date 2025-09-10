@@ -2,15 +2,16 @@ package com.github.javydreamercsw.base.ai.mock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.base.ai.MatchNarrationService.MatchNarrationContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.MatchTypeContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.Move;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.MoveSet;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.NPCContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.RefereeContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.VenueContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.WrestlerContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.RefereeContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,18 +20,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Unit tests for MockMatchNarrationService. Tests the mock AI provider's ability to generate
- * realistic wrestling match narrations.
+ * realistic wrestling segment narrations.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Mock Match Narration Service Tests")
 class MockMatchNarrationServiceTest {
 
-  private MockMatchNarrationService mockService;
-  private MatchNarrationContext testContext;
+  private MockSegmentNarrationService mockService;
+  private SegmentNarrationContext testContext;
 
   @BeforeEach
   void setUp() {
-    mockService = new MockMatchNarrationService();
+    mockService = new MockSegmentNarrationService();
     testContext = createTestMatchContext();
   }
 
@@ -47,9 +48,9 @@ class MockMatchNarrationServiceTest {
   }
 
   @Test
-  @DisplayName("Should generate non-empty match narration")
+  @DisplayName("Should generate non-empty segment narration")
   void shouldGenerateNonEmptyMatchNarration() {
-    String narration = mockService.narrateMatch(testContext);
+    String narration = mockService.narrateSegment(testContext);
 
     assertThat(narration)
         .isNotNull()
@@ -60,7 +61,7 @@ class MockMatchNarrationServiceTest {
   @Test
   @DisplayName("Should include wrestler names in narration")
   void shouldIncludeWrestlerNamesInNarration() {
-    String narration = mockService.narrateMatch(testContext);
+    String narration = mockService.narrateSegment(testContext);
 
     assertThat(narration).contains("Stone Cold Steve Austin").contains("The Rock");
   }
@@ -68,15 +69,15 @@ class MockMatchNarrationServiceTest {
   @Test
   @DisplayName("Should include venue information in narration")
   void shouldIncludeVenueInformationInNarration() {
-    String narration = mockService.narrateMatch(testContext);
+    String narration = mockService.narrateSegment(testContext);
 
     assertThat(narration).containsIgnoringCase("WrestleMania");
   }
 
   @Test
-  @DisplayName("Should include match type in narration")
+  @DisplayName("Should include segment type in narration")
   void shouldIncludeMatchTypeInNarration() {
-    String narration = mockService.narrateMatch(testContext);
+    String narration = mockService.narrateSegment(testContext);
 
     assertThat(narration).containsIgnoringCase("Singles Match");
   }
@@ -84,11 +85,11 @@ class MockMatchNarrationServiceTest {
   @Test
   @DisplayName("Should generate different narrations for different contexts")
   void shouldGenerateDifferentNarrationsForDifferentContexts() {
-    MatchNarrationContext context1 = createTestMatchContext();
-    MatchNarrationContext context2 = createAlternativeMatchContext();
+    SegmentNarrationContext context1 = createTestMatchContext();
+    SegmentNarrationContext context2 = createAlternativeMatchContext();
 
-    String narration1 = mockService.narrateMatch(context1);
-    String narration2 = mockService.narrateMatch(context2);
+    String narration1 = mockService.narrateSegment(context1);
+    String narration2 = mockService.narrateSegment(context2);
 
     assertThat(narration1).isNotEqualTo(narration2);
     assertThat(narration2).contains("Undertaker").contains("Kane");
@@ -97,12 +98,12 @@ class MockMatchNarrationServiceTest {
   @Test
   @DisplayName("Should handle minimal context gracefully")
   void shouldHandleMinimalContextGracefully() {
-    MatchNarrationContext minimalContext = new MatchNarrationContext();
+    SegmentNarrationContext minimalContext = new SegmentNarrationContext();
 
     // Set only required fields
-    MatchTypeContext matchType = new MatchTypeContext();
-    matchType.setMatchType("Singles Match");
-    minimalContext.setMatchType(matchType);
+    SegmentTypeContext matchType = new SegmentTypeContext();
+    matchType.setSegmentType("Singles Match");
+    minimalContext.setSegmentType(matchType);
 
     WrestlerContext wrestler1 = new WrestlerContext();
     wrestler1.setName("Wrestler A");
@@ -110,7 +111,7 @@ class MockMatchNarrationServiceTest {
     wrestler2.setName("Wrestler B");
     minimalContext.setWrestlers(Arrays.asList(wrestler1, wrestler2));
 
-    String narration = mockService.narrateMatch(minimalContext);
+    String narration = mockService.narrateSegment(minimalContext);
 
     assertThat(narration).isNotNull().isNotEmpty().contains("Wrestler A").contains("Wrestler B");
   }
@@ -120,7 +121,7 @@ class MockMatchNarrationServiceTest {
   void shouldSimulateProcessingTime() {
     long startTime = System.currentTimeMillis();
 
-    mockService.narrateMatch(testContext);
+    mockService.narrateSegment(testContext);
 
     long endTime = System.currentTimeMillis();
     long duration = endTime - startTime;
@@ -132,24 +133,24 @@ class MockMatchNarrationServiceTest {
   @Test
   @DisplayName("Should generate structured narration with multiple sections")
   void shouldGenerateStructuredNarrationWithMultipleSections() {
-    String narration = mockService.narrateMatch(testContext);
+    String narration = mockService.narrateSegment(testContext);
 
     // Should contain multiple paragraphs/sections
     String[] sections = narration.split("\n\n");
     assertThat(sections).hasSizeGreaterThanOrEqualTo(3);
   }
 
-  /** Creates a comprehensive test match context. */
-  private MatchNarrationContext createTestMatchContext() {
-    MatchNarrationContext context = new MatchNarrationContext();
+  /** Creates a comprehensive test segment context. */
+  private SegmentNarrationContext createTestMatchContext() {
+    SegmentNarrationContext context = new SegmentNarrationContext();
 
     // Match Type
-    MatchTypeContext matchType = new MatchTypeContext();
-    matchType.setMatchType("Singles Match");
+    SegmentTypeContext matchType = new SegmentTypeContext();
+    matchType.setSegmentType("Singles Match");
     matchType.setStipulation("WWE Championship");
-    matchType.setRules(Arrays.asList("Standard Rules"));
+    matchType.setRules(List.of("Standard Rules"));
     matchType.setTimeLimit(30);
-    context.setMatchType(matchType);
+    context.setSegmentType(matchType);
 
     // Venue
     VenueContext venue = new VenueContext();
@@ -169,11 +170,11 @@ class MockMatchNarrationServiceTest {
 
     MoveSet austinMoves = new MoveSet();
     austinMoves.setFinishers(
-        Arrays.asList(new Move("Stone Cold Stunner", "Jaw-dropping finishing move", "finisher")));
+        List.of(new Move("Stone Cold Stunner", "Jaw-dropping finishing move", "finisher")));
     austinMoves.setTrademarks(
-        Arrays.asList(new Move("Lou Thesz Press", "Explosive takedown with punches", "trademark")));
+        List.of(new Move("Lou Thesz Press", "Explosive takedown with punches", "trademark")));
     austin.setMoveSet(austinMoves);
-    austin.setFeudsAndHeat(Arrays.asList("Austin vs McMahon"));
+    austin.setFeudsAndHeat(List.of("Austin vs McMahon"));
 
     WrestlerContext rock = new WrestlerContext();
     rock.setName("The Rock");
@@ -185,7 +186,7 @@ class MockMatchNarrationServiceTest {
             new Move("Rock Bottom", "Devastating slam", "finisher"),
             new Move("People's Elbow", "Electrifying elbow drop", "finisher")));
     rock.setMoveSet(rockMoves);
-    rock.setFeudsAndHeat(Arrays.asList("Corporate Champion"));
+    rock.setFeudsAndHeat(List.of("Corporate Champion"));
 
     context.setWrestlers(Arrays.asList(austin, rock));
 
@@ -214,21 +215,21 @@ class MockMatchNarrationServiceTest {
     // Context
     context.setAudience("82,500 screaming fans");
     context.setDeterminedOutcome("Stone Cold Steve Austin wins via Stone Cold Stunner");
-    context.setRecentMatchNarrations(Arrays.asList("Previous epic encounter..."));
+    context.setRecentSegmentNarrations(List.of("Previous epic encounter..."));
 
     return context;
   }
 
-  /** Creates an alternative match context for comparison testing. */
-  private MatchNarrationContext createAlternativeMatchContext() {
-    MatchNarrationContext context = new MatchNarrationContext();
+  /** Creates an alternative segment context for comparison testing. */
+  private SegmentNarrationContext createAlternativeMatchContext() {
+    SegmentNarrationContext context = new SegmentNarrationContext();
 
     // Match Type
-    MatchTypeContext matchType = new MatchTypeContext();
-    matchType.setMatchType("Hell in a Cell");
+    SegmentTypeContext matchType = new SegmentTypeContext();
+    matchType.setSegmentType("Hell in a Cell");
     matchType.setStipulation("Brothers of Destruction");
     matchType.setRules(Arrays.asList("No Escape", "Hardcore Rules"));
-    context.setMatchType(matchType);
+    context.setSegmentType(matchType);
 
     // Venue
     VenueContext venue = new VenueContext();

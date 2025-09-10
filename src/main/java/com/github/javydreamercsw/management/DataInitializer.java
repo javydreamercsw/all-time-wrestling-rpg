@@ -8,21 +8,21 @@ import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
-import com.github.javydreamercsw.management.domain.show.match.rule.MatchRule;
-import com.github.javydreamercsw.management.domain.show.match.rule.MatchRuleRepository;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.dto.MatchRuleDTO;
-import com.github.javydreamercsw.management.dto.MatchTypeDTO;
+import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
+import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckCardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
-import com.github.javydreamercsw.management.service.match.MatchRuleService;
-import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -46,40 +46,44 @@ public class DataInitializer {
 
   @Autowired private CardRepository cardRepository;
   @Autowired private CardSetRepository cardSetRepository;
-  @Autowired private MatchRuleRepository matchRuleRepository;
+  @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private DeckRepository deckRepository;
 
   @Bean
   @Order(-1)
-  public ApplicationRunner loadMatchRulesFromFile(@NonNull MatchRuleService matchRuleService) {
+  public ApplicationRunner loadSegmentRulesFromFile(
+      @NonNull SegmentRuleService segmentRuleService) {
     return args -> {
-      ClassPathResource resource = new ClassPathResource("match_rules.json");
+      ClassPathResource resource = new ClassPathResource("segment_rules.json");
       if (resource.exists()) {
-        log.info("Loading match rules from file: {}", resource.getPath());
+        log.info("Loading segment rules from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
-          var matchRulesFromFile = mapper.readValue(is, new TypeReference<List<MatchRuleDTO>>() {});
+          var segmentRulesFromFile =
+              mapper.readValue(is, new TypeReference<List<SegmentRuleDTO>>() {});
 
-          for (MatchRuleDTO dto : matchRulesFromFile) {
+          for (SegmentRuleDTO dto : segmentRulesFromFile) {
             // Only create if it doesn't exist
-            Optional<MatchRule> existingRule = matchRuleService.findByName(dto.getName());
+            Optional<SegmentRule> existingRule = segmentRuleService.findByName(dto.getName());
             if (existingRule.isEmpty()) {
-              matchRuleService.createOrUpdateRule(
+              segmentRuleService.createOrUpdateRule(
                   dto.getName(), dto.getDescription(), dto.isRequiresHighHeat());
               log.info(
-                  "Loaded match rule: {} (High Heat: {})", dto.getName(), dto.isRequiresHighHeat());
+                  "Loaded segment rule: {} (High Heat: {})",
+                  dto.getName(),
+                  dto.isRequiresHighHeat());
             } else {
-              log.debug("Match rule {} already exists, skipping creation.", dto.getName());
+              log.debug("Segment rule {} already exists, skipping creation.", dto.getName());
             }
           }
-          matchRuleRepository.flush();
-          log.info("Match rule loading completed - {} rules loaded", matchRulesFromFile.size());
+          segmentRuleRepository.flush();
+          log.info("Segment rule loading completed - {} rules loaded", segmentRulesFromFile.size());
         } catch (Exception e) {
-          log.error("Error loading match rules from file", e);
+          log.error("Error loading segment rules from file", e);
         }
       } else {
-        log.warn("Match rules file not found: {}", resource.getPath());
+        log.warn("Segment rules file not found: {}", resource.getPath());
       }
     };
   }
@@ -135,36 +139,38 @@ public class DataInitializer {
 
   @Bean
   @Order(0)
-  public ApplicationRunner loadMatchTypesFromFile(@NonNull MatchTypeService matchTypeService) {
+  public ApplicationRunner loadSegmentTypesFromFile(
+      @NonNull SegmentTypeService segmentTypeService) {
     return args -> {
-      ClassPathResource resource = new ClassPathResource("match_types.json");
+      ClassPathResource resource = new ClassPathResource("segment_types.json");
       if (resource.exists()) {
-        log.info("Loading match types from file: {}", resource.getPath());
+        log.info("Loading segment types from file: {}", resource.getPath());
         ObjectMapper mapper = new ObjectMapper();
         try (var is = resource.getInputStream()) {
-          var matchTypesFromFile = mapper.readValue(is, new TypeReference<List<MatchTypeDTO>>() {});
+          var segmentTypesFromFile =
+              mapper.readValue(is, new TypeReference<List<SegmentTypeDTO>>() {});
 
-          for (MatchTypeDTO dto : matchTypesFromFile) {
+          for (SegmentTypeDTO dto : segmentTypesFromFile) {
             // Only create if it doesn't exist
-            Optional<MatchType> existingType = matchTypeService.findByName(dto.getName());
+            Optional<SegmentType> existingType = segmentTypeService.findByName(dto.getName());
             if (existingType.isEmpty()) {
-              MatchType matchType =
-                  matchTypeService.createOrUpdateMatchType(dto.getName(), dto.getDescription());
+              SegmentType segmentType =
+                  segmentTypeService.createOrUpdateSegmentType(dto.getName(), dto.getDescription());
               log.info(
-                  "Loaded match type: {} (Players: {})",
-                  matchType.getName(),
+                  "Loaded segment type: {} (Players: {})",
+                  segmentType.getName(),
                   dto.isUnlimited() ? "Unlimited" : dto.getPlayerAmount());
             } else {
-              log.debug("Match type {} already exists, skipping creation.", dto.getName());
+              log.debug("Segment type {} already exists, skipping creation.", dto.getName());
             }
           }
 
-          log.info("Match type loading completed");
+          log.info("Segment type loading completed");
         } catch (Exception e) {
-          log.error("Error loading match types from file", e);
+          log.error("Error loading segment types from file", e);
         }
       } else {
-        log.warn("Match types file not found: {}", resource.getPath());
+        log.warn("Segment types file not found: {}", resource.getPath());
       }
     };
   }

@@ -26,7 +26,7 @@ public class ParallelSyncOrchestrator {
   @Autowired private WrestlerSyncService wrestlerSyncService;
   @Autowired private FactionSyncService factionSyncService;
   @Autowired private TeamSyncService teamSyncService;
-  @Autowired private MatchSyncService matchSyncService;
+  @Autowired private SegmentSyncService segmentSyncService;
   @Autowired private SeasonSyncService seasonSyncService;
   @Autowired private ShowTypeSyncService showTypeSyncService;
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
@@ -137,7 +137,7 @@ public class ParallelSyncOrchestrator {
                   syncEntity(
                       "matches",
                       baseOperationId,
-                      () -> matchSyncService.syncMatches(baseOperationId + "-matches"))));
+                      () -> segmentSyncService.syncSegment(baseOperationId + "-matches"))));
     }
 
     if (entityConfig.isEntityEnabled("seasons")) {
@@ -248,7 +248,7 @@ public class ParallelSyncOrchestrator {
       "wrestlers",
       "factions",
       "teams",
-      "matches",
+      "segments",
       "seasons",
       "showtypes",
       "showtemplates",

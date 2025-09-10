@@ -118,7 +118,7 @@ class DataExportControllerTest {
     assertNotNull(response.getBody());
 
     // Make test more robust by checking for key parts of the error message
-    // Updated to match the new error message format (changed due to AI suggestion in GitHub)
+    // Updated to segment the new error message format (changed due to AI suggestion in GitHub)
     String responseBody = response.getBody();
     assertTrue(
         responseBody.contains("Failed to export shows"),
@@ -187,7 +187,7 @@ class DataExportControllerTest {
     // Assert
     assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     // Make test more robust by checking for key parts of the error message
-    // Updated to match the new consistent error message format
+    // Updated to segment the new consistent error message format
     String responseBody = response.getBody();
     assertTrue(
         responseBody.contains("Failed to export show templates"),

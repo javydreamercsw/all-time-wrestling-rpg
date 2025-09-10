@@ -444,7 +444,7 @@ public class WrestlerSyncService extends BaseSyncService {
           }
         }
 
-        // 3. Create new wrestler if no match found
+        // 3. Create new wrestler if no segment found
         if (wrestler == null) {
           wrestler = new Wrestler();
           isNewWrestler = true;

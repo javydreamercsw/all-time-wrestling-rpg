@@ -29,8 +29,8 @@ public class CacheConfig {
   public static final String TITLES_CACHE = "titles";
   public static final String RIVALRIES_CACHE = "rivalries";
   public static final String INJURIES_CACHE = "injuries";
-  public static final String MATCH_TYPES_CACHE = "matchTypes";
-  public static final String MATCH_RULES_CACHE = "matchRules";
+  public static final String SEGMENT_TYPES_CACHE = "segmentTypes";
+  public static final String SEGMENT_RULES_CACHE = "segmentRules";
   public static final String SHOW_TEMPLATES_CACHE = "showTemplates";
   public static final String WRESTLER_STATS_CACHE = "wrestlerStats";
   public static final String CALENDAR_CACHE = "calendar";
@@ -59,9 +59,9 @@ public class CacheConfig {
             createCaffeineCache(SEASONS_CACHE, 100, 60), // Limited number of seasons, 60 min TTL
             createCaffeineCache(TITLES_CACHE, 100, 60), // Limited number of titles, 60 min TTL
             createCaffeineCache(
-                MATCH_TYPES_CACHE, 50, 60), // Limited number of match types, 60 min TTL
+                SEGMENT_TYPES_CACHE, 50, 60), // Limited number of segment types, 60 min TTL
             createCaffeineCache(
-                MATCH_RULES_CACHE, 100, 60), // Limited number of match rules, 60 min TTL
+                SEGMENT_RULES_CACHE, 100, 60), // Limited number of segment rules, 60 min TTL
 
             // Moderately accessed data - medium TTL
             createCaffeineCache(SHOWS_CACHE, 2000, 5), // Up to 2000 shows, 5 min TTL
@@ -72,7 +72,7 @@ public class CacheConfig {
             // Frequently changing data - shorter TTL
             createCaffeineCache(INJURIES_CACHE, 1000, 2), // Injuries change frequently, 2 min TTL
             createCaffeineCache(
-                WRESTLER_STATS_CACHE, 1000, 1), // Stats updated after matches, 1 min TTL
+                WRESTLER_STATS_CACHE, 1000, 1), // Stats updated after segments, 1 min TTL
 
             // Computed/aggregated data - can be expensive to recalculate
             createCaffeineCache(CALENDAR_CACHE, 100, 5), // Calendar views, 5 min TTL

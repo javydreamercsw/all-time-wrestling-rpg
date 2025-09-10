@@ -2,7 +2,7 @@ package com.github.javydreamercsw.management.domain.feud;
 
 /**
  * Represents the role of a wrestler in a multi-wrestler feud. Roles help define storyline dynamics
- * and match booking priorities.
+ * and segment booking priorities.
  */
 public enum FeudRole {
   /** Main antagonist - primary villain in the feud */

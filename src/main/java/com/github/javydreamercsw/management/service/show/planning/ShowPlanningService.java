@@ -2,8 +2,8 @@ package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.Match;
-import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import java.time.Clock;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ShowPlanningService {
 
-  private final MatchRepository matchRepository;
+  private final SegmentRepository segmentRepository;
   private final RivalryService rivalryService;
   private final PromoBookingService promoBookingService;
   private final Clock clock;
@@ -28,13 +28,14 @@ public class ShowPlanningService {
   public ShowPlanningContext getShowPlanningContext(Show show) {
     ShowPlanningContext context = new ShowPlanningContext();
 
-    // Get matches from the last 30 days
+    // Get segments from the last 30 days
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
     Instant lastMonth = showDate.minus(30, ChronoUnit.DAYS);
-    log.debug("Getting matches between {} and {}", lastMonth, showDate);
-    List<Match> lastMonthMatches = matchRepository.findByMatchDateBetween(lastMonth, showDate);
-    log.debug("Found {} matches", lastMonthMatches.size());
-    context.setLastMonthMatches(lastMonthMatches);
+    log.debug("Getting segments between {} and {}", lastMonth, showDate);
+    List<Segment> lastMonthSegments =
+        segmentRepository.findBySegmentDateBetween(lastMonth, showDate);
+    log.debug("Found {} segments", lastMonthSegments.size());
+    context.setLastMonthSegments(lastMonthSegments);
 
     // Get current rivalries
     List<Rivalry> currentRivalries = rivalryService.getActiveRivalriesBetween(lastMonth, showDate);
@@ -42,8 +43,8 @@ public class ShowPlanningService {
     context.setCurrentRivalries(currentRivalries);
 
     // Get promos from the last month
-    List<Match> lastMonthPromos =
-        lastMonthMatches.stream()
+    List<Segment> lastMonthPromos =
+        lastMonthSegments.stream()
             .filter(promoBookingService::isPromoSegment)
             .collect(Collectors.toList());
     log.debug("Found {} promos in the last month", lastMonthPromos.size());

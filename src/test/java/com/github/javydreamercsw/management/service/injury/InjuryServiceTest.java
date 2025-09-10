@@ -62,7 +62,7 @@ class InjuryServiceTest {
     // When
     Optional<Injury> result =
         injuryService.createInjury(
-            1L, "Knee Injury", "Torn ACL", InjurySeverity.SEVERE, "Occurred during match");
+            1L, "Knee Injury", "Torn ACL", InjurySeverity.SEVERE, "Occurred during segment");
 
     // Then
     assertThat(result).isPresent();

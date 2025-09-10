@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a condition that must be met for a storyline branch to activate. Conditions can check
- * match outcomes, wrestler states, heat levels, etc.
+ * segment outcomes, wrestler states, heat levels, etc.
  */
 @Entity
 @Table(name = "storyline_branch_condition")
@@ -123,7 +123,7 @@ public class StorylineBranchCondition extends AbstractEntity<Long> {
     return summary.toString();
   }
 
-  /** Check if this is a match outcome condition. */
+  /** Check if this is a segment outcome condition. */
   public boolean isMatchOutcomeCondition() {
     return "WRESTLER_WINS".equals(conditionType)
         || "WRESTLER_LOSES".equals(conditionType)
@@ -155,7 +155,7 @@ public class StorylineBranchCondition extends AbstractEntity<Long> {
   /** Get the priority for checking this condition (higher = more urgent). */
   public int getCheckPriority() {
     return switch (conditionType) {
-      case "WRESTLER_WINS", "WRESTLER_LOSES" -> 10; // Highest - match outcomes
+      case "WRESTLER_WINS", "WRESTLER_LOSES" -> 10; // Highest - segment outcomes
       case "HEAT_THRESHOLD", "RIVALRY_ACTIVE" -> 8; // High - rivalry conditions
       case "FACTION_MEMBER", "FACTION_ACTIVE" -> 6; // Medium - faction conditions
       case "DATE_REACHED", "DAYS_PASSED" -> 4; // Low - time conditions
@@ -171,7 +171,7 @@ public class StorylineBranchCondition extends AbstractEntity<Long> {
   /** Get recommended check interval in hours. */
   public int getRecommendedCheckIntervalHours() {
     if (isMatchOutcomeCondition()) {
-      return 1; // Check every hour for match outcomes
+      return 1; // Check every hour for segment outcomes
     } else if (isRivalryCondition() || isFactionCondition()) {
       return 6; // Check every 6 hours for rivalry/faction changes
     } else if (isTimeBasedCondition()) {

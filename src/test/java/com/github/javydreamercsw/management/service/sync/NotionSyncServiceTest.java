@@ -12,8 +12,8 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.InjurySyncService;
-import com.github.javydreamercsw.management.service.sync.entity.MatchSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.SeasonSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.SegmentSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTemplateSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTypeSyncService;
@@ -41,7 +41,7 @@ class NotionSyncServiceTest extends BaseTest {
   @Mock private WrestlerSyncService wrestlerSyncService;
   @Mock private FactionSyncService factionSyncService;
   @Mock private TeamSyncService teamSyncService;
-  @Mock private MatchSyncService matchSyncService;
+  @Mock private SegmentSyncService matchSyncService;
   @Mock private SeasonSyncService seasonSyncService;
   @Mock private ShowTypeSyncService showTypeSyncService;
   @Mock private ShowTemplateSyncService showTemplateSyncService;
@@ -216,14 +216,14 @@ class NotionSyncServiceTest extends BaseTest {
     // Given
     String testOperationId = "my-test-operation-id";
     BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Matches", 15, 3);
-    when(matchSyncService.syncMatches(testOperationId + "-matches")).thenReturn(mockResult);
+    when(matchSyncService.syncSegments(testOperationId + "-matches")).thenReturn(mockResult);
 
     // When
-    BaseSyncService.SyncResult result = notionSyncService.syncMatches(testOperationId);
+    BaseSyncService.SyncResult result = notionSyncService.syncSegments(testOperationId);
 
     // Then
     assertThat(result).isEqualTo(mockResult);
-    verify(matchSyncService).syncMatches(testOperationId + "-matches");
+    verify(matchSyncService).syncSegments(testOperationId + "-matches");
   }
 
   // ==================== SEASONS SYNC TESTS ====================

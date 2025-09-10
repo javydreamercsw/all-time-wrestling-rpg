@@ -289,7 +289,7 @@ class ShowTemplateSyncIntegrationTest extends BaseTest {
           template.getShowType().getId());
     }
 
-    // Verify show type counts match expectations
+    // Verify show type counts segment expectations
     long weeklyCount =
         allTemplates.stream().filter(t -> "Weekly".equals(t.getShowType().getName())).count();
     long pleCount =

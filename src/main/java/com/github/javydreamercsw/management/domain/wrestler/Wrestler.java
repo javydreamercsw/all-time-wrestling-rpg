@@ -116,7 +116,7 @@ public class Wrestler extends AbstractEntity<Long> {
 
   // ==================== ATW RPG METHODS ====================
 
-  /** Calculate fan weight for match outcome system (+1 weight per full 5,000 fans) */
+  /** Calculate fan weight for segment outcome system (+1 weight per full 5,000 fans) */
   public Integer getFanWeight() {
     return Math.toIntExact(fans / 5);
   }
@@ -212,7 +212,7 @@ public class Wrestler extends AbstractEntity<Long> {
   }
 
   /**
-   * Update current health to match effective starting health. Call this when a wrestler's injury
+   * Update current health to segment effective starting health. Call this when a wrestler's injury
    * status changes.
    */
   public void refreshCurrentHealth() {

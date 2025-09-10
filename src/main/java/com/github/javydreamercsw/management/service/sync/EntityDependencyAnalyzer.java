@@ -56,7 +56,7 @@ public class EntityDependencyAnalyzer {
     order.add("teams"); // Team (depends on Wrestler for members)
 
     // Complex entities that depend on multiple others
-    order.add("matches"); // Match (depends on Show, Wrestler, Team, Faction)
+    order.add("segments"); // Segment (depends on Show, Wrestler, Team, Faction)
 
     log.info("🎯 Using known dependency order: {}", order);
     return order;
@@ -101,7 +101,7 @@ public class EntityDependencyAnalyzer {
       "com.github.javydreamercsw.management.domain.wrestler",
       "com.github.javydreamercsw.management.domain.faction",
       "com.github.javydreamercsw.management.domain.team",
-      "com.github.javydreamercsw.management.domain.match",
+      "com.github.javydreamercsw.management.domain.segment",
       "com.github.javydreamercsw.management.domain.season"
     };
 
@@ -294,7 +294,7 @@ public class EntityDependencyAnalyzer {
       case "wrestler" -> "wrestlers";
       case "faction" -> "factions";
       case "team" -> "teams";
-      case "match" -> "matches";
+      case "segment" -> "segments";
       default -> entityName.toLowerCase() + "s"; // Default pluralization
     };
   }

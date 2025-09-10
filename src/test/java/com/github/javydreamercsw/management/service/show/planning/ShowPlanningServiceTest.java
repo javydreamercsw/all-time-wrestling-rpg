@@ -5,8 +5,8 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.Match;
-import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import java.time.Clock;
@@ -25,7 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ShowPlanningServiceTest {
 
-  @Mock private MatchRepository matchRepository;
+  @Mock private SegmentRepository matchRepository;
   @Mock private RivalryService rivalryService;
   @Mock private PromoBookingService promoBookingService;
 
@@ -47,8 +47,8 @@ class ShowPlanningServiceTest {
     show.setShowDate(LocalDate.now());
 
     Instant lastMonth = clock.instant().minus(30, ChronoUnit.DAYS);
-    List<Match> matches = Collections.singletonList(new Match());
-    when(matchRepository.findByMatchDateBetween(any(), any())).thenReturn(matches);
+    List<Segment> segments = Collections.singletonList(new Segment());
+    when(matchRepository.findBySegmentDateBetween(any(), any())).thenReturn(segments);
 
     List<Rivalry> rivalries = Collections.singletonList(new Rivalry());
     when(rivalryService.getActiveRivalriesBetween(any(), any())).thenReturn(rivalries);
@@ -60,7 +60,7 @@ class ShowPlanningServiceTest {
 
     // Then
     assertNotNull(context);
-    assertEquals(matches, context.getLastMonthMatches());
+    assertEquals(segments, context.getLastMonthSegments());
     assertEquals(rivalries, context.getCurrentRivalries());
     assertEquals(1, context.getLastMonthPromos().size());
     assertEquals("Test Show", context.getShowTemplate().getShowName());

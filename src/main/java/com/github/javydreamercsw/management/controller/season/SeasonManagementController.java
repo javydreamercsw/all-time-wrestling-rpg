@@ -48,9 +48,9 @@ public class SeasonManagementController {
   // ==================== SHOW BOOKING ENDPOINTS ====================
 
   @Operation(
-      summary = "Book a show with automated matches",
+      summary = "Book a show with automated segments",
       description =
-          "Books a complete show with automatically generated matches based on storylines")
+          "Books a complete show with automatically generated segments based on storylines")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "201", description = "Show booked successfully"),
@@ -64,7 +64,7 @@ public class SeasonManagementController {
             request.showName(),
             request.showDescription(),
             request.showType(),
-            request.matchCount());
+            request.segmentCount());
 
     if (show.isPresent()) {
       ShowBookingService.ShowStatistics stats =
@@ -78,7 +78,7 @@ public class SeasonManagementController {
 
   @Operation(
       summary = "Book a PPV event",
-      description = "Books a pay-per-view event with enhanced match quality and storyline focus")
+      description = "Books a pay-per-view event with enhanced segment quality and storyline focus")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "201", description = "PPV booked successfully"),
@@ -155,11 +155,9 @@ public class SeasonManagementController {
         seasonProgressionService.progressToNextSeason(
             request.newSeasonName(), request.newSeasonDescription());
 
-    if (newSeason.isPresent()) {
-      return ResponseEntity.status(201).body(newSeason.get());
-    } else {
-      return ResponseEntity.badRequest().body("Failed to progress to next season");
-    }
+    return newSeason
+        .<ResponseEntity<Object>>map(season -> ResponseEntity.status(201).body(season))
+        .orElseGet(() -> ResponseEntity.badRequest().body("Failed to progress to next season"));
   }
 
   @Operation(
@@ -264,7 +262,7 @@ public class SeasonManagementController {
       @NotBlank String showName,
       @NotBlank String showDescription,
       @NotBlank String showType,
-      @Min(3) @Max(10) int matchCount) {}
+      @Min(3) @Max(10) int segmentCount) {}
 
   public record BookPPVRequest(@NotBlank String ppvName, @NotBlank String ppvDescription) {}
 
