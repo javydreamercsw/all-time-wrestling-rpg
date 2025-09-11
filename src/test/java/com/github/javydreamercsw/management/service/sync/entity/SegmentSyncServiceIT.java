@@ -13,6 +13,7 @@ import java.util.Random;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("SegmentSyncService Integration Tests")
+@EnabledIf("isNotionTokenAvailable")
 class SegmentSyncServiceIT extends BaseTest {
 
   @Autowired private SegmentSyncService segmentSyncService;

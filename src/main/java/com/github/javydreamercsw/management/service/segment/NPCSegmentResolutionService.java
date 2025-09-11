@@ -53,9 +53,9 @@ public class NPCSegmentResolutionService {
       @NonNull Show show,
       String stipulation) {
 
-    // Default to "Standard Segment" if no rule provided
+    // Default to "Standard Match" if no rule provided
     String finalStipulation =
-        (stipulation != null && !stipulation.trim().isEmpty()) ? stipulation : "Standard Segment";
+        (stipulation != null && !stipulation.trim().isEmpty()) ? stipulation : "Standard Match";
 
     log.info(
         "Resolving team segment: {} vs {} on show {} ({})",
@@ -125,9 +125,9 @@ public class NPCSegmentResolutionService {
       throw new IllegalArgumentException("Multi-team segment requires at least 3 teams");
     }
 
-    // Default to "Standard Segment" if no rule provided
+    // Default to "Standard Match" if no rule provided
     String finalStipulation =
-        (stipulation != null && !stipulation.trim().isEmpty()) ? stipulation : "Standard Segment";
+        (stipulation != null && !stipulation.trim().isEmpty()) ? stipulation : "Standard Match";
 
     log.info(
         "Resolving {}-team segment on show {} ({}): {}",
@@ -271,7 +271,7 @@ public class NPCSegmentResolutionService {
   private void applySegmentRules(@NonNull Segment result, String stipulation) {
     if (stipulation == null
         || stipulation.trim().isEmpty()
-        || "Standard Segment".equals(stipulation)) {
+        || "Standard Match".equals(stipulation)) {
       // No special rules for standard segments
       return;
     }

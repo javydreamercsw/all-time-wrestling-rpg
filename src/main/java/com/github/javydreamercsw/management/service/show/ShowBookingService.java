@@ -372,7 +372,7 @@ public class ShowBookingService {
       Wrestler wrestler2 = availableWrestlers.remove(0);
 
       Optional<Segment> segment =
-          bookSinglesSegment(show, wrestler1, wrestler2, "Standard Segment");
+          bookSinglesSegment(show, wrestler1, wrestler2, "Standard Match");
       if (segment.isPresent()) {
         segments.add(segment.get());
         log.debug("Booked random segment: {} vs {}", wrestler1.getName(), wrestler2.getName());
@@ -523,7 +523,7 @@ public class ShowBookingService {
         return selectedRule.getName();
       }
       // Ultimate fallback
-      return "Standard Segment";
+      return "Standard Match";
     }
 
     return availableStipulations.get(random.nextInt(availableStipulations.size()));

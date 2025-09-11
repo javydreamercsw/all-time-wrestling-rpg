@@ -178,7 +178,7 @@ public class Segment extends AbstractEntity<Long> {
   /** Get segment rules as a formatted string. */
   public String getSegmentRulesAsString() {
     if (segmentRules.isEmpty()) {
-      return "Standard Segment";
+      return "Standard Match";
     }
     return segmentRules.stream()
         .map(SegmentRule::getName)
