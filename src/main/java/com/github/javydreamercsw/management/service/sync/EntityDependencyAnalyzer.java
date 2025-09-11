@@ -284,18 +284,4 @@ public class EntityDependencyAnalyzer {
     visited.add(entity);
     result.add(entity);
   }
-
-  /** Maps common entity names to sync method names. */
-  public String mapEntityToSyncMethod(String entityName) {
-    return switch (entityName.toLowerCase()) {
-      case "showtemplate" -> "templates";
-      case "season" -> "seasons";
-      case "show" -> "shows";
-      case "wrestler" -> "wrestlers";
-      case "faction" -> "factions";
-      case "team" -> "teams";
-      case "segment" -> "segments";
-      default -> entityName.toLowerCase() + "s"; // Default pluralization
-    };
-  }
 }

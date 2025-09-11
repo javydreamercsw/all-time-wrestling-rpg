@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.show.planning;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,7 @@ class ShowPlanningAiServiceTest {
   @Test
   void planShow() {
     // Given
-    ShowPlanningContext context = new ShowPlanningContext();
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
 
     // When
     ProposedShow proposedShow = showPlanningAiService.planShow(context);

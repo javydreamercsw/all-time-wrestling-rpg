@@ -66,9 +66,9 @@ class SegmentSyncServiceTest extends BaseTest {
     setField(segmentSyncService, "notionHandler", notionHandler);
     setField(segmentSyncService, "progressTracker", progressTracker);
     setField(segmentSyncService, "rateLimitService", rateLimitService);
-    setField(segmentSyncService, "matchService", segmentService);
+    setField(segmentSyncService, "segmentService", segmentService);
     setField(segmentSyncService, "showService", showService);
-    setField(segmentSyncService, "matchTypeService", segmentTypeService);
+    setField(segmentSyncService, "segmentTypeService", segmentTypeService);
     setField(segmentSyncService, "showSyncService", showSyncService);
   }
 
@@ -100,7 +100,7 @@ class SegmentSyncServiceTest extends BaseTest {
         Map.of(
             "Name",
             "Updated Test Match",
-            "Match Type",
+            "Segment Type",
             "Singles",
             "Participants",
             "",
@@ -154,7 +154,7 @@ class SegmentSyncServiceTest extends BaseTest {
               }
             });
     matchPage.setRawProperties(
-        Map.of("Name", matchName, "Match Type", "Singles", "Participants", "", "Winners", ""));
+        Map.of("Name", matchName, "Segment Type", "Singles", "Participants", "", "Winners", ""));
 
     // Mock NotionHandler to return the segment page
     when(notionHandler.loadSegmentById(matchId)).thenReturn(Optional.of(matchPage));
@@ -192,6 +192,7 @@ class SegmentSyncServiceTest extends BaseTest {
     verify(segmentService, times(1)).updateSegment(any(Segment.class));
   }
 
+  @Test
   @DisplayName("Should handle no segment found in Notion")
   void shouldHandleNoSegmentFoundInNotion() {
     // Given

@@ -37,33 +37,6 @@ class ArchitectureTest {
         .check(importedClasses);
   }
 
-  // Temporarily disabled due to test environment complexity
-  // @Test
-  void repositories_should_only_be_used_by_application_services_and_other_domain_classes() {
-    // Architecture rule temporarily disabled for test environment
-    // classes()
-    //     .that()
-    //     .areAssignableTo(Repository.class)
-    //     .should()
-    //     .onlyHaveDependentClassesThat()
-    //     .resideInAnyPackage(BASE_PACKAGE + "..domain..", BASE_PACKAGE + "..service..")
-    //     .check(importedClasses);
-  }
-
-  // Temporarily disabled due to test environment complexity
-  // @Test
-  void repositories_should_only_be_accessed_by_transactional_classes() {
-    // Architecture rule temporarily disabled for test environment
-    // classes()
-    //     .that()
-    //     .areAssignableTo(Repository.class)
-    //     .should()
-    //     .onlyBeAccessed()
-    //     .byClassesThat()
-    //     .areAnnotatedWith(Transactional.class)
-    //     .check(importedClasses);
-  }
-
   @Test
   void application_services_should_not_depend_on_the_user_interface() {
     noClasses()

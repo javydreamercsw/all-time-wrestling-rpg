@@ -81,7 +81,7 @@ class ParallelSyncOrchestratorTest {
     when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
     when(entityConfig.isEntityEnabled("factions")).thenReturn(false);
     when(entityConfig.isEntityEnabled("teams")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("matches")).thenReturn(false);
+    when(entityConfig.isEntityEnabled("segments")).thenReturn(false);
     when(entityConfig.isEntityEnabled("seasons")).thenReturn(false);
     when(entityConfig.isEntityEnabled("showtypes")).thenReturn(false);
     when(entityConfig.isEntityEnabled("showtemplates")).thenReturn(false);
@@ -173,7 +173,7 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("Factions", 1, 0));
     when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 1, 0));
     when(segmentSyncService.syncSegments(anyString()))
-        .thenReturn(SyncResult.success("Matches", 1, 0));
+        .thenReturn(SyncResult.success("Segments", 1, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 1, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
@@ -189,13 +189,15 @@ class ParallelSyncOrchestratorTest {
 
     // Then
     // The orchestrator should handle exceptions gracefully and continue with other entities
-    assertTrue(result.isSuccess()); // Overall operation succeeds
-    assertTrue(result.getEntityResults().size() > 0);
+    assertTrue(result.isSuccess()); // Overall operation fails
+    assertEquals(10, result.getEntityResults().size());
 
     // At least one entity should have failed
     long failedCount =
-        result.getEntityResults().stream().filter(r -> !r.getSyncResult().isSuccess()).count();
-    assertTrue(failedCount >= 1);
+        result.getEntityResults().stream()
+            .filter(r -> r.getSyncResult() != null && !r.getSyncResult().isSuccess())
+            .count();
+    assertEquals(1, failedCount);
   }
 
   private void setupAllEntitiesEnabled() {
@@ -214,7 +216,7 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("Factions", 3, 0));
     when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 7, 0));
     when(segmentSyncService.syncSegments(anyString()))
-        .thenReturn(SyncResult.success("Matches", 8, 0));
+        .thenReturn(SyncResult.success("Segments", 8, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 2, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))

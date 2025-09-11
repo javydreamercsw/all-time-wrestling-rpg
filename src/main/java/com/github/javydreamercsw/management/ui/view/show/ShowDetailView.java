@@ -39,6 +39,7 @@ import jakarta.annotation.security.PermitAll;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 
 /**
  * Detail view for displaying comprehensive information about a specific show. Accessible via URL
@@ -53,7 +54,6 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
   private final SegmentRepository segmentRepository;
   private final SegmentTypeRepository segmentTypeRepository;
   private final WrestlerRepository wrestlerRepository;
-  private Show currentShow;
   private String referrer = "shows"; // Default referrer
 
   private H2 showTitle;
@@ -142,8 +142,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
   private void loadShow(Long showId) {
     Optional<Show> showOpt = showService.getShowById(showId);
     if (showOpt.isPresent()) {
-      currentShow = showOpt.get();
-      displayShow(currentShow);
+      displayShow(showOpt.get());
     } else {
       showNotFound();
     }
@@ -210,7 +209,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     return card;
   }
 
-  private Div createDetailsCard(Show show) {
+  private Div createDetailsCard(@NonNull Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -293,7 +292,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     return card;
   }
 
-  private HorizontalLayout createDetailRow(String label, String value) {
+  private HorizontalLayout createDetailRow(@NonNull String label, @NonNull String value) {
     Span labelSpan = new Span(label);
     labelSpan.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.TextColor.SECONDARY);
 
@@ -307,7 +306,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     return layout;
   }
 
-  private Div createDescriptionCard(Show show) {
+  private Div createDescriptionCard(@NonNull Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -369,7 +368,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     contentLayout.add(notFoundCard);
   }
 
-  private Div createSegmentsCard(Show show) {
+  private Div createSegmentsCard(@NonNull Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -437,14 +436,14 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
             segment -> {
               List<String> wrestlerNames =
                   segment.getWrestlers().stream().map(Wrestler::getName).toList();
-              return String.join(" vs ", wrestlerNames);
+              return String.join(", ", wrestlerNames);
             })
         .setHeader("Participants")
         .setSortable(false)
         .setFlexGrow(4); // Give more space to participants
 
     // Winner column
-    grid.addColumn(segment -> segment.getWinner() != null ? segment.getWinner().getName() : "TBD")
+    grid.addColumn(segment -> segment.getWinner() != null ? segment.getWinner().getName() : "N/A")
         .setHeader("Winner")
         .setSortable(true)
         .setFlexGrow(2);

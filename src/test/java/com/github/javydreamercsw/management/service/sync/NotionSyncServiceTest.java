@@ -215,7 +215,7 @@ class NotionSyncServiceTest extends BaseTest {
   void shouldDelegateMatchesSyncToMatchSyncService() {
     // Given
     String testOperationId = "my-test-operation-id";
-    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Matches", 15, 3);
+    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Segments", 15, 3);
     when(matchSyncService.syncSegments(testOperationId + "-matches")).thenReturn(mockResult);
 
     // When

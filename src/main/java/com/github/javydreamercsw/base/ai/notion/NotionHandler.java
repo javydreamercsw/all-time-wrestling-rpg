@@ -1061,15 +1061,15 @@ public class NotionHandler {
   public Optional<SegmentPage> loadSegment(@NonNull String segmentName) {
     log.debug("Loading segment: '{}'", segmentName);
 
-    String matchDbId = getDatabaseId("Matches");
+    String matchDbId = getDatabaseId("Segments");
     if (matchDbId == null) {
-      log.warn("Matches database not found in workspace");
+      log.warn("Segments database not found in workspace");
       return Optional.empty();
     }
 
     try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
       return loadEntityFromDatabase(
-          client, matchDbId, segmentName, "Match", this::mapPageToMatchPage);
+          client, matchDbId, segmentName, "Segment", this::mapPageToSegmentPage);
     } catch (Exception e) {
       log.error("Failed to load segment: {}", segmentName, e);
       return Optional.empty();
@@ -1084,7 +1084,7 @@ public class NotionHandler {
    */
   public Optional<SegmentPage> loadSegmentById(@NonNull String segment) {
     log.debug("Loading segment with ID: '{}'", segment);
-    return loadPage(segment).map(page -> mapPageToMatchPage(page, ""));
+    return loadPage(segment).map(page -> mapPageToSegmentPage(page, ""));
   }
 
   /**
@@ -1100,9 +1100,9 @@ public class NotionHandler {
       throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
     }
 
-    String matchDbId = getDatabaseId("Matches");
+    String matchDbId = getDatabaseId("Segments");
     if (matchDbId == null) {
-      log.warn("Matches database not found in workspace");
+      log.warn("Segment database not found in workspace");
       return new ArrayList<>();
     }
 
@@ -1111,7 +1111,7 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, matchDbId, "Match", this::mapPageToMatchPage);
+      return loadAllEntitiesFromDatabase(client, matchDbId, "Segment", this::mapPageToSegmentPage);
     } catch (Exception e) {
       log.error("Failed to load all matches", e);
       throw new RuntimeException("Failed to load matches from Notion: " + e.getMessage(), e);
@@ -1695,10 +1695,10 @@ public class NotionHandler {
   }
 
   /** Maps a Notion page to a MatchPage object. */
-  private SegmentPage mapPageToMatchPage(@NonNull Page pageData, @NonNull String matchName) {
+  private SegmentPage mapPageToSegmentPage(@NonNull Page pageData, @NonNull String matchName) {
     SegmentPage matchPage =
         mapPageToGenericEntity(
-            pageData, matchName, "Match", SegmentPage::new, SegmentPage.NotionParent::new);
+            pageData, matchName, "Segment", SegmentPage::new, SegmentPage.NotionParent::new);
 
     // Extract and set specific MatchPage properties
     SegmentPage.NotionProperties properties = new SegmentPage.NotionProperties();
@@ -1708,7 +1708,7 @@ public class NotionHandler {
       properties.setParticipants(createProperty(notionProperties, "Participants", client));
       properties.setWinners(createProperty(notionProperties, "Winners", client));
       properties.setShows(createProperty(notionProperties, "Shows", client));
-      properties.setSegment_Type(createProperty(notionProperties, "Match Type", client));
+      properties.setSegment_Type(createProperty(notionProperties, "Segment Type", client));
       properties.setReferee_s(createProperty(notionProperties, "Referee(s)", client));
       properties.setRules(createProperty(notionProperties, "Rules", client));
       properties.setTitle_s(createProperty(notionProperties, "Title(s)", client));
@@ -1979,8 +1979,8 @@ public class NotionHandler {
 
         Map<String, PageProperty> properties = pageData.getProperties();
 
-        // Look for a "Matches" relation property
-        PageProperty matchesProperty = properties.get("Matches");
+        // Look for a "Segments" relation property
+        PageProperty matchesProperty = properties.get("Segments");
         if (matchesProperty != null
             && matchesProperty.getRelation() != null
             && !matchesProperty.getRelation().isEmpty()) {

@@ -130,15 +130,17 @@ public class WrestlerService {
               boolean injuryOccurred = wrestler.addBump();
               if (injuryOccurred) {
                 // Create injury using the injury service
-                Injury injury = injuryService.createInjuryFromBumps(wrestler);
-                System.out.println(
-                    "Wrestler "
-                        + wrestler.getName()
-                        + " suffered an injury: "
-                        + injury.getName()
-                        + " ("
-                        + injury.getSeverity().getDisplayName()
-                        + ")");
+                Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestler.getId());
+                injury.ifPresent(
+                    value ->
+                        System.out.println(
+                            "Wrestler "
+                                + wrestler.getName()
+                                + " suffered an injury: "
+                                + value.getName()
+                                + " ("
+                                + value.getSeverity().getDisplayName()
+                                + ")"));
               }
               return wrestlerRepository.saveAndFlush(wrestler);
             });

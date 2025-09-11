@@ -48,4 +48,15 @@ public class SegmentTypeService {
     segmentType.setDescription(description);
     return segmentTypeRepository.save(segmentType);
   }
+
+  @Transactional
+  public void deleteSegmentType(@NonNull Long id) {
+    if (segmentTypeRepository.existsById(id)) {
+      segmentTypeRepository.deleteById(id);
+      log.info("Deleted segment type with ID: {}", id);
+    } else {
+      log.warn("Segment type with ID {} not found for deletion.", id);
+      throw new IllegalArgumentException("Segment type not found with ID: " + id);
+    }
+  }
 }

@@ -74,7 +74,6 @@ public class ParallelSyncOrchestrator {
       log.info("✅ Parallel sync completed in {}ms", totalTime);
 
       return new ParallelSyncResult(results, totalTime, true, null);
-
     } catch (Exception e) {
       log.error("❌ Parallel sync failed", e);
       return new ParallelSyncResult(
@@ -95,9 +94,7 @@ public class ParallelSyncOrchestrator {
           executor.submit(
               () ->
                   syncEntity(
-                      "shows",
-                      baseOperationId,
-                      () -> showSyncService.syncShows(baseOperationId + "-shows"))));
+                      "shows", () -> showSyncService.syncShows(baseOperationId + "-shows"))));
     }
 
     if (entityConfig.isEntityEnabled("wrestlers")) {
@@ -106,7 +103,6 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "wrestlers",
-                      baseOperationId,
                       () -> wrestlerSyncService.syncWrestlers(baseOperationId + "-wrestlers"))));
     }
 
@@ -116,7 +112,6 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "factions",
-                      baseOperationId,
                       () -> factionSyncService.syncFactions(baseOperationId + "-factions"))));
     }
 
@@ -125,19 +120,16 @@ public class ParallelSyncOrchestrator {
           executor.submit(
               () ->
                   syncEntity(
-                      "teams",
-                      baseOperationId,
-                      () -> teamSyncService.syncTeams(baseOperationId + "-teams"))));
+                      "teams", () -> teamSyncService.syncTeams(baseOperationId + "-teams"))));
     }
 
-    if (entityConfig.isEntityEnabled("matches")) {
+    if (entityConfig.isEntityEnabled("segments")) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "matches",
-                      baseOperationId,
-                      () -> segmentSyncService.syncSegment(baseOperationId + "-matches"))));
+                      "segments",
+                      () -> segmentSyncService.syncSegments(baseOperationId + "-segments"))));
     }
 
     if (entityConfig.isEntityEnabled("seasons")) {
@@ -146,7 +138,6 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "seasons",
-                      baseOperationId,
                       () -> seasonSyncService.syncSeasons(baseOperationId + "-seasons"))));
     }
 
@@ -156,7 +147,6 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "showtypes",
-                      baseOperationId,
                       () -> showTypeSyncService.syncShowTypes(baseOperationId + "-showtypes"))));
     }
 
@@ -166,7 +156,6 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "showtemplates",
-                      baseOperationId,
                       () ->
                           showTemplateSyncService.syncShowTemplates(
                               baseOperationId + "-showtemplates"))));
@@ -178,26 +167,20 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "injuries",
-                      baseOperationId,
                       () -> injurySyncService.syncInjuryTypes(baseOperationId + "-injuries"))));
     }
 
     if (entityConfig.isEntityEnabled("npcs")) {
       futures.add(
           executor.submit(
-              () ->
-                  syncEntity(
-                      "npcs",
-                      baseOperationId,
-                      () -> npcSyncService.syncNpcs(baseOperationId + "-npcs"))));
+              () -> syncEntity("npcs", () -> npcSyncService.syncNpcs(baseOperationId + "-npcs"))));
     }
 
     return futures;
   }
 
   /** Wraps entity sync execution with error handling and timing. */
-  private EntitySyncResult syncEntity(
-      String entityType, String operationId, Callable<SyncResult> syncTask) {
+  private EntitySyncResult syncEntity(String entityType, Callable<SyncResult> syncTask) {
     long startTime = System.currentTimeMillis();
     try {
       log.debug("Starting sync for entity: {}", entityType);
@@ -301,11 +284,17 @@ public class ParallelSyncOrchestrator {
     }
 
     public int getSuccessfulSyncs() {
-      return (int) entityResults.stream().filter(r -> r.getSyncResult().isSuccess()).count();
+      return (int)
+          entityResults.stream()
+              .filter(r -> r.getSyncResult() != null && r.getSyncResult().isSuccess())
+              .count();
     }
 
     public int getFailedSyncs() {
-      return (int) entityResults.stream().filter(r -> !r.getSyncResult().isSuccess()).count();
+      return (int)
+          entityResults.stream()
+              .filter(r -> r.getSyncResult() != null && !r.getSyncResult().isSuccess())
+              .count();
     }
   }
 

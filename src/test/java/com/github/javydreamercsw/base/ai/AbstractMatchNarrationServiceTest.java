@@ -42,7 +42,7 @@ class AbstractMatchNarrationServiceTest {
         .isNotNull()
         .isNotEmpty()
         .contains("professional wrestling play-by-play commentator")
-        .contains("MATCH SETUP:")
+        .contains("SEGMENT SETUP:")
         .contains("WRESTLERS:")
         .contains("REFEREE:")
         .contains("SUPPORTING CHARACTERS:")
@@ -56,7 +56,7 @@ class AbstractMatchNarrationServiceTest {
     String prompt = service.buildTestPrompt(testContext);
 
     assertThat(prompt)
-        .contains("Match Type: Championship Match")
+        .contains("Segment Type: Championship Match")
         .contains("Stipulation: World Heavyweight Championship")
         .contains("Special Rules: No DQ, Falls Count Anywhere")
         .contains("Time Limit: 60 minutes");
@@ -75,7 +75,7 @@ class AbstractMatchNarrationServiceTest {
         .contains("Description: The World's Most Famous Arena")
         .contains("Atmosphere: Electric and historic")
         .contains("Significance: The Mecca of professional wrestling")
-        .contains("Notable Matches: Hulk Hogan vs Andre the Giant");
+        .contains("Notable Segments: Hulk Hogan vs Andre the Giant");
   }
 
   @Test
@@ -85,11 +85,11 @@ class AbstractMatchNarrationServiceTest {
 
     assertThat(prompt)
         .contains("- John Cena:")
-        .contains("Description: The Leader of Cenation")
+        .contains("Description: The Leader of Cenation - Never Give Up")
         .contains("Finishers: Attitude Adjustment (Fireman's carry slam)")
         .contains("Trademark Moves: Five Knuckle Shuffle (Theatrical fist drop)")
         .contains("Current Feuds/Heat: Face of the company")
-        .contains("Recent Match History: Defeated Randy Orton");
+        .contains("Recent Segment History: Defeated Randy Orton");
   }
 
   @Test
@@ -100,7 +100,7 @@ class AbstractMatchNarrationServiceTest {
     assertThat(prompt)
         .contains("REFEREE:")
         .contains("- Charles Robinson:")
-        .contains("Description: Veteran WWE referee")
+        .contains("Description: Veteran WWE referee known for his athleticism")
         .contains("Personality: Fair and professional");
   }
 
@@ -132,8 +132,8 @@ class AbstractMatchNarrationServiceTest {
     String prompt = service.buildTestPrompt(testContext);
 
     assertThat(prompt)
-        .contains("RECENT MATCH CONTEXT")
-        .contains("Recent Match 1: Previous epic encounter");
+        .contains("RECENT SEGMENT CONTEXT")
+        .contains("Recent Segment 1: Previous epic encounter");
   }
 
   @Test

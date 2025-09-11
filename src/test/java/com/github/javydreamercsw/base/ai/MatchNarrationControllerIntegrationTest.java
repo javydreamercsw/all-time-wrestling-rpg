@@ -62,9 +62,9 @@ class MatchNarrationControllerIntegrationTest {
         .andExpect(jsonPath("$.provider").exists())
         .andExpect(jsonPath("$.narration").exists())
         .andExpect(jsonPath("$.narration").isString())
-        .andExpect(jsonPath("$.sampleMatch").value(true))
+        .andExpect(jsonPath("$.sampleSegment").value(true))
         .andExpect(jsonPath("$.estimatedCost").exists())
-        .andExpect(jsonPath("$.context.matchType").value("Singles Match"))
+        .andExpect(jsonPath("$.context.segmentType").value("Singles Match"))
         .andExpect(jsonPath("$.context.wrestlers").isArray())
         .andExpect(jsonPath("$.context.wrestlers[0]").value("Rob Van Dam"))
         .andExpect(jsonPath("$.context.wrestlers[1]").value("Kurt Angle"))
@@ -80,7 +80,7 @@ class MatchNarrationControllerIntegrationTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.provider").value("Mock AI"))
         .andExpect(jsonPath("$.narration").exists())
-        .andExpect(jsonPath("$.testMatch").value(true))
+        .andExpect(jsonPath("$.testSegment").value(true))
         .andExpect(jsonPath("$.estimatedCost").value(0.0));
   }
 
@@ -124,7 +124,7 @@ class MatchNarrationControllerIntegrationTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.provider").exists())
         .andExpect(jsonPath("$.narration").exists())
-        .andExpect(jsonPath("$.matchType").value("Hell in a Cell"))
+        .andExpect(jsonPath("$.segmentType").value("Hell in a Cell"))
         .andExpect(jsonPath("$.wrestlers").isArray())
         .andExpect(jsonPath("$.wrestlers[0]").value("The Undertaker"))
         .andExpect(jsonPath("$.wrestlers[1]").value("Mankind"))

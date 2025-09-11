@@ -45,13 +45,14 @@ public class ShowPage extends NotionPage {
 
         Map<String, PageProperty> properties = pageData.getProperties();
 
-        // Look for a "Matches" relation property
-        PageProperty matchesProperty = properties.get("Matches");
+        // Look for a "Segments" relation property
+        PageProperty matchesProperty = properties.get("Segments");
         if (matchesProperty != null
             && matchesProperty.getRelation() != null
             && !matchesProperty.getRelation().isEmpty()) {
           log.debug(
-              "Found {} matches in show's relation property", matchesProperty.getRelation().size());
+              "Found {} segments in show's relation property",
+              matchesProperty.getRelation().size());
 
           // Process each related segment
           for (Object relationObj : matchesProperty.getRelation()) {

@@ -6,6 +6,8 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,9 +26,11 @@ public class ShowPlanningService {
   private final SegmentRepository segmentRepository;
   private final RivalryService rivalryService;
   private final PromoBookingService promoBookingService;
+  private final ShowPlanningDtoMapper mapper;
   private final Clock clock;
 
-  public ShowPlanningContext getShowPlanningContext(Show show) {
+  @Transactional(readOnly = true)
+  public ShowPlanningContextDTO getShowPlanningContext(Show show) {
     ShowPlanningContext context = new ShowPlanningContext();
 
     // Get segments from the last 30 days
@@ -58,6 +63,6 @@ public class ShowPlanningService {
     template.setExpectedPromos(2);
     context.setShowTemplate(template);
 
-    return context;
+    return mapper.toDto(context);
   }
 }
