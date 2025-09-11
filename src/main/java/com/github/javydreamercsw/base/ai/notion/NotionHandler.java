@@ -516,7 +516,8 @@ public class NotionHandler {
       if (client == null) {
         return new ArrayList<>();
       }
-      return loadAllEntitiesFromDatabase(client, dbId, databaseName, (page, name) -> page.getId());
+      return loadAllEntitiesFromDatabase(
+          client, dbId, databaseName, (page, name) -> page.getId(), false);
     } catch (Exception e) {
       log.error("Failed to load all page IDs from database '{}'", databaseName, e);
       return new ArrayList<>();
@@ -644,10 +645,10 @@ public class NotionHandler {
       }
       if (syncMode) {
         return loadAllEntitiesFromDatabase(
-            client, wrestlerDbId, "Wrestler", this::mapPageToWrestlerPageSyncMode);
+            client, wrestlerDbId, "Wrestler", this::mapPageToWrestlerPageSyncMode, false);
       } else {
         return loadAllEntitiesFromDatabase(
-            client, wrestlerDbId, "Wrestler", this::mapPageToWrestlerPage);
+            client, wrestlerDbId, "Wrestler", this::mapPageToWrestlerPage, true);
       }
     } catch (Exception e) {
       log.error("Failed to load all wrestlers for sync", e);
@@ -880,7 +881,7 @@ public class NotionHandler {
       if (client == null) {
         return new ArrayList<>();
       }
-      return loadAllEntitiesFromDatabase(client, showDbId, "Show", this::mapPageToShowPage);
+      return loadAllEntitiesFromDatabase(client, showDbId, "Show", this::mapPageToShowPage, true);
     } catch (Exception e) {
       log.error("Failed to load all shows", e);
       return new ArrayList<>();
@@ -921,7 +922,8 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, showDbId, "Show", this::mapPageToShowPageForSync);
+      return loadAllEntitiesFromDatabase(
+          client, showDbId, "Show", this::mapPageToShowPageForSync, false);
     } catch (Exception e) {
       log.error("Failed to load all shows for sync", e);
       throw new RuntimeException("Failed to load shows from Notion: " + e.getMessage(), e);
@@ -998,7 +1000,8 @@ public class NotionHandler {
                   entityName,
                   "ShowTemplate",
                   ShowTemplatePage::new,
-                  NotionPage.NotionParent::new));
+                  NotionPage.NotionParent::new),
+          false);
     } catch (Exception e) {
       log.error("Failed to load all show templates for sync", e);
       return new ArrayList<>();
@@ -1111,7 +1114,8 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, matchDbId, "Segment", this::mapPageToSegmentPage);
+      return loadAllEntitiesFromDatabase(
+          client, matchDbId, "Segment", this::mapPageToSegmentPage, false);
     } catch (Exception e) {
       log.error("Failed to load all matches", e);
       throw new RuntimeException("Failed to load matches from Notion: " + e.getMessage(), e);
@@ -1187,7 +1191,7 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, teamDbId, "Team", this::mapPageToTeamPage);
+      return loadAllEntitiesFromDatabase(client, teamDbId, "Team", this::mapPageToTeamPage, false);
     } catch (Exception e) {
       log.error("Failed to load all teams", e);
       throw new RuntimeException("Failed to load teams from Notion: " + e.getMessage(), e);
@@ -1244,7 +1248,8 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, seasonDbId, "Season", this::mapPageToSeasonPage);
+      return loadAllEntitiesFromDatabase(
+          client, seasonDbId, "Season", this::mapPageToSeasonPage, false);
     } catch (Exception e) {
       log.error("Failed to load all seasons", e);
       throw new RuntimeException("Failed to load seasons from Notion: " + e.getMessage(), e);
@@ -1302,7 +1307,7 @@ public class NotionHandler {
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
       return loadAllEntitiesFromDatabase(
-          client, factionDbId, "Faction", this::mapPageToFactionPage);
+          client, factionDbId, "Faction", this::mapPageToFactionPage, false);
     } catch (Exception e) {
       log.error("Failed to load all factions", e);
       throw new RuntimeException("Failed to load factions from Notion: " + e.getMessage(), e);
@@ -1340,7 +1345,7 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, npcDbId, "NPC", this::mapPageToNpcPage);
+      return loadAllEntitiesFromDatabase(client, npcDbId, "NPC", this::mapPageToNpcPage, false);
     } catch (Exception e) {
       log.error("Failed to load all NPCs", e);
       throw new RuntimeException("Failed to load NPCs from Notion: " + e.getMessage(), e);
@@ -1379,7 +1384,8 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, injuryDbId, "Injury", this::mapPageToInjuryPage);
+      return loadAllEntitiesFromDatabase(
+          client, injuryDbId, "Injury", this::mapPageToInjuryPage, false);
     } catch (Exception e) {
       log.error("Failed to load all injuries", e);
       throw new RuntimeException("Failed to load injuries from Notion: " + e.getMessage(), e);
@@ -1490,7 +1496,8 @@ public class NotionHandler {
       @NonNull NotionClient client,
       @NonNull String databaseId,
       @NonNull String entityType,
-      @NonNull java.util.function.BiFunction<Page, String, T> mapper) {
+      @NonNull java.util.function.BiFunction<Page, String, T> mapper,
+      boolean resolveRelationships) {
 
     List<T> entities = new ArrayList<>();
     try {
@@ -1520,7 +1527,7 @@ public class NotionHandler {
       // Parallelize the mapping of pages to entities to improve performance
       entities =
           results.parallelStream()
-              .map(page -> mapPageToEntity(page, client, entityType, mapper))
+              .map(page -> mapPageToEntity(page, client, entityType, mapper, resolveRelationships))
               .filter(java.util.Objects::nonNull)
               .collect(java.util.stream.Collectors.toList());
 
@@ -1537,7 +1544,8 @@ public class NotionHandler {
       Page page,
       NotionClient client,
       String entityType,
-      java.util.function.BiFunction<Page, String, T> mapper) {
+      java.util.function.BiFunction<Page, String, T> mapper,
+      boolean resolveRelationships) {
     try {
       Page pageData =
           executeWithRetry(() -> client.retrievePage(page.getId(), Collections.emptyList()));
