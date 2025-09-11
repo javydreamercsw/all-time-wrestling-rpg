@@ -33,52 +33,46 @@ public class ShowPage extends NotionPage {
    *
    * @return List of MatchPage objects representing all matches in this show
    */
-  public List<MatchPage> getMatches() {
+  public List<SegmentPage> getMatches() {
     Logger log = LoggerFactory.getLogger(ShowPage.class);
     log.debug("Loading matches for show: {}", this.getId());
 
-    List<MatchPage> matches = new ArrayList<>();
+    List<SegmentPage> matches = new ArrayList<>();
 
     try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
-      // Get the original page data to access properties
-      // PrintStream originalOut = System.out;
       try {
-        // System.setOut(new PrintStream(new ByteArrayOutputStream()));
         Page pageData = client.retrievePage(this.getId(), Collections.emptyList());
-        // System.setOut(originalOut);
 
         Map<String, PageProperty> properties = pageData.getProperties();
 
-        // Look for a "Matches" relation property
-        PageProperty matchesProperty = properties.get("Matches");
+        // Look for a "Segments" relation property
+        PageProperty matchesProperty = properties.get("Segments");
         if (matchesProperty != null
             && matchesProperty.getRelation() != null
             && !matchesProperty.getRelation().isEmpty()) {
           log.debug(
-              "Found {} matches in show's relation property", matchesProperty.getRelation().size());
+              "Found {} segments in show's relation property",
+              matchesProperty.getRelation().size());
 
-          // Process each related match
+          // Process each related segment
           for (Object relationObj : matchesProperty.getRelation()) {
             try {
-              // Use reflection to get the match ID
+              // Use reflection to get the segment ID
               String matchId =
                   (String) relationObj.getClass().getMethod("getId").invoke(relationObj);
-              log.debug("Processing match ID: {}", matchId);
+              log.debug("Processing segment ID: {}", matchId);
 
-              // Retrieve the match page to get its details
-              // System.setOut(new PrintStream(new ByteArrayOutputStream()));
+              // Retrieve the segment page to get its details
               Page matchPageData = client.retrievePage(matchId, Collections.emptyList());
-              // System.setOut(originalOut);
 
               // Create and populate MatchPage object
-              MatchPage matchPage = mapPageToMatchPage(matchPageData);
+              SegmentPage matchPage = mapPageToMatchPage(matchPageData);
               matches.add(matchPage);
 
-              log.debug("Added match: {} (ID: {})", getMatchName(matchPageData), matchId);
+              log.debug("Added segment: {} (ID: {})", getMatchName(matchPageData), matchId);
 
             } catch (Exception e) {
-              // System.setOut(originalOut);
-              log.error("Failed to process match relation: {}", e.getMessage());
+              log.error("Failed to process segment relation: {}", e.getMessage());
             }
           }
         } else {
@@ -86,13 +80,10 @@ public class ShowPage extends NotionPage {
         }
 
       } catch (Exception e) {
-        // System.setOut(originalOut);
         log.error("Error loading matches for show: {}", e.getMessage());
-      } finally {
-        // System.setOut(originalOut);
       }
     } catch (Exception e) {
-      log.error("Error creating Notion client for match loading: {}", e.getMessage());
+      log.error("Error creating Notion client for segment loading: {}", e.getMessage());
     }
 
     log.info("Loaded {} matches for show: {}", matches.size(), this.getId());
@@ -100,8 +91,8 @@ public class ShowPage extends NotionPage {
   }
 
   /** Helper method to map a Notion Page to a MatchPage object. */
-  private MatchPage mapPageToMatchPage(Page pageData) {
-    MatchPage matchPage = new MatchPage();
+  private SegmentPage mapPageToMatchPage(Page pageData) {
+    SegmentPage matchPage = new SegmentPage();
 
     // Set basic page information
     matchPage.setObject("page");
@@ -114,7 +105,7 @@ public class ShowPage extends NotionPage {
     matchPage.setPublic_url(pageData.getPublicUrl());
 
     // Set parent information
-    MatchPage.NotionParent parent = new MatchPage.NotionParent();
+    SegmentPage.NotionParent parent = new SegmentPage.NotionParent();
     parent.setType("database_id");
     parent.setDatabase_id(pageData.getParent().getDatabaseId());
     matchPage.setParent(parent);
@@ -122,10 +113,10 @@ public class ShowPage extends NotionPage {
     return matchPage;
   }
 
-  /** Helper method to extract match name from page data. */
-  private String getMatchName(Page matchPageData) {
+  /** Helper method to extract segment name from page data. */
+  private String getMatchName(Page segmentPageData) {
     try {
-      PageProperty nameProperty = matchPageData.getProperties().get("Name");
+      PageProperty nameProperty = segmentPageData.getProperties().get("Name");
       if (nameProperty != null
           && nameProperty.getTitle() != null
           && !nameProperty.getTitle().isEmpty()) {
@@ -133,7 +124,7 @@ public class ShowPage extends NotionPage {
       }
     } catch (Exception e) {
       Logger log = LoggerFactory.getLogger(ShowPage.class);
-      log.warn("Failed to extract match name: {}", e.getMessage());
+      log.warn("Failed to extract segment name: {}", e.getMessage());
     }
     return "Unknown Match";
   }

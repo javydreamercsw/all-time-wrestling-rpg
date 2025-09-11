@@ -36,8 +36,8 @@ public enum TitleTier {
   }
 
   /**
-   * Get the #1 Contender match entry fee for this title. All wrestlers must pay this to participate
-   * in #1 contender matches.
+   * Get the #1 Contender segment entry fee for this title. All wrestlers must pay this to
+   * participate in #1 contender matches.
    *
    * @return The entry fee in fans
    */

@@ -149,7 +149,7 @@ class TitleReignTest {
   @Test
   @DisplayName("Should handle notes field")
   void shouldHandleNotesField() {
-    String notes = "Won title in a steel cage match at WrestleMania";
+    String notes = "Won title in a steel cage segment at WrestleMania";
     titleReign.setNotes(notes);
 
     assertThat(titleReign.getNotes()).isEqualTo(notes);

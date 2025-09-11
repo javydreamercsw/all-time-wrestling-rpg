@@ -144,7 +144,7 @@ public class StorylineBranchEffect extends AbstractEntity<Long> {
         || "DISBAND_FACTION".equals(effectType);
   }
 
-  /** Check if this is a match effect. */
+  /** Check if this is a segment effect. */
   public boolean isMatchEffect() {
     return "FORCE_MATCH".equals(effectType)
         || "ADD_STIPULATION".equals(effectType)
@@ -172,7 +172,7 @@ public class StorylineBranchEffect extends AbstractEntity<Long> {
   public int getExecutionPriority() {
     return switch (effectType) {
       case "CREATE_RIVALRY", "ADD_HEAT" -> 10; // Highest - rivalry effects
-      case "FORCE_MATCH", "TITLE_SHOT" -> 9; // Very high - match effects
+      case "FORCE_MATCH", "TITLE_SHOT" -> 9; // Very high - segment effects
       case "CREATE_FACTION", "ADD_MEMBER" -> 8; // High - faction effects
       case "AWARD_FANS", "CHANGE_ALIGNMENT" -> 6; // Medium - wrestler effects
       case "CREATE_STORYLINE", "STORYLINE_TWIST" -> 4; // Low - storyline effects

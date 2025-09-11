@@ -128,7 +128,7 @@ class WrestlerServiceTest {
     Injury mockInjury = new Injury();
     mockInjury.setName("Test Injury");
     mockInjury.setSeverity(InjurySeverity.MINOR);
-    when(injuryService.createInjuryFromBumps(any(Wrestler.class))).thenReturn(mockInjury);
+    when(injuryService.createInjuryFromBumps(any())).thenReturn(Optional.of(mockInjury));
 
     // When
     Optional<Wrestler> result = wrestlerService.addBump(1L);
@@ -137,7 +137,8 @@ class WrestlerServiceTest {
     assertThat(result).isPresent();
     assertThat(result.get().getBumps()).isEqualTo(0); // Reset after injury
     verify(wrestlerRepository).saveAndFlush(testWrestler);
-    verify(injuryService).createInjuryFromBumps(testWrestler); // Verify injury service was called
+    verify(injuryService)
+        .createInjuryFromBumps(testWrestler.getId()); // Verify injury service was called
   }
 
   @Test

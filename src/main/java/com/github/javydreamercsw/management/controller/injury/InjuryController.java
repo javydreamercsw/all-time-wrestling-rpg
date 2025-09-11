@@ -4,6 +4,7 @@ import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.InjuryResponseDTO;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -63,7 +64,7 @@ public class InjuryController {
             request.injuryNotes());
 
     if (injury.isPresent()) {
-      return ResponseEntity.status(HttpStatus.CREATED).body(injury.get());
+      return ResponseEntity.status(HttpStatus.CREATED).body(new InjuryResponseDTO(injury.get()));
     } else {
       return ResponseEntity.badRequest()
           .body(new ErrorResponse("Cannot create injury - wrestler not found"));
@@ -86,7 +87,8 @@ public class InjuryController {
     // First check if wrestler exists and has enough bumps
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     if (wrestlerOpt.isEmpty()) {
-      return ResponseEntity.badRequest().body(new ErrorResponse("Wrestler not found"));
+      return ResponseEntity.status(HttpStatus.NOT_FOUND)
+          .body(new ErrorResponse("Wrestler not found"));
     }
 
     Wrestler wrestler = wrestlerOpt.get();
@@ -95,10 +97,10 @@ public class InjuryController {
           .body(new ErrorResponse("Wrestler has less than 3 bumps (" + wrestler.getBumps() + ")"));
     }
 
-    Injury injury = injuryService.createInjuryFromBumps(wrestler);
+    Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestlerId);
 
-    if (injury != null) {
-      return ResponseEntity.status(HttpStatus.CREATED).body(injury);
+    if (injury.isPresent()) {
+      return ResponseEntity.status(HttpStatus.CREATED).body(new InjuryResponseDTO(injury.get()));
     } else {
       return ResponseEntity.badRequest().body(new ErrorResponse("Failed to create injury"));
     }

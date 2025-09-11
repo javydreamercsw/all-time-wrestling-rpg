@@ -157,7 +157,7 @@ class TitleTierTest {
           .isEqualTo(15000L);
 
       assertThat(title.getContenderEntryFee())
-          .as("Contender entry fee should match challenge cost")
+          .as("Contender entry fee should segment challenge cost")
           .isEqualTo(title.getChallengeCost());
     }
   }

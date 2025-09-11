@@ -60,10 +60,10 @@ public class FactionRivalryController {
   }
 
   @Operation(
-      summary = "Get rivalries requiring matches",
-      description = "Retrieve rivalries that require matches at next show")
+      summary = "Get rivalries requiring segments",
+      description = "Retrieve rivalries that require segments at next show")
   @GetMapping("/requiring-matches")
-  public ResponseEntity<List<FactionRivalry>> getRivalriesRequiringMatches() {
+  public ResponseEntity<List<FactionRivalry>> getRivalriesRequiringSegments() {
     List<FactionRivalry> rivalries = factionRivalryService.getRivalriesRequiringMatches();
     return ResponseEntity.ok(rivalries);
   }
@@ -78,10 +78,10 @@ public class FactionRivalryController {
   }
 
   @Operation(
-      summary = "Get rivalries requiring rule matches",
-      description = "Retrieve rivalries requiring rule matches")
+      summary = "Get rivalries requiring rule segments",
+      description = "Retrieve rivalries requiring rule segments")
   @GetMapping("/requiring-rule")
-  public ResponseEntity<List<FactionRivalry>> getRivalriesRequiringStipulationMatches() {
+  public ResponseEntity<List<FactionRivalry>> getRivalriesRequiringStipulationSegments() {
     List<FactionRivalry> rivalries =
         factionRivalryService.getRivalriesRequiringStipulationMatches();
     return ResponseEntity.ok(rivalries);
@@ -225,7 +225,7 @@ public class FactionRivalryController {
 
   public record FactionRivalryStatistics(
       int totalActiveRivalries,
-      int rivalriesRequiringMatches,
+      int rivalriesRequiringSegments,
       int rivalriesEligibleForResolution,
       int rivalriesRequiringStipulation,
       int totalWrestlersInvolved) {}

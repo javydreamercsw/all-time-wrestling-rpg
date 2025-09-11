@@ -167,18 +167,18 @@ CREATE INDEX IF NOT EXISTS idx_show_template_type ON show_template(show_type_id)
 -- Index for template external ID (Notion sync)
 CREATE INDEX IF NOT EXISTS idx_show_template_external_id ON show_template(external_id);
 
--- ==================== MATCH STIPULATION TABLE INDEXES ====================
+-- ==================== SEGMENT RULE TABLE INDEXES ====================
 
 -- Index for match stipulation name searches
-CREATE INDEX IF NOT EXISTS idx_match_stipulation_name ON match_stipulation(name);
+CREATE INDEX IF NOT EXISTS idx_segment_rule_name ON segment_rule(name);
 
 -- Index for high heat match stipulations
-CREATE INDEX IF NOT EXISTS idx_match_stipulation_high_heat ON match_stipulation(requires_high_heat);
+CREATE INDEX IF NOT EXISTS idx_segment_rule_high_heat ON segment_rule(requires_high_heat);
 
--- ==================== MATCH TYPE TABLE INDEXES ====================
+-- ==================== SEGMENT TYPE TABLE INDEXES ====================
 
 -- Index for match type name searches
-CREATE INDEX IF NOT EXISTS idx_match_type_name ON match_type(name);
+CREATE INDEX IF NOT EXISTS idx_segment_type_name ON segment_type(name);
 
 -- ==================== PERFORMANCE MONITORING INDEXES ====================
 

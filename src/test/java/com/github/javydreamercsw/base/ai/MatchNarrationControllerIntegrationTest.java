@@ -7,10 +7,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.MatchNarrationContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.MatchTypeContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.VenueContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.WrestlerContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import java.util.Arrays;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,10 +38,10 @@ class MatchNarrationControllerIntegrationTest {
   @Autowired private ObjectMapper objectMapper;
 
   @Test
-  @DisplayName("GET /api/match-narration/limits should return provider information")
+  @DisplayName("GET /api/segment-narration/limits should return provider information")
   void shouldReturnProviderInformation() throws Exception {
     mockMvc
-        .perform(get("/api/match-narration/limits"))
+        .perform(get("/api/segment-narration/limits"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.available").value(true))
@@ -53,18 +53,18 @@ class MatchNarrationControllerIntegrationTest {
   }
 
   @Test
-  @DisplayName("POST /api/match-narration/sample should generate sample match narration")
+  @DisplayName("POST /api/segment-narration/sample should generate sample segment narration")
   void shouldGenerateSampleMatchNarration() throws Exception {
     mockMvc
-        .perform(post("/api/match-narration/sample"))
+        .perform(post("/api/segment-narration/sample"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.provider").exists())
         .andExpect(jsonPath("$.narration").exists())
         .andExpect(jsonPath("$.narration").isString())
-        .andExpect(jsonPath("$.sampleMatch").value(true))
+        .andExpect(jsonPath("$.sampleSegment").value(true))
         .andExpect(jsonPath("$.estimatedCost").exists())
-        .andExpect(jsonPath("$.context.matchType").value("Singles Match"))
+        .andExpect(jsonPath("$.context.segmentType").value("Singles Match"))
         .andExpect(jsonPath("$.context.wrestlers").isArray())
         .andExpect(jsonPath("$.context.wrestlers[0]").value("Rob Van Dam"))
         .andExpect(jsonPath("$.context.wrestlers[1]").value("Kurt Angle"))
@@ -72,23 +72,23 @@ class MatchNarrationControllerIntegrationTest {
   }
 
   @Test
-  @DisplayName("POST /api/match-narration/test should use mock provider")
+  @DisplayName("POST /api/segment-narration/test should use mock provider")
   void shouldUseMockProvider() throws Exception {
     mockMvc
-        .perform(post("/api/match-narration/test"))
+        .perform(post("/api/segment-narration/test"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.provider").value("Mock AI"))
         .andExpect(jsonPath("$.narration").exists())
-        .andExpect(jsonPath("$.testMatch").value(true))
+        .andExpect(jsonPath("$.testSegment").value(true))
         .andExpect(jsonPath("$.estimatedCost").value(0.0));
   }
 
   @Test
-  @DisplayName("POST /api/match-narration/test/mock should test specific mock provider")
+  @DisplayName("POST /api/segment-narration/test/mock should test specific mock provider")
   void shouldTestSpecificMockProvider() throws Exception {
     mockMvc
-        .perform(post("/api/match-narration/test/mock"))
+        .perform(post("/api/segment-narration/test/mock"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.provider").value("Mock AI"))
@@ -98,33 +98,33 @@ class MatchNarrationControllerIntegrationTest {
   }
 
   @Test
-  @DisplayName("POST /api/match-narration/test/nonexistent should return error")
+  @DisplayName("POST /api/segment-narration/test/nonexistent should return error")
   void shouldReturnErrorForNonexistentProvider() throws Exception {
     mockMvc
-        .perform(post("/api/match-narration/test/nonexistent"))
+        .perform(post("/api/segment-narration/test/nonexistent"))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.error").value("Provider 'nonexistent' not available or not found"));
   }
 
   @Test
-  @DisplayName("POST /api/match-narration/narrate should accept custom match context")
+  @DisplayName("POST /api/segment-narration/narrate should accept custom segment context")
   void shouldAcceptCustomMatchContext() throws Exception {
     // Given
-    MatchNarrationContext customContext = createCustomMatchContext();
+    SegmentNarrationContext customContext = createCustomMatchContext();
     String requestBody = objectMapper.writeValueAsString(customContext);
 
     // When & Then
     mockMvc
         .perform(
-            post("/api/match-narration/narrate")
+            post("/api/segment-narration/narrate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.provider").exists())
         .andExpect(jsonPath("$.narration").exists())
-        .andExpect(jsonPath("$.matchType").value("Hell in a Cell"))
+        .andExpect(jsonPath("$.segmentType").value("Hell in a Cell"))
         .andExpect(jsonPath("$.wrestlers").isArray())
         .andExpect(jsonPath("$.wrestlers[0]").value("The Undertaker"))
         .andExpect(jsonPath("$.wrestlers[1]").value("Mankind"))
@@ -139,23 +139,23 @@ class MatchNarrationControllerIntegrationTest {
 
     mockMvc
         .perform(
-            post("/api/match-narration/narrate")
+            post("/api/segment-narration/narrate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(malformedJson))
         .andExpect(status().isBadRequest());
   }
 
   @Test
-  @DisplayName("Should validate required fields in match context")
+  @DisplayName("Should validate required fields in segment context")
   void shouldValidateRequiredFieldsInMatchContext() throws Exception {
     // Given - context missing required fields
-    MatchNarrationContext incompleteContext = new MatchNarrationContext();
+    SegmentNarrationContext incompleteContext = new SegmentNarrationContext();
     String requestBody = objectMapper.writeValueAsString(incompleteContext);
 
     // When & Then
     mockMvc
         .perform(
-            post("/api/match-narration/narrate")
+            post("/api/segment-narration/narrate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
         .andExpect(status().isInternalServerError())
@@ -166,7 +166,7 @@ class MatchNarrationControllerIntegrationTest {
   @DisplayName("Should include cost estimates in limits response")
   void shouldIncludeCostEstimatesInLimitsResponse() throws Exception {
     mockMvc
-        .perform(get("/api/match-narration/limits"))
+        .perform(get("/api/segment-narration/limits"))
         .andExpect(status().isOk())
         .andExpect(
             jsonPath("$.availableServices[?(@.providerName == 'Mock AI')].costPer1KTokens")
@@ -182,7 +182,7 @@ class MatchNarrationControllerIntegrationTest {
   void shouldReturnConsistentResponseStructureAcrossEndpoints() throws Exception {
     // Test sample endpoint
     mockMvc
-        .perform(post("/api/match-narration/sample"))
+        .perform(post("/api/segment-narration/sample"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.provider").exists())
         .andExpect(jsonPath("$.narration").exists())
@@ -190,23 +190,23 @@ class MatchNarrationControllerIntegrationTest {
 
     // Test specific provider endpoint
     mockMvc
-        .perform(post("/api/match-narration/test/mock"))
+        .perform(post("/api/segment-narration/test/mock"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.provider").exists())
         .andExpect(jsonPath("$.narration").exists())
         .andExpect(jsonPath("$.estimatedCost").exists());
   }
 
-  /** Creates a custom match context for testing. */
-  private MatchNarrationContext createCustomMatchContext() {
-    MatchNarrationContext context = new MatchNarrationContext();
+  /** Creates a custom segment context for testing. */
+  private SegmentNarrationContext createCustomMatchContext() {
+    SegmentNarrationContext context = new SegmentNarrationContext();
 
     // Match Type
-    MatchTypeContext matchType = new MatchTypeContext();
-    matchType.setMatchType("Hell in a Cell");
+    SegmentTypeContext matchType = new SegmentTypeContext();
+    matchType.setSegmentType("Hell in a Cell");
     matchType.setStipulation("King of the Ring 1998");
     matchType.setRules(Arrays.asList("No Disqualification", "Falls Count Anywhere"));
-    context.setMatchType(matchType);
+    context.setSegmentType(matchType);
 
     // Venue
     VenueContext venue = new VenueContext();
@@ -216,7 +216,7 @@ class MatchNarrationControllerIntegrationTest {
     venue.setCapacity(17000);
     venue.setDescription("Historic venue for legendary matches");
     venue.setAtmosphere("Intense and foreboding");
-    venue.setSignificance("Site of the most famous Hell in a Cell match");
+    venue.setSignificance("Site of the most famous Hell in a Cell segment");
     context.setVenue(venue);
 
     // Wrestlers

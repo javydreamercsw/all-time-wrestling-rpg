@@ -27,7 +27,7 @@ class NotionPropertyTest extends BaseTest {
 
     try {
       // Get a small sample of matches to test property resolution
-      var result = notionSyncService.syncMatches("property-test");
+      var result = notionSyncService.syncSegments("property-test");
 
       System.out.println("✅ Property resolution test completed");
       System.out.println("📊 Sync result: " + (result.isSuccess() ? "SUCCESS" : "FAILED"));

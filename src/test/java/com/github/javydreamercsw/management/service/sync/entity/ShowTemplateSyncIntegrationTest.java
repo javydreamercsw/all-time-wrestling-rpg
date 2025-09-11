@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
@@ -41,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Slf4j
 @DisplayName("Show Template Sync Integration Tests")
+@EnabledIf("isNotionTokenAvailable")
 class ShowTemplateSyncIntegrationTest extends BaseTest {
 
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
@@ -289,7 +291,7 @@ class ShowTemplateSyncIntegrationTest extends BaseTest {
           template.getShowType().getId());
     }
 
-    // Verify show type counts match expectations
+    // Verify show type counts segment expectations
     long weeklyCount =
         allTemplates.stream().filter(t -> "Weekly".equals(t.getShowType().getName())).count();
     long pleCount =

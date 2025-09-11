@@ -9,14 +9,14 @@ import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.match.NPCMatchResolutionService;
+import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -32,7 +32,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Integration tests for the complete injury system including bump conversion, match integration,
+ * Integration tests for the complete injury system including bump conversion, segment integration,
  * and health calculations.
  */
 @Import(TestcontainersConfiguration.class)
@@ -44,11 +44,11 @@ class InjurySystemIntegrationTest {
 
   @Autowired private InjuryService injuryService;
   @Autowired private WrestlerService wrestlerService;
-  @Autowired private NPCMatchResolutionService npcMatchResolutionService;
+  @Autowired private NPCSegmentResolutionService npcSegmentResolutionService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private InjuryRepository injuryRepository;
-  @Autowired private MatchRepository matchRepository;
-  @Autowired private MatchTypeRepository matchTypeRepository;
+  @Autowired private SegmentRepository segmentRepository;
+  @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private DeckRepository deckRepository;
@@ -58,18 +58,18 @@ class InjurySystemIntegrationTest {
   private Wrestler wrestler1;
   private Wrestler wrestler2;
   private Show testShow;
-  private MatchType singlesMatchType;
+  private SegmentType singlesSegmentType;
 
   @BeforeEach
   void setUp() {
     // Clean up
-    matchRepository.deleteAll();
+    segmentRepository.deleteAll();
     injuryRepository.deleteAll();
     deckRepository.deleteAll();
     wrestlerRepository.deleteAll();
     showRepository.deleteAll();
     showTypeRepository.deleteAll();
-    matchTypeRepository.deleteAll();
+    segmentTypeRepository.deleteAll();
 
     // Create test data
     wrestler1 = wrestlerService.createWrestler("Test Wrestler 1", true, null);
@@ -95,11 +95,11 @@ class InjurySystemIntegrationTest {
     testShow.setShowDate(java.time.LocalDate.now());
     testShow = showRepository.save(testShow);
 
-    // Create match type
-    singlesMatchType = new MatchType();
-    singlesMatchType.setName("Singles Match");
-    singlesMatchType.setDescription("One-on-one wrestling match");
-    singlesMatchType = matchTypeRepository.save(singlesMatchType);
+    // Create segment type
+    singlesSegmentType = new SegmentType();
+    singlesSegmentType.setName("Singles Segment");
+    singlesSegmentType.setDescription("One-on-one wrestling segment");
+    singlesSegmentType = segmentTypeRepository.save(singlesSegmentType);
   }
 
   @Test

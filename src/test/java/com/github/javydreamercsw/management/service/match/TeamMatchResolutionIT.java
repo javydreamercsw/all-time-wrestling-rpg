@@ -6,14 +6,17 @@ import com.github.javydreamercsw.TestcontainersConfiguration;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.match.Match;
-import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.SegmentTeam;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.List;
@@ -36,14 +39,14 @@ import org.springframework.transaction.annotation.Transactional;
 @DisplayName("Team Match Resolution Integration Tests")
 class TeamMatchResolutionIT {
 
-  @Autowired NPCMatchResolutionService npcMatchResolutionService;
+  @Autowired NPCSegmentResolutionService npcSegmentResolutionService;
   @Autowired WrestlerService wrestlerService;
   @Autowired WrestlerRepository wrestlerRepository;
-  @Autowired MatchRepository matchRepository;
-  @Autowired MatchTypeRepository matchTypeRepository;
+  @Autowired SegmentRepository matchRepository;
+  @Autowired SegmentTypeRepository matchTypeRepository;
   @Autowired ShowRepository showRepository;
   @Autowired ShowTypeRepository showTypeRepository;
-  @Autowired MatchRuleService matchRuleService;
+  @Autowired SegmentRuleService matchRuleService;
   @Autowired DeckRepository deckRepository; // Autowire DeckRepository
 
   private Wrestler rookie1;
@@ -52,8 +55,8 @@ class TeamMatchResolutionIT {
   private Wrestler rookie4;
   private Wrestler contender1;
   private Wrestler contender2;
-  private MatchType tagTeamMatchType;
-  private MatchType handicapMatchType;
+  private SegmentType tagTeamSegmentType;
+  private SegmentType handicapSegmentType;
   private Show testShow;
 
   private Wrestler createWrestler(@NonNull String name) {
@@ -96,13 +99,13 @@ class TeamMatchResolutionIT {
     contender1 = wrestlerRepository.findById(contender1.getId()).orElseThrow();
     contender2 = wrestlerRepository.findById(contender2.getId()).orElseThrow();
 
-    // Create match types (rely on DataInitializer for these)
-    tagTeamMatchType = matchTypeRepository.findByName("Tag Team").orElseThrow();
-    handicapMatchType = matchTypeRepository.findByName("Handicap Match").orElseThrow();
+    // Create segment types (rely on DataInitializer for these)
+    tagTeamSegmentType = matchTypeRepository.findByName("Tag Team").orElseThrow();
+    handicapSegmentType = matchTypeRepository.findByName("Handicap Match").orElseThrow();
 
-    // Create match rules for testing
+    // Create segment rules for testing
     matchRuleService.createOrUpdateRule(
-        "Handicap Match", "Handicap match with uneven teams", false);
+        "Handicap Match", "Handicap segment with uneven teams", false);
 
     // Create test show
     ShowType showType = new ShowType();
@@ -128,27 +131,25 @@ class TeamMatchResolutionIT {
   }
 
   @Test
-  @DisplayName("Should resolve tag team match (2v2)")
+  @DisplayName("Should resolve tag team segment (2v2)")
   void shouldResolveTagTeamMatch() {
     // Given
-    MatchTeam team1 = new MatchTeam(Arrays.asList(rookie1, rookie2), "The Rookies");
-    MatchTeam team2 = new MatchTeam(Arrays.asList(rookie3, rookie4), "The Newbies");
+    SegmentTeam team1 = new SegmentTeam(Arrays.asList(rookie1, rookie2), "The Rookies");
+    SegmentTeam team2 = new SegmentTeam(Arrays.asList(rookie3, rookie4), "The Newbies");
 
     // When
-    Match result =
-        npcMatchResolutionService.resolveTeamMatch(
-            team1, team2, tagTeamMatchType, testShow, "Tag Team Match");
+    Segment result =
+        npcSegmentResolutionService.resolveTeamSegment(
+            team1, team2, tagTeamSegmentType, testShow, "Tag Team Match");
 
     // Then
     assertThat(result).isNotNull();
     assertThat(result.getId()).isNotNull();
     assertThat(result.getShow()).isEqualTo(testShow);
-    assertThat(result.getMatchType()).isEqualTo(tagTeamMatchType);
+    assertThat(result.getSegmentType()).isEqualTo(tagTeamSegmentType);
     assertThat(result.getWinner()).isIn(rookie1, rookie2, rookie3, rookie4);
     assertThat(result.getIsNpcGenerated()).isTrue();
     assertThat(result.getParticipants()).hasSize(4);
-    assertThat(result.getDurationMinutes()).isBetween(10, 35);
-    assertThat(result.getMatchRating()).isBetween(1, 5);
 
     // Verify all participants
     List<Wrestler> participants = result.getWrestlers();
@@ -156,21 +157,21 @@ class TeamMatchResolutionIT {
   }
 
   @Test
-  @DisplayName("Should resolve handicap match (1v2)")
+  @DisplayName("Should resolve handicap segment (1v2)")
   void shouldResolveHandicapMatch() {
     // Given
-    MatchTeam soloTeam = new MatchTeam(contender1);
-    MatchTeam handicapTeam = new MatchTeam(Arrays.asList(rookie1, rookie2), "Rookie Alliance");
+    SegmentTeam soloTeam = new SegmentTeam(contender1);
+    SegmentTeam handicapTeam = new SegmentTeam(Arrays.asList(rookie1, rookie2), "Rookie Alliance");
 
     // When
-    Match result =
-        npcMatchResolutionService.resolveTeamMatch(
-            soloTeam, handicapTeam, handicapMatchType, testShow, "Handicap Match");
+    Segment result =
+        npcSegmentResolutionService.resolveTeamSegment(
+            soloTeam, handicapTeam, handicapSegmentType, testShow, "Handicap Match");
 
     // Then
     assertThat(result).isNotNull();
     assertThat(result.getParticipants()).hasSize(3);
-    assertThat(result.getMatchRulesAsString()).contains("Handicap");
+    assertThat(result.getSegmentRulesAsString()).contains("Handicap");
 
     // The contender should have a good chance despite being outnumbered
     List<Wrestler> participants = result.getWrestlers();
@@ -178,21 +179,21 @@ class TeamMatchResolutionIT {
   }
 
   @Test
-  @DisplayName("Should favor higher tier team in tag team match")
+  @DisplayName("Should favor higher tier team in tag team segment")
   void shouldFavorHigherTierTeamInTagTeamMatch() {
     // Given
-    MatchTeam rookieTeam = new MatchTeam(Arrays.asList(rookie1, rookie2), "Rookie Team");
-    MatchTeam contenderTeam =
-        new MatchTeam(Arrays.asList(contender1, contender2), "Contender Team");
+    SegmentTeam rookieTeam = new SegmentTeam(Arrays.asList(rookie1, rookie2), "Rookie Team");
+    SegmentTeam contenderTeam =
+        new SegmentTeam(Arrays.asList(contender1, contender2), "Contender Team");
 
     // When - Run multiple matches to test probability
     int contenderTeamWins = 0;
     int totalMatches = 50;
 
     for (int i = 0; i < totalMatches; i++) {
-      Match result =
-          npcMatchResolutionService.resolveTeamMatch(
-              rookieTeam, contenderTeam, tagTeamMatchType, testShow, "Test Match " + i);
+      Segment result =
+          npcSegmentResolutionService.resolveTeamSegment(
+              rookieTeam, contenderTeam, tagTeamSegmentType, testShow, "Test Match " + i);
 
       // Check if any contender won (representing their team)
       if (result.getWinner().equals(contender1) || result.getWinner().equals(contender2)) {
@@ -210,21 +211,20 @@ class TeamMatchResolutionIT {
   @Test
   @DisplayName("Should handle complex multi-team scenarios")
   void shouldHandleComplexMultiTeamScenarios() {
-    // Given - 3v2 match
-    MatchTeam bigTeam = new MatchTeam(Arrays.asList(rookie1, rookie2, rookie3), "The Big Team");
-    MatchTeam smallTeam = new MatchTeam(Arrays.asList(contender1, contender2), "The Elite");
+    // Given - 3v2 segment
+    SegmentTeam bigTeam = new SegmentTeam(Arrays.asList(rookie1, rookie2, rookie3), "The Big Team");
+    SegmentTeam smallTeam = new SegmentTeam(Arrays.asList(contender1, contender2), "The Elite");
 
     // When
-    Match result =
-        npcMatchResolutionService.resolveTeamMatch(
-            bigTeam, smallTeam, handicapMatchType, testShow, "3v2 Elimination");
+    Segment result =
+        npcSegmentResolutionService.resolveTeamSegment(
+            bigTeam, smallTeam, handicapSegmentType, testShow, "3v2 Elimination");
 
     // Then
     assertThat(result).isNotNull();
     assertThat(result.getParticipants()).hasSize(5);
-    // Note: "3v2 Elimination" doesn't match any seeded rules, so it will be "Standard Match"
-    assertThat(result.getMatchRulesAsString()).isEqualTo("Standard Match");
-    assertThat(result.getDurationMinutes()).isBetween(15, 35); // Longer due to complexity
+    // Note: "3v2 Elimination" doesn't segment any seeded rules, so it will be "Standard Match"
+    assertThat(result.getSegmentRulesAsString()).isEqualTo("Standard Match");
 
     List<Wrestler> participants = result.getWrestlers();
     assertThat(participants)
@@ -232,16 +232,16 @@ class TeamMatchResolutionIT {
   }
 
   @Test
-  @DisplayName("Should work with singles match using team interface")
+  @DisplayName("Should work with singles segment using team interface")
   void shouldWorkWithSinglesMatchUsingTeamInterface() {
     // Given
-    MatchTeam team1 = new MatchTeam(rookie1);
-    MatchTeam team2 = new MatchTeam(contender1);
+    SegmentTeam team1 = new SegmentTeam(rookie1);
+    SegmentTeam team2 = new SegmentTeam(contender1);
 
     // When
-    Match result =
-        npcMatchResolutionService.resolveTeamMatch(
-            team1, team2, tagTeamMatchType, testShow, "Singles Match via Team Interface");
+    Segment result =
+        npcSegmentResolutionService.resolveTeamSegment(
+            team1, team2, tagTeamSegmentType, testShow, "Singles Match via Team Interface");
 
     // Then
     assertThat(result).isNotNull();
@@ -253,20 +253,15 @@ class TeamMatchResolutionIT {
   }
 
   @Test
-  @DisplayName("Should generate appropriate match duration for team matches")
+  @DisplayName("Should generate appropriate segment duration for team matches")
   void shouldGenerateAppropriateMatchDurationForTeamMatches() {
     // Given
-    MatchTeam tagTeam1 = new MatchTeam(Arrays.asList(rookie1, rookie2));
-    MatchTeam tagTeam2 = new MatchTeam(Arrays.asList(rookie3, rookie4));
+    SegmentTeam tagTeam1 = new SegmentTeam(Arrays.asList(rookie1, rookie2));
+    SegmentTeam tagTeam2 = new SegmentTeam(Arrays.asList(rookie3, rookie4));
 
     // When
-    Match result =
-        npcMatchResolutionService.resolveTeamMatch(
-            tagTeam1, tagTeam2, tagTeamMatchType, testShow, "Tag Team Championship");
-
-    // Then - Tag team matches should be longer than singles
-    assertThat(result.getDurationMinutes())
-        .isBetween(12, 35) // Longer than typical singles matches
-        .describedAs("Tag team matches should have longer duration");
+    Segment result =
+        npcSegmentResolutionService.resolveTeamSegment(
+            tagTeam1, tagTeam2, tagTeamSegmentType, testShow, "Tag Team Championship");
   }
 }

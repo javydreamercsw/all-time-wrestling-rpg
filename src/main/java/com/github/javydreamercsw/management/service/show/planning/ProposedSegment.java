@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 public class ProposedSegment {
-  private String type; // "match" or "promo"
+  private String type; // "segment" or "promo"
   private String description;
   private List<String> participants;
 }

@@ -157,7 +157,7 @@ class DatabaseIndexValidationTest {
     String scriptContent =
         Files.readString(Paths.get("src/main/resources/db/optimization/indexes.sql"));
 
-    // Regex to match CREATE INDEX statements
+    // Regex to segment CREATE INDEX statements
     Pattern indexPattern =
         Pattern.compile(
             "CREATE\\s+INDEX\\s+IF\\s+NOT\\s+EXISTS\\s+(\\w+)\\s+ON\\s+(\\w+)\\s*\\(([^)]+)\\)",

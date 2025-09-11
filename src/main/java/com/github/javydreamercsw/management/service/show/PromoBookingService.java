@@ -2,14 +2,14 @@ package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.Match;
-import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.match.MatchRuleService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,8 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service for booking promo segments in wrestling shows. Promos are treated as matches with special
- * promo rules but no winners/losers, focusing on storyline development and character work.
+ * Service for booking promo segments in wrestling shows. Promos are treated as segments with
+ * special promo rules but no winners/losers, focusing on storyline development and character work.
  */
 @Service
 @RequiredArgsConstructor
@@ -32,11 +32,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class PromoBookingService {
 
-  private final MatchRepository matchRepository;
-  private final MatchTypeRepository matchTypeRepository;
+  private final SegmentRepository segmentRepository;
+  private final SegmentTypeRepository segmentTypeRepository;
   private final WrestlerRepository wrestlerRepository;
   private final RivalryService rivalryService;
-  private final MatchRuleService matchRuleService;
+  private final SegmentRuleService segmentRuleService;
   private final Clock clock;
   private final Random random = new Random();
 
@@ -49,9 +49,9 @@ public class PromoBookingService {
    * @return List of booked promo segments
    */
   @Transactional
-  public List<Match> bookPromosForShow(
+  public List<Segment> bookPromosForShow(
       @NonNull Show show, @NonNull List<Wrestler> availableWrestlers, int maxPromos) {
-    List<Match> promos = new ArrayList<>();
+    List<Segment> promos = new ArrayList<>();
 
     if (availableWrestlers.isEmpty() || maxPromos <= 0) {
       return promos;
@@ -75,9 +75,9 @@ public class PromoBookingService {
   }
 
   /** Book rivalry-based confrontation promos. */
-  private List<Match> bookRivalryPromos(
+  private List<Segment> bookRivalryPromos(
       @NonNull Show show, @NonNull List<Wrestler> availableWrestlers, int maxPromos) {
-    List<Match> promos = new ArrayList<>();
+    List<Segment> promos = new ArrayList<>();
     List<Rivalry> activeRivalries = rivalryService.getActiveRivalries();
 
     int bookedPromos = 0;
@@ -90,7 +90,7 @@ public class PromoBookingService {
       // Check if both wrestlers are available
       if (availableWrestlers.contains(wrestler1) && availableWrestlers.contains(wrestler2)) {
         String promoType = selectRivalryPromoType(rivalry.getHeat());
-        Optional<Match> promo = bookPromoSegment(show, List.of(wrestler1, wrestler2), promoType);
+        Optional<Segment> promo = bookPromoSegment(show, List.of(wrestler1, wrestler2), promoType);
 
         if (promo.isPresent()) {
           promos.add(promo.get());
@@ -112,9 +112,9 @@ public class PromoBookingService {
   }
 
   /** Book character development and storyline promos. */
-  private List<Match> bookCharacterPromos(
+  private List<Segment> bookCharacterPromos(
       Show show, List<Wrestler> availableWrestlers, int maxPromos) {
-    List<Match> promos = new ArrayList<>();
+    List<Segment> promos = new ArrayList<>();
 
     for (int i = 0; i < maxPromos && !availableWrestlers.isEmpty(); i++) {
       // Decide between solo promo or group promo
@@ -124,7 +124,7 @@ public class PromoBookingService {
         // Book solo promo
         Wrestler wrestler = availableWrestlers.remove(0);
         String promoType = selectSoloPromoType();
-        Optional<Match> promo = bookPromoSegment(show, List.of(wrestler), promoType);
+        Optional<Segment> promo = bookPromoSegment(show, List.of(wrestler), promoType);
 
         if (promo.isPresent()) {
           promos.add(promo.get());
@@ -142,7 +142,7 @@ public class PromoBookingService {
         }
 
         String promoType = selectGroupPromoType();
-        Optional<Match> promo = bookPromoSegment(show, groupWrestlers, promoType);
+        Optional<Segment> promo = bookPromoSegment(show, groupWrestlers, promoType);
 
         if (promo.isPresent()) {
           promos.add(promo.get());
@@ -159,18 +159,18 @@ public class PromoBookingService {
     return promos;
   }
 
-  /** Book a promo segment as a match with promo rules. */
-  private Optional<Match> bookPromoSegment(
+  /** Book a promo segment as a segment with promo rules. */
+  private Optional<Segment> bookPromoSegment(
       @NonNull Show show, @NonNull List<Wrestler> wrestlers, @NonNull String promoType) {
     try {
-      // Get promo match type (create if doesn't exist)
-      MatchType promoMatchType = getOrCreatePromoMatchType();
+      // Get promo segment type (create if doesn't exist)
+      SegmentType promoSegmentType = getOrCreatePromoSegmentType();
 
-      // Create the promo "match"
-      Match promo = new Match();
+      // Create the promo "segment"
+      Segment promo = new Segment();
       promo.setShow(show);
-      promo.setMatchType(promoMatchType);
-      promo.setMatchDate(clock.instant());
+      promo.setSegmentType(promoSegmentType);
+      promo.setSegmentDate(clock.instant());
       promo.setIsNpcGenerated(true);
 
       // Add wrestlers as participants
@@ -179,13 +179,9 @@ public class PromoBookingService {
       }
 
       // Apply promo rule
-      matchRuleService.findByName(promoType).ifPresent(promo::addMatchRule);
+      segmentRuleService.findByName(promoType).ifPresent(promo::addSegmentRule);
 
-      // Set promo rating (based on wrestler charisma/fan count)
-      int promoRating = calculatePromoRating(wrestlers);
-      promo.setMatchRating(promoRating);
-
-      Match savedPromo = matchRepository.save(promo);
+      Segment savedPromo = segmentRepository.save(promo);
       return Optional.of(savedPromo);
 
     } catch (Exception e) {
@@ -194,20 +190,20 @@ public class PromoBookingService {
     }
   }
 
-  /** Get the promo match type from database. */
-  private MatchType getOrCreatePromoMatchType() {
-    Optional<MatchType> promoTypeOpt = matchTypeRepository.findByName("Promo");
+  /** Get the promo segment type from database. */
+  private SegmentType getOrCreatePromoSegmentType() {
+    Optional<SegmentType> promoTypeOpt = segmentTypeRepository.findByName("Promo");
 
     if (promoTypeOpt.isPresent()) {
       return promoTypeOpt.get();
     }
 
-    // Fallback: create promo match type if not loaded from JSON
-    log.warn("Promo match type not found in database, creating fallback");
-    MatchType promoType = new MatchType();
+    // Fallback: create promo segment type if not loaded from JSON
+    log.warn("Promo segment type not found in database, creating fallback");
+    SegmentType promoType = new SegmentType();
     promoType.setName("Promo");
     promoType.setDescription("Non-wrestling promo segment for storyline development");
-    return matchTypeRepository.save(promoType);
+    return segmentTypeRepository.save(promoType);
   }
 
   /** Select appropriate promo type based on rivalry heat using database-driven selection. */
@@ -280,38 +276,16 @@ public class PromoBookingService {
 
   /** Get promo type names from database, filtering out non-existent ones. */
   private List<String> getPromoTypesByNames(List<String> requestedNames) {
-    return requestedNames.stream().filter(name -> matchRuleService.existsByName(name)).toList();
+    return requestedNames.stream().filter(segmentRuleService::existsByName).toList();
   }
 
-  /** Calculate promo rating based on wrestler popularity and charisma. */
-  private int calculatePromoRating(@NonNull List<Wrestler> wrestlers) {
-    // Base rating
-    int baseRating = 2 + random.nextInt(2); // 2-3 base rating
-
-    // Bonus based on wrestler fan count (popularity)
-    long totalFans = wrestlers.stream().mapToLong(Wrestler::getFans).sum();
-    long averageFans = totalFans / wrestlers.size();
-
-    int popularityBonus = 0;
-    if (averageFans > 50000) {
-      popularityBonus = 2; // Very popular wrestlers
-    } else if (averageFans > 20000) {
-      popularityBonus = 1; // Popular wrestlers
-    }
-
-    // Multi-wrestler bonus (group dynamics)
-    int groupBonus = wrestlers.size() > 1 ? 1 : 0;
-
-    return Math.min(5, baseRating + popularityBonus + groupBonus);
-  }
-
-  /** Check if a match is a promo segment. */
-  public boolean isPromoSegment(@NonNull Match match) {
-    return match.getMatchType() != null && "Promo".equals(match.getMatchType().getName());
+  /** Check if a segment is a promo segment. */
+  public boolean isPromoSegment(@NonNull Segment segment) {
+    return segment.getSegmentType() != null && "Promo".equals(segment.getSegmentType().getName());
   }
 
   /** Get all promo segments for a show. */
-  public List<Match> getPromosForShow(@NonNull Show show) {
-    return matchRepository.findByShow(show).stream().filter(this::isPromoSegment).toList();
+  public List<Segment> getPromosForShow(@NonNull Show show) {
+    return segmentRepository.findByShow(show).stream().filter(this::isPromoSegment).toList();
   }
 }

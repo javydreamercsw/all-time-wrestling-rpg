@@ -1,7 +1,11 @@
 package com.github.javydreamercsw.management.service.storyline;
 
-import com.github.javydreamercsw.management.domain.show.match.Match;
-import com.github.javydreamercsw.management.domain.storyline.*;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.storyline.StorylineBranch;
+import com.github.javydreamercsw.management.domain.storyline.StorylineBranchCondition;
+import com.github.javydreamercsw.management.domain.storyline.StorylineBranchEffect;
+import com.github.javydreamercsw.management.domain.storyline.StorylineBranchRepository;
+import com.github.javydreamercsw.management.domain.storyline.StorylineBranchType;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -16,7 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service for managing storyline branching based on match outcomes in the ATW RPG system. Handles
+ * Service for managing storyline branching based on segment outcomes in the ATW RPG system. Handles
  * creation, activation, and execution of storyline branches.
  */
 @Service
@@ -160,7 +164,8 @@ public class StorylineBranchingService {
   }
 
   /** Activate a storyline branch. */
-  public Optional<StorylineBranch> activateBranch(@NonNull Long branchId, Match triggeringMatch) {
+  public Optional<StorylineBranch> activateBranch(
+      @NonNull Long branchId, Segment triggeringSegment) {
     Optional<StorylineBranch> branchOpt = storylineBranchRepository.findById(branchId);
 
     if (branchOpt.isEmpty()) {
@@ -179,13 +184,13 @@ public class StorylineBranchingService {
       return Optional.of(branch);
     }
 
-    branch.activate(triggeringMatch);
+    branch.activate(triggeringSegment);
     StorylineBranch savedBranch = storylineBranchRepository.saveAndFlush(branch);
 
     log.info(
-        "Activated storyline branch: {} (triggered by match: {})",
+        "Activated storyline branch: {} (triggered by segment: {})",
         branch.getName(),
-        triggeringMatch != null ? triggeringMatch.getId() : "manual");
+        triggeringSegment != null ? triggeringSegment.getId() : "manual");
 
     return Optional.of(savedBranch);
   }
@@ -212,48 +217,48 @@ public class StorylineBranchingService {
     return Optional.of(savedBranch);
   }
 
-  /** Process match outcome for storyline branching. */
-  public void processMatchOutcome(@NonNull Match match) {
-    log.info("Processing match outcome for storyline branching: Match ID {}", match.getId());
+  /** Process segment outcome for storyline branching. */
+  public void processSegmentOutcome(@NonNull Segment segment) {
+    log.info("Processing segment outcome for storyline branching: Match ID {}", segment.getId());
 
-    // Get all match outcome branches
+    // Get all segment outcome branches
     List<StorylineBranch> matchOutcomeBranches =
         getBranchesByType(StorylineBranchType.MATCH_OUTCOME);
 
     for (StorylineBranch branch : matchOutcomeBranches) {
       if (branch.areConditionsMet()) {
-        activateBranch(branch.getId(), match);
+        activateBranch(branch.getId(), segment);
       }
     }
 
-    // Check for other branch types that might be triggered by match outcomes
-    processRivalryEscalationBranches(match);
-    processTitleChangeBranches(match);
+    // Check for other branch types that might be triggered by segment outcomes
+    processRivalryEscalationBranches(segment);
+    processTitleChangeBranches(segment);
   }
 
   /** Process rivalry escalation branches. */
-  private void processRivalryEscalationBranches(@NonNull Match match) {
+  private void processRivalryEscalationBranches(@NonNull Segment segment) {
     List<StorylineBranch> rivalryBranches =
         getBranchesByType(StorylineBranchType.RIVALRY_ESCALATION);
 
     for (StorylineBranch branch : rivalryBranches) {
       if (branch.areConditionsMet()) {
-        activateBranch(branch.getId(), match);
+        activateBranch(branch.getId(), segment);
       }
     }
   }
 
   /** Process title change branches. */
-  private void processTitleChangeBranches(@NonNull Match match) {
-    if (!match.getIsTitleMatch()) {
-      return; // Not a title match
+  private void processTitleChangeBranches(@NonNull Segment segment) {
+    if (!segment.getIsTitleSegment()) {
+      return; // Not a title segment
     }
 
     List<StorylineBranch> titleBranches = getBranchesByType(StorylineBranchType.TITLE_CHANGE);
 
     for (StorylineBranch branch : titleBranches) {
       if (branch.areConditionsMet()) {
-        activateBranch(branch.getId(), match);
+        activateBranch(branch.getId(), segment);
       }
     }
   }

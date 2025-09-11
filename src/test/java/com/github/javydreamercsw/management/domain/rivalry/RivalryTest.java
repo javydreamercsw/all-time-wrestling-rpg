@@ -117,7 +117,7 @@ class RivalryTest {
   }
 
   @Test
-  @DisplayName("Should determine when rivalry requires rule match")
+  @DisplayName("Should determine when rivalry requires rule segment")
   void shouldDetermineWhenRivalryRequiresStipulationMatch() {
     // Below 30 heat - no rule required
     rivalry.setHeat(29);
