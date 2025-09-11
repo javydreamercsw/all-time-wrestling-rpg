@@ -5,8 +5,8 @@ package com.github.javydreamercsw.management.domain.storyline;
  * triggers and effects.
  */
 public enum StorylineBranchType {
-  /** Triggered by match outcomes - winner/loser specific */
-  MATCH_OUTCOME("Match Outcome", "Branch triggered by specific match results", "🏆"),
+  /** Triggered by segment outcomes - winner/loser specific */
+  MATCH_OUTCOME("Match Outcome", "Branch triggered by specific segment results", "🏆"),
 
   /** Triggered by rivalry escalation */
   RIVALRY_ESCALATION(
@@ -48,7 +48,7 @@ public enum StorylineBranchType {
     this.emoji = emoji;
   }
 
-  /** Check if this branch type is match-related. */
+  /** Check if this branch type is segment-related. */
   public boolean isMatchRelated() {
     return this == MATCH_OUTCOME || this == TITLE_CHANGE;
   }

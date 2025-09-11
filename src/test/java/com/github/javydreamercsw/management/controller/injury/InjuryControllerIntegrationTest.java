@@ -12,6 +12,7 @@ import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class InjuryControllerIntegrationTest {
   @Test
   @DisplayName("Should create new injury successfully")
   void shouldCreateNewInjurySuccessfully() throws Exception {
-    Wrestler wrestler = createTestWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
 
     CreateInjuryRequest request =
         new CreateInjuryRequest(
@@ -61,7 +62,7 @@ class InjuryControllerIntegrationTest {
             "Knee Injury",
             "Torn ACL",
             InjurySeverity.SEVERE,
-            "Occurred during match");
+            "Occurred during segment");
 
     mockMvc
         .perform(
@@ -79,7 +80,7 @@ class InjuryControllerIntegrationTest {
   @Test
   @DisplayName("Should create injury from bumps when wrestler has 3+ bumps")
   void shouldCreateInjuryFromBumpsWhenWrestlerHas3PlusBumps() throws Exception {
-    Wrestler wrestler = createTestWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
     wrestler.setBumps(3);
     wrestlerRepository.save(wrestler);
 
@@ -95,7 +96,7 @@ class InjuryControllerIntegrationTest {
   @Test
   @DisplayName("Should not create injury from bumps when wrestler has less than 3 bumps")
   void shouldNotCreateInjuryFromBumpsWhenWrestlerHasLessThan3Bumps() throws Exception {
-    Wrestler wrestler = createTestWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
     wrestler.setBumps(2);
     wrestlerRepository.save(wrestler);
 
@@ -108,7 +109,7 @@ class InjuryControllerIntegrationTest {
   @Test
   @DisplayName("Should get all injuries with pagination")
   void shouldGetAllInjuriesWithPagination() throws Exception {
-    Wrestler wrestler = createTestWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
     createTestInjury(wrestler, "Injury 1", InjurySeverity.MINOR);
     createTestInjury(wrestler, "Injury 2", InjurySeverity.MODERATE);
 
@@ -123,7 +124,7 @@ class InjuryControllerIntegrationTest {
   @Test
   @DisplayName("Should get injury by ID")
   void shouldGetInjuryById() throws Exception {
-    Wrestler wrestler = createTestWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
     Injury injury = createTestInjury(wrestler, "Test Injury", InjurySeverity.SEVERE);
 
     mockMvc
@@ -136,7 +137,7 @@ class InjuryControllerIntegrationTest {
   @Test
   @DisplayName("Should get active injuries for wrestler")
   void shouldGetActiveInjuriesForWrestler() throws Exception {
-    Wrestler wrestler = createTestWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
     Injury activeInjury = createTestInjury(wrestler, "Active Injury", InjurySeverity.MINOR);
     Injury healedInjury = createTestInjury(wrestler, "Healed Injury", InjurySeverity.MODERATE);
     healedInjury.heal();
@@ -153,7 +154,7 @@ class InjuryControllerIntegrationTest {
   @Test
   @DisplayName("Should get injuries by severity")
   void shouldGetInjuriesBySeverity() throws Exception {
-    Wrestler wrestler = createTestWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
     createTestInjury(wrestler, "Severe Injury 1", InjurySeverity.SEVERE);
     createTestInjury(wrestler, "Severe Injury 2", InjurySeverity.SEVERE);
     createTestInjury(wrestler, "Minor Injury", InjurySeverity.MINOR);
@@ -168,7 +169,7 @@ class InjuryControllerIntegrationTest {
   @Test
   @DisplayName("Should attempt healing with successful dice roll")
   void shouldAttemptHealingWithSuccessfulDiceRoll() throws Exception {
-    Wrestler wrestler = createTestWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
     Injury injury = createTestInjury(wrestler, "Minor Injury", InjurySeverity.MINOR);
 
     HealingAttemptRequest request = new HealingAttemptRequest(6); // Should succeed for MINOR
@@ -187,7 +188,7 @@ class InjuryControllerIntegrationTest {
   @Test
   @DisplayName("Should attempt healing with failed dice roll")
   void shouldAttemptHealingWithFailedDiceRoll() throws Exception {
-    Wrestler wrestler = createTestWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
     Injury injury = createTestInjury(wrestler, "Minor Injury", InjurySeverity.MINOR);
 
     HealingAttemptRequest request = new HealingAttemptRequest(2); // Should fail for MINOR
@@ -206,7 +207,7 @@ class InjuryControllerIntegrationTest {
   @Test
   @DisplayName("Should get total health penalty for wrestler")
   void shouldGetTotalHealthPenaltyForWrestler() throws Exception {
-    Wrestler wrestler = createTestWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
     createTestInjury(wrestler, "Injury 1", InjurySeverity.MINOR);
     createTestInjury(wrestler, "Injury 2", InjurySeverity.MODERATE);
 
@@ -237,7 +238,7 @@ class InjuryControllerIntegrationTest {
   @Test
   @DisplayName("Should validate dice roll range for healing")
   void shouldValidateDiceRollRangeForHealing() throws Exception {
-    Wrestler wrestler = createTestWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
     Injury injury = createTestInjury(wrestler, "Test Injury", InjurySeverity.MINOR);
 
     HealingAttemptRequest request = new HealingAttemptRequest(7); // Invalid dice roll > 6
@@ -256,7 +257,7 @@ class InjuryControllerIntegrationTest {
     mockMvc.perform(get("/api/injuries/{id}", 999L)).andExpect(status().isNotFound());
   }
 
-  private Wrestler createTestWrestler(String name, Long fans) {
+  private Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
     Wrestler wrestler = new Wrestler();
     wrestler.setName(name);
     wrestler.setFans(fans);
@@ -272,7 +273,8 @@ class InjuryControllerIntegrationTest {
     return wrestlerRepository.save(wrestler);
   }
 
-  private Injury createTestInjury(Wrestler wrestler, String name, InjurySeverity severity) {
+  private Injury createTestInjury(
+      @NonNull Wrestler wrestler, @NonNull String name, @NonNull InjurySeverity severity) {
     Injury injury = new Injury();
     injury.setWrestler(wrestler);
     injury.setName(name);

@@ -5,12 +5,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.MatchPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.SegmentPage;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.File;
@@ -44,21 +44,21 @@ class NotionPropertyResolutionTest {
 
   @MockitoBean private NotionHandler notionHandler;
   @MockitoBean private ShowService showService;
-  @MockitoBean private MatchTypeService matchTypeService;
+  @MockitoBean private SegmentTypeService matchTypeService;
   @MockitoBean private WrestlerService wrestlerService;
 
   private ObjectMapper objectMapper;
-  private List<MatchPage> sampleMatches;
+  private List<SegmentPage> sampleSegments;
 
   @BeforeEach
   void setUp() throws Exception {
     objectMapper = new ObjectMapper();
 
-    // Load sample match data from JSON files
-    sampleMatches = loadSampleMatches();
+    // Load sample segment data from JSON files
+    sampleSegments = loadSampleMatches();
 
     // Mock the NotionHandler to return our sample data
-    when(notionHandler.loadAllMatches()).thenReturn(sampleMatches);
+    when(notionHandler.loadAllSegments()).thenReturn(sampleSegments);
 
     // Mock the service dependencies
     setupServiceMocks();
@@ -70,7 +70,7 @@ class NotionPropertyResolutionTest {
     // Given - Sample matches with Date properties
 
     // When - Extract date values from sample data
-    for (MatchPage match : sampleMatches) {
+    for (SegmentPage match : sampleSegments) {
       String dateValue = (String) match.getRawProperties().get("Date");
 
       // Then - Date should not have @ prefix
@@ -85,12 +85,12 @@ class NotionPropertyResolutionTest {
   @Test
   @DisplayName("Should resolve Title(s) properties to championship names")
   void shouldResolveTitlePropertiesToChampionshipNames() {
-    // Given - Sample match with title
-    MatchPage championshipMatch =
-        sampleMatches.stream()
+    // Given - Sample segment with title
+    SegmentPage championshipMatch =
+        sampleSegments.stream()
             .filter(match -> !"N/A".equals(match.getRawProperties().get("Title(s)")))
             .findFirst()
-            .orElseThrow(() -> new AssertionError("No championship match found in samples"));
+            .orElseThrow(() -> new AssertionError("No championship segment found in samples"));
 
     // When - Extract title value
     String titleValue = (String) championshipMatch.getRawProperties().get("Title(s)");
@@ -106,12 +106,12 @@ class NotionPropertyResolutionTest {
   @Test
   @DisplayName("Should resolve Winners as wrestler names")
   void shouldResolveWinnersAsWrestlerNames() {
-    // Given - Sample match with winner
-    MatchPage matchWithWinner =
-        sampleMatches.stream()
+    // Given - Sample segment with winner
+    SegmentPage matchWithWinner =
+        sampleSegments.stream()
             .filter(match -> !"N/A".equals(match.getRawProperties().get("Winners")))
             .findFirst()
-            .orElseThrow(() -> new AssertionError("No match with winner found in samples"));
+            .orElseThrow(() -> new AssertionError("No segment with winner found in samples"));
 
     // When - Extract winner value
     String winnerValue = (String) matchWithWinner.getRawProperties().get("Winners");
@@ -129,8 +129,8 @@ class NotionPropertyResolutionTest {
   void shouldResolveParticipantsAsCommaSeparatedWrestlerNames() {
     // Given - Sample matches with participants
 
-    // When & Then - Check each match's participants
-    for (MatchPage match : sampleMatches) {
+    // When & Then - Check each segment's participants
+    for (SegmentPage match : sampleSegments) {
       String participants = (String) match.getRawProperties().get("Participants");
 
       assertThat(participants)
@@ -151,7 +151,7 @@ class NotionPropertyResolutionTest {
     // Given - Sample matches with N/A values
 
     // When & Then - Check that N/A values are handled properly
-    for (MatchPage match : sampleMatches) {
+    for (SegmentPage match : sampleSegments) {
       Object titleValue = match.getRawProperties().get("Title(s)");
       Object winnerValue = match.getRawProperties().get("Winners");
       Object notesValue = match.getRawProperties().get("Notes");
@@ -177,11 +177,11 @@ class NotionPropertyResolutionTest {
     // The actual sync is mocked, so we focus on testing the data structure
 
     // When - Verify sample data is loaded correctly
-    assertThat(sampleMatches).isNotEmpty();
-    assertThat(sampleMatches.size()).isEqualTo(3);
+    assertThat(sampleSegments).isNotEmpty();
+    assertThat(sampleSegments.size()).isEqualTo(3);
 
     // Then - Verify each sample has the expected properties
-    for (MatchPage match : sampleMatches) {
+    for (SegmentPage match : sampleSegments) {
       assertThat(match.getRawProperties()).isNotEmpty();
       assertThat(match.getRawProperties().get("Name")).isNotNull();
       assertThat(match.getRawProperties().get("Date")).isNotNull();
@@ -189,16 +189,16 @@ class NotionPropertyResolutionTest {
     }
   }
 
-  /** Load sample match data from JSON files. */
-  private List<MatchPage> loadSampleMatches() throws Exception {
+  /** Load sample segment data from JSON files. */
+  private List<SegmentPage> loadSampleMatches() throws Exception {
     File samplesDir = new File("src/test/resources/notion-samples");
 
-    MatchPage sample1 =
-        objectMapper.readValue(new File(samplesDir, "sample-match-1.json"), MatchPage.class);
-    MatchPage sample2 =
-        objectMapper.readValue(new File(samplesDir, "sample-match-2.json"), MatchPage.class);
-    MatchPage sample3 =
-        objectMapper.readValue(new File(samplesDir, "sample-match-3.json"), MatchPage.class);
+    SegmentPage sample1 =
+        objectMapper.readValue(new File(samplesDir, "sample-segment-1.json"), SegmentPage.class);
+    SegmentPage sample2 =
+        objectMapper.readValue(new File(samplesDir, "sample-segment-2.json"), SegmentPage.class);
+    SegmentPage sample3 =
+        objectMapper.readValue(new File(samplesDir, "sample-segment-3.json"), SegmentPage.class);
 
     return Arrays.asList(sample1, sample2, sample3);
   }
@@ -211,15 +211,15 @@ class NotionPropertyResolutionTest {
     when(showService.findByName("Timeless")).thenReturn(Optional.of(timelessShow));
 
     // Mock MatchTypeService
-    MatchType tagTeamType = new MatchType();
+    SegmentType tagTeamType = new SegmentType();
     tagTeamType.setName("Tag Team");
     when(matchTypeService.findByName("Tag Team")).thenReturn(Optional.of(tagTeamType));
 
-    MatchType oneOnOneType = new MatchType();
+    SegmentType oneOnOneType = new SegmentType();
     oneOnOneType.setName("One on One");
     when(matchTypeService.findByName("One on One")).thenReturn(Optional.of(oneOnOneType));
 
-    MatchType promoType = new MatchType();
+    SegmentType promoType = new SegmentType();
     promoType.setName("Promo");
     when(matchTypeService.findByName("Promo")).thenReturn(Optional.of(promoType));
 

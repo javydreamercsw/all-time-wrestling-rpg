@@ -1,7 +1,7 @@
 package com.github.javydreamercsw;
 
 import com.github.javydreamercsw.management.DataInitializer;
-import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 
@@ -12,9 +12,9 @@ public class TestcontainersConfiguration {
   //  See https://docs.spring.io/spring-boot/reference/testing/testcontainers.html for details.
 
   @Bean
-  public DataInitializer dataInitializer(MatchTypeService matchTypeService) {
+  public DataInitializer dataInitializer(SegmentTypeService segmentTypeService) {
     DataInitializer dataInitializer = new DataInitializer();
-    dataInitializer.loadMatchTypesFromFile(matchTypeService);
+    dataInitializer.loadSegmentTypesFromFile(segmentTypeService);
     return dataInitializer;
   }
 }

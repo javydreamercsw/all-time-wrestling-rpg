@@ -346,7 +346,7 @@ public class DramaEventService {
 
     // If injury occurred (3 bumps reached), create injury
     if (injuryOccurred) {
-      injuryService.createInjuryFromBumps(wrestler);
+      injuryService.createInjuryFromBumps(wrestler.getId());
       notes.append("Injury created from bumps; ");
     } else {
       notes.append("Bump added; ");
@@ -448,7 +448,7 @@ public class DramaEventService {
               primary
                   + " had a brief disagreement with "
                   + secondary
-                  + " over match planning, but it was quickly resolved.");
+                  + " over segment planning, but it was quickly resolved.");
       case NEGATIVE ->
           new DramaEventTemplate(
               primary + " and " + secondary + " Backstage Altercation",
@@ -736,7 +736,7 @@ public class DramaEventService {
               primary
                   + " has officially challenged "
                   + secondary
-                  + " for their championship in what should be an interesting match.");
+                  + " for their championship in what should be an interesting segment.");
       case NEGATIVE ->
           new DramaEventTemplate(
               primary + " Demands Title Shot from " + secondary,
@@ -750,7 +750,7 @@ public class DramaEventService {
               primary
                   + " made a shocking confrontation with champion "
                   + secondary
-                  + ", demanding an immediate title match in dramatic fashion.");
+                  + ", demanding an immediate title segment in dramatic fashion.");
     };
   }
 

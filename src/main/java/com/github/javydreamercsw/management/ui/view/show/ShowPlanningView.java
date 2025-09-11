@@ -5,7 +5,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
-import com.github.javydreamercsw.management.service.show.planning.ShowPlanningContext;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -107,7 +107,6 @@ public class ShowPlanningView extends Main {
                   });
               return removeButton;
             });
-
     approveButton = new Button("Approve Segments");
     approveButton.addClickListener(e -> approveSegments());
 
@@ -121,10 +120,10 @@ public class ShowPlanningView extends Main {
     Show selectedShow = showComboBox.getValue();
     if (selectedShow != null) {
       String baseUrl = UrlUtil.getBaseUrl();
-      ShowPlanningContext context =
+      ShowPlanningContextDTO context =
           restTemplate.getForObject(
               baseUrl + "/api/show-planning/context/" + selectedShow.getId(),
-              ShowPlanningContext.class);
+              ShowPlanningContextDTO.class);
       try {
         contextArea.setValue(
             objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context));

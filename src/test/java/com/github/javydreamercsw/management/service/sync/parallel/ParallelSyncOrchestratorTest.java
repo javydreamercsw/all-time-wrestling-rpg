@@ -26,7 +26,7 @@ class ParallelSyncOrchestratorTest {
   @Mock private WrestlerSyncService wrestlerSyncService;
   @Mock private FactionSyncService factionSyncService;
   @Mock private TeamSyncService teamSyncService;
-  @Mock private MatchSyncService matchSyncService;
+  @Mock private SegmentSyncService segmentSyncService;
   @Mock private SeasonSyncService seasonSyncService;
   @Mock private ShowTypeSyncService showTypeSyncService;
   @Mock private ShowTemplateSyncService showTemplateSyncService;
@@ -66,7 +66,7 @@ class ParallelSyncOrchestratorTest {
     verify(wrestlerSyncService).syncWrestlers(anyString());
     verify(factionSyncService).syncFactions(anyString());
     verify(teamSyncService).syncTeams(anyString());
-    verify(matchSyncService).syncMatches(anyString());
+    verify(segmentSyncService).syncSegments(anyString());
     verify(seasonSyncService).syncSeasons(anyString());
     verify(showTypeSyncService).syncShowTypes(anyString());
     verify(showTemplateSyncService).syncShowTemplates(anyString());
@@ -81,7 +81,7 @@ class ParallelSyncOrchestratorTest {
     when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
     when(entityConfig.isEntityEnabled("factions")).thenReturn(false);
     when(entityConfig.isEntityEnabled("teams")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("matches")).thenReturn(false);
+    when(entityConfig.isEntityEnabled("segments")).thenReturn(false);
     when(entityConfig.isEntityEnabled("seasons")).thenReturn(false);
     when(entityConfig.isEntityEnabled("showtypes")).thenReturn(false);
     when(entityConfig.isEntityEnabled("showtemplates")).thenReturn(false);
@@ -124,7 +124,8 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("Factions", 3, 0));
     when(teamSyncService.syncTeams(anyString()))
         .thenReturn(SyncResult.failure("Teams", "Notion API error"));
-    when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 8, 0));
+    when(segmentSyncService.syncSegments(anyString()))
+        .thenReturn(SyncResult.success("Matches", 8, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 2, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
@@ -171,7 +172,8 @@ class ParallelSyncOrchestratorTest {
     when(factionSyncService.syncFactions(anyString()))
         .thenReturn(SyncResult.success("Factions", 1, 0));
     when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 1, 0));
-    when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 1, 0));
+    when(segmentSyncService.syncSegments(anyString()))
+        .thenReturn(SyncResult.success("Segments", 1, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 1, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
@@ -187,13 +189,15 @@ class ParallelSyncOrchestratorTest {
 
     // Then
     // The orchestrator should handle exceptions gracefully and continue with other entities
-    assertTrue(result.isSuccess()); // Overall operation succeeds
-    assertTrue(result.getEntityResults().size() > 0);
+    assertTrue(result.isSuccess()); // Overall operation fails
+    assertEquals(10, result.getEntityResults().size());
 
     // At least one entity should have failed
     long failedCount =
-        result.getEntityResults().stream().filter(r -> !r.getSyncResult().isSuccess()).count();
-    assertTrue(failedCount >= 1);
+        result.getEntityResults().stream()
+            .filter(r -> r.getSyncResult() != null && !r.getSyncResult().isSuccess())
+            .count();
+    assertEquals(1, failedCount);
   }
 
   private void setupAllEntitiesEnabled() {
@@ -211,7 +215,8 @@ class ParallelSyncOrchestratorTest {
     when(factionSyncService.syncFactions(anyString()))
         .thenReturn(SyncResult.success("Factions", 3, 0));
     when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 7, 0));
-    when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 8, 0));
+    when(segmentSyncService.syncSegments(anyString()))
+        .thenReturn(SyncResult.success("Segments", 8, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 2, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))

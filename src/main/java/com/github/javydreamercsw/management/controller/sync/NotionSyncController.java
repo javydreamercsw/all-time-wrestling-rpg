@@ -155,7 +155,7 @@ public class NotionSyncController {
       })
   @PostMapping("/trigger/{entity}")
   public ResponseEntity<Map<String, Object>> triggerEntitySync(
-      @Parameter(description = "Entity name to sync (shows, wrestlers, teams, matches, templates)")
+      @Parameter(description = "Entity name to sync (shows, wrestlers, teams, segments, templates)")
           @PathVariable
           String entity) {
 
@@ -275,8 +275,8 @@ public class NotionSyncController {
                 "Wrestling factions and groups",
                 "teams",
                 "Wrestling teams and stables",
-                "matches",
-                "Match records and results"));
+                "segments",
+                "Segment records and results"));
 
     return ResponseEntity.ok(response);
   }

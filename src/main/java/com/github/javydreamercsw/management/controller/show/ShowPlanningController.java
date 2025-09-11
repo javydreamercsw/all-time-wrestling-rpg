@@ -3,8 +3,8 @@ package com.github.javydreamercsw.management.controller.show;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
-import com.github.javydreamercsw.management.service.show.planning.ShowPlanningContext;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +24,7 @@ public class ShowPlanningController {
   private final ShowService showService;
 
   @GetMapping("/context/{showId}")
-  public ResponseEntity<ShowPlanningContext> getShowPlanningContext(@PathVariable Long showId) {
+  public ResponseEntity<ShowPlanningContextDTO> getShowPlanningContext(@PathVariable Long showId) {
     return showService
         .getShowById(showId)
         .map(show -> ResponseEntity.ok(showPlanningService.getShowPlanningContext(show)))
@@ -32,7 +32,7 @@ public class ShowPlanningController {
   }
 
   @PostMapping("/plan")
-  public ResponseEntity<ProposedShow> planShow(@RequestBody ShowPlanningContext context) {
+  public ResponseEntity<ProposedShow> planShow(@RequestBody ShowPlanningContextDTO context) {
     return ResponseEntity.ok(showPlanningAiService.planShow(context));
   }
 }

@@ -188,8 +188,8 @@ class RivalryControllerIntegrationTest {
     Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50000L);
     Wrestler wrestler3 = createTestWrestler("Wrestler 3", 50000L);
 
-    createTestRivalry(wrestler1, wrestler2, 12); // Requires match (10+ heat)
-    createTestRivalry(wrestler1, wrestler3, 5); // Doesn't require match
+    createTestRivalry(wrestler1, wrestler2, 12); // Requires segment (10+ heat)
+    createTestRivalry(wrestler1, wrestler3, 5); // Doesn't require segment
 
     mockMvc
         .perform(get("/api/rivalries/requiring-matches"))

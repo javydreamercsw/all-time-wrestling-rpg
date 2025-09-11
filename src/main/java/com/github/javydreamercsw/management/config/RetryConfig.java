@@ -61,7 +61,7 @@ public class RetryConfig {
     private EntityConfig wrestlers = new EntityConfig();
     private EntityConfig factions = new EntityConfig();
     private EntityConfig teams = new EntityConfig();
-    private EntityConfig matches = new EntityConfig();
+    private EntityConfig segments = new EntityConfig();
     private EntityConfig templates = new EntityConfig();
   }
 
@@ -123,8 +123,8 @@ public class RetryConfig {
         return entities.getFactions();
       case "teams":
         return entities.getTeams();
-      case "matches":
-        return entities.getMatches();
+      case "segments":
+        return entities.getSegments();
       case "templates":
         return entities.getTemplates();
       default:

@@ -12,11 +12,11 @@ import org.junit.jupiter.api.Test;
 @DisplayName("MatchDTO Tests")
 class MatchDTOTest {
 
-  private MatchDTO matchDTO;
+  private SegmentDTO segmentDTO;
 
   @BeforeEach
   void setUp() {
-    matchDTO = new MatchDTO();
+    segmentDTO = new SegmentDTO();
   }
 
   @Test
@@ -25,28 +25,28 @@ class MatchDTOTest {
     // Given
     Instant now = Instant.now();
     List<String> participantNames = Arrays.asList("Wrestler 1", "Wrestler 2");
-    List<String> winnerNames = Arrays.asList("Wrestler 1");
+    List<String> winnerNames = List.of("Wrestler 1");
 
     // When
-    matchDTO.setExternalId("notion-123");
-    matchDTO.setName("Test Match");
-    matchDTO.setParticipantNames(participantNames);
-    matchDTO.setWinnerNames(winnerNames);
-    matchDTO.setMatchTypeName("Singles");
-    matchDTO.setShowName("Test Show");
-    matchDTO.setMatchDate(now);
-    matchDTO.setCreatedTime(now);
-    matchDTO.setLastEditedTime(now);
+    segmentDTO.setExternalId("notion-123");
+    segmentDTO.setName("Test Match");
+    segmentDTO.setParticipantNames(participantNames);
+    segmentDTO.setWinnerNames(winnerNames);
+    segmentDTO.setSegmentTypeName("Singles");
+    segmentDTO.setShowName("Test Show");
+    segmentDTO.setSegmentDate(now);
+    segmentDTO.setCreatedTime(now);
+    segmentDTO.setLastEditedTime(now);
 
     // Then
-    assertThat(matchDTO.getExternalId()).isEqualTo("notion-123");
-    assertThat(matchDTO.getName()).isEqualTo("Test Match");
-    assertThat(matchDTO.getParticipantNames()).isEqualTo(participantNames);
-    assertThat(matchDTO.getWinnerNames()).isEqualTo(winnerNames);
-    assertThat(matchDTO.getMatchTypeName()).isEqualTo("Singles");
-    assertThat(matchDTO.getShowName()).isEqualTo("Test Show");
-    assertThat(matchDTO.getMatchDate()).isEqualTo(now);
-    assertThat(matchDTO.getCreatedTime()).isEqualTo(now);
-    assertThat(matchDTO.getLastEditedTime()).isEqualTo(now);
+    assertThat(segmentDTO.getExternalId()).isEqualTo("notion-123");
+    assertThat(segmentDTO.getName()).isEqualTo("Test Match");
+    assertThat(segmentDTO.getParticipantNames()).isEqualTo(participantNames);
+    assertThat(segmentDTO.getWinnerNames()).isEqualTo(winnerNames);
+    assertThat(segmentDTO.getSegmentTypeName()).isEqualTo("Singles");
+    assertThat(segmentDTO.getShowName()).isEqualTo("Test Show");
+    assertThat(segmentDTO.getSegmentDate()).isEqualTo(now);
+    assertThat(segmentDTO.getCreatedTime()).isEqualTo(now);
+    assertThat(segmentDTO.getLastEditedTime()).isEqualTo(now);
   }
 }

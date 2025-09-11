@@ -48,18 +48,18 @@ public class OpenApiConfig {
             """
             ## All Time Wrestling RPG Management System API
 
-            A comprehensive REST API for managing wrestling promotions, wrestlers, matches, and storylines
+            A comprehensive REST API for managing wrestling promotions, wrestlers, segments, and storylines
             in the All Time Wrestling RPG system. This API provides endpoints for:
 
             ### Core Features
             - **Wrestler Management**: Create, update, and manage wrestler profiles, stats, and careers
             - **Show Management**: Schedule and manage wrestling shows, events, and pay-per-views
-            - **Match System**: Book matches, track results, and generate AI-powered match narrations
+            - **Segment System**: Book segments, track results, and generate AI-powered segment narrations
             - **Season Management**: Organize shows and storylines into seasons
             - **Title Management**: Track championship titles, reigns, and lineages
 
             ### Advanced Features
-            - **AI Match Narration**: Generate detailed match stories using multiple AI providers
+            - **AI Segment Narration**: Generate detailed segment stories using multiple AI providers
             - **Injury System**: Track wrestler injuries, recovery times, and health status
             - **Drama Events**: Manage storylines, feuds, and dramatic moments
             - **Rivalry System**: Track wrestler relationships and heat levels
@@ -112,8 +112,8 @@ public class OpenApiConfig {
             .name("Show Management")
             .description("Operations for scheduling and managing wrestling shows and events"),
         new Tag()
-            .name("Match System")
-            .description("Match booking, results tracking, and AI-powered narration generation"),
+            .name("Segment System")
+            .description("Segment booking, results tracking, and AI-powered narration generation"),
         new Tag()
             .name("Season Management")
             .description("Season creation, management, and organization of shows"),
@@ -138,7 +138,7 @@ public class OpenApiConfig {
             .description("Notion database synchronization and integration"),
         new Tag()
             .name("AI Services")
-            .description("AI-powered features including match narration and story generation"),
+            .description("AI-powered features including segment narration and story generation"),
         new Tag().name("Statistics").description("Performance metrics, analytics, and reporting"),
         new Tag()
             .name("System")

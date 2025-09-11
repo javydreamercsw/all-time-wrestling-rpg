@@ -137,12 +137,12 @@ public class ApiDocumentationController {
         List.of(
             "Wrestler Management",
             "Show Scheduling",
-            "Match Booking",
+            "Segment Booking",
             "Season Organization",
             "Title Tracking"),
         "advancedFeatures",
         List.of(
-            "AI Match Narration",
+            "AI Segment Narration",
             "Injury System",
             "Drama Events",
             "Rivalry Tracking",
@@ -181,10 +181,10 @@ public class ApiDocumentationController {
             List.of("GET", "POST", "PUT", "DELETE"),
             "features",
             List.of("Scheduling", "Calendar view", "Template-based creation")),
-        "matchSystem",
+        "segmentSystem",
         Map.of(
             "baseUrl",
-            "/api/matches",
+            "/api/segments",
             "operations",
             List.of("GET", "POST", "PUT"),
             "features",
@@ -192,7 +192,7 @@ public class ApiDocumentationController {
         "aiServices",
         Map.of(
             "baseUrl",
-            "/api/match-narration",
+            "/api/segment-narration",
             "operations",
             List.of("POST"),
             "features",

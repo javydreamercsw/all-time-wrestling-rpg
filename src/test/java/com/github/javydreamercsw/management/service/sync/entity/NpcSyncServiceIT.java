@@ -32,6 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
+@EnabledIf("isNotionTokenAvailable")
 class NpcSyncServiceIT extends BaseTest {
 
   @Mock private NpcService npcService;

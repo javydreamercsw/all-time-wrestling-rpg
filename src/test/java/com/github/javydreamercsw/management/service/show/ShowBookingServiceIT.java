@@ -6,16 +6,16 @@ import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.Match;
-import com.github.javydreamercsw.management.domain.show.match.MatchRepository;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.match.type.MatchTypeService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
@@ -38,16 +38,16 @@ class ShowBookingServiceIT {
   @Autowired SeasonService seasonService;
   @Autowired SeasonRepository seasonRepository;
   @Autowired ShowTypeRepository showTypeRepository;
-  @Autowired MatchTypeRepository matchTypeRepository;
-  @Autowired MatchTypeService matchTypeService;
-  @Autowired MatchRepository matchRepository;
+  @Autowired SegmentTypeRepository matchTypeRepository;
+  @Autowired SegmentTypeService matchTypeService;
+  @Autowired SegmentRepository matchRepository;
   @Autowired WrestlerRepository wrestlerRepository;
   @Autowired DeckRepository deckRepository; // Autowire DeckRepository
 
   private Season testSeason;
   private ShowType weeklyShowType;
   private ShowType ppvShowType;
-  private MatchType singlesMatchType;
+  private SegmentType singlesMatchType;
 
   @BeforeEach
   void setUp() {
@@ -71,7 +71,7 @@ class ShowBookingServiceIT {
     ppvShowType.setDescription("Pay-Per-View special event");
     ppvShowType = showTypeRepository.save(ppvShowType);
 
-    // Get the singles match type for tests
+    // Get the singles segment type for tests
     singlesMatchType = matchTypeRepository.findByName("One on One").orElseThrow();
 
     // Create test wrestlers
@@ -82,16 +82,16 @@ class ShowBookingServiceIT {
   }
 
   @Test
-  @DisplayName("Should book regular show with specified match count")
-  void shouldBookRegularShowWithSpecifiedMatchCount() {
+  @DisplayName("Should book regular show with specified segment count")
+  void shouldBookRegularShowWithSpecifiedSegmentCount() {
     // Given
     String showName = "Monday Night Wrestling";
     String showDescription = "Weekly wrestling showcase";
-    int matchCount = 5;
+    int segmentCount = 5;
 
     // When
     Optional<Show> result =
-        showBookingService.bookShow(showName, showDescription, "Weekly Show", matchCount);
+        showBookingService.bookShow(showName, showDescription, "Weekly Show", segmentCount);
 
     // Then
     assertThat(result).isPresent();
@@ -100,17 +100,17 @@ class ShowBookingServiceIT {
     assertThat(show.getDescription()).isEqualTo(showDescription);
     assertThat(show.getType()).isEqualTo(weeklyShowType);
 
-    // Check matches and promos were created (may be fewer than requested due to wrestler
+    // Check segments and promos were created (may be fewer than requested due to wrestler
     // availability)
-    List<Match> allSegments = showBookingService.getMatchesForShow(show.getId());
+    List<Segment> allSegments = showBookingService.getSegmentsForShow(show.getId());
     assertThat(allSegments)
         .hasSizeGreaterThanOrEqualTo(3); // At least 3 segments (matches + promos)
 
     // Verify all segments have valid participants
-    for (Match segment : allSegments) {
+    for (Segment segment : allSegments) {
       System.out.println(segment);
       assertThat(segment.getWrestlers()).isNotEmpty();
-      if (!segment.getMatchType().getName().equals("Promo")) {
+      if (!segment.getSegmentType().getName().equals("Promo")) {
         assertThat(segment.getWinner()).isNotNull();
       }
       assertThat(segment.getShow()).isEqualTo(show);
@@ -118,8 +118,8 @@ class ShowBookingServiceIT {
   }
 
   @Test
-  @DisplayName("Should book PPV with enhanced match quality")
-  void shouldBookPPVWithEnhancedMatchQuality() {
+  @DisplayName("Should book PPV with enhanced segment quality")
+  void shouldBookPPVWithEnhancedSegmentQuality() {
     // Given
     String ppvName = "Ultimate Showdown 2024";
     String ppvDescription = "The biggest wrestling event of the year";
@@ -134,17 +134,12 @@ class ShowBookingServiceIT {
     assertThat(ppv.getDescription()).isEqualTo(ppvDescription);
     assertThat(ppv.getType().getName()).isEqualTo("PPV");
 
-    // Check matches and promos were created (PPVs should have multiple segments, may be fewer due
+    // Check segments and promos were created (PPVs should have multiple segments, may be fewer due
     // to wrestler
     // availability)
-    List<Match> allSegments = showBookingService.getMatchesForShow(ppv.getId());
+    List<Segment> allSegments = showBookingService.getSegmentsForShow(ppv.getId());
     assertThat(allSegments)
         .hasSizeGreaterThanOrEqualTo(4); // At least 4 segments for PPV (matches + promos)
-
-    // PPV segments should generally have higher quality
-    double averageRating =
-        allSegments.stream().mapToInt(Match::getMatchRating).average().orElse(0.0);
-    assertThat(averageRating).isGreaterThan(2.0); // PPVs should have decent quality
   }
 
   @Test
@@ -160,12 +155,11 @@ class ShowBookingServiceIT {
     ShowBookingService.ShowStatistics stats = showBookingService.getShowStatistics(show.getId());
 
     // Then
-    assertThat(stats.totalMatches()).isGreaterThanOrEqualTo(3); // At least 3 matches
+    assertThat(stats.totalSegments()).isGreaterThanOrEqualTo(3); // At least 3 segments
     assertThat(stats.totalPromos()).isGreaterThanOrEqualTo(1); // At least 1 promo
     assertThat(stats.totalWrestlers()).isGreaterThan(0);
-    assertThat(stats.averageRating()).isBetween(1.0, 5.0);
-    assertThat(stats.rivalryMatches()).isGreaterThanOrEqualTo(0);
-    assertThat(stats.multiPersonMatches()).isGreaterThanOrEqualTo(0);
+    assertThat(stats.rivalrySegments()).isGreaterThanOrEqualTo(0);
+    assertThat(stats.multiPersonSegments()).isGreaterThanOrEqualTo(0);
   }
 
   @Test
@@ -184,30 +178,30 @@ class ShowBookingServiceIT {
     Optional<Show> result =
         showBookingService.bookShow("Test Show", "Test Description", "Weekly Show", 5);
 
-    // Then - Should still create show but with fewer matches
+    // Then - Should still create show but with fewer segments
     assertThat(result).isPresent();
     Show show = result.get();
 
-    List<Match> allSegments = showBookingService.getMatchesForShow(show.getId());
+    List<Segment> allSegments = showBookingService.getSegmentsForShow(show.getId());
     // Should create at least some segments even with limited wrestlers
     assertThat(allSegments).hasSizeGreaterThanOrEqualTo(1);
   }
 
   @Test
-  @DisplayName("Should reject invalid match count")
-  void shouldRejectInvalidMatchCount() {
+  @DisplayName("Should reject invalid segment count")
+  void shouldRejectInvalidSegmentCount() {
     // Given
     String showName = "Invalid Show";
-    String showDescription = "Show with invalid match count";
+    String showDescription = "Show with invalid segment count";
 
-    // When - Try to book show with too few matches
+    // When - Try to book show with too few segments
     Optional<Show> result1 =
         showBookingService.bookShow(showName, showDescription, "Weekly Show", 2);
 
     // Then
     assertThat(result1).isEmpty();
 
-    // When - Try to book show with too many matches
+    // When - Try to book show with too many segments
     Optional<Show> result2 =
         showBookingService.bookShow(showName, showDescription, "Weekly Show", 11);
 
@@ -252,28 +246,28 @@ class ShowBookingServiceIT {
   }
 
   @Test
-  @DisplayName("Should create matches with proper match results")
-  void shouldCreateMatchesWithProperMatches() {
+  @DisplayName("Should create segments with proper results")
+  void shouldCreateSegmentsWithProperResults() {
     // Given
     Optional<Show> showOpt =
-        showBookingService.bookShow("Match Test Show", "Testing match creation", "Weekly Show", 3);
+        showBookingService.bookShow(
+            "Segment Test Show", "Testing segment creation", "Weekly Show", 3);
     assertThat(showOpt).isPresent();
     Show show = showOpt.get();
 
     // When
-    List<Match> allSegments = showBookingService.getMatchesForShow(show.getId());
+    List<Segment> allSegments = showBookingService.getSegmentsForShow(show.getId());
 
     // Then
     assertThat(allSegments)
         .hasSizeGreaterThanOrEqualTo(3); // At least 3 segments (matches + promos)
 
-    for (Match segment : allSegments) {
+    for (Segment segment : allSegments) {
       // Each segment should have basic required fields
-      if (!segment.getMatchType().getName().equals("Promo")) { // Only matches have winners
+      if (!segment.getSegmentType().getName().equals("Promo")) { // Only matches have winners
         assertThat(segment.getWinner()).isNotNull();
       }
-      assertThat(segment.getMatchDate()).isNotNull();
-      assertThat(segment.getMatchRating()).isBetween(1, 5);
+      assertThat(segment.getSegmentDate()).isNotNull();
       assertThat(segment.getShow()).isEqualTo(show);
       assertThat(segment.getWrestlers()).isNotEmpty();
       assertThat(segment.getIsNpcGenerated()).isTrue();

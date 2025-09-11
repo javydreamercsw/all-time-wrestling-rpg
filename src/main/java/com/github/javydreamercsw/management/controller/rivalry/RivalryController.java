@@ -165,10 +165,10 @@ public class RivalryController {
   }
 
   @Operation(
-      summary = "Get rivalries requiring matches",
-      description = "Gets rivalries that require matches (10+ heat)")
+      summary = "Get rivalries requiring segments",
+      description = "Gets rivalries that require segments (10+ heat)")
   @GetMapping("/requiring-matches")
-  public ResponseEntity<List<Rivalry>> getRivalriesRequiringMatches() {
+  public ResponseEntity<List<Rivalry>> getRivalriesRequiringSegments() {
     List<Rivalry> rivalries = rivalryService.getRivalriesRequiringMatches();
     return ResponseEntity.ok(rivalries);
   }
@@ -183,10 +183,10 @@ public class RivalryController {
   }
 
   @Operation(
-      summary = "Get rivalries requiring rule matches",
-      description = "Gets rivalries requiring rule matches (30+ heat)")
+      summary = "Get rivalries requiring rule segments",
+      description = "Gets rivalries requiring rule segments (30+ heat)")
   @GetMapping("/requiring-rule")
-  public ResponseEntity<List<Rivalry>> getRivalriesRequiringStipulationMatches() {
+  public ResponseEntity<List<Rivalry>> getRivalriesRequiringStipulationSegments() {
     List<Rivalry> rivalries = rivalryService.getRivalriesRequiringStipulationMatches();
     return ResponseEntity.ok(rivalries);
   }

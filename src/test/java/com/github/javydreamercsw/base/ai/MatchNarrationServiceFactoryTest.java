@@ -20,12 +20,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @DisplayName("Match Narration Service Factory Tests")
 class MatchNarrationServiceFactoryTest {
 
-  @Mock private MatchNarrationService geminiService;
-  @Mock private MatchNarrationService claudeService;
-  @Mock private MatchNarrationService openaiService;
-  @Mock private MatchNarrationService mockService;
+  @Mock private SegmentNarrationService geminiService;
+  @Mock private SegmentNarrationService claudeService;
+  @Mock private SegmentNarrationService openaiService;
+  @Mock private SegmentNarrationService mockService;
 
-  private MatchNarrationServiceFactory factory;
+  private SegmentNarrationServiceFactory factory;
 
   @BeforeEach
   void setUp() {
@@ -35,10 +35,10 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(openaiService.getProviderName()).thenReturn("OpenAI GPT-3.5");
     lenient().when(mockService.getProviderName()).thenReturn("Mock AI");
 
-    List<MatchNarrationService> services =
+    List<SegmentNarrationService> services =
         Arrays.asList(geminiService, claudeService, openaiService, mockService);
 
-    factory = new MatchNarrationServiceFactory(services);
+    factory = new SegmentNarrationServiceFactory(services);
   }
 
   @Test
@@ -51,7 +51,7 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(mockService.isAvailable()).thenReturn(true);
 
     // When
-    MatchNarrationService selected = factory.getBestAvailableService();
+    SegmentNarrationService selected = factory.getBestAvailableService();
 
     // Then
     assertThat(selected).isEqualTo(geminiService);
@@ -67,7 +67,7 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(mockService.isAvailable()).thenReturn(true);
 
     // When
-    MatchNarrationService selected = factory.getBestAvailableService();
+    SegmentNarrationService selected = factory.getBestAvailableService();
 
     // Then
     assertThat(selected).isEqualTo(claudeService);
@@ -83,7 +83,7 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(mockService.isAvailable()).thenReturn(true);
 
     // When
-    MatchNarrationService selected = factory.getBestAvailableService();
+    SegmentNarrationService selected = factory.getBestAvailableService();
 
     // Then
     assertThat(selected).isEqualTo(openaiService);
@@ -99,7 +99,7 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(mockService.isAvailable()).thenReturn(true);
 
     // When
-    MatchNarrationService selected = factory.getBestAvailableService();
+    SegmentNarrationService selected = factory.getBestAvailableService();
 
     // Then
     assertThat(selected).isEqualTo(mockService);
@@ -115,7 +115,7 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(mockService.isAvailable()).thenReturn(false);
 
     // When
-    MatchNarrationService selected = factory.getBestAvailableService();
+    SegmentNarrationService selected = factory.getBestAvailableService();
 
     // Then
     assertThat(selected).isNull();
@@ -128,7 +128,7 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(mockService.isAvailable()).thenReturn(true);
 
     // When
-    MatchNarrationService found = factory.getServiceByProvider("Mock");
+    SegmentNarrationService found = factory.getServiceByProvider("Mock");
 
     // Then
     assertThat(found).isEqualTo(mockService);
@@ -141,7 +141,7 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(claudeService.isAvailable()).thenReturn(false);
 
     // When
-    MatchNarrationService found = factory.getServiceByProvider("Claude");
+    SegmentNarrationService found = factory.getServiceByProvider("Claude");
 
     // Then
     assertThat(found).isNull();
@@ -154,7 +154,7 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(mockService.isAvailable()).thenReturn(true);
 
     // When
-    MatchNarrationService testingService = factory.getTestingService();
+    SegmentNarrationService testingService = factory.getTestingService();
 
     // Then
     assertThat(testingService).isEqualTo(mockService);
@@ -168,7 +168,7 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(geminiService.isAvailable()).thenReturn(true);
 
     // When
-    MatchNarrationService testingService = factory.getTestingService();
+    SegmentNarrationService testingService = factory.getTestingService();
 
     // Then
     assertThat(testingService).isEqualTo(geminiService);
@@ -184,13 +184,13 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(mockService.isAvailable()).thenReturn(true);
 
     // When
-    List<MatchNarrationServiceFactory.ServiceInfo> services = factory.getAvailableServices();
+    List<SegmentNarrationServiceFactory.ServiceInfo> services = factory.getAvailableServices();
 
     // Then
     assertThat(services).hasSize(4);
 
     // Check that service info contains expected data
-    MatchNarrationServiceFactory.ServiceInfo geminiInfo =
+    SegmentNarrationServiceFactory.ServiceInfo geminiInfo =
         services.stream()
             .filter(info -> info.providerName().equals("Google Gemini"))
             .findFirst()
@@ -204,28 +204,28 @@ class MatchNarrationServiceFactoryTest {
   }
 
   @Test
-  @DisplayName("Should calculate estimated match costs correctly")
-  void shouldCalculateEstimatedMatchCostsCorrectly() {
+  @DisplayName("Should calculate estimated segment costs correctly")
+  void shouldCalculateEstimatedSegmentCostsCorrectly() {
     // Test cost calculations for different providers
 
     // Gemini (free)
-    double geminiCost = factory.getEstimatedMatchCost("Google Gemini");
+    double geminiCost = factory.getEstimatedSegmentCost("Google Gemini");
     assertThat(geminiCost).isEqualTo(0.0);
 
     // Claude
-    double claudeCost = factory.getEstimatedMatchCost("Anthropic Claude");
+    double claudeCost = factory.getEstimatedSegmentCost("Anthropic Claude");
     assertThat(claudeCost).isGreaterThan(0.0).isLessThan(10.0);
 
     // OpenAI GPT-3.5
-    double openaiCost = factory.getEstimatedMatchCost("OpenAI GPT-3.5");
+    double openaiCost = factory.getEstimatedSegmentCost("OpenAI GPT-3.5");
     assertThat(openaiCost).isGreaterThan(claudeCost).isLessThan(20.0);
 
     // OpenAI GPT-4
-    double gpt4Cost = factory.getEstimatedMatchCost("OpenAI GPT-4");
+    double gpt4Cost = factory.getEstimatedSegmentCost("OpenAI GPT-4");
     assertThat(gpt4Cost).isGreaterThan(openaiCost);
 
     // Mock (free)
-    double mockCost = factory.getEstimatedMatchCost("Mock AI");
+    double mockCost = factory.getEstimatedSegmentCost("Mock AI");
     assertThat(mockCost).isEqualTo(0.0);
   }
 
@@ -236,9 +236,9 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(mockService.isAvailable()).thenReturn(true);
 
     // When
-    MatchNarrationService found1 = factory.getServiceByProvider("mock");
-    MatchNarrationService found2 = factory.getServiceByProvider("MOCK");
-    MatchNarrationService found3 = factory.getServiceByProvider("Mock");
+    SegmentNarrationService found1 = factory.getServiceByProvider("mock");
+    SegmentNarrationService found2 = factory.getServiceByProvider("MOCK");
+    SegmentNarrationService found3 = factory.getServiceByProvider("Mock");
 
     // Then
     assertThat(found1).isEqualTo(mockService);
@@ -253,7 +253,7 @@ class MatchNarrationServiceFactoryTest {
     lenient().when(openaiService.isAvailable()).thenReturn(true);
 
     // When
-    MatchNarrationService found = factory.getServiceByProvider("OpenAI");
+    SegmentNarrationService found = factory.getServiceByProvider("OpenAI");
 
     // Then
     assertThat(found).isEqualTo(openaiService);

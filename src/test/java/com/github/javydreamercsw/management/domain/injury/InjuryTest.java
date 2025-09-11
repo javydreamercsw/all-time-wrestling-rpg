@@ -213,7 +213,7 @@ class InjuryTest {
   @Test
   @DisplayName("Should handle injury notes")
   void shouldHandleInjuryNotes() {
-    String notes = "Injury occurred during steel cage match. Requires surgery.";
+    String notes = "Injury occurred during steel cage segment. Requires surgery.";
     injury.setInjuryNotes(notes);
 
     assertThat(injury.getInjuryNotes()).isEqualTo(notes);

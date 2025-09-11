@@ -104,7 +104,7 @@ public class NotionSyncScheduler {
       case "wrestlers" -> notionSyncService.syncWrestlers(operationId);
       case "factions" -> notionSyncService.syncFactions(operationId);
       case "teams" -> notionSyncService.syncTeams(operationId);
-      case "matches" -> notionSyncService.syncMatches(operationId);
+      case "segments" -> notionSyncService.syncSegments(operationId);
       case "templates" -> notionSyncService.syncShowTemplates(operationId);
       case "seasons" -> notionSyncService.syncSeasons(operationId);
       case "show-types" -> notionSyncService.syncShowTypes(operationId);
@@ -134,7 +134,7 @@ public class NotionSyncScheduler {
       case "wrestlers" -> notionSyncService.syncWrestlers(operationId);
       case "factions" -> notionSyncService.syncFactions(operationId);
       case "teams" -> notionSyncService.syncTeams(operationId);
-      case "matches" -> notionSyncService.syncMatches(operationId);
+      case "segments" -> notionSyncService.syncSegments(operationId);
       case "templates" -> notionSyncService.syncShowTemplates(operationId);
       case "seasons" -> notionSyncService.syncSeasons(operationId);
       case "show-types", "showtypes" -> notionSyncService.syncShowTypes(operationId);
