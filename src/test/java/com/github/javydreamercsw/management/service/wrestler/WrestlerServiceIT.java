@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.TestcontainersConfiguration;
 import com.github.javydreamercsw.management.config.TestConfig;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
@@ -134,8 +133,8 @@ class WrestlerServiceIT {
     wrestlerService.awardFans(mainEventer.getId(), 120000L); // Main Eventer tier
 
     // When
-    List<Wrestler> extremeEligible = wrestlerService.getEligibleWrestlers(TitleTier.EXTREME);
-    List<Wrestler> worldEligible = wrestlerService.getEligibleWrestlers(TitleTier.WORLD);
+    List<Wrestler> extremeEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE);
+    List<Wrestler> worldEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER);
 
     // Then
     assertThat(extremeEligible).hasSize(3); // Riser, Contender, Main Eventer
@@ -222,8 +221,8 @@ class WrestlerServiceIT {
     // Calculate expected health manually to avoid lazy loading issues
     int expectedHealth = finalWrestler.getStartingHealth() - finalWrestler.getBumps();
     assertThat(expectedHealth).isEqualTo(13); // 15 - 2 bumps
-    assertThat(finalWrestler.isEligibleForTitle(TitleTier.TAG_TEAM)).isTrue();
-    assertThat(finalWrestler.isEligibleForTitle(TitleTier.INTERTEMPORAL)).isFalse();
+    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.RISER)).isTrue();
+    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.MIDCARDER)).isFalse();
     assertThat(finalWrestler.getDescription()).isEqualTo("Test wrestler for complex operations");
   }
 }

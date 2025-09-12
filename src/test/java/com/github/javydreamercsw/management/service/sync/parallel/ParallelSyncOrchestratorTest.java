@@ -33,6 +33,8 @@ class ParallelSyncOrchestratorTest {
   @Mock private InjurySyncService injurySyncService;
   @Mock private EntitySyncConfiguration entityConfig;
   @Mock private NpcSyncService npcSyncService;
+  @Mock private TitleSyncService titleSyncService;
+  @Mock private TitleReignSyncService titleReignSyncService;
 
   @InjectMocks private ParallelSyncOrchestrator orchestrator;
 
@@ -57,8 +59,8 @@ class ParallelSyncOrchestratorTest {
 
     // Then
     assertTrue(result.isSuccess());
-    assertEquals(10, result.getEntityResults().size());
-    assertEquals(10, result.getSuccessfulSyncs());
+    assertEquals(12, result.getEntityResults().size());
+    assertEquals(12, result.getSuccessfulSyncs());
     assertEquals(0, result.getFailedSyncs());
 
     // Verify all services were called
@@ -72,20 +74,17 @@ class ParallelSyncOrchestratorTest {
     verify(showTemplateSyncService).syncShowTemplates(anyString());
     verify(injurySyncService).syncInjuryTypes(anyString());
     verify(npcSyncService).syncNpcs(anyString());
+    verify(titleSyncService).syncTitles(anyString());
+    verify(titleReignSyncService).syncTitleReigns(anyString());
   }
 
   @Test
   void executeParallelSync_WhenSomeEntitiesDisabled_ShouldOnlyExecuteEnabled() {
     // Given
-    when(entityConfig.isEntityEnabled("shows")).thenReturn(true);
-    when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
-    when(entityConfig.isEntityEnabled("factions")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("teams")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("segments")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("seasons")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("showtypes")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("showtemplates")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("injuries")).thenReturn(true);
+    lenient().when(entityConfig.isEntityEnabled(anyString())).thenReturn(false);
+    lenient().when(entityConfig.isEntityEnabled("shows")).thenReturn(true);
+    lenient().when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
+    lenient().when(entityConfig.isEntityEnabled("injuries")).thenReturn(true);
 
     when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0));
     when(wrestlerSyncService.syncWrestlers(anyString()))
@@ -109,6 +108,8 @@ class ParallelSyncOrchestratorTest {
     // Verify disabled services were not called
     verify(factionSyncService, never()).syncFactions(anyString());
     verify(teamSyncService, never()).syncTeams(anyString());
+    verify(titleSyncService, never()).syncTitles(anyString());
+    verify(titleReignSyncService, never()).syncTitleReigns(anyString());
   }
 
   @Test
@@ -135,14 +136,17 @@ class ParallelSyncOrchestratorTest {
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0));
     when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0));
+    when(titleSyncService.syncTitles(anyString())).thenReturn(SyncResult.success("Titles", 5, 0));
+    when(titleReignSyncService.syncTitleReigns(anyString()))
+        .thenReturn(SyncResult.success("TitleReigns", 5, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
 
     // Then
     assertTrue(result.isSuccess()); // Overall success despite some failures
-    assertEquals(10, result.getEntityResults().size());
-    assertEquals(8, result.getSuccessfulSyncs());
+    assertEquals(12, result.getEntityResults().size());
+    assertEquals(10, result.getSuccessfulSyncs());
     assertEquals(2, result.getFailedSyncs());
   }
 
@@ -183,6 +187,9 @@ class ParallelSyncOrchestratorTest {
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0));
     when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 1, 0));
+    when(titleSyncService.syncTitles(anyString())).thenReturn(SyncResult.success("Titles", 1, 0));
+    when(titleReignSyncService.syncTitleReigns(anyString()))
+        .thenReturn(SyncResult.success("TitleReigns", 1, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
@@ -190,7 +197,7 @@ class ParallelSyncOrchestratorTest {
     // Then
     // The orchestrator should handle exceptions gracefully and continue with other entities
     assertTrue(result.isSuccess()); // Overall operation fails
-    assertEquals(10, result.getEntityResults().size());
+    assertEquals(12, result.getEntityResults().size());
 
     // At least one entity should have failed
     long failedCount =
@@ -226,5 +233,8 @@ class ParallelSyncOrchestratorTest {
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0));
     when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0));
+    when(titleSyncService.syncTitles(anyString())).thenReturn(SyncResult.success("Titles", 5, 0));
+    when(titleReignSyncService.syncTitleReigns(anyString()))
+        .thenReturn(SyncResult.success("TitleReigns", 5, 0));
   }
 }

@@ -24,5 +24,6 @@ public class WrestlerPage extends NotionPage {
     private Property Matches;
     private Property FanWeight;
     private Property Heat;
+    private Property Sex;
   }
 }

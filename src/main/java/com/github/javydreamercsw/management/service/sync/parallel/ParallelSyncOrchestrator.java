@@ -32,6 +32,8 @@ public class ParallelSyncOrchestrator {
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private InjurySyncService injurySyncService;
   @Autowired private NpcSyncService npcSyncService;
+  @Autowired private TitleSyncService titleSyncService;
+  @Autowired private TitleReignSyncService titleReignSyncService;
   @Autowired private EntitySyncConfiguration entityConfig;
 
   /**
@@ -176,6 +178,25 @@ public class ParallelSyncOrchestrator {
               () -> syncEntity("npcs", () -> npcSyncService.syncNpcs(baseOperationId + "-npcs"))));
     }
 
+    if (entityConfig.isEntityEnabled("titles")) {
+      futures.add(
+          executor.submit(
+              () ->
+                  syncEntity(
+                      "titles", () -> titleSyncService.syncTitles(baseOperationId + "-titles"))));
+    }
+
+    if (entityConfig.isEntityEnabled("titlereigns")) {
+      futures.add(
+          executor.submit(
+              () ->
+                  syncEntity(
+                      "titlereigns",
+                      () ->
+                          titleReignSyncService.syncTitleReigns(
+                              baseOperationId + "-titlereigns"))));
+    }
+
     return futures;
   }
 
@@ -227,16 +248,18 @@ public class ParallelSyncOrchestrator {
   private int countEnabledEntities() {
     int count = 0;
     String[] entities = {
+      "seasons",
+      "showtypes",
+      "showtemplates",
       "shows",
       "wrestlers",
       "factions",
       "teams",
-      "segments",
-      "seasons",
-      "showtypes",
-      "showtemplates",
       "injuries",
-      "npcs"
+      "npcs",
+      "segments",
+      "titles",
+      "titlereigns"
     };
 
     for (String entity : entities) {

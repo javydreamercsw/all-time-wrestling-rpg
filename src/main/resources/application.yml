@@ -52,3 +52,9 @@ notion:
 
         npcs:
           enabled: true
+
+        titles:
+          enabled: true
+
+        titlereigns:
+          enabled: true

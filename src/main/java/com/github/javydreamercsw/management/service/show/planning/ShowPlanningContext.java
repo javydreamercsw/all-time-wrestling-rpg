@@ -11,4 +11,6 @@ public class ShowPlanningContext {
   private List<Rivalry> currentRivalries;
   private List<Segment> lastMonthPromos;
   private ShowTemplate showTemplate;
+  private List<ShowPlanningChampionship> championships;
+  private ShowPlanningPle nextPle;
 }

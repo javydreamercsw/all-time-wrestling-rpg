@@ -153,28 +153,36 @@ public class NotionSyncScheduler {
    *
    * @param results List of sync results to summarize
    */
-  private void logSyncSummary(List<NotionSyncService.SyncResult> results) {
+  private void logSyncSummary(
+      List<com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult>
+          results) {
     int successCount = 0;
     int failureCount = 0;
     int totalSynced = 0;
 
-    for (NotionSyncService.SyncResult result : results) {
+    log.info("=== SYNC SUMMARY ===");
+    for (com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult result :
+        results) {
       if (result.isSuccess()) {
         successCount++;
         totalSynced += result.getSyncedCount();
       } else {
         failureCount++;
+        log.error("❌ {} sync failed: {}", result.getEntityType(), result.getErrorMessage());
+      }
+      if (!result.getMessages().isEmpty()) {
+        log.info("Messages for {}:", result.getEntityType());
+        result.getMessages().forEach(log::warn);
       }
     }
 
-    log.info("=== SYNC SUMMARY ===");
     log.info("Total entities processed: {}", results.size());
     log.info("Successful syncs: {}", successCount);
     log.info("Failed syncs: {}", failureCount);
     log.info("Total items synchronized: {}", totalSynced);
 
     if (failureCount > 0) {
-      log.warn("Some sync operations failed. Check logs above for details.");
+      log.warn("Some sync operations failed. Check logs for details.");
     }
   }
 

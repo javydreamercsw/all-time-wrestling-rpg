@@ -232,7 +232,7 @@ class WrestlerHealthCalculationTest {
     wrestler.updateTier();
 
     // Then - Tier should be based on fans, not health
-    assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.INTERTEMPORAL_TIER);
+    assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.MIDCARDER);
   }
 
   private Injury createInjury(InjurySeverity severity, int healthPenalty) {

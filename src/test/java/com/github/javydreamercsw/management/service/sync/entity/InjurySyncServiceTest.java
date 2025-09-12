@@ -360,4 +360,8 @@ class InjurySyncServiceTest {
     injuryType.setInjuryName("Test Injury");
     return injuryType;
   }
+
+  private static boolean isNotionTokenAvailable() {
+    return EnvironmentVariableUtil.isNotionTokenAvailable();
+  }
 }

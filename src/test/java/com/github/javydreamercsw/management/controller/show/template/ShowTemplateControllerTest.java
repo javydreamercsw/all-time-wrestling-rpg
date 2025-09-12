@@ -22,7 +22,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -36,7 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @DisplayName("ShowTemplate Controller Tests")
 class ShowTemplateControllerTest extends BaseControllerTest {
 
-  @MockBean private CommandLineRunner commandLineRunner;
+  @MockitoBean private CommandLineRunner commandLineRunner;
 
   @Autowired private MockMvc mockMvc;
 

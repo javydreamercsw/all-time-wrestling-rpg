@@ -371,8 +371,7 @@ public class ShowBookingService {
       Wrestler wrestler1 = availableWrestlers.remove(0);
       Wrestler wrestler2 = availableWrestlers.remove(0);
 
-      Optional<Segment> segment =
-          bookSinglesSegment(show, wrestler1, wrestler2, "Standard Match");
+      Optional<Segment> segment = bookSinglesSegment(show, wrestler1, wrestler2, "Standard Match");
       if (segment.isPresent()) {
         segments.add(segment.get());
         log.debug("Booked random segment: {} vs {}", wrestler1.getName(), wrestler2.getName());

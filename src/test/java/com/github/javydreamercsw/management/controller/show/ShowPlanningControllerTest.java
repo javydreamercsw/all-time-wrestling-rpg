@@ -19,7 +19,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -31,7 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @TestPropertySource(properties = "spring.flyway.enabled=false")
 class ShowPlanningControllerTest {
 
-  @MockBean private CommandLineRunner commandLineRunner;
+  @MockitoBean private CommandLineRunner commandLineRunner;
 
   @Autowired private MockMvc mockMvc;
 

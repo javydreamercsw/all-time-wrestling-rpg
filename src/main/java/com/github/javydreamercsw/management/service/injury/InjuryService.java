@@ -279,7 +279,7 @@ public class InjuryService {
         if (roll <= 94) yield InjurySeverity.SEVERE; // 19% chance
         yield InjurySeverity.CRITICAL; // 6% chance
       }
-      case INTERTEMPORAL_TIER -> {
+      case MIDCARDER -> {
         // Elite wrestlers know how to protect themselves
         if (roll <= 55) yield InjurySeverity.MINOR; // 55% chance
         if (roll <= 80) yield InjurySeverity.MODERATE; // 25% chance

@@ -19,6 +19,7 @@ import java.util.Random;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,14 +32,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Transactional(readOnly = true)
 public class PromoBookingService {
-
-  private final SegmentRepository segmentRepository;
-  private final SegmentTypeRepository segmentTypeRepository;
-  private final WrestlerRepository wrestlerRepository;
-  private final RivalryService rivalryService;
-  private final SegmentRuleService segmentRuleService;
-  private final Clock clock;
-  private final Random random = new Random();
+  @Autowired private SegmentRepository segmentRepository;
+  @Autowired private SegmentTypeRepository segmentTypeRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private RivalryService rivalryService;
+  @Autowired private SegmentRuleService segmentRuleService;
+  @Autowired private Clock clock;
+  @Autowired private Random random = new Random();
 
   /**
    * Book promo segments for a show based on storylines and wrestler availability.

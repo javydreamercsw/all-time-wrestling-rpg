@@ -2,8 +2,8 @@ package com.github.javydreamercsw.management.domain.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,7 +21,7 @@ class TitleTest {
   void setUp() {
     title = new Title();
     title.setName("Test Championship");
-    title.setTier(TitleTier.WORLD);
+    title.setTier(WrestlerTier.MAIN_EVENTER);
     title.setDescription("Test title for unit tests");
 
     wrestler1 = createWrestler("Wrestler 1", 120000L);
@@ -141,7 +141,7 @@ class TitleTest {
   @Test
   @DisplayName("Should check wrestler eligibility")
   void shouldCheckWrestlerEligibility() {
-    title.setTier(TitleTier.WORLD); // Requires 100k fans
+    title.setTier(WrestlerTier.MAIN_EVENTER); // Requires 100k fans
 
     Wrestler eligibleWrestler = createWrestler("Eligible", 120000L);
     Wrestler ineligibleWrestler = createWrestler("Ineligible", 50000L);
@@ -153,11 +153,11 @@ class TitleTest {
   @Test
   @DisplayName("Should get challenge costs from tier")
   void shouldGetChallengeCostsFromTier() {
-    title.setTier(TitleTier.EXTREME);
+    title.setTier(WrestlerTier.CONTENDER);
     assertThat(title.getChallengeCost()).isEqualTo(15000L);
     assertThat(title.getContenderEntryFee()).isEqualTo(15000L);
 
-    title.setTier(TitleTier.WORLD);
+    title.setTier(WrestlerTier.MAIN_EVENTER);
     assertThat(title.getChallengeCost()).isEqualTo(15000L);
     assertThat(title.getContenderEntryFee()).isEqualTo(15000L);
   }

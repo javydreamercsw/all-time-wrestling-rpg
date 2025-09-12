@@ -59,7 +59,10 @@ public class Wrestler extends AbstractEntity<Long> {
   /** Current wrestler tier based on fan count */
   @Column(name = "tier", nullable = false)
   @Enumerated(EnumType.STRING)
-  private WrestlerTier tier = WrestlerTier.ROOKIE;
+  private WrestlerTier tier;
+
+  @Enumerated(EnumType.STRING)
+  private Gender gender;
 
   /** Number of bump tokens (0-2, converts to injury at 3) */
   @Column(name = "bumps")
@@ -128,7 +131,7 @@ public class Wrestler extends AbstractEntity<Long> {
   }
 
   /** Check if wrestler is eligible for a specific title tier */
-  public boolean isEligibleForTitle(TitleTier titleTier) {
+  public boolean isEligibleForTitle(WrestlerTier titleTier) {
     return titleTier.isEligible(fans);
   }
 

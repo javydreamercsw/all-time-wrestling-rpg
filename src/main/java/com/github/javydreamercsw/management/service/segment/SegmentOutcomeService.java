@@ -182,7 +182,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
       case ROOKIE -> 0;
       case RISER -> 2;
       case CONTENDER -> 4;
-      case INTERTEMPORAL_TIER -> 6;
+      case MIDCARDER -> 6;
       case MAIN_EVENTER -> 8;
       case ICON -> 10;
     };
