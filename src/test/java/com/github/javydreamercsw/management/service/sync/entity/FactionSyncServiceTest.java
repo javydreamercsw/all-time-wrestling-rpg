@@ -51,12 +51,14 @@ class FactionSyncServiceTest extends BaseTest {
 
   @BeforeEach
   void setUp() {
+    // This needs to be stubbed before the constructor is called.
+    Mockito.lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+
     factionSyncService = new FactionSyncService(objectMapper, syncProperties);
     injectMockDependencies();
 
     // Setup default behavior
     lenient().when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
-    Mockito.lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
   }
 
   private void injectMockDependencies() {

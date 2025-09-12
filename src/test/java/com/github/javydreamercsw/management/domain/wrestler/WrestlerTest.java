@@ -25,6 +25,7 @@ class WrestlerTest {
     wrestler.setFans(0L);
     wrestler.setBumps(0);
     wrestler.setIsPlayer(true);
+    wrestler.updateTier(); // Explicitly update tier for unit tests
   }
 
   @Test
@@ -67,7 +68,7 @@ class WrestlerTest {
   @ParameterizedTest
   @DisplayName("Should check title eligibility correctly")
   @CsvSource({
-    "20000, false, false, false, false",
+    "20000, true, false, false, false",
     "25000, true, false, false, false",
     "40000, true, true, false, false",
     "60000, true, true, true, false",
@@ -75,13 +76,13 @@ class WrestlerTest {
     "150000, true, true, true, true"
   })
   void shouldCheckTitleEligibilityCorrectly(
-      Long fans, boolean extreme, boolean tagTeam, boolean intertemporal, boolean world) {
+      Long fans, boolean rookie, boolean contender, boolean midcarder, boolean maineventer) {
     wrestler.setFans(fans);
 
-    assertThat(wrestler.isEligibleForTitle(TitleTier.EXTREME)).isEqualTo(extreme);
-    assertThat(wrestler.isEligibleForTitle(TitleTier.TAG_TEAM)).isEqualTo(tagTeam);
-    assertThat(wrestler.isEligibleForTitle(TitleTier.INTERTEMPORAL)).isEqualTo(intertemporal);
-    assertThat(wrestler.isEligibleForTitle(TitleTier.WORLD)).isEqualTo(world);
+    assertThat(wrestler.isEligibleForTitle(WrestlerTier.ROOKIE)).isEqualTo(rookie);
+    assertThat(wrestler.isEligibleForTitle(WrestlerTier.CONTENDER)).isEqualTo(contender);
+    assertThat(wrestler.isEligibleForTitle(WrestlerTier.MIDCARDER)).isEqualTo(midcarder);
+    assertThat(wrestler.isEligibleForTitle(WrestlerTier.MAIN_EVENTER)).isEqualTo(maineventer);
   }
 
   @Test
@@ -113,7 +114,7 @@ class WrestlerTest {
 
     wrestler.addFans(30000L); // Now 65k fans -> Intertemporal
     assertThat(wrestler.getFans()).isEqualTo(65000L);
-    assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.INTERTEMPORAL_TIER);
+    assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.MIDCARDER);
   }
 
   @Test
@@ -235,7 +236,7 @@ class WrestlerTest {
     assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.CONTENDER);
     assertThat(wrestler.getBumps()).isEqualTo(2);
     assertThat(wrestler.getEffectiveStartingHealth()).isEqualTo(13); // 15 - 2 bumps
-    assertThat(wrestler.isEligibleForTitle(TitleTier.TAG_TEAM)).isTrue();
-    assertThat(wrestler.isEligibleForTitle(TitleTier.INTERTEMPORAL)).isFalse();
+    assertThat(wrestler.isEligibleForTitle(WrestlerTier.RISER)).isTrue();
+    assertThat(wrestler.isEligibleForTitle(WrestlerTier.MIDCARDER)).isFalse();
   }
 }

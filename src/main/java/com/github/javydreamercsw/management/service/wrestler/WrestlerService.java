@@ -4,7 +4,6 @@ import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
 import com.github.javydreamercsw.management.domain.injury.Injury;
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -152,7 +151,7 @@ public class WrestlerService {
    * @param titleTier The title tier to check eligibility for
    * @return List of eligible wrestlers
    */
-  public List<Wrestler> getEligibleWrestlers(@NonNull TitleTier titleTier) {
+  public List<Wrestler> getEligibleWrestlers(@NonNull WrestlerTier titleTier) {
     return wrestlerRepository.findAll().stream()
         .filter(wrestler -> wrestler.isEligibleForTitle(titleTier))
         .toList();

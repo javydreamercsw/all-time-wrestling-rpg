@@ -28,6 +28,28 @@ public class SegmentNarrationServiceFactory {
    * @return The best available service, or null if none are available
    */
   public SegmentNarrationService getBestAvailableService() {
+    List<SegmentNarrationService> sortedServices = getAvailableServicesInPriorityOrder();
+    if (!sortedServices.isEmpty()) {
+      SegmentNarrationService service = sortedServices.get(0);
+      log.info(
+          "Selected segment narration provider: {} (priority: {}, cost: ${}/1K tokens, reason: {})",
+          service.getProviderName(),
+          getCostInfo(service.getProviderName()).priority(),
+          getCostInfo(service.getProviderName()).costPer1KTokens(),
+          getCostInfo(service.getProviderName()).description());
+      return service;
+    }
+
+    log.warn("No segment narration services are available");
+    return null;
+  }
+
+  /**
+   * Gets all available segment narration services in priority order (cost-effectiveness first).
+   *
+   * @return List of available services, sorted by priority.
+   */
+  public List<SegmentNarrationService> getAvailableServicesInPriorityOrder() {
     // Define priority order based on cost-effectiveness
     ProviderPriority[] priorityOrder = {
       new ProviderPriority("Gemini", 1, 0.0, "FREE tier with excellent quality"),
@@ -36,34 +58,25 @@ public class SegmentNarrationServiceFactory {
       new ProviderPriority("Mock", 10, 0.0, "Mock AI for testing and development")
     };
 
+    List<SegmentNarrationService> sortedServices = new java.util.ArrayList<>();
+
     for (ProviderPriority priority : priorityOrder) {
       for (SegmentNarrationService service : availableServices) {
         if (service.getProviderName().toLowerCase().contains(priority.name().toLowerCase())
             && service.isAvailable()) {
-          log.info(
-              "Selected segment narration provider: {} (priority: {}, cost: ${}/1K tokens, reason:"
-                  + " {})",
-              service.getProviderName(),
-              priority.priority(),
-              priority.costPer1KTokens(),
-              priority.reason());
-          return service;
+          sortedServices.add(service);
         }
       }
     }
 
-    // Fallback: select any available service
+    // Add any other available services that were not explicitly prioritized
     for (SegmentNarrationService service : availableServices) {
-      if (service.isAvailable()) {
-        log.info(
-            "Selected segment narration provider: {} (fallback - no priority segment)",
-            service.getProviderName());
-        return service;
+      if (service.isAvailable() && !sortedServices.contains(service)) {
+        sortedServices.add(service);
       }
     }
 
-    log.warn("No segment narration services are available");
-    return null;
+    return sortedServices;
   }
 
   /** Provider priority information for cost-based selection. */

@@ -20,6 +20,14 @@ public interface SegmentNarrationService {
   String narrateSegment(SegmentNarrationContext segmentContext);
 
   /**
+   * Summarizes a segment narration.
+   *
+   * @param narration The narration to summarize.
+   * @return A summary of the narration.
+   */
+  String summarizeNarration(String narration);
+
+  /**
    * Gets the name/type of this AI service provider.
    *
    * @return Provider name (e.g., "OpenAI", "Gemini", "Claude")

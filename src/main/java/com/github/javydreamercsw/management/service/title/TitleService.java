@@ -2,9 +2,9 @@ package com.github.javydreamercsw.management.service.title;
 
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -30,7 +30,7 @@ public class TitleService {
 
   /** Create a new title. */
   public Title createTitle(
-      @NonNull String name, @NonNull String description, @NonNull TitleTier tier) {
+      @NonNull String name, @NonNull String description, @NonNull WrestlerTier tier) {
     Title title = new Title();
     title.setName(name);
     title.setDescription(description);
@@ -73,7 +73,7 @@ public class TitleService {
 
   /** Get titles by tier. */
   @Transactional(readOnly = true)
-  public List<Title> getTitlesByTier(@NonNull TitleTier tier) {
+  public List<Title> getTitlesByTier(@NonNull WrestlerTier tier) {
     return titleRepository.findActiveTitlesByTier(tier);
   }
 
@@ -249,7 +249,7 @@ public class TitleService {
   public record TitleStats(
       Long titleId,
       String name,
-      TitleTier tier,
+      WrestlerTier tier,
       boolean isVacant,
       String currentChampion,
       long currentReignDays,

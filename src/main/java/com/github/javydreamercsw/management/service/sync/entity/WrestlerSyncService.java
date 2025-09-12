@@ -4,12 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.base.util.NotionBlocksRetriever;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.util.NotionBlocksRetriever;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -232,6 +233,10 @@ public class WrestlerSyncService extends BaseSyncService {
 
     dto.setFaction(extractFactionFromWrestlerPage(wrestlerPage));
     dto.setExternalId(wrestlerPage.getId());
+    if (wrestlerPage.getRawProperties() != null
+        && wrestlerPage.getRawProperties().get("Sex") instanceof String) {
+      dto.setSex((String) wrestlerPage.getRawProperties().get("Sex"));
+    }
     return dto;
   }
 
@@ -464,6 +469,14 @@ public class WrestlerSyncService extends BaseSyncService {
         wrestler.setName(dto.getName());
         wrestler.setExternalId(dto.getExternalId());
 
+        if (dto.getSex() != null && !dto.getSex().isBlank()) {
+          try {
+            wrestler.setGender(Gender.valueOf(dto.getSex().toUpperCase()));
+          } catch (IllegalArgumentException e) {
+            log.warn("Invalid sex value '{}' for wrestler '{}'", dto.getSex(), dto.getName());
+          }
+        }
+
         // Update description if provided
         if (dto.getDescription() != null && !dto.getDescription().trim().isEmpty()) {
           wrestler.setDescription(dto.getDescription());
@@ -550,6 +563,7 @@ public class WrestlerSyncService extends BaseSyncService {
     private String weight;
     private String hometown;
     private String externalId; // Notion page ID
+    private String sex;
 
     // Game-specific fields (preserved from existing data)
     private Integer deckSize;

@@ -1,9 +1,9 @@
 package com.github.javydreamercsw.base.ai.notion;
 
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.base.util.NotionBlocksRetriever;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
-import dev.failsafe.Timeout;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -189,7 +189,7 @@ public class NotionHandler {
   }
 
   private <T> T executeWithRetry(java.util.function.Supplier<T> action) {
-    RetryPolicy<T> retryPolicy =
+    RetryPolicy<T> rateLimitPolicy =
         RetryPolicy.<T>builder()
             .handleIf(
                 e ->
@@ -200,14 +200,22 @@ public class NotionHandler {
             .onRetry(e -> log.warn("Rate limited by Notion API. Retrying...", e.getLastException()))
             .build();
 
-    Timeout<T> timeout = Timeout.of(java.time.Duration.ofSeconds(30));
+    RetryPolicy<T> serverRetryPolicy =
+        RetryPolicy.<T>builder()
+            .handleIf(
+                e ->
+                    e instanceof NotionAPIError
+                        && ((NotionAPIError) e).getError().getStatus() >= 500)
+            .withBackoff(1, 5, java.time.temporal.ChronoUnit.SECONDS)
+            .withMaxRetries(3)
+            .onRetry(e -> log.warn("Server side error. Retrying...", e.getLastException()))
+            .build();
 
-    return Failsafe.with(retryPolicy, timeout).get(action::get);
+    return Failsafe.with(rateLimitPolicy, serverRetryPolicy).get(action::get);
   }
 
   private String getValue(@NonNull NotionClient client, @NonNull PageProperty value) {
-    return getValue(
-        client, value, true); // Default to resolving relationships for backward compatibility
+    return getValue(client, value, true);
   }
 
   private String getValue(
@@ -1319,6 +1327,46 @@ public class NotionHandler {
     return getInstance().loadFaction(factionName);
   }
 
+  // ==================== TITLE LOADING METHODS ====================
+
+  /**
+   * Loads all titles from the Notion Titles database.
+   *
+   * @return List of all TitlePage objects from the Titles database
+   */
+  public List<TitlePage> loadAllTitles() {
+    log.debug("Loading all titles from Titles database");
+
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String titleDbId = getDatabaseId("Championships");
+    if (titleDbId == null) {
+      log.warn("Championships database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(
+          client, titleDbId, "Title", this::mapPageToTitlePage, false);
+    } catch (Exception e) {
+      log.error("Failed to load all titles", e);
+      throw new RuntimeException("Failed to load titles from Notion: " + e.getMessage(), e);
+    }
+  }
+
+  /** Maps a Notion page to a TitlePage object. */
+  private TitlePage mapPageToTitlePage(@NonNull Page pageData, @NonNull String titleName) {
+    return mapPageToGenericEntity(
+        pageData, titleName, "Title", TitlePage::new, TitlePage.NotionParent::new);
+  }
+
   // ==================== NPC LOADING METHODS ====================
 
   /**
@@ -1793,10 +1841,49 @@ public class NotionHandler {
         pageData, factionName, "Faction", FactionPage::new, FactionPage.NotionParent::new);
   }
 
+  /**
+   * Loads all title reigns from the Notion Title Reigns database.
+   *
+   * @return List of all TitleReignPage objects from the Title Reigns database
+   */
+  public List<TitleReignPage> loadAllTitleReigns() {
+    log.debug("Loading all title reigns from Title Reigns database");
+
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String dbId = getDatabaseId("Title Reigns");
+    if (dbId == null) {
+      log.warn("Title Reigns database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(
+          client, dbId, "Title Reign", this::mapPageToTitleReignPage, false);
+    } catch (Exception e) {
+      log.error("Failed to load all title reigns", e);
+      throw new RuntimeException("Failed to load title reigns from Notion: " + e.getMessage(), e);
+    }
+  }
+
   /** Maps a Notion page to an InjuryPage object. */
   private InjuryPage mapPageToInjuryPage(@NonNull Page pageData, @NonNull String injuryName) {
     return mapPageToGenericEntity(
         pageData, injuryName, "Injury", InjuryPage::new, InjuryPage.NotionParent::new);
+  }
+
+  /** Maps a Notion page to a TitleReignPage object. */
+  private TitleReignPage mapPageToTitleReignPage(
+      @NonNull Page pageData, @NonNull String entityName) {
+    return mapPageToGenericEntity(
+        pageData, entityName, "Title Reign", TitleReignPage::new, TitleReignPage.NotionParent::new);
   }
 
   /** Generic mapping method for all entity types with full relationship resolution. */
@@ -2090,5 +2177,23 @@ public class NotionHandler {
     property.setFormula(pageProperty.getFormula());
     property.setHas_more(pageProperty.getHasMore());
     return property;
+  }
+
+  /**
+   * Retrieves the plain text content of a Notion page by its ID. This method fetches all blocks
+   * within the page and extracts their plain text.
+   *
+   * @param pageId The ID of the Notion page.
+   * @return The concatenated plain text content of the page, or an empty string if no content.
+   */
+  public String getPageContentPlainText(@NonNull String pageId) {
+    log.debug("Retrieving content for page: {}", pageId);
+    String notionToken = EnvironmentVariableUtil.getNotionToken();
+    if (notionToken == null || notionToken.trim().isEmpty()) {
+      log.warn("NOTION_TOKEN not available. Cannot retrieve page content.");
+      return "";
+    }
+    NotionBlocksRetriever retriever = new NotionBlocksRetriever(notionToken);
+    return retriever.retrievePageContent(pageId);
   }
 }

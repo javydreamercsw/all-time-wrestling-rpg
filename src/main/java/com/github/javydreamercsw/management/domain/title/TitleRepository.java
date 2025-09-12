@@ -1,7 +1,7 @@
 package com.github.javydreamercsw.management.domain.title;
 
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -19,7 +19,7 @@ public interface TitleRepository
 
   Optional<Title> findByName(String name);
 
-  List<Title> findByTier(TitleTier tier);
+  List<Title> findByTier(WrestlerTier tier);
 
   List<Title> findByIsActiveTrue();
 
@@ -33,7 +33,7 @@ public interface TitleRepository
 
   /** Find active titles of a specific tier. */
   @Query("SELECT t FROM Title t WHERE t.tier = :tier AND t.isActive = true")
-  List<Title> findActiveTitlesByTier(@Param("tier") TitleTier tier);
+  List<Title> findActiveTitlesByTier(@Param("tier") WrestlerTier tier);
 
   /** Find vacant active titles. */
   @Query("SELECT t FROM Title t WHERE t.isVacant = true AND t.isActive = true")
@@ -41,6 +41,9 @@ public interface TitleRepository
 
   /** Check if a title with the given name already exists. */
   boolean existsByName(String name);
+
+  /** Find a title by its external ID (Notion page ID). */
+  Optional<Title> findByExternalId(String externalId);
 
   /** Find titles that a wrestler is eligible to challenge for. */
   @Query(

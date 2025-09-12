@@ -10,4 +10,7 @@ public class ShowPlanningContextDTO {
   private List<ShowPlanningRivalryDTO> currentRivalries;
   private List<ShowPlanningSegmentDTO> lastMonthPromos;
   private ShowTemplate showTemplate;
+  private List<ShowPlanningWrestlerHeatDTO> wrestlerHeats;
+  private List<ShowPlanningChampionshipDTO> championships;
+  private ShowPlanningPleDTO nextPle;
 }

@@ -15,6 +15,7 @@ import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +53,7 @@ public class SegmentSyncService extends BaseSyncService {
   }
 
   private SyncResult performSegmentSyncInternal(@NonNull String operationId) throws Exception {
+    final List<String> messages = new java.util.concurrent.CopyOnWriteArrayList<>();
     // 1. Get all local external IDs
     progressTracker.updateProgress(operationId, 1, "Fetching local segment IDs");
     List<String> localExternalIds = segmentService.getAllExternalIds();
@@ -85,7 +87,9 @@ public class SegmentSyncService extends BaseSyncService {
               try {
                 return notionHandler.loadSegmentById(id).orElse(null);
               } catch (Exception e) {
-                log.error("Failed to load segment page for id: {}", id, e);
+                String msg = "Failed to load segment page for id: " + id;
+                log.error(msg, e);
+                messages.add(msg);
                 return null;
               }
             },
@@ -101,11 +105,12 @@ public class SegmentSyncService extends BaseSyncService {
 
     // 5. Convert to DTOs
     progressTracker.updateProgress(operationId, 4, "Converting new segments to DTOs");
-    List<SegmentDTO> segmentDTOs = convertSegmentsWithRateLimit(validSegmentPages, operationId);
+    List<SegmentDTO> segmentDTOs =
+        convertSegmentsWithRateLimit(validSegmentPages, operationId, messages::add);
 
     // 6. Save to database
     progressTracker.updateProgress(operationId, 5, "Saving new segments to database");
-    int savedCount = saveSegmentsToDatabase(segmentDTOs);
+    int savedCount = saveSegmentsToDatabase(segmentDTOs, messages::add);
 
     int errorCount = newSegmentIds.size() - savedCount;
     log.info("✅ Synced {} new segments with {} errors", savedCount, errorCount);
@@ -117,11 +122,14 @@ public class SegmentSyncService extends BaseSyncService {
             : "Delta-sync for segments completed with errors.";
     progressTracker.completeOperation(operationId, success, message, savedCount);
 
+    SyncResult result;
     if (success) {
-      return SyncResult.success("Segments", savedCount, errorCount);
+      result = SyncResult.success("Segments", savedCount, errorCount);
     } else {
-      return SyncResult.failure("Segments", "Some new segments failed to sync.");
+      result = SyncResult.failure("Segments", "Some new segments failed to sync.");
     }
+    result.getMessages().addAll(messages);
+    return result;
   }
 
   private List<SegmentDTO> convertSegmentsWithRateLimit(
@@ -135,7 +143,24 @@ public class SegmentSyncService extends BaseSyncService {
         "Converted %d/%d segments");
   }
 
+  private List<SegmentDTO> convertSegmentsWithRateLimit(
+      List<SegmentPage> notionSegments, String operationId, Consumer<String> messageConsumer) {
+    return processWithControlledParallelism(
+        notionSegments,
+        (segmentPage) -> convertNotionPageToDTO(segmentPage, messageConsumer),
+        10, // Batch size
+        operationId,
+        2, // Progress step
+        "Converted %d/%d segments",
+        messageConsumer);
+  }
+
   private SegmentDTO convertNotionPageToDTO(@NonNull SegmentPage segmentPage) {
+    return convertNotionPageToDTO(segmentPage, (msg) -> {});
+  }
+
+  private SegmentDTO convertNotionPageToDTO(
+      @NonNull SegmentPage segmentPage, Consumer<String> messageConsumer) {
     try {
       SegmentDTO segmentDTO = new SegmentDTO();
       segmentDTO.setExternalId(segmentPage.getId());
@@ -173,12 +198,15 @@ public class SegmentSyncService extends BaseSyncService {
       if (segmentTypeProperty instanceof String && !((String) segmentTypeProperty).isEmpty()) {
         segmentDTO.setSegmentTypeName((String) segmentTypeProperty);
       } else {
-        log.warn(
-            "Segment type property for segment {} is not a string or is empty. Actual type: {},"
-                + " Value: {}",
-            segmentPage.getId(),
-            segmentTypeProperty != null ? segmentTypeProperty.getClass().getName() : "null",
-            segmentTypeProperty);
+        String msg =
+            String.format(
+                "Segment type property for segment %s is not a string or is empty. Actual type: %s,"
+                    + " Value: %s",
+                segmentPage.getId(),
+                segmentTypeProperty != null ? segmentTypeProperty.getClass().getName() : "null",
+                segmentTypeProperty);
+        log.warn(msg);
+        messageConsumer.accept(msg);
       }
 
       Object dateProperty = segmentPage.getRawProperties().get("Date");
@@ -193,35 +221,48 @@ public class SegmentSyncService extends BaseSyncService {
           java.time.LocalDate localDate = java.time.LocalDate.parse(dateString, formatter);
           segmentDTO.setSegmentDate(localDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
         } catch (java.time.format.DateTimeParseException e) {
-          log.warn(
-              "Could not parse date '{}' for segment {}: {}",
-              dateProperty,
-              segmentPage.getId(),
-              e.getMessage());
+          String msg =
+              String.format(
+                  "Could not parse date '%s' for segment %s: %s",
+                  dateProperty, segmentPage.getId(), e.getMessage());
+          log.warn(msg);
+          messageConsumer.accept(msg);
           segmentDTO.setSegmentDate(null);
         }
       }
 
+      segmentDTO.setNarration(notionHandler.getPageContentPlainText(segmentPage.getId()));
+
       return segmentDTO;
     } catch (Exception e) {
-      log.error(
-          "Error converting Notion SegmentPage to DTO for page {}: {}",
-          segmentPage.getId(),
-          e.getMessage(),
-          e);
+      String msg =
+          String.format(
+              "Error converting Notion SegmentPage to DTO for page %s: %s",
+              segmentPage.getId(), e.getMessage());
+      log.error(msg, e);
+      messageConsumer.accept(msg);
       return null;
     }
   }
 
   private int saveSegmentsToDatabase(@NonNull List<SegmentDTO> segmentDTOs) {
+    return saveSegmentsToDatabase(segmentDTOs, (msg) -> {});
+  }
+
+  private int saveSegmentsToDatabase(
+      @NonNull List<SegmentDTO> segmentDTOs, Consumer<String> messageConsumer) {
     int savedCount = 0;
     for (SegmentDTO segmentDTO : segmentDTOs) {
       try {
-        if (processSingleSegment(segmentDTO)) {
+        if (processSingleSegment(segmentDTO, messageConsumer)) {
           savedCount++;
         }
       } catch (Exception e) {
-        log.error("Failed to process segment DTO {}: {}", segmentDTO.getName(), e.getMessage(), e);
+        String msg =
+            String.format(
+                "Failed to process segment DTO %s: %s", segmentDTO.getName(), e.getMessage());
+        log.error(msg, e);
+        messageConsumer.accept(msg);
       }
     }
     return savedCount;
@@ -230,6 +271,11 @@ public class SegmentSyncService extends BaseSyncService {
   @org.springframework.transaction.annotation.Transactional(
       propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
   public boolean processSingleSegment(@NonNull SegmentDTO segmentDTO) {
+    return processSingleSegment(segmentDTO, (msg) -> {});
+  }
+
+  public boolean processSingleSegment(
+      @NonNull SegmentDTO segmentDTO, Consumer<String> messageConsumer) {
     try {
       Optional<Segment> existingSegmentOpt =
           Optional.ofNullable(segmentDTO.getExternalId()).flatMap(segmentService::findByExternalId);
@@ -248,28 +294,33 @@ public class SegmentSyncService extends BaseSyncService {
 
       Optional<Show> showOpt = showService.findByExternalId(segmentDTO.getShowExternalId());
       if (showOpt.isEmpty()) {
-        log.warn(
-            "Show '{}' for segment {} was not found locally. Attempting to sync it.",
-            segmentDTO.getShowName(),
-            segmentDTO.getName());
+        String msg =
+            String.format(
+                "Show '%s' for segment %s was not found locally. Attempting to sync it.",
+                segmentDTO.getShowName(), segmentDTO.getName());
+        log.warn(msg);
+        messageConsumer.accept(msg);
         // Attempt to sync the missing show
         SyncResult showSyncResult = showSyncService.syncShow(segmentDTO.getShowExternalId());
         if (showSyncResult.isSuccess()) {
           log.info("Successfully synced show '{}'. Retrying lookup.", segmentDTO.getShowName());
           showOpt = showService.findByExternalId(segmentDTO.getShowExternalId());
         } else {
-          log.error(
-              "Failed to sync show '{}' for segment {}: {}",
-              segmentDTO.getShowName(),
-              segmentDTO.getName(),
-              showSyncResult.getErrorMessage());
+          String errorMsg =
+              String.format(
+                  "Failed to sync show '%s' for segment %s: %s",
+                  segmentDTO.getShowName(), segmentDTO.getName(), showSyncResult.getErrorMessage());
+          log.error(errorMsg);
+          messageConsumer.accept(errorMsg);
         }
 
         if (showOpt.isEmpty()) {
-          log.warn(
-              "Skipping segment {} as show '{}' could not be found or synced.",
-              segmentDTO.getName(),
-              segmentDTO.getShowName());
+          String errorMsg =
+              String.format(
+                  "Skipping segment %s as show '%s' could not be found or synced.",
+                  segmentDTO.getName(), segmentDTO.getShowName());
+          log.warn(errorMsg);
+          messageConsumer.accept(errorMsg);
           return false;
         }
       }
@@ -277,18 +328,23 @@ public class SegmentSyncService extends BaseSyncService {
 
       String segmentTypeName = segmentDTO.getSegmentTypeName();
       if (segmentTypeName == null || segmentTypeName.trim().isEmpty()) {
-        log.warn(
-            "Skipping segment {} as segment type name is null or empty in Notion data.",
-            segmentDTO.getName());
+        String msg =
+            String.format(
+                "Skipping segment %s as segment type name is null or empty in Notion data.",
+                segmentDTO.getName());
+        log.warn(msg);
+        messageConsumer.accept(msg);
         return false;
       }
 
       Optional<SegmentType> segmentTypeOpt = segmentTypeService.findByName(segmentTypeName);
       if (segmentTypeOpt.isEmpty()) {
-        log.warn(
-            "Skipping segment {} as segment type '{}' was not found in local database.",
-            segmentDTO.getName(),
-            segmentTypeName);
+        String msg =
+            String.format(
+                "Skipping segment %s as segment type '%s' was not found in local database.",
+                segmentDTO.getName(), segmentTypeName);
+        log.warn(msg);
+        messageConsumer.accept(msg);
         return false;
       }
       segment.setSegmentType(segmentTypeOpt.get());
@@ -314,10 +370,16 @@ public class SegmentSyncService extends BaseSyncService {
 
       segment.setSegmentDate(segmentDTO.getSegmentDate());
 
+      segment.setNarration(segmentDTO.getNarration());
+
       segmentService.updateSegment(segment);
       return true;
     } catch (Exception e) {
-      log.error("Failed to process segment DTO {}: {}", segmentDTO.getName(), e.getMessage(), e);
+      String msg =
+          String.format(
+              "Failed to process segment DTO %s: %s", segmentDTO.getName(), e.getMessage());
+      log.error(msg, e);
+      messageConsumer.accept(msg);
       return false;
     }
   }
@@ -331,6 +393,7 @@ public class SegmentSyncService extends BaseSyncService {
     log.info("🤼 Starting segment synchronization from Notion for ID: {}", segmentId);
     String operationId = "segment-sync-" + segmentId;
     progressTracker.startOperation(operationId, "Segment Sync", 4);
+    final List<String> messages = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     try {
       Optional<SegmentPage> segmentPageOpt = notionHandler.loadSegmentById(segmentId);
@@ -342,24 +405,30 @@ public class SegmentSyncService extends BaseSyncService {
       }
 
       SegmentPage segmentPage = segmentPageOpt.get();
-      SegmentDTO segmentDTO = convertNotionPageToDTO(segmentPage);
+      SegmentDTO segmentDTO = convertNotionPageToDTO(segmentPage, messages::add);
 
-      if (processSingleSegment(segmentDTO)) {
+      if (processSingleSegment(segmentDTO, messages::add)) {
         String message = "Segment sync completed successfully. Synced 1 segment.";
         log.info(message);
         progressTracker.completeOperation(operationId, true, message, 1);
-        return SyncResult.success("Segment", 1, 0);
+        SyncResult result = SyncResult.success("Segment", 1, 0);
+        result.getMessages().addAll(messages);
+        return result;
       } else {
         String errorMessage = "Failed to process segment with ID " + segmentId;
         log.error(errorMessage);
         progressTracker.failOperation(operationId, errorMessage);
-        return SyncResult.failure("Segment", errorMessage);
+        SyncResult result = SyncResult.failure("Segment", errorMessage);
+        result.getMessages().addAll(messages);
+        return result;
       }
     } catch (Exception e) {
       String errorMessage = "Failed to synchronize segment from Notion: " + e.getMessage();
       log.error(errorMessage, e);
       progressTracker.failOperation(operationId, errorMessage);
-      return SyncResult.failure("Segment", errorMessage);
+      SyncResult result = SyncResult.failure("Segment", errorMessage);
+      result.getMessages().add(e.getMessage());
+      return result;
     }
   }
 }

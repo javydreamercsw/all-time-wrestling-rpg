@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.management.util;
+package com.github.javydreamercsw.base.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +32,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Retrieve the page content for a given page ID. */
-  public String retrievePageContent(String pageId) {
+  public String retrievePageContent(@NonNull String pageId) {
     try {
       log.debug("Retrieving page content for ID: {}", pageId);
 
@@ -121,9 +121,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a single block into readable text content. */
-  private String parseBlock(JsonNode block) {
-    if (block == null) return null;
-
+  private String parseBlock(@NonNull JsonNode block) {
     JsonNode typeNode = block.get("type");
     if (typeNode == null) return null;
 
@@ -153,7 +151,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a paragraph block. */
-  private String parseParagraph(JsonNode block) {
+  private String parseParagraph(@NonNull JsonNode block) {
     JsonNode paragraph = block.get("paragraph");
     if (paragraph == null) return null;
 
@@ -162,7 +160,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a heading block. */
-  private String parseHeading(JsonNode block, int level) {
+  private String parseHeading(@NonNull JsonNode block, int level) {
     String headingKey = "heading_" + level;
     JsonNode heading = block.get(headingKey);
     if (heading == null) return null;
@@ -178,7 +176,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a bulleted list item. */
-  private String parseBulletedListItem(JsonNode block) {
+  private String parseBulletedListItem(@NonNull JsonNode block) {
     JsonNode listItem = block.get("bulleted_list_item");
     if (listItem == null) return null;
 
@@ -190,7 +188,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a numbered list item. */
-  private String parseNumberedListItem(JsonNode block) {
+  private String parseNumberedListItem(@NonNull JsonNode block) {
     JsonNode listItem = block.get("numbered_list_item");
     if (listItem == null) return null;
 
@@ -202,7 +200,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a to-do item. */
-  private String parseToDoItem(JsonNode block) {
+  private String parseToDoItem(@NonNull JsonNode block) {
     JsonNode toDo = block.get("to_do");
     if (toDo == null) return null;
 
@@ -218,7 +216,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a quote block. */
-  private String parseQuote(JsonNode block) {
+  private String parseQuote(@NonNull JsonNode block) {
     JsonNode quote = block.get("quote");
     if (quote == null) return null;
 
@@ -230,7 +228,7 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse a callout block. */
-  private String parseCallout(JsonNode block) {
+  private String parseCallout(@NonNull JsonNode block) {
     JsonNode callout = block.get("callout");
     if (callout == null) return null;
 
@@ -253,8 +251,8 @@ public class NotionBlocksRetriever {
   }
 
   /** Parse rich text array into plain text with basic formatting. */
-  private String parseRichText(JsonNode richTextArray) {
-    if (richTextArray == null || !richTextArray.isArray()) return null;
+  private String parseRichText(@NonNull JsonNode richTextArray) {
+    if (!richTextArray.isArray()) return null;
 
     StringBuilder text = new StringBuilder();
 

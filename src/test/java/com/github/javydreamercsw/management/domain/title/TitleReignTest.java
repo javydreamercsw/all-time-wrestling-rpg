@@ -2,8 +2,8 @@ package com.github.javydreamercsw.management.domain.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,7 +21,7 @@ class TitleReignTest {
   void setUp() {
     title = new Title();
     title.setName("Test Championship");
-    title.setTier(TitleTier.WORLD);
+    title.setTier(WrestlerTier.MAIN_EVENTER);
 
     wrestler = new Wrestler();
     wrestler.setName("Test Champion");

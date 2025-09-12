@@ -1,17 +1,18 @@
 package com.github.javydreamercsw.management.domain.title;
 
-import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
+import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -30,6 +31,9 @@ public class Title extends AbstractEntity<Long> {
   @Column(name = "title_id")
   private Long id;
 
+  @Column(name = "external_id")
+  private String externalId;
+
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;
 
@@ -39,7 +43,10 @@ public class Title extends AbstractEntity<Long> {
 
   @Column(name = "tier", nullable = false)
   @Enumerated(EnumType.STRING)
-  private TitleTier tier;
+  private WrestlerTier tier;
+
+  @Enumerated(EnumType.STRING)
+  private Gender gender;
 
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
@@ -51,10 +58,12 @@ public class Title extends AbstractEntity<Long> {
   private Instant creationDate;
 
   // Current champion (null if vacant)
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "current_champion_id")
-  @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns"})
-  private Wrestler currentChampion;
+  @ManyToOne private Wrestler currentChampion;
+
+  @ManyToOne private Wrestler numberOneContender;
+
+  @OneToMany(mappedBy = "title", cascade = CascadeType.ALL, orphanRemoval = true)
+  private Set<TitleReign> titleReigns = new HashSet<>();
 
   @Column(name = "title_won_date")
   private Instant titleWonDate;
@@ -63,6 +72,10 @@ public class Title extends AbstractEntity<Long> {
   @OneToMany(mappedBy = "title", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"title"})
   private List<TitleReign> titleHistory = new ArrayList<>();
+
+  @ManyToMany(mappedBy = "titles", fetch = FetchType.LAZY)
+  private List<com.github.javydreamercsw.management.domain.show.segment.Segment> segments =
+      new ArrayList<>();
 
   // ==================== ATW RPG METHODS ====================
 

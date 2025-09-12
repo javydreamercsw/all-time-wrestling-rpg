@@ -23,4 +23,5 @@ public class SegmentDTO {
   private Instant segmentDate;
   private Instant createdTime;
   private Instant lastEditedTime;
+  private String narration;
 }

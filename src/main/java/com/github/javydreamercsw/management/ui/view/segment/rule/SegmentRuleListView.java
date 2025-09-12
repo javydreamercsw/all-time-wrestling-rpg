@@ -24,6 +24,7 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,9 +45,10 @@ public class SegmentRuleListView extends Main {
   private Binder<SegmentRule> binder;
 
   public SegmentRuleListView() {
-    initializeUI();
+    // Vaadin requires a no-arg constructor.
   }
 
+  @PostConstruct
   private void initializeUI() {
     setSizeFull();
     addClassNames(

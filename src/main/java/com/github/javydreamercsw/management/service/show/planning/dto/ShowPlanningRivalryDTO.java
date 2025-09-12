@@ -8,4 +8,5 @@ public class ShowPlanningRivalryDTO {
   private Long id;
   private String name;
   private List<String> participants;
+  private int heat;
 }

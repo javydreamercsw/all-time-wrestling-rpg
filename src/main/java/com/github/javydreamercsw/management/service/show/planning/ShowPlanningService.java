@@ -4,15 +4,22 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,15 +29,19 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class ShowPlanningService {
-
   private final SegmentRepository segmentRepository;
   private final RivalryService rivalryService;
   private final PromoBookingService promoBookingService;
   private final ShowPlanningDtoMapper mapper;
   private final Clock clock;
+  private final TitleService titleService;
+  private final ShowService showService;
+  private final com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
+  private final com.github.javydreamercsw.management.service.segment.SegmentSummaryService
+      segmentSummaryService;
 
-  @Transactional(readOnly = true)
-  public ShowPlanningContextDTO getShowPlanningContext(Show show) {
+  @Transactional
+  public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
     ShowPlanningContext context = new ShowPlanningContext();
 
     // Get segments from the last 30 days
@@ -40,6 +51,34 @@ public class ShowPlanningService {
     List<Segment> lastMonthSegments =
         segmentRepository.findBySegmentDateBetween(lastMonth, showDate);
     log.debug("Found {} segments", lastMonthSegments.size());
+
+    // New logic to generate summaries
+    // New logic to generate summaries
+    lastMonthSegments.forEach(
+        segment -> {
+          if ((segment.getSummary() == null || segment.getSummary().isEmpty())
+              && (segment.getNarration() != null && !segment.getNarration().isEmpty())) {
+            try {
+              segmentSummaryService.summarizeSegment(segment.getId());
+              // After summarizing, reload the segment to get the updated summary
+              segmentService
+                  .findById(segment.getId())
+                  .ifPresent(
+                      updatedSegment -> {
+                        segment.setSummary(updatedSegment.getSummary());
+                      });
+            } catch (Exception e) {
+              log.error("Failed to generate summary for segment: {}", segment.getId(), e);
+            }
+          }
+        });
+    // No need to reload the whole list again
+    // lastMonthSegments = segmentRepository.findBySegmentDateBetween(lastMonth, showDate);
+
+    context.setLastMonthSegments(lastMonthSegments);
+    // Reload segments to get the summaries
+    lastMonthSegments = segmentRepository.findBySegmentDateBetween(lastMonth, showDate);
+
     context.setLastMonthSegments(lastMonthSegments);
 
     // Get current rivalries
@@ -62,6 +101,32 @@ public class ShowPlanningService {
     template.setExpectedMatches(5);
     template.setExpectedPromos(2);
     context.setShowTemplate(template);
+
+    // Get championships
+    List<ShowPlanningChampionship> championships = new ArrayList<>();
+    List<Title> activeTitles = titleService.getActiveTitles();
+    for (Title title : activeTitles) {
+      ShowPlanningChampionship championship = new ShowPlanningChampionship();
+      championship.setTitle(title);
+      if (title.getCurrentChampion() != null) {
+        championship.setChampion(title.getCurrentChampion());
+      }
+      List<Wrestler> eligibleChallengers = titleService.getEligibleChallengers(title.getId());
+      if (!eligibleChallengers.isEmpty()) {
+        championship.setContender(eligibleChallengers.get(0));
+      }
+      championships.add(championship);
+    }
+    context.setChampionships(championships);
+
+    // Get next PLE
+    Optional<Show> nextPle =
+        showService.getUpcomingShows(10).stream().filter(Show::isPremiumLiveEvent).findFirst();
+    if (nextPle.isPresent()) {
+      ShowPlanningPle ple = new ShowPlanningPle();
+      ple.setPle(nextPle.get());
+      context.setNextPle(ple);
+    }
 
     return mapper.toDto(context);
   }

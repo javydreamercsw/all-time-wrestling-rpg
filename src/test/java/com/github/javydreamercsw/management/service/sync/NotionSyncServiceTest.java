@@ -2,7 +2,6 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,7 +40,7 @@ class NotionSyncServiceTest extends BaseTest {
   @Mock private WrestlerSyncService wrestlerSyncService;
   @Mock private FactionSyncService factionSyncService;
   @Mock private TeamSyncService teamSyncService;
-  @Mock private SegmentSyncService matchSyncService;
+  @Mock private SegmentSyncService segmentSyncService;
   @Mock private SeasonSyncService seasonSyncService;
   @Mock private ShowTypeSyncService showTypeSyncService;
   @Mock private ShowTemplateSyncService showTemplateSyncService;
@@ -79,7 +78,7 @@ class NotionSyncServiceTest extends BaseTest {
     setField(notionSyncService, "wrestlerSyncService", wrestlerSyncService);
     setField(notionSyncService, "factionSyncService", factionSyncService);
     setField(notionSyncService, "teamSyncService", teamSyncService);
-    setField(notionSyncService, "matchSyncService", matchSyncService);
+    setField(notionSyncService, "segmentSyncService", segmentSyncService);
     setField(notionSyncService, "seasonSyncService", seasonSyncService);
     setField(notionSyncService, "showTypeSyncService", showTypeSyncService);
     setField(notionSyncService, "showTemplateSyncService", showTemplateSyncService);
@@ -216,14 +215,14 @@ class NotionSyncServiceTest extends BaseTest {
     // Given
     String testOperationId = "my-test-operation-id";
     BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Segments", 15, 3);
-    when(matchSyncService.syncSegments(testOperationId + "-matches")).thenReturn(mockResult);
+    when(segmentSyncService.syncSegments(testOperationId + "-matches")).thenReturn(mockResult);
 
     // When
     BaseSyncService.SyncResult result = notionSyncService.syncSegments(testOperationId);
 
     // Then
     assertThat(result).isEqualTo(mockResult);
-    verify(matchSyncService).syncSegments(testOperationId + "-matches");
+    verify(segmentSyncService).syncSegments(testOperationId + "-matches");
   }
 
   // ==================== SEASONS SYNC TESTS ====================

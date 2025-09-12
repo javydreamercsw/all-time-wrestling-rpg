@@ -459,7 +459,27 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
         .setSortable(true)
         .setFlexGrow(2);
 
+    grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setFlexGrow(1);
+
     return grid;
+  }
+
+  private HorizontalLayout createActionButtons(Segment segment) {
+    Button summaryButton = new Button("Summarize", new Icon(VaadinIcon.ACADEMY_CAP));
+    summaryButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    summaryButton.setTooltipText("Generate AI Summary");
+    summaryButton.addClickListener(e -> generateSummary(segment));
+    summaryButton.setEnabled(segment.getNarration() != null && !segment.getNarration().isEmpty());
+    return new HorizontalLayout(summaryButton);
+  }
+
+  private void generateSummary(Segment segment) {
+    String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
+    new org.springframework.web.client.RestTemplate()
+        .postForObject(
+            baseUrl + "/api/segments/" + segment.getId() + "/summarize", null, Void.class);
+    Notification.show("Summary generation started!", 3000, Notification.Position.BOTTOM_START)
+        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
   private void openAddSegmentDialog(Show show) {

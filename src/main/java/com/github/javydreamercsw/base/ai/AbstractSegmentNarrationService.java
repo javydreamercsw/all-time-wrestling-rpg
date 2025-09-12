@@ -1,12 +1,17 @@
 package com.github.javydreamercsw.base.ai;
 
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Abstract base class for segment narration services. Contains common logic for building prompts
  * from segment context that can be used by any AI provider.
  */
+@Slf4j
 public abstract class AbstractSegmentNarrationService implements SegmentNarrationService {
 
   /**
@@ -176,10 +181,9 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
       for (int i = 0; i < Math.min(3, context.getRecentSegmentNarrations().size()); i++) {
         prompt.append("Recent Segment ").append(i + 1).append(": ");
         prompt.append(
-            context
-                .getRecentSegmentNarrations()
-                .get(i)
-                .substring(0, Math.min(200, context.getRecentSegmentNarrations().get(i).length())));
+            context.getRecentSegmentNarrations().get(i),
+            0,
+            Math.min(200, context.getRecentSegmentNarrations().get(i).length()));
         prompt.append("...\n");
       }
       prompt.append("\n");
@@ -319,6 +323,149 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     }
 
     String prompt = buildSegmentNarrationPrompt(segmentContext);
-    return callAIProvider(prompt);
+    return executeWithRetry(prompt);
+  }
+
+  @Override
+  public String summarizeNarration(@NonNull String narration) {
+    if (!isAvailable()) {
+      throw new RuntimeException(
+          getProviderName()
+              + " AI service is not available. Please configure the required API key.");
+    }
+
+    String prompt = buildSummaryPrompt(narration);
+    return executeWithRetry(prompt);
+  }
+
+  protected String buildSummaryPrompt(@NonNull String narration) {
+    StringBuilder prompt = new StringBuilder();
+    prompt.append(
+        "You are a wrestling expert. Summarize the following segment narration in 2-3 sentences,"
+            + " focusing on the key events, turning points, and the final outcome. The summary"
+            + " should be suitable for a show planning context, providing a quick overview of what"
+            + " happened in the segment.\n\n");
+    prompt.append("Narration:\n");
+    prompt.append(narration);
+    prompt.append("\n\nSummary:");
+    return prompt.toString();
+  }
+
+  /**
+   * Gets the retry policies specific to this AI provider. Each implementation can override this to
+   * provide custom retry behavior.
+   */
+  protected List<RetryPolicyConfig> getRetryPolicies() {
+    // Default retry policies - can be overridden by implementations
+    return Arrays.asList(
+        RetryPolicyConfig.fixedDelay(
+            3, Duration.ofSeconds(2), this::isRetryableException, "Standard retry policy"),
+        RetryPolicyConfig.exponentialBackoff(
+            2,
+            Duration.ofSeconds(5),
+            Duration.ofSeconds(30),
+            this::isRetryableException,
+            "Extended backoff policy"));
+  }
+
+  /**
+   * Determines if an exception should trigger a retry. Can be overridden by implementations for
+   * provider-specific logic.
+   */
+  protected boolean isRetryableException(@NonNull Exception exception) {
+    String message = exception.getMessage();
+    if (message == null) {
+      return false;
+    }
+
+    // Default retryable conditions
+    return message.contains("429")
+        || // Rate limiting
+        message.contains("503")
+        || // Service unavailable
+        message.contains("502")
+        || // Bad gateway
+        message.contains("timeout")
+        || message.contains("connection");
+  }
+
+  /** Executes AI provider call with retry logic using the provider's retry policies. */
+  protected String executeWithRetry(@NonNull String prompt) {
+    List<RetryPolicyConfig> policies = getRetryPolicies();
+    Exception lastException = null;
+
+    for (RetryPolicyConfig policy : policies) {
+      try {
+        return callAIProviderWithRetry(prompt, policy);
+      } catch (Exception e) {
+        lastException = e;
+        log.warn(
+            "Retry policy '{}' failed for {}: {}",
+            policy.getDescription(),
+            getProviderName(),
+            e.getMessage());
+      }
+    }
+
+    throw new RuntimeException(
+        "All retry policies exhausted for " + getProviderName(), lastException);
+  }
+
+  /** Executes the AI provider call with a specific retry policy. */
+  private String callAIProviderWithRetry(
+      @NonNull String prompt, @NonNull RetryPolicyConfig policy) {
+    Exception lastException = null;
+    Duration currentDelay = policy.getBaseDelay();
+
+    for (int attempt = 0; attempt <= policy.getMaxRetries(); attempt++) {
+      try {
+        return callAIProvider(prompt);
+      } catch (Exception e) {
+        lastException = e;
+
+        if (attempt < policy.getMaxRetries() && policy.getShouldRetry().test(e)) {
+          Duration delay = calculateRetryDelay(e, currentDelay);
+          log.warn(
+              "Attempt {} failed for {} ({}), retrying in {}ms: {}",
+              attempt + 1,
+              getProviderName(),
+              policy.getDescription(),
+              delay.toMillis(),
+              e.getMessage());
+
+          try {
+            Thread.sleep(delay.toMillis());
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted during retry delay", ie);
+          }
+
+          // Exponential backoff
+          if (!policy.getBaseDelay().equals(policy.getMaxDelay())) {
+            currentDelay =
+                Duration.ofMillis(
+                    Math.min(currentDelay.toMillis() * 2, policy.getMaxDelay().toMillis()));
+          }
+        } else {
+          break;
+        }
+      }
+    }
+
+    throw new RuntimeException(
+        "Max retries exceeded for "
+            + getProviderName()
+            + " with policy: "
+            + policy.getDescription(),
+        lastException);
+  }
+
+  /**
+   * Calculates retry delay, potentially extracting it from API error response. Can be overridden by
+   * implementations to parse provider-specific retry hints.
+   */
+  protected Duration calculateRetryDelay(
+      @NonNull Exception exception, @NonNull Duration defaultDelay) {
+    return defaultDelay;
   }
 }

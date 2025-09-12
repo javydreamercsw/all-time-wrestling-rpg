@@ -13,6 +13,8 @@ import com.github.javydreamercsw.management.service.sync.entity.ShowSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTemplateSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTypeSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.TeamSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.TitleReignSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.TitleSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
@@ -43,6 +45,8 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private InjurySyncService injurySyncService;
   @Autowired private NpcSyncService npcSyncService;
+  @Autowired private TitleSyncService titleSyncService;
+  @Autowired private TitleReignSyncService titleReignSyncService;
 
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
@@ -225,5 +229,25 @@ public class NotionSyncService extends BaseSyncService {
    */
   public SyncResult syncNpcs(@NonNull String operationId) {
     return npcSyncService.syncNpcs(operationId);
+  }
+
+  /**
+   * Synchronizes titles from Notion to the local database.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncTitles(@NonNull String operationId) {
+    return titleSyncService.syncTitles(operationId);
+  }
+
+  /**
+   * Synchronizes title reigns from Notion to the local database.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncTitleReigns(@NonNull String operationId) {
+    return titleReignSyncService.syncTitleReigns(operationId);
   }
 }

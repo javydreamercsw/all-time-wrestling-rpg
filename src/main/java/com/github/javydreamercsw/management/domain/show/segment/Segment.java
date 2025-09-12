@@ -5,6 +5,7 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -80,6 +81,10 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "narration")
   private String narration;
 
+  @Lob
+  @Column(name = "summary")
+  private String summary;
+
   @Column(name = "is_title_segment", nullable = false)
   private Boolean isTitleSegment = false;
 
@@ -97,6 +102,13 @@ public class Segment extends AbstractEntity<Long> {
       fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"segment"})
   private List<SegmentParticipant> participants = new ArrayList<>();
+
+  @ManyToMany
+  @JoinTable(
+      name = "segment_title",
+      joinColumns = @JoinColumn(name = "segment_id"),
+      inverseJoinColumns = @JoinColumn(name = "title_id"))
+  private List<Title> titles = new ArrayList<>();
 
   @Override
   public @Nullable Long getId() {

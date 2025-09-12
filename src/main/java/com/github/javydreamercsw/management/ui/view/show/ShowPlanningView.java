@@ -33,7 +33,7 @@ public class ShowPlanningView extends Main {
 
   private final ShowService showService;
   private final RestTemplate restTemplate = new RestTemplate();
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
   private ComboBox<Show> showComboBox;
   private Button loadContextButton;
@@ -43,8 +43,9 @@ public class ShowPlanningView extends Main {
   private Editor<ProposedSegment> editor;
   private List<ProposedSegment> segments = new ArrayList<>();
 
-  public ShowPlanningView(ShowService showService) {
+  public ShowPlanningView(ShowService showService, ObjectMapper objectMapper) {
     this.showService = showService;
+    this.objectMapper = objectMapper;
 
     showComboBox = new ComboBox<>("Select Show");
     showComboBox.setItems(showService.findAll());
@@ -52,6 +53,10 @@ public class ShowPlanningView extends Main {
 
     loadContextButton = new Button("Load Context");
     loadContextButton.addClickListener(e -> loadContext());
+    loadContextButton.setEnabled(false);
+
+    showComboBox.addValueChangeListener(
+        event -> loadContextButton.setEnabled(event.getValue() != null));
 
     contextArea = new TextArea("Show Planning Context");
     contextArea.setWidthFull();
