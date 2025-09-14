@@ -36,8 +36,8 @@ class WrestlerServiceIT {
   @Autowired DeckRepository deckRepository;
 
   @BeforeEach
-  void clean(){
-      wrestlerRepository.deleteAll();
+  void clean() {
+    wrestlerRepository.deleteAll();
   }
 
   @Test
@@ -146,7 +146,7 @@ class WrestlerServiceIT {
     assertThat(extremeEligible).hasSize(4); // Rookie, Riser, Contender, Main Eventer
     assertThat(extremeEligible)
         .extracting(Wrestler::getName)
-        .containsExactlyInAnyOrder("Rookie","Riser", "Contender", "Main Eventer");
+        .containsExactlyInAnyOrder("Rookie", "Riser", "Contender", "Main Eventer");
 
     assertThat(worldEligible).hasSize(1); // Only Main Eventer
     assertThat(worldEligible).extracting(Wrestler::getName).containsExactly("Main Eventer");

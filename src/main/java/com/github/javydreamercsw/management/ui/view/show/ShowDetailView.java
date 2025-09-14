@@ -39,6 +39,7 @@ import jakarta.annotation.security.PermitAll;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.NonNull;
 
 /**
@@ -464,7 +465,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     return grid;
   }
 
-  private HorizontalLayout createActionButtons(Segment segment) {
+  private HorizontalLayout createActionButtons(@NonNull Segment segment) {
     Button summaryButton = new Button("Summarize", new Icon(VaadinIcon.ACADEMY_CAP));
     summaryButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     summaryButton.setTooltipText("Generate AI Summary");
@@ -473,7 +474,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     return new HorizontalLayout(summaryButton);
   }
 
-  private void generateSummary(Segment segment) {
+  private void generateSummary(@NonNull Segment segment) {
     String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
     new org.springframework.web.client.RestTemplate()
         .postForObject(
@@ -482,7 +483,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
-  private void openAddSegmentDialog(Show show) {
+  private void openAddSegmentDialog(@NonNull Show show) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Add Segment to " + show.getName());
     dialog.setWidth("600px");
@@ -554,7 +555,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
   }
 
   private boolean validateAndSaveSegment(
-      Show show, SegmentType segmentType, java.util.Set<Wrestler> wrestlers, Wrestler winner) {
+      @NonNull Show show, SegmentType segmentType, Set<Wrestler> wrestlers, Wrestler winner) {
     // Validation
     if (segmentType == null) {
       Notification.show("Please select a segment type", 3000, Notification.Position.MIDDLE)
