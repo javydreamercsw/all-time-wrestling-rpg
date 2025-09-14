@@ -74,39 +74,43 @@ public class TitleReignSyncService extends BaseSyncService {
 
       for (TitleReignPage page : titleReignPages) {
         String titleId = page.getTitleRelationId();
-        String championId = page.getChampionRelationId();
+        String championIds = page.getChampionRelationId();
 
-        if (titleId == null || championId == null) {
+        if (titleId == null || championIds == null) {
           log.warn("Skipping title reign with missing title or champion ID: {}", page.getId());
           continue;
         }
 
         Optional<Title> titleOpt = titleRepository.findByExternalId(titleId);
-        Optional<Wrestler> championOpt = wrestlerRepository.findByExternalId(championId);
 
         if (titleOpt.isEmpty()) {
           log.warn("Skipping title reign: Title with ID '{}' not found locally.", titleId);
           continue;
         }
-        if (championOpt.isEmpty()) {
-          log.warn("Skipping title reign: Champion with ID '{}' not found locally.", championId);
+
+        Title title = titleOpt.get();
+        String[] championExtIds = championIds.split(",");
+        List<Wrestler> champions = new java.util.ArrayList<>();
+        for (String championExtId : championExtIds) {
+          wrestlerRepository.findByExternalId(championExtId.trim()).ifPresent(champions::add);
+        }
+
+        if (champions.isEmpty()) {
+          log.warn("Skipping title reign: No champions found for IDs '{}'.", championIds);
           continue;
         }
 
-        Title title = titleOpt.get();
-        Wrestler champion = championOpt.get();
-
-        // Attempt to find existing reign by title, champion, and reign number
+        // Attempt to find existing reign by title, and reign number
         Optional<TitleReign> existingReignOpt = Optional.empty();
         if (page.getReignNumber() != null) {
           existingReignOpt =
-              titleReignRepository.findByTitleAndChampionAndReignNumber(
-                  title, champion, page.getReignNumber());
+              titleReignRepository.findByTitleAndReignNumber(title, page.getReignNumber());
         }
 
         TitleReign reign = existingReignOpt.orElse(new TitleReign());
         reign.setTitle(title);
-        reign.setChampion(champion);
+        reign.getChampions().clear();
+        reign.getChampions().addAll(champions);
         reign.setReignNumber(page.getReignNumber() != null ? page.getReignNumber() : 0);
         reign.setNotes(page.getNotes());
 
@@ -128,7 +132,9 @@ public class TitleReignSyncService extends BaseSyncService {
         log.info(
             "Saved title reign for {} - {} (Reign #{}): {} to {}",
             title.getName(),
-            champion.getName(),
+            reign.getChampions().stream()
+                .map(Wrestler::getName)
+                .collect(java.util.stream.Collectors.joining(" & ")),
             reign.getReignNumber(),
             reign.getStartDate(),
             reign.getEndDate());

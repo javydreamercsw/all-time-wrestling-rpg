@@ -28,8 +28,10 @@ public interface TitleRepository
   List<Title> findByIsVacantFalse();
 
   /** Find titles currently held by a specific wrestler. */
-  @Query("SELECT t FROM Title t WHERE t.currentChampion = :wrestler AND t.isVacant = false")
-  List<Title> findByCurrentChampion(@Param("wrestler") Wrestler wrestler);
+  @Query(
+      "SELECT DISTINCT tr.title FROM TitleReign tr WHERE tr.endDate IS NULL AND :wrestler MEMBER OF"
+          + " tr.champions")
+  List<Title> findTitlesHeldByWrestler(@Param("wrestler") Wrestler wrestler);
 
   /** Find active titles of a specific tier. */
   @Query("SELECT t FROM Title t WHERE t.tier = :tier AND t.isActive = true")

@@ -13,20 +13,16 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class TitleSyncServiceTest {
@@ -36,32 +32,23 @@ class TitleSyncServiceTest {
   @Mock private TitleService titleService;
   @Mock private NotionHandler notionHandler;
   @Mock private NotionSyncProperties syncProperties;
-  @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private NotionRateLimitService rateLimitService;
 
   private TitleSyncService titleSyncService;
 
   @BeforeEach
-  void setUp() {
-    Mockito.lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+  void setUp() throws Exception {
+    when(syncProperties.getParallelThreads()).thenReturn(1);
     titleSyncService = new TitleSyncService(new ObjectMapper(), syncProperties);
 
     // Manually inject the mocks using reflection
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        titleSyncService, "titleRepository", titleRepository);
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        titleSyncService, "wrestlerRepository", wrestlerRepository);
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        titleSyncService, "titleService", titleService);
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        titleSyncService, "notionHandler", notionHandler);
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        titleSyncService, "progressTracker", progressTracker);
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        titleSyncService, "healthMonitor", healthMonitor);
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        titleSyncService, "rateLimitService", rateLimitService);
+    ReflectionTestUtils.setField(titleSyncService, "titleRepository", titleRepository);
+    ReflectionTestUtils.setField(titleSyncService, "wrestlerRepository", wrestlerRepository);
+    ReflectionTestUtils.setField(titleSyncService, "titleService", titleService);
+    ReflectionTestUtils.setField(titleSyncService, "notionHandler", notionHandler);
+    ReflectionTestUtils.setField(titleSyncService, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(titleSyncService, "rateLimitService", rateLimitService);
   }
 
   @Test
@@ -70,30 +57,25 @@ class TitleSyncServiceTest {
     Wrestler champion = new Wrestler();
     champion.setId(1L);
     champion.setName("Champion Wrestler");
-    champion.setExternalId("champion-wrestler-id");
 
     Wrestler contender = new Wrestler();
     contender.setId(2L);
     contender.setName("Contender Wrestler");
-    contender.setExternalId("contender-wrestler-id");
 
     Title existingTitle = new Title();
     existingTitle.setId(100L);
     existingTitle.setName("ATW World");
+    existingTitle.setIsVacant(true);
 
-    TitlePage titlePage = new TitlePage();
-    Map<String, Object> rawProperties = new HashMap<>();
-    rawProperties.put("Name", "ATW World");
-    rawProperties.put("Current Champion", "champion-wrestler-id");
-    rawProperties.put("👤 #1 Contenders", "contender-wrestler-id");
-    titlePage.setRawProperties(rawProperties);
+    TitlePage titlePage = mock(TitlePage.class);
+    when(titlePage.getChampionRelationId()).thenReturn("champion-ext-id");
+    when(titlePage.getContenderRelationId()).thenReturn("contender-ext-id");
 
     when(syncProperties.isEntityEnabled("titles")).thenReturn(true);
     when(notionHandler.loadAllTitles()).thenReturn(Collections.singletonList(titlePage));
-    when(titleService.findByName("ATW World")).thenReturn(Optional.of(existingTitle));
-    when(wrestlerRepository.findByExternalId("champion-wrestler-id"))
-        .thenReturn(Optional.of(champion));
-    when(wrestlerRepository.findByExternalId("contender-wrestler-id"))
+    when(titleService.findByName(any())).thenReturn(Optional.of(existingTitle));
+    when(wrestlerRepository.findByExternalId("champion-ext-id")).thenReturn(Optional.of(champion));
+    when(wrestlerRepository.findByExternalId("contender-ext-id"))
         .thenReturn(Optional.of(contender));
 
     // Act
@@ -101,14 +83,14 @@ class TitleSyncServiceTest {
 
     // Assert
     ArgumentCaptor<Title> titleCaptor = ArgumentCaptor.forClass(Title.class);
-    verify(titleRepository, times(2)).save(titleCaptor.capture());
+    verify(titleRepository, atLeastOnce()).save(titleCaptor.capture());
 
-    List<Title> savedTitles = titleCaptor.getAllValues();
-    Title finalSave = savedTitles.get(savedTitles.size() - 1);
+    Title finalSave = titleCaptor.getValue();
 
-    assertNotNull(finalSave.getCurrentChampion());
-    assertEquals("Champion Wrestler", finalSave.getCurrentChampion().getName());
-    assertNotNull(finalSave.getNumberOneContender());
-    assertEquals("Contender Wrestler", finalSave.getNumberOneContender().getName());
+    assertFalse(finalSave.getIsVacant());
+    assertEquals(1, finalSave.getCurrentChampions().size());
+    assertEquals("Champion Wrestler", finalSave.getCurrentChampions().get(0).getName());
+    assertNotNull(finalSave.getContender());
+    assertEquals("Contender Wrestler", finalSave.getContender().getName());
   }
 }

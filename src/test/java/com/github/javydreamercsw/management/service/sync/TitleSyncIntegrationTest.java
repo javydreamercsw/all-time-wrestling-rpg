@@ -72,15 +72,19 @@ class TitleSyncIntegrationTest extends BaseTest {
     log.info("Verifying ATW World Title Champion...");
     // This assertion depends on the data in your Notion database.
     // If it fails, check that the 'ATW World' championship has a champion assigned in Notion.
-    assertNotNull(atwWorldTitle.getCurrentChampion(), "ATW World Champion should not be null");
-    log.info("ATW World Champion is: {}", atwWorldTitle.getCurrentChampion().getName());
+    assertFalse(
+        atwWorldTitle.getCurrentChampions().isEmpty(), "ATW World Champion should not be empty");
+    log.info(
+        "ATW World Champion is: {}",
+        atwWorldTitle.getCurrentChampions().stream()
+            .map(w -> w.getName())
+            .collect(java.util.stream.Collectors.joining(" & ")));
 
     log.info("Verifying ATW World Title #1 Contender...");
     // This assertion depends on the data in your Notion database.
     // If it fails, check that the 'ATW World' championship has a #1 contender assigned in Notion.
-    assertNotNull(
-        atwWorldTitle.getNumberOneContender(), "ATW World #1 Contender should not be null");
-    log.info("ATW World #1 Contender is: {}", atwWorldTitle.getNumberOneContender().getName());
+    assertNotNull(atwWorldTitle.getContender(), "ATW World #1 Contender should not be null");
+    log.info("ATW World #1 Contender is: {}", atwWorldTitle.getContender().getName());
 
     // Verify title reigns
     log.info("Verifying ATW World Title Reigns...");
@@ -90,11 +94,13 @@ class TitleSyncIntegrationTest extends BaseTest {
 
     // Example: Assert at least one reign exists and check some properties
     TitleReign firstReign = reigns.get(0);
-    assertNotNull(firstReign.getChampion(), "First reign should have a champion");
+    assertFalse(firstReign.getChampions().isEmpty(), "First reign should have champions");
     assertNotNull(firstReign.getStartDate(), "First reign should have a start date");
     log.info(
         "First reign: Champion {} from {}",
-        firstReign.getChampion().getName(),
+        firstReign.getChampions().stream()
+            .map(w -> w.getName())
+            .collect(java.util.stream.Collectors.joining(" & ")),
         firstReign.getStartDate());
   }
 }

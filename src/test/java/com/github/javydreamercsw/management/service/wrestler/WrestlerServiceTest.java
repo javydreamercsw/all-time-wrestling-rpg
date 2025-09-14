@@ -167,8 +167,10 @@ class WrestlerServiceTest {
     List<Wrestler> eligible = wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE);
 
     // Then
-    assertThat(eligible).hasSize(2);
-    assertThat(eligible).extracting(Wrestler::getName).containsExactly("Wrestler 2", "Wrestler 3");
+    assertThat(eligible).hasSize(3);
+    assertThat(eligible)
+        .extracting(Wrestler::getName)
+        .containsExactly("Wrestler 1", "Wrestler 2", "Wrestler 3");
   }
 
   @Test

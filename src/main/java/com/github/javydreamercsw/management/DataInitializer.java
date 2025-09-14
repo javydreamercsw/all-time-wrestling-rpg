@@ -13,7 +13,11 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
@@ -25,6 +29,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +54,7 @@ public class DataInitializer {
   @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private DeckRepository deckRepository;
+  @Autowired private TitleRepository titleRepository;
 
   @Bean
   @Order(-1)
@@ -89,7 +95,70 @@ public class DataInitializer {
   }
 
   @Bean
+  @Order(0)
+  public ApplicationRunner syncShowTypesFromFile(@NonNull ShowTypeService showTypeService) {
+    return args -> {
+      ClassPathResource resource = new ClassPathResource("show_types.json");
+      if (resource.exists()) {
+        log.info("Loading show types from file: {}", resource.getPath());
+        ObjectMapper mapper = new ObjectMapper();
+        try (var is = resource.getInputStream()) {
+          var showTypesFromFile = mapper.readValue(is, new TypeReference<List<ShowType>>() {});
+          Map<String, ShowType> existing =
+              showTypeService.findAll().stream()
+                  .collect(Collectors.toMap(ShowType::getName, s -> s));
+          for (ShowType st : showTypesFromFile) {
+            ShowType existingType = existing.get(st.getName());
+            if (existingType == null) {
+              showTypeService.save(st);
+              log.info("Saved new show type: {}", st.getName());
+            }
+          }
+        }
+      }
+    };
+  }
+
+  @Bean
   @Order(1)
+  public ApplicationRunner loadSegmentTypesFromFile(
+      @NonNull SegmentTypeService segmentTypeService) {
+    return args -> {
+      ClassPathResource resource = new ClassPathResource("segment_types.json");
+      if (resource.exists()) {
+        log.info("Loading segment types from file: {}", resource.getPath());
+        ObjectMapper mapper = new ObjectMapper();
+        try (var is = resource.getInputStream()) {
+          var segmentTypesFromFile =
+              mapper.readValue(is, new TypeReference<List<SegmentTypeDTO>>() {});
+
+          for (SegmentTypeDTO dto : segmentTypesFromFile) {
+            // Only create if it doesn't exist
+            Optional<SegmentType> existingType = segmentTypeService.findByName(dto.getName());
+            if (existingType.isEmpty()) {
+              SegmentType segmentType =
+                  segmentTypeService.createOrUpdateSegmentType(dto.getName(), dto.getDescription());
+              log.info(
+                  "Loaded segment type: {} (Players: {})",
+                  segmentType.getName(),
+                  dto.isUnlimited() ? "Unlimited" : dto.getPlayerAmount());
+            } else {
+              log.debug("Segment type {} already exists, skipping creation.", dto.getName());
+            }
+          }
+
+          log.info("Segment type loading completed");
+        } catch (Exception e) {
+          log.error("Error loading segment types from file", e);
+        }
+      } else {
+        log.warn("Segment types file not found: {}", resource.getPath());
+      }
+    };
+  }
+
+  @Bean
+  @Order(2)
   public ApplicationRunner loadShowTemplatesFromFile(
       @NonNull ShowTemplateService showTemplateService) {
     return args -> {
@@ -138,45 +207,7 @@ public class DataInitializer {
   }
 
   @Bean
-  @Order(0)
-  public ApplicationRunner loadSegmentTypesFromFile(
-      @NonNull SegmentTypeService segmentTypeService) {
-    return args -> {
-      ClassPathResource resource = new ClassPathResource("segment_types.json");
-      if (resource.exists()) {
-        log.info("Loading segment types from file: {}", resource.getPath());
-        ObjectMapper mapper = new ObjectMapper();
-        try (var is = resource.getInputStream()) {
-          var segmentTypesFromFile =
-              mapper.readValue(is, new TypeReference<List<SegmentTypeDTO>>() {});
-
-          for (SegmentTypeDTO dto : segmentTypesFromFile) {
-            // Only create if it doesn't exist
-            Optional<SegmentType> existingType = segmentTypeService.findByName(dto.getName());
-            if (existingType.isEmpty()) {
-              SegmentType segmentType =
-                  segmentTypeService.createOrUpdateSegmentType(dto.getName(), dto.getDescription());
-              log.info(
-                  "Loaded segment type: {} (Players: {})",
-                  segmentType.getName(),
-                  dto.isUnlimited() ? "Unlimited" : dto.getPlayerAmount());
-            } else {
-              log.debug("Segment type {} already exists, skipping creation.", dto.getName());
-            }
-          }
-
-          log.info("Segment type loading completed");
-        } catch (Exception e) {
-          log.error("Error loading segment types from file", e);
-        }
-      } else {
-        log.warn("Segment types file not found: {}", resource.getPath());
-      }
-    };
-  }
-
-  @Bean
-  @Order(1)
+  @Order(3)
   public ApplicationRunner syncSetsFromFile(@NonNull CardSetService cardSetService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("sets.json");
@@ -207,7 +238,7 @@ public class DataInitializer {
   }
 
   @Bean
-  @Order(2)
+  @Order(4)
   public ApplicationRunner syncCardsFromFile(
       @NonNull CardService cardService, @NonNull CardSetService cardSetService) {
     return args -> {
@@ -257,7 +288,7 @@ public class DataInitializer {
   }
 
   @Bean
-  @Order(3)
+  @Order(5)
   public ApplicationRunner syncWrestlersFromFile(@NonNull WrestlerService wrestlerService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("wrestlers.json");
@@ -325,7 +356,34 @@ public class DataInitializer {
   }
 
   @Bean
-  @Order(4)
+  @Order(6)
+  public ApplicationRunner syncChampionshipsFromFile(@NonNull TitleService titleService) {
+    return args -> {
+      ClassPathResource resource = new ClassPathResource("championships.json");
+      if (resource.exists()) {
+        log.info("Loading championships from file: {}", resource.getPath());
+        ObjectMapper mapper = new ObjectMapper();
+        try (var is = resource.getInputStream()) {
+          var championshipsFromFile = mapper.readValue(is, new TypeReference<List<TitleDTO>>() {});
+          for (TitleDTO dto : championshipsFromFile) {
+            Optional<Title> existingTitle = titleService.findByName(dto.getName());
+            if (existingTitle.isEmpty()) {
+              titleService.createTitle(dto.getName(), dto.getDescription(), dto.getTier());
+              log.info("Created new title: {}", dto.getName());
+            } else {
+              log.debug("Title {} already exists, skipping creation.", dto.getName());
+            }
+          }
+          titleRepository.flush();
+        } catch (Exception e) {
+          log.error("Error loading championships from file", e);
+        }
+      }
+    };
+  }
+
+  @Bean
+  @Order(7)
   public ApplicationRunner syncDecksFromFile(
       @NonNull CardService cardService,
       @NonNull WrestlerService wrestlerService,
@@ -381,31 +439,6 @@ public class DataInitializer {
     };
   }
 
-  @Bean
-  @Order(5)
-  public ApplicationRunner syncShowTypesFromFile(@NonNull ShowTypeService showTypeService) {
-    return args -> {
-      ClassPathResource resource = new ClassPathResource("show_types.json");
-      if (resource.exists()) {
-        log.info("Loading show types from file: {}", resource.getPath());
-        ObjectMapper mapper = new ObjectMapper();
-        try (var is = resource.getInputStream()) {
-          var showTypesFromFile = mapper.readValue(is, new TypeReference<List<ShowType>>() {});
-          Map<String, ShowType> existing =
-              showTypeService.findAll().stream()
-                  .collect(Collectors.toMap(ShowType::getName, s -> s));
-          for (ShowType st : showTypesFromFile) {
-            ShowType existingType = existing.get(st.getName());
-            if (existingType == null) {
-              showTypeService.save(st);
-              log.info("Saved new show type: {}", st.getName());
-            }
-          }
-        }
-      }
-    };
-  }
-
   @Data
   public static class CardDTO {
     private String name;
@@ -435,5 +468,14 @@ public class DataInitializer {
     private int number;
     private String set;
     private int amount;
+  }
+
+  @Data
+  public static class TitleDTO {
+    private String name;
+
+    private String description;
+    private WrestlerTier tier;
+    private Gender gender;
   }
 }

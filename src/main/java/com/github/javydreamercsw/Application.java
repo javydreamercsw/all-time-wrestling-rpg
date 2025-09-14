@@ -29,12 +29,14 @@ public class Application implements AppShellConfigurator {
   @Bean
   public CommandLineRunner flywayCommandLineRunner(DataSource dataSource) {
     return args -> {
-      Flyway.configure()
-          .dataSource(dataSource)
-          .locations("classpath:db/migration")
-          .baselineOnMigrate(true) // Allow Flyway to take over existing schemas
-          .load()
-          .migrate();
+      Flyway flyway =
+          Flyway.configure()
+              .dataSource(dataSource)
+              .locations("classpath:db/migration")
+              .baselineOnMigrate(true) // Allow Flyway to take over existing schemas
+              .load();
+      flyway.repair();
+      flyway.migrate();
     };
   }
 

@@ -203,4 +203,8 @@ public class SegmentRuleService {
 
     return segmentRuleRepository.save(segmentRule);
   }
+
+  public List<SegmentRule> findAll() {
+    return segmentRuleRepository.findAll();
+  }
 }

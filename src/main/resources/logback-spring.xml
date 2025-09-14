@@ -5,7 +5,7 @@
     <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
     
     <!-- Disable Notion SDK logging completely -->
-    <logger name="notion" level="OFF" additivity="false"/>
+    <logger name="notion.api.v1.logging.StdoutLogger" level="OFF" />
     
     <!-- Set atmosphere logging to warn as configured in application.properties -->
     <logger name="org.atmosphere" level="WARN"/>

@@ -35,6 +35,7 @@ CREATE TABLE wrestler (
     bumps INT DEFAULT 0,
     current_health INT,
     is_player BOOLEAN NOT NULL,
+    gender VARCHAR(255),
     description VARCHAR(1000),
     faction_id BIGINT,
     FOREIGN KEY (faction_id) REFERENCES faction(faction_id) ON DELETE SET NULL
@@ -128,7 +129,9 @@ CREATE TABLE season (
     start_date DATE NOT NULL,
     end_date DATE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    creation_date TIMESTAMP NOT NULL
+    creation_date TIMESTAMP NOT NULL,
+    notion_id VARCHAR(255),
+    shows_per_ppv INT DEFAULT 5 NOT NULL
 );
 
 CREATE TABLE show_type (
@@ -140,7 +143,7 @@ CREATE TABLE show_type (
 );
 
 CREATE TABLE show_template (
-    show_template_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    template_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     description LONGTEXT,
     show_type_id BIGINT NOT NULL,
@@ -162,7 +165,7 @@ CREATE TABLE show (
     creation_date TIMESTAMP NOT NULL,
     FOREIGN KEY (show_type_id) REFERENCES show_type(show_type_id) ON DELETE RESTRICT,
     FOREIGN KEY (season_id) REFERENCES season(season_id) ON DELETE SET NULL,
-    FOREIGN KEY (template_id) REFERENCES show_template(show_template_id) ON DELETE SET NULL
+    FOREIGN KEY (template_id) REFERENCES show_template(template_id) ON DELETE SET NULL
 );
 
 -- =================================================================
@@ -228,25 +231,32 @@ CREATE TABLE title (
     title_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     description LONGTEXT,
-    tier VARCHAR(255) NOT NULL,
+    tier VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     is_vacant BOOLEAN NOT NULL DEFAULT TRUE,
-    current_champion_id BIGINT,
-    title_won_date TIMESTAMP,
     creation_date TIMESTAMP NOT NULL,
-    FOREIGN KEY (current_champion_id) REFERENCES wrestler(wrestler_id) ON DELETE SET NULL
+    external_id VARCHAR(255) UNIQUE,
+    contender_id BIGINT,
+    FOREIGN KEY (contender_id) REFERENCES wrestler(wrestler_id) ON DELETE SET NULL
 );
 
 CREATE TABLE title_reign (
     title_reign_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    external_id VARCHAR(255),
     title_id BIGINT NOT NULL,
-    wrestler_id BIGINT NOT NULL,
-    won_date TIMESTAMP NOT NULL,
-    lost_date TIMESTAMP,
-    days_held INT,
-    is_current BOOLEAN NOT NULL DEFAULT FALSE,
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP,
+    reign_number INT NOT NULL DEFAULT 1,
+    notes LONGTEXT,
     creation_date TIMESTAMP NOT NULL,
-    FOREIGN KEY (title_id) REFERENCES title(title_id) ON DELETE CASCADE,
+    FOREIGN KEY (title_id) REFERENCES title(title_id) ON DELETE CASCADE
+);
+
+CREATE TABLE title_reign_champion (
+    title_reign_id BIGINT NOT NULL,
+    wrestler_id BIGINT NOT NULL,
+    PRIMARY KEY (title_reign_id, wrestler_id),
+    FOREIGN KEY (title_reign_id) REFERENCES title_reign(title_reign_id) ON DELETE CASCADE,
     FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE
 );
 

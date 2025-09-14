@@ -75,11 +75,17 @@ public class ShowPlanningDtoMapper {
   public ShowPlanningChampionshipDTO toDto(ShowPlanningChampionship championship) {
     ShowPlanningChampionshipDTO dto = new ShowPlanningChampionshipDTO();
     dto.setChampionshipName(championship.getTitle().getName());
-    if (championship.getChampion() != null) {
-      dto.setChampionName(championship.getChampion().getName());
+    if (!championship.getChampions().isEmpty()) {
+      dto.setChampionName(
+          championship.getChampions().stream()
+              .map(w -> w.getName())
+              .collect(Collectors.joining(" & ")));
     }
-    if (championship.getContender() != null) {
-      dto.setContenderName(championship.getContender().getName());
+    if (!championship.getContenders().isEmpty()) {
+      dto.setContenderName(
+          championship.getContenders().stream()
+              .map(w -> w.getName())
+              .collect(Collectors.joining(" & ")));
     }
     return dto;
   }

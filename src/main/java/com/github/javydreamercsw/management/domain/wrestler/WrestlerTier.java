@@ -9,7 +9,7 @@ import lombok.Getter;
 @Getter
 public enum WrestlerTier {
   /** 0 – 24,999 fans - Just starting out. Local pops only. */
-  ROOKIE("Rookie", 0L, 24999L, "Just starting out. Local pops only.", "🐍", 0L, 0L),
+  ROOKIE("Rookie", 0L, 24999L, "Just starting out. Local pops only.", "🐍", 0L, 0L, 0L),
 
   /** 25,000 – 39,999 fans - Making noise in the lower card. Known for chaos. */
   RISER(
@@ -18,6 +18,7 @@ public enum WrestlerTier {
       39999L,
       "Making noise in the lower card. Known for chaos.",
       "🔥",
+      25000L,
       25000L,
       15000L),
 
@@ -29,11 +30,19 @@ public enum WrestlerTier {
       "Credible threat. Building rivalries and alliances.",
       "💪",
       40000L,
+      40000L,
       15000L),
 
   /** 60,000 – 99,999 fans - A serious player in the midcard scene. */
   MIDCARDER(
-      "Midcarder", 60000L, 99999L, "A serious player in the midcard scene.", "🧠", 60000L, 15000L),
+      "Midcarder",
+      60000L,
+      99999L,
+      "A serious player in the midcard scene.",
+      "🧠",
+      60000L,
+      60000L,
+      15000L),
 
   /** 100,000+ fans - Top of the mountain. Can headline PPVs. */
   MAIN_EVENTER(
@@ -42,6 +51,7 @@ public enum WrestlerTier {
       149999L,
       "Top of the mountain. Can headline PPVs.",
       "👑",
+      100000L,
       100000L,
       15000L),
 
@@ -53,6 +63,7 @@ public enum WrestlerTier {
       "Transcends eras. May cut promos as a bonus once per show.",
       "🌟",
       150000L,
+      150000L,
       15000L);
 
   // Getters
@@ -63,6 +74,7 @@ public enum WrestlerTier {
   private final String emoji;
   private final Long requiredFans;
   private final Long challengeCost;
+  private final Long contenderEntryFee;
 
   WrestlerTier(
       String displayName,
@@ -71,7 +83,8 @@ public enum WrestlerTier {
       String description,
       String emoji,
       Long requiredFans,
-      Long challengeCost) {
+      Long challengeCost,
+      Long contenderEntryFee) {
     this.displayName = displayName;
     this.minFans = minFans;
     this.maxFans = maxFans;
@@ -79,6 +92,7 @@ public enum WrestlerTier {
     this.emoji = emoji;
     this.requiredFans = requiredFans;
     this.challengeCost = challengeCost;
+    this.contenderEntryFee = contenderEntryFee;
   }
 
   /**
@@ -131,17 +145,5 @@ public enum WrestlerTier {
       return String.format("%,d+", minFans);
     }
     return String.format("%,d - %,d", minFans, maxFans);
-  }
-
-  public Long getRequiredFans() {
-    return requiredFans;
-  }
-
-  public Long getChallengeCost() {
-    return challengeCost;
-  }
-
-  public Long getContenderEntryFee() {
-    return challengeCost;
   }
 }
