@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.service.sync.entity;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -26,7 +27,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -41,10 +42,16 @@ class TitleReignSyncServiceTest {
   @Mock private NotionHandler notionHandler;
   @Mock private SyncHealthMonitor healthMonitor;
 
-  @InjectMocks private TitleReignSyncService service;
+  @Mock
+  private com.github.javydreamercsw.management.service.sync.NotionRateLimitService rateLimitService;
+
+  private TitleReignSyncService service;
 
   @BeforeEach
   void setUp() throws Exception {
+    when(syncProperties.getParallelThreads()).thenReturn(1);
+    service = new TitleReignSyncService(objectMapper, syncProperties);
+
     // Manually inject mocks into the private fields of the base class
     Field handlerField = BaseSyncService.class.getDeclaredField("notionHandler");
     handlerField.setAccessible(true);
@@ -53,6 +60,19 @@ class TitleReignSyncServiceTest {
     Field healthMonitorField = BaseSyncService.class.getDeclaredField("healthMonitor");
     healthMonitorField.setAccessible(true);
     healthMonitorField.set(service, healthMonitor);
+
+    Field rateLimitServiceField = BaseSyncService.class.getDeclaredField("rateLimitService");
+    rateLimitServiceField.setAccessible(true);
+    rateLimitServiceField.set(service, rateLimitService);
+
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "titleReignRepository", titleReignRepository);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "titleRepository", titleRepository);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "wrestlerRepository", wrestlerRepository);
+
+    service.clearSyncSession();
   }
 
   @Test
@@ -60,7 +80,8 @@ class TitleReignSyncServiceTest {
     // Given: A sync has already run successfully in this session.
     when(syncProperties.isEntityEnabled("titlereigns")).thenReturn(true);
     when(notionHandler.loadAllTitleReigns()).thenReturn(Collections.emptyList());
-    service.syncTitleReigns("first-op"); // First call
+    SyncResult firstResult = service.syncTitleReigns("first-op"); // First call
+    assertTrue(firstResult.isSuccess()); // Ensure the first sync completes
 
     // When: The sync is called a second time.
     SyncResult result = service.syncTitleReigns("second-op");
@@ -111,8 +132,7 @@ class TitleReignSyncServiceTest {
     wrestler.setName("Champion Wrestler");
     when(wrestlerRepository.findByExternalId("wrestler-id-1")).thenReturn(Optional.of(wrestler));
 
-    when(titleReignRepository.findByTitleAndChampionAndReignNumber(title, wrestler, 1))
-        .thenReturn(Optional.empty());
+    when(titleReignRepository.findByTitleAndReignNumber(title, 1)).thenReturn(Optional.empty());
 
     // When: The sync is executed.
     SyncResult result = service.syncTitleReigns("test-op");
@@ -120,6 +140,11 @@ class TitleReignSyncServiceTest {
     // Then: The sync should succeed and a new reign should be saved.
     assertTrue(result.isSuccess());
     verify(titleReignRepository).save(any(TitleReign.class));
+    // Verify that the saved reign has the correct champion(s)
+    ArgumentCaptor<TitleReign> reignCaptor = ArgumentCaptor.forClass(TitleReign.class);
+    verify(titleReignRepository).save(reignCaptor.capture());
+    TitleReign savedReign = reignCaptor.getValue();
+    assertThat(savedReign.getChampions()).containsExactly(wrestler);
     verify(healthMonitor).recordSuccess(anyString(), anyLong(), anyInt());
   }
 

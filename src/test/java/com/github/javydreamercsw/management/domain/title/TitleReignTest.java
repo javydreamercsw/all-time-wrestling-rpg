@@ -30,7 +30,7 @@ class TitleReignTest {
 
     titleReign = new TitleReign();
     titleReign.setTitle(title);
-    titleReign.setChampion(wrestler);
+    titleReign.getChampions().add(wrestler);
     titleReign.setReignNumber(1);
     titleReign.setStartDate(Instant.now());
   }
@@ -159,9 +159,9 @@ class TitleReignTest {
   @DisplayName("Should maintain relationships correctly")
   void shouldMaintainRelationshipsCorrectly() {
     assertThat(titleReign.getTitle()).isEqualTo(title);
-    assertThat(titleReign.getChampion()).isEqualTo(wrestler);
+    assertThat(titleReign.getChampions()).containsExactly(wrestler);
     assertThat(titleReign.getTitle().getName()).isEqualTo("Test Championship");
-    assertThat(titleReign.getChampion().getName()).isEqualTo("Test Champion");
+    assertThat(titleReign.getChampions().get(0).getName()).isEqualTo("Test Champion");
   }
 
   @Test

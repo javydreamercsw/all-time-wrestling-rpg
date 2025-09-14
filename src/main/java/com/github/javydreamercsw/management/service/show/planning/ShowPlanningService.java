@@ -105,15 +105,20 @@ public class ShowPlanningService {
     // Get championships
     List<ShowPlanningChampionship> championships = new ArrayList<>();
     List<Title> activeTitles = titleService.getActiveTitles();
+    log.info("Found {} active titles", activeTitles.size());
     for (Title title : activeTitles) {
       ShowPlanningChampionship championship = new ShowPlanningChampionship();
       championship.setTitle(title);
-      if (title.getCurrentChampion() != null) {
-        championship.setChampion(title.getCurrentChampion());
+      if (!title.getCurrentChampions().isEmpty()) {
+        championship.getChampions().addAll(title.getCurrentChampions());
       }
       List<Wrestler> eligibleChallengers = titleService.getEligibleChallengers(title.getId());
+      log.info(
+          "Found {} eligible challengers for title {}",
+          eligibleChallengers.size(),
+          title.getName());
       if (!eligibleChallengers.isEmpty()) {
-        championship.setContender(eligibleChallengers.get(0));
+        championship.getContenders().add(eligibleChallengers.get(0));
       }
       championships.add(championship);
     }

@@ -50,6 +50,7 @@ public class EntityDependencyAnalyzer {
     order.add("show-types");
     order.add("shows"); // Show (depends on ShowTemplate, Season)
     order.add("wrestlers"); // Wrestler (may depend on Faction, but can be synced independently)
+    order.add("titles");
 
     // Entities that depend on wrestlers
     order.add("factions"); // Faction (depends on Wrestler for leader and members)

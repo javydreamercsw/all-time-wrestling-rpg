@@ -21,7 +21,6 @@ public class ShowTemplateDTO {
   private String description;
 
   /** Name of the show type this template belongs to */
-  @JsonProperty("showTypeName")
   private String showTypeName;
 
   /** URL to the Notion page containing template details */

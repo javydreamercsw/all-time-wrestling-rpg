@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.TitlePage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
@@ -14,25 +13,26 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.List;
-import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
 public class TitleSyncService extends BaseSyncService {
 
-  @Autowired private TitleService titleService;
-  @Autowired private TitleRepository titleRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private TitleReignRepository titleReignRepository;
+  @Autowired protected TitleService titleService;
+  @Autowired protected TitleRepository titleRepository;
+  @Autowired protected WrestlerRepository wrestlerRepository;
+  @Autowired protected TitleReignRepository titleReignRepository;
 
   public TitleSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
   }
 
+  @Transactional
   public SyncResult syncTitles(@NonNull String operationId) {
     if (isAlreadySyncedInSession("titles")) {
       log.info("⏭️ Titles already synced in current session, skipping");
@@ -131,66 +131,63 @@ public class TitleSyncService extends BaseSyncService {
   }
 
   private void updateTitleFromNotion(Title title, TitlePage titlePage) {
-    log.info("Updating title: {}", title.getName());
+    log.debug("Updating title: {}", title.getName());
 
-    String sex = titlePage.getGender();
-    if (sex != null && !sex.isBlank()) {
+    String gender = titlePage.getGender();
+    if (gender != null && !gender.isBlank()) {
       try {
-        title.setGender(Gender.valueOf(sex.toUpperCase()));
+        title.setGender(Gender.valueOf(gender.toUpperCase()));
       } catch (IllegalArgumentException e) {
-        log.warn("Invalid sex value '{}' for title '{}'", sex, title.getName());
+        log.warn("Invalid gender value '{}' for title '{}'", gender, title.getName());
       }
     }
 
-    String championId = titlePage.getChampionRelationId();
-    if (championId != null && !championId.isBlank()) {
-      Optional<Wrestler> championOpt = wrestlerRepository.findByExternalId(championId);
-      if (championOpt.isPresent()) {
-        Wrestler champion = championOpt.get();
-        log.info("Setting champion for title '{}' to '{}'", title.getName(), champion.getName());
-        title.setCurrentChampion(champion);
-        titleRepository.save(title);
-      } else {
-        log.warn(
-            "Champion with external ID '{}' not found for title '{}'", championId, title.getName());
+    // Sync Champions
+    String championIds = titlePage.getChampionRelationId();
+    if (championIds != null && !championIds.isBlank()) {
+      List<Wrestler> newChampions = new java.util.ArrayList<>();
+      for (String championId : championIds.split(",")) {
+        wrestlerRepository.findByExternalId(championId.trim()).ifPresent(newChampions::add);
       }
-    } else {
-      // If the champion relation is empty in Notion, we might want to vacate it locally.
-      if (title.getCurrentChampion() != null) {
-        log.info("Vacating title: {}", title.getName());
-        title.vacateTitle();
-        titleRepository.save(title);
-      }
-    }
 
-    String contenderId = titlePage.getContenderRelationId();
-    if (contenderId != null && !contenderId.isBlank()) {
-      Optional<Wrestler> contenderOpt = wrestlerRepository.findByExternalId(contenderId);
-      if (contenderOpt.isPresent()) {
-        Wrestler contender = contenderOpt.get();
+      if (!newChampions.isEmpty()
+          && !new java.util.HashSet<>(title.getCurrentChampions())
+              .equals(new java.util.HashSet<>(newChampions))) {
         log.info(
-            "Setting #1 contender for title '{}' to '{}'", title.getName(), contender.getName());
-        title.setNumberOneContender(contender);
-        titleRepository.save(title);
-      } else {
-        log.warn(
-            "Contender with external ID '{}' not found for title '{}'",
-            contenderId,
-            title.getName());
-      }
-    } else {
-      if (title.getNumberOneContender() != null) {
-        log.info("Removing #1 contender from title: {}", title.getName());
-        title.setNumberOneContender(null);
+            "Setting champions for title '{}' to '{}'",
+            title.getName(),
+            newChampions.stream()
+                .map(Wrestler::getName)
+                .collect(java.util.stream.Collectors.joining(", ")));
+        title.awardTitleTo(newChampions, java.time.Instant.now());
         titleRepository.save(title);
       }
+    } else if (!title.getIsVacant()) {
+      log.info("Vacating title from Notion: {}", title.getName());
+      title.vacateTitle();
+      titleRepository.save(title);
     }
 
-    List<TitleReign> reigns = titleReignRepository.findByTitle(title);
-    title.getTitleReigns().clear();
-    title.getTitleReigns().addAll(reigns);
-    title.getTitleHistory().clear();
-    title.getTitleHistory().addAll(reigns);
-    titleRepository.save(title);
+    // Sync Contender
+    String contenderIds = titlePage.getContenderRelationId();
+    if (contenderIds != null && !contenderIds.isBlank()) {
+      wrestlerRepository
+          .findByExternalId(contenderIds.split(",")[0].trim())
+          .ifPresent(
+              contender -> {
+                if (!contender.equals(title.getContender())) {
+                  log.info(
+                      "Setting #1 contender for title '{}' to '{}'",
+                      title.getName(),
+                      contender.getName());
+                  title.setContender(contender);
+                  titleRepository.save(title);
+                }
+              });
+    } else if (title.getContender() != null) {
+      log.info("Removing #1 contender from title: {}", title.getName());
+      title.setContender(null);
+      titleRepository.save(title);
+    }
   }
 }

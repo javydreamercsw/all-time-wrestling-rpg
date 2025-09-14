@@ -128,7 +128,7 @@ class ShowPlanningServiceTest {
     title.setName("Test Title");
     Wrestler champion = new Wrestler();
     champion.setName("Champion");
-    title.setCurrentChampion(champion);
+    title.getCurrentChampions().add(champion);
     when(titleService.getActiveTitles()).thenReturn(Collections.singletonList(title));
     Wrestler contender = new Wrestler();
     contender.setName("Contender");

@@ -169,7 +169,16 @@ public class NotionSyncView extends Main {
     statusButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     statusButton.addClickListener(e -> updateSyncStatus());
 
-    controlSection.add(syncAllButton, entitySelectionCombo, syncSelectedButton, statusButton);
+    Button syncChampionshipsButton = new Button("Sync Championships", VaadinIcon.TROPHY.create());
+    syncChampionshipsButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+    syncChampionshipsButton.addClickListener(e -> triggerEntitySync("titles"));
+
+    controlSection.add(
+        syncAllButton,
+        entitySelectionCombo,
+        syncSelectedButton,
+        syncChampionshipsButton,
+        statusButton);
     return controlSection;
   }
 

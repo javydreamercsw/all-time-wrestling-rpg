@@ -101,7 +101,7 @@ CREATE INDEX IF NOT EXISTS idx_title_reign_current ON title_reign(end_date);
 CREATE INDEX IF NOT EXISTS idx_title_reign_title ON title_reign(title_id);
 
 -- Index for title reigns by champion
-CREATE INDEX IF NOT EXISTS idx_title_reign_wrestler ON title_reign(champion_id);
+CREATE INDEX IF NOT EXISTS idx_title_reign_wrestler ON title_reign_champion(wrestler_id);
 
 -- Index for reign start date
 CREATE INDEX IF NOT EXISTS idx_title_reign_start_date ON title_reign(start_date);
@@ -208,7 +208,7 @@ CREATE INDEX IF NOT EXISTS idx_injury_recovery ON injury(is_active, severity, in
 
 -- Additional indexes on foreign keys that might not be automatically indexed
 CREATE INDEX IF NOT EXISTS idx_show_fk_composite ON show(show_type_id, season_id, template_id);
-CREATE INDEX IF NOT EXISTS idx_title_reign_fk_composite ON title_reign(title_id, champion_id, end_date);
+CREATE INDEX IF NOT EXISTS idx_title_reign_fk_composite ON title_reign_champion(title_reign_id, wrestler_id);
 
 -- ==================== FULL TEXT SEARCH INDEXES (H2 Specific) ====================
 

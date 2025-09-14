@@ -1,31 +1,6 @@
 [ {
-  "titleName" : "ATW World",
-  "titleType" : "Singles",
-  "tier" : "Main Event",
-  "titleMatchFee" : 100000,
-  "contenderMatchFee" : 35000
-}, {
-  "titleName" : "ATW Intertemporal",
-  "titleType" : "Singles",
-  "tier" : "Midcard",
-  "titleMatchFee" : 60000,
-  "contenderMatchFee" : 25000
-}, {
-  "titleName" : "ATW Extreme",
-  "titleType" : "Singles",
-  "tier" : "Lower Midcard",
-  "titleMatchFee" : 25000,
-  "contenderMatchFee" : 15000
-}, {
-  "titleName" : "ATW Tag Team",
-  "titleType" : "Tag Team",
-  "tier" : "Lower Midcard",
-  "titleMatchFee" : 40000,
-  "contenderMatchFee" : 20000
-}, {
-  "titleName" : "Time Vault",
-  "titleType" : "Singles",
-  "tier" : "N/A",
-  "titleMatchFee" : null,
-  "contenderMatchFee" : null
+  "name" : "ATW World",
+  "tier" : "MAIN_EVENTER",
+  "description" : "",
+  "gender" : "MALE"
 } ]

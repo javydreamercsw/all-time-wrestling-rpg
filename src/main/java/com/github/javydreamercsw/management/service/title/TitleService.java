@@ -9,6 +9,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -91,7 +92,7 @@ public class TitleService {
         return Optional.empty();
       }
 
-      title.awardTitle(wrestler);
+      title.awardTitleTo(List.of(wrestler), Instant.now(clock));
       return Optional.of(titleRepository.saveAndFlush(title));
     }
 
@@ -180,7 +181,7 @@ public class TitleService {
   public List<Title> getTitlesHeldBy(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
-        .map(titleRepository::findByCurrentChampion)
+        .map(wrestler -> titleRepository.findTitlesHeldByWrestler(wrestler))
         .orElse(List.of());
   }
 
@@ -226,8 +227,10 @@ public class TitleService {
                     title.getName(),
                     title.getTier(),
                     title.getIsVacant(),
-                    title.getCurrentChampion() != null
-                        ? title.getCurrentChampion().getName()
+                    !title.getCurrentChampions().isEmpty()
+                        ? title.getCurrentChampions().stream()
+                            .map(Wrestler::getName)
+                            .collect(Collectors.joining(" & "))
                         : null,
                     title.getCurrentReignDays(),
                     title.getTotalReigns(),
@@ -239,6 +242,10 @@ public class TitleService {
   @Transactional(readOnly = true)
   public boolean titleNameExists(@NonNull String name) {
     return titleRepository.existsByName(name);
+  }
+
+  public List<Title> findAll() {
+    return titleRepository.findAll();
   }
 
   /** Challenge result data class. */
