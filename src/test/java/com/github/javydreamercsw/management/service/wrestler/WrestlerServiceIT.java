@@ -11,6 +11,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,11 @@ class WrestlerServiceIT {
   @Autowired WrestlerService wrestlerService;
   @Autowired WrestlerRepository wrestlerRepository;
   @Autowired DeckRepository deckRepository;
+
+  @BeforeEach
+  void clean(){
+      wrestlerRepository.deleteAll();
+  }
 
   @Test
   @DisplayName("Should create wrestler with ATW RPG defaults")
@@ -137,10 +143,10 @@ class WrestlerServiceIT {
     List<Wrestler> worldEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER);
 
     // Then
-    assertThat(extremeEligible).hasSize(3); // Riser, Contender, Main Eventer
+    assertThat(extremeEligible).hasSize(4); // Rookie, Riser, Contender, Main Eventer
     assertThat(extremeEligible)
         .extracting(Wrestler::getName)
-        .containsExactlyInAnyOrder("Riser", "Contender", "Main Eventer");
+        .containsExactlyInAnyOrder("Rookie","Riser", "Contender", "Main Eventer");
 
     assertThat(worldEligible).hasSize(1); // Only Main Eventer
     assertThat(worldEligible).extracting(Wrestler::getName).containsExactly("Main Eventer");
