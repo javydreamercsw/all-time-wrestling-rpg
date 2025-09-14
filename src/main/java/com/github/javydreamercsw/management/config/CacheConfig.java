@@ -4,11 +4,10 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
-import org.springframework.cache.support.SimpleCacheManager;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -47,56 +46,34 @@ public class CacheConfig {
   public CacheManager cacheManager() {
     log.info("🚀 Initializing cache manager with performance optimizations...");
 
-    SimpleCacheManager cacheManager = new SimpleCacheManager();
-
-    // Configure caches with different characteristics based on usage patterns
-    cacheManager.setCaches(
+    CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+    cacheManager.setCacheNames(
         Arrays.asList(
-            // Frequently accessed, rarely changed data - longer TTL
-            createCaffeineCache(WRESTLERS_CACHE, 100, 60), // Up to 1000 wrestlers, 10 min TTL
-            createCaffeineCache(
-                SHOW_TYPES_CACHE, 1_000, 60), // Limited number of show types, 60 min TTL
-            createCaffeineCache(SEASONS_CACHE, 100, 60), // Limited number of seasons, 60 min TTL
-            createCaffeineCache(TITLES_CACHE, 100, 60), // Limited number of titles, 60 min TTL
-            createCaffeineCache(
-                SEGMENT_TYPES_CACHE, 50, 60), // Limited number of segment types, 60 min TTL
-            createCaffeineCache(
-                SEGMENT_RULES_CACHE, 100, 60), // Limited number of segment rules, 60 min TTL
+            WRESTLERS_CACHE,
+            SHOWS_CACHE,
+            SHOW_TYPES_CACHE,
+            SEASONS_CACHE,
+            TITLES_CACHE,
+            RIVALRIES_CACHE,
+            INJURIES_CACHE,
+            SEGMENT_TYPES_CACHE,
+            SEGMENT_RULES_CACHE,
+            SHOW_TEMPLATES_CACHE,
+            WRESTLER_STATS_CACHE,
+            CALENDAR_CACHE,
+            NOTION_SYNC_CACHE,
+            NOTION_PAGES_CACHE,
+            NOTION_QUERIES_CACHE));
 
-            // Moderately accessed data - medium TTL
-            createCaffeineCache(SHOWS_CACHE, 2000, 5), // Up to 2000 shows, 5 min TTL
-            createCaffeineCache(
-                SHOW_TEMPLATES_CACHE, 100, 30), // Limited number of templates, 30 min TTL
-            createCaffeineCache(RIVALRIES_CACHE, 500, 15), // Up to 500 active rivalries, 15 min TTL
-
-            // Frequently changing data - shorter TTL
-            createCaffeineCache(INJURIES_CACHE, 1000, 2), // Injuries change frequently, 2 min TTL
-            createCaffeineCache(
-                WRESTLER_STATS_CACHE, 1000, 1), // Stats updated after segments, 1 min TTL
-
-            // Computed/aggregated data - can be expensive to recalculate
-            createCaffeineCache(CALENDAR_CACHE, 100, 5), // Calendar views, 5 min TTL
-            createCaffeineCache(NOTION_SYNC_CACHE, 50, 1), // Notion sync status, 1 min TTL
-
-            // Notion API Caches
-            createCaffeineCache(NOTION_PAGES_CACHE, 5000, 5), // Cache Notion pages for 5 minutes
-            createCaffeineCache(NOTION_QUERIES_CACHE, 1000, 2) // Cache Notion queries for 2 minutes
-            ));
+    // Default spec for all caches
+    cacheManager.setCaffeine(
+        Caffeine.newBuilder()
+            .expireAfterWrite(10, TimeUnit.MINUTES)
+            .maximumSize(500)
+            .recordStats());
 
     log.info("✅ Cache manager initialized with {} caches", cacheManager.getCacheNames().size());
     return cacheManager;
-  }
-
-  /** Creates a Caffeine cache with the specified name, maximum size, and TTL. */
-  private Cache createCaffeineCache(String name, int maxSize, int ttlMinutes) {
-    log.debug("Creating Caffeine cache: {} (max size: {}, TTL: {} min)", name, maxSize, ttlMinutes);
-    return new CaffeineCache(
-        name,
-        Caffeine.newBuilder()
-            .maximumSize(maxSize)
-            .expireAfterWrite(ttlMinutes, TimeUnit.MINUTES)
-            .recordStats()
-            .build());
   }
 
   /** Cache statistics and monitoring bean. Provides insights into cache performance. */
