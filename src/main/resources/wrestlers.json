@@ -51,7 +51,7 @@
   "description" : "Mysterious warrior with ancient fighting techniques and unwavering honor",
   "gender" : "MALE"
 }, {
-  "name" : "Andre the Giant",
+  "name" : "André the Giant",
   "deckSize" : 15,
   "startingHealth" : 20,
   "lowHealth" : 3,
@@ -64,7 +64,7 @@
   "description" : "The Eighth Wonder of the World - Legendary giant with unmatched presence and power",
   "gender" : "MALE"
 }, {
-  "name" : "Macho Man Randy Savage",
+  "name" : "Randy Savage",
   "deckSize" : 15,
   "startingHealth" : 16,
   "lowHealth" : 4,

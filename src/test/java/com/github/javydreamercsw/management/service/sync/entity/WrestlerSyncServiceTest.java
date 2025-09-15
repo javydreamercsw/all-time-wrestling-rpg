@@ -32,14 +32,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * relationships, and error handling.
  */
 @ExtendWith(MockitoExtension.class)
-class WrestlerSyncServiceIT {
+class WrestlerSyncServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
 
   @Mock private WrestlerService wrestlerService;
 
   @Mock private NotionHandler notionHandler;
-  private NotionSyncProperties syncProperties; // Declare without @Mock
+  private final NotionSyncProperties syncProperties; // Declare without @Mock
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private ObjectMapper objectMapper;
@@ -48,7 +48,7 @@ class WrestlerSyncServiceIT {
   private WrestlerSyncService wrestlerSyncService;
 
   // Constructor to configure the mock before setUp()
-  public WrestlerSyncServiceIT() {
+  public WrestlerSyncServiceTest() {
     syncProperties = mock(NotionSyncProperties.class); // Manually create mock
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);

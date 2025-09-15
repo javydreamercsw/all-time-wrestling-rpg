@@ -169,16 +169,7 @@ public class NotionSyncView extends Main {
     statusButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     statusButton.addClickListener(e -> updateSyncStatus());
 
-    Button syncChampionshipsButton = new Button("Sync Championships", VaadinIcon.TROPHY.create());
-    syncChampionshipsButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
-    syncChampionshipsButton.addClickListener(e -> triggerEntitySync("titles"));
-
-    controlSection.add(
-        syncAllButton,
-        entitySelectionCombo,
-        syncSelectedButton,
-        syncChampionshipsButton,
-        statusButton);
+    controlSection.add(syncAllButton, entitySelectionCombo, syncSelectedButton, statusButton);
     return controlSection;
   }
 
@@ -364,14 +355,14 @@ public class NotionSyncView extends Main {
     SyncProgressTracker.SyncProgressListener progressListener =
         new SyncProgressTracker.SyncProgressListener() {
           @Override
-          public void onProgressUpdated(SyncProgress progress) {
+          public void onProgressUpdated(@NonNull SyncProgress progress) {
             if (progress.getOperationId().equals(operationId)) {
               getUI().ifPresent(ui -> ui.access(() -> updateProgressDisplay(progress)));
             }
           }
 
           @Override
-          public void onOperationCompleted(SyncProgress progress) {
+          public void onOperationCompleted(@NonNull SyncProgress progress) {
             if (progress.getOperationId().equals(operationId)) {
               getUI()
                   .ifPresent(
@@ -401,7 +392,8 @@ public class NotionSyncView extends Main {
           }
 
           @Override
-          public void onLogMessage(String logOperationId, String message, String level) {
+          public void onLogMessage(
+              @NonNull String logOperationId, @NonNull String message, @NonNull String level) {
             if (logOperationId.equals(operationId)) {
               getUI().ifPresent(ui -> ui.access(() -> addLogEntry(message, level)));
             }

@@ -214,11 +214,11 @@ public class NotionHandler {
     return Failsafe.with(rateLimitPolicy, serverRetryPolicy).get(action::get);
   }
 
-  private String getValue(@NonNull NotionClient client, @NonNull PageProperty value) {
+  public String getValue(@NonNull NotionClient client, @NonNull PageProperty value) {
     return getValue(client, value, true);
   }
 
-  private String getValue(
+  public String getValue(
       @NonNull NotionClient client, @NonNull PageProperty value, boolean resolveRelationships) {
     try {
       // Handle cases where type is null but we can infer the type from populated fields
@@ -756,7 +756,8 @@ public class NotionHandler {
   }
 
   /** Maps a Notion page to a WrestlerPage object in sync mode (minimal processing). */
-  private WrestlerPage mapPageToWrestlerPageSyncMode(Page pageData, String wrestlerName) {
+  private WrestlerPage mapPageToWrestlerPageSyncMode(
+      @NonNull Page pageData, @NonNull String wrestlerName) {
     log.debug("Mapping Notion page to WrestlerPage object in sync mode for: {}", wrestlerName);
 
     WrestlerPage wrestlerPage = new WrestlerPage();
@@ -799,6 +800,20 @@ public class NotionHandler {
           minimalProperties.put(key, relationCount + " relations");
           log.debug(
               "Wrestler Property (sync mode - count only) - {}: {} relations", key, relationCount);
+        } else if (property.getPeople() != null && !property.getPeople().isEmpty()) {
+          int peopleCount = property.getPeople().size();
+          minimalProperties.put(key, peopleCount + " people");
+          log.debug("Wrestler Property (sync mode - count only) - {}: {} people", key, peopleCount);
+        } else if (property.getFormula() != null) {
+          String formulaValue = getFormulaValue(property.getFormula());
+          minimalProperties.put(key, formulaValue);
+          log.debug("Wrestler Property (sync mode) - {}: {}", key, formulaValue);
+        } else if (property.getCreatedTime() != null) {
+          minimalProperties.put(key, property.getCreatedTime());
+          log.debug("Wrestler Property (sync mode) - {}: {}", key, property.getCreatedTime());
+        } else if (property.getLastEditedTime() != null) {
+          minimalProperties.put(key, property.getLastEditedTime());
+          log.debug("Wrestler Property (sync mode) - {}: {}", key, property.getLastEditedTime());
         }
       } catch (Exception e) {
         log.debug(
