@@ -71,7 +71,7 @@ public class Wrestler extends AbstractEntity<Long> {
   @Column(name = "is_player", nullable = false)
   private Boolean isPlayer = false;
 
-  @Column(name = "description", length = 1000)
+  @Column(name = "description", length = 4000)
   private String description;
 
   // ==================== ATW RPG RELATIONSHIPS ====================

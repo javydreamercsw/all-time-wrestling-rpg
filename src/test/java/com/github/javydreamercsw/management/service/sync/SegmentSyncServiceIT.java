@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.management.service.sync.entity;
+package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -6,6 +6,7 @@ import com.github.javydreamercsw.TestcontainersConfiguration;
 import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.sync.entity.SegmentSyncService;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;

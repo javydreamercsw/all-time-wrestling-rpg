@@ -10,20 +10,20 @@ public class WrestlerPage extends NotionPage {
 
   @Data
   @EqualsAndHashCode(callSuper = false)
-  static class NotionProperties extends NotionPage.BaseNotionProperties {
+  public static class NotionProperties extends NotionPage.BaseNotionProperties {
     // Wrestler-specific properties only (common properties inherited from base)
-    private Property Player;
-    private Property TitleBonus;
-    private Property TotalBonus;
-    private Property Titles;
-    private Property Heat1;
-    private Property Fans;
-    private Property Bumps;
-    private Property Faction;
-    private Property HeatBonus;
-    private Property Matches;
-    private Property FanWeight;
-    private Property Heat;
-    private Property Sex;
+    private Property player;
+    private Property titleBonus;
+    private Property totalBonus;
+    private Property titles;
+    private Property heat1;
+    private Property fans;
+    private Property bumps;
+    private Property faction;
+    private Property heatBonus;
+    private Property matches;
+    private Property fanWeight;
+    private Property heat;
+    private Property gender;
   }
 }

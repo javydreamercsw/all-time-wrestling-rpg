@@ -33,7 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @EnabledIf("isNotionTokenAvailable")
-class NpcSyncServiceIT extends BaseTest {
+class NpcSyncServiceTest extends BaseTest {
 
   @Mock private NpcService npcService;
   @Mock private ObjectMapper objectMapper;
@@ -51,7 +51,7 @@ class NpcSyncServiceIT extends BaseTest {
   @InjectMocks NpcSyncService npcSyncService;
 
   // Constructor to configure the mock before setUp()
-  public NpcSyncServiceIT() {
+  public NpcSyncServiceTest() {
     syncProperties = mock(NotionSyncProperties.class); // Manually create mock
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);

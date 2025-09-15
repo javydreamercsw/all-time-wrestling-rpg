@@ -1,0 +1,1 @@
+ALTER TABLE wrestler ALTER COLUMN description VARCHAR(4000);
