@@ -32,7 +32,7 @@ public class TitleReign extends AbstractEntity<Long> {
   @JoinColumn(name = "title_id", nullable = false)
   private Title title;
 
-  @ManyToMany(fetch = FetchType.LAZY)
+  @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
       name = "title_reign_champion",
       joinColumns = @JoinColumn(name = "title_reign_id"),
