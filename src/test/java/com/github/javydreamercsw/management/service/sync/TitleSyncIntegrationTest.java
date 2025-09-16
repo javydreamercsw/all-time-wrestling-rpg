@@ -7,6 +7,9 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.entity.TitleSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -31,15 +35,20 @@ import org.springframework.test.context.TestPropertySource;
     })
 @EnabledIf("isNotionTokenAvailable")
 @Slf4j
+@Transactional
 class TitleSyncIntegrationTest extends BaseTest {
 
   @Autowired private NotionSyncService notionSyncService;
 
   @Autowired private TitleRepository titleRepository;
 
+  @Autowired private WrestlerRepository wrestlerRepository;
+
   @Autowired private WrestlerSyncService wrestlerSyncService;
 
   @Autowired private TitleReignRepository titleReignRepository;
+
+  @Autowired private TitleSyncService titleSyncService;
 
   @BeforeEach
   void setUp() {
@@ -77,14 +86,16 @@ class TitleSyncIntegrationTest extends BaseTest {
     log.info(
         "ATW World Champion is: {}",
         atwWorldTitle.getCurrentChampions().stream()
-            .map(w -> w.getName())
+            .map(Wrestler::getName)
             .collect(java.util.stream.Collectors.joining(" & ")));
 
     log.info("Verifying ATW World Title #1 Contender...");
     // This assertion depends on the data in your Notion database.
     // If it fails, check that the 'ATW World' championship has a #1 contender assigned in Notion.
     assertNotNull(atwWorldTitle.getContender(), "ATW World #1 Contender should not be null");
-    log.info("ATW World #1 Contender is: {}", atwWorldTitle.getContender().getName());
+    assertFalse(
+        atwWorldTitle.getContender().isEmpty(), "ATW World #1 Contender should not be empty");
+    log.info("ATW World #1 Contender is: {}", atwWorldTitle.getContender().get(0).getName());
 
     // Verify title reigns
     log.info("Verifying ATW World Title Reigns...");
@@ -99,8 +110,18 @@ class TitleSyncIntegrationTest extends BaseTest {
     log.info(
         "First reign: Champion {} from {}",
         firstReign.getChampions().stream()
-            .map(w -> w.getName())
+            .map(Wrestler::getName)
             .collect(java.util.stream.Collectors.joining(" & ")),
         firstReign.getStartDate());
+
+    // Log all wrestler external IDs in the database
+    List<Wrestler> allWrestlers = wrestlerRepository.findAll();
+    log.info(
+        "All wrestler external IDs in DB: {}",
+        allWrestlers.stream().map(Wrestler::getExternalId).toList());
+    // Log the champion IDs from Notion for ATW World
+    log.info(
+        "ATW World title current champions: {}",
+        atwWorldTitle.getCurrentChampions().stream().map(Wrestler::getExternalId).toList());
   }
 }

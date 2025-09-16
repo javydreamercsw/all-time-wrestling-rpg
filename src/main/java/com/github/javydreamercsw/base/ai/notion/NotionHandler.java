@@ -273,8 +273,10 @@ public class NotionHandler {
           if (value.getRelation() == null || value.getRelation().isEmpty()) {
             yield "N/A";
           } else if (!resolveRelationships) {
-            // Fast mode: just return the count without resolving names
-            yield value.getRelation().size() + " items";
+            // Fast mode: return comma-separated IDs without resolving names
+            yield value.getRelation().stream()
+                .map(PageProperty.PageReference::getId)
+                .collect(Collectors.joining(", "));
           } else {
             // Full mode: resolve relationship names (expensive)
             yield value.getRelation().stream()

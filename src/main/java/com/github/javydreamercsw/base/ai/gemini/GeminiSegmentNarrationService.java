@@ -113,9 +113,12 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
 
       if (response.statusCode() == 200) {
         return extractContentFromResponse(response.body());
+      } else if (response.statusCode() == 429) {
+        log.warn("Gemini API rate limit exceeded (429). Returning null summary.");
+        return null; // Return null for 429 errors
       } else {
         log.error("Gemini API error: {} - {}", response.statusCode(), response.body());
-        return "Error calling Gemini API: " + response.statusCode();
+        return null; // Return null for other non-200 errors
       }
 
     } catch (Exception e) {

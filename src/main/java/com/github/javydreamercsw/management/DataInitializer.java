@@ -55,6 +55,7 @@ public class DataInitializer {
   @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private DeckRepository deckRepository;
   @Autowired private TitleRepository titleRepository;
+  @Autowired private WrestlerService wrestlerService;
 
   @Bean
   @Order(-1)
@@ -367,11 +368,45 @@ public class DataInitializer {
           var championshipsFromFile = mapper.readValue(is, new TypeReference<List<TitleDTO>>() {});
           for (TitleDTO dto : championshipsFromFile) {
             Optional<Title> existingTitle = titleService.findByName(dto.getName());
+            Title title;
             if (existingTitle.isEmpty()) {
-              titleService.createTitle(dto.getName(), dto.getDescription(), dto.getTier());
+              title = titleService.createTitle(dto.getName(), dto.getDescription(), dto.getTier());
               log.info("Created new title: {}", dto.getName());
             } else {
+              title = existingTitle.get();
               log.debug("Title {} already exists, skipping creation.", dto.getName());
+            }
+
+            // Award title if currentChampionName is provided
+            if (dto.getCurrentChampionName() != null
+                && !dto.getCurrentChampionName().trim().isEmpty()) {
+              Optional<Wrestler> championOpt =
+                  wrestlerService.findByName(dto.getCurrentChampionName());
+              if (championOpt.isPresent()) {
+                // Check if the title is already held by this champion
+                if (title.getCurrentChampions().isEmpty()
+                    || !title.getCurrentChampions().contains(championOpt.get())) {
+                  titleService.awardTitle(title.getId(), championOpt.get().getId());
+                  log.info(
+                      "Awarded title {} to champion {}",
+                      title.getName(),
+                      dto.getCurrentChampionName());
+                } else {
+                  log.debug(
+                      "Title {} already held by champion {}",
+                      title.getName(),
+                      dto.getCurrentChampionName());
+                }
+              } else {
+                log.warn(
+                    "Champion '{}' not found for title '{}'. Title will remain vacant.",
+                    dto.getCurrentChampionName(),
+                    dto.getName());
+              }
+            } else if (!title.getIsVacant()) {
+              // If no champion is specified in DTO but title is not vacant, vacate it
+              titleService.vacateTitle(title.getId());
+              log.info("Vacated title {} as no champion was specified in DTO.", title.getName());
             }
           }
           titleRepository.flush();
@@ -473,9 +508,9 @@ public class DataInitializer {
   @Data
   public static class TitleDTO {
     private String name;
-
     private String description;
     private WrestlerTier tier;
     private Gender gender;
+    private String currentChampionName;
   }
 }

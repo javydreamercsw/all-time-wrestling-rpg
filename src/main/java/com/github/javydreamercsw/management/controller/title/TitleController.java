@@ -115,14 +115,15 @@ public class TitleController {
   public ResponseEntity<Object> awardTitle(
       @PathVariable Long titleId, @PathVariable Long wrestlerId) {
     Optional<Title> title = titleService.awardTitle(titleId, wrestlerId);
-    if (title.isPresent()) {
-      return ResponseEntity.ok(title.get());
-    } else {
-      return ResponseEntity.badRequest()
-          .body(
-              new ErrorResponse(
-                  "Cannot award title - wrestler may not be eligible or entities not found"));
-    }
+    return title
+        .<ResponseEntity<Object>>map(ResponseEntity::ok)
+        .orElseGet(
+            () ->
+                ResponseEntity.badRequest()
+                    .body(
+                        new ErrorResponse(
+                            "Cannot award title - wrestler may not be eligible or entities not"
+                                + " found")));
   }
 
   @Operation(summary = "Vacate title", description = "Vacates a title (removes current champion)")

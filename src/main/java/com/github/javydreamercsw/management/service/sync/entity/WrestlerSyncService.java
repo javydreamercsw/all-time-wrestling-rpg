@@ -246,7 +246,7 @@ public class WrestlerSyncService extends BaseSyncService {
         }
       }
 
-      // Extract Gender (Sex)
+      // Extract Gender
       Object genderObj = rawProperties.get("Gender");
       if (genderObj instanceof String) {
         dto.setGender((String) genderObj);
@@ -263,10 +263,8 @@ public class WrestlerSyncService extends BaseSyncService {
       }
 
       // Extract IsPlayer
-      Object isPlayerObj = rawProperties.get("IsPlayer");
-      if (isPlayerObj instanceof String) {
-        dto.setIsPlayer(Boolean.parseBoolean((String) isPlayerObj));
-      }
+      Object isPlayerObj = rawProperties.get("Player");
+      dto.setIsPlayer(isPlayerObj == null);
 
       // Extract CreationDate
       Object creationDateObj = rawProperties.get("Created");

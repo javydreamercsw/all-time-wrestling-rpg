@@ -68,8 +68,10 @@ class TitleSyncServiceTest {
     existingTitle.setIsVacant(true);
 
     TitlePage titlePage = mock(TitlePage.class);
-    when(titlePage.getChampionRelationId()).thenReturn("champion-ext-id");
-    when(titlePage.getContenderRelationId()).thenReturn("contender-ext-id");
+    when(titlePage.getChampionRelationIds())
+        .thenReturn(Collections.singletonList("champion-ext-id"));
+    when(titlePage.getContenderRelationIds())
+        .thenReturn(Collections.singletonList("contender-ext-id"));
 
     when(syncProperties.isEntityEnabled("titles")).thenReturn(true);
     when(notionHandler.loadAllTitles()).thenReturn(Collections.singletonList(titlePage));
@@ -91,6 +93,6 @@ class TitleSyncServiceTest {
     assertEquals(1, finalSave.getCurrentChampions().size());
     assertEquals("Champion Wrestler", finalSave.getCurrentChampions().get(0).getName());
     assertNotNull(finalSave.getContender());
-    assertEquals("Contender Wrestler", finalSave.getContender().getName());
+    assertEquals("Contender Wrestler", finalSave.getContender().get(0).getName());
   }
 }
