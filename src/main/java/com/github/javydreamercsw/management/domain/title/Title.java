@@ -56,14 +56,14 @@ public class Title extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
-  @ManyToMany(fetch = FetchType.LAZY)
+  @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
       name = "title_contender",
       joinColumns = @JoinColumn(name = "title_id"),
       inverseJoinColumns = @JoinColumn(name = "wrestler_id"))
   private List<Wrestler> contender = new ArrayList<>();
 
-  @ManyToMany(fetch = FetchType.LAZY)
+  @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
       name = "title_champion",
       joinColumns = @JoinColumn(name = "title_id"),
@@ -78,7 +78,7 @@ public class Title extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"title"})
   private Set<TitleReign> titleReigns = new HashSet<>();
 
-  @ManyToMany(mappedBy = "titles", fetch = FetchType.LAZY)
+  @ManyToMany(mappedBy = "titles", fetch = FetchType.EAGER)
   private List<Segment> segments = new ArrayList<>();
 
   public void awardTitleTo(@NonNull List<Wrestler> newChampions, @NonNull Instant awardDate) {
