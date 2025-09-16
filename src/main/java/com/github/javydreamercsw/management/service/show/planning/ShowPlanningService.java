@@ -112,13 +112,11 @@ public class ShowPlanningService {
       if (!title.getCurrentChampions().isEmpty()) {
         championship.getChampions().addAll(title.getCurrentChampions());
       }
-      List<Wrestler> eligibleChallengers = titleService.getEligibleChallengers(title.getId());
-      log.info(
-          "Found {} eligible challengers for title {}",
-          eligibleChallengers.size(),
-          title.getName());
-      // Add up to 5 eligible challengers
-      eligibleChallengers.stream().limit(5).forEach(championship.getContenders()::add);
+      // Use only the current #1 contender(s) for this title
+      List<Wrestler> numberOneContenders = title.getContender();
+      if (numberOneContenders != null && !numberOneContenders.isEmpty()) {
+        championship.getContenders().addAll(numberOneContenders);
+      }
       championships.add(championship);
     }
     context.setChampionships(championships);
