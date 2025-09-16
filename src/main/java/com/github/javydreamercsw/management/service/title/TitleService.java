@@ -248,6 +248,10 @@ public class TitleService {
     return titleRepository.findAll();
   }
 
+  public Title save(Title title) {
+    return titleRepository.save(title);
+  }
+
   /** Challenge result data class. */
   public record ChallengeResult(
       boolean success, @NonNull String message, Title title, Wrestler challenger) {}
