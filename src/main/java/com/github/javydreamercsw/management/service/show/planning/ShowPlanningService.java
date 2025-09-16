@@ -117,9 +117,8 @@ public class ShowPlanningService {
           "Found {} eligible challengers for title {}",
           eligibleChallengers.size(),
           title.getName());
-      if (!eligibleChallengers.isEmpty()) {
-        championship.getContenders().add(eligibleChallengers.get(0));
-      }
+      // Add up to 5 eligible challengers
+      eligibleChallengers.stream().limit(5).forEach(championship.getContenders()::add);
       championships.add(championship);
     }
     context.setChampionships(championships);

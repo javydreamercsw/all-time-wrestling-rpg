@@ -51,16 +51,30 @@ public class Title extends AbstractEntity<Long> {
   private Boolean isActive = true;
 
   @Column(name = "is_vacant", nullable = false)
-  private Boolean isVacant = true;
+  private Boolean isVacant = false;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "contender_id")
-  private Wrestler contender;
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "title_contender",
+      joinColumns = @JoinColumn(name = "title_id"),
+      inverseJoinColumns = @JoinColumn(name = "wrestler_id"))
+  private List<Wrestler> contender = new ArrayList<>();
 
-  @OneToMany(mappedBy = "title", cascade = CascadeType.ALL, orphanRemoval = true)
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "title_champion",
+      joinColumns = @JoinColumn(name = "title_id"),
+      inverseJoinColumns = @JoinColumn(name = "wrestler_id"))
+  private List<Wrestler> champion = new ArrayList<>();
+
+  @OneToMany(
+      mappedBy = "title",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.EAGER)
   @JsonIgnoreProperties({"title"})
   private Set<TitleReign> titleReigns = new HashSet<>();
 
@@ -78,6 +92,7 @@ public class Title extends AbstractEntity<Long> {
     newReign.setStartDate(awardDate);
     getTitleReigns().add(newReign);
 
+    this.champion = new ArrayList<>(newChampions); // Ensure champion field is updated
     this.isVacant = newChampions.isEmpty();
   }
 

@@ -81,6 +81,7 @@ public class TitleSyncService extends BaseSyncService {
                           titleName);
                       Title newTitle = new Title();
                       newTitle.setName(titleName);
+                      newTitle.setExternalId(titlePage.getId());
                       // Set defaults or extract from page
                       String tierString = titlePage.getTier();
                       if (tierString != null) {
@@ -109,8 +110,9 @@ public class TitleSyncService extends BaseSyncService {
                           log.warn("Invalid tier '{}' for title '{}'", tierString, titleName);
                         }
                       }
+                      newTitle.setGender(Gender.valueOf(titlePage.getGender().toUpperCase()));
                       newTitle.setIsActive(true);
-                      newTitle.setIsVacant(true);
+                      newTitle.setIsVacant(false);
                       return titleRepository.save(newTitle);
                     });
 
@@ -143,16 +145,46 @@ public class TitleSyncService extends BaseSyncService {
     }
 
     // Sync Champions
-    String championIds = titlePage.getChampionRelationId();
-    if (championIds != null && !championIds.isBlank()) {
+    List<String> championIds = titlePage.getChampionRelationIds();
+    log.info("Champion IDs from Notion for '{}': {}", title.getName(), championIds);
+    if (championIds != null && !championIds.isEmpty()) {
       List<Wrestler> newChampions = new java.util.ArrayList<>();
-      for (String championId : championIds.split(",")) {
-        wrestlerRepository.findByExternalId(championId.trim()).ifPresent(newChampions::add);
+      for (String championId : championIds) {
+        var wrestlerOpt = wrestlerRepository.findByExternalId(championId.trim());
+        if (wrestlerOpt.isPresent()) {
+          Wrestler wrestler = wrestlerOpt.get();
+          log.info(
+              "Resolved wrestler by externalId for championId '{}': {} (externalId={})",
+              championId,
+              wrestler.getName(),
+              wrestler.getExternalId());
+          newChampions.add(wrestler);
+        } else {
+          // Try by name as fallback
+          var wrestlerByNameOpt = wrestlerRepository.findByName(championId.trim());
+          if (wrestlerByNameOpt.isPresent()) {
+            Wrestler wrestler = wrestlerByNameOpt.get();
+            log.info(
+                "Resolved wrestler by name for championId '{}': {} (externalId={})",
+                championId,
+                wrestler.getName(),
+                wrestler.getExternalId());
+            newChampions.add(wrestler);
+          } else {
+            log.warn(
+                "No wrestler found for championId '{}' (tried externalId and name) when syncing"
+                    + " title '{}'.",
+                championId,
+                title.getName());
+          }
+        }
       }
-
-      if (!newChampions.isEmpty()
-          && !new java.util.HashSet<>(title.getCurrentChampions())
-              .equals(new java.util.HashSet<>(newChampions))) {
+      log.info(
+          "Final resolved champions for '{}': {}",
+          title.getName(),
+          newChampions.stream().map(w -> w.getName() + " (" + w.getExternalId() + ")").toList());
+      if (!newChampions.isEmpty()) {
+        // Always award the title if new champions are present
         log.info(
             "Setting champions for title '{}' to '{}'",
             title.getName(),
@@ -160,7 +192,20 @@ public class TitleSyncService extends BaseSyncService {
                 .map(Wrestler::getName)
                 .collect(java.util.stream.Collectors.joining(", ")));
         title.awardTitleTo(newChampions, java.time.Instant.now());
-        titleRepository.save(title);
+        titleRepository.saveAndFlush(title);
+        // Ensure the reign is persisted
+        title
+            .getCurrentReign()
+            .ifPresent(
+                reign -> {
+                  if (reign.getStartDate() == null) {
+                    reign.setStartDate(java.time.Instant.now());
+                  }
+                  titleReignRepository.saveAndFlush(reign);
+                });
+      } else {
+        log.warn(
+            "No champions resolved for title '{}'. Title will remain vacant.", title.getName());
       }
     } else if (!title.getIsVacant()) {
       log.info("Vacating title from Notion: {}", title.getName());
@@ -169,24 +214,58 @@ public class TitleSyncService extends BaseSyncService {
     }
 
     // Sync Contender
-    String contenderIds = titlePage.getContenderRelationId();
-    if (contenderIds != null && !contenderIds.isBlank()) {
-      wrestlerRepository
-          .findByExternalId(contenderIds.split(",")[0].trim())
-          .ifPresent(
-              contender -> {
-                if (!contender.equals(title.getContender())) {
-                  log.info(
-                      "Setting #1 contender for title '{}' to '{}'",
-                      title.getName(),
-                      contender.getName());
-                  title.setContender(contender);
-                  titleRepository.save(title);
-                }
-              });
-    } else if (title.getContender() != null) {
-      log.info("Removing #1 contender from title: {}", title.getName());
-      title.setContender(null);
+    List<String> contenderIds = titlePage.getContenderRelationIds();
+    if (contenderIds != null && !contenderIds.isEmpty()) {
+      List<Wrestler> newContenders = new java.util.ArrayList<>();
+      for (String contenderId : contenderIds) {
+        var wrestlerOpt = wrestlerRepository.findByExternalId(contenderId.trim());
+        if (wrestlerOpt.isPresent()) {
+          Wrestler wrestler = wrestlerOpt.get();
+          log.info(
+              "Resolved contender by externalId for contenderId '{}': {} (externalId={})",
+              contenderId,
+              wrestler.getName(),
+              wrestler.getExternalId());
+          newContenders.add(wrestler);
+        } else {
+          var wrestlerByNameOpt = wrestlerRepository.findByName(contenderId.trim());
+          if (wrestlerByNameOpt.isPresent()) {
+            Wrestler wrestler = wrestlerByNameOpt.get();
+            log.info(
+                "Resolved contender by name for contenderId '{}': {} (externalId={})",
+                contenderId,
+                wrestler.getName(),
+                wrestler.getExternalId());
+            newContenders.add(wrestler);
+          } else {
+            log.warn(
+                "No wrestler found for contenderId '{}' (tried externalId and name) when syncing"
+                    + " title '{}'.",
+                contenderId,
+                title.getName());
+          }
+        }
+      }
+      log.info(
+          "Final resolved contenders for '{}': {}",
+          title.getName(),
+          newContenders.stream().map(w -> w.getName() + " (" + w.getExternalId() + ")").toList());
+      if (!newContenders.isEmpty()) {
+        // Only update if contenders have changed
+        if (!newContenders.equals(title.getContender())) {
+          log.info(
+              "Setting contenders for title '{}' to '{}'",
+              title.getName(),
+              newContenders.stream()
+                  .map(Wrestler::getName)
+                  .collect(java.util.stream.Collectors.joining(", ")));
+          title.setContender(newContenders);
+          titleRepository.save(title);
+        }
+      }
+    } else if (title.getContender() != null && !title.getContender().isEmpty()) {
+      log.info("Removing contenders from title: {}", title.getName());
+      title.setContender(new java.util.ArrayList<>());
       titleRepository.save(title);
     }
   }
