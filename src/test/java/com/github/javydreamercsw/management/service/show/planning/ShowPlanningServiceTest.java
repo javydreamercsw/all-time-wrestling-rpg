@@ -19,6 +19,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.time.Clock;
@@ -168,5 +169,41 @@ class ShowPlanningServiceTest {
               }
               return Optional.empty();
             });
+  }
+
+  @Test
+  void getShowPlanningContext_shouldIncludeOnlyNumberOneContenders() {
+    // Given
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("Test Show");
+    when(show.getShowDate()).thenReturn(LocalDate.now());
+    when(show.getId()).thenReturn(1L);
+
+    Title title = new Title();
+    title.setId(1L);
+    title.setName("Test Title");
+    Wrestler champion = new Wrestler();
+    champion.setName("Champion");
+
+    TitleReign currentReign = new TitleReign();
+    currentReign.getChampions().add(champion);
+    title.getTitleReigns().add(currentReign);
+
+    Wrestler numberOneContender = new Wrestler();
+    numberOneContender.setName("Number One Contender");
+    title.setContender(Collections.singletonList(numberOneContender));
+
+    when(titleService.getActiveTitles()).thenReturn(Collections.singletonList(title));
+
+    // Act
+    ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
+
+    // Assert
+    assertNotNull(context);
+    assertFalse(context.getChampionships().isEmpty());
+    var championship = context.getChampionships().get(0);
+    assertEquals("Test Title", championship.getChampionshipName());
+    assertEquals("Champion", championship.getChampionName());
+    assertEquals("Number One Contender", championship.getContenderName());
   }
 }
