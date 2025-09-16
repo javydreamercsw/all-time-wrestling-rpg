@@ -20,6 +20,7 @@ public class MenuService {
     entities.addChild(new MenuItem("Injury Types", VaadinIcon.PLUS_CIRCLE, "injury-types"));
     entities.addChild(new MenuItem("NPCs", VaadinIcon.USERS, "npc-list"));
     entities.addChild(new MenuItem("Seasons", VaadinIcon.CALENDAR_CLOCK, "season-list"));
+    entities.addChild(new MenuItem("Titles", VaadinIcon.TROPHY, "title-list"));
     // Removed Rivalries
     // Removed Titles
     entities.addChild(new MenuItem("Segment Rules", VaadinIcon.LIST_OL, "segment-rule-list"));
