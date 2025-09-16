@@ -138,8 +138,12 @@ public class Title extends AbstractEntity<Long> {
     return name + " (Champion: " + getChampionNames() + ")";
   }
 
-  private String getChampionNames() {
+  public String getChampionNames() {
     return getCurrentChampions().stream().map(Wrestler::getName).collect(Collectors.joining(" & "));
+  }
+
+  public String getContenderNames() {
+    return getContender().stream().map(Wrestler::getName).collect(Collectors.joining(" & "));
   }
 
   public String getStatusEmoji() {

@@ -25,8 +25,8 @@ public class TitlePage extends NotionPage {
   }
 
   public List<String> getContenderRelationIds() {
-    if (getRawProperties() != null && getRawProperties().containsKey("👤 #1 Contenders")) {
-      Object contenderProp = getRawProperties().get("👤 #1 Contenders");
+    if (getRawProperties() != null && getRawProperties().containsKey("#1 Contender")) {
+      Object contenderProp = getRawProperties().get("#1 Contender");
       if (contenderProp instanceof String) {
         return List.of(((String) contenderProp).split(",")).stream()
             .map(String::trim)
