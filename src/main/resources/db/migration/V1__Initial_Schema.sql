@@ -36,7 +36,7 @@ CREATE TABLE wrestler (
     current_health INT,
     is_player BOOLEAN NOT NULL,
     gender VARCHAR(255),
-    description VARCHAR(1000),
+    description VARCHAR(4000),
     faction_id BIGINT,
     FOREIGN KEY (faction_id) REFERENCES faction(faction_id) ON DELETE SET NULL
 );
@@ -235,9 +235,23 @@ CREATE TABLE title (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     is_vacant BOOLEAN NOT NULL DEFAULT TRUE,
     creation_date TIMESTAMP NOT NULL,
-    external_id VARCHAR(255) UNIQUE,
-    contender_id BIGINT,
-    FOREIGN KEY (contender_id) REFERENCES wrestler(wrestler_id) ON DELETE SET NULL
+    external_id VARCHAR(255) UNIQUE
+);
+
+CREATE TABLE title_champion (
+    title_id BIGINT NOT NULL,
+    wrestler_id BIGINT NOT NULL,
+    PRIMARY KEY (title_id, wrestler_id),
+    FOREIGN KEY (title_id) REFERENCES title(title_id) ON DELETE CASCADE,
+    FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE
+);
+
+CREATE TABLE title_contender (
+    title_id BIGINT NOT NULL,
+    wrestler_id BIGINT NOT NULL,
+    PRIMARY KEY (title_id, wrestler_id),
+    FOREIGN KEY (title_id) REFERENCES title(title_id) ON DELETE CASCADE,
+    FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE
 );
 
 CREATE TABLE title_reign (
