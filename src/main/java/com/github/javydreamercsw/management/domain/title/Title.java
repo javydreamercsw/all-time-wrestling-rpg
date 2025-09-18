@@ -50,9 +50,6 @@ public class Title extends AbstractEntity<Long> {
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 
-  @Column(name = "is_vacant", nullable = false)
-  private Boolean isVacant = false;
-
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
@@ -93,12 +90,11 @@ public class Title extends AbstractEntity<Long> {
     getTitleReigns().add(newReign);
 
     this.champion = new ArrayList<>(newChampions); // Ensure champion field is updated
-    this.isVacant = newChampions.isEmpty();
   }
 
   public void vacateTitle() {
     getCurrentReign().ifPresent(reign -> reign.endReign(Instant.now()));
-    this.isVacant = true;
+    this.champion.clear();
   }
 
   @JsonIgnore
@@ -108,7 +104,7 @@ public class Title extends AbstractEntity<Long> {
 
   @JsonIgnore
   public List<Wrestler> getCurrentChampions() {
-    return getCurrentReign().map(TitleReign::getChampions).orElse(new ArrayList<>());
+    return champion;
   }
 
   public long getCurrentReignDays() {
@@ -132,7 +128,7 @@ public class Title extends AbstractEntity<Long> {
   }
 
   public String getDisplayName() {
-    if (isVacant) {
+    if (isVacant()) {
       return name + " (Vacant)";
     }
     return name + " (Champion: " + getChampionNames() + ")";
@@ -147,8 +143,12 @@ public class Title extends AbstractEntity<Long> {
   }
 
   public String getStatusEmoji() {
-    if (!isActive) return "🚫";
-    if (isVacant) return "👑❓";
+    if (!isActive) {
+      return "🚫";
+    }
+    if (isVacant()) {
+      return "👑❓";
+    }
     return "👑";
   }
 
@@ -162,5 +162,9 @@ public class Title extends AbstractEntity<Long> {
     if (creationDate == null) {
       creationDate = Instant.now();
     }
+  }
+
+  public boolean isVacant() {
+    return getCurrentChampions().isEmpty();
   }
 }

@@ -2,7 +2,7 @@ package com.github.javydreamercsw.management.controller.faction;
 
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
-import com.github.javydreamercsw.management.service.rivalry.RivalryService.ResolutionResult;
+import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -121,14 +121,15 @@ public class FactionRivalryController {
         factionRivalryService.createFactionRivalry(
             request.faction1Id(), request.faction2Id(), request.storylineNotes());
 
-    if (rivalry.isPresent()) {
-      return ResponseEntity.ok(rivalry.get());
-    } else {
-      return ResponseEntity.badRequest()
-          .body(
-              new ErrorResponse(
-                  "Cannot create faction rivalry - factions not found or rivalry already exists"));
-    }
+    return rivalry
+        .<ResponseEntity<Object>>map(ResponseEntity::ok)
+        .orElseGet(
+            () ->
+                ResponseEntity.badRequest()
+                    .body(
+                        new ErrorResponse(
+                            "Cannot create faction rivalry - factions not found or rivalry already"
+                                + " exists")));
   }
 
   @Operation(
@@ -140,12 +141,14 @@ public class FactionRivalryController {
     Optional<FactionRivalry> rivalry =
         factionRivalryService.addHeat(id, request.heatGain(), request.reason());
 
-    if (rivalry.isPresent()) {
-      return ResponseEntity.ok(rivalry.get());
-    } else {
-      return ResponseEntity.badRequest()
-          .body(new ErrorResponse("Cannot add heat - faction rivalry not found or inactive"));
-    }
+    return rivalry
+        .<ResponseEntity<Object>>map(ResponseEntity::ok)
+        .orElseGet(
+            () ->
+                ResponseEntity.badRequest()
+                    .body(
+                        new ErrorResponse(
+                            "Cannot add heat - faction rivalry not found or inactive")));
   }
 
   @Operation(
@@ -158,21 +161,21 @@ public class FactionRivalryController {
         factionRivalryService.addHeatBetweenFactions(
             request.faction1Id(), request.faction2Id(), request.heatGain(), request.reason());
 
-    if (rivalry.isPresent()) {
-      return ResponseEntity.ok(rivalry.get());
-    } else {
-      return ResponseEntity.badRequest()
-          .body(new ErrorResponse("Cannot add heat - factions not found"));
-    }
+    return rivalry
+        .<ResponseEntity<Object>>map(ResponseEntity::ok)
+        .orElseGet(
+            () ->
+                ResponseEntity.badRequest()
+                    .body(new ErrorResponse("Cannot add heat - factions not found")));
   }
 
   @Operation(
       summary = "Attempt rivalry resolution",
       description = "Attempt to resolve a faction rivalry with dice rolls")
   @PostMapping("/{id}/resolve")
-  public ResponseEntity<ResolutionResult> attemptResolution(
+  public ResponseEntity<ResolutionResult<FactionRivalry>> attemptResolution(
       @PathVariable Long id, @Valid @RequestBody AttemptResolutionRequest request) {
-    ResolutionResult result =
+    ResolutionResult<FactionRivalry> result =
         factionRivalryService.attemptResolution(id, request.faction1Roll(), request.faction2Roll());
 
     return ResponseEntity.ok(result);
@@ -184,12 +187,12 @@ public class FactionRivalryController {
       @PathVariable Long id, @RequestParam(defaultValue = "Rivalry ended") String reason) {
     Optional<FactionRivalry> rivalry = factionRivalryService.endFactionRivalry(id, reason);
 
-    if (rivalry.isPresent()) {
-      return ResponseEntity.ok(rivalry.get());
-    } else {
-      return ResponseEntity.badRequest()
-          .body(new ErrorResponse("Cannot end faction rivalry - rivalry not found"));
-    }
+    return rivalry
+        .<ResponseEntity<Object>>map(ResponseEntity::ok)
+        .orElseGet(
+            () ->
+                ResponseEntity.badRequest()
+                    .body(new ErrorResponse("Cannot end faction rivalry - rivalry not found")));
   }
 
   @Operation(

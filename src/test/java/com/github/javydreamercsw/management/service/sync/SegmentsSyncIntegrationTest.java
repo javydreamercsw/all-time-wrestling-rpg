@@ -30,9 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest(properties = {"notion.sync.enabled=true", "notion.sync.entities.matches=true"})
 @ActiveProfiles("test")
 @Transactional
-@DisplayName("Matches Sync Integration Tests")
+@DisplayName("Segment Sync Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
-class MatchesSyncIntegrationTest extends BaseTest {
+class SegmentSyncIntegrationTest extends BaseTest {
 
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private ShowService showService;

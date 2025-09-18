@@ -65,7 +65,6 @@ class TitleSyncServiceTest {
     Title existingTitle = new Title();
     existingTitle.setId(100L);
     existingTitle.setName("ATW World");
-    existingTitle.setIsVacant(true);
 
     TitlePage titlePage = mock(TitlePage.class);
     when(titlePage.getChampionRelationIds())
@@ -89,7 +88,7 @@ class TitleSyncServiceTest {
 
     Title finalSave = titleCaptor.getValue();
 
-    assertFalse(finalSave.getIsVacant());
+    assertFalse(finalSave.isVacant());
     assertEquals(1, finalSave.getCurrentChampions().size());
     assertEquals("Champion Wrestler", finalSave.getCurrentChampions().get(0).getName());
     assertNotNull(finalSave.getContender());

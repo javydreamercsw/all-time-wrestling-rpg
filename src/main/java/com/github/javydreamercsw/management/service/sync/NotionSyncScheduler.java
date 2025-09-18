@@ -111,6 +111,8 @@ public class NotionSyncScheduler {
       case "injuries" -> notionSyncService.syncInjuryTypes(operationId);
       case "npcs" -> notionSyncService.syncNpcs(operationId);
       case "titles" -> notionSyncService.syncTitles(operationId);
+      case "rivalries" -> notionSyncService.syncRivalries(operationId);
+      case "faction-rivalries" -> notionSyncService.syncFactionRivalries(operationId);
       default -> {
         log.warn("Unknown entity type for sync: {}", entityName);
         yield NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
@@ -130,24 +132,7 @@ public class NotionSyncScheduler {
     // Generate operation ID for progress tracking
     String operationId = "sync-" + entityName.toLowerCase() + "-" + System.currentTimeMillis();
 
-    return switch (entityName.toLowerCase()) {
-      case "shows" -> notionSyncService.syncShows(operationId);
-      case "wrestlers" -> notionSyncService.syncWrestlers(operationId);
-      case "factions" -> notionSyncService.syncFactions(operationId);
-      case "teams" -> notionSyncService.syncTeams(operationId);
-      case "segments" -> notionSyncService.syncSegments(operationId);
-      case "templates" -> notionSyncService.syncShowTemplates(operationId);
-      case "seasons" -> notionSyncService.syncSeasons(operationId);
-      case "show-types", "showtypes" -> notionSyncService.syncShowTypes(operationId);
-      case "injuries", "injury-types", "injurytypes" ->
-          notionSyncService.syncInjuryTypes(operationId);
-      case "npcs" -> notionSyncService.syncNpcs(operationId);
-      case "titles" -> notionSyncService.syncTitles(operationId);
-      default -> {
-        log.warn("Unknown entity type for sync: {}", entityName);
-        yield NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
-      }
-    };
+    return syncEntity(entityName, operationId);
   }
 
   /**

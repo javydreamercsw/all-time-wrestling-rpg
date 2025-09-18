@@ -2213,4 +2213,84 @@ public class NotionHandler {
     NotionBlocksRetriever retriever = new NotionBlocksRetriever(notionToken);
     return retriever.retrievePageContent(pageId);
   }
+
+  /**
+   * Loads all rivalries from the Notion Heat database.
+   *
+   * @return List of all RivalryPage objects from the Heat database
+   */
+  public List<RivalryPage> loadAllRivalries() {
+    log.debug("Loading all rivalries from Heat database");
+
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String dbId = getDatabaseId("Heat");
+    if (dbId == null) {
+      log.warn("Heat database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(
+          client, dbId, "Rivalry", this::mapPageToRivalryPage, false);
+    } catch (Exception e) {
+      log.error("Failed to load all rivalries", e);
+      throw new RuntimeException("Failed to load rivalries from Notion: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Loads all faction rivalries from the Notion Faction Heat database.
+   *
+   * @return List of all FactionRivalryPage objects from the Faction Heat database
+   */
+  public List<FactionRivalryPage> loadAllFactionRivalries() {
+    log.debug("Loading all faction rivalries from Faction Heat database");
+
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String dbId = getDatabaseId("Faction Heat");
+    if (dbId == null) {
+      log.warn("Faction Heat database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(
+          client, dbId, "Faction Rivalry", this::mapPageToFactionRivalryPage, false);
+    } catch (Exception e) {
+      log.error("Failed to load all faction rivalries", e);
+      throw new RuntimeException(
+          "Failed to load faction rivalries from Notion: " + e.getMessage(), e);
+    }
+  }
+
+  /** Maps a Notion page to a RivalryPage object. */
+  private RivalryPage mapPageToRivalryPage(@NonNull Page pageData, @NonNull String entityName) {
+    return mapPageToGenericEntity(
+        pageData, entityName, "Rivalry", RivalryPage::new, RivalryPage.NotionParent::new);
+  }
+
+  /** Maps a Notion page to a FactionRivalryPage object. */
+  private FactionRivalryPage mapPageToFactionRivalryPage(
+      @NonNull Page pageData, @NonNull String entityName) {
+    return mapPageToGenericEntity(
+        pageData,
+        entityName,
+        "Faction Rivalry",
+        FactionRivalryPage::new,
+        FactionRivalryPage.NotionParent::new);
+  }
 }

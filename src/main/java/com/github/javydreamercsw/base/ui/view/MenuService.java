@@ -17,6 +17,8 @@ public class MenuService {
 
     MenuItem entities = new MenuItem("Entities", VaadinIcon.DATABASE, null);
     entities.addChild(new MenuItem("Factions", VaadinIcon.GROUP, "faction-list"));
+    entities.addChild(new MenuItem("Rivalries", VaadinIcon.FIRE, "rivalry-list"));
+    entities.addChild(new MenuItem("Faction Rivalries", VaadinIcon.GROUP, "faction-rivalry-list"));
     entities.addChild(new MenuItem("Injury Types", VaadinIcon.PLUS_CIRCLE, "injury-types"));
     entities.addChild(new MenuItem("NPCs", VaadinIcon.USERS, "npc-list"));
     entities.addChild(new MenuItem("Seasons", VaadinIcon.CALENDAR_CLOCK, "season-list"));

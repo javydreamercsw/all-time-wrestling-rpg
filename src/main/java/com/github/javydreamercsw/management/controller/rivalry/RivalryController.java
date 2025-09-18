@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.controller.rivalry;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
+import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -112,12 +113,12 @@ public class RivalryController {
       @PathVariable Long id, @Valid @RequestBody AddHeatRequest request) {
     Optional<Rivalry> rivalry = rivalryService.addHeat(id, request.heatGain(), request.reason());
 
-    if (rivalry.isPresent()) {
-      return ResponseEntity.ok(rivalry.get());
-    } else {
-      return ResponseEntity.badRequest()
-          .body(new ErrorResponse("Cannot add heat - rivalry not found or inactive"));
-    }
+    return rivalry
+        .<ResponseEntity<Object>>map(ResponseEntity::ok)
+        .orElseGet(
+            () ->
+                ResponseEntity.badRequest()
+                    .body(new ErrorResponse("Cannot add heat - rivalry not found or inactive")));
   }
 
   @Operation(
@@ -130,21 +131,21 @@ public class RivalryController {
         rivalryService.addHeatBetweenWrestlers(
             request.wrestler1Id(), request.wrestler2Id(), request.heatGain(), request.reason());
 
-    if (rivalry.isPresent()) {
-      return ResponseEntity.ok(rivalry.get());
-    } else {
-      return ResponseEntity.badRequest()
-          .body(new ErrorResponse("Cannot add heat - wrestlers not found"));
-    }
+    return rivalry
+        .<ResponseEntity<Object>>map(ResponseEntity::ok)
+        .orElseGet(
+            () ->
+                ResponseEntity.badRequest()
+                    .body(new ErrorResponse("Cannot add heat - wrestlers not found")));
   }
 
   @Operation(
       summary = "Attempt rivalry resolution",
       description = "Attempts to resolve a rivalry using dice rolls")
   @PostMapping("/{id}/resolve")
-  public ResponseEntity<RivalryService.ResolutionResult> attemptResolution(
+  public ResponseEntity<ResolutionResult<Rivalry>> attemptResolution(
       @PathVariable Long id, @Valid @RequestBody ResolutionAttemptRequest request) {
-    RivalryService.ResolutionResult result =
+    ResolutionResult<Rivalry> result =
         rivalryService.attemptResolution(id, request.wrestler1Roll(), request.wrestler2Roll());
 
     return ResponseEntity.ok(result);
@@ -156,12 +157,14 @@ public class RivalryController {
       @PathVariable Long id, @Valid @RequestBody EndRivalryRequest request) {
     Optional<Rivalry> rivalry = rivalryService.endRivalry(id, request.reason());
 
-    if (rivalry.isPresent()) {
-      return ResponseEntity.ok(rivalry.get());
-    } else {
-      return ResponseEntity.badRequest()
-          .body(new ErrorResponse("Cannot end rivalry - rivalry not found or already ended"));
-    }
+    return rivalry
+        .<ResponseEntity<Object>>map(ResponseEntity::ok)
+        .orElseGet(
+            () ->
+                ResponseEntity.badRequest()
+                    .body(
+                        new ErrorResponse(
+                            "Cannot end rivalry - rivalry not found or already ended")));
   }
 
   @Operation(

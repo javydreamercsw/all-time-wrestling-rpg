@@ -15,6 +15,9 @@ public interface FactionRivalryRepository
   // If you don't need a total row count, Slice is better than Page.
   Page<FactionRivalry> findAllBy(Pageable pageable);
 
+  @Query("SELECT fr FROM FactionRivalry fr JOIN FETCH fr.faction1 JOIN FETCH fr.faction2")
+  Page<FactionRivalry> findAllWithFactions(Pageable pageable);
+
   /** Find active faction rivalries. */
   List<FactionRivalry> findByIsActiveTrue();
 

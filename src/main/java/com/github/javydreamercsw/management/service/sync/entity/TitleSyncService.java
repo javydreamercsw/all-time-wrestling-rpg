@@ -112,7 +112,7 @@ public class TitleSyncService extends BaseSyncService {
                       }
                       newTitle.setGender(Gender.valueOf(titlePage.getGender().toUpperCase()));
                       newTitle.setIsActive(true);
-                      newTitle.setIsVacant(false);
+
                       return titleRepository.save(newTitle);
                     });
 
@@ -207,7 +207,7 @@ public class TitleSyncService extends BaseSyncService {
         log.warn(
             "No champions resolved for title '{}'. Title will remain vacant.", title.getName());
       }
-    } else if (!title.getIsVacant()) {
+    } else if (!title.isVacant()) {
       log.info("Vacating title from Notion: {}", title.getName());
       title.vacateTitle();
       titleRepository.save(title);

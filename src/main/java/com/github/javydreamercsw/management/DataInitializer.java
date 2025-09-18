@@ -403,7 +403,7 @@ public class DataInitializer {
                     dto.getCurrentChampionName(),
                     dto.getName());
               }
-            } else if (!title.getIsVacant()) {
+            } else if (!title.isVacant()) {
               // If no champion is specified in DTO but title is not vacant, vacate it
               titleService.vacateTitle(title.getId());
               log.info("Vacated title {} as no champion was specified in DTO.", title.getName());

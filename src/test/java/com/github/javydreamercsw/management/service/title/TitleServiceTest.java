@@ -63,7 +63,7 @@ class TitleServiceTest {
     assertThat(result.getDescription()).isEqualTo("Top title");
     assertThat(result.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
     assertThat(result.getIsActive()).isTrue();
-    assertThat(result.getIsVacant()).isTrue();
+    assertThat(result.isVacant()).isTrue();
     verify(titleRepository).saveAndFlush(any(Title.class));
   }
 
@@ -100,7 +100,7 @@ class TitleServiceTest {
     // Then
     assertThat(result).isPresent();
     assertThat(title.getCurrentChampions()).containsExactly(wrestler);
-    assertThat(title.getIsVacant()).isFalse();
+    assertThat(title.isVacant()).isFalse();
     verify(titleRepository).saveAndFlush(title);
   }
 
@@ -138,7 +138,7 @@ class TitleServiceTest {
 
     // Then
     assertThat(result).isPresent();
-    assertThat(title.getIsVacant()).isTrue();
+    assertThat(title.isVacant()).isTrue();
     assertThat(title.getCurrentChampions()).isEmpty();
     verify(titleRepository).saveAndFlush(title);
   }
@@ -267,7 +267,6 @@ class TitleServiceTest {
     // Given
     Title title = createTitle("Test Title", WrestlerTier.MAIN_EVENTER);
     title.setIsActive(false);
-    title.setIsVacant(true);
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
 
     // When
@@ -322,7 +321,6 @@ class TitleServiceTest {
     title.setName(name);
     title.setTier(tier);
     title.setIsActive(true);
-    title.setIsVacant(true);
     title.setCreationDate(fixedInstant);
     return title;
   }

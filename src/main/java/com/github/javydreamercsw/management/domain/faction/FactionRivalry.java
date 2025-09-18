@@ -67,6 +67,14 @@ public class FactionRivalry extends AbstractEntity<Long> {
     return id;
   }
 
+  public Instant getStartedDate() {
+    return startedDate;
+  }
+
+  public Instant getEndedDate() {
+    return endedDate;
+  }
+
   @PrePersist
   protected void onCreate() {
     if (creationDate == null) {

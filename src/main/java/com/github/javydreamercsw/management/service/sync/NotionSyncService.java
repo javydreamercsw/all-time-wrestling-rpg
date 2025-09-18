@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.FactionRivalrySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.InjurySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.NpcSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.RivalrySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.SeasonSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.SegmentSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowSyncService;
@@ -47,6 +49,8 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private NpcSyncService npcSyncService;
   @Autowired private TitleSyncService titleSyncService;
   @Autowired private TitleReignSyncService titleReignSyncService;
+  @Autowired private RivalrySyncService rivalrySyncService;
+  @Autowired private FactionRivalrySyncService factionRivalrySyncService;
 
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
@@ -249,5 +253,25 @@ public class NotionSyncService extends BaseSyncService {
    */
   public SyncResult syncTitleReigns(@NonNull String operationId) {
     return titleReignSyncService.syncTitleReigns(operationId);
+  }
+
+  /**
+   * Synchronizes rivalries from Notion to the database.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncRivalries(@NonNull String operationId) {
+    return rivalrySyncService.syncRivalries(operationId);
+  }
+
+  /**
+   * Synchronizes faction rivalries from Notion to the database.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncFactionRivalries(@NonNull String operationId) {
+    return factionRivalrySyncService.syncFactionRivalries(operationId);
   }
 }
