@@ -61,4 +61,22 @@ public interface TeamRepository extends JpaRepository<Team, Long>, JpaSpecificat
 
   /** Find teams by faction and status. */
   List<Team> findByFactionAndStatus(Faction faction, TeamStatus status);
+
+  @Query(
+      value =
+          "SELECT t FROM Team t"
+              + " LEFT JOIN FETCH t.wrestler1"
+              + " LEFT JOIN FETCH t.wrestler2"
+              + " LEFT JOIN FETCH t.faction",
+      countQuery = "SELECT count(t) FROM Team t")
+  @Override
+  Page<Team> findAll(Pageable pageable);
+
+  @Query(
+      "SELECT t FROM Team t"
+          + " LEFT JOIN FETCH t.wrestler1"
+          + " LEFT JOIN FETCH t.wrestler2"
+          + " LEFT JOIN FETCH t.faction")
+  @Override
+  List<Team> findAll();
 }
