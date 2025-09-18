@@ -53,7 +53,9 @@ public class EntityDependencyAnalyzer {
     order.add("titles");
 
     // Entities that depend on wrestlers
+    order.add("rivalries");
     order.add("factions"); // Faction (depends on Wrestler for leader and members)
+    order.add("faction-rivalries");
     order.add("teams"); // Team (depends on Wrestler for members)
 
     // Complex entities that depend on multiple others

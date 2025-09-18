@@ -11,12 +11,14 @@ import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -151,14 +153,13 @@ class RivalryServiceTest {
     when(rivalryRepository.saveAndFlush(any(Rivalry.class))).thenReturn(rivalry);
 
     // When
-    RivalryService.ResolutionResult result =
-        rivalryService.attemptResolution(1L, 16, 15); // Total = 31
+    ResolutionResult<Rivalry> result = rivalryService.attemptResolution(1L, 16, 15); // Total = 31
 
     // Then
     assertThat(result.resolved()).isTrue();
     assertThat(result.message()).isEqualTo("Rivalry resolved successfully");
-    assertThat(result.wrestler1Roll()).isEqualTo(16);
-    assertThat(result.wrestler2Roll()).isEqualTo(15);
+    assertThat(result.roll1()).isEqualTo(16);
+    assertThat(result.roll2()).isEqualTo(15);
     assertThat(result.totalRoll()).isEqualTo(31);
     assertThat(rivalry.getIsActive()).isFalse();
     verify(rivalryRepository).saveAndFlush(rivalry);
@@ -175,8 +176,7 @@ class RivalryServiceTest {
     when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
 
     // When
-    RivalryService.ResolutionResult result =
-        rivalryService.attemptResolution(1L, 10, 15); // Total = 25
+    ResolutionResult<Rivalry> result = rivalryService.attemptResolution(1L, 10, 15); // Total = 25
 
     // Then
     assertThat(result.resolved()).isFalse();
@@ -196,7 +196,7 @@ class RivalryServiceTest {
     when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
 
     // When
-    RivalryService.ResolutionResult result = rivalryService.attemptResolution(1L, 20, 20);
+    ResolutionResult<Rivalry> result = rivalryService.attemptResolution(1L, 20, 20);
 
     // Then
     assertThat(result.resolved()).isFalse();
@@ -335,7 +335,7 @@ class RivalryServiceTest {
     assertThat(result).isTrue();
   }
 
-  private Wrestler createWrestler(String name, Long id) {
+  private Wrestler createWrestler(@NonNull String name, @NonNull Long id) {
     Wrestler wrestler = new Wrestler();
     wrestler.setId(id);
     wrestler.setName(name);
@@ -345,7 +345,8 @@ class RivalryServiceTest {
     return wrestler;
   }
 
-  private Rivalry createRivalry(Wrestler wrestler1, Wrestler wrestler2, int heat) {
+  private Rivalry createRivalry(
+      @NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2, int heat) {
     Rivalry rivalry = new Rivalry();
     rivalry.setId(1L);
     rivalry.setWrestler1(wrestler1);

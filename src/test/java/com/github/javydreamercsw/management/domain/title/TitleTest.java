@@ -37,7 +37,7 @@ class TitleTest {
     Title newTitle = new Title();
 
     assertThat(newTitle.getIsActive()).isTrue();
-    assertThat(newTitle.getIsVacant()).isTrue();
+    assertThat(newTitle.isVacant()).isTrue();
     assertThat(newTitle.getCurrentChampions()).isEmpty();
     assertThat(newTitle.getTitleReigns()).isEmpty();
   }
@@ -45,15 +45,14 @@ class TitleTest {
   @Test
   @DisplayName("Should award title to new champion")
   void shouldAwardTitleToNewChampion() {
-    // Initially vacant
-    assertThat(title.getIsVacant()).isTrue();
+    assertThat(title.isVacant()).isTrue();
     assertThat(title.getCurrentChampions()).isEmpty();
 
     Instant awardTime = Instant.now();
     title.awardTitleTo(List.of(wrestler1), awardTime);
 
     // Title should now be held
-    assertThat(title.getIsVacant()).isFalse();
+    assertThat(title.isVacant()).isFalse();
     assertThat(title.getCurrentChampions()).containsExactly(wrestler1);
 
     // Should create title reign
@@ -101,7 +100,7 @@ class TitleTest {
     title.vacateTitle();
 
     // Title should be vacant
-    assertThat(title.getIsVacant()).isTrue();
+    assertThat(title.isVacant()).isTrue();
     assertThat(title.getCurrentChampions()).isEmpty();
 
     // Reign should be ended
@@ -179,7 +178,6 @@ class TitleTest {
   void shouldShowStatusEmojis() {
     // Active vacant title
     title.setIsActive(true);
-    title.setIsVacant(true);
     assertThat(title.getStatusEmoji()).isEqualTo("👑❓");
 
     // Active title with champion
@@ -218,14 +216,24 @@ class TitleTest {
   @DisplayName("Should handle vacating already vacant title")
   void shouldHandleVacatingAlreadyVacantTitle() {
     // Title is vacant by default
-    assertThat(title.getIsVacant()).isTrue();
+    assertThat(title.isVacant()).isTrue();
 
     // Vacating vacant title should not cause issues
     title.vacateTitle();
 
-    assertThat(title.getIsVacant()).isTrue();
+    assertThat(title.isVacant()).isTrue();
     assertThat(title.getCurrentChampions()).isEmpty();
     assertThat(title.getTitleReigns()).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should return champion from champion field directly")
+  void shouldReturnChampionFromChampionFieldDirectly() {
+    // Set champion directly, without creating a reign
+    title.setChampion(List.of(wrestler1));
+
+    // The getCurrentChampions method should now return the champion
+    assertThat(title.getCurrentChampions()).containsExactly(wrestler1);
   }
 
   private Wrestler createWrestler(String name, Long fans) {

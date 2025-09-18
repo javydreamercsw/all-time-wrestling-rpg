@@ -311,7 +311,6 @@ class TitleControllerIntegrationTest {
   void shouldDeleteInactiveVacantTitle() throws Exception {
     Title title = createTestTitle("Test Title", WrestlerTier.MAIN_EVENTER);
     title.setIsActive(false);
-    title.setIsVacant(true);
     titleRepository.save(title);
 
     mockMvc.perform(delete("/api/titles/{id}", title.getId())).andExpect(status().isNoContent());
@@ -346,7 +345,6 @@ class TitleControllerIntegrationTest {
     title.setDescription("Test description");
     title.setTier(tier);
     title.setIsActive(true);
-    title.setIsVacant(true);
     return titleRepository.save(title);
   }
 

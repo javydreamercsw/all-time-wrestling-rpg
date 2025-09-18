@@ -23,10 +23,6 @@ public interface TitleRepository
 
   List<Title> findByIsActiveTrue();
 
-  List<Title> findByIsVacantTrue();
-
-  List<Title> findByIsVacantFalse();
-
   /** Find titles currently held by a specific wrestler. */
   @Query(
       "SELECT DISTINCT tr.title FROM TitleReign tr WHERE tr.endDate IS NULL AND :wrestler MEMBER OF"
@@ -34,11 +30,11 @@ public interface TitleRepository
   List<Title> findTitlesHeldByWrestler(@Param("wrestler") Wrestler wrestler);
 
   /** Find active titles of a specific tier. */
-  @Query("SELECT t FROM Title t WHERE t.tier = :tier AND t.isActive = true")
+  @Query("SELECT t FROM Title t JOIN FETCH t.champion WHERE t.tier = :tier AND t.isActive = true")
   List<Title> findActiveTitlesByTier(@Param("tier") WrestlerTier tier);
 
-  /** Find vacant active titles. */
-  @Query("SELECT t FROM Title t WHERE t.isVacant = true AND t.isActive = true")
+  /** Get vacant titles. */
+  @Query("SELECT t FROM Title t WHERE t.champion IS EMPTY AND t.isActive = true")
   List<Title> findVacantActiveTitles();
 
   /** Check if a title with the given name already exists. */

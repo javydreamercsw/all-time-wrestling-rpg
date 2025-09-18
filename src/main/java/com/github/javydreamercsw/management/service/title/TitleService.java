@@ -37,7 +37,7 @@ public class TitleService {
     title.setDescription(description);
     title.setTier(tier);
     title.setIsActive(true);
-    title.setIsVacant(true);
+
     title.setCreationDate(Instant.now(clock));
 
     return titleRepository.saveAndFlush(title);
@@ -206,7 +206,7 @@ public class TitleService {
   public boolean deleteTitle(Long titleId) {
     return titleRepository
         .findById(titleId)
-        .filter(title -> !title.getIsActive() && title.getIsVacant())
+        .filter(title -> !title.getIsActive() && title.isVacant())
         .map(
             title -> {
               titleRepository.delete(title);
@@ -226,7 +226,7 @@ public class TitleService {
                     title.getId(),
                     title.getName(),
                     title.getTier(),
-                    title.getIsVacant(),
+                    title.isVacant(),
                     !title.getCurrentChampions().isEmpty()
                         ? title.getCurrentChampions().stream()
                             .map(Wrestler::getName)

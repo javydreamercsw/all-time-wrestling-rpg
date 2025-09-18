@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
 import com.github.javydreamercsw.management.service.sync.DataIntegrityChecker;
@@ -44,6 +45,8 @@ public abstract class BaseSyncService {
   protected final ObjectMapper objectMapper;
   protected final NotionSyncProperties syncProperties;
 
+  @Autowired protected EntitySyncConfiguration entitySyncConfig;
+
   // Session-based tracking to prevent duplicate syncing during batch operations
   private final ThreadLocal<Set<String>> currentSyncSession = ThreadLocal.withInitial(HashSet::new);
 
@@ -69,6 +72,16 @@ public abstract class BaseSyncService {
     this.objectMapper = objectMapper;
     this.syncProperties = syncProperties;
     this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
+  }
+
+  /**
+   * Gets the effective sync settings for a specific entity type.
+   *
+   * @param entityType The entity type (e.g., "rivalries")
+   * @return The effective sync settings for the entity.
+   */
+  protected EntitySyncConfiguration.EntitySyncSettings getSyncSettings(@NonNull String entityType) {
+    return entitySyncConfig.getEffectiveSettings(entityType);
   }
 
   /**
