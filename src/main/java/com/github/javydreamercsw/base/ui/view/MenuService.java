@@ -24,7 +24,6 @@ public class MenuService {
     // Removed Rivalries
     // Removed Titles
     entities.addChild(new MenuItem("Segment Rules", VaadinIcon.LIST_OL, "segment-rule-list"));
-    entities.addChild(new MenuItem("Segment Rules", VaadinIcon.LIST_OL, "segment-rule-list"));
     entities.addChild(new MenuItem("Segment Types", VaadinIcon.PUZZLE_PIECE, "segment-type-list"));
     entities.addChild(new MenuItem("Shows", VaadinIcon.CALENDAR_O, "show-list"));
     entities.addChild(
