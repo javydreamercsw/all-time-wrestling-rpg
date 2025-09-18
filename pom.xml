@@ -27,7 +27,7 @@
     <java.version>17</java.version>
     <surefireArgLine/>
     <testcontainers.version>1.21.3</testcontainers.version>
-    <vaadin.version>24.8.6</vaadin.version>
+    <vaadin.version>24.9.0</vaadin.version>
   </properties>
 
   <dependencyManagement>
@@ -42,7 +42,7 @@
       <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
-        <version>1.18.40</version>
+        <version>1.18.42</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
