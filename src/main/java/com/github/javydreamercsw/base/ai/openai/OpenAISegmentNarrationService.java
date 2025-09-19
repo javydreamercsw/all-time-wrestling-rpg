@@ -67,12 +67,19 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
     return apiKey != null && !apiKey.trim().isEmpty();
   }
 
+  @Override
+  public String generateText(@NonNull String prompt) {
+    return callOpenAI(prompt);
+  }
+
   /** Makes a call to the OpenAI API with the given prompt. */
   private String callOpenAI(@NonNull String prompt) {
     if (!isAvailable()) {
-      log.warn("OpenAI API key not configured");
-      return "OpenAI AI service is not available. Please configure OPENAI_API_KEY environment"
-          + " variable.";
+      throw new com.github.javydreamercsw.base.ai.AIServiceException(
+          400,
+          "Bad Request",
+          getProviderName(),
+          "OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.");
     }
 
     try {
@@ -124,13 +131,17 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
       if (response.statusCode() == 200) {
         return extractContentFromResponse(response.body());
       } else {
-        log.error("OpenAI API error: {} - {}", response.statusCode(), response.body());
-        return "Error calling OpenAI API: " + response.statusCode() + " - " + response.body();
+        throw new com.github.javydreamercsw.base.ai.AIServiceException(
+            response.statusCode(),
+            "OpenAI API Error",
+            getProviderName(),
+            "OpenAI API returned an error: " + response.body());
       }
 
     } catch (Exception e) {
       log.error("Failed to call OpenAI API for segment narration", e);
-      return "Error processing segment narration request: " + e.getMessage();
+      throw new com.github.javydreamercsw.base.ai.AIServiceException(
+          500, "Internal Server Error", getProviderName(), e.getMessage(), e);
     }
   }
 

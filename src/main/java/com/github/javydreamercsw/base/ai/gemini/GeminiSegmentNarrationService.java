@@ -51,6 +51,11 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
     return apiKey != null && !apiKey.trim().isEmpty();
   }
 
+  @Override
+  public String generateText(@NonNull String prompt) {
+    return callGemini(prompt);
+  }
+
   /** Makes a call to the Gemini API with the given prompt. */
   private String callGemini(@NonNull String prompt) {
     try {
@@ -113,17 +118,20 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
 
       if (response.statusCode() == 200) {
         return extractContentFromResponse(response.body());
-      } else if (response.statusCode() == 429) {
-        log.warn("Gemini API rate limit exceeded (429). Returning null summary.");
-        return null; // Return null for 429 errors
       } else {
-        log.error("Gemini API error: {} - {}", response.statusCode(), response.body());
-        return null; // Return null for other non-200 errors
+        // Throw custom exception for AI service errors
+        throw new com.github.javydreamercsw.base.ai.AIServiceException(
+            response.statusCode(),
+            "Gemini API Error",
+            getProviderName(),
+            "Gemini API returned an error: " + response.body());
       }
 
     } catch (Exception e) {
       log.error("Failed to call Gemini API for segment narration", e);
-      return "Error processing segment narration request: " + e.getMessage();
+      // Re-throw as custom exception
+      throw new com.github.javydreamercsw.base.ai.AIServiceException(
+          500, "Internal Server Error", getProviderName(), e.getMessage(), e);
     }
   }
 

@@ -373,6 +373,12 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
    * provider-specific logic.
    */
   protected boolean isRetryableException(@NonNull Exception exception) {
+    // Check for custom AI service exception with retryable status codes
+    if (exception instanceof AIServiceException aiException) {
+      return Arrays.asList(429, 502, 503).contains(aiException.getStatusCode());
+    }
+
+    // Fallback to message-based checking for generic exceptions
     String message = exception.getMessage();
     if (message == null) {
       return false;
@@ -397,6 +403,16 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     for (RetryPolicyConfig policy : policies) {
       try {
         return callAIProviderWithRetry(prompt, policy);
+      } catch (AIServiceException e) {
+        lastException = e;
+        if (!isRetryableException(e)) {
+          throw e; // Re-throw non-retryable AI exceptions directly
+        }
+        log.warn(
+            "Retryable AI error for {}: {} - {}",
+            getProviderName(),
+            e.getStatusCode(),
+            e.getMessage());
       } catch (Exception e) {
         lastException = e;
         log.warn(
@@ -407,8 +423,12 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
       }
     }
 
-    throw new RuntimeException(
-        "All retry policies exhausted for " + getProviderName(), lastException);
+    throw new AIServiceException(
+        503,
+        "Service Unavailable",
+        getProviderName(),
+        "All retry policies exhausted for " + getProviderName(),
+        lastException);
   }
 
   /** Executes the AI provider call with a specific retry policy. */

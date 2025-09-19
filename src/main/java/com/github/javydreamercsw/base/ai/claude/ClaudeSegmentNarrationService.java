@@ -54,12 +54,19 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
     return apiKey != null && !apiKey.trim().isEmpty();
   }
 
+  @Override
+  public String generateText(@NonNull String prompt) {
+    return callClaude(prompt);
+  }
+
   /** Makes a call to the Claude API with the given prompt. */
   private String callClaude(@NonNull String prompt) {
     if (!isAvailable()) {
-      log.warn("Claude API key not configured");
-      return "Claude AI service is not available. Please configure CLAUDE_API_KEY environment"
-          + " variable.";
+      throw new com.github.javydreamercsw.base.ai.AIServiceException(
+          400,
+          "Bad Request",
+          getProviderName(),
+          "Claude API key not configured. Please set CLAUDE_API_KEY environment variable.");
     }
 
     try {
@@ -101,13 +108,17 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
       if (response.statusCode() == 200) {
         return extractContentFromResponse(response.body());
       } else {
-        log.error("Claude API error: {} - {}", response.statusCode(), response.body());
-        return "Error calling Claude API: " + response.statusCode() + " - " + response.body();
+        throw new com.github.javydreamercsw.base.ai.AIServiceException(
+            response.statusCode(),
+            "Claude API Error",
+            getProviderName(),
+            "Claude API returned an error: " + response.body());
       }
 
     } catch (Exception e) {
       log.error("Failed to call Claude API for segment narration", e);
-      return "Error processing segment narration request: " + e.getMessage();
+      throw new com.github.javydreamercsw.base.ai.AIServiceException(
+          500, "Internal Server Error", getProviderName(), e.getMessage(), e);
     }
   }
 

@@ -41,6 +41,14 @@ public interface SegmentNarrationService {
    */
   boolean isAvailable();
 
+  /**
+   * Generates text based on a given prompt. This is a general-purpose text generation method.
+   *
+   * @param prompt The prompt for text generation.
+   * @return AI-generated text.
+   */
+  String generateText(String prompt);
+
   /** Context object containing all information needed for segment narration. */
   @Setter
   @Getter

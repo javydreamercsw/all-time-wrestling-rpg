@@ -1,13 +1,229 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.service.show.planning.dto.AiGeneratedSegmentDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import java.util.List;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ShowPlanningAiService {
 
-  public ProposedShow planShow(ShowPlanningContextDTO context) {
-    // AI logic to plan the show will go here
-    return new ProposedShow();
+  private final SegmentNarrationServiceFactory narrationServiceFactory;
+  private final ObjectMapper objectMapper;
+
+  public ProposedShow planShow(@NonNull ShowPlanningContextDTO context) {
+    SegmentNarrationService aiService = narrationServiceFactory.getBestAvailableService();
+    if (aiService == null) {
+      log.warn("No AI service available for show planning.");
+      return new ProposedShow();
+    }
+
+    String prompt = buildShowPlanningPrompt(context);
+    log.debug("Sending prompt to AI: {}", prompt);
+
+    String aiResponse = aiService.generateText(prompt);
+    log.debug("Received response from AI: {}", aiResponse);
+
+    if (aiResponse == null || aiResponse.trim().isEmpty()) {
+      log.warn("AI returned an empty or null response for show planning.");
+      return new ProposedShow();
+    }
+
+    try {
+      // Attempt to extract JSON array from the response, as AI might include conversational text
+      String jsonString = extractJsonArray(aiResponse);
+      if (jsonString == null) {
+        log.error("Could not extract JSON array from AI response: {}", aiResponse);
+        return new ProposedShow();
+      }
+
+      List<AiGeneratedSegmentDTO> aiSegments =
+          objectMapper.readValue(
+              jsonString,
+              objectMapper
+                  .getTypeFactory()
+                  .constructCollectionType(List.class, AiGeneratedSegmentDTO.class));
+
+      List<ProposedSegment> proposedSegments =
+          aiSegments.stream()
+              .map(
+                  dto -> {
+                    ProposedSegment segment = new ProposedSegment();
+                    segment.setType(dto.getType());
+                    segment.setDescription(dto.getDescription());
+                    segment.setParticipants(dto.getParticipants());
+                    return segment;
+                  })
+              .collect(java.util.stream.Collectors.toList());
+
+      ProposedShow proposedShow = new ProposedShow();
+      proposedShow.setSegments(proposedSegments);
+      return proposedShow;
+    } catch (JsonProcessingException e) {
+      log.error("Failed to parse AI response into ProposedShow object: {}", aiResponse, e);
+      return new ProposedShow();
+    } catch (Exception e) {
+      log.error("An unexpected error occurred during show planning: {}", e.getMessage(), e);
+      return new ProposedShow();
+    }
+  }
+
+  private String buildShowPlanningPrompt(@NonNull ShowPlanningContextDTO context) {
+    StringBuilder prompt = new StringBuilder();
+    prompt.append(
+        "You are a professional wrestling show planner. Your task is to create a compelling and"
+            + " coherent show by generating a list of segments in JSON format.\n\n");
+    prompt.append("Here is the context for the show:\n");
+
+    if (context.getShowTemplate() != null) {
+      prompt
+          .append("Show Template Name: ")
+          .append(context.getShowTemplate().getShowName())
+          .append("\n");
+      prompt
+          .append("Show Template Description: ")
+          .append(context.getShowTemplate().getDescription())
+          .append("\n");
+      prompt
+          .append("Expected Matches: ")
+          .append(context.getShowTemplate().getExpectedMatches())
+          .append("\n");
+      prompt
+          .append("Expected Promos: ")
+          .append(context.getShowTemplate().getExpectedPromos())
+          .append("\n");
+    }
+
+    if (context.getLastMonthSegments() != null && !context.getLastMonthSegments().isEmpty()) {
+      prompt.append("Last Month's Segments:\n");
+      context
+          .getLastMonthSegments()
+          .forEach(
+              segment ->
+                  prompt
+                      .append("- Name: ")
+                      .append(segment.getName())
+                      .append(", Summary: ")
+                      .append(segment.getSummary())
+                      .append(", Participants: ")
+                      .append(String.join(", ", segment.getParticipants()))
+                      .append("\n"));
+    }
+
+    if (context.getLastMonthPromos() != null && !context.getLastMonthPromos().isEmpty()) {
+      prompt.append("Last Month's Promos:\n");
+      context
+          .getLastMonthPromos()
+          .forEach(
+              promo ->
+                  prompt
+                      .append("- Name: ")
+                      .append(promo.getName())
+                      .append(", Summary: ")
+                      .append(promo.getSummary())
+                      .append(", Participants: ")
+                      .append(String.join(", ", promo.getParticipants()))
+                      .append("\n"));
+    }
+
+    if (context.getCurrentRivalries() != null && !context.getCurrentRivalries().isEmpty()) {
+      prompt.append("Current Rivalries:\n");
+      context
+          .getCurrentRivalries()
+          .forEach(
+              rivalry ->
+                  prompt
+                      .append("- Name: ")
+                      .append(rivalry.getName())
+                      .append(", Participants: ")
+                      .append(String.join(", ", rivalry.getParticipants()))
+                      .append(", Heat: ")
+                      .append(rivalry.getHeat())
+                      .append("\n"));
+    }
+
+    if (context.getWrestlerHeats() != null && !context.getWrestlerHeats().isEmpty()) {
+      prompt.append("Wrestler Heat:\n");
+      context
+          .getWrestlerHeats()
+          .forEach(
+              heat ->
+                  prompt
+                      .append("- Wrestler: ")
+                      .append(heat.getWrestlerName())
+                      .append(", Heat: ")
+                      .append(heat.getHeat())
+                      .append("\n"));
+    }
+
+    if (context.getChampionships() != null && !context.getChampionships().isEmpty()) {
+      prompt.append("Championships:\n");
+      context
+          .getChampionships()
+          .forEach(
+              championship ->
+                  prompt
+                      .append("- Name: ")
+                      .append(championship.getChampionshipName())
+                      .append(", Champion: ")
+                      .append(championship.getChampionName())
+                      .append(", Contender: ")
+                      .append(championship.getContenderName())
+                      .append("\n"));
+    }
+
+    if (context.getNextPle() != null) {
+      prompt.append("Next PLE (Premium Live Event):\n");
+      prompt.append("- Name: ").append(context.getNextPle().getPleName()).append("\n");
+      prompt.append("- Date: ").append(context.getNextPle().getPleDate()).append("\n");
+      prompt.append("- Summary: ").append(context.getNextPle().getSummary()).append("\n");
+    }
+
+    prompt.append("\nHere is the JSON schema for a single segment:\n");
+    prompt.append("```json\n");
+    prompt.append("{\n");
+    prompt.append("  \"segmentId\": \"string\",\n");
+    prompt.append(
+        "  \"type\": \"string\", // e.g., \"match\", \"promo\", \"interview\", \"angle\"\n");
+    prompt.append("  \"description\": \"string\",\n");
+    prompt.append("  \"outcome\": \"string\",\n");
+    prompt.append("  \"participants\": [\"string\"]\n");
+    prompt.append("}\n");
+    prompt.append("```\n\n");
+    prompt.append(
+        "Generate a JSON array of at least 5 and at most 10 segments for the show. Each segment"
+            + " should adhere to the provided schema. Ensure the segments flow logically and build"
+            + " towards a compelling narrative. IMPORTANT: The 'participants' field MUST be"
+            + " populated with relevant wrestler names from the provided context. The response MUST"
+            + " be a valid JSON array, and ONLY the JSON array. Do not include any conversational"
+            + " text or explanations outside the JSON.\n\n");
+    prompt.append("JSON:\n");
+    return prompt.toString();
+  }
+
+  /**
+   * Extracts a JSON array from a given string. This is useful when the AI might include
+   * conversational text around the JSON output.
+   *
+   * @param input The string potentially containing a JSON array.
+   * @return The extracted JSON array string, or null if not found.
+   */
+  private String extractJsonArray(String input) {
+    int startIndex = input.indexOf('[');
+    int endIndex = input.lastIndexOf(']');
+
+    if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+      return input.substring(startIndex, endIndex + 1);
+    }
+    return null;
   }
 }
