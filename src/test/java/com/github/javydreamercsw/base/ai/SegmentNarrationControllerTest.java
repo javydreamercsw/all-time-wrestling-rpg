@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(
     controllers = SegmentNarrationController.class,
     excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
-class MatchNarrationControllerTest extends BaseControllerTest {
+class SegmentNarrationControllerTest extends BaseControllerTest {
 
   @MockitoBean private CommandLineRunner commandLineRunner;
 

@@ -8,7 +8,13 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -52,9 +58,13 @@ import lombok.NonNull;
 public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   private final ShowService showService;
+  private final SegmentService segmentService;
   private final SegmentRepository segmentRepository;
   private final SegmentTypeRepository segmentTypeRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final NpcService npcService;
+  private final WrestlerService wrestlerService;
+  private final TitleService titleService;
   private String referrer = "shows"; // Default referrer
 
   private H2 showTitle;
@@ -62,13 +72,21 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   public ShowDetailView(
       ShowService showService,
+      SegmentService segmentService,
       SegmentRepository segmentRepository,
       SegmentTypeRepository segmentTypeRepository,
-      WrestlerRepository wrestlerRepository) {
+      WrestlerRepository wrestlerRepository,
+      NpcService npcService,
+      WrestlerService wrestlerService,
+      TitleService titleService) {
     this.showService = showService;
+    this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
     this.segmentTypeRepository = segmentTypeRepository;
     this.wrestlerRepository = wrestlerRepository;
+    this.npcService = npcService;
+    this.wrestlerService = wrestlerService;
+    this.titleService = titleService;
     initializeComponents();
   }
 
@@ -411,8 +429,14 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       // Create segments grid
       Grid<Segment> segmentsGrid = createSegmentsGrid(segments);
       segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
-      segmentsLayout.add(segmentsGrid);
-      segmentsLayout.setFlexGrow(1, segmentsGrid); // Let grid expand
+
+      // Wrap the grid in a Div to enable horizontal scrolling
+      Div gridWrapper = new Div(segmentsGrid);
+      gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
+      gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
+
+      segmentsLayout.add(gridWrapper);
+      segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
     }
 
     card.add(header, segmentsLayout);
@@ -423,14 +447,15 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     Grid<Segment> grid = new Grid<>(Segment.class, false);
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.setItems(segments);
-    grid.setSizeFull(); // Make grid use full available space
-    grid.addClassNames(LumoUtility.Width.FULL);
 
     // Segment type column
     grid.addColumn(segment -> segment.getSegmentType().getName())
         .setHeader("Segment Type")
         .setSortable(true)
-        .setFlexGrow(2);
+        .setFlexGrow(1);
+
+    // Segment type column
+    grid.addColumn(Segment::getNarration).setHeader("Narration").setSortable(true).setFlexGrow(6);
 
     // Participants column
     grid.addColumn(
@@ -447,7 +472,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     grid.addColumn(segment -> segment.getWinner() != null ? segment.getWinner().getName() : "N/A")
         .setHeader("Winner")
         .setSortable(true)
-        .setFlexGrow(2);
+        .setFlexGrow(1);
 
     // Segment date column
     grid.addColumn(
@@ -458,20 +483,41 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
                     .format(DateTimeFormatter.ofPattern("MMM d, yyyy")))
         .setHeader("Date")
         .setSortable(true)
-        .setFlexGrow(2);
+        .setFlexGrow(1);
 
     grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setFlexGrow(1);
 
     return grid;
   }
 
-  private HorizontalLayout createActionButtons(@NonNull Segment segment) {
+  private Component createActionButtons(@NonNull Segment segment) {
     Button summaryButton = new Button("Summarize", new Icon(VaadinIcon.ACADEMY_CAP));
     summaryButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     summaryButton.setTooltipText("Generate AI Summary");
     summaryButton.addClickListener(e -> generateSummary(segment));
     summaryButton.setEnabled(segment.getNarration() != null && !segment.getNarration().isEmpty());
-    return new HorizontalLayout(summaryButton);
+
+    Button narrateButton = new Button("Narrate", new Icon(VaadinIcon.MICROPHONE));
+    narrateButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    narrateButton.setTooltipText("Generate AI Narration");
+    narrateButton.addClickListener(
+        e -> {
+          NarrationDialog dialog =
+              new NarrationDialog(segment, npcService, wrestlerService, titleService);
+          dialog.open();
+        });
+
+    Button editButton = new Button("Edit", new Icon(VaadinIcon.EDIT));
+    editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    editButton.setTooltipText("Edit Segment");
+    editButton.addClickListener(e -> openEditSegmentDialog(segment));
+
+    Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
+    deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
+    deleteButton.setTooltipText("Delete Segment");
+    deleteButton.addClickListener(e -> deleteSegment(segment));
+
+    return new VerticalLayout(summaryButton, narrateButton, editButton, deleteButton);
   }
 
   private void generateSummary(@NonNull Segment segment) {
@@ -532,7 +578,8 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
                   show,
                   segmentTypeCombo.getValue(),
                   wrestlersCombo.getValue(),
-                  winnerCombo.getValue())) {
+                  winnerCombo.getValue(),
+                  null)) {
                 dialog.close();
                 // Refresh the segments display
                 displayShow(show);
@@ -554,8 +601,120 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     dialog.open();
   }
 
+  private void openEditSegmentDialog(@NonNull Segment segment) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Edit Segment for " + segment.getShow().getName());
+    dialog.setWidth("600px");
+    dialog.setMaxWidth("90vw");
+
+    // Form layout
+    FormLayout formLayout = new FormLayout();
+    formLayout.setResponsiveSteps(
+        new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
+
+    // Segment type selection
+    ComboBox<SegmentType> segmentTypeCombo = new ComboBox<>("Segment Type");
+    segmentTypeCombo.setItems(segmentTypeRepository.findAll());
+    segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
+    segmentTypeCombo.setWidthFull();
+    segmentTypeCombo.setRequired(true);
+    segmentTypeCombo.setValue(segment.getSegmentType());
+
+    // Wrestlers selection (multi-select)
+    MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
+    wrestlersCombo.setItems(wrestlerRepository.findAll());
+    wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
+    wrestlersCombo.setWidthFull();
+    wrestlersCombo.setRequired(true);
+    wrestlersCombo.setValue(segment.getWrestlers());
+
+    // Winner selection (will be populated based on selected wrestlers)
+    ComboBox<Wrestler> winnerCombo = new ComboBox<>("Winner (Optional)");
+    winnerCombo.setItemLabelGenerator(Wrestler::getName);
+    winnerCombo.setWidthFull();
+    winnerCombo.setClearButtonVisible(true);
+    winnerCombo.setItems(segment.getWrestlers()); // Initialize with current participants
+    winnerCombo.setValue(segment.getWinner());
+
+    // Update winner options when wrestlers change
+    wrestlersCombo.addValueChangeListener(
+        e -> {
+          winnerCombo.setItems(e.getValue());
+          winnerCombo.clear();
+        });
+
+    formLayout.add(segmentTypeCombo, wrestlersCombo, winnerCombo);
+
+    // Buttons
+    Button saveButton =
+        new Button(
+            "Save Changes",
+            e -> {
+              if (validateAndSaveSegment(
+                  segment.getShow(),
+                  segmentTypeCombo.getValue(),
+                  wrestlersCombo.getValue(),
+                  winnerCombo.getValue(),
+                  segment)) {
+                dialog.close();
+                // Refresh the segments display
+                displayShow(segment.getShow());
+              }
+            });
+    saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+    Button cancelButton = new Button("Cancel", e -> dialog.close());
+
+    HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, cancelButton);
+    buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+    buttonLayout.setWidthFull();
+
+    VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
+    dialogLayout.setSpacing(true);
+    dialogLayout.setPadding(false);
+
+    dialog.add(dialogLayout);
+    dialog.open();
+  }
+
+  private void deleteSegment(@NonNull Segment segment) {
+    Dialog confirmDialog = new Dialog();
+    confirmDialog.setHeaderTitle("Delete Segment");
+    confirmDialog.add(new Paragraph("Are you sure you want to delete this segment?"));
+
+    Button deleteButton =
+        new Button(
+            "Delete",
+            event -> {
+              try {
+                segmentService.deleteSegment(segment.getId());
+                Notification.show(
+                        "Segment deleted successfully!", 3000, Notification.Position.BOTTOM_START)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                confirmDialog.close();
+                displayShow(segment.getShow()); // Refresh the segments display
+              } catch (Exception e) {
+                Notification.show(
+                        "Error deleting segment: " + e.getMessage(),
+                        5000,
+                        Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            });
+    deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+
+    Button cancelButton = new Button("Cancel", event -> confirmDialog.close());
+
+    confirmDialog.getFooter().add(cancelButton, deleteButton);
+    confirmDialog.open();
+  }
+
   private boolean validateAndSaveSegment(
-      @NonNull Show show, SegmentType segmentType, Set<Wrestler> wrestlers, Wrestler winner) {
+      @NonNull Show show,
+      SegmentType segmentType,
+      Set<Wrestler> wrestlers,
+      Wrestler winner,
+      Segment segmentToUpdate) {
     // Validation
     if (segmentType == null) {
       Notification.show("Please select a segment type", 3000, Notification.Position.MIDDLE)
@@ -583,13 +742,20 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     }
 
     try {
-      // Create segment
-      Segment segment = new Segment();
-      segment.setShow(show);
+      Segment segment;
+      if (segmentToUpdate != null) {
+        segment = segmentToUpdate;
+        segment.getParticipants().clear(); // Clear existing participants
+        segment.getSegmentRules().clear(); // Clear existing rules
+      } else {
+        segment = new Segment();
+        segment.setShow(show);
+        segment.setSegmentDate(java.time.Instant.now());
+        segment.setIsTitleSegment(false);
+        segment.setIsNpcGenerated(false);
+      }
+
       segment.setSegmentType(segmentType);
-      segment.setSegmentDate(java.time.Instant.now());
-      segment.setIsTitleSegment(false);
-      segment.setIsNpcGenerated(false);
 
       // Add participants
       for (Wrestler wrestler : wrestlers) {
@@ -600,11 +766,21 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
         segment.setWinner(winner);
       }
 
-      // Save the segment
-      segmentRepository.save(segment);
-
-      Notification.show("Segment added successfully!", 3000, Notification.Position.BOTTOM_START)
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      // Save or update the segment
+      if (segmentToUpdate != null) {
+        segmentService.updateSegment(segment);
+        Notification.show("Segment updated successfully!", 3000, Notification.Position.BOTTOM_START)
+            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      } else {
+        segmentService.createSegment(
+            show,
+            segmentType,
+            java.time.Instant.now(), // Assuming current time for new segment
+            false // Assuming not a title segment for new segment
+            ); // Use segmentService to create
+        Notification.show("Segment added successfully!", 3000, Notification.Position.BOTTOM_START)
+            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      }
       return true;
 
     } catch (Exception e) {

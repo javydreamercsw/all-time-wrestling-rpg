@@ -22,6 +22,7 @@ public interface SegmentRepository
   @Query(
       """
       SELECT s FROM Segment s
+      LEFT JOIN FETCH s.show
       LEFT JOIN FETCH s.participants p
       LEFT JOIN FETCH p.wrestler
       WHERE s.show = :show

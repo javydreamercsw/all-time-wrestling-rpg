@@ -3,6 +3,8 @@ package com.github.javydreamercsw.management.domain.wrestler;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.card.Card;
+import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
@@ -94,7 +96,7 @@ public class Wrestler extends AbstractEntity<Long> {
 
   @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, orphanRemoval = true)
   @JsonIgnore
-  private List<com.github.javydreamercsw.management.domain.deck.Deck> decks = new ArrayList<>();
+  private List<Deck> decks = new ArrayList<>();
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "faction_id")
@@ -103,7 +105,7 @@ public class Wrestler extends AbstractEntity<Long> {
     "rivalriesAsFaction1",
     "rivalriesAsFaction2"
   })
-  private com.github.javydreamercsw.management.domain.faction.Faction faction;
+  private Faction faction;
 
   // ==================== ATW RPG METHODS ====================
 

@@ -1,10 +1,12 @@
 package com.github.javydreamercsw.management.controller.show;
 
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,5 +36,14 @@ public class ShowPlanningController {
   @PostMapping("/plan")
   public ResponseEntity<ProposedShow> planShow(@RequestBody ShowPlanningContextDTO context) {
     return ResponseEntity.ok(showPlanningAiService.planShow(context));
+  }
+
+  @PostMapping("/approve/{showId}")
+  public ResponseEntity<Void> approveSegments(
+      @PathVariable Long showId, @RequestBody List<ProposedSegment> segments) {
+    showService
+        .getShowById(showId)
+        .ifPresent(show -> showPlanningService.approveSegments(show, segments));
+    return ResponseEntity.ok().build();
   }
 }

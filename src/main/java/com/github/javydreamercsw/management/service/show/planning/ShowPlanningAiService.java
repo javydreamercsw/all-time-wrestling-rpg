@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.AiGeneratedSegmentDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import java.util.List;
@@ -19,6 +20,7 @@ public class ShowPlanningAiService {
 
   private final SegmentNarrationServiceFactory narrationServiceFactory;
   private final ObjectMapper objectMapper;
+  private final SegmentTypeService segmentTypeService;
 
   public ProposedShow planShow(@NonNull ShowPlanningContextDTO context) {
     SegmentNarrationService aiService = narrationServiceFactory.getBestAvailableService();
@@ -28,10 +30,10 @@ public class ShowPlanningAiService {
     }
 
     String prompt = buildShowPlanningPrompt(context);
-    log.debug("Sending prompt to AI: {}", prompt);
+    log.info("Sending prompt to AI: {}", prompt);
 
     String aiResponse = aiService.generateText(prompt);
-    log.debug("Received response from AI: {}", aiResponse);
+    log.info("Received response from AI: {}", aiResponse);
 
     if (aiResponse == null || aiResponse.trim().isEmpty()) {
       log.warn("AI returned an empty or null response for show planning.");
@@ -188,24 +190,44 @@ public class ShowPlanningAiService {
       prompt.append("- Summary: ").append(context.getNextPle().getSummary()).append("\n");
     }
 
+    List<String> segmentTypes =
+        segmentTypeService.findAll().stream()
+            .map(com.github.javydreamercsw.management.domain.show.segment.type.SegmentType::getName)
+            .collect(java.util.stream.Collectors.toList());
+    prompt
+        .append("\nAvailable Segment Types: ")
+        .append(String.join(", ", segmentTypes))
+        .append("\n");
+
+    prompt.append(
+        "\nIMPORTANT: Use the provided context to generate a compelling and coherent show. "
+            + "The segments should build on existing rivalries and championships. "
+            + "If a `Next PLE` is provided, the show should build towards it.\n\n");
+
     prompt.append("\nHere is the JSON schema for a single segment:\n");
     prompt.append("```json\n");
     prompt.append("{\n");
     prompt.append("  \"segmentId\": \"string\",\n");
-    prompt.append(
-        "  \"type\": \"string\", // e.g., \"match\", \"promo\", \"interview\", \"angle\"\n");
+    prompt.append("  \"type\": \"string\", // e.g., \"").append(segmentTypes.get(0)).append("\"\n");
     prompt.append("  \"description\": \"string\",\n");
     prompt.append("  \"outcome\": \"string\",\n");
     prompt.append("  \"participants\": [\"string\"]\n");
     prompt.append("}\n");
     prompt.append("```\n\n");
-    prompt.append(
-        "Generate a JSON array of at least 5 and at most 10 segments for the show. Each segment"
-            + " should adhere to the provided schema. Ensure the segments flow logically and build"
-            + " towards a compelling narrative. IMPORTANT: The 'participants' field MUST be"
-            + " populated with relevant wrestler names from the provided context. The response MUST"
-            + " be a valid JSON array, and ONLY the JSON array. Do not include any conversational"
-            + " text or explanations outside the JSON.\n\n");
+    prompt
+        .append("Generate a JSON array of exactly ")
+        .append(context.getShowTemplate().getExpectedMatches())
+        .append(" matches and ")
+        .append(context.getShowTemplate().getExpectedPromos())
+        .append(" promos for the show. Each segment")
+        .append(
+            " should adhere to the provided schema. Ensure the segments flow logically and build")
+        .append(" towards a compelling narrative. IMPORTANT: The 'participants' field MUST be")
+        .append(
+            " populated with relevant wrestler names from the provided context. The response MUST")
+        .append(
+            " be a valid JSON array, and ONLY the JSON array. Do not include any conversational")
+        .append(" text or explanations outside the JSON.\n\n");
     prompt.append("JSON:\n");
     return prompt.toString();
   }

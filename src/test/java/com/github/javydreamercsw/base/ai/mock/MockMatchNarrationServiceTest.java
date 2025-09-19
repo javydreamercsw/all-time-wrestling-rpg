@@ -241,10 +241,16 @@ class MockMatchNarrationServiceTest {
     WrestlerContext undertaker = new WrestlerContext();
     undertaker.setName("The Undertaker");
     undertaker.setDescription("The Deadman");
+    MoveSet undertakerMoves = new MoveSet();
+    undertakerMoves.setFinishers(List.of(new Move("Tombstone Piledriver", "Finisher", "finisher")));
+    undertaker.setMoveSet(undertakerMoves);
 
     WrestlerContext kane = new WrestlerContext();
     kane.setName("Kane");
     kane.setDescription("The Big Red Machine");
+    MoveSet kaneMoves = new MoveSet();
+    kaneMoves.setFinishers(List.of(new Move("Chokeslam", "Finisher", "finisher")));
+    kane.setMoveSet(kaneMoves);
 
     context.setWrestlers(Arrays.asList(undertaker, kane));
     context.setAudience("Shocked crowd");

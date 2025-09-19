@@ -261,6 +261,48 @@ class AbstractMatchNarrationServiceTest {
     return context;
   }
 
+  @Test
+  @DisplayName("Should include custom instructions in promo prompt")
+  void shouldIncludeCustomInstructionsInPromoPrompt() {
+    // Given
+    SegmentNarrationContext promoContext = new SegmentNarrationContext();
+    SegmentTypeContext segmentType = new SegmentTypeContext();
+    segmentType.setSegmentType("Promo");
+    promoContext.setSegmentType(segmentType);
+    promoContext.setDeterminedOutcome("A promo about a future match.");
+    String customInstructions = "These are my custom instructions.";
+    promoContext.setInstructions(customInstructions);
+
+    // When
+    String prompt = service.buildTestPrompt(promoContext);
+
+    // Then
+    assertThat(prompt)
+        .isNotNull()
+        .isNotEmpty()
+        .contains("PROMO NARRATION INSTRUCTIONS:")
+        .contains(customInstructions);
+  }
+
+  @Test
+  @DisplayName("Should include custom instructions in match prompt")
+  void shouldIncludeCustomInstructionsInMatchPrompt() {
+    // Given
+    SegmentNarrationContext matchContext = createComprehensiveTestContext();
+    String customInstructions = "These are my custom instructions for a match.";
+    matchContext.setInstructions(customInstructions);
+
+    // When
+    String prompt = service.buildTestPrompt(matchContext);
+
+    // Then
+    assertThat(prompt)
+        .isNotNull()
+        .isNotEmpty()
+        .contains("NARRATION INSTRUCTIONS:")
+        .contains(customInstructions);
+  }
+
   /** Testable implementation of AbstractMatchNarrationService for testing prompt building. */
   private static class TestableMatchNarrationService extends AbstractSegmentNarrationService {
 
