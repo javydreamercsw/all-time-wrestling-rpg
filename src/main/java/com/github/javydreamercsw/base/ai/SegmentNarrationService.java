@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 /**
  * AI service interface focused specifically on wrestling segment narration. This interface is
@@ -52,6 +53,7 @@ public interface SegmentNarrationService {
   /** Context object containing all information needed for segment narration. */
   @Setter
   @Getter
+  @ToString // Add this annotation
   class SegmentNarrationContext {
     // Getters and setters
     private List<WrestlerContext> wrestlers;
@@ -62,16 +64,32 @@ public interface SegmentNarrationService {
     private VenueContext venue;
     private String audience;
     private List<String> recentSegmentNarrations;
+    private List<WrestlerContext> fullRoster; // Add full roster
+    private List<TitleContext> titles; // Add titles
+    private String instructions; // Add instructions field
+  }
+
+  /** Context for wrestling titles. */
+  @Setter
+  @Getter
+  @ToString
+  class TitleContext {
+    private String name;
+    private String currentHolderName;
+    private String tier; // e.g., World, Mid-Card, Tag Team
   }
 
   /** Context for individual wrestlers in the segment. */
   @Setter
   @Getter
+  @ToString // Add this annotation
   class WrestlerContext {
     // Getters and setters
     private String name;
     private String description;
     private String team;
+    private String gender;
+    private String tier;
     private MoveSet moveSet;
     private List<String> feudsAndHeat;
     private List<String> recentSegments;
@@ -81,6 +99,7 @@ public interface SegmentNarrationService {
   /** Wrestler's move set including finishers and trademarks. */
   @Setter
   @Getter
+  @ToString // Add this annotation
   class MoveSet {
     // Getters and setters
     private List<Move> finishers;
@@ -91,6 +110,7 @@ public interface SegmentNarrationService {
   /** Individual wrestling move with description. */
   @Setter
   @Getter
+  @ToString // Add this annotation
   class Move {
     // Getters and setters
     private String name;
@@ -109,6 +129,7 @@ public interface SegmentNarrationService {
   /** Match type and rules context. */
   @Setter
   @Getter
+  @ToString // Add this annotation
   class SegmentTypeContext {
     // Getters and setters
     private String segmentType; // Singles, Tag Team, Triple Threat, etc.
@@ -120,6 +141,7 @@ public interface SegmentNarrationService {
   /** Referee context affecting segment flow. */
   @Setter
   @Getter
+  @ToString // Add this annotation
   class RefereeContext {
     // Getters and setters
     private String name;
@@ -131,6 +153,7 @@ public interface SegmentNarrationService {
   /** Non-player characters involved in the segment (commentators, announcers, etc.). */
   @Setter
   @Getter
+  @ToString // Add this annotation
   class NPCContext {
     // Getters and setters
     private String name;
@@ -143,6 +166,7 @@ public interface SegmentNarrationService {
   /** Venue context with rich details about the wrestling venue. */
   @Setter
   @Getter
+  @ToString // Add this annotation
   class VenueContext {
     // Getters and setters
     private String name;

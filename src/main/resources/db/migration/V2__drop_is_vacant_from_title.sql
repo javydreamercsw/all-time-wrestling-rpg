@@ -1,0 +1,1 @@
+ALTER TABLE title DROP COLUMN is_vacant;

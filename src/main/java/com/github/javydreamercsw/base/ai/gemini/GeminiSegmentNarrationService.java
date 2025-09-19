@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.base.ai.gemini;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -120,7 +121,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
         return extractContentFromResponse(response.body());
       } else {
         // Throw custom exception for AI service errors
-        throw new com.github.javydreamercsw.base.ai.AIServiceException(
+        throw new AIServiceException(
             response.statusCode(),
             "Gemini API Error",
             getProviderName(),
@@ -130,7 +131,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
     } catch (Exception e) {
       log.error("Failed to call Gemini API for segment narration", e);
       // Re-throw as custom exception
-      throw new com.github.javydreamercsw.base.ai.AIServiceException(
+      throw new AIServiceException(
           500, "Internal Server Error", getProviderName(), e.getMessage(), e);
     }
   }

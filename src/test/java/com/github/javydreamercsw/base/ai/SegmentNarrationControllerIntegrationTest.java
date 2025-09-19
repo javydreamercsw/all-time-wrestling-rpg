@@ -30,8 +30,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureWebMvc
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@DisplayName("Match Narration Controller Integration Tests")
-class MatchNarrationControllerIntegrationTest {
+@DisplayName("Segment Narration Controller Integration Tests")
+class SegmentNarrationControllerIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
 
@@ -109,9 +109,9 @@ class MatchNarrationControllerIntegrationTest {
 
   @Test
   @DisplayName("POST /api/segment-narration/narrate should accept custom segment context")
-  void shouldAcceptCustomMatchContext() throws Exception {
+  void shouldAcceptCustomSegmentContext() throws Exception {
     // Given
-    SegmentNarrationContext customContext = createCustomMatchContext();
+    SegmentNarrationContext customContext = createCustomSegmentContext();
     String requestBody = objectMapper.writeValueAsString(customContext);
 
     // When & Then
@@ -198,7 +198,7 @@ class MatchNarrationControllerIntegrationTest {
   }
 
   /** Creates a custom segment context for testing. */
-  private SegmentNarrationContext createCustomMatchContext() {
+  private SegmentNarrationContext createCustomSegmentContext() {
     SegmentNarrationContext context = new SegmentNarrationContext();
 
     // Match Type

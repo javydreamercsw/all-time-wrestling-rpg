@@ -17,6 +17,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
@@ -40,14 +41,11 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-/**
- * View for generating AI-powered wrestling segment narrations. Allows users to configure segment
- * parameters and generate detailed segment stories.
- */
 @Route("segment-narration")
 @PageTitle("Segment Narration")
 @Menu(order = 5, icon = "vaadin:microphone", title = "Segment Narration")
@@ -331,6 +329,21 @@ public class SegmentNarrationView extends Main {
 
       handleNarrationResponse(response.getBody());
 
+    } catch (org.springframework.web.client.HttpClientErrorException e) {
+      log.error("HTTP Client Error generating segment narration", e);
+      try {
+        JsonNode errorResponse = objectMapper.readTree(e.getResponseBodyAsString());
+        if (errorResponse.has("alternativeProviders")) {
+          showRetryDialog(errorResponse);
+        } else {
+          showError(
+              "Failed to generate narration: "
+                  + errorResponse.path("error").asText("Unknown error"));
+        }
+      } catch (Exception ex) {
+        log.error("Error parsing error response", ex);
+        showError("Failed to generate narration: " + e.getMessage());
+      }
     } catch (Exception e) {
       log.error("Error generating segment narration", e);
       showError("Failed to generate narration: " + e.getMessage());
@@ -528,5 +541,77 @@ public class SegmentNarrationView extends Main {
   private void showError(String message) {
     Notification.show(message, 5000, Notification.Position.BOTTOM_END)
         .addThemeVariants(NotificationVariant.LUMO_ERROR);
+  }
+
+  private void showRetryDialog(JsonNode errorResponse) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Narration Failed");
+
+    VerticalLayout content = new VerticalLayout();
+    content.add(
+        new com.vaadin.flow.component.html.Span(
+            errorResponse.path("error").asText("Unknown error")));
+
+    JsonNode alternativeProviders = errorResponse.path("alternativeProviders");
+    if (alternativeProviders.isArray()) {
+      content.add(new H3("Try with another provider:"));
+      for (JsonNode providerNode : alternativeProviders) {
+        String provider = providerNode.path("provider").asText();
+        double estimatedCost = providerNode.path("estimatedCost").asDouble();
+        Button retryButton =
+            new Button(
+                "Retry with " + provider + String.format(" (~$%.4f)", estimatedCost),
+                e -> {
+                  retryWithProvider(provider);
+                  dialog.close();
+                });
+        content.add(retryButton);
+      }
+    }
+
+    dialog.add(content);
+    dialog.getFooter().add(new Button("Cancel", e -> dialog.close()));
+    dialog.open();
+  }
+
+  private void retryWithProvider(@NonNull String provider) {
+    if (!validateForm()) {
+      return;
+    }
+
+    showProgress(true);
+
+    try {
+      SegmentNarrationService.SegmentNarrationContext context = buildSegmentContext();
+
+      // Call the REST API with the specified provider
+      String baseUrl = UrlUtil.getBaseUrl();
+      ResponseEntity<String> response =
+          restTemplate.postForEntity(
+              baseUrl + "/api/segment-narration/narrate/" + provider, context, String.class);
+
+      handleNarrationResponse(response.getBody());
+
+    } catch (org.springframework.web.client.HttpClientErrorException e) {
+      log.error("HTTP Client Error retrying with provider {}: {}", provider, e.getMessage(), e);
+      try {
+        JsonNode errorResponse = objectMapper.readTree(e.getResponseBodyAsString());
+        if (errorResponse.has("alternativeProviders")) {
+          showRetryDialog(errorResponse);
+        } else {
+          showError(
+              "Failed to generate narration: "
+                  + errorResponse.path("error").asText("Unknown error"));
+        }
+      } catch (Exception ex) {
+        log.error("Error parsing error response", ex);
+        showError("Failed to generate narration: " + e.getMessage());
+      }
+    } catch (Exception e) {
+      log.error("Error retrying with provider: " + provider, e);
+      showError("Failed to generate narration: " + e.getMessage());
+    } finally {
+      showProgress(false);
+    }
   }
 }

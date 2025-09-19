@@ -6,7 +6,7 @@ import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import java.security.SecureRandom;
+import com.github.javydreamercsw.utils.DiceBag;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
   private final WrestlerRepository wrestlerRepository;
-  private final Random random = new SecureRandom();
+  private final Random random = new Random();
 
   /**
    * Determines the match outcome if none is provided in the context. Uses wrestler stats, tier
@@ -39,6 +39,14 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
     if (context.getDeterminedOutcome() != null
         && !context.getDeterminedOutcome().trim().isEmpty()) {
       log.debug("Segment outcome already determined: {}", context.getDeterminedOutcome());
+      return context;
+    }
+
+    // If it's a promo with no wrestlers, don't determine an outcome automatically.
+    // The narration will be based on the summary.
+    if ("Promo".equalsIgnoreCase(context.getSegmentType().getSegmentType())
+        && (context.getWrestlers() == null || context.getWrestlers().isEmpty())) {
+      log.debug("Segment is a promo with no wrestlers, skipping outcome determination.");
       return context;
     }
 
@@ -83,7 +91,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
     // Determine winner using weighted random selection
     int totalWeight = weight1 + weight2;
-    double randomValue = random.nextDouble() * totalWeight;
+    double randomValue = new DiceBag(totalWeight).roll();
 
     WrestlerContext winner;
     WrestlerContext loser;
@@ -115,7 +123,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
     // Determine winner using weighted random selection
     int totalWeight = wrestlerWeights.stream().mapToInt(WrestlerWeight::weight).sum();
-    double randomValue = random.nextDouble() * totalWeight;
+    double randomValue = new DiceBag(totalWeight).roll();
 
     double cumulativeWeight = 0;
     WrestlerContext winner = wrestlers.get(0); // fallback
@@ -129,7 +137,6 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
     // Generate outcome description
     String finishingMove = getRandomFinishingMove(winner);
-    int opponentCount = wrestlers.size() - 1;
     return String.format(
         "%s emerges victorious from the %d-way match with %s",
         winner.getName(), wrestlers.size(), finishingMove);

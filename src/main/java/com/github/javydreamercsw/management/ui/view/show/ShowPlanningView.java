@@ -194,6 +194,22 @@ public class ShowPlanningView extends Main {
   }
 
   private void approveSegments() {
-    // Logic to approve segments will go here
+    Show selectedShow = showComboBox.getValue();
+    if (selectedShow == null) {
+      Notification.show("Please select a show first.", 5000, Notification.Position.MIDDLE);
+      return;
+    }
+
+    try {
+      String baseUrl = UrlUtil.getBaseUrl();
+      restTemplate.postForEntity(
+          baseUrl + "/api/show-planning/approve/" + selectedShow.getId(), segments, Void.class);
+      Notification.show("Segments approved successfully!", 5000, Notification.Position.MIDDLE);
+      proposedSegmentsGrid.setItems(new ArrayList<>());
+    } catch (Exception ex) {
+      Notification.show(
+          "Error approving segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+      ex.printStackTrace();
+    }
   }
 }
