@@ -24,7 +24,8 @@ public class Npc extends AbstractEntity<Long> {
   private String name;
 
   @Column(nullable = false)
-  private String npcType;
+  private String
+      npcType; // Used for the NPC's role (e.g., Referee, Commentator, Commissioner, Other)
 
   private String externalId;
 

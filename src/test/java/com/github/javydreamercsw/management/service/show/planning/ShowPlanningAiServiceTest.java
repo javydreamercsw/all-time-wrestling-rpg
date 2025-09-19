@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,17 +16,18 @@ class ShowPlanningAiServiceTest {
   private ShowPlanningAiService showPlanningAiService;
   private SegmentNarrationServiceFactory narrationServiceFactory;
   private SegmentNarrationService segmentNarrationService;
-  private ObjectMapper objectMapper;
 
   @BeforeEach
   void setUp() {
     narrationServiceFactory = mock(SegmentNarrationServiceFactory.class);
     segmentNarrationService = mock(SegmentNarrationService.class);
-    objectMapper = new ObjectMapper(); // Use real ObjectMapper for JSON parsing
+    ObjectMapper objectMapper = new ObjectMapper(); // Use real ObjectMapper for JSON parsing
+    SegmentTypeService segmentTypeService = mock(SegmentTypeService.class);
 
     when(narrationServiceFactory.getBestAvailableService()).thenReturn(segmentNarrationService);
 
-    showPlanningAiService = new ShowPlanningAiService(narrationServiceFactory, objectMapper);
+    showPlanningAiService =
+        new ShowPlanningAiService(narrationServiceFactory, objectMapper, segmentTypeService);
   }
 
   @Test
@@ -42,13 +44,13 @@ class ShowPlanningAiServiceTest {
         [
           {
             "segmentId": "seg1",
-            "type": "match",
+            "type": "One on One",
             "description": "Main Event: John Cena vs Randy Orton",
             "outcome": "John Cena wins"
           },
           {
             "segmentId": "seg2",
-            "type": "promo",
+            "type": "Promo",
             "description": "CM Punk cuts a promo on the Authority",
             "outcome": "Crowd boos Authority"
           }

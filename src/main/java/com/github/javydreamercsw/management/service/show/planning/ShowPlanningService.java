@@ -7,11 +7,13 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -39,6 +41,8 @@ public class ShowPlanningService {
   private final com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
   private final com.github.javydreamercsw.management.service.segment.SegmentSummaryService
       segmentSummaryService;
+  private final SegmentTypeService segmentTypeService;
+  private final WrestlerService wrestlerService;
 
   @Transactional
   public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
@@ -52,7 +56,6 @@ public class ShowPlanningService {
         segmentRepository.findBySegmentDateBetween(lastMonth, showDate);
     log.debug("Found {} segments", lastMonthSegments.size());
 
-    // New logic to generate summaries
     // New logic to generate summaries
     lastMonthSegments.forEach(
         segment -> {
@@ -72,12 +75,6 @@ public class ShowPlanningService {
             }
           }
         });
-    // No need to reload the whole list again
-    // lastMonthSegments = segmentRepository.findBySegmentDateBetween(lastMonth, showDate);
-
-    context.setLastMonthSegments(lastMonthSegments);
-    // Reload segments to get the summaries
-    lastMonthSegments = segmentRepository.findBySegmentDateBetween(lastMonth, showDate);
 
     context.setLastMonthSegments(lastMonthSegments);
 
@@ -131,5 +128,27 @@ public class ShowPlanningService {
     }
 
     return mapper.toDto(context);
+  }
+
+  @Transactional
+  public void approveSegments(@NonNull Show show, @NonNull List<ProposedSegment> proposedSegments) {
+    List<Segment> segmentsToSave = new ArrayList<>();
+    for (ProposedSegment proposedSegment : proposedSegments) {
+      log.info("Processing segment: {}", proposedSegment);
+      Segment segment = new Segment();
+      segment.setShow(show);
+      segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+      segment.setNarration(proposedSegment.getDescription());
+
+      segmentTypeService.findByName(proposedSegment.getType()).ifPresent(segment::setSegmentType);
+
+      for (String participantName : proposedSegment.getParticipants()) {
+        wrestlerService.findByName(participantName).ifPresent(segment::addParticipant);
+      }
+
+      segmentsToSave.add(segment);
+    }
+    segmentRepository.saveAll(segmentsToSave);
+    log.info("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
   }
 }

@@ -318,8 +318,12 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
   public String narrateSegment(
       @NonNull SegmentNarrationService.SegmentNarrationContext segmentContext) {
     if (!isAvailable()) {
-      return getProviderName()
-          + " AI service is not available. Please configure the required API key.";
+      throw new AIServiceException(
+          503,
+          "Service Unavailable",
+          getProviderName(),
+          getProviderName()
+              + " AI service is not available. Please configure the required API key.");
     }
 
     String prompt = buildSegmentNarrationPrompt(segmentContext);
