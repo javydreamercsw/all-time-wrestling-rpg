@@ -279,6 +279,11 @@ class AbstractMatchNarrationServiceTest {
       return true;
     }
 
+    @Override
+    public String generateText(@NonNull String prompt) {
+      return callAIProvider(prompt);
+    }
+
     // Expose the protected method for testing
     public String buildTestPrompt(SegmentNarrationContext context) {
       return buildSegmentNarrationPrompt(context);

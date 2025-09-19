@@ -431,7 +431,7 @@ public class SegmentNarrationController {
   public ResponseEntity<Map<String, Object>> createTestPromo() {
     SegmentNarrationService service = serviceFactory.getTestingService();
     if (service == null) {
-      return ResponseEntity.badRequest().body(Map.of("error", "No testing service available"));
+      return ResponseEntity.status(503).body(Map.of("error", "No testing service available"));
     }
 
     try {
@@ -466,6 +466,13 @@ public class SegmentNarrationController {
 
       return ResponseEntity.ok(response);
 
+    } catch (AIServiceException e) {
+      log.error("AI service error creating test promo: {}", e.getMessage());
+      Map<String, Object> errorResponse = new HashMap<>();
+      errorResponse.put("provider", e.getProvider());
+      errorResponse.put("statusCode", e.getStatusCode());
+      errorResponse.put("error", e.getMessage());
+      return ResponseEntity.status(e.getStatusCode()).body(errorResponse);
     } catch (Exception e) {
       log.error("Error creating test promo narration", e);
       Map<String, Object> errorResponse = new HashMap<>();

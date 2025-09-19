@@ -41,6 +41,11 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     return true; // Always available for testing
   }
 
+  @Override
+  public String generateText(@NonNull String prompt) {
+    return generateMockNarration(prompt);
+  }
+
   /** Generates a realistic mock wrestling segment narration. */
   private String generateMockNarration(@NonNull String prompt) {
     // Extract wrestler names from the prompt for personalization

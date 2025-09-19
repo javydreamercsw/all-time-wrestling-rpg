@@ -13,6 +13,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -40,6 +41,7 @@ public class ShowPlanningView extends Main {
   private TextArea contextArea;
   private Grid<ProposedSegment> proposedSegmentsGrid;
   private Button approveButton;
+  private Button proposeSegmentsButton;
   private Editor<ProposedSegment> editor;
   private List<ProposedSegment> segments = new ArrayList<>();
 
@@ -61,6 +63,10 @@ public class ShowPlanningView extends Main {
     contextArea = new TextArea("Show Planning Context");
     contextArea.setWidthFull();
     contextArea.setHeight("300px");
+
+    proposeSegmentsButton = new Button("Propose Segments");
+    proposeSegmentsButton.addClickListener(e -> proposeSegments());
+    proposeSegmentsButton.setEnabled(false);
 
     proposedSegmentsGrid = new Grid<>(ProposedSegment.class, false);
     proposedSegmentsGrid.addColumn(ProposedSegment::getType).setHeader("Type");
@@ -117,7 +123,12 @@ public class ShowPlanningView extends Main {
 
     VerticalLayout layout =
         new VerticalLayout(
-            showComboBox, loadContextButton, contextArea, proposedSegmentsGrid, approveButton);
+            showComboBox,
+            loadContextButton,
+            proposeSegmentsButton,
+            contextArea,
+            proposedSegmentsGrid,
+            approveButton);
     add(layout);
   }
 
@@ -132,6 +143,7 @@ public class ShowPlanningView extends Main {
       try {
         contextArea.setValue(
             objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context));
+        proposeSegmentsButton.setEnabled(true);
       } catch (Exception ex) {
         contextArea.setValue("Error displaying context: " + ex.getMessage());
       }
@@ -144,6 +156,40 @@ public class ShowPlanningView extends Main {
         segments = new ArrayList<>(proposedShow.getSegments());
         proposedSegmentsGrid.setItems(segments);
       }
+    }
+  }
+
+  private void proposeSegments() {
+    try {
+      String baseUrl = UrlUtil.getBaseUrl();
+      ShowPlanningContextDTO context =
+          objectMapper.readValue(contextArea.getValue(), ShowPlanningContextDTO.class);
+
+      // Log the request context
+      System.out.println(
+          "Sending context to AI: "
+              + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context));
+
+      ProposedShow proposedShow =
+          restTemplate.postForObject(
+              baseUrl + "/api/show-planning/plan", context, ProposedShow.class);
+
+      // Log the response
+      System.out.println(
+          "Received proposed show from AI: "
+              + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(proposedShow));
+
+      if (proposedShow != null) {
+        segments = new ArrayList<>(proposedShow.getSegments());
+        proposedSegmentsGrid.setItems(segments);
+        approveButton.setEnabled(true); // Enable approve button
+      } else {
+        Notification.show("AI did not propose any segments.", 5000, Notification.Position.MIDDLE);
+      }
+    } catch (Exception ex) {
+      Notification.show(
+          "Error proposing segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+      ex.printStackTrace();
     }
   }
 
