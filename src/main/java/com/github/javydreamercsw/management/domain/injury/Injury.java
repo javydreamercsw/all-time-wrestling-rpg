@@ -2,7 +2,7 @@ package com.github.javydreamercsw.management.domain.injury;
 
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
@@ -13,13 +13,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Represents an injury sustained by a wrestler in the ATW RPG system. Injuries affect starting
- * health and can be healed through recovery phases.
- *
- * <p>Injury System: - 3 bump tokens convert to 1 injury - Injuries reduce starting health - Can be
- * healed by staying off shows or spending fans
- */
 @Entity
 @Table(name = "injury")
 @Getter
@@ -32,7 +25,7 @@ public class Injury extends AbstractEntity<Long> {
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "wrestler_id", nullable = false)
-  @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns"})
+  @JsonIgnore
   private Wrestler wrestler;
 
   @Column(name = "name", nullable = false)
@@ -59,7 +52,7 @@ public class Injury extends AbstractEntity<Long> {
   private Instant healedDate;
 
   @Column(name = "healing_cost", nullable = false)
-  @Min(0) private Long healingCost = 10000L; // Default 10k fans to heal
+  @Min(0) private Long healingCost = 10000L;
 
   @Lob
   @Column(name = "injury_notes")
@@ -69,59 +62,55 @@ public class Injury extends AbstractEntity<Long> {
   private Instant creationDate;
 
   @Column(name = "external_id", unique = true)
-  @Size(max = 255) private String externalId; // External system ID (e.g., Notion page ID)
+  @Size(max = 255) private String externalId;
 
-  // ==================== ATW RPG METHODS ====================
-
-  /** Check if this injury is currently affecting the wrestler. */
+  @JsonIgnore
   public boolean isCurrentlyActive() {
     return isActive && healedDate == null;
   }
 
-  /** Heal this injury. */
   public void heal() {
     this.isActive = false;
     this.healedDate = Instant.now();
   }
 
-  /** Get the number of days this injury has been active. */
+  @JsonIgnore
   public long getDaysActive() {
     Instant end = healedDate != null ? healedDate : Instant.now();
     return java.time.Duration.between(injuryDate, end).toDays();
   }
 
-  /** Get display string for this injury. */
+  @JsonIgnore
   public String getDisplayString() {
     String status = isCurrentlyActive() ? " (Active)" : " (Healed)";
     return String.format(
         "%s - %s (%d health penalty)%s", name, severity.getDisplayName(), healthPenalty, status);
   }
 
-  /** Get injury status emoji. */
+  @JsonIgnore
   public String getStatusEmoji() {
     if (!isActive) return "✅";
     return severity.getEmoji();
   }
 
-  /** Get the total health impact of this injury. */
+  @JsonIgnore
   public int getHealthImpact() {
     return isCurrentlyActive() ? healthPenalty : 0;
   }
 
-  /** Check if this injury can be healed with the recovery system. */
+  @JsonIgnore
   public boolean canBeHealed() {
     return isCurrentlyActive();
   }
 
-  /** Get the fan cost to attempt healing this injury. */
+  @JsonIgnore
   public Long getHealingFanCost() {
     return healingCost;
   }
 
-  /** Get injury duration display. */
+  @JsonIgnore
   public String getDurationDisplay() {
     long days = getDaysActive();
-
     if (days == 0) {
       return "Less than 1 day";
     } else if (days == 1) {

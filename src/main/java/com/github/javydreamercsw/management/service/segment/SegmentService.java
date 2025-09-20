@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.segment;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -14,7 +15,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -63,48 +63,26 @@ public class SegmentService {
    * @return The updated Segment
    */
   public Segment updateSegment(@NonNull Segment segment) {
-    try {
-      return segmentRepository.save(segment);
-    } catch (DataIntegrityViolationException e) {
-      log.error(
-          "Data integrity violation when saving segment with external ID {}: {}",
-          segment.getExternalId(),
-          e.getMessage());
-      // Attempt to find by external ID and update if it's a unique constraint violation
-      if (e.getMessage() != null && e.getMessage().contains("unique constraint")) {
-        // Detach the problematic entity from the session
-        entityManager.detach(segment);
+    Segment existingSegment = segmentRepository.findById(segment.getId()).orElseThrow();
 
-        Optional<Segment> existingSegment =
-            segmentRepository.findByExternalId(segment.getExternalId());
-        if (existingSegment.isPresent()) {
-          log.warn(
-              "Segment with external ID {} already exists, attempting to merge.",
-              segment.getExternalId());
-          // Copy properties from the new segment to the existing one
-          Segment foundSegment = existingSegment.get();
-          // BeanUtils.copyProperties(segment, foundSegment, "id"); // Exclude ID
-          foundSegment.setShow(segment.getShow());
-          foundSegment.setSegmentType(segment.getSegmentType());
-          foundSegment.setWinner(segment.getWinner());
-          foundSegment.setSegmentDate(segment.getSegmentDate());
-          foundSegment.setStatus(segment.getStatus());
-          foundSegment.setNarration(segment.getNarration());
-          foundSegment.setIsTitleSegment(segment.getIsTitleSegment());
-          foundSegment.setIsNpcGenerated(segment.getIsNpcGenerated());
-          // Clear and re-add participants and rules to ensure they are updated
-          foundSegment.getParticipants().clear();
-          segment
-              .getParticipants()
-              .forEach(participant -> foundSegment.addParticipant(participant.getWrestler()));
-          foundSegment.getSegmentRules().clear();
-          segment.getSegmentRules().forEach(foundSegment::addSegmentRule);
+    existingSegment.setSegmentType(segment.getSegmentType());
+    existingSegment.setNarration(segment.getNarration());
+    existingSegment.setSummary(segment.getSummary());
 
-          return segmentRepository.save(foundSegment);
-        }
-      }
-      throw e; // Re-throw if not a unique constraint violation or cannot be handled
+    existingSegment.getParticipants().clear();
+    for (SegmentParticipant p : segment.getParticipants()) {
+      existingSegment.addParticipant(p.getWrestler());
     }
+
+    existingSegment.getSegmentRules().clear();
+    for (com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule rule :
+        segment.getSegmentRules()) {
+      existingSegment.addSegmentRule(rule);
+    }
+
+    existingSegment.setWinners(segment.getWinners());
+
+    return segmentRepository.save(existingSegment);
   }
 
   /**

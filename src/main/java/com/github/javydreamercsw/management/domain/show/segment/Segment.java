@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.domain.show.segment;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -49,7 +50,8 @@ public class Segment extends AbstractEntity<Long> {
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "show_id", nullable = false)
-  @JsonIgnoreProperties({"season"})
+  @JsonIgnore
+  @ToString.Exclude
   private Show show;
 
   @ManyToOne(optional = false)
@@ -99,7 +101,7 @@ public class Segment extends AbstractEntity<Long> {
       mappedBy = "segment",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
-      fetch = FetchType.LAZY)
+      fetch = FetchType.EAGER)
   @JsonIgnoreProperties({"segment"})
   private List<SegmentParticipant> participants = new ArrayList<>();
 
@@ -108,6 +110,7 @@ public class Segment extends AbstractEntity<Long> {
       name = "segment_title",
       joinColumns = @JoinColumn(name = "segment_id"),
       inverseJoinColumns = @JoinColumn(name = "title_id"))
+  @JsonIgnore
   private List<Title> titles = new ArrayList<>();
 
   @Override
@@ -143,16 +146,38 @@ public class Segment extends AbstractEntity<Long> {
 
   /** Set the winner of the segment. */
   public void setWinner(Wrestler wrestler) {
-    this.winner = wrestler;
-    for (SegmentParticipant participant : participants) {
-      participant.setIsWinner(participant.getWrestler().equals(wrestler));
+    if (wrestler == null) {
+      setWinners(new ArrayList<>());
+    } else {
+      setWinners(List.of(wrestler));
     }
-    this.status = SegmentStatus.COMPLETED;
   }
 
   /** Get all wrestlers participating in the segment. */
   public List<Wrestler> getWrestlers() {
     return participants.stream().map(SegmentParticipant::getWrestler).toList();
+  }
+
+  public List<Wrestler> getWinners() {
+    return participants.stream()
+        .filter(SegmentParticipant::getIsWinner)
+        .map(SegmentParticipant::getWrestler)
+        .toList();
+  }
+
+  public void setWinners(List<Wrestler> winners) {
+    if (winners == null || winners.isEmpty()) {
+      this.winner = null;
+      for (SegmentParticipant participant : participants) {
+        participant.setIsWinner(false);
+      }
+    } else {
+      this.winner = winners.get(0); // Keep single winner for backward compatibility
+      for (SegmentParticipant participant : participants) {
+        participant.setIsWinner(winners.contains(participant.getWrestler()));
+      }
+    }
+    this.status = SegmentStatus.COMPLETED;
   }
 
   /** Check if this was a singles segment (2 participants). */
