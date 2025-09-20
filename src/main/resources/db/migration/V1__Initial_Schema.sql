@@ -233,7 +233,6 @@ CREATE TABLE title (
     description LONGTEXT,
     tier VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    is_vacant BOOLEAN NOT NULL DEFAULT TRUE,
     creation_date TIMESTAMP NOT NULL,
     external_id VARCHAR(255) UNIQUE
 );
