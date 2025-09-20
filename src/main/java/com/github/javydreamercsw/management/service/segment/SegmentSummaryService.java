@@ -17,7 +17,7 @@ public class SegmentSummaryService {
   private final SegmentService segmentService;
   private final SegmentNarrationServiceFactory narrationServiceFactory;
 
-  public void summarizeSegment(@NonNull Long segmentId) {
+  public Segment summarizeSegment(@NonNull Long segmentId) {
     Segment segment =
         segmentService
             .findById(segmentId)
@@ -33,8 +33,7 @@ public class SegmentSummaryService {
           summary = narrationService.summarizeNarration(segment.getNarration());
           if (summary != null && !summary.isEmpty()) {
             segment.setSummary(summary);
-            segmentService.updateSegment(segment);
-            return;
+            return segmentService.updateSegment(segment);
           }
         } catch (RuntimeException e) {
           if (e.getCause() instanceof notion.api.v1.exception.NotionAPIError) {
@@ -58,5 +57,6 @@ public class SegmentSummaryService {
           "Failed to generate summary for segment {} after trying all available AI providers.",
           segmentId);
     }
+    return segment;
   }
 }

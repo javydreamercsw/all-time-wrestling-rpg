@@ -94,17 +94,17 @@ public class Wrestler extends AbstractEntity<Long> {
   @JsonIgnore
   private List<Rivalry> rivalriesAsWrestler2 = new ArrayList<>();
 
-  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(
+      mappedBy = "wrestler",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.EAGER)
   @JsonIgnore
   private List<Deck> decks = new ArrayList<>();
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "faction_id")
-  @com.fasterxml.jackson.annotation.JsonIgnoreProperties({
-    "members",
-    "rivalriesAsFaction1",
-    "rivalriesAsFaction2"
-  })
+  @com.fasterxml.jackson.annotation.JsonIgnore
   private Faction faction;
 
   // ==================== ATW RPG METHODS ====================
@@ -113,6 +113,7 @@ public class Wrestler extends AbstractEntity<Long> {
     return Math.toIntExact(fans / 5);
   }
 
+  @JsonIgnore
   public Integer getEffectiveStartingHealth() {
     int effective = startingHealth - bumps - getTotalInjuryPenalty();
     return Math.max(1, effective); // Never go below 1
@@ -166,14 +167,17 @@ public class Wrestler extends AbstractEntity<Long> {
     return allRivalries;
   }
 
+  @JsonIgnore
   public List<Injury> getActiveInjuries() {
     return injuries.stream().filter(Injury::isCurrentlyActive).toList();
   }
 
+  @JsonIgnore
   public Integer getTotalInjuryPenalty() {
     return getActiveInjuries().stream().mapToInt(Injury::getHealthPenalty).sum();
   }
 
+  @JsonIgnore
   public Integer getCurrentHealthWithPenalties() {
     if (currentHealth == null) {
       return getEffectiveStartingHealth();

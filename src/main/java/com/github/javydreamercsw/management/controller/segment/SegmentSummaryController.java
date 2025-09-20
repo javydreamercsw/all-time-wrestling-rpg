@@ -16,8 +16,10 @@ public class SegmentSummaryController {
   private final SegmentSummaryService segmentSummaryService;
 
   @PostMapping("/{segmentId}/summarize")
-  public ResponseEntity<Void> summarizeSegment(@PathVariable Long segmentId) {
-    segmentSummaryService.summarizeSegment(segmentId);
-    return ResponseEntity.ok().build();
+  public ResponseEntity<com.github.javydreamercsw.management.domain.show.segment.Segment>
+      summarizeSegment(@PathVariable Long segmentId) {
+    com.github.javydreamercsw.management.domain.show.segment.Segment updatedSegment =
+        segmentSummaryService.summarizeSegment(segmentId);
+    return ResponseEntity.ok(updatedSegment);
   }
 }
