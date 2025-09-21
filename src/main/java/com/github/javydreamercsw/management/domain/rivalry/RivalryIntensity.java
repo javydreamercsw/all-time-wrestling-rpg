@@ -11,8 +11,8 @@ public enum RivalryIntensity {
   /** 20-29 heat - Can attempt resolution with dice roll */
   INTENSE("Intense", 20, 29, "Can attempt resolution with dice roll", "💥"),
 
-  /** 30+ heat - Requires stipulation match */
-  EXPLOSIVE("Explosive", 30, Integer.MAX_VALUE, "Requires stipulation match", "🌋");
+  /** 30+ heat - Requires rule segment */
+  EXPLOSIVE("Explosive", 30, Integer.MAX_VALUE, "Requires rule segment", "🌋");
 
   private final String displayName;
   private final int minHeat;
@@ -48,7 +48,7 @@ public enum RivalryIntensity {
     return this.ordinal() >= INTENSE.ordinal();
   }
 
-  /** Check if this intensity requires a stipulation match. */
+  /** Check if this intensity requires a rule segment. */
   public boolean requiresStipulationMatch() {
     return this == EXPLOSIVE;
   }

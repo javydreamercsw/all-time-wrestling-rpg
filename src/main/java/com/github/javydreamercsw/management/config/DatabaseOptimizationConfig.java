@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -18,6 +19,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 @Configuration
 @Slf4j
 @Order(100)
+@DependsOn("flywayCommandLineRunner")
 public class DatabaseOptimizationConfig implements ApplicationRunner {
 
   private final DataSource dataSource;
@@ -76,7 +78,8 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
           jdbcTemplate.queryForObject("SELECT COUNT(*) FROM show_template", Integer.class);
       Integer deckCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM deck", Integer.class);
       Integer cardCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM card", Integer.class);
-      Integer matchCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM match", Integer.class);
+      Integer segmentCount =
+          jdbcTemplate.queryForObject("SELECT COUNT(*) FROM segment", Integer.class);
 
       log.info("📊 Database Statistics:");
       log.info("   - Wrestlers: {}", wrestlerCount);
@@ -87,7 +90,7 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
       log.info("   - Show Templates: {}", showTemplateCount);
       log.info("   - Decks: {}", deckCount);
       log.info("   - Cards: {}", cardCount);
-      log.info("   - Matches: {}", matchCount);
+      log.info("   - Segments: {}", segmentCount);
 
       // Check if indexes exist (H2 specific query)
       try {

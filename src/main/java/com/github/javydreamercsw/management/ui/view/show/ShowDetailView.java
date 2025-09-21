@@ -2,13 +2,20 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -30,7 +37,7 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
@@ -38,8 +45,12 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import lombok.NonNull;
 
 /**
  * Detail view for displaying comprehensive information about a specific show. Accessible via URL
@@ -51,10 +62,17 @@ import java.util.Optional;
 public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   private final ShowService showService;
-  private final MatchResultRepository matchResultRepository;
-  private final MatchTypeRepository matchTypeRepository;
+  private final SegmentService segmentService;
+  private final SegmentRepository segmentRepository;
+  private final SegmentTypeRepository segmentTypeRepository;
   private final WrestlerRepository wrestlerRepository;
-  private Show currentShow;
+  private final NpcService npcService;
+  private final WrestlerService wrestlerService;
+  private final TitleService titleService;
+  private final com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository
+      segmentRuleRepository;
+  private final com.github.javydreamercsw.management.service.match.MatchAdjudicationService
+      matchAdjudicationService;
   private String referrer = "shows"; // Default referrer
 
   private H2 showTitle;
@@ -62,13 +80,27 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   public ShowDetailView(
       ShowService showService,
-      MatchResultRepository matchResultRepository,
-      MatchTypeRepository matchTypeRepository,
-      WrestlerRepository wrestlerRepository) {
+      SegmentService segmentService,
+      SegmentRepository segmentRepository,
+      SegmentTypeRepository segmentTypeRepository,
+      WrestlerRepository wrestlerRepository,
+      NpcService npcService,
+      WrestlerService wrestlerService,
+      TitleService titleService,
+      com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository
+          segmentRuleRepository,
+      com.github.javydreamercsw.management.service.match.MatchAdjudicationService
+          matchAdjudicationService) {
     this.showService = showService;
-    this.matchResultRepository = matchResultRepository;
-    this.matchTypeRepository = matchTypeRepository;
+    this.segmentService = segmentService;
+    this.segmentRepository = segmentRepository;
+    this.segmentTypeRepository = segmentTypeRepository;
     this.wrestlerRepository = wrestlerRepository;
+    this.npcService = npcService;
+    this.wrestlerService = wrestlerService;
+    this.titleService = titleService;
+    this.segmentRuleRepository = segmentRuleRepository;
+    this.matchAdjudicationService = matchAdjudicationService;
     initializeComponents();
   }
 
@@ -104,14 +136,13 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
   @Override
   public void setParameter(BeforeEvent event, Long showId) {
     // Detect referrer from query parameters or referer header
-    String refererParam =
+    this.referrer =
         event
             .getLocation()
             .getQueryParameters()
             .getParameters()
-            .getOrDefault("ref", java.util.List.of("shows"))
+            .getOrDefault("ref", List.of("shows"))
             .get(0);
-    this.referrer = refererParam;
 
     if (showId != null) {
       loadShow(showId);
@@ -144,8 +175,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
   private void loadShow(Long showId) {
     Optional<Show> showOpt = showService.getShowById(showId);
     if (showOpt.isPresent()) {
-      currentShow = showOpt.get();
-      displayShow(currentShow);
+      displayShow(showOpt.get());
     } else {
       showNotFound();
     }
@@ -169,9 +199,9 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       contentLayout.add(descriptionCard);
     }
 
-    // Show matches card
-    Div matchesCard = createMatchesCard(show);
-    contentLayout.add(matchesCard);
+    // Show segments card
+    Div segmentsCard = createSegmentsCard(show);
+    contentLayout.add(segmentsCard);
   }
 
   private Div createHeaderCard(Show show) {
@@ -212,7 +242,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     return card;
   }
 
-  private Div createDetailsCard(Show show) {
+  private Div createDetailsCard(@NonNull Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -232,7 +262,11 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       HorizontalLayout dateLayout =
           createDetailRow(
               "Show Date:",
-              show.getShowDate().format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")));
+              show.getShowDate()
+                  .format(
+                      DateTimeFormatter.ofPattern(
+                          "EEEE, MMMM d, yyyy"))); // Corrected: Removed unnecessary escaping of
+      // double quotes within the pattern string.
       detailsLayout.add(dateLayout);
     } else {
       HorizontalLayout dateLayout = createDetailRow("Show Date:", "Not scheduled");
@@ -279,7 +313,11 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
               "Created:",
               show.getCreationDate()
                   .atZone(java.time.ZoneId.systemDefault())
-                  .format(DateTimeFormatter.ofPattern("MMM d, yyyy 'at' h:mm a")));
+                  .format(
+                      DateTimeFormatter.ofPattern(
+                          "MMM d, yyyy 'at' h:mm a"))); // Corrected: Removed unnecessary escaping
+      // of double quotes within the pattern
+      // string.
       detailsLayout.add(createdLayout);
     }
 
@@ -287,7 +325,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     return card;
   }
 
-  private HorizontalLayout createDetailRow(String label, String value) {
+  private HorizontalLayout createDetailRow(@NonNull String label, @NonNull String value) {
     Span labelSpan = new Span(label);
     labelSpan.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.TextColor.SECONDARY);
 
@@ -301,7 +339,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     return layout;
   }
 
-  private Div createDescriptionCard(Show show) {
+  private Div createDescriptionCard(@NonNull Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -315,7 +353,10 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     Div descriptionContent = new Div();
     descriptionContent
         .getElement()
-        .setProperty("innerHTML", show.getDescription().replace("\n", "<br>"));
+        .setProperty(
+            "innerHTML",
+            show.getDescription()
+                .replace("\n", "<br>")); // Corrected: Replaced \n with <br> for HTML rendering.
     descriptionContent.addClassNames(LumoUtility.TextColor.BODY);
 
     card.add(descriptionTitle, descriptionContent);
@@ -360,7 +401,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     contentLayout.add(notFoundCard);
   }
 
-  private Div createMatchesCard(Show show) {
+  private Div createSegmentsCard(@NonNull Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -376,103 +417,157 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     header.setJustifyContentMode(HorizontalLayout.JustifyContentMode.BETWEEN);
     header.setAlignItems(HorizontalLayout.Alignment.CENTER);
 
-    H3 matchesTitle = new H3("Matches");
-    matchesTitle.addClassNames(LumoUtility.Margin.NONE);
+    H3 segmentsTitle = new H3("Segments");
+    segmentsTitle.addClassNames(LumoUtility.Margin.NONE);
 
-    Button addMatchBtn = new Button("Add Match", new Icon(VaadinIcon.PLUS));
-    addMatchBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    addMatchBtn.addClickListener(e -> openAddMatchDialog(show));
+    Button addSegmentBtn = new Button("Add Segment", new Icon(VaadinIcon.PLUS));
+    addSegmentBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    addSegmentBtn.addClickListener(e -> openAddSegmentDialog(show));
 
-    header.add(matchesTitle, addMatchBtn);
+    header.add(segmentsTitle, addSegmentBtn);
 
-    // Get matches for this show
-    List<MatchResult> matches = matchResultRepository.findByShow(show);
+    // Get segments for this show
+    List<Segment> segments = segmentRepository.findByShow(show);
 
-    VerticalLayout matchesLayout = new VerticalLayout();
-    matchesLayout.setSpacing(false);
-    matchesLayout.setPadding(false);
-    matchesLayout.setSizeFull();
-    matchesLayout.addClassNames(LumoUtility.Width.FULL);
+    VerticalLayout segmentsLayout = new VerticalLayout();
+    segmentsLayout.setSpacing(false);
+    segmentsLayout.setPadding(false);
+    segmentsLayout.setSizeFull();
+    segmentsLayout.addClassNames(LumoUtility.Width.FULL);
 
-    if (matches.isEmpty()) {
-      Span noMatches = new Span("No matches scheduled for this show yet.");
-      noMatches.addClassNames(LumoUtility.TextColor.SECONDARY);
-      matchesLayout.add(noMatches);
+    if (segments.isEmpty()) {
+      Span noSegments = new Span("No segments scheduled for this show yet.");
+      noSegments.addClassNames(LumoUtility.TextColor.SECONDARY);
+      segmentsLayout.add(noSegments);
     } else {
-      // Create matches grid
-      Grid<MatchResult> matchesGrid = createMatchesGrid(matches);
-      matchesGrid.setHeight("400px"); // Set a reasonable height for the grid
-      matchesLayout.add(matchesGrid);
-      matchesLayout.setFlexGrow(1, matchesGrid); // Let grid expand
+      // Create segments grid
+      Grid<Segment> segmentsGrid = createSegmentsGrid(segments);
+      segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
+
+      // Wrap the grid in a Div to enable horizontal scrolling
+      Div gridWrapper = new Div(segmentsGrid);
+      gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
+      gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
+
+      segmentsLayout.add(gridWrapper);
+      segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
     }
 
-    card.add(header, matchesLayout);
+    card.add(header, segmentsLayout);
     return card;
   }
 
-  private Grid<MatchResult> createMatchesGrid(List<MatchResult> matches) {
-    Grid<MatchResult> grid = new Grid<>(MatchResult.class, false);
+  private Grid<Segment> createSegmentsGrid(List<Segment> segments) {
+    Grid<Segment> grid = new Grid<>(Segment.class, false);
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
-    grid.setItems(matches);
-    grid.setSizeFull(); // Make grid use full available space
-    grid.addClassNames(LumoUtility.Width.FULL);
+    grid.setItems(segments);
 
-    // Match type column
-    grid.addColumn(match -> match.getMatchType().getName())
-        .setHeader("Match Type")
+    // Segment type column
+    grid.addColumn(segment -> segment.getSegmentType().getName())
+        .setHeader("Segment Type")
         .setSortable(true)
-        .setFlexGrow(2);
+        .setFlexGrow(1);
+
+    // Segment type column
+    grid.addColumn(
+            segment -> {
+              List<String> wrestlerNames =
+                  segment.getSegmentRules().stream().map(SegmentRule::getName).toList();
+              return String.join(", ", wrestlerNames);
+            })
+        .setHeader("Segment Rule(s)")
+        .setSortable(true)
+        .setFlexGrow(1);
+
+    // Segment type column
+    grid.addColumn(Segment::getSummary).setHeader("Summary").setSortable(true).setFlexGrow(3);
+
+    // Segment type column
+    grid.addColumn(Segment::getNarration).setHeader("Narration").setSortable(true).setFlexGrow(6);
 
     // Participants column
     grid.addColumn(
-            match -> {
+            segment -> {
               List<String> wrestlerNames =
-                  match.getWrestlers().stream().map(wrestler -> wrestler.getName()).toList();
-              return String.join(" vs ", wrestlerNames);
+                  segment.getWrestlers().stream().map(Wrestler::getName).toList();
+              return String.join(", ", wrestlerNames);
             })
         .setHeader("Participants")
         .setSortable(false)
         .setFlexGrow(4); // Give more space to participants
 
     // Winner column
-    grid.addColumn(match -> match.getWinner() != null ? match.getWinner().getName() : "TBD")
-        .setHeader("Winner")
-        .setSortable(true)
+    grid.addColumn(
+            segment -> {
+              List<String> winnerNames =
+                  segment.getWinners().stream().map(Wrestler::getName).toList();
+              return String.join(", ", winnerNames);
+            })
+        .setHeader("Winner(s)")
+        .setSortable(false)
         .setFlexGrow(2);
 
-    // Match date column
+    // Segment date column
     grid.addColumn(
-            match ->
-                match
-                    .getMatchDate()
+            segment ->
+                segment
+                    .getSegmentDate()
                     .atZone(java.time.ZoneId.systemDefault())
                     .format(DateTimeFormatter.ofPattern("MMM d, yyyy")))
         .setHeader("Date")
         .setSortable(true)
-        .setFlexGrow(2);
-
-    // Rating column
-    grid.addColumn(
-            match ->
-                match.getMatchRating() != null ? "★".repeat(match.getMatchRating()) : "Not rated")
-        .setHeader("Rating")
-        .setSortable(true)
         .setFlexGrow(1);
 
-    // Duration column (if available)
-    grid.addColumn(
-            match ->
-                match.getDurationMinutes() != null ? match.getDurationMinutes() + " min" : "N/A")
-        .setHeader("Duration")
-        .setSortable(true)
-        .setFlexGrow(1);
+    grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setFlexGrow(1);
 
     return grid;
   }
 
-  private void openAddMatchDialog(Show show) {
+  private Component createActionButtons(@NonNull Segment segment) {
+    Button summaryButton = new Button("Summarize", new Icon(VaadinIcon.ACADEMY_CAP));
+    summaryButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    summaryButton.setTooltipText("Generate AI Summary");
+    summaryButton.addClickListener(e -> generateSummary(segment));
+    summaryButton.setEnabled(segment.getNarration() != null && !segment.getNarration().isEmpty());
+
+    Button narrateButton = new Button("Narrate", new Icon(VaadinIcon.MICROPHONE));
+    narrateButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    narrateButton.setTooltipText("Generate AI Narration");
+    narrateButton.addClickListener(
+        e -> {
+          NarrationDialog dialog =
+              new NarrationDialog(segment, npcService, wrestlerService, titleService);
+          dialog.open();
+        });
+
+    Button editButton = new Button("Edit", new Icon(VaadinIcon.EDIT));
+    editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    editButton.setTooltipText("Edit Segment");
+    editButton.addClickListener(e -> openEditSegmentDialog(segment));
+
+    Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
+    deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
+    deleteButton.setTooltipText("Delete Segment");
+    deleteButton.addClickListener(e -> deleteSegment(segment));
+
+    return new VerticalLayout(summaryButton, narrateButton, editButton, deleteButton);
+  }
+
+  private void generateSummary(@NonNull Segment segment) {
+    String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
+    new org.springframework.web.client.RestTemplate()
+        .postForObject(
+            baseUrl + "/api/segments/" + segment.getId() + "/summarize",
+            null,
+            com.github.javydreamercsw.management.domain.show.segment.Segment.class);
+    Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
+        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    displayShow(segment.getShow()); // Refresh the grid
+  }
+
+  private void openAddSegmentDialog(@NonNull Show show) {
     Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Add Match to " + show.getName());
+    dialog.setHeaderTitle("Add Segment to " + show.getName());
     dialog.setWidth("600px");
     dialog.setMaxWidth("90vw");
 
@@ -481,12 +576,19 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
 
-    // Match type selection
-    ComboBox<MatchType> matchTypeCombo = new ComboBox<>("Match Type");
-    matchTypeCombo.setItems(matchTypeRepository.findAll());
-    matchTypeCombo.setItemLabelGenerator(MatchType::getName);
-    matchTypeCombo.setWidthFull();
-    matchTypeCombo.setRequired(true);
+    // Segment type selection
+    ComboBox<SegmentType> segmentTypeCombo = new ComboBox<>("Segment Type");
+    segmentTypeCombo.setItems(segmentTypeRepository.findAll());
+    segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
+    segmentTypeCombo.setWidthFull();
+    segmentTypeCombo.setRequired(true);
+
+    // Segment rules selection (multi-select)
+    MultiSelectComboBox<SegmentRule> rulesCombo = new MultiSelectComboBox<>("Segment Rules");
+    rulesCombo.setItems(segmentRuleRepository.findAll());
+    rulesCombo.setItemLabelGenerator(SegmentRule::getName);
+    rulesCombo.setWidthFull();
+    formLayout.setColspan(rulesCombo, 2);
 
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
@@ -508,36 +610,26 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
           winnerCombo.clear();
         });
 
-    // Match rating
-    IntegerField ratingField = new IntegerField("Match Rating (1-5)");
-    ratingField.setMin(1);
-    ratingField.setMax(5);
-    ratingField.setStepButtonsVisible(true);
-    ratingField.setWidthFull();
-
-    // Duration
-    IntegerField durationField = new IntegerField("Duration (minutes)");
-    durationField.setMin(1);
-    durationField.setMax(180);
-    durationField.setStepButtonsVisible(true);
-    durationField.setWidthFull();
-
-    formLayout.add(matchTypeCombo, wrestlersCombo, winnerCombo, ratingField, durationField);
+    formLayout.add(segmentTypeCombo, rulesCombo, wrestlersCombo, winnerCombo);
 
     // Buttons
     Button saveButton =
         new Button(
-            "Add Match",
+            "Add Segment",
             e -> {
-              if (validateAndSaveMatch(
+              Set<Wrestler> winners = new HashSet<>();
+              if (winnerCombo.getValue() != null) {
+                winners.add(winnerCombo.getValue());
+              }
+              if (validateAndSaveSegment(
                   show,
-                  matchTypeCombo.getValue(),
+                  segmentTypeCombo.getValue(),
                   wrestlersCombo.getValue(),
-                  winnerCombo.getValue(),
-                  ratingField.getValue(),
-                  durationField.getValue())) {
+                  winners,
+                  rulesCombo.getValue(),
+                  null)) {
                 dialog.close();
-                // Refresh the matches display
+                // Refresh the segments display
                 displayShow(show);
               }
             });
@@ -557,65 +649,227 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     dialog.open();
   }
 
-  private boolean validateAndSaveMatch(
-      Show show,
-      MatchType matchType,
-      java.util.Set<Wrestler> wrestlers,
-      Wrestler winner,
-      Integer rating,
-      Integer duration) {
+  private void openEditSegmentDialog(@NonNull Segment segment) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Edit Segment for " + segment.getShow().getName());
+    dialog.setWidth("600px");
+    dialog.setMaxWidth("90vw");
+
+    // Form layout
+    FormLayout formLayout = new FormLayout();
+    formLayout.setResponsiveSteps(
+        new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
+
+    // Segment type selection
+    ComboBox<SegmentType> segmentTypeCombo = new ComboBox<>("Segment Type");
+    segmentTypeCombo.setItems(segmentTypeRepository.findAll());
+    segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
+    segmentTypeCombo.setWidthFull();
+    segmentTypeCombo.setRequired(true);
+    segmentTypeCombo.setValue(segment.getSegmentType());
+
+    // Segment rules selection (multi-select)
+    MultiSelectComboBox<SegmentRule> rulesCombo = new MultiSelectComboBox<>("Segment Rules");
+    rulesCombo.setItems(segmentRuleRepository.findAll());
+    rulesCombo.setItemLabelGenerator(SegmentRule::getName);
+    rulesCombo.setWidthFull();
+    rulesCombo.setValue(segment.getSegmentRules());
+    formLayout.setColspan(rulesCombo, 2);
+
+    // Wrestlers selection (multi-select)
+    MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
+    wrestlersCombo.setItems(wrestlerRepository.findAll());
+    wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
+    wrestlersCombo.setWidthFull();
+    wrestlersCombo.setRequired(true);
+    wrestlersCombo.setValue(segment.getWrestlers());
+
+    // Winner selection (multi-select)
+    MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
+    winnersCombo.setItemLabelGenerator(Wrestler::getName);
+    winnersCombo.setWidthFull();
+    winnersCombo.setItems(segment.getWrestlers());
+    winnersCombo.setValue(segment.getWinners());
+
+    // Update winner options when wrestlers change
+    wrestlersCombo.addValueChangeListener(
+        e -> {
+          winnersCombo.setItems(e.getValue());
+          winnersCombo.clear();
+        });
+
+    // Narration
+    TextArea summaryArea = new TextArea("Summary");
+    summaryArea.setWidthFull();
+    summaryArea.setValue(segment.getSummary() != null ? segment.getSummary() : "");
+    formLayout.setColspan(summaryArea, 2);
+
+    // Narration
+    TextArea narrationArea = new TextArea("Narration");
+    narrationArea.setWidthFull();
+    narrationArea.setValue(segment.getNarration() != null ? segment.getNarration() : "");
+    formLayout.setColspan(narrationArea, 2);
+
+    formLayout.add(
+        segmentTypeCombo, rulesCombo, wrestlersCombo, winnersCombo, summaryArea, narrationArea);
+
+    // Buttons
+    Button saveButton =
+        new Button(
+            "Save Changes",
+            e -> {
+              segment.setNarration(narrationArea.getValue());
+              segment.setSummary(summaryArea.getValue());
+              if (validateAndSaveSegment(
+                  segment.getShow(),
+                  segmentTypeCombo.getValue(),
+                  wrestlersCombo.getValue(),
+                  winnersCombo.getValue(),
+                  rulesCombo.getValue(),
+                  segment)) {
+                dialog.close();
+                // Refresh the segments display
+                displayShow(segment.getShow());
+              }
+            });
+    saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+    Button cancelButton = new Button("Cancel", e -> dialog.close());
+
+    HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, cancelButton);
+    buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+    buttonLayout.setWidthFull();
+
+    VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
+    dialogLayout.setSpacing(true);
+    dialogLayout.setPadding(false);
+
+    dialog.add(dialogLayout);
+    dialog.open();
+  }
+
+  private void deleteSegment(@NonNull Segment segment) {
+    Dialog confirmDialog = new Dialog();
+    confirmDialog.setHeaderTitle("Delete Segment");
+    confirmDialog.add(new Paragraph("Are you sure you want to delete this segment?"));
+
+    Button deleteButton =
+        new Button(
+            "Delete",
+            event -> {
+              try {
+                segmentService.deleteSegment(segment.getId());
+                Notification.show(
+                        "Segment deleted successfully!", 3000, Notification.Position.BOTTOM_START)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                confirmDialog.close();
+                displayShow(segment.getShow()); // Refresh the segments display
+              } catch (Exception e) {
+                Notification.show(
+                        "Error deleting segment: " + e.getMessage(),
+                        5000,
+                        Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            });
+    deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+
+    Button cancelButton = new Button("Cancel", event -> confirmDialog.close());
+
+    confirmDialog.getFooter().add(cancelButton, deleteButton);
+    confirmDialog.open();
+  }
+
+  private boolean validateAndSaveSegment(
+      @NonNull Show show,
+      SegmentType segmentType,
+      Set<Wrestler> wrestlers,
+      Set<Wrestler> winners,
+      Set<SegmentRule> rules,
+      Segment segmentToUpdate) {
     // Validation
-    if (matchType == null) {
-      Notification.show("Please select a match type", 3000, Notification.Position.MIDDLE)
+    if (segmentType == null) {
+      Notification.show("Please select a segment type", 3000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return false;
     }
 
-    if (wrestlers == null || wrestlers.isEmpty()) {
-      Notification.show("Please select at least one wrestler", 3000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-      return false;
+    if (!"Promo".equalsIgnoreCase(segmentType.getName())) {
+      if (wrestlers == null || wrestlers.isEmpty()) {
+        Notification.show("Please select at least one wrestler", 3000, Notification.Position.MIDDLE)
+            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        return false;
+      }
+
+      if (wrestlers.size() < 2) {
+        Notification.show(
+                "Please select at least two wrestlers for a match",
+                3000,
+                Notification.Position.MIDDLE)
+            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        return false;
+      }
     }
 
-    if (wrestlers.size() < 2) {
-      Notification.show("Please select at least two wrestlers", 3000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-      return false;
-    }
-
-    if (winner != null && !wrestlers.contains(winner)) {
-      Notification.show(
-              "Winner must be one of the selected wrestlers", 3000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-      return false;
+    if (winners != null) {
+      for (Wrestler winner : winners) {
+        if (!wrestlers.contains(winner)) {
+          Notification.show(
+                  "Winner must be one of the selected wrestlers",
+                  3000,
+                  Notification.Position.MIDDLE)
+              .addThemeVariants(NotificationVariant.LUMO_ERROR);
+          return false;
+        }
+      }
     }
 
     try {
-      // Create match result
-      MatchResult matchResult = new MatchResult();
-      matchResult.setShow(show);
-      matchResult.setMatchType(matchType);
-      matchResult.setWinner(winner);
-      matchResult.setMatchDate(java.time.Instant.now());
-      matchResult.setMatchRating(rating);
-      matchResult.setDurationMinutes(duration);
-      matchResult.setIsTitleMatch(false);
-      matchResult.setIsNpcGenerated(false);
+      Segment segment;
+      if (segmentToUpdate != null) {
+        segment = segmentToUpdate;
+        segment.getParticipants().clear();
+        segment.getSegmentRules().clear();
+      } else {
+        segment = new Segment();
+        segment.setShow(show);
+        segment.setSegmentDate(java.time.Instant.now());
+        segment.setIsTitleSegment(false);
+        segment.setIsNpcGenerated(false);
+      }
+
+      segment.setSegmentType(segmentType);
 
       // Add participants
       for (Wrestler wrestler : wrestlers) {
-        matchResult.addParticipant(wrestler, wrestler.equals(winner));
+        segment.addParticipant(wrestler);
       }
 
-      // Save the match
-      matchResultRepository.save(matchResult);
+      if (winners != null) {
+        segment.setWinners(new ArrayList<>(winners));
+      }
 
-      Notification.show("Match added successfully!", 3000, Notification.Position.BOTTOM_START)
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      // Add segment rules
+      if (rules != null) {
+        for (SegmentRule rule : rules) {
+          segment.addSegmentRule(rule);
+        }
+      }
+
+      // Save or update the segment
+      Segment savedSegment = segmentRepository.save(segment);
+      if (segmentToUpdate != null) {
+        Notification.show("Segment updated successfully!", 3000, Notification.Position.BOTTOM_START)
+            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      } else {
+        Notification.show("Segment added successfully!", 3000, Notification.Position.BOTTOM_START)
+            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      }
+      matchAdjudicationService.adjudicateMatch(savedSegment);
       return true;
-
     } catch (Exception e) {
-      Notification.show("Error saving match: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
+      Notification.show(
+              "Error saving segment: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return false;
     }

@@ -33,7 +33,7 @@ public class TeamService {
   /** Get all teams with pagination. */
   @Transactional(readOnly = true)
   public Page<Team> getAllTeams(Pageable pageable) {
-    return teamRepository.findAllBy(pageable);
+    return teamRepository.findAll(pageable);
   }
 
   /** Get team by ID. */

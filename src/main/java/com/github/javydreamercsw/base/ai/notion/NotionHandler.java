@@ -1,10 +1,9 @@
 package com.github.javydreamercsw.base.ai.notion;
 
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.base.util.NotionBlocksRetriever;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,6 +15,7 @@ import lombok.NonNull;
 import notion.api.v1.NotionClient;
 import notion.api.v1.exception.NotionAPIError;
 import notion.api.v1.model.databases.DatabaseProperty;
+import notion.api.v1.model.databases.QueryResults;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.model.search.DatabaseSearchResult;
@@ -57,10 +57,10 @@ public class NotionHandler {
   public static void main(String[] args) {
     // Example usage
     NotionHandler handler = NotionHandler.getInstance();
-    log.info("Database map loaded with {} databases", handler.databaseMap.size());
-    log.info("You can now reference databases by name using getDatabaseId(name)");
+    log.debug("Database map loaded with {} databases", handler.databaseMap.size());
+    log.debug("You can now reference databases by name using getDatabaseId(name)");
 
-    handler.databaseMap.forEach((key, value) -> log.info("{}: {}", key, value));
+    handler.databaseMap.forEach((key, value) -> log.debug("{}: {}", key, value));
   }
 
   /**
@@ -84,7 +84,7 @@ public class NotionHandler {
     try (NotionClient client = new NotionClient(notionToken)) {
       loadDatabases(client);
       initialized = true;
-      log.info("NotionHandler initialized successfully with {} databases", databaseMap.size());
+      log.debug("NotionHandler initialized successfully with {} databases", databaseMap.size());
     } catch (Exception e) {
       log.error("Failed to initialize NotionHandler", e);
       throw new RuntimeException("Failed to initialize NotionHandler", e);
@@ -93,21 +93,14 @@ public class NotionHandler {
 
   /** Loads all databases from the Notion workspace into the internal map. */
   private void loadDatabases(@NonNull NotionClient client) {
-    PrintStream originalOut = System.out;
     try {
       log.debug("Starting database search in Notion workspace");
-
-      // Temporarily redirect System.out to suppress Notion SDK logs
-      System.setOut(new PrintStream(new ByteArrayOutputStream()));
 
       // Search for all databases in the workspace
       SearchRequest.SearchFilter searchFilter =
           new SearchRequest.SearchFilter("database", "object");
       SearchRequest searchRequest = new SearchRequest("", searchFilter);
       SearchResults searchResults = executeWithRetry(() -> client.search(searchRequest));
-
-      // Restore System.out before logging our results
-      System.setOut(originalOut);
 
       log.debug("Found {} database results from Notion API", searchResults.getResults().size());
 
@@ -131,13 +124,8 @@ public class NotionHandler {
       log.debug("Database loading completed. Total databases loaded: {}", databaseMap.size());
 
     } catch (Exception e) {
-      // Restore System.out in case of exception
-      System.setOut(originalOut);
       log.error("Error loading databases from Notion", e);
       throw e;
-    } finally {
-      // Ensure System.out is always restored
-      System.setOut(originalOut);
     }
   }
 
@@ -164,21 +152,15 @@ public class NotionHandler {
 
   /** Internal method to query a specific database with an existing client. */
   private void querySpecificDatabase(@NonNull NotionClient client, String databaseId) {
-    PrintStream originalOut = System.out;
+    // PrintStream originalOut = System.out;
     try {
       log.debug("Creating query request for database: {}", databaseId);
 
       // Create an empty query request (no filters, returns all results)
       QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
 
-      // Temporarily redirect System.out to suppress Notion SDK logs
-      System.setOut(new PrintStream(new ByteArrayOutputStream()));
-
       // Send query request
       List<Page> results = executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
-
-      // Restore System.out before logging our results
-      System.setOut(originalOut);
 
       log.debug("Found {} pages in database {}", results.size(), databaseId);
 
@@ -186,11 +168,8 @@ public class NotionHandler {
           page -> {
             log.debug("Processing page: {}", page.getId());
 
-            // Suppress output again for retrievePage calls
-            System.setOut(new PrintStream(new ByteArrayOutputStream()));
             Page pageData =
                 executeWithRetry(() -> client.retrievePage(page.getId(), Collections.emptyList()));
-            System.setOut(originalOut);
 
             pageData
                 .getProperties()
@@ -204,18 +183,13 @@ public class NotionHandler {
       log.debug("Completed querying database: {}", databaseId);
 
     } catch (Exception e) {
-      // Restore System.out in case of exception
-      System.setOut(originalOut);
       log.error("Error querying database: {}", databaseId, e);
       throw e;
-    } finally {
-      // Ensure System.out is always restored
-      System.setOut(originalOut);
     }
   }
 
   private <T> T executeWithRetry(java.util.function.Supplier<T> action) {
-    RetryPolicy<T> retryPolicy =
+    RetryPolicy<T> rateLimitPolicy =
         RetryPolicy.<T>builder()
             .handleIf(
                 e ->
@@ -226,15 +200,25 @@ public class NotionHandler {
             .onRetry(e -> log.warn("Rate limited by Notion API. Retrying...", e.getLastException()))
             .build();
 
-    return Failsafe.with(retryPolicy).get(action::get);
+    RetryPolicy<T> serverRetryPolicy =
+        RetryPolicy.<T>builder()
+            .handleIf(
+                e ->
+                    e instanceof NotionAPIError
+                        && ((NotionAPIError) e).getError().getStatus() >= 500)
+            .withBackoff(1, 5, java.time.temporal.ChronoUnit.SECONDS)
+            .withMaxRetries(3)
+            .onRetry(e -> log.warn("Server side error. Retrying...", e.getLastException()))
+            .build();
+
+    return Failsafe.with(rateLimitPolicy, serverRetryPolicy).get(action::get);
   }
 
-  private String getValue(@NonNull NotionClient client, @NonNull PageProperty value) {
-    return getValue(
-        client, value, true); // Default to resolving relationships for backward compatibility
+  public String getValue(@NonNull NotionClient client, @NonNull PageProperty value) {
+    return getValue(client, value, true);
   }
 
-  private String getValue(
+  public String getValue(
       @NonNull NotionClient client, @NonNull PageProperty value, boolean resolveRelationships) {
     try {
       // Handle cases where type is null but we can infer the type from populated fields
@@ -289,46 +273,38 @@ public class NotionHandler {
           if (value.getRelation() == null || value.getRelation().isEmpty()) {
             yield "N/A";
           } else if (!resolveRelationships) {
-            // Fast mode: just return the count without resolving names
-            yield value.getRelation().size() + " items";
+            // Fast mode: return comma-separated IDs without resolving names
+            yield value.getRelation().stream()
+                .map(PageProperty.PageReference::getId)
+                .collect(Collectors.joining(", "));
           } else {
             // Full mode: resolve relationship names (expensive)
             yield value.getRelation().stream()
                 .map(
                     relation -> {
-                      // Suppress System.out for relation retrievePage calls
-                      PrintStream originalOut = System.out;
-                      try {
-                        System.setOut(new PrintStream(new ByteArrayOutputStream()));
-                        Page relatedPage =
-                            executeWithRetry(
-                                () ->
-                                    client.retrievePage(relation.getId(), Collections.emptyList()));
-                        System.setOut(originalOut);
+                      Page relatedPage =
+                          executeWithRetry(
+                              () -> client.retrievePage(relation.getId(), Collections.emptyList()));
 
-                        // Try multiple common title property names
-                        String[] titlePropertyNames = {
-                          "Name", "Title", "Title Name", "Championship", "name", "title"
-                        };
-                        for (String propertyName : titlePropertyNames) {
-                          PageProperty titleProperty =
-                              relatedPage.getProperties().get(propertyName);
-                          if (titleProperty != null
-                              && titleProperty.getTitle() != null
-                              && !titleProperty.getTitle().isEmpty()) {
-                            return titleProperty.getTitle().get(0).getPlainText();
-                          }
+                      // Try multiple common title property names
+                      String[] titlePropertyNames = {
+                        "Name", "Title", "Title Name", "Championship", "name", "title"
+                      };
+                      for (String propertyName : titlePropertyNames) {
+                        PageProperty titleProperty = relatedPage.getProperties().get(propertyName);
+                        if (titleProperty != null
+                            && titleProperty.getTitle() != null
+                            && !titleProperty.getTitle().isEmpty()) {
+                          return titleProperty.getTitle().get(0).getPlainText();
                         }
-
-                        // If no title property found, log available properties for debugging
-                        log.debug(
-                            "No title property found for relation {}. Available properties: {}",
-                            relation.getId(),
-                            relatedPage.getProperties().keySet());
-                        return relation.getId();
-                      } finally {
-                        System.setOut(originalOut);
                       }
+
+                      // If no title property found, log available properties for debugging
+                      log.debug(
+                          "No title property found for relation {}. Available properties: {}",
+                          relation.getId(),
+                          relatedPage.getProperties().keySet());
+                      return relation.getId();
                     })
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("N/A");
@@ -532,6 +508,33 @@ public class NotionHandler {
   }
 
   /**
+   * Gets all page IDs from a given database.
+   *
+   * @param databaseName The name of the database
+   * @return List of page IDs
+   */
+  public List<String> getDatabasePageIds(@NonNull String databaseName) {
+    log.debug("Loading all page IDs from database: '{}'", databaseName);
+
+    String dbId = getDatabaseId(databaseName);
+    if (dbId == null) {
+      log.warn("'{}' database not found in workspace", databaseName);
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        return new ArrayList<>();
+      }
+      return loadAllEntitiesFromDatabase(
+          client, dbId, databaseName, (page, name) -> page.getId(), false);
+    } catch (Exception e) {
+      log.error("Failed to load all page IDs from database '{}'", databaseName, e);
+      return new ArrayList<>();
+    }
+  }
+
+  /**
    * Gets all loaded databases as a map of name -> ID.
    *
    * @return A copy of the database map
@@ -652,10 +655,10 @@ public class NotionHandler {
       }
       if (syncMode) {
         return loadAllEntitiesFromDatabase(
-            client, wrestlerDbId, "Wrestler", this::mapPageToWrestlerPageSyncMode);
+            client, wrestlerDbId, "Wrestler", this::mapPageToWrestlerPageSyncMode, false);
       } else {
         return loadAllEntitiesFromDatabase(
-            client, wrestlerDbId, "Wrestler", this::mapPageToWrestlerPage);
+            client, wrestlerDbId, "Wrestler", this::mapPageToWrestlerPage, true);
       }
     } catch (Exception e) {
       log.error("Failed to load all wrestlers for sync", e);
@@ -666,31 +669,21 @@ public class NotionHandler {
   /** Internal method to load a wrestler from a specific database. */
   private Optional<WrestlerPage> loadWrestlerFromDatabase(
       @NonNull NotionClient client, @NonNull String databaseId, @NonNull String wrestlerName) {
-    PrintStream originalOut = System.out;
     try {
       log.debug("Searching for wrestler '{}' in database {}", wrestlerName, databaseId);
 
       // Create a query request to find the wrestler by name
       QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
 
-      // Temporarily redirect System.out to suppress Notion SDK logs
-      System.setOut(new PrintStream(new ByteArrayOutputStream()));
-
       // Send query request
       List<Page> results = executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
-
-      // Restore System.out before logging our results
-      System.setOut(originalOut);
 
       log.debug("Found {} pages in wrestlers database", results.size());
 
       // Search for the wrestler by name
       for (Page page : results) {
-        // Suppress output again for retrievePage calls
-        System.setOut(new PrintStream(new ByteArrayOutputStream()));
         Page pageData =
             executeWithRetry(() -> client.retrievePage(page.getId(), Collections.emptyList()));
-        System.setOut(originalOut);
 
         // Get the name property
         PageProperty nameProperty = pageData.getProperties().get("Name");
@@ -710,13 +703,8 @@ public class NotionHandler {
       return Optional.empty();
 
     } catch (Exception e) {
-      // Restore System.out in case of exception
-      System.setOut(originalOut);
       log.error("Error loading wrestler '{}' from database: {}", wrestlerName, databaseId, e);
       throw e;
-    } finally {
-      // Ensure System.out is always restored
-      System.setOut(originalOut);
     }
   }
 
@@ -754,7 +742,7 @@ public class NotionHandler {
       properties.forEach(
           (key, value) -> {
             String valueStr = getValue(client, value);
-            log.info("Wrestler Property - {}: {}", key, valueStr);
+            log.debug("Wrestler Property - {}: {}", key, valueStr);
             processedProperties.put(key, valueStr);
           });
 
@@ -770,7 +758,8 @@ public class NotionHandler {
   }
 
   /** Maps a Notion page to a WrestlerPage object in sync mode (minimal processing). */
-  private WrestlerPage mapPageToWrestlerPageSyncMode(Page pageData, String wrestlerName) {
+  private WrestlerPage mapPageToWrestlerPageSyncMode(
+      @NonNull Page pageData, @NonNull String wrestlerName) {
     log.debug("Mapping Notion page to WrestlerPage object in sync mode for: {}", wrestlerName);
 
     WrestlerPage wrestlerPage = new WrestlerPage();
@@ -813,6 +802,20 @@ public class NotionHandler {
           minimalProperties.put(key, relationCount + " relations");
           log.debug(
               "Wrestler Property (sync mode - count only) - {}: {} relations", key, relationCount);
+        } else if (property.getPeople() != null && !property.getPeople().isEmpty()) {
+          int peopleCount = property.getPeople().size();
+          minimalProperties.put(key, peopleCount + " people");
+          log.debug("Wrestler Property (sync mode - count only) - {}: {} people", key, peopleCount);
+        } else if (property.getFormula() != null) {
+          String formulaValue = getFormulaValue(property.getFormula());
+          minimalProperties.put(key, formulaValue);
+          log.debug("Wrestler Property (sync mode) - {}: {}", key, formulaValue);
+        } else if (property.getCreatedTime() != null) {
+          minimalProperties.put(key, property.getCreatedTime());
+          log.debug("Wrestler Property (sync mode) - {}: {}", key, property.getCreatedTime());
+        } else if (property.getLastEditedTime() != null) {
+          minimalProperties.put(key, property.getLastEditedTime());
+          log.debug("Wrestler Property (sync mode) - {}: {}", key, property.getLastEditedTime());
         }
       } catch (Exception e) {
         log.debug(
@@ -869,6 +872,17 @@ public class NotionHandler {
     }
   }
 
+  /**
+   * Loads a show from the Notion database by ID.
+   *
+   * @param showId The ID of the show to load.
+   * @return Optional containing the ShowPage object if found, empty otherwise.
+   */
+  public Optional<ShowPage> loadShowById(@NonNull String showId) {
+    log.debug("Loading show with ID: '{}'", showId);
+    return loadPage(showId).map(page -> mapPageToShowPage(page, ""));
+  }
+
   /** Static convenience method to load a show. */
   public static Optional<ShowPage> loadShowStatic(String showName) {
     return getInstance().loadShow(showName);
@@ -892,7 +906,7 @@ public class NotionHandler {
       if (client == null) {
         return new ArrayList<>();
       }
-      return loadAllEntitiesFromDatabase(client, showDbId, "Show", this::mapPageToShowPage);
+      return loadAllEntitiesFromDatabase(client, showDbId, "Show", this::mapPageToShowPage, true);
     } catch (Exception e) {
       log.error("Failed to load all shows", e);
       return new ArrayList<>();
@@ -933,7 +947,8 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, showDbId, "Show", this::mapPageToShowPageForSync);
+      return loadAllEntitiesFromDatabase(
+          client, showDbId, "Show", this::mapPageToShowPageForSync, false);
     } catch (Exception e) {
       log.error("Failed to load all shows for sync", e);
       throw new RuntimeException("Failed to load shows from Notion: " + e.getMessage(), e);
@@ -1010,7 +1025,8 @@ public class NotionHandler {
                   entityName,
                   "ShowTemplate",
                   ShowTemplatePage::new,
-                  NotionPage.NotionParent::new));
+                  NotionPage.NotionParent::new),
+          false);
     } catch (Exception e) {
       log.error("Failed to load all show templates for sync", e);
       return new ArrayList<>();
@@ -1025,17 +1041,17 @@ public class NotionHandler {
    */
   public Map<String, ShowTemplatePage> retrieveShowTemplateData(
       @NonNull List<String> templateNames) {
-    log.info("Retrieving show template data for {} templates", templateNames.size());
+    log.debug("Retrieving show template data for {} templates", templateNames.size());
     Map<String, ShowTemplatePage> templateData = new HashMap<>();
 
     for (String templateName : templateNames) {
-      log.info("Loading template: {}", templateName);
+      log.debug("Loading template: {}", templateName);
       Optional<ShowTemplatePage> templatePageOpt = loadShowTemplate(templateName);
 
       if (templatePageOpt.isPresent()) {
         ShowTemplatePage templatePage = templatePageOpt.get();
         templateData.put(templateName, templatePage);
-        log.info("Successfully loaded template: {}", templateName);
+        log.debug("Successfully loaded template: {}", templateName);
 
         // Log the template data for inspection
         logShowTemplateData(templateName, templatePage);
@@ -1044,53 +1060,59 @@ public class NotionHandler {
       }
     }
 
-    log.info("Retrieved {} out of {} templates", templateData.size(), templateNames.size());
+    log.debug("Retrieved {} out of {} templates", templateData.size(), templateNames.size());
     return templateData;
   }
 
   /** Logs detailed information about a show template for inspection. */
   private void logShowTemplateData(
       @NonNull String templateName, @NonNull ShowTemplatePage templatePage) {
-    log.info("=== TEMPLATE DATA FOR {} ===", templateName);
+    log.debug("=== TEMPLATE DATA FOR {} ===", templateName);
 
     // Log raw properties for complete data inspection
     if (templatePage.getRawProperties() != null && !templatePage.getRawProperties().isEmpty()) {
-      log.info("Raw properties:");
+      log.debug("Raw properties:");
       templatePage
           .getRawProperties()
           .forEach(
               (key, value) -> {
-                log.info("  {}: {}", key, value);
+                log.debug("  {}: {}", key, value);
               });
     }
 
-    log.info("=== END TEMPLATE DATA FOR {} ===", templateName);
+    log.debug("=== END TEMPLATE DATA FOR {} ===", templateName);
   }
 
   // ==================== MATCH LOADING METHODS ====================
 
-  /** Loads a match from the Notion database by name. */
-  public Optional<MatchPage> loadMatch(@NonNull String matchName) {
-    log.debug("Loading match: '{}'", matchName);
+  /** Loads a segment from the Notion database by name. */
+  public Optional<SegmentPage> loadSegment(@NonNull String segmentName) {
+    log.debug("Loading segment: '{}'", segmentName);
 
-    String matchDbId = getDatabaseId("Matches");
+    String matchDbId = getDatabaseId("Segments");
     if (matchDbId == null) {
-      log.warn("Matches database not found in workspace");
+      log.warn("Segments database not found in workspace");
       return Optional.empty();
     }
 
     try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
       return loadEntityFromDatabase(
-          client, matchDbId, matchName, "Match", this::mapPageToMatchPage);
+          client, matchDbId, segmentName, "Segment", this::mapPageToSegmentPage);
     } catch (Exception e) {
-      log.error("Failed to load match: {}", matchName, e);
+      log.error("Failed to load segment: {}", segmentName, e);
       return Optional.empty();
     }
   }
 
-  /** Static convenience method to load a match. */
-  public static Optional<MatchPage> loadMatchStatic(@NonNull String matchName) {
-    return getInstance().loadMatch(matchName);
+  /**
+   * Loads a segment from the Notion database by ID.
+   *
+   * @param segment The ID of the segment to load.
+   * @return Optional containing the MatchPage object if found, empty otherwise.
+   */
+  public Optional<SegmentPage> loadSegmentById(@NonNull String segment) {
+    log.debug("Loading segment with ID: '{}'", segment);
+    return loadPage(segment).map(page -> mapPageToSegmentPage(page, ""));
   }
 
   /**
@@ -1098,7 +1120,7 @@ public class NotionHandler {
    *
    * @return List of all MatchPage objects from the Matches database
    */
-  public List<MatchPage> loadAllMatches() {
+  public List<SegmentPage> loadAllSegments() {
     log.debug("Loading all matches from Matches database");
 
     // Check if NOTION_TOKEN is available first
@@ -1106,9 +1128,9 @@ public class NotionHandler {
       throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
     }
 
-    String matchDbId = getDatabaseId("Matches");
+    String matchDbId = getDatabaseId("Segments");
     if (matchDbId == null) {
-      log.warn("Matches database not found in workspace");
+      log.warn("Segment database not found in workspace");
       return new ArrayList<>();
     }
 
@@ -1117,7 +1139,8 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, matchDbId, "Match", this::mapPageToMatchPage);
+      return loadAllEntitiesFromDatabase(
+          client, matchDbId, "Segment", this::mapPageToSegmentPage, false);
     } catch (Exception e) {
       log.error("Failed to load all matches", e);
       throw new RuntimeException("Failed to load matches from Notion: " + e.getMessage(), e);
@@ -1193,7 +1216,7 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, teamDbId, "Team", this::mapPageToTeamPage);
+      return loadAllEntitiesFromDatabase(client, teamDbId, "Team", this::mapPageToTeamPage, false);
     } catch (Exception e) {
       log.error("Failed to load all teams", e);
       throw new RuntimeException("Failed to load teams from Notion: " + e.getMessage(), e);
@@ -1250,7 +1273,8 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, seasonDbId, "Season", this::mapPageToSeasonPage);
+      return loadAllEntitiesFromDatabase(
+          client, seasonDbId, "Season", this::mapPageToSeasonPage, false);
     } catch (Exception e) {
       log.error("Failed to load all seasons", e);
       throw new RuntimeException("Failed to load seasons from Notion: " + e.getMessage(), e);
@@ -1308,7 +1332,7 @@ public class NotionHandler {
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
       return loadAllEntitiesFromDatabase(
-          client, factionDbId, "Faction", this::mapPageToFactionPage);
+          client, factionDbId, "Faction", this::mapPageToFactionPage, false);
     } catch (Exception e) {
       log.error("Failed to load all factions", e);
       throw new RuntimeException("Failed to load factions from Notion: " + e.getMessage(), e);
@@ -1318,6 +1342,46 @@ public class NotionHandler {
   /** Static convenience method to load a faction. */
   public static Optional<FactionPage> loadFactionStatic(@NonNull String factionName) {
     return getInstance().loadFaction(factionName);
+  }
+
+  // ==================== TITLE LOADING METHODS ====================
+
+  /**
+   * Loads all titles from the Notion Titles database.
+   *
+   * @return List of all TitlePage objects from the Titles database
+   */
+  public List<TitlePage> loadAllTitles() {
+    log.debug("Loading all titles from Titles database");
+
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String titleDbId = getDatabaseId("Championships");
+    if (titleDbId == null) {
+      log.warn("Championships database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(
+          client, titleDbId, "Title", this::mapPageToTitlePage, false);
+    } catch (Exception e) {
+      log.error("Failed to load all titles", e);
+      throw new RuntimeException("Failed to load titles from Notion: " + e.getMessage(), e);
+    }
+  }
+
+  /** Maps a Notion page to a TitlePage object. */
+  private TitlePage mapPageToTitlePage(@NonNull Page pageData, @NonNull String titleName) {
+    return mapPageToGenericEntity(
+        pageData, titleName, "Title", TitlePage::new, TitlePage.NotionParent::new);
   }
 
   // ==================== NPC LOADING METHODS ====================
@@ -1346,7 +1410,7 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, npcDbId, "NPC", this::mapPageToNpcPage);
+      return loadAllEntitiesFromDatabase(client, npcDbId, "NPC", this::mapPageToNpcPage, false);
     } catch (Exception e) {
       log.error("Failed to load all NPCs", e);
       throw new RuntimeException("Failed to load NPCs from Notion: " + e.getMessage(), e);
@@ -1385,7 +1449,8 @@ public class NotionHandler {
         throw new IllegalStateException(
             "Failed to create NotionClient - NOTION_TOKEN may be invalid");
       }
-      return loadAllEntitiesFromDatabase(client, injuryDbId, "Injury", this::mapPageToInjuryPage);
+      return loadAllEntitiesFromDatabase(
+          client, injuryDbId, "Injury", this::mapPageToInjuryPage, false);
     } catch (Exception e) {
       log.error("Failed to load all injuries", e);
       throw new RuntimeException("Failed to load injuries from Notion: " + e.getMessage(), e);
@@ -1393,6 +1458,31 @@ public class NotionHandler {
   }
 
   // ==================== GENERIC HELPER METHODS ====================
+
+  /**
+   * Loads a Notion page by its ID.
+   *
+   * @param pageId The ID of the page to load.
+   * @return Optional containing the Page object if found, empty otherwise.
+   */
+  public Optional<Page> loadPage(@NonNull String pageId) {
+    log.debug("Loading page with ID: '{}'", pageId);
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        return Optional.empty();
+      }
+      return Optional.of(
+          executeWithRetry(
+              () -> {
+                synchronized (client) {
+                  return client.retrievePage(pageId, Collections.emptyList());
+                }
+              }));
+    } catch (Exception e) {
+      log.error("Failed to load page with ID: {}", pageId, e);
+      return Optional.empty();
+    }
+  }
 
   /**
    * Creates a NotionClient safely, checking for token availability.
@@ -1420,7 +1510,7 @@ public class NotionHandler {
 
       List<Page> results = executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
 
-      log.info("Found {} pages in {} database for sync", results.size(), entityType);
+      log.debug("Found {} pages in {} database for sync", results.size(), entityType);
 
       // Process pages in batches to avoid overwhelming the API
       int batchSize = 10;
@@ -1456,7 +1546,7 @@ public class NotionHandler {
         }
       }
 
-      log.info("Successfully loaded {} {} entities for sync", entities.size(), entityType);
+      log.debug("Successfully loaded {} {} entities for sync", entities.size(), entityType);
       return entities;
 
     } catch (Exception e) {
@@ -1471,26 +1561,42 @@ public class NotionHandler {
       @NonNull NotionClient client,
       @NonNull String databaseId,
       @NonNull String entityType,
-      @NonNull java.util.function.BiFunction<Page, String, T> mapper) {
+      @NonNull java.util.function.BiFunction<Page, String, T> mapper,
+      boolean resolveRelationships) {
 
     List<T> entities = new ArrayList<>();
     try {
       log.debug("Loading all {} entities from database {}", entityType, databaseId);
+      String nextCursor = null;
+      boolean hasMore;
 
-      QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
+      List<Page> results = new ArrayList<>();
 
-      List<Page> results = executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
+      do {
+        QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
+        queryRequest.setStartCursor(nextCursor);
 
-      log.debug("Found {} pages in {} database", results.size(), entityType);
+        QueryResults queryResults = executeWithRetry(() -> client.queryDatabase(queryRequest));
+        results.addAll(queryResults.getResults());
+        hasMore = queryResults.getHasMore();
+        nextCursor = queryResults.getNextCursor();
 
-      for (Page page : results) {
-        T entity = mapPageToEntity(page, client, entityType, mapper);
-        if (entity != null) {
-          entities.add(entity);
-        }
-      }
+        log.debug(
+            "Found {} pages in {} database (hasMore: {}, nextCursor: {})",
+            results.size(),
+            entityType,
+            hasMore,
+            nextCursor);
+      } while (hasMore);
 
-      log.info("Successfully loaded {} {} entities from database", entities.size(), entityType);
+      // Parallelize the mapping of pages to entities to improve performance
+      entities =
+          results.parallelStream()
+              .map(page -> mapPageToEntity(page, client, entityType, mapper, resolveRelationships))
+              .filter(java.util.Objects::nonNull)
+              .collect(java.util.stream.Collectors.toList());
+
+      log.debug("Successfully loaded {} {} entities from database", entities.size(), entityType);
       return entities;
 
     } catch (Exception e) {
@@ -1503,7 +1609,8 @@ public class NotionHandler {
       Page page,
       NotionClient client,
       String entityType,
-      java.util.function.BiFunction<Page, String, T> mapper) {
+      java.util.function.BiFunction<Page, String, T> mapper,
+      boolean resolveRelationships) {
     try {
       Page pageData =
           executeWithRetry(() -> client.retrievePage(page.getId(), Collections.emptyList()));
@@ -1536,29 +1643,20 @@ public class NotionHandler {
       @NonNull String entityType,
       @NonNull java.util.function.BiFunction<Page, String, T> mapper) {
 
-    PrintStream originalOut = System.out;
+    // PrintStream originalOut = System.out;
     try {
       log.debug("Searching for {} '{}' in database {}", entityType, entityName, databaseId);
 
       QueryDatabaseRequest queryRequest = new QueryDatabaseRequest(databaseId);
 
-      // Temporarily redirect System.out to suppress Notion SDK logs
-      System.setOut(new PrintStream(new ByteArrayOutputStream()));
-
       List<Page> results = executeWithRetry(() -> client.queryDatabase(queryRequest)).getResults();
-
-      // Restore System.out before logging our results
-      System.setOut(originalOut);
 
       log.debug("Found {} pages in {} database", results.size(), entityType);
 
       // Search for the entity by name
       for (Page page : results) {
-        // Suppress output again for retrievePage calls
-        System.setOut(new PrintStream(new ByteArrayOutputStream()));
         Page pageData =
             executeWithRetry(() -> client.retrievePage(page.getId(), Collections.emptyList()));
-        System.setOut(originalOut);
 
         // Get the name property
         PageProperty nameProperty = pageData.getProperties().get("Name");
@@ -1578,13 +1676,8 @@ public class NotionHandler {
       return Optional.empty();
 
     } catch (Exception e) {
-      // Restore System.out in case of exception
-      System.setOut(originalOut);
       log.error("Error loading {} '{}' from database: {}", entityType, entityName, databaseId, e);
       throw e;
-    } finally {
-      // Ensure System.out is always restored
-      System.setOut(originalOut);
     }
   }
 
@@ -1675,20 +1768,20 @@ public class NotionHandler {
   }
 
   /** Maps a Notion page to a MatchPage object. */
-  private MatchPage mapPageToMatchPage(@NonNull Page pageData, @NonNull String matchName) {
-    MatchPage matchPage =
+  private SegmentPage mapPageToSegmentPage(@NonNull Page pageData, @NonNull String matchName) {
+    SegmentPage matchPage =
         mapPageToGenericEntity(
-            pageData, matchName, "Match", MatchPage::new, MatchPage.NotionParent::new);
+            pageData, matchName, "Segment", SegmentPage::new, SegmentPage.NotionParent::new);
 
     // Extract and set specific MatchPage properties
-    MatchPage.NotionProperties properties = new MatchPage.NotionProperties();
+    SegmentPage.NotionProperties properties = new SegmentPage.NotionProperties();
     Map<String, PageProperty> notionProperties = pageData.getProperties();
 
     try (NotionClient client = createNotionClient()) {
       properties.setParticipants(createProperty(notionProperties, "Participants", client));
       properties.setWinners(createProperty(notionProperties, "Winners", client));
       properties.setShows(createProperty(notionProperties, "Shows", client));
-      properties.setMatch_Type(createProperty(notionProperties, "Match Type", client));
+      properties.setSegment_Type(createProperty(notionProperties, "Segment Type", client));
       properties.setReferee_s(createProperty(notionProperties, "Referee(s)", client));
       properties.setRules(createProperty(notionProperties, "Rules", client));
       properties.setTitle_s(createProperty(notionProperties, "Title(s)", client));
@@ -1765,10 +1858,49 @@ public class NotionHandler {
         pageData, factionName, "Faction", FactionPage::new, FactionPage.NotionParent::new);
   }
 
+  /**
+   * Loads all title reigns from the Notion Title Reigns database.
+   *
+   * @return List of all TitleReignPage objects from the Title Reigns database
+   */
+  public List<TitleReignPage> loadAllTitleReigns() {
+    log.debug("Loading all title reigns from Title Reigns database");
+
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String dbId = getDatabaseId("Title Reigns");
+    if (dbId == null) {
+      log.warn("Title Reigns database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(
+          client, dbId, "Title Reign", this::mapPageToTitleReignPage, false);
+    } catch (Exception e) {
+      log.error("Failed to load all title reigns", e);
+      throw new RuntimeException("Failed to load title reigns from Notion: " + e.getMessage(), e);
+    }
+  }
+
   /** Maps a Notion page to an InjuryPage object. */
   private InjuryPage mapPageToInjuryPage(@NonNull Page pageData, @NonNull String injuryName) {
     return mapPageToGenericEntity(
         pageData, injuryName, "Injury", InjuryPage::new, InjuryPage.NotionParent::new);
+  }
+
+  /** Maps a Notion page to a TitleReignPage object. */
+  private TitleReignPage mapPageToTitleReignPage(
+      @NonNull Page pageData, @NonNull String entityName) {
+    return mapPageToGenericEntity(
+        pageData, entityName, "Title Reign", TitleReignPage::new, TitleReignPage.NotionParent::new);
   }
 
   /** Generic mapping method for all entity types with full relationship resolution. */
@@ -1810,7 +1942,7 @@ public class NotionHandler {
 
     // If entity is TeamPage, set typed properties using original PageProperty map
     if (entityPage instanceof TeamPage teamPage) {
-        Map<String, notion.api.v1.model.pages.PageProperty> notionProperties = pageData.getProperties();
+      Map<String, PageProperty> notionProperties = pageData.getProperties();
       TeamPage.NotionProperties props = mapPagePropertiesToNotionProperties(notionProperties);
       teamPage.setProperties(props);
     }
@@ -1908,10 +2040,10 @@ public class NotionHandler {
               // Add debug info for Date property to understand the @ issue
               if ("Date".equals(key)) {
                 String propertyType = value.getType() != null ? value.getType().getValue() : "null";
-                log.info(
+                log.debug(
                     "{} Property - {}: {} (type: {})", entityType, key, valueStr, propertyType);
               } else {
-                log.info("{} Property - {}: {}", entityType, key, valueStr);
+                log.debug("{} Property - {}: {}", entityType, key, valueStr);
               }
               processedProperties.put(key, valueStr);
             } catch (Exception propertyError) {
@@ -1937,37 +2069,34 @@ public class NotionHandler {
   }
 
   /**
-   * Extracts the first match name from a show's matches relation property.
+   * Extracts the first segment name from a show's matches relation property.
    *
    * @param showPage The ShowPage object to extract matches from
-   * @return The name of the first match, or null if no matches found
+   * @return The name of the first segment, or null if no matches found
    */
   public String extractFirstMatchFromShow(@NonNull ShowPage showPage) {
-    log.debug("Extracting first match from show: {}", showPage.getId());
+    log.debug("Extracting first segment from show: {}", showPage.getId());
 
     String notionToken = System.getenv("NOTION_TOKEN");
     if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("NOTION_TOKEN not available. Cannot extract match from show: {}", showPage.getId());
+      log.warn(
+          "NOTION_TOKEN not available. Cannot extract segment from show: {}", showPage.getId());
       return null;
     }
 
     try (NotionClient client = new NotionClient(notionToken)) {
-      // Get the original page data to access properties
-      PrintStream originalOut = System.out;
       try {
-        System.setOut(new PrintStream(new ByteArrayOutputStream()));
         Page pageData =
             executeWithRetry(() -> client.retrievePage(showPage.getId(), Collections.emptyList()));
-        System.setOut(originalOut);
 
         Map<String, PageProperty> properties = pageData.getProperties();
 
-        // Look for a "Matches" relation property
-        PageProperty matchesProperty = properties.get("Matches");
+        // Look for a "Segments" relation property
+        PageProperty matchesProperty = properties.get("Segments");
         if (matchesProperty != null
             && matchesProperty.getRelation() != null
             && !matchesProperty.getRelation().isEmpty()) {
-          // Get the first related match - using generic approach since Relation type may not be
+          // Get the first related segment - using generic approach since Relation type may not be
           // accessible
           Object firstMatch = matchesProperty.getRelation().get(0);
           String matchId = null;
@@ -1976,26 +2105,23 @@ public class NotionHandler {
           try {
             matchId = (String) firstMatch.getClass().getMethod("getId").invoke(firstMatch);
           } catch (Exception e) {
-            log.error("Failed to extract match ID from relation: {}", e.getMessage());
+            log.error("Failed to extract segment ID from relation: {}", e.getMessage());
             return null;
           }
 
-          log.debug("Found first match ID: {}", matchId);
+          log.debug("Found first segment ID: {}", matchId);
 
-          // Retrieve the match page to get its name
-          System.setOut(new PrintStream(new ByteArrayOutputStream()));
           final String finalMatchId = matchId;
           Page matchPage =
               executeWithRetry(() -> client.retrievePage(finalMatchId, Collections.emptyList()));
-          System.setOut(originalOut);
 
-          // Get the match name from the Name property
+          // Get the segment name from the Name property
           PageProperty nameProperty = matchPage.getProperties().get("Name");
           if (nameProperty != null
               && nameProperty.getTitle() != null
               && !nameProperty.getTitle().isEmpty()) {
             String matchName = nameProperty.getTitle().get(0).getPlainText();
-            log.debug("Extracted match name: {}", matchName);
+            log.debug("Extracted segment name: {}", matchName);
             return matchName;
           }
         }
@@ -2004,35 +2130,38 @@ public class NotionHandler {
         return null;
 
       } catch (Exception e) {
-        System.setOut(originalOut);
-        log.error("Error extracting match from show: {}", e.getMessage());
+        log.error("Error extracting segment from show: {}", e.getMessage());
         return null;
-      } finally {
-        System.setOut(originalOut);
       }
     } catch (Exception e) {
-      log.error("Error creating Notion client for match extraction: {}", e.getMessage());
+      log.error("Error creating Notion client for segment extraction: {}", e.getMessage());
       return null;
     }
   }
 
   /** Maps raw properties to TeamPage.NotionProperties. */
-  private TeamPage.NotionProperties mapPagePropertiesToNotionProperties(Map<String, notion.api.v1.model.pages.PageProperty> notionProperties) {
+  private TeamPage.NotionProperties mapPagePropertiesToNotionProperties(
+      Map<String, notion.api.v1.model.pages.PageProperty> notionProperties) {
     TeamPage.NotionProperties props = new TeamPage.NotionProperties();
     if (notionProperties == null) return props;
-    if (notionProperties.containsKey("Member 1")) props.setMembers(toProperty(notionProperties.get("Member 1")));
-    if (notionProperties.containsKey("Leader")) props.setLeader(toProperty(notionProperties.get("Leader")));
-    if (notionProperties.containsKey("TeamType")) props.setTeamType(toProperty(notionProperties.get("TeamType")));
-    if (notionProperties.containsKey("Status")) props.setStatus(toProperty(notionProperties.get("Status")));
-    if (notionProperties.containsKey("FormedDate")) props.setFormedDate(toProperty(notionProperties.get("FormedDate")));
-    if (notionProperties.containsKey("DisbandedDate")) props.setDisbandedDate(toProperty(notionProperties.get("DisbandedDate")));
-    if (notionProperties.containsKey("Faction")) props.setFaction(toProperty(notionProperties.get("Faction")));
+    if (notionProperties.containsKey("Member 1"))
+      props.setMembers(toProperty(notionProperties.get("Member 1")));
+    if (notionProperties.containsKey("Leader"))
+      props.setLeader(toProperty(notionProperties.get("Leader")));
+    if (notionProperties.containsKey("TeamType"))
+      props.setTeamType(toProperty(notionProperties.get("TeamType")));
+    if (notionProperties.containsKey("Status"))
+      props.setStatus(toProperty(notionProperties.get("Status")));
+    if (notionProperties.containsKey("FormedDate"))
+      props.setFormedDate(toProperty(notionProperties.get("FormedDate")));
+    if (notionProperties.containsKey("DisbandedDate"))
+      props.setDisbandedDate(toProperty(notionProperties.get("DisbandedDate")));
+    if (notionProperties.containsKey("Faction"))
+      props.setFaction(toProperty(notionProperties.get("Faction")));
     return props;
   }
 
-  /**
-   * Converts a Notion PageProperty to a TeamPage.Property.
-   */
+  /** Converts a Notion PageProperty to a TeamPage.Property. */
   private TeamPage.Property toProperty(notion.api.v1.model.pages.PageProperty pageProperty) {
     if (pageProperty == null) return null;
     TeamPage.Property property = new TeamPage.Property();
@@ -2045,11 +2174,14 @@ public class NotionHandler {
     // Map relations
     if (pageProperty.getRelation() != null) {
       List<TeamPage.Relation> relations = new java.util.ArrayList<>();
-      pageProperty.getRelation().forEach(ref -> {
-        TeamPage.Relation rel = new TeamPage.Relation();
-        rel.setId(ref.getId());
-        relations.add(rel);
-      });
+      pageProperty
+          .getRelation()
+          .forEach(
+              ref -> {
+                TeamPage.Relation rel = new TeamPage.Relation();
+                rel.setId(ref.getId());
+                relations.add(rel);
+              });
       property.setRelation(relations);
     }
     property.setPeople(pageProperty.getPeople());
@@ -2062,5 +2194,103 @@ public class NotionHandler {
     property.setFormula(pageProperty.getFormula());
     property.setHas_more(pageProperty.getHasMore());
     return property;
+  }
+
+  /**
+   * Retrieves the plain text content of a Notion page by its ID. This method fetches all blocks
+   * within the page and extracts their plain text.
+   *
+   * @param pageId The ID of the Notion page.
+   * @return The concatenated plain text content of the page, or an empty string if no content.
+   */
+  public String getPageContentPlainText(@NonNull String pageId) {
+    log.debug("Retrieving content for page: {}", pageId);
+    String notionToken = EnvironmentVariableUtil.getNotionToken();
+    if (notionToken == null || notionToken.trim().isEmpty()) {
+      log.warn("NOTION_TOKEN not available. Cannot retrieve page content.");
+      return "";
+    }
+    NotionBlocksRetriever retriever = new NotionBlocksRetriever(notionToken);
+    return retriever.retrievePageContent(pageId);
+  }
+
+  /**
+   * Loads all rivalries from the Notion Heat database.
+   *
+   * @return List of all RivalryPage objects from the Heat database
+   */
+  public List<RivalryPage> loadAllRivalries() {
+    log.debug("Loading all rivalries from Heat database");
+
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String dbId = getDatabaseId("Heat");
+    if (dbId == null) {
+      log.warn("Heat database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(
+          client, dbId, "Rivalry", this::mapPageToRivalryPage, false);
+    } catch (Exception e) {
+      log.error("Failed to load all rivalries", e);
+      throw new RuntimeException("Failed to load rivalries from Notion: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Loads all faction rivalries from the Notion Faction Heat database.
+   *
+   * @return List of all FactionRivalryPage objects from the Faction Heat database
+   */
+  public List<FactionRivalryPage> loadAllFactionRivalries() {
+    log.debug("Loading all faction rivalries from Faction Heat database");
+
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String dbId = getDatabaseId("Faction Heat");
+    if (dbId == null) {
+      log.warn("Faction Heat database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(
+          client, dbId, "Faction Rivalry", this::mapPageToFactionRivalryPage, false);
+    } catch (Exception e) {
+      log.error("Failed to load all faction rivalries", e);
+      throw new RuntimeException(
+          "Failed to load faction rivalries from Notion: " + e.getMessage(), e);
+    }
+  }
+
+  /** Maps a Notion page to a RivalryPage object. */
+  private RivalryPage mapPageToRivalryPage(@NonNull Page pageData, @NonNull String entityName) {
+    return mapPageToGenericEntity(
+        pageData, entityName, "Rivalry", RivalryPage::new, RivalryPage.NotionParent::new);
+  }
+
+  /** Maps a Notion page to a FactionRivalryPage object. */
+  private FactionRivalryPage mapPageToFactionRivalryPage(
+      @NonNull Page pageData, @NonNull String entityName) {
+    return mapPageToGenericEntity(
+        pageData,
+        entityName,
+        "Faction Rivalry",
+        FactionRivalryPage::new,
+        FactionRivalryPage.NotionParent::new);
   }
 }

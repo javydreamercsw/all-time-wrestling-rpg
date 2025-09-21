@@ -31,7 +31,7 @@ notion:
 
         matches:
           enabled: true
-          batchSize: 200  # Large batch for simple match data
+          batchSize: 200  # Large batch for simple segment data
           timeoutSeconds: 900  # Very long timeout for large datasets
 
         injuries:
@@ -51,4 +51,10 @@ notion:
           enabled: false
 
         npcs:
+          enabled: true
+
+        titles:
+          enabled: true
+
+        titlereigns:
           enabled: true

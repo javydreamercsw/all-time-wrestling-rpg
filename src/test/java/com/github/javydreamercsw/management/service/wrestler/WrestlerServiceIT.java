@@ -5,13 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.TestcontainersConfiguration;
 import com.github.javydreamercsw.management.config.TestConfig;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +34,11 @@ class WrestlerServiceIT {
   @Autowired WrestlerService wrestlerService;
   @Autowired WrestlerRepository wrestlerRepository;
   @Autowired DeckRepository deckRepository;
+
+  @BeforeEach
+  void clean() {
+    wrestlerRepository.deleteAll();
+  }
 
   @Test
   @DisplayName("Should create wrestler with ATW RPG defaults")
@@ -134,14 +139,14 @@ class WrestlerServiceIT {
     wrestlerService.awardFans(mainEventer.getId(), 120000L); // Main Eventer tier
 
     // When
-    List<Wrestler> extremeEligible = wrestlerService.getEligibleWrestlers(TitleTier.EXTREME);
-    List<Wrestler> worldEligible = wrestlerService.getEligibleWrestlers(TitleTier.WORLD);
+    List<Wrestler> extremeEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE);
+    List<Wrestler> worldEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER);
 
     // Then
-    assertThat(extremeEligible).hasSize(3); // Riser, Contender, Main Eventer
+    assertThat(extremeEligible).hasSize(4); // Rookie, Riser, Contender, Main Eventer
     assertThat(extremeEligible)
         .extracting(Wrestler::getName)
-        .containsExactlyInAnyOrder("Riser", "Contender", "Main Eventer");
+        .containsExactlyInAnyOrder("Rookie", "Riser", "Contender", "Main Eventer");
 
     assertThat(worldEligible).hasSize(1); // Only Main Eventer
     assertThat(worldEligible).extracting(Wrestler::getName).containsExactly("Main Eventer");
@@ -222,8 +227,8 @@ class WrestlerServiceIT {
     // Calculate expected health manually to avoid lazy loading issues
     int expectedHealth = finalWrestler.getStartingHealth() - finalWrestler.getBumps();
     assertThat(expectedHealth).isEqualTo(13); // 15 - 2 bumps
-    assertThat(finalWrestler.isEligibleForTitle(TitleTier.TAG_TEAM)).isTrue();
-    assertThat(finalWrestler.isEligibleForTitle(TitleTier.INTERTEMPORAL)).isFalse();
+    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.RISER)).isTrue();
+    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.MIDCARDER)).isFalse();
     assertThat(finalWrestler.getDescription()).isEqualTo("Test wrestler for complex operations");
   }
 }

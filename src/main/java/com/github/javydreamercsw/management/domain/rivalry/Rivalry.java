@@ -91,7 +91,7 @@ public class Rivalry extends AbstractEntity<Long> {
     return isActive && heat >= 20;
   }
 
-  /** Check if rivalry requires stipulation match (30+ heat). */
+  /** Check if rivalry requires rule segment (30+ heat). */
   public boolean requiresStipulationMatch() {
     return isActive && heat >= 30;
   }
@@ -189,6 +189,14 @@ public class Rivalry extends AbstractEntity<Long> {
   @Override
   public @Nullable Long getId() {
     return id;
+  }
+
+  public Instant getStartedDate() {
+    return startedDate;
+  }
+
+  public Instant getEndedDate() {
+    return endedDate;
   }
 
   @PrePersist

@@ -4,12 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.base.util.NotionBlocksRetriever;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.util.NotionBlocksRetriever;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -232,6 +233,45 @@ public class WrestlerSyncService extends BaseSyncService {
 
     dto.setFaction(extractFactionFromWrestlerPage(wrestlerPage));
     dto.setExternalId(wrestlerPage.getId());
+
+    Map<String, Object> rawProperties = wrestlerPage.getRawProperties();
+    if (rawProperties != null) {
+      // Extract Fans
+      Object fansObj = rawProperties.get("Fans");
+      if (fansObj instanceof Number) {
+        try {
+          dto.setFans(((Number) fansObj).longValue());
+        } catch (NumberFormatException e) {
+          log.warn("Invalid 'Fans' value for {}: {}", dto.getName(), fansObj);
+        }
+      }
+
+      // Extract Gender
+      Object genderObj = rawProperties.get("Gender");
+      if (genderObj instanceof String) {
+        dto.setGender((String) genderObj);
+      }
+
+      // Extract Bumps
+      Object bumpsObj = rawProperties.get("Bumps");
+      if (bumpsObj instanceof Number) {
+        try {
+          dto.setBumps(((Number) bumpsObj).intValue());
+        } catch (NumberFormatException e) {
+          log.warn("Invalid 'Bumps' value for {}: {}", dto.getName(), bumpsObj);
+        }
+      }
+
+      // Extract IsPlayer
+      Object isPlayerObj = rawProperties.get("Player");
+      dto.setIsPlayer(isPlayerObj == null);
+
+      // Extract CreationDate
+      Object creationDateObj = rawProperties.get("Created");
+      if (creationDateObj instanceof String) {
+        dto.setCreationDate((String) creationDateObj);
+      }
+    }
     return dto;
   }
 
@@ -343,9 +383,6 @@ public class WrestlerSyncService extends BaseSyncService {
     // Always use Notion data for these fields (they're the source of truth)
     merged.setName(notion.getName());
     merged.setExternalId(notion.getExternalId());
-    merged.setHeight(notion.getHeight());
-    merged.setWeight(notion.getWeight());
-    merged.setHometown(notion.getHometown());
 
     // Smart description handling: prefer Notion if available, otherwise preserve existing
     if (notion.getDescription() != null && !notion.getDescription().trim().isEmpty()) {
@@ -365,6 +402,51 @@ public class WrestlerSyncService extends BaseSyncService {
       merged.setFaction(null);
     }
 
+    // Smart fans handling: prefer Notion if available, otherwise preserve existing
+    if (notion.getFans() != null) {
+      merged.setFans(notion.getFans());
+    } else if (existing != null && existing.getFans() != null) {
+      merged.setFans(existing.getFans());
+    } else {
+      merged.setFans(0L);
+    }
+
+    // Smart isPlayer handling: prefer Notion if available, otherwise preserve existing
+    if (notion.getIsPlayer() != null) {
+      merged.setIsPlayer(notion.getIsPlayer());
+    } else if (existing != null && existing.getIsPlayer() != null) {
+      merged.setIsPlayer(existing.getIsPlayer());
+    } else {
+      merged.setIsPlayer(false);
+    }
+
+    // Smart bumps handling: prefer Notion if available, otherwise preserve existing
+    if (notion.getBumps() != null) {
+      merged.setBumps(notion.getBumps());
+    } else if (existing != null && existing.getBumps() != null) {
+      merged.setBumps(existing.getBumps());
+    } else {
+      merged.setBumps(0);
+    }
+
+    // Smart creationDate handling: prefer Notion if available, otherwise preserve existing
+    if (notion.getCreationDate() != null && !notion.getCreationDate().trim().isEmpty()) {
+      merged.setCreationDate(notion.getCreationDate());
+    } else if (existing != null && existing.getCreationDate() != null) {
+      merged.setCreationDate(existing.getCreationDate());
+    } else {
+      merged.setCreationDate(null);
+    }
+
+    // Smart gender handling: prefer Notion if available, otherwise preserve existing
+    if (notion.getGender() != null && !notion.getGender().trim().isEmpty()) {
+      merged.setGender(notion.getGender());
+    } else if (existing != null && existing.getGender() != null) {
+      merged.setGender(existing.getGender());
+    } else {
+      merged.setGender(null);
+    }
+
     // Preserve existing game data if available, otherwise use defaults
     if (existing != null) {
       merged.setDeckSize(existing.getDeckSize());
@@ -372,10 +454,6 @@ public class WrestlerSyncService extends BaseSyncService {
       merged.setLowHealth(existing.getLowHealth());
       merged.setStartingStamina(existing.getStartingStamina());
       merged.setLowStamina(existing.getLowStamina());
-      merged.setFans(existing.getFans());
-      merged.setIsPlayer(existing.getIsPlayer());
-      merged.setBumps(existing.getBumps());
-      merged.setCreationDate(existing.getCreationDate());
     } else {
       // Set defaults for new wrestlers
       merged.setDeckSize(15);
@@ -383,12 +461,7 @@ public class WrestlerSyncService extends BaseSyncService {
       merged.setLowHealth(0);
       merged.setStartingStamina(0);
       merged.setLowStamina(0);
-      merged.setFans(0L);
-      merged.setIsPlayer(false);
-      merged.setBumps(0);
-      merged.setCreationDate(null);
     }
-
     return merged;
   }
 
@@ -444,7 +517,7 @@ public class WrestlerSyncService extends BaseSyncService {
           }
         }
 
-        // 3. Create new wrestler if no match found
+        // 3. Create new wrestler if no segment found
         if (wrestler == null) {
           wrestler = new Wrestler();
           isNewWrestler = true;
@@ -463,6 +536,14 @@ public class WrestlerSyncService extends BaseSyncService {
         // Set basic properties (always update these)
         wrestler.setName(dto.getName());
         wrestler.setExternalId(dto.getExternalId());
+
+        if (dto.getGender() != null && !dto.getGender().isBlank()) {
+          try {
+            wrestler.setGender(Gender.valueOf(dto.getGender().toUpperCase()));
+          } catch (IllegalArgumentException e) {
+            log.warn("Invalid sex value '{}' for wrestler '{}'", dto.getGender(), dto.getName());
+          }
+        }
 
         // Update description if provided
         if (dto.getDescription() != null && !dto.getDescription().trim().isEmpty()) {
@@ -546,10 +627,8 @@ public class WrestlerSyncService extends BaseSyncService {
     // Getters and setters
     private String name;
     private String description;
-    private String height;
-    private String weight;
-    private String hometown;
     private String externalId; // Notion page ID
+    private String gender;
 
     // Game-specific fields (preserved from existing data)
     private Integer deckSize;

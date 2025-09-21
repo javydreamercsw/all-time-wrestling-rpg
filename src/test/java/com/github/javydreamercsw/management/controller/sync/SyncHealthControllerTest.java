@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.test.BaseControllerTest;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncHealthSummary;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncMetric;
@@ -12,13 +13,20 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(SyncHealthController.class)
-class SyncHealthControllerTest {
+@WebMvcTest(
+    controllers = SyncHealthController.class,
+    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
+class SyncHealthControllerTest extends BaseControllerTest {
+
+  @MockitoBean private CommandLineRunner commandLineRunner;
 
   @Autowired private MockMvc mockMvc;
 

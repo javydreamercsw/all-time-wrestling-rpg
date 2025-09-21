@@ -1,0 +1,49 @@
+package com.github.javydreamercsw.management.controller.show;
+
+import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
+import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/show-planning")
+@RequiredArgsConstructor
+public class ShowPlanningController {
+
+  private final ShowPlanningService showPlanningService;
+  private final ShowPlanningAiService showPlanningAiService;
+  private final ShowService showService;
+
+  @GetMapping("/context/{showId}")
+  public ResponseEntity<ShowPlanningContextDTO> getShowPlanningContext(@PathVariable Long showId) {
+    return showService
+        .getShowById(showId)
+        .map(show -> ResponseEntity.ok(showPlanningService.getShowPlanningContext(show)))
+        .orElse(ResponseEntity.notFound().build());
+  }
+
+  @PostMapping("/plan")
+  public ResponseEntity<ProposedShow> planShow(@RequestBody ShowPlanningContextDTO context) {
+    return ResponseEntity.ok(showPlanningAiService.planShow(context));
+  }
+
+  @PostMapping("/approve/{showId}")
+  public ResponseEntity<Void> approveSegments(
+      @PathVariable Long showId, @RequestBody List<ProposedSegment> segments) {
+    showService
+        .getShowById(showId)
+        .ifPresent(show -> showPlanningService.approveSegments(show, segments));
+    return ResponseEntity.ok().build();
+  }
+}

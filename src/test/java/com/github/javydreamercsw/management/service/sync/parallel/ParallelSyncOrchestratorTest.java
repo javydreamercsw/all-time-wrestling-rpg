@@ -26,13 +26,15 @@ class ParallelSyncOrchestratorTest {
   @Mock private WrestlerSyncService wrestlerSyncService;
   @Mock private FactionSyncService factionSyncService;
   @Mock private TeamSyncService teamSyncService;
-  @Mock private MatchSyncService matchSyncService;
+  @Mock private SegmentSyncService segmentSyncService;
   @Mock private SeasonSyncService seasonSyncService;
   @Mock private ShowTypeSyncService showTypeSyncService;
   @Mock private ShowTemplateSyncService showTemplateSyncService;
   @Mock private InjurySyncService injurySyncService;
   @Mock private EntitySyncConfiguration entityConfig;
   @Mock private NpcSyncService npcSyncService;
+  @Mock private TitleSyncService titleSyncService;
+  @Mock private TitleReignSyncService titleReignSyncService;
 
   @InjectMocks private ParallelSyncOrchestrator orchestrator;
 
@@ -57,8 +59,8 @@ class ParallelSyncOrchestratorTest {
 
     // Then
     assertTrue(result.isSuccess());
-    assertEquals(10, result.getEntityResults().size());
-    assertEquals(10, result.getSuccessfulSyncs());
+    assertEquals(12, result.getEntityResults().size());
+    assertEquals(12, result.getSuccessfulSyncs());
     assertEquals(0, result.getFailedSyncs());
 
     // Verify all services were called
@@ -66,26 +68,23 @@ class ParallelSyncOrchestratorTest {
     verify(wrestlerSyncService).syncWrestlers(anyString());
     verify(factionSyncService).syncFactions(anyString());
     verify(teamSyncService).syncTeams(anyString());
-    verify(matchSyncService).syncMatches(anyString());
+    verify(segmentSyncService).syncSegments(anyString());
     verify(seasonSyncService).syncSeasons(anyString());
     verify(showTypeSyncService).syncShowTypes(anyString());
     verify(showTemplateSyncService).syncShowTemplates(anyString());
     verify(injurySyncService).syncInjuryTypes(anyString());
     verify(npcSyncService).syncNpcs(anyString());
+    verify(titleSyncService).syncTitles(anyString());
+    verify(titleReignSyncService).syncTitleReigns(anyString());
   }
 
   @Test
   void executeParallelSync_WhenSomeEntitiesDisabled_ShouldOnlyExecuteEnabled() {
     // Given
-    when(entityConfig.isEntityEnabled("shows")).thenReturn(true);
-    when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
-    when(entityConfig.isEntityEnabled("factions")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("teams")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("matches")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("seasons")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("showtypes")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("showtemplates")).thenReturn(false);
-    when(entityConfig.isEntityEnabled("injuries")).thenReturn(true);
+    lenient().when(entityConfig.isEntityEnabled(anyString())).thenReturn(false);
+    lenient().when(entityConfig.isEntityEnabled("shows")).thenReturn(true);
+    lenient().when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
+    lenient().when(entityConfig.isEntityEnabled("injuries")).thenReturn(true);
 
     when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0));
     when(wrestlerSyncService.syncWrestlers(anyString()))
@@ -109,6 +108,8 @@ class ParallelSyncOrchestratorTest {
     // Verify disabled services were not called
     verify(factionSyncService, never()).syncFactions(anyString());
     verify(teamSyncService, never()).syncTeams(anyString());
+    verify(titleSyncService, never()).syncTitles(anyString());
+    verify(titleReignSyncService, never()).syncTitleReigns(anyString());
   }
 
   @Test
@@ -124,7 +125,8 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("Factions", 3, 0));
     when(teamSyncService.syncTeams(anyString()))
         .thenReturn(SyncResult.failure("Teams", "Notion API error"));
-    when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 8, 0));
+    when(segmentSyncService.syncSegments(anyString()))
+        .thenReturn(SyncResult.success("Matches", 8, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 2, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
@@ -134,14 +136,17 @@ class ParallelSyncOrchestratorTest {
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0));
     when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0));
+    when(titleSyncService.syncTitles(anyString())).thenReturn(SyncResult.success("Titles", 5, 0));
+    when(titleReignSyncService.syncTitleReigns(anyString()))
+        .thenReturn(SyncResult.success("TitleReigns", 5, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
 
     // Then
     assertTrue(result.isSuccess()); // Overall success despite some failures
-    assertEquals(10, result.getEntityResults().size());
-    assertEquals(8, result.getSuccessfulSyncs());
+    assertEquals(12, result.getEntityResults().size());
+    assertEquals(10, result.getSuccessfulSyncs());
     assertEquals(2, result.getFailedSyncs());
   }
 
@@ -171,7 +176,8 @@ class ParallelSyncOrchestratorTest {
     when(factionSyncService.syncFactions(anyString()))
         .thenReturn(SyncResult.success("Factions", 1, 0));
     when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 1, 0));
-    when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 1, 0));
+    when(segmentSyncService.syncSegments(anyString()))
+        .thenReturn(SyncResult.success("Segments", 1, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 1, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
@@ -181,19 +187,24 @@ class ParallelSyncOrchestratorTest {
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0));
     when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 1, 0));
+    when(titleSyncService.syncTitles(anyString())).thenReturn(SyncResult.success("Titles", 1, 0));
+    when(titleReignSyncService.syncTitleReigns(anyString()))
+        .thenReturn(SyncResult.success("TitleReigns", 1, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
 
     // Then
     // The orchestrator should handle exceptions gracefully and continue with other entities
-    assertTrue(result.isSuccess()); // Overall operation succeeds
-    assertTrue(result.getEntityResults().size() > 0);
+    assertTrue(result.isSuccess()); // Overall operation fails
+    assertEquals(12, result.getEntityResults().size());
 
     // At least one entity should have failed
     long failedCount =
-        result.getEntityResults().stream().filter(r -> !r.getSyncResult().isSuccess()).count();
-    assertTrue(failedCount >= 1);
+        result.getEntityResults().stream()
+            .filter(r -> r.getSyncResult() != null && !r.getSyncResult().isSuccess())
+            .count();
+    assertEquals(1, failedCount);
   }
 
   private void setupAllEntitiesEnabled() {
@@ -211,7 +222,8 @@ class ParallelSyncOrchestratorTest {
     when(factionSyncService.syncFactions(anyString()))
         .thenReturn(SyncResult.success("Factions", 3, 0));
     when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 7, 0));
-    when(matchSyncService.syncMatches(anyString())).thenReturn(SyncResult.success("Matches", 8, 0));
+    when(segmentSyncService.syncSegments(anyString()))
+        .thenReturn(SyncResult.success("Segments", 8, 0));
     when(seasonSyncService.syncSeasons(anyString()))
         .thenReturn(SyncResult.success("Seasons", 2, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
@@ -221,5 +233,8 @@ class ParallelSyncOrchestratorTest {
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0));
     when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0));
+    when(titleSyncService.syncTitles(anyString())).thenReturn(SyncResult.success("Titles", 5, 0));
+    when(titleReignSyncService.syncTitleReigns(anyString()))
+        .thenReturn(SyncResult.success("TitleReigns", 5, 0));
   }
 }

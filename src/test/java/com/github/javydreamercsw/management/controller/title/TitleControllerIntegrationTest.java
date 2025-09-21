@@ -9,9 +9,10 @@ import com.github.javydreamercsw.management.controller.title.TitleController.Upd
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,8 @@ class TitleControllerIntegrationTest {
   @DisplayName("Should create new title successfully")
   void shouldCreateNewTitleSuccessfully() throws Exception {
     CreateTitleRequest request =
-        new CreateTitleRequest("World Championship", "The top championship", TitleTier.WORLD);
+        new CreateTitleRequest(
+            "World Championship", "The top championship", WrestlerTier.MAIN_EVENTER);
 
     mockMvc
         .perform(
@@ -64,7 +66,7 @@ class TitleControllerIntegrationTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.name").value("World Championship"))
         .andExpect(jsonPath("$.description").value("The top championship"))
-        .andExpect(jsonPath("$.tier").value("WORLD"))
+        .andExpect(jsonPath("$.tier").value("MAIN_EVENTER"))
         .andExpect(jsonPath("$.isActive").value(true))
         .andExpect(jsonPath("$.isVacant").value(true));
   }
@@ -73,11 +75,11 @@ class TitleControllerIntegrationTest {
   @DisplayName("Should prevent duplicate title names")
   void shouldPreventDuplicateTitleNames() throws Exception {
     // Create first title
-    createTestTitle("World Championship", TitleTier.WORLD);
+    createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
 
     // Try to create duplicate
     CreateTitleRequest request =
-        new CreateTitleRequest("World Championship", "Duplicate title", TitleTier.EXTREME);
+        new CreateTitleRequest("World Championship", "Duplicate title", WrestlerTier.ROOKIE);
 
     mockMvc
         .perform(
@@ -110,8 +112,8 @@ class TitleControllerIntegrationTest {
   @DisplayName("Should get all titles with pagination")
   void shouldGetAllTitlesWithPagination() throws Exception {
     // Create test titles
-    createTestTitle("World Championship", TitleTier.WORLD);
-    createTestTitle("Extreme Championship", TitleTier.EXTREME);
+    createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    createTestTitle("Extreme Championship", WrestlerTier.ROOKIE);
 
     mockMvc
         .perform(get("/api/titles").param("page", "0").param("size", "10"))
@@ -124,20 +126,21 @@ class TitleControllerIntegrationTest {
   @Test
   @DisplayName("Should get title by ID")
   void shouldGetTitleById() throws Exception {
-    Title title = createTestTitle("Test Championship", TitleTier.WORLD);
+    Title title = createTestTitle("Test Championship", WrestlerTier.MAIN_EVENTER);
 
     mockMvc
         .perform(get("/api/titles/{id}", title.getId()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.name").value("Test Championship"))
-        .andExpect(jsonPath("$.tier").value("WORLD"));
+        .andExpect(jsonPath("$.tier").value("MAIN_EVENTER"));
   }
 
   @Test
   @DisplayName("Should get active titles")
   void shouldGetActiveTitles() throws Exception {
-    Title activeTitle = createTestTitle("Active Championship", TitleTier.WORLD);
-    Title inactiveTitle = createTestTitle("Inactive Championship", TitleTier.EXTREME);
+    Title activeTitle = createTestTitle("Active Championship", WrestlerTier.MAIN_EVENTER);
+    activeTitle.setIsActive(true);
+    Title inactiveTitle = createTestTitle("Inactive Championship", WrestlerTier.ROOKIE);
     inactiveTitle.setIsActive(false);
     titleRepository.save(inactiveTitle);
 
@@ -152,12 +155,12 @@ class TitleControllerIntegrationTest {
   @Test
   @DisplayName("Should get vacant titles")
   void shouldGetVacantTitles() throws Exception {
-    Title vacantTitle = createTestTitle("Vacant Championship", TitleTier.WORLD);
-    Title heldTitle = createTestTitle("Held Championship", TitleTier.EXTREME);
+    createTestTitle("Vacant Championship", WrestlerTier.MAIN_EVENTER);
+    Title heldTitle = createTestTitle("Held Championship", WrestlerTier.ROOKIE);
 
     // Award the second title to a wrestler
     Wrestler wrestler = createTestWrestler("Champion", 120000L);
-    heldTitle.awardTitle(wrestler);
+    heldTitle.awardTitleTo(java.util.List.of(wrestler), Instant.now());
     titleRepository.save(heldTitle);
 
     mockMvc
@@ -171,12 +174,12 @@ class TitleControllerIntegrationTest {
   @Test
   @DisplayName("Should get titles by tier")
   void shouldGetTitlesByTier() throws Exception {
-    createTestTitle("World Championship", TitleTier.WORLD);
-    createTestTitle("Extreme Championship", TitleTier.EXTREME);
-    createTestTitle("Another World Title", TitleTier.WORLD);
+    createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    createTestTitle("Extreme Championship", WrestlerTier.ROOKIE);
+    createTestTitle("Another World Title", WrestlerTier.MAIN_EVENTER);
 
     mockMvc
-        .perform(get("/api/titles/tier/{tier}", TitleTier.WORLD))
+        .perform(get("/api/titles/tier/{tier}", WrestlerTier.MAIN_EVENTER))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isArray())
         .andExpect(jsonPath("$.length()").value(2));
@@ -185,20 +188,20 @@ class TitleControllerIntegrationTest {
   @Test
   @DisplayName("Should award title to eligible wrestler")
   void shouldAwardTitleToEligibleWrestler() throws Exception {
-    Title title = createTestTitle("World Championship", TitleTier.WORLD);
+    Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler wrestler = createTestWrestler("Champion", 120000L); // Eligible for World title
 
     mockMvc
         .perform(post("/api/titles/{titleId}/award/{wrestlerId}", title.getId(), wrestler.getId()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.isVacant").value(false))
-        .andExpect(jsonPath("$.currentChampion.name").value("Champion"));
+        .andExpect(jsonPath("$.currentChampions[0].name").value("Champion"));
   }
 
   @Test
   @DisplayName("Should not award title to ineligible wrestler")
   void shouldNotAwardTitleToIneligibleWrestler() throws Exception {
-    Title title = createTestTitle("World Championship", TitleTier.WORLD);
+    Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler wrestler = createTestWrestler("Rookie", 50000L); // Not eligible for World title
 
     mockMvc
@@ -210,22 +213,22 @@ class TitleControllerIntegrationTest {
   @Test
   @DisplayName("Should vacate title")
   void shouldVacateTitle() throws Exception {
-    Title title = createTestTitle("World Championship", TitleTier.WORLD);
+    Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler wrestler = createTestWrestler("Champion", 120000L);
-    title.awardTitle(wrestler);
+    title.awardTitleTo(java.util.List.of(wrestler), Instant.now());
     titleRepository.save(title);
 
     mockMvc
         .perform(post("/api/titles/{id}/vacate", title.getId()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.isVacant").value(true))
-        .andExpect(jsonPath("$.currentChampion").doesNotExist());
+        .andExpect(jsonPath("$.currentChampions").isEmpty());
   }
 
   @Test
   @DisplayName("Should handle successful title challenge")
   void shouldHandleSuccessfulTitleChallenge() throws Exception {
-    Title title = createTestTitle("World Championship", TitleTier.WORLD);
+    Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler challenger = createTestWrestler("Challenger", 120000L); // Has enough fans
 
     mockMvc
@@ -239,7 +242,7 @@ class TitleControllerIntegrationTest {
   @Test
   @DisplayName("Should handle failed title challenge")
   void shouldHandleFailedTitleChallenge() throws Exception {
-    Title title = createTestTitle("World Championship", TitleTier.WORLD);
+    Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler challenger = createTestWrestler("Poor Challenger", 50000L); // Not eligible
 
     mockMvc
@@ -253,9 +256,9 @@ class TitleControllerIntegrationTest {
   @Test
   @DisplayName("Should get eligible challengers")
   void shouldGetEligibleChallengers() throws Exception {
-    Title title = createTestTitle("World Championship", TitleTier.WORLD);
-    Wrestler eligible = createTestWrestler("Eligible", 120000L);
-    Wrestler ineligible = createTestWrestler("Ineligible", 50000L);
+    Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    createTestWrestler("Eligible", 120000L);
+    createTestWrestler("Ineligible", 50000L);
 
     mockMvc
         .perform(get("/api/titles/{id}/eligible-challengers", title.getId()))
@@ -269,11 +272,11 @@ class TitleControllerIntegrationTest {
   @DisplayName("Should get titles held by wrestler")
   void shouldGetTitlesHeldByWrestler() throws Exception {
     Wrestler wrestler = createTestWrestler("Champion", 120000L);
-    Title title1 = createTestTitle("World Championship", TitleTier.WORLD);
-    Title title2 = createTestTitle("Extreme Championship", TitleTier.EXTREME);
+    Title title1 = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    Title title2 = createTestTitle("Extreme Championship", WrestlerTier.ROOKIE);
 
-    title1.awardTitle(wrestler);
-    title2.awardTitle(wrestler);
+    title1.awardTitleTo(java.util.List.of(wrestler), Instant.now());
+    title2.awardTitleTo(java.util.List.of(wrestler), Instant.now());
     titleRepository.save(title1);
     titleRepository.save(title2);
 
@@ -287,7 +290,7 @@ class TitleControllerIntegrationTest {
   @Test
   @DisplayName("Should update title")
   void shouldUpdateTitle() throws Exception {
-    Title title = createTestTitle("Original Name", TitleTier.WORLD);
+    Title title = createTestTitle("Original Name", WrestlerTier.MAIN_EVENTER);
 
     UpdateTitleRequest request =
         new UpdateTitleRequest("Updated Name", "Updated description", false);
@@ -306,9 +309,8 @@ class TitleControllerIntegrationTest {
   @Test
   @DisplayName("Should delete inactive vacant title")
   void shouldDeleteInactiveVacantTitle() throws Exception {
-    Title title = createTestTitle("Test Title", TitleTier.WORLD);
+    Title title = createTestTitle("Test Title", WrestlerTier.MAIN_EVENTER);
     title.setIsActive(false);
-    title.setIsVacant(true);
     titleRepository.save(title);
 
     mockMvc.perform(delete("/api/titles/{id}", title.getId())).andExpect(status().isNoContent());
@@ -317,7 +319,7 @@ class TitleControllerIntegrationTest {
   @Test
   @DisplayName("Should not delete active title")
   void shouldNotDeleteActiveTitle() throws Exception {
-    Title title = createTestTitle("Active Title", TitleTier.WORLD);
+    Title title = createTestTitle("Active Title", WrestlerTier.MAIN_EVENTER);
 
     mockMvc.perform(delete("/api/titles/{id}", title.getId())).andExpect(status().isConflict());
   }
@@ -325,25 +327,24 @@ class TitleControllerIntegrationTest {
   @Test
   @DisplayName("Should get title statistics")
   void shouldGetTitleStatistics() throws Exception {
-    Title title = createTestTitle("Test Championship", TitleTier.WORLD);
+    Title title = createTestTitle("Test Championship", WrestlerTier.MAIN_EVENTER);
 
     mockMvc
         .perform(get("/api/titles/{id}/stats", title.getId()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.titleId").value(title.getId()))
         .andExpect(jsonPath("$.name").value("Test Championship"))
-        .andExpect(jsonPath("$.tier").value("WORLD"))
+        .andExpect(jsonPath("$.tier").value("MAIN_EVENTER"))
         .andExpect(jsonPath("$.isVacant").value(true))
         .andExpect(jsonPath("$.isActive").value(true));
   }
 
-  private Title createTestTitle(String name, TitleTier tier) {
+  private Title createTestTitle(String name, WrestlerTier tier) {
     Title title = new Title();
     title.setName(name);
     title.setDescription("Test description");
     title.setTier(tier);
     title.setIsActive(true);
-    title.setIsVacant(true);
     return titleRepository.save(title);
   }
 

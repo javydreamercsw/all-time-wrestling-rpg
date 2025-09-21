@@ -6,13 +6,21 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -36,6 +44,14 @@ class DataInitializerTest {
 
   @Autowired private ShowService showService;
 
+  @Autowired private TitleService titleService;
+
+  @Autowired private SegmentRuleService segmentRuleService;
+
+  @Autowired private ShowTemplateService showTemplateService;
+
+  @Autowired private SegmentTypeService segmentTypeService;
+
   @Test
   void testDataLoadedFromFile() {
     List<Card> cards = cardService.findAll();
@@ -44,6 +60,10 @@ class DataInitializerTest {
     List<Deck> decks = deckService.findAll();
     List<ShowType> showTypes = showTypeService.findAll();
     List<Show> shows = showService.findAll();
+    List<Title> titles = titleService.findAll();
+    List<SegmentRule> segmentRules = segmentRuleService.findAll();
+    List<ShowTemplate> showTemplates = showTemplateService.findAll();
+    List<SegmentType> segmentTypes = segmentTypeService.findAll();
 
     // Check that cards and sets are loaded
     assertThat(cards).isNotEmpty();
@@ -51,6 +71,10 @@ class DataInitializerTest {
     assertThat(wrestlers).isNotEmpty();
     assertThat(decks).isNotEmpty();
     assertThat(showTypes).isNotEmpty();
+    assertThat(titles).isNotEmpty();
+    assertThat(segmentRules).isNotEmpty();
+    assertThat(showTemplates).isNotEmpty();
+    assertThat(segmentTypes).isNotEmpty();
     // Note: shows.json is empty, so we don't expect shows to be loaded from file
     // Shows are typically created through the booking service or Notion sync
     assertThat(shows).isEmpty(); // Changed expectation since shows.json is empty

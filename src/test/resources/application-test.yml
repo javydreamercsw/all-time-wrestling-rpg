@@ -1,4 +1,4 @@
-# Test configuration for match narration system
+# Test configuration for segment narration system
 # Ensures tests run with mock AI provider and don't require external API keys
 
 spring:

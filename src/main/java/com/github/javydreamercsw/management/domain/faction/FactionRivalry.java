@@ -67,6 +67,14 @@ public class FactionRivalry extends AbstractEntity<Long> {
     return id;
   }
 
+  public Instant getStartedDate() {
+    return startedDate;
+  }
+
+  public Instant getEndedDate() {
+    return endedDate;
+  }
+
   @PrePersist
   protected void onCreate() {
     if (creationDate == null) {
@@ -93,8 +101,8 @@ public class FactionRivalry extends AbstractEntity<Long> {
     heatEvents.add(event);
   }
 
-  /** Check if factions must have matches at next show (10+ heat). */
-  public boolean mustHaveMatchesNextShow() {
+  /** Check if factions must have segments at next show (10+ heat). */
+  public boolean mustHaveSegmentsNextShow() {
     return isActive && heat >= 10;
   }
 
@@ -103,8 +111,8 @@ public class FactionRivalry extends AbstractEntity<Long> {
     return isActive && heat >= 20;
   }
 
-  /** Check if rivalry requires stipulation match (30+ heat). */
-  public boolean requiresStipulationMatch() {
+  /** Check if rivalry requires rule segment (30+ heat). */
+  public boolean requiresStipulationSegment() {
     return isActive && heat >= 30;
   }
 

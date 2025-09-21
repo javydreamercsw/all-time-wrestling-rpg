@@ -4,7 +4,7 @@ import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_M
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
@@ -15,7 +15,7 @@ import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Represents a storyline branch that can be triggered by match outcomes. This allows for dynamic
+ * Represents a storyline branch that can be triggered by segment outcomes. This allows for dynamic
  * storyline development based on who wins/loses matches.
  */
 @Entity
@@ -54,11 +54,11 @@ public class StorylineBranch extends AbstractEntity<Long> {
   @Column(name = "completed_date")
   private Instant completedDate;
 
-  // The match result that triggered this branch (if applicable)
+  // The segment result that triggered this branch (if applicable)
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "triggering_match_id")
+  @JoinColumn(name = "triggering_segment_id")
   @JsonIgnoreProperties({"participants", "show"})
-  private MatchResult triggeringMatch;
+  private Segment triggeringSegment;
 
   // Conditions that must be met for this branch to activate
   @OneToMany(mappedBy = "storylineBranch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -106,12 +106,12 @@ public class StorylineBranch extends AbstractEntity<Long> {
   }
 
   /** Activate this storyline branch. */
-  public void activate(MatchResult triggeringMatch) {
+  public void activate(Segment triggeringSegment) {
     if (!isActive || activatedDate != null) {
       return; // Already activated or inactive
     }
 
-    this.triggeringMatch = triggeringMatch;
+    this.triggeringSegment = triggeringSegment;
     this.activatedDate = Instant.now();
 
     // Execute all effects

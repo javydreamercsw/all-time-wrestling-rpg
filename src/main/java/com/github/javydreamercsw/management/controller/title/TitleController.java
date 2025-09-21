@@ -1,8 +1,8 @@
 package com.github.javydreamercsw.management.controller.title;
 
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -99,7 +99,7 @@ public class TitleController {
       summary = "Get titles by tier",
       description = "Retrieves all active titles of a specific tier")
   @GetMapping("/tier/{tier}")
-  public ResponseEntity<List<Title>> getTitlesByTier(@PathVariable TitleTier tier) {
+  public ResponseEntity<List<Title>> getTitlesByTier(@PathVariable WrestlerTier tier) {
     List<Title> titles = titleService.getTitlesByTier(tier);
     return ResponseEntity.ok(titles);
   }
@@ -115,14 +115,15 @@ public class TitleController {
   public ResponseEntity<Object> awardTitle(
       @PathVariable Long titleId, @PathVariable Long wrestlerId) {
     Optional<Title> title = titleService.awardTitle(titleId, wrestlerId);
-    if (title.isPresent()) {
-      return ResponseEntity.ok(title.get());
-    } else {
-      return ResponseEntity.badRequest()
-          .body(
-              new ErrorResponse(
-                  "Cannot award title - wrestler may not be eligible or entities not found"));
-    }
+    return title
+        .<ResponseEntity<Object>>map(ResponseEntity::ok)
+        .orElseGet(
+            () ->
+                ResponseEntity.badRequest()
+                    .body(
+                        new ErrorResponse(
+                            "Cannot award title - wrestler may not be eligible or entities not"
+                                + " found")));
   }
 
   @Operation(summary = "Vacate title", description = "Vacates a title (removes current champion)")
@@ -211,7 +212,7 @@ public class TitleController {
   public record CreateTitleRequest(
       @NotBlank(message = "Title name is required") @Size(max = 255, message = "Title name must not exceed 255 characters") String name,
       @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
-      @NotNull(message = "Title tier is required") TitleTier tier) {}
+      @NotNull(message = "Title tier is required") WrestlerTier tier) {}
 
   public record UpdateTitleRequest(
       @Size(max = 255, message = "Title name must not exceed 255 characters") String name,

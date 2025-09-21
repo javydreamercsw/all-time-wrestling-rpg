@@ -2,7 +2,6 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,8 +11,8 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.InjurySyncService;
-import com.github.javydreamercsw.management.service.sync.entity.MatchSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.SeasonSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.SegmentSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTemplateSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTypeSyncService;
@@ -34,14 +33,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class NotionSyncServiceTest extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;
-  @Mock private NotionSyncProperties syncProperties;
+  private NotionSyncProperties syncProperties; // Declare as a real instance
 
   // Mock entity-specific sync services
   @Mock private ShowSyncService showSyncService;
   @Mock private WrestlerSyncService wrestlerSyncService;
   @Mock private FactionSyncService factionSyncService;
   @Mock private TeamSyncService teamSyncService;
-  @Mock private MatchSyncService matchSyncService;
+  @Mock private SegmentSyncService segmentSyncService;
   @Mock private SeasonSyncService seasonSyncService;
   @Mock private ShowTypeSyncService showTypeSyncService;
   @Mock private ShowTemplateSyncService showTemplateSyncService;
@@ -49,21 +48,37 @@ class NotionSyncServiceTest extends BaseTest {
 
   // Mock parallel sync components
   @Mock private ParallelSyncOrchestrator parallelSyncOrchestrator;
-  @Mock private EntitySyncConfiguration entitySyncConfiguration;
+  // @Mock private EntitySyncConfiguration entitySyncConfiguration; // Removed mock
 
   private NotionSyncService notionSyncService;
 
   @BeforeEach
   void setUp() throws Exception {
+    // Instantiate a real NotionSyncProperties
+    syncProperties = new NotionSyncProperties();
+    syncProperties.setParallelThreads(1); // Explicitly set for test consistency
+
     // Create the service with constructor injection
     notionSyncService = new NotionSyncService(objectMapper, syncProperties);
+
+    // Create and configure a real EntitySyncConfiguration instance
+    EntitySyncConfiguration entitySyncConfiguration = new EntitySyncConfiguration();
+    entitySyncConfiguration.getDefaults().setEnabled(true);
+    entitySyncConfiguration.getDefaults().setBatchSize(50);
+    entitySyncConfiguration.getDefaults().setParallelProcessing(true);
+    entitySyncConfiguration.getDefaults().setMaxThreads(4);
+    entitySyncConfiguration.getDefaults().setTimeoutSeconds(300);
+    entitySyncConfiguration.getDefaults().setRetryAttempts(3);
+    entitySyncConfiguration.getDefaults().setRetryDelayMs(1000);
+    entitySyncConfiguration.getDefaults().setValidationEnabled(true);
+    entitySyncConfiguration.getDefaults().setSkipOnError(true);
 
     // Inject the mocked sync services using reflection
     setField(notionSyncService, "showSyncService", showSyncService);
     setField(notionSyncService, "wrestlerSyncService", wrestlerSyncService);
     setField(notionSyncService, "factionSyncService", factionSyncService);
     setField(notionSyncService, "teamSyncService", teamSyncService);
-    setField(notionSyncService, "matchSyncService", matchSyncService);
+    setField(notionSyncService, "segmentSyncService", segmentSyncService);
     setField(notionSyncService, "seasonSyncService", seasonSyncService);
     setField(notionSyncService, "showTypeSyncService", showTypeSyncService);
     setField(notionSyncService, "showTemplateSyncService", showTemplateSyncService);
@@ -199,15 +214,15 @@ class NotionSyncServiceTest extends BaseTest {
   void shouldDelegateMatchesSyncToMatchSyncService() {
     // Given
     String testOperationId = "my-test-operation-id";
-    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Matches", 15, 3);
-    when(matchSyncService.syncMatches(testOperationId + "-matches")).thenReturn(mockResult);
+    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Segments", 15, 3);
+    when(segmentSyncService.syncSegments(testOperationId + "-matches")).thenReturn(mockResult);
 
     // When
-    BaseSyncService.SyncResult result = notionSyncService.syncMatches(testOperationId);
+    BaseSyncService.SyncResult result = notionSyncService.syncSegments(testOperationId);
 
     // Then
     assertThat(result).isEqualTo(mockResult);
-    verify(matchSyncService).syncMatches(testOperationId + "-matches");
+    verify(segmentSyncService).syncSegments(testOperationId + "-matches");
   }
 
   // ==================== SEASONS SYNC TESTS ====================

@@ -2,9 +2,11 @@ package com.github.javydreamercsw.management.domain.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,12 +18,13 @@ class TitleTest {
   private Title title;
   private Wrestler wrestler1;
   private Wrestler wrestler2;
+  private static long wrestlerIdCounter = 1L;
 
   @BeforeEach
   void setUp() {
     title = new Title();
     title.setName("Test Championship");
-    title.setTier(TitleTier.WORLD);
+    title.setTier(WrestlerTier.MAIN_EVENTER);
     title.setDescription("Test title for unit tests");
 
     wrestler1 = createWrestler("Wrestler 1", 120000L);
@@ -34,55 +37,55 @@ class TitleTest {
     Title newTitle = new Title();
 
     assertThat(newTitle.getIsActive()).isTrue();
-    assertThat(newTitle.getIsVacant()).isTrue();
-    assertThat(newTitle.getCurrentChampion()).isNull();
-    assertThat(newTitle.getTitleHistory()).isEmpty();
+    assertThat(newTitle.isVacant()).isTrue();
+    assertThat(newTitle.getCurrentChampions()).isEmpty();
+    assertThat(newTitle.getTitleReigns()).isEmpty();
   }
 
   @Test
   @DisplayName("Should award title to new champion")
   void shouldAwardTitleToNewChampion() {
-    // Initially vacant
-    assertThat(title.getIsVacant()).isTrue();
-    assertThat(title.getCurrentChampion()).isNull();
+    assertThat(title.isVacant()).isTrue();
+    assertThat(title.getCurrentChampions()).isEmpty();
 
-    Instant beforeAward = Instant.now();
-    title.awardTitle(wrestler1);
-    Instant afterAward = Instant.now();
+    Instant awardTime = Instant.now();
+    title.awardTitleTo(List.of(wrestler1), awardTime);
 
     // Title should now be held
-    assertThat(title.getIsVacant()).isFalse();
-    assertThat(title.getCurrentChampion()).isEqualTo(wrestler1);
-    assertThat(title.getTitleWonDate()).isBetween(beforeAward, afterAward);
+    assertThat(title.isVacant()).isFalse();
+    assertThat(title.getCurrentChampions()).containsExactly(wrestler1);
 
     // Should create title reign
-    assertThat(title.getTitleHistory()).hasSize(1);
-    TitleReign reign = title.getTitleHistory().get(0);
-    assertThat(reign.getChampion()).isEqualTo(wrestler1);
+    assertThat(title.getTitleReigns()).hasSize(1);
+    TitleReign reign = title.getTitleReigns().iterator().next();
+    assertThat(reign.getChampions()).containsExactly(wrestler1);
     assertThat(reign.getTitle()).isEqualTo(title);
     assertThat(reign.isCurrentReign()).isTrue();
+    assertThat(reign.getStartDate()).isEqualTo(awardTime);
   }
 
   @Test
   @DisplayName("Should transfer title between champions")
   void shouldTransferTitleBetweenChampions() {
     // Award to first champion
-    title.awardTitle(wrestler1);
+    Instant firstAwardTime = Instant.now();
+    title.awardTitleTo(List.of(wrestler1), firstAwardTime);
     TitleReign firstReign = title.getCurrentReign().orElseThrow();
 
     // Award to second champion
-    title.awardTitle(wrestler2);
+    Instant secondAwardTime = Instant.now().plusSeconds(60);
+    title.awardTitleTo(List.of(wrestler2), secondAwardTime);
 
     // First reign should be ended
     assertThat(firstReign.isCurrentReign()).isFalse();
-    assertThat(firstReign.getEndDate()).isNotNull();
+    assertThat(firstReign.getEndDate()).isEqualTo(secondAwardTime);
 
     // Second reign should be current
-    assertThat(title.getCurrentChampion()).isEqualTo(wrestler2);
-    assertThat(title.getTitleHistory()).hasSize(2);
+    assertThat(title.getCurrentChampions()).containsExactly(wrestler2);
+    assertThat(title.getTitleReigns()).hasSize(2);
 
     TitleReign currentReign = title.getCurrentReign().orElseThrow();
-    assertThat(currentReign.getChampion()).isEqualTo(wrestler2);
+    assertThat(currentReign.getChampions()).containsExactly(wrestler2);
     assertThat(currentReign.isCurrentReign()).isTrue();
   }
 
@@ -90,16 +93,15 @@ class TitleTest {
   @DisplayName("Should vacate title properly")
   void shouldVacateTitleProperly() {
     // Award title first
-    title.awardTitle(wrestler1);
+    title.awardTitleTo(List.of(wrestler1), Instant.now());
     TitleReign reign = title.getCurrentReign().orElseThrow();
 
     // Vacate title
     title.vacateTitle();
 
     // Title should be vacant
-    assertThat(title.getIsVacant()).isTrue();
-    assertThat(title.getCurrentChampion()).isNull();
-    assertThat(title.getTitleWonDate()).isNull();
+    assertThat(title.isVacant()).isTrue();
+    assertThat(title.getCurrentChampions()).isEmpty();
 
     // Reign should be ended
     assertThat(reign.isCurrentReign()).isFalse();
@@ -113,13 +115,10 @@ class TitleTest {
     assertThat(title.getCurrentReignDays()).isEqualTo(0);
 
     // Award title
-    title.awardTitle(wrestler1);
+    Instant awardTime = Instant.now().minus(1, ChronoUnit.DAYS);
+    title.awardTitleTo(List.of(wrestler1), awardTime);
 
-    // Should be 0 days (same day)
-    assertThat(title.getCurrentReignDays()).isEqualTo(0);
-
-    // Simulate title won yesterday
-    title.setTitleWonDate(Instant.now().minusSeconds(24 * 60 * 60));
+    // Should be 1 day
     assertThat(title.getCurrentReignDays()).isEqualTo(1);
   }
 
@@ -128,20 +127,20 @@ class TitleTest {
   void shouldCountTotalReigns() {
     assertThat(title.getTotalReigns()).isEqualTo(0);
 
-    title.awardTitle(wrestler1);
+    title.awardTitleTo(List.of(wrestler1), Instant.now());
     assertThat(title.getTotalReigns()).isEqualTo(1);
 
-    title.awardTitle(wrestler2);
+    title.awardTitleTo(List.of(wrestler2), Instant.now());
     assertThat(title.getTotalReigns()).isEqualTo(2);
 
     title.vacateTitle();
-    assertThat(title.getTotalReigns()).isEqualTo(2); // Vacating doesn't add reign
+    assertThat(title.getTotalReigns()).isEqualTo(2); // Vacating doesn't add a new reign
   }
 
   @Test
   @DisplayName("Should check wrestler eligibility")
   void shouldCheckWrestlerEligibility() {
-    title.setTier(TitleTier.WORLD); // Requires 100k fans
+    title.setTier(WrestlerTier.MAIN_EVENTER); // Requires 100k fans
 
     Wrestler eligibleWrestler = createWrestler("Eligible", 120000L);
     Wrestler ineligibleWrestler = createWrestler("Ineligible", 50000L);
@@ -153,12 +152,12 @@ class TitleTest {
   @Test
   @DisplayName("Should get challenge costs from tier")
   void shouldGetChallengeCostsFromTier() {
-    title.setTier(TitleTier.EXTREME);
-    assertThat(title.getChallengeCost()).isEqualTo(15000L);
+    title.setTier(WrestlerTier.CONTENDER);
+    assertThat(title.getChallengeCost()).isEqualTo(40000L);
     assertThat(title.getContenderEntryFee()).isEqualTo(15000L);
 
-    title.setTier(TitleTier.WORLD);
-    assertThat(title.getChallengeCost()).isEqualTo(15000L);
+    title.setTier(WrestlerTier.MAIN_EVENTER);
+    assertThat(title.getChallengeCost()).isEqualTo(100000L);
     assertThat(title.getContenderEntryFee()).isEqualTo(15000L);
   }
 
@@ -170,7 +169,7 @@ class TitleTest {
     assertThat(title.getDisplayName()).isEqualTo("World Championship (Vacant)");
 
     // Title with champion
-    title.awardTitle(wrestler1);
+    title.awardTitleTo(List.of(wrestler1), Instant.now());
     assertThat(title.getDisplayName()).isEqualTo("World Championship (Champion: Wrestler 1)");
   }
 
@@ -179,11 +178,10 @@ class TitleTest {
   void shouldShowStatusEmojis() {
     // Active vacant title
     title.setIsActive(true);
-    title.setIsVacant(true);
     assertThat(title.getStatusEmoji()).isEqualTo("👑❓");
 
     // Active title with champion
-    title.awardTitle(wrestler1);
+    title.awardTitleTo(List.of(wrestler1), Instant.now());
     assertThat(title.getStatusEmoji()).isEqualTo("👑");
 
     // Inactive title
@@ -195,23 +193,22 @@ class TitleTest {
   @DisplayName("Should handle multiple title changes")
   void shouldHandleMultipleTitleChanges() {
     // Award to wrestler1
-    title.awardTitle(wrestler1);
+    title.awardTitleTo(List.of(wrestler1), Instant.now());
     assertThat(title.getTotalReigns()).isEqualTo(1);
 
     // Award to wrestler2
-    title.awardTitle(wrestler2);
+    title.awardTitleTo(List.of(wrestler2), Instant.now());
     assertThat(title.getTotalReigns()).isEqualTo(2);
 
     // Award back to wrestler1 (second reign)
-    title.awardTitle(wrestler1);
+    title.awardTitleTo(List.of(wrestler1), Instant.now());
     assertThat(title.getTotalReigns()).isEqualTo(3);
 
     // Verify current champion
-    assertThat(title.getCurrentChampion()).isEqualTo(wrestler1);
+    assertThat(title.getCurrentChampions()).containsExactly(wrestler1);
 
     // Verify only one current reign
-    long currentReigns =
-        title.getTitleHistory().stream().filter(TitleReign::isCurrentReign).count();
+    long currentReigns = title.getTitleReigns().stream().filter(TitleReign::isCurrentReign).count();
     assertThat(currentReigns).isEqualTo(1);
   }
 
@@ -219,19 +216,29 @@ class TitleTest {
   @DisplayName("Should handle vacating already vacant title")
   void shouldHandleVacatingAlreadyVacantTitle() {
     // Title is vacant by default
-    assertThat(title.getIsVacant()).isTrue();
+    assertThat(title.isVacant()).isTrue();
 
     // Vacating vacant title should not cause issues
     title.vacateTitle();
 
-    assertThat(title.getIsVacant()).isTrue();
-    assertThat(title.getCurrentChampion()).isNull();
-    assertThat(title.getTitleHistory()).isEmpty();
+    assertThat(title.isVacant()).isTrue();
+    assertThat(title.getCurrentChampions()).isEmpty();
+    assertThat(title.getTitleReigns()).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should return champion from champion field directly")
+  void shouldReturnChampionFromChampionFieldDirectly() {
+    // Set champion directly, without creating a reign
+    title.setChampion(List.of(wrestler1));
+
+    // The getCurrentChampions method should now return the champion
+    assertThat(title.getCurrentChampions()).containsExactly(wrestler1);
   }
 
   private Wrestler createWrestler(String name, Long fans) {
     Wrestler wrestler = new Wrestler();
-    wrestler.setId(System.nanoTime()); // Unique ID for testing
+    wrestler.setId(wrestlerIdCounter++);
     wrestler.setName(name);
     wrestler.setFans(fans);
     wrestler.setStartingHealth(15);

@@ -159,10 +159,7 @@ public class SeasonManagementScheduler {
             stats.totalShows(),
             stats.regularShows(),
             stats.ppvShows());
-        log.info(
-            "Matches: {} total (Avg Rating: {})",
-            stats.totalMatches(),
-            String.format("%.1f", stats.averageMatchRating()));
+        log.info("Matches: {} total", stats.totalMatches());
         log.info("Wrestlers: {} unique", stats.uniqueWrestlers());
         log.info("Most Active: {}", stats.mostActiveWrestler());
         log.info("Most Successful: {}", stats.mostSuccessfulWrestler());
@@ -202,11 +199,10 @@ public class SeasonManagementScheduler {
     if (result.isPresent()) {
       ShowBookingService.ShowStatistics stats = result.get();
       log.info(
-          "Booked regular show '{}' - {} matches, {} wrestlers, avg rating: {}",
+          "Booked regular show '{}' - {} matches, {} wrestlers",
           showName,
-          stats.totalMatches(),
-          stats.totalWrestlers(),
-          String.format("%.1f", stats.averageRating()));
+          stats.totalSegments(),
+          stats.totalWrestlers());
     } else {
       log.warn("Failed to book regular show '{}'", showName);
     }
@@ -225,11 +221,10 @@ public class SeasonManagementScheduler {
     if (result.isPresent()) {
       ShowBookingService.ShowStatistics stats = result.get();
       log.info(
-          "Booked PPV '{}' - {} matches, {} wrestlers, avg rating: {}",
+          "Booked PPV '{}' - {} matches, {} wrestlers",
           ppvName,
-          stats.totalMatches(),
-          stats.totalWrestlers(),
-          String.format("%.1f", stats.averageRating()));
+          stats.totalSegments(),
+          stats.totalWrestlers());
     } else {
       log.warn("Failed to book PPV '{}'", ppvName);
     }
@@ -261,10 +256,9 @@ public class SeasonManagementScheduler {
     statsOpt.ifPresent(
         stats ->
             log.info(
-                "Season Health Check - '{}': {} shows, {} avg rating, {} days running",
+                "Season Health Check - '{}': {} shows, {} days running",
                 stats.seasonName(),
                 stats.totalShows(),
-                String.format("%.1f", stats.averageMatchRating()),
                 stats.durationDays()));
   }
 

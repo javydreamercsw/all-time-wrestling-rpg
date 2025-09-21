@@ -39,7 +39,7 @@ class WrestlerSyncServiceTest {
   @Mock private WrestlerService wrestlerService;
 
   @Mock private NotionHandler notionHandler;
-  @Mock private NotionSyncProperties syncProperties;
+  private final NotionSyncProperties syncProperties; // Declare without @Mock
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private ObjectMapper objectMapper;
@@ -47,12 +47,17 @@ class WrestlerSyncServiceTest {
 
   private WrestlerSyncService wrestlerSyncService;
 
+  // Constructor to configure the mock before setUp()
+  public WrestlerSyncServiceTest() {
+    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+  }
+
   @BeforeEach
   void setUp() {
     wrestlerSyncService = new WrestlerSyncService(objectMapper, syncProperties);
     injectMockDependencies();
-
-    when(syncProperties.isEntityEnabled("wrestlers")).thenReturn(true);
   }
 
   private void injectMockDependencies() {

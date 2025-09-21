@@ -27,7 +27,7 @@
     <java.version>17</java.version>
     <surefireArgLine/>
     <testcontainers.version>1.21.3</testcontainers.version>
-    <vaadin.version>24.8.6</vaadin.version>
+    <vaadin.version>24.9.0</vaadin.version>
   </properties>
 
   <dependencyManagement>
@@ -42,7 +42,7 @@
       <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
-        <version>1.18.38</version>
+        <version>1.18.42</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
@@ -87,6 +87,7 @@
       <!-- Replace with the database you will be using in production -->
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
+      <version>2.3.232</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -106,6 +107,10 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -159,6 +164,14 @@
       <artifactId>failsafe</artifactId>
       <version>3.3.2</version>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-cache</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
   </dependencies>
 
   <repositories>
@@ -181,7 +194,7 @@
             <path>
               <groupId>org.projectlombok</groupId>
               <artifactId>lombok</artifactId>
-              <version>1.18.38</version>
+              <version>1.18.42</version>
             </path>
           </annotationProcessorPaths>
         </configuration>
@@ -215,6 +228,18 @@
             -Djdk.instrument.traceUsage=false
             -javaagent:${org.mockito:mockito-core:jar}</argLine>
         </configuration>
+        <executions>
+          <execution>
+            <id>pre-integration-test</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <test>**/run-data-initializer.sh</test>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
@@ -228,7 +253,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>2.44.5</version>
+        <version>2.46.1</version>
         <configuration>
           <!-- optional: limit format enforcement to just the files changed by this feature branch
               <ratchetFrom>origin/master</ratchetFrom>-->
@@ -433,7 +458,7 @@
       </build>
     </profile>
     <profile>
-      <id>covergae</id>
+      <id>coverage</id>
       <build>
         <plugins>
           <!-- JaCoCo Code Coverage Plugin -->
@@ -486,6 +511,7 @@
                 </goals>
                 <configuration>
                   <propertyName>surefireArgLine</propertyName>
+                  <destFile>${project.build.directory}/jacoco.exec</destFile>
                 </configuration>
               </execution>
 
@@ -497,6 +523,7 @@
                 </goals>
                 <configuration>
                   <propertyName>failsafeArgLine</propertyName>
+                  <destFile>${project.build.directory}/jacoco-it.exec</destFile>
                 </configuration>
               </execution>
 
@@ -604,6 +631,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
+              <skip>true</skip>
               <!-- Disable parallel execution for integration tests -->
               <parallel>none</parallel>
               <threadCount>1</threadCount>
@@ -629,6 +657,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
+              <argLine>${failsafeArgLine}</argLine>
               <trimStackTrace>false</trimStackTrace>
               <enableAssertions>true</enableAssertions>
               <!-- Sequential execution for integration tests -->
@@ -646,15 +675,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-
-    <!-- Coverage Profile - Enables coverage verification -->
-    <profile>
-      <id>coverage</id>
-      <properties>
-        <!-- Enable coverage verification for this profile -->
-        <jacoco.skip>false</jacoco.skip>
-      </properties>
     </profile>
   </profiles>
 </project>

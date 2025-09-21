@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
 import com.github.javydreamercsw.management.service.sync.DataIntegrityChecker;
@@ -44,11 +45,13 @@ public abstract class BaseSyncService {
   protected final ObjectMapper objectMapper;
   protected final NotionSyncProperties syncProperties;
 
+  @Autowired protected EntitySyncConfiguration entitySyncConfig;
+
   // Session-based tracking to prevent duplicate syncing during batch operations
   private final ThreadLocal<Set<String>> currentSyncSession = ThreadLocal.withInitial(HashSet::new);
 
   // Controlled parallelism executor for all sync operations
-  private final ExecutorService syncExecutorService = Executors.newFixedThreadPool(3);
+  private final ExecutorService syncExecutorService;
 
   // Optional NotionHandler for integration tests
   @Autowired(required = false)
@@ -64,9 +67,21 @@ public abstract class BaseSyncService {
   @Autowired public DataIntegrityChecker integrityChecker;
   @Autowired public NotionRateLimitService rateLimitService;
 
-  protected BaseSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
+  protected BaseSyncService(
+      @NonNull ObjectMapper objectMapper, @NonNull NotionSyncProperties syncProperties) {
     this.objectMapper = objectMapper;
     this.syncProperties = syncProperties;
+    this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
+  }
+
+  /**
+   * Gets the effective sync settings for a specific entity type.
+   *
+   * @param entityType The entity type (e.g., "rivalries")
+   * @return The effective sync settings for the entity.
+   */
+  protected EntitySyncConfiguration.EntitySyncSettings getSyncSettings(@NonNull String entityType) {
+    return entitySyncConfig.getEffectiveSettings(entityType);
   }
 
   /**
@@ -297,24 +312,6 @@ public abstract class BaseSyncService {
   }
 
   /**
-   * Execute a sync operation with full resilience patterns: circuit breaker, retry, and rate
-   * limiting.
-   */
-  protected <T> T executeResilientSync(
-      String entityType, String operationId, Function<Integer, T> syncOperation) throws Exception {
-    return circuitBreakerService.execute(
-        entityType,
-        () ->
-            retryService.executeWithRetry(
-                entityType,
-                (int attemptNumber) -> {
-                  log.debug("🔄 {} sync attempt {} starting", entityType, attemptNumber);
-                  rateLimitService.acquirePermit();
-                  return syncOperation.apply(attemptNumber);
-                }));
-  }
-
-  /**
    * Process a list of items with controlled parallel processing and rate limiting.
    *
    * @param items List of items to process
@@ -332,6 +329,18 @@ public abstract class BaseSyncService {
       String operationId,
       int progressStep,
       String description) {
+    return processWithControlledParallelism(
+        items, processor, batchSize, operationId, progressStep, description, null);
+  }
+
+  protected <T, R> List<R> processWithControlledParallelism(
+      List<T> items,
+      Function<T, R> processor,
+      int batchSize,
+      String operationId,
+      int progressStep,
+      String description,
+      java.util.function.Consumer<String> messageConsumer) {
 
     if (items.isEmpty()) {
       return List.of();
@@ -361,10 +370,14 @@ public abstract class BaseSyncService {
                               return processor.apply(item);
                             } catch (InterruptedException e) {
                               Thread.currentThread().interrupt();
-                              log.error("Interrupted while processing item");
+                              String msg = "Interrupted while processing item";
+                              log.error(msg);
+                              if (messageConsumer != null) messageConsumer.accept(msg);
                               throw new RuntimeException("Processing interrupted", e);
                             } catch (Exception e) {
-                              log.error("Error processing item: {}", e.getMessage());
+                              String msg = "Error processing item: " + e.getMessage();
+                              log.error(msg);
+                              if (messageConsumer != null) messageConsumer.accept(msg);
                               throw new RuntimeException("Processing failed", e);
                             }
                           },
@@ -378,9 +391,11 @@ public abstract class BaseSyncService {
                 .map(
                     future -> {
                       try {
-                        return future.get(30, TimeUnit.SECONDS);
+                        return future.get(2, TimeUnit.MINUTES);
                       } catch (Exception e) {
-                        log.error("Failed to complete processing future: {}", e.getMessage());
+                        String msg = "Failed to complete processing future: " + e.getMessage();
+                        log.error(msg);
+                        if (messageConsumer != null) messageConsumer.accept(msg);
                         throw new RuntimeException("Future completion failed", e);
                       }
                     })
@@ -405,7 +420,9 @@ public abstract class BaseSyncService {
 
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        log.error("Interrupted while processing batch");
+        String msg = "Interrupted while processing batch";
+        log.error(msg);
+        if (messageConsumer != null) messageConsumer.accept(msg);
         throw new RuntimeException("Batch processing interrupted", e);
       }
     }
@@ -414,22 +431,9 @@ public abstract class BaseSyncService {
   }
 
   /** Execute a Notion API call with proper rate limiting. */
-  protected <T> T executeWithRateLimit(Supplier<T> apiCall) throws InterruptedException {
+  protected <T> T executeWithRateLimit(@NonNull Supplier<T> apiCall) throws InterruptedException {
     rateLimitService.acquirePermit();
     return apiCall.get();
-  }
-
-  /** Shutdown the executor service (should be called during application shutdown). */
-  public void shutdown() {
-    syncExecutorService.shutdown();
-    try {
-      if (!syncExecutorService.awaitTermination(60, TimeUnit.SECONDS)) {
-        syncExecutorService.shutdownNow();
-      }
-    } catch (InterruptedException e) {
-      syncExecutorService.shutdownNow();
-      Thread.currentThread().interrupt();
-    }
   }
 
   /** Represents the result of a synchronization operation. */
@@ -441,6 +445,7 @@ public abstract class BaseSyncService {
     private final int syncedCount;
     private final int errorCount;
     private final String errorMessage;
+    private final List<String> messages = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     private SyncResult(
         boolean success,

@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -27,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Service responsible for synchronizing shows from Notion to the database. */
 @Service
@@ -145,58 +148,80 @@ public class ShowSyncService extends BaseSyncService {
   /** Performs the actual shows sync operation with enhanced error handling. */
   @SneakyThrows
   private SyncResult performShowsSyncInternal(@NonNull String operationId, long startTime) {
-    return syncTransactionManager.executeInTransaction(
-        operationId,
-        "shows",
-        (transaction) -> {
-          try {
-            // Step 1: Validate sync prerequisites
-            log.info("🔍 Validating sync prerequisites...");
-            progressTracker.updateProgress(operationId, 1, "Validating sync prerequisites...");
+    try {
+      // Step 1: Get all local external IDs
+      progressTracker.updateProgress(operationId, 1, "Fetching local show IDs");
+      List<String> localExternalIds = showService.getAllExternalIds();
+      log.info("Found {} shows in the local database.", localExternalIds.size());
 
-            // Step 2: Get all shows from Notion
-            log.info("📥 Retrieving shows from Notion...");
-            progressTracker.updateProgress(
-                operationId, 3, "Retrieving shows from Notion database...");
+      // Step 2: Get all Notion page IDs
+      progressTracker.updateProgress(operationId, 2, "Fetching Notion show IDs");
+      List<String> notionShowIds =
+          executeWithRateLimit(() -> notionHandler.getDatabasePageIds("Shows"));
+      log.info("Found {} shows in Notion.", notionShowIds.size());
 
-            List<ShowPage> notionShows = executeWithRateLimit(notionHandler::loadAllShowsForSync);
-            long retrieveTime = System.currentTimeMillis() - startTime;
-            log.info("✅ Retrieved {} shows from Notion in {}ms", notionShows.size(), retrieveTime);
+      // Step 3: Calculate the difference
+      List<String> newShowIds =
+          notionShowIds.stream()
+              .filter(id -> !localExternalIds.contains(id))
+              .collect(java.util.stream.Collectors.toList());
 
-            // Step 3: Convert to DTOs
-            log.info("🔄 Converting shows to DTOs...");
-            progressTracker.updateProgress(operationId, 5, "Converting shows to DTOs...");
+      if (newShowIds.isEmpty()) {
+        log.info("No new shows to sync from Notion.");
+        progressTracker.completeOperation(operationId, true, "No new shows to sync.", 0);
+        return SyncResult.success("Shows", 0, 0);
+      }
+      log.info("Found {} new shows to sync from Notion.", newShowIds.size());
 
-            List<ShowDTO> showDTOs = convertShowPagesToDTO(notionShows, operationId);
-            long convertTime = System.currentTimeMillis() - startTime - retrieveTime;
-            log.info("✅ Converted {} shows to DTOs in {}ms", showDTOs.size(), convertTime);
+      // Step 4: Load only the new ShowPage objects in parallel
+      progressTracker.updateProgress(operationId, 3, "Loading new show pages from Notion");
+      List<ShowPage> showPages =
+          processWithControlledParallelism(
+              newShowIds,
+              (id) -> {
+                try {
+                  return notionHandler.loadShowById(id).orElse(null);
+                } catch (Exception e) {
+                  log.error("Failed to load show page for id: {}", id, e);
+                  return null;
+                }
+              },
+              10,
+              operationId,
+              3,
+              "Loaded");
 
-            // Step 4: Save to database
-            log.info("💾 Saving shows to database...");
-            progressTracker.updateProgress(operationId, 6, "Saving shows to database...");
+      List<ShowPage> validShowPages =
+          showPages.stream()
+              .filter(java.util.Objects::nonNull)
+              .collect(java.util.stream.Collectors.toList());
 
-            int savedCount = saveShowsToDatabase(showDTOs);
+      // Step 5: Convert to DTOs
+      progressTracker.updateProgress(operationId, 4, "Converting new shows to DTOs");
+      List<ShowDTO> showDTOs = convertShowPagesToDTO(validShowPages, operationId);
 
-            long totalTime = System.currentTimeMillis() - startTime;
-            log.info(
-                "🎉 Successfully synchronized {} shows to database in {}ms total",
-                savedCount,
-                totalTime);
+      // Step 6: Save to database
+      progressTracker.updateProgress(operationId, 5, "Saving new shows to database");
+      int savedCount = saveShowsToDatabase(showDTOs);
 
-            progressTracker.completeOperation(
-                operationId,
-                true,
-                String.format("Successfully synced %d shows", savedCount),
-                savedCount);
+      int errorCount = newShowIds.size() - savedCount;
+      log.info("✅ Synced {} new shows with {} errors", savedCount, errorCount);
 
-            // Record success in health monitor
-            healthMonitor.recordSuccess("Shows", totalTime, savedCount);
-            return SyncResult.success("Shows", savedCount, 0);
+      boolean success = errorCount == 0;
+      String message =
+          success
+              ? "Delta-sync for shows completed successfully."
+              : "Delta-sync for shows completed with errors.";
+      progressTracker.completeOperation(operationId, success, message, savedCount);
 
-          } catch (Exception e) {
-            throw new RuntimeException("Shows sync operation failed: " + e.getMessage(), e);
-          }
-        });
+      if (success) {
+        return SyncResult.success("Shows", savedCount, errorCount);
+      } else {
+        return SyncResult.failure("Shows", "Some new shows failed to sync.");
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Shows sync operation failed: " + e.getMessage(), e);
+    }
   }
 
   private List<ShowDTO> convertShowPagesToDTO(
@@ -331,7 +356,8 @@ public class ShowSyncService extends BaseSyncService {
   }
 
   /** Process a single show with error handling. */
-  private boolean processSingleShow(
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public boolean processSingleShow(
       @NonNull ShowDTO dto,
       @NonNull Map<String, ShowType> showTypes,
       @NonNull Map<String, Season> seasons,
@@ -521,5 +547,37 @@ public class ShowSyncService extends BaseSyncService {
     }
 
     return null;
+  }
+
+  public List<String> getShowIds() {
+    return notionHandler.getDatabasePageIds("Shows");
+  }
+
+  public SyncResult syncShow(@NonNull String showId) {
+    log.info("Starting show synchronization from Notion for ID: {}", showId);
+    String operationId = "show-sync-" + showId;
+    progressTracker.startOperation(operationId, "Show Sync", 4);
+
+    try {
+      Optional<ShowPage> showPage = notionHandler.loadShowById(showId);
+      if (showPage.isEmpty()) {
+        String errorMessage = "Show with ID " + showId + " not found in Notion.";
+        log.error(errorMessage);
+        progressTracker.failOperation(operationId, errorMessage);
+        return SyncResult.failure("Show", errorMessage);
+      }
+
+      List<ShowDTO> showDTOs = convertShowPagesToDTO(List.of(showPage.get()), operationId);
+      int savedCount = saveShowsToDatabase(showDTOs);
+      String message = "Show sync completed successfully. Synced " + savedCount + " show.";
+      log.info(message);
+      progressTracker.completeOperation(operationId, true, message, savedCount);
+      return SyncResult.success("Show", savedCount, 0);
+    } catch (Exception e) {
+      String errorMessage = "Failed to synchronize show from Notion: " + e.getMessage();
+      log.error(errorMessage, e);
+      progressTracker.failOperation(operationId, errorMessage);
+      return SyncResult.failure("Show", errorMessage);
+    }
   }
 }

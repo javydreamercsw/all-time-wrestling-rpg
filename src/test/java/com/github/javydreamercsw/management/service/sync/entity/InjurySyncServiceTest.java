@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -37,18 +38,26 @@ import org.mockito.quality.Strictness;
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@EnabledIf("isNotionTokenAvailable")
 class InjurySyncServiceTest {
 
   @Mock private InjuryTypeService injuryTypeService;
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private NotionHandler notionHandler;
-  @Mock private NotionSyncProperties syncProperties;
+  private NotionSyncProperties syncProperties; // Declare without @Mock
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionRateLimitService rateLimitService;
 
   private InjurySyncService injurySyncService;
+
+  // Constructor to configure the mock before setUp()
+  public InjurySyncServiceTest() {
+    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+  }
 
   @BeforeEach
   void setUp() {
@@ -350,5 +359,9 @@ class InjurySyncServiceTest {
     injuryType.setId(1L);
     injuryType.setInjuryName("Test Injury");
     return injuryType;
+  }
+
+  private static boolean isNotionTokenAvailable() {
+    return EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 }

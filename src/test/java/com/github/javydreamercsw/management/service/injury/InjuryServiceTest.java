@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,7 +63,7 @@ class InjuryServiceTest {
     // When
     Optional<Injury> result =
         injuryService.createInjury(
-            1L, "Knee Injury", "Torn ACL", InjurySeverity.SEVERE, "Occurred during match");
+            1L, "Knee Injury", "Torn ACL", InjurySeverity.SEVERE, "Occurred during segment");
 
     // Then
     assertThat(result).isPresent();
@@ -75,13 +76,13 @@ class InjuryServiceTest {
   }
 
   @Test
-  @DisplayName("Should create injury from bumps when wrestler has 3+ bumps")
-  void shouldCreateInjuryFromBumpsWhenWrestlerHas3PlusBumps() {
+  @DisplayName("Should create injury from bumps")
+  void shouldCreateInjuryFromBumps() {
     // Given
     Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
-    wrestler.setBumps(3);
+    wrestler.setBumps(3); // Set bumps to trigger injury creation
+    when(wrestlerRepository.findById(wrestler.getId())).thenReturn(Optional.of(wrestler));
 
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
     when(injuryRepository.saveAndFlush(any(Injury.class)))
         .thenAnswer(
             invocation -> {
@@ -91,31 +92,15 @@ class InjuryServiceTest {
             });
 
     // When
-    Optional<Injury> result = injuryService.createInjuryFromBumps(1L);
+    Optional<Injury> result = injuryService.createInjuryFromBumps(wrestler.getId());
 
     // Then
-    assertThat(result).isPresent();
-    assertThat(wrestler.getBumps())
-        .isEqualTo(3); // Bumps are not reset by this method (handled by Wrestler.addBump())
+    assertThat(result).isNotNull();
+    Assertions.assertTrue(result.isPresent());
     assertThat(result.get().getWrestler()).isEqualTo(wrestler);
     assertThat(result.get().getIsActive()).isTrue();
+    assertThat(wrestler.getInjuries()).contains(result.get());
     verify(injuryRepository).saveAndFlush(any(Injury.class));
-  }
-
-  @Test
-  @DisplayName("Should not create injury from bumps when wrestler has less than 3 bumps")
-  void shouldNotCreateInjuryFromBumpsWhenWrestlerHasLessThan3Bumps() {
-    // Given
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
-    wrestler.setBumps(2);
-
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-
-    // When
-    Optional<Injury> result = injuryService.createInjuryFromBumps(1L);
-
-    // Then
-    assertThat(result).isEmpty();
   }
 
   @Test

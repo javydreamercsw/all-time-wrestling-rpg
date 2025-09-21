@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -50,11 +51,14 @@ class FactionSyncServiceTest extends BaseTest {
 
   @BeforeEach
   void setUp() {
+    // This needs to be stubbed before the constructor is called.
+    Mockito.lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+
     factionSyncService = new FactionSyncService(objectMapper, syncProperties);
     injectMockDependencies();
 
     // Setup default behavior
-    when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
+    lenient().when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
   }
 
   private void injectMockDependencies() {

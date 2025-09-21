@@ -50,13 +50,16 @@ public class EntityDependencyAnalyzer {
     order.add("show-types");
     order.add("shows"); // Show (depends on ShowTemplate, Season)
     order.add("wrestlers"); // Wrestler (may depend on Faction, but can be synced independently)
+    order.add("titles");
 
     // Entities that depend on wrestlers
+    order.add("rivalries");
     order.add("factions"); // Faction (depends on Wrestler for leader and members)
+    order.add("faction-rivalries");
     order.add("teams"); // Team (depends on Wrestler for members)
 
     // Complex entities that depend on multiple others
-    order.add("matches"); // Match (depends on Show, Wrestler, Team, Faction)
+    order.add("segments"); // Segment (depends on Show, Wrestler, Team, Faction)
 
     log.info("🎯 Using known dependency order: {}", order);
     return order;
@@ -101,7 +104,7 @@ public class EntityDependencyAnalyzer {
       "com.github.javydreamercsw.management.domain.wrestler",
       "com.github.javydreamercsw.management.domain.faction",
       "com.github.javydreamercsw.management.domain.team",
-      "com.github.javydreamercsw.management.domain.match",
+      "com.github.javydreamercsw.management.domain.segment",
       "com.github.javydreamercsw.management.domain.season"
     };
 
@@ -283,19 +286,5 @@ public class EntityDependencyAnalyzer {
     visiting.remove(entity);
     visited.add(entity);
     result.add(entity);
-  }
-
-  /** Maps common entity names to sync method names. */
-  public String mapEntityToSyncMethod(String entityName) {
-    return switch (entityName.toLowerCase()) {
-      case "showtemplate" -> "templates";
-      case "season" -> "seasons";
-      case "show" -> "shows";
-      case "wrestler" -> "wrestlers";
-      case "faction" -> "factions";
-      case "team" -> "teams";
-      case "match" -> "matches";
-      default -> entityName.toLowerCase() + "s"; // Default pluralization
-    };
   }
 }

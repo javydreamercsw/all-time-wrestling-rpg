@@ -40,7 +40,7 @@ class FactionCrudIntegrationTest {
 
     // Mock service responses
     when(factionService.findAllWithMembers()).thenReturn(testFactions);
-    when(wrestlerService.findAll()).thenReturn(testWrestlers);
+    lenient().when(wrestlerService.findAll()).thenReturn(testWrestlers);
 
     factionListView = new FactionListView(factionService, wrestlerService);
   }

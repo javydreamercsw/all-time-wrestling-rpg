@@ -36,6 +36,10 @@ public class EntitySyncConfiguration {
 
     // Merge with defaults
     EntitySyncSettings effective = new EntitySyncSettings();
+    effective.setDatabaseId(
+        entitySettings.getDatabaseId() != null
+            ? entitySettings.getDatabaseId()
+            : defaults.getDatabaseId());
     effective.setEnabled(
         entitySettings.getEnabled() != null ? entitySettings.getEnabled() : defaults.getEnabled());
     effective.setBatchSize(
@@ -86,6 +90,9 @@ public class EntitySyncConfiguration {
 
   @Data
   public static class EntitySyncSettings {
+    /** The Notion database ID for this entity. */
+    private String databaseId;
+
     /** Whether sync is enabled for this entity */
     private Boolean enabled = true;
 

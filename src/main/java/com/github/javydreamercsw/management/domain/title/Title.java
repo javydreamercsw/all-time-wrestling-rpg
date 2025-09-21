@@ -1,25 +1,25 @@
 package com.github.javydreamercsw.management.domain.title;
 
-import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Represents a championship title in the ATW RPG system. Tracks the current champion, title
- * history, and championship-specific rules.
- */
 @Entity
 @Table(name = "title", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
@@ -30,6 +30,9 @@ public class Title extends AbstractEntity<Long> {
   @Column(name = "title_id")
   private Long id;
 
+  @Column(name = "external_id")
+  private String externalId;
+
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;
 
@@ -39,110 +42,113 @@ public class Title extends AbstractEntity<Long> {
 
   @Column(name = "tier", nullable = false)
   @Enumerated(EnumType.STRING)
-  private TitleTier tier;
+  private WrestlerTier tier;
+
+  @Enumerated(EnumType.STRING)
+  private Gender gender;
 
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 
-  @Column(name = "is_vacant", nullable = false)
-  private Boolean isVacant = true;
-
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
-  // Current champion (null if vacant)
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "current_champion_id")
-  @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns"})
-  private Wrestler currentChampion;
+  @ManyToMany(fetch = FetchType.EAGER)
+  @JoinTable(
+      name = "title_contender",
+      joinColumns = @JoinColumn(name = "title_id"),
+      inverseJoinColumns = @JoinColumn(name = "wrestler_id"))
+  private List<Wrestler> contender = new ArrayList<>();
 
-  @Column(name = "title_won_date")
-  private Instant titleWonDate;
+  @ManyToMany(fetch = FetchType.EAGER)
+  @JoinTable(
+      name = "title_champion",
+      joinColumns = @JoinColumn(name = "title_id"),
+      inverseJoinColumns = @JoinColumn(name = "wrestler_id"))
+  private List<Wrestler> champion = new ArrayList<>();
 
-  // Title history
-  @OneToMany(mappedBy = "title", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @OneToMany(
+      mappedBy = "title",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.EAGER)
   @JsonIgnoreProperties({"title"})
-  private List<TitleReign> titleHistory = new ArrayList<>();
+  private Set<TitleReign> titleReigns = new HashSet<>();
 
-  // ==================== ATW RPG METHODS ====================
+  @ManyToMany(mappedBy = "titles", fetch = FetchType.EAGER)
+  private List<Segment> segments = new ArrayList<>();
 
-  /** Award the title to a new champion. */
-  public void awardTitle(Wrestler newChampion) {
-    // End current reign if there is one
-    if (currentChampion != null && !isVacant) {
-      getCurrentReign().ifPresent(reign -> reign.endReign(Instant.now()));
-    }
+  public void awardTitleTo(@NonNull List<Wrestler> newChampions, @NonNull Instant awardDate) {
+    // End the current reign if one exists.
+    getCurrentReign().ifPresent(reign -> reign.endReign(awardDate));
 
-    // Set new champion
-    this.currentChampion = newChampion;
-    this.isVacant = false;
-    this.titleWonDate = Instant.now();
-
-    // Create new title reign
+    // Create a new title reign for the new champions.
     TitleReign newReign = new TitleReign();
     newReign.setTitle(this);
-    newReign.setChampion(newChampion);
-    newReign.setStartDate(titleWonDate);
-    titleHistory.add(newReign);
+    newReign.getChampions().addAll(newChampions);
+    newReign.setStartDate(awardDate);
+    getTitleReigns().add(newReign);
+
+    this.champion = new ArrayList<>(newChampions); // Ensure champion field is updated
   }
 
-  /** Vacate the title (no current champion). */
   public void vacateTitle() {
-    if (currentChampion != null && !isVacant) {
-      getCurrentReign().ifPresent(reign -> reign.endReign(Instant.now()));
-    }
-
-    this.currentChampion = null;
-    this.isVacant = true;
-    this.titleWonDate = null;
+    getCurrentReign().ifPresent(reign -> reign.endReign(Instant.now()));
+    this.champion.clear();
   }
 
-  /** Get the current title reign. */
   @JsonIgnore
   public java.util.Optional<TitleReign> getCurrentReign() {
-    return titleHistory.stream().filter(reign -> reign.getEndDate() == null).findFirst();
+    return getTitleReigns().stream().filter(TitleReign::isCurrentReign).findFirst();
   }
 
-  /** Get the length of the current reign in days. */
+  @JsonIgnore
+  public List<Wrestler> getCurrentChampions() {
+    return champion;
+  }
+
   public long getCurrentReignDays() {
-    if (isVacant || titleWonDate == null) {
-      return 0;
-    }
-    return java.time.Duration.between(titleWonDate, Instant.now()).toDays();
+    return getCurrentReign().map(TitleReign::getReignLengthDays).orElse(0L);
   }
 
-  /** Get the total number of title reigns. */
   public int getTotalReigns() {
-    return titleHistory.size();
+    return titleReigns.size();
   }
 
-  /** Check if a wrestler is eligible to challenge for this title. */
   public boolean isWrestlerEligible(Wrestler wrestler) {
     return wrestler.isEligibleForTitle(tier);
   }
 
-  /** Get the fan cost to challenge for this title. */
   public Long getChallengeCost() {
     return tier.getChallengeCost();
   }
 
-  /** Get the #1 contender entry fee for this title. */
   public Long getContenderEntryFee() {
     return tier.getContenderEntryFee();
   }
 
-  /** Get display name with current champion info. */
   public String getDisplayName() {
-    if (isVacant) {
+    if (isVacant()) {
       return name + " (Vacant)";
     }
-    return name + " (Champion: " + currentChampion.getName() + ")";
+    return name + " (Champion: " + getChampionNames() + ")";
   }
 
-  /** Get title status emoji. */
+  public String getChampionNames() {
+    return getCurrentChampions().stream().map(Wrestler::getName).collect(Collectors.joining(" & "));
+  }
+
+  public String getContenderNames() {
+    return getContender().stream().map(Wrestler::getName).collect(Collectors.joining(" & "));
+  }
+
   public String getStatusEmoji() {
-    if (!isActive) return "🚫";
-    if (isVacant) return "👑❓";
+    if (!isActive) {
+      return "🚫";
+    }
+    if (isVacant()) {
+      return "👑❓";
+    }
     return "👑";
   }
 
@@ -156,5 +162,9 @@ public class Title extends AbstractEntity<Long> {
     if (creationDate == null) {
       creationDate = Instant.now();
     }
+  }
+
+  public boolean isVacant() {
+    return getCurrentChampions().isEmpty();
   }
 }

@@ -9,7 +9,8 @@
   "isPlayer" : false,
   "bumps" : 0,
   "faction" : null,
-  "description" : "The Whole F'n Show - High-flying innovator with extreme attitude and unmatched charisma"
+  "description" : "The Whole F'n Show - High-flying innovator with extreme attitude and unmatched charisma",
+  "gender" : "MALE"
 }, {
   "name" : "Rey Jaguar",
   "deckSize" : 15,
@@ -21,7 +22,8 @@
   "isPlayer" : false,
   "bumps" : 0,
   "faction" : null,
-  "description" : "Lucha libre master with incredible agility and high-flying prowess"
+  "description" : "Lucha libre master with incredible agility and high-flying prowess",
+  "gender" : "MALE"
 }, {
   "name" : "Kurt Angle",
   "deckSize" : 15,
@@ -33,7 +35,8 @@
   "isPlayer" : false,
   "bumps" : 0,
   "faction" : null,
-  "description" : "Olympic Hero turned ruthless champion - Technical wrestling machine with legitimate amateur background"
+  "description" : "Olympic Hero turned ruthless champion - Technical wrestling machine with legitimate amateur background",
+  "gender" : "MALE"
 }, {
   "name" : "Oda Tsurugi",
   "deckSize" : 15,
@@ -45,9 +48,10 @@
   "isPlayer" : false,
   "bumps" : 0,
   "faction" : null,
-  "description" : "Mysterious warrior with ancient fighting techniques and unwavering honor"
+  "description" : "Mysterious warrior with ancient fighting techniques and unwavering honor",
+  "gender" : "MALE"
 }, {
-  "name" : "Andre the Giant",
+  "name" : "André the Giant",
   "deckSize" : 15,
   "startingHealth" : 20,
   "lowHealth" : 3,
@@ -57,9 +61,10 @@
   "isPlayer" : false,
   "bumps" : 0,
   "faction" : null,
-  "description" : "The Eighth Wonder of the World - Legendary giant with unmatched presence and power"
+  "description" : "The Eighth Wonder of the World - Legendary giant with unmatched presence and power",
+  "gender" : "MALE"
 }, {
-  "name" : "Macho Man Randy Savage",
+  "name" : "Randy Savage",
   "deckSize" : 15,
   "startingHealth" : 16,
   "lowHealth" : 4,
@@ -69,7 +74,8 @@
   "isPlayer" : false,
   "bumps" : 0,
   "faction" : null,
-  "description" : "Ooh yeah! The cream of the crop with unmatched intensity and charisma"
+  "description" : "Ooh yeah! The cream of the crop with unmatched intensity and charisma",
+  "gender" : "MALE"
 }, {
   "name" : "Jax Felix",
   "deckSize" : 16,
@@ -81,7 +87,8 @@
   "isPlayer" : false,
   "bumps" : 0,
   "faction" : null,
-  "description" : "Rising star with incredible speed and innovative offense"
+  "description" : "Rising star with incredible speed and innovative offense",
+  "gender" : "MALE"
 }, {
   "name" : "Mukundi Shumba",
   "deckSize" : 15,
@@ -93,7 +100,8 @@
   "isPlayer" : false,
   "bumps" : 0,
   "faction" : null,
-  "description" : "Powerful warrior with incredible strength and African fighting heritage"
+  "description" : "Powerful warrior with incredible strength and African fighting heritage",
+  "gender" : "MALE"
 }, {
   "name" : "The British Bulldog",
   "deckSize" : 15,
@@ -105,5 +113,6 @@
   "isPlayer" : false,
   "bumps" : 0,
   "faction" : null,
-  "description" : "The pride of England with incredible power and technical skill"
+  "description" : "The pride of England with incredible power and technical skill",
+  "gender" : "MALE"
 } ]

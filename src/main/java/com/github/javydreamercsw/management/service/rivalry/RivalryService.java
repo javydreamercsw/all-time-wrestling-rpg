@@ -5,6 +5,7 @@ import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -98,18 +99,18 @@ public class RivalryService {
   }
 
   /** Attempt to resolve a rivalry with dice rolls. */
-  public ResolutionResult attemptResolution(
+  public ResolutionResult<Rivalry> attemptResolution(
       @NonNull Long rivalryId, @NonNull Integer wrestler1Roll, @NonNull Integer wrestler2Roll) {
     Optional<Rivalry> rivalryOpt = rivalryRepository.findById(rivalryId);
 
     if (rivalryOpt.isEmpty()) {
-      return new ResolutionResult(false, "Rivalry not found", null, 0, 0, 0);
+      return new ResolutionResult<>(false, "Rivalry not found", null, 0, 0, 0);
     }
 
     Rivalry rivalry = rivalryOpt.get();
 
     if (!rivalry.canAttemptResolution()) {
-      return new ResolutionResult(
+      return new ResolutionResult<>(
           false,
           String.format(
               "Rivalry needs at least 20 heat to attempt resolution (current: %d)",
@@ -121,8 +122,8 @@ public class RivalryService {
     }
 
     // Use provided rolls or generate random ones
-    int roll1 = wrestler1Roll != null ? wrestler1Roll : random.nextInt(20) + 1;
-    int roll2 = wrestler2Roll != null ? wrestler2Roll : random.nextInt(20) + 1;
+    int roll1 = wrestler1Roll;
+    int roll2 = wrestler2Roll;
     int total = roll1 + roll2;
 
     boolean resolved = rivalry.attemptResolution(roll1, roll2);
@@ -131,7 +132,7 @@ public class RivalryService {
       rivalryRepository.saveAndFlush(rivalry);
     }
 
-    return new ResolutionResult(
+    return new ResolutionResult<>(
         resolved,
         resolved ? "Rivalry resolved successfully" : "Resolution attempt failed",
         rivalry,
@@ -164,10 +165,21 @@ public class RivalryService {
     return rivalryRepository.findAllBy(pageable);
   }
 
+  @Transactional(readOnly = true)
+  public Page<Rivalry> getAllRivalriesWithWrestlers(@NonNull Pageable pageable) {
+    return rivalryRepository.findAllWithWrestlers(pageable);
+  }
+
   /** Get active rivalries. */
   @Transactional(readOnly = true)
   public List<Rivalry> getActiveRivalries() {
     return rivalryRepository.findByIsActiveTrue();
+  }
+
+  /** Get active rivalries between two dates. */
+  @Transactional(readOnly = true)
+  public List<Rivalry> getActiveRivalriesBetween(Instant startDate, Instant endDate) {
+    return rivalryRepository.findActiveRivalriesBetween(startDate, endDate);
   }
 
   /** Get rivalries for a specific wrestler. */
@@ -191,7 +203,7 @@ public class RivalryService {
     return rivalryRepository.findRivalriesEligibleForResolution();
   }
 
-  /** Get rivalries requiring stipulation matches (30+ heat). */
+  /** Get rivalries requiring rule matches (30+ heat). */
   @Transactional(readOnly = true)
   public List<Rivalry> getRivalriesRequiringStipulationMatches() {
     return rivalryRepository.findRivalriesRequiringStipulationMatches();
@@ -272,15 +284,6 @@ public class RivalryService {
 
     return rivalryRepository.hasRivalryHistory(wrestler1Opt.get(), wrestler2Opt.get());
   }
-
-  /** Resolution result data class. */
-  public record ResolutionResult(
-      boolean resolved,
-      String message,
-      Rivalry rivalry,
-      int wrestler1Roll,
-      int wrestler2Roll,
-      int totalRoll) {}
 
   /** Rivalry statistics data class. */
   public record RivalryStats(

@@ -15,6 +15,9 @@ public interface FactionRivalryRepository
   // If you don't need a total row count, Slice is better than Page.
   Page<FactionRivalry> findAllBy(Pageable pageable);
 
+  @Query("SELECT fr FROM FactionRivalry fr JOIN FETCH fr.faction1 JOIN FETCH fr.faction2")
+  Page<FactionRivalry> findAllWithFactions(Pageable pageable);
+
   /** Find active faction rivalries. */
   List<FactionRivalry> findByIsActiveTrue();
 
@@ -49,7 +52,7 @@ public interface FactionRivalryRepository
   @Query("SELECT fr FROM FactionRivalry fr WHERE fr.isActive = true AND fr.heat >= 20")
   List<FactionRivalry> findRivalriesEligibleForResolution();
 
-  /** Find rivalries requiring stipulation matches (30+ heat). */
+  /** Find rivalries requiring rule matches (30+ heat). */
   @Query("SELECT fr FROM FactionRivalry fr WHERE fr.isActive = true AND fr.heat >= 30")
   List<FactionRivalry> findRivalriesRequiringStipulationMatches();
 

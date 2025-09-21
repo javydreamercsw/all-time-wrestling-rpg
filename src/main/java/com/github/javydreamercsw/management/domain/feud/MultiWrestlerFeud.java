@@ -152,7 +152,7 @@ public class MultiWrestlerFeud extends AbstractEntity<Long> {
     return isActive && heat >= 20;
   }
 
-  /** Check if feud requires stipulation match (30+ heat). */
+  /** Check if feud requires rule segment (30+ heat). */
   public boolean requiresStipulationMatch() {
     return isActive && heat >= 30;
   }

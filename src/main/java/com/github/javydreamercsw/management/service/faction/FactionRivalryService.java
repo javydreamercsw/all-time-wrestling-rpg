@@ -4,11 +4,12 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
-import com.github.javydreamercsw.management.service.rivalry.RivalryService.ResolutionResult;
+import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -35,6 +36,12 @@ public class FactionRivalryService {
   @Transactional(readOnly = true)
   public Page<FactionRivalry> getAllFactionRivalries(Pageable pageable) {
     return factionRivalryRepository.findAllBy(pageable);
+  }
+
+  /** Get all faction rivalries with factions eagerly loaded. */
+  @Transactional(readOnly = true)
+  public Page<FactionRivalry> getAllFactionRivalriesWithFactions(Pageable pageable) {
+    return factionRivalryRepository.findAllWithFactions(pageable);
   }
 
   /** Get faction rivalry by ID. */
@@ -157,23 +164,23 @@ public class FactionRivalryService {
   }
 
   /** Attempt to resolve a faction rivalry with dice rolls. */
-  public ResolutionResult attemptResolution(
+  public ResolutionResult<FactionRivalry> attemptResolution(
       Long rivalryId, Integer faction1Roll, Integer faction2Roll) {
     Optional<FactionRivalry> rivalryOpt = factionRivalryRepository.findById(rivalryId);
 
     if (rivalryOpt.isEmpty()) {
-      return new ResolutionResult(false, "Faction rivalry not found", null, 0, 0, 0);
+      return new ResolutionResult<>(false, "Faction rivalry not found", null, 0, 0, 0);
     }
 
     FactionRivalry rivalry = rivalryOpt.get();
 
     if (!rivalry.canAttemptResolution()) {
-      return new ResolutionResult(
+      return new ResolutionResult<>(
           false,
           String.format(
               "Faction rivalry needs at least 20 heat to attempt resolution (current: %d)",
               rivalry.getHeat()),
-          null, // No individual rivalry to return
+          rivalry,
           0,
           0,
           0);
@@ -204,10 +211,10 @@ public class FactionRivalryService {
           total);
     }
 
-    return new ResolutionResult(
+    return new ResolutionResult<>(
         resolved,
         resolved ? "Faction rivalry resolved successfully" : "Faction resolution attempt failed",
-        null, // No individual rivalry to return
+        rivalry,
         roll1,
         roll2,
         total);
@@ -247,7 +254,7 @@ public class FactionRivalryService {
     return factionRivalryRepository.findRivalriesEligibleForResolution();
   }
 
-  /** Get faction rivalries requiring stipulation matches. */
+  /** Get faction rivalries requiring rule matches. */
   @Transactional(readOnly = true)
   public List<FactionRivalry> getRivalriesRequiringStipulationMatches() {
     return factionRivalryRepository.findRivalriesRequiringStipulationMatches();
@@ -269,6 +276,26 @@ public class FactionRivalryService {
   @Transactional(readOnly = true)
   public List<FactionRivalry> getRivalriesInvolvingStables() {
     return factionRivalryRepository.findRivalriesInvolvingStables();
+  }
+
+  /**
+   * Get rivalry between two factions.
+   *
+   * @param faction1Id ID of the first faction
+   * @param faction2Id ID of the second faction
+   * @return Optional of FactionRivalry
+   */
+  @Transactional(readOnly = true)
+  public Optional<FactionRivalry> getFactionRivalryBetweenFactions(
+      @NonNull Long faction1Id, @NonNull Long faction2Id) {
+    Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
+    Optional<Faction> faction2Opt = factionRepository.findById(faction2Id);
+
+    if (faction1Opt.isEmpty() || faction2Opt.isEmpty()) {
+      return Optional.empty();
+    }
+
+    return factionRivalryRepository.findActiveRivalryBetween(faction1Opt.get(), faction2Opt.get());
   }
 
   /** Check if two factions can have a rivalry. */

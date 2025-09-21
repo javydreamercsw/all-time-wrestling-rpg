@@ -101,7 +101,7 @@ CREATE INDEX IF NOT EXISTS idx_title_reign_current ON title_reign(end_date);
 CREATE INDEX IF NOT EXISTS idx_title_reign_title ON title_reign(title_id);
 
 -- Index for title reigns by champion
-CREATE INDEX IF NOT EXISTS idx_title_reign_wrestler ON title_reign(champion_id);
+CREATE INDEX IF NOT EXISTS idx_title_reign_wrestler ON title_reign_champion(wrestler_id);
 
 -- Index for reign start date
 CREATE INDEX IF NOT EXISTS idx_title_reign_start_date ON title_reign(start_date);
@@ -167,18 +167,18 @@ CREATE INDEX IF NOT EXISTS idx_show_template_type ON show_template(show_type_id)
 -- Index for template external ID (Notion sync)
 CREATE INDEX IF NOT EXISTS idx_show_template_external_id ON show_template(external_id);
 
--- ==================== MATCH RULE TABLE INDEXES ====================
+-- ==================== SEGMENT RULE TABLE INDEXES ====================
 
--- Index for match rule name searches
-CREATE INDEX IF NOT EXISTS idx_match_rule_name ON match_rule(name);
+-- Index for match stipulation name searches
+CREATE INDEX IF NOT EXISTS idx_segment_rule_name ON segment_rule(name);
 
--- Index for high heat match rules
-CREATE INDEX IF NOT EXISTS idx_match_rule_high_heat ON match_rule(requires_high_heat);
+-- Index for high heat match stipulations
+CREATE INDEX IF NOT EXISTS idx_segment_rule_high_heat ON segment_rule(requires_high_heat);
 
--- ==================== MATCH TYPE TABLE INDEXES ====================
+-- ==================== SEGMENT TYPE TABLE INDEXES ====================
 
 -- Index for match type name searches
-CREATE INDEX IF NOT EXISTS idx_match_type_name ON match_type(name);
+CREATE INDEX IF NOT EXISTS idx_segment_type_name ON segment_type(name);
 
 -- ==================== PERFORMANCE MONITORING INDEXES ====================
 
@@ -208,7 +208,7 @@ CREATE INDEX IF NOT EXISTS idx_injury_recovery ON injury(is_active, severity, in
 
 -- Additional indexes on foreign keys that might not be automatically indexed
 CREATE INDEX IF NOT EXISTS idx_show_fk_composite ON show(show_type_id, season_id, template_id);
-CREATE INDEX IF NOT EXISTS idx_title_reign_fk_composite ON title_reign(title_id, champion_id, end_date);
+CREATE INDEX IF NOT EXISTS idx_title_reign_fk_composite ON title_reign_champion(title_reign_id, wrestler_id);
 
 -- ==================== FULL TEXT SEARCH INDEXES (H2 Specific) ====================
 

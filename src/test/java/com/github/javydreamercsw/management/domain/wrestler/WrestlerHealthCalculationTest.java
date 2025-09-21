@@ -116,7 +116,7 @@ class WrestlerHealthCalculationTest {
   @DisplayName("Should calculate current health with penalties correctly")
   void shouldCalculateCurrentHealthWithPenaltiesCorrectly() {
     // Given
-    wrestler.setCurrentHealth(12); // Damaged in match
+    wrestler.setCurrentHealth(12); // Damaged in segment
     wrestler.setBumps(1);
     Injury injury = createInjury(InjurySeverity.MODERATE, 3);
     wrestler.getInjuries().add(injury);
@@ -147,7 +147,7 @@ class WrestlerHealthCalculationTest {
   }
 
   @Test
-  @DisplayName("Should refresh current health to match effective starting health")
+  @DisplayName("Should refresh current health to segment effective starting health")
   void shouldRefreshCurrentHealthToMatchEffectiveStartingHealth() {
     // Given
     wrestler.setCurrentHealth(10); // Some arbitrary value
@@ -232,7 +232,7 @@ class WrestlerHealthCalculationTest {
     wrestler.updateTier();
 
     // Then - Tier should be based on fans, not health
-    assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.INTERTEMPORAL_TIER);
+    assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.MIDCARDER);
   }
 
   private Injury createInjury(InjurySeverity severity, int healthPenalty) {

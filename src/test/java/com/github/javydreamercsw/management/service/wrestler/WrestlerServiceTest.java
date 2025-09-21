@@ -2,13 +2,11 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
@@ -129,7 +127,7 @@ class WrestlerServiceTest {
     Injury mockInjury = new Injury();
     mockInjury.setName("Test Injury");
     mockInjury.setSeverity(InjurySeverity.MINOR);
-    when(injuryService.createInjuryFromBumps(anyLong())).thenReturn(Optional.of(mockInjury));
+    when(injuryService.createInjuryFromBumps(any())).thenReturn(Optional.of(mockInjury));
 
     // When
     Optional<Wrestler> result = wrestlerService.addBump(1L);
@@ -138,7 +136,8 @@ class WrestlerServiceTest {
     assertThat(result).isPresent();
     assertThat(result.get().getBumps()).isEqualTo(0); // Reset after injury
     verify(wrestlerRepository).saveAndFlush(testWrestler);
-    verify(injuryService).createInjuryFromBumps(1L); // Verify injury service was called
+    verify(injuryService)
+        .createInjuryFromBumps(testWrestler.getId()); // Verify injury service was called
   }
 
   @Test
@@ -165,11 +164,13 @@ class WrestlerServiceTest {
     when(wrestlerRepository.findAll()).thenReturn(Arrays.asList(wrestler1, wrestler2, wrestler3));
 
     // When
-    List<Wrestler> eligible = wrestlerService.getEligibleWrestlers(TitleTier.EXTREME);
+    List<Wrestler> eligible = wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE);
 
     // Then
-    assertThat(eligible).hasSize(2);
-    assertThat(eligible).extracting(Wrestler::getName).containsExactly("Wrestler 2", "Wrestler 3");
+    assertThat(eligible).hasSize(3);
+    assertThat(eligible)
+        .extracting(Wrestler::getName)
+        .containsExactly("Wrestler 1", "Wrestler 2", "Wrestler 3");
   }
 
   @Test

@@ -1,7 +1,7 @@
 package com.github.javydreamercsw.management.domain.title;
 
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -19,28 +19,29 @@ public interface TitleRepository
 
   Optional<Title> findByName(String name);
 
-  List<Title> findByTier(TitleTier tier);
+  List<Title> findByTier(WrestlerTier tier);
 
   List<Title> findByIsActiveTrue();
 
-  List<Title> findByIsVacantTrue();
-
-  List<Title> findByIsVacantFalse();
-
   /** Find titles currently held by a specific wrestler. */
-  @Query("SELECT t FROM Title t WHERE t.currentChampion = :wrestler AND t.isVacant = false")
-  List<Title> findByCurrentChampion(@Param("wrestler") Wrestler wrestler);
+  @Query(
+      "SELECT DISTINCT tr.title FROM TitleReign tr WHERE tr.endDate IS NULL AND :wrestler MEMBER OF"
+          + " tr.champions")
+  List<Title> findTitlesHeldByWrestler(@Param("wrestler") Wrestler wrestler);
 
   /** Find active titles of a specific tier. */
-  @Query("SELECT t FROM Title t WHERE t.tier = :tier AND t.isActive = true")
-  List<Title> findActiveTitlesByTier(@Param("tier") TitleTier tier);
+  @Query("SELECT t FROM Title t JOIN FETCH t.champion WHERE t.tier = :tier AND t.isActive = true")
+  List<Title> findActiveTitlesByTier(@Param("tier") WrestlerTier tier);
 
-  /** Find vacant active titles. */
-  @Query("SELECT t FROM Title t WHERE t.isVacant = true AND t.isActive = true")
+  /** Get vacant titles. */
+  @Query("SELECT t FROM Title t WHERE t.champion IS EMPTY AND t.isActive = true")
   List<Title> findVacantActiveTitles();
 
   /** Check if a title with the given name already exists. */
   boolean existsByName(String name);
+
+  /** Find a title by its external ID (Notion page ID). */
+  Optional<Title> findByExternalId(String externalId);
 
   /** Find titles that a wrestler is eligible to challenge for. */
   @Query(

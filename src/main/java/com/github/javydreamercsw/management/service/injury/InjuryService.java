@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -60,28 +61,40 @@ public class InjuryService {
    * Create injury from bump system (3 bumps = 1 injury). This method should only be called when an
    * injury should be created (bumps already reset by Wrestler.addBump()).
    */
-  public Optional<Injury> createInjuryFromBumps(Long wrestlerId) {
+  public Optional<Injury> createInjuryFromBumps(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
             wrestler -> {
-              // Create injury with severity based on wrestler tier
+              if (wrestler.getBumps() < 3) {
+                // This check is now redundant as it's done in the controller, but kept for safety.
+                return null;
+              }
               InjurySeverity severity = getRandomInjurySeverityForWrestler(wrestler);
               String injuryName = generateInjuryName(severity);
               String description = generateInjuryDescription(severity);
 
-              return createInjury(
-                      wrestlerId,
-                      injuryName,
-                      description,
-                      severity,
-                      "Generated from bump accumulation (tier: " + wrestler.getTier().name() + ")")
-                  .orElse(null);
+              Injury injury = new Injury();
+              injury.setWrestler(wrestler);
+              injury.setName(injuryName);
+              injury.setDescription(description);
+              injury.setSeverity(severity);
+              injury.setHealthPenalty(severity.getRandomHealthPenalty());
+              injury.setHealingCost(severity.getBaseHealingCost());
+              injury.setIsActive(true);
+              injury.setInjuryDate(Instant.now(clock));
+              injury.setInjuryNotes(
+                  "Generated from bump accumulation (tier: " + wrestler.getTier().name() + ")");
+              injury.setCreationDate(Instant.now(clock));
+
+              wrestler.getInjuries().add(injury);
+
+              return injuryRepository.saveAndFlush(injury);
             });
   }
 
   /** Attempt to heal an injury. */
-  public HealingResult attemptHealing(Long injuryId, Integer diceRoll) {
+  public HealingResult attemptHealing(@NonNull Long injuryId, @NonNull Integer diceRoll) {
     Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
 
     if (injuryOpt.isEmpty()) {
@@ -129,19 +142,19 @@ public class InjuryService {
 
   /** Get injury by ID. */
   @Transactional(readOnly = true)
-  public Optional<Injury> getInjuryById(Long injuryId) {
+  public Optional<Injury> getInjuryById(@NonNull Long injuryId) {
     return injuryRepository.findById(injuryId);
   }
 
   /** Get all injuries with pagination. */
   @Transactional(readOnly = true)
-  public Page<Injury> getAllInjuries(Pageable pageable) {
+  public Page<Injury> getAllInjuries(@NonNull Pageable pageable) {
     return injuryRepository.findAllBy(pageable);
   }
 
   /** Get active injuries for a wrestler. */
   @Transactional(readOnly = true)
-  public List<Injury> getActiveInjuriesForWrestler(Long wrestlerId) {
+  public List<Injury> getActiveInjuriesForWrestler(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(injuryRepository::findActiveInjuriesForWrestler)
@@ -150,7 +163,7 @@ public class InjuryService {
 
   /** Get all injuries for a wrestler. */
   @Transactional(readOnly = true)
-  public List<Injury> getAllInjuriesForWrestler(Long wrestlerId) {
+  public List<Injury> getAllInjuriesForWrestler(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(injuryRepository::findByWrestler)
@@ -159,7 +172,7 @@ public class InjuryService {
 
   /** Get injuries by severity. */
   @Transactional(readOnly = true)
-  public List<Injury> getInjuriesBySeverity(InjurySeverity severity) {
+  public List<Injury> getInjuriesBySeverity(@NonNull InjurySeverity severity) {
     return injuryRepository.findBySeverity(severity);
   }
 
@@ -177,7 +190,7 @@ public class InjuryService {
 
   /** Get total health penalty for a wrestler. */
   @Transactional(readOnly = true)
-  public Integer getTotalHealthPenaltyForWrestler(Long wrestlerId) {
+  public Integer getTotalHealthPenaltyForWrestler(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(injuryRepository::getTotalHealthPenaltyForWrestler)
@@ -192,7 +205,7 @@ public class InjuryService {
 
   /** Update injury information. */
   public Optional<Injury> updateInjury(
-      Long injuryId, String name, String description, String injuryNotes) {
+      @NonNull Long injuryId, String name, String description, String injuryNotes) {
     return injuryRepository
         .findById(injuryId)
         .map(
@@ -204,15 +217,9 @@ public class InjuryService {
             });
   }
 
-  /** Check if injury exists by external ID. */
-  @Transactional(readOnly = true)
-  public boolean existsByExternalId(String externalId) {
-    return injuryRepository.existsByExternalId(externalId);
-  }
-
   /** Find injury by external ID. */
   @Transactional(readOnly = true)
-  public Optional<Injury> findByExternalId(String externalId) {
+  public Optional<Injury> findByExternalId(@NonNull String externalId) {
     return injuryRepository.findByExternalId(externalId);
   }
 
@@ -236,26 +243,16 @@ public class InjuryService {
                   allInjuries.size() - activeInjuries.size(),
                   totalHealthPenalty,
                   wrestler.getEffectiveStartingHealth(), // Already includes injury penalty
-                  activeInjuries.stream().mapToLong(injury -> injury.getHealingCost()).sum());
+                  activeInjuries.stream().mapToLong(Injury::getHealingCost).sum());
             })
         .orElse(null);
-  }
-
-  /** Generate random injury severity based on probability. */
-  private InjurySeverity getRandomInjurySeverity() {
-    int roll = random.nextInt(100) + 1;
-
-    if (roll <= 50) return InjurySeverity.MINOR; // 50% chance
-    if (roll <= 80) return InjurySeverity.MODERATE; // 30% chance
-    if (roll <= 95) return InjurySeverity.SEVERE; // 15% chance
-    return InjurySeverity.CRITICAL; // 5% chance
   }
 
   /**
    * Generate random injury severity based on wrestler tier. Higher tier wrestlers are more
    * resilient and get less severe injuries.
    */
-  private InjurySeverity getRandomInjurySeverityForWrestler(Wrestler wrestler) {
+  private InjurySeverity getRandomInjurySeverityForWrestler(@NonNull Wrestler wrestler) {
     int roll = random.nextInt(100) + 1;
 
     // Adjust probabilities based on wrestler tier
@@ -282,7 +279,7 @@ public class InjuryService {
         if (roll <= 94) yield InjurySeverity.SEVERE; // 19% chance
         yield InjurySeverity.CRITICAL; // 6% chance
       }
-      case INTERTEMPORAL_TIER -> {
+      case MIDCARDER -> {
         // Elite wrestlers know how to protect themselves
         if (roll <= 55) yield InjurySeverity.MINOR; // 55% chance
         if (roll <= 80) yield InjurySeverity.MODERATE; // 25% chance
@@ -307,7 +304,7 @@ public class InjuryService {
   }
 
   /** Generate injury name based on severity. */
-  private String generateInjuryName(InjurySeverity severity) {
+  private String generateInjuryName(@NonNull InjurySeverity severity) {
     String[] minorInjuries = {"Bruised Ribs", "Twisted Ankle", "Minor Cut", "Muscle Strain"};
     String[] moderateInjuries = {
       "Sprained Wrist", "Bruised Shoulder", "Minor Concussion", "Pulled Muscle"
@@ -329,7 +326,7 @@ public class InjuryService {
   }
 
   /** Generate injury description based on severity. */
-  private String generateInjuryDescription(InjurySeverity severity) {
+  private String generateInjuryDescription(@NonNull InjurySeverity severity) {
     return switch (severity) {
       case MINOR -> "A minor injury that should heal quickly with proper rest.";
       case MODERATE -> "A moderate injury that requires some time to heal properly.";

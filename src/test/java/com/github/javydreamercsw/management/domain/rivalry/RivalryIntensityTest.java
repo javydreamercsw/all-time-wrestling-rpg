@@ -90,13 +90,13 @@ class RivalryIntensityTest {
     assertThat(explosive.getEmoji()).isEqualTo("🌋");
     assertThat(explosive.getMinHeat()).isEqualTo(30);
     assertThat(explosive.getMaxHeat()).isEqualTo(Integer.MAX_VALUE);
-    assertThat(explosive.getDescription()).contains("Requires stipulation match");
+    assertThat(explosive.getDescription()).contains("Requires rule segment");
     assertThat(explosive.getDisplayWithEmoji()).isEqualTo("🌋 Explosive");
     assertThat(explosive.getHeatRangeDisplay()).isEqualTo("30+ heat");
   }
 
   @ParameterizedTest
-  @DisplayName("Should correctly check if requires next show match")
+  @DisplayName("Should correctly check if requires next show segment")
   @CsvSource({"SIMMERING, false", "HEATED, true", "INTENSE, true", "EXPLOSIVE, true"})
   void shouldCorrectlyCheckIfRequiresNextShowMatch(RivalryIntensity intensity, boolean expected) {
     assertThat(intensity.requiresNextShowMatch()).isEqualTo(expected);
@@ -110,7 +110,7 @@ class RivalryIntensityTest {
   }
 
   @ParameterizedTest
-  @DisplayName("Should correctly check if requires stipulation match")
+  @DisplayName("Should correctly check if requires rule segment")
   @CsvSource({"SIMMERING, false", "HEATED, false", "INTENSE, false", "EXPLOSIVE, true"})
   void shouldCorrectlyCheckIfRequiresStipulationMatch(
       RivalryIntensity intensity, boolean expected) {

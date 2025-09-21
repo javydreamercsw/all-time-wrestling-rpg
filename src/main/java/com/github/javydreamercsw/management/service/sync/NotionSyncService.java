@@ -4,15 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.FactionRivalrySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.InjurySyncService;
-import com.github.javydreamercsw.management.service.sync.entity.MatchSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.NpcSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.RivalrySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.SeasonSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.SegmentSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTemplateSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTypeSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.TeamSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.TitleReignSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.TitleSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
@@ -37,12 +41,16 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private WrestlerSyncService wrestlerSyncService;
   @Autowired private FactionSyncService factionSyncService;
   @Autowired private TeamSyncService teamSyncService;
-  @Autowired private MatchSyncService matchSyncService;
+  @Autowired private SegmentSyncService segmentSyncService;
   @Autowired private SeasonSyncService seasonSyncService;
   @Autowired private ShowTypeSyncService showTypeSyncService;
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private InjurySyncService injurySyncService;
   @Autowired private NpcSyncService npcSyncService;
+  @Autowired private TitleSyncService titleSyncService;
+  @Autowired private TitleReignSyncService titleReignSyncService;
+  @Autowired private RivalrySyncService rivalrySyncService;
+  @Autowired private FactionRivalrySyncService factionRivalrySyncService;
 
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
@@ -79,6 +87,44 @@ public class NotionSyncService extends BaseSyncService {
   }
 
   // ==================== INDIVIDUAL ENTITY SYNC OPERATIONS ====================
+
+  /**
+   * Synchronizes a single show from Notion by its ID.
+   *
+   * @param showId The Notion ID of the show to sync.
+   * @return SyncResult containing the outcome of the sync operation.
+   */
+  public SyncResult syncShow(@NonNull String showId) {
+    return showSyncService.syncShow(showId);
+  }
+
+  /**
+   * Gets all show IDs from the Notion database.
+   *
+   * @return List of all show IDs.
+   */
+  public java.util.List<String> getAllShowIds() {
+    return showSyncService.getShowIds();
+  }
+
+  /**
+   * Synchronizes a single segment from Notion by its ID.
+   *
+   * @param segmentId The Notion ID of the segment to sync.
+   * @return SyncResult containing the outcome of the sync operation.
+   */
+  public SyncResult syncSegment(@NonNull String segmentId) {
+    return segmentSyncService.syncSegment(segmentId);
+  }
+
+  /**
+   * Gets all segment IDs from the Notion database.
+   *
+   * @return List of all segment IDs.
+   */
+  public java.util.List<String> getAllSegmentIds() {
+    return segmentSyncService.getSegmentIds();
+  }
 
   /**
    * Synchronizes shows from Notion Shows database directly to the database.
@@ -130,13 +176,13 @@ public class NotionSyncService extends BaseSyncService {
   }
 
   /**
-   * Synchronizes matches from Notion Matches database directly to the database.
+   * Synchronizes segments from Notion Segments database directly to the database.
    *
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult containing the outcome of the sync operation
    */
-  public SyncResult syncMatches(@NonNull String operationId) {
-    return matchSyncService.syncMatches(operationId + "-matches");
+  public SyncResult syncSegments(@NonNull String operationId) {
+    return segmentSyncService.syncSegments(operationId + "-segments");
   }
 
   /**
@@ -187,5 +233,45 @@ public class NotionSyncService extends BaseSyncService {
    */
   public SyncResult syncNpcs(@NonNull String operationId) {
     return npcSyncService.syncNpcs(operationId);
+  }
+
+  /**
+   * Synchronizes titles from Notion to the local database.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncTitles(@NonNull String operationId) {
+    return titleSyncService.syncTitles(operationId);
+  }
+
+  /**
+   * Synchronizes title reigns from Notion to the local database.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncTitleReigns(@NonNull String operationId) {
+    return titleReignSyncService.syncTitleReigns(operationId);
+  }
+
+  /**
+   * Synchronizes rivalries from Notion to the database.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncRivalries(@NonNull String operationId) {
+    return rivalrySyncService.syncRivalries(operationId);
+  }
+
+  /**
+   * Synchronizes faction rivalries from Notion to the database.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncFactionRivalries(@NonNull String operationId) {
+    return factionRivalrySyncService.syncFactionRivalries(operationId);
   }
 }

@@ -3,8 +3,8 @@ package com.github.javydreamercsw.management.service.season;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Clock;
 import java.time.Instant;
@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SeasonProgressionService {
 
   private final SeasonRepository seasonRepository;
-  private final MatchResultRepository matchResultRepository;
+  private final SegmentRepository segmentRepository;
   private final Clock clock;
 
   /**
@@ -58,12 +58,10 @@ public class SeasonProgressionService {
     int ppvShows = totalShows - regularShows;
 
     // Get all matches from the season
-    List<MatchResult> allMatches =
-        shows.stream().flatMap(show -> matchResultRepository.findByShow(show).stream()).toList();
+    List<Segment> allMatches =
+        shows.stream().flatMap(show -> segmentRepository.findByShow(show).stream()).toList();
 
     int totalMatches = allMatches.size();
-    double averageMatchRating =
-        allMatches.stream().mapToInt(MatchResult::getMatchRating).average().orElse(0.0);
 
     // Calculate wrestler statistics
     Map<Wrestler, Long> wrestlerMatchCounts =
@@ -73,7 +71,7 @@ public class SeasonProgressionService {
 
     Map<Wrestler, Long> wrestlerWinCounts =
         allMatches.stream()
-            .collect(Collectors.groupingBy(MatchResult::getWinner, Collectors.counting()));
+            .collect(Collectors.groupingBy(Segment::getWinner, Collectors.counting()));
 
     // Find most active wrestler
     Optional<Wrestler> mostActiveWrestler =
@@ -108,7 +106,6 @@ public class SeasonProgressionService {
             regularShows,
             ppvShows,
             totalMatches,
-            averageMatchRating,
             wrestlerMatchCounts.size(),
             mostActiveWrestler.map(Wrestler::getName).orElse("N/A"),
             mostSuccessfulWrestler.map(Wrestler::getName).orElse("N/A"),
@@ -249,18 +246,6 @@ public class SeasonProgressionService {
           "Season has " + showCount + " shows. Consider building toward season climax.");
     }
 
-    // Check for storyline opportunities
-    Optional<SeasonStatistics> statsOpt = getSeasonStatistics(activeSeason.getId());
-    if (statsOpt.isPresent()) {
-      SeasonStatistics stats = statsOpt.get();
-      if (stats.averageMatchRating() < 3.0) {
-        recommendations.add(
-            "Average match rating is low ("
-                + String.format("%.1f", stats.averageMatchRating())
-                + "). Consider booking more rivalry-based matches.");
-      }
-    }
-
     if (recommendations.isEmpty()) {
       recommendations.add("Season is progressing well. Continue with regular show booking.");
     }
@@ -299,7 +284,6 @@ public class SeasonProgressionService {
       int regularShows,
       int ppvShows,
       int totalMatches,
-      double averageMatchRating,
       int uniqueWrestlers,
       String mostActiveWrestler,
       String mostSuccessfulWrestler,

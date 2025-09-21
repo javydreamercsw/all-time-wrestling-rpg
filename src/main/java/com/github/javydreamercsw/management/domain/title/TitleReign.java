@@ -4,6 +4,9 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -22,13 +25,19 @@ public class TitleReign extends AbstractEntity<Long> {
   @Column(name = "title_reign_id")
   private Long id;
 
+  @Column(name = "external_id")
+  private String externalId;
+
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "title_id", nullable = false)
   private Title title;
 
-  @ManyToOne(optional = false, fetch = FetchType.LAZY)
-  @JoinColumn(name = "champion_id", nullable = false)
-  private Wrestler champion;
+  @ManyToMany(fetch = FetchType.EAGER)
+  @JoinTable(
+      name = "title_reign_champion",
+      joinColumns = @JoinColumn(name = "title_reign_id"),
+      inverseJoinColumns = @JoinColumn(name = "wrestler_id"))
+  private List<Wrestler> champions = new ArrayList<>();
 
   @Column(name = "start_date", nullable = false)
   private Instant startDate;
@@ -105,7 +114,16 @@ public class TitleReign extends AbstractEntity<Long> {
   public String getDisplayString() {
     String status = isCurrentReign() ? " (Current)" : "";
     return String.format(
-        "%s - Reign #%d (%s)%s", champion.getName(), reignNumber, getReignLengthDisplay(), status);
+        "%s - Reign #%d (%s)%s", getChampionNames(), reignNumber, getReignLengthDisplay(), status);
+  }
+
+  /**
+   * Gets the champion names as a formatted string.
+   *
+   * @return Formatted champion names.
+   */
+  private String getChampionNames() {
+    return champions.stream().map(Wrestler::getName).collect(Collectors.joining(" & "));
   }
 
   @Override

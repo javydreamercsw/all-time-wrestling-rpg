@@ -1,7 +1,6 @@
 package com.github.javydreamercsw.management.service.sync.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -39,13 +38,20 @@ class ShowTemplateSyncServiceTest {
 
   @Mock private ShowTemplateService showTemplateService;
   @Mock private ObjectMapper objectMapper;
-  @Mock private NotionSyncProperties syncProperties;
+  private final NotionSyncProperties syncProperties; // Declare without @Mock
   @Mock private NotionHandler notionHandler;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private NotionRateLimitService rateLimitService;
 
   private ShowTemplateSyncService syncService;
+
+  // Constructor to configure the mock before setUp()
+  public ShowTemplateSyncServiceTest() {
+    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+  }
 
   @BeforeEach
   void setUp() {

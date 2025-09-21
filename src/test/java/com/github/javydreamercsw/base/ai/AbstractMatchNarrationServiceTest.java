@@ -2,15 +2,17 @@ package com.github.javydreamercsw.base.ai;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.base.ai.MatchNarrationService.MatchNarrationContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.MatchTypeContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.Move;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.MoveSet;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.NPCContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.RefereeContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.VenueContext;
-import com.github.javydreamercsw.base.ai.MatchNarrationService.WrestlerContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.RefereeContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import java.util.Arrays;
+import java.util.List;
+import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,7 +25,7 @@ import org.junit.jupiter.api.Test;
 class AbstractMatchNarrationServiceTest {
 
   private TestableMatchNarrationService service;
-  private MatchNarrationContext testContext;
+  private SegmentNarrationContext testContext;
 
   @BeforeEach
   void setUp() {
@@ -40,7 +42,7 @@ class AbstractMatchNarrationServiceTest {
         .isNotNull()
         .isNotEmpty()
         .contains("professional wrestling play-by-play commentator")
-        .contains("MATCH SETUP:")
+        .contains("SEGMENT SETUP:")
         .contains("WRESTLERS:")
         .contains("REFEREE:")
         .contains("SUPPORTING CHARACTERS:")
@@ -49,12 +51,12 @@ class AbstractMatchNarrationServiceTest {
   }
 
   @Test
-  @DisplayName("Should include match type and stipulation in prompt")
+  @DisplayName("Should include segment type and rule in prompt")
   void shouldIncludeMatchTypeAndStipulationInPrompt() {
     String prompt = service.buildTestPrompt(testContext);
 
     assertThat(prompt)
-        .contains("Match Type: Championship Match")
+        .contains("Segment Type: Championship Match")
         .contains("Stipulation: World Heavyweight Championship")
         .contains("Special Rules: No DQ, Falls Count Anywhere")
         .contains("Time Limit: 60 minutes");
@@ -73,7 +75,7 @@ class AbstractMatchNarrationServiceTest {
         .contains("Description: The World's Most Famous Arena")
         .contains("Atmosphere: Electric and historic")
         .contains("Significance: The Mecca of professional wrestling")
-        .contains("Notable Matches: Hulk Hogan vs Andre the Giant");
+        .contains("Notable Segments: Hulk Hogan vs Andre the Giant");
   }
 
   @Test
@@ -83,11 +85,11 @@ class AbstractMatchNarrationServiceTest {
 
     assertThat(prompt)
         .contains("- John Cena:")
-        .contains("Description: The Leader of Cenation")
+        .contains("Description: The Leader of Cenation - Never Give Up")
         .contains("Finishers: Attitude Adjustment (Fireman's carry slam)")
         .contains("Trademark Moves: Five Knuckle Shuffle (Theatrical fist drop)")
         .contains("Current Feuds/Heat: Face of the company")
-        .contains("Recent Match History: Defeated Randy Orton");
+        .contains("Recent Segment History: Defeated Randy Orton");
   }
 
   @Test
@@ -98,7 +100,7 @@ class AbstractMatchNarrationServiceTest {
     assertThat(prompt)
         .contains("REFEREE:")
         .contains("- Charles Robinson:")
-        .contains("Description: Veteran WWE referee")
+        .contains("Description: Veteran WWE referee known for his athleticism")
         .contains("Personality: Fair and professional");
   }
 
@@ -125,13 +127,13 @@ class AbstractMatchNarrationServiceTest {
   }
 
   @Test
-  @DisplayName("Should include recent match context for continuity")
+  @DisplayName("Should include recent segment context for continuity")
   void shouldIncludeRecentMatchContextForContinuity() {
     String prompt = service.buildTestPrompt(testContext);
 
     assertThat(prompt)
-        .contains("RECENT MATCH CONTEXT")
-        .contains("Recent Match 1: Previous epic encounter");
+        .contains("RECENT SEGMENT CONTEXT")
+        .contains("Recent Segment 1: Previous epic encounter");
   }
 
   @Test
@@ -146,21 +148,21 @@ class AbstractMatchNarrationServiceTest {
         .contains("3. Include realistic crowd reactions")
         .contains("4. Incorporate the referee's personality")
         .contains("5. Reference the feuds/heat")
-        .contains("10. Create a detailed, comprehensive match narration of 1500-2500 words")
-        .contains("Begin the match narration now:");
+        .contains("10. Create a detailed, comprehensive segment narration of 1500-2500 words")
+        .contains("Begin the segment narration now:");
   }
 
   @Test
   @DisplayName("Should handle minimal context gracefully")
   void shouldHandleMinimalContextGracefully() {
-    MatchNarrationContext minimalContext = new MatchNarrationContext();
+    SegmentNarrationContext minimalContext = new SegmentNarrationContext();
 
     // Set only required fields
-    MatchTypeContext matchType = new MatchTypeContext();
-    matchType.setMatchType("Singles Match");
+    SegmentTypeContext matchType = new SegmentTypeContext();
+    matchType.setSegmentType("Singles Match");
     matchType.setStipulation("Regular Match");
-    matchType.setRules(Arrays.asList());
-    minimalContext.setMatchType(matchType);
+    matchType.setRules(List.of());
+    minimalContext.setSegmentType(matchType);
 
     WrestlerContext wrestler1 = new WrestlerContext();
     wrestler1.setName("Wrestler A");
@@ -182,16 +184,16 @@ class AbstractMatchNarrationServiceTest {
   }
 
   /** Creates a comprehensive test context with all possible fields populated. */
-  private MatchNarrationContext createComprehensiveTestContext() {
-    MatchNarrationContext context = new MatchNarrationContext();
+  private SegmentNarrationContext createComprehensiveTestContext() {
+    SegmentNarrationContext context = new SegmentNarrationContext();
 
     // Match Type
-    MatchTypeContext matchType = new MatchTypeContext();
-    matchType.setMatchType("Championship Match");
+    SegmentTypeContext matchType = new SegmentTypeContext();
+    matchType.setSegmentType("Championship Match");
     matchType.setStipulation("World Heavyweight Championship");
     matchType.setRules(Arrays.asList("No DQ", "Falls Count Anywhere"));
     matchType.setTimeLimit(60);
-    context.setMatchType(matchType);
+    context.setSegmentType(matchType);
 
     // Venue
     VenueContext venue = new VenueContext();
@@ -202,7 +204,7 @@ class AbstractMatchNarrationServiceTest {
     venue.setDescription("The World's Most Famous Arena");
     venue.setAtmosphere("Electric and historic");
     venue.setSignificance("The Mecca of professional wrestling");
-    venue.setNotableMatches(
+    venue.setNotableSegments(
         Arrays.asList("Hulk Hogan vs Andre the Giant", "Shawn Michaels vs Razor Ramon"));
     context.setVenue(venue);
 
@@ -217,10 +219,10 @@ class AbstractMatchNarrationServiceTest {
             new Move("Attitude Adjustment", "Fireman's carry slam", "finisher"),
             new Move("STF/STFU", "Submission hold", "finisher")));
     cenaMoves.setTrademarks(
-        Arrays.asList(new Move("Five Knuckle Shuffle", "Theatrical fist drop", "trademark")));
+        List.of(new Move("Five Knuckle Shuffle", "Theatrical fist drop", "trademark")));
     cena.setMoveSet(cenaMoves);
     cena.setFeudsAndHeat(Arrays.asList("Face of the company", "Polarizing figure"));
-    cena.setRecentMatches(Arrays.asList("Defeated Randy Orton", "Beat Edge for title"));
+    cena.setRecentSegments(Arrays.asList("Defeated Randy Orton", "Beat Edge for title"));
 
     WrestlerContext edge = new WrestlerContext();
     edge.setName("Edge");
@@ -253,17 +255,59 @@ class AbstractMatchNarrationServiceTest {
     context.setAudience("Sold-out crowd of 20,000 passionate WWE fans");
     context.setDeterminedOutcome(
         "John Cena wins via Attitude Adjustment to retain the World Heavyweight Championship");
-    context.setRecentMatchNarrations(
-        Arrays.asList("Previous epic encounter between these two rivals..."));
+    context.setRecentSegmentNarrations(
+        List.of("Previous epic encounter between these two rivals..."));
 
     return context;
   }
 
+  @Test
+  @DisplayName("Should include custom instructions in promo prompt")
+  void shouldIncludeCustomInstructionsInPromoPrompt() {
+    // Given
+    SegmentNarrationContext promoContext = new SegmentNarrationContext();
+    SegmentTypeContext segmentType = new SegmentTypeContext();
+    segmentType.setSegmentType("Promo");
+    promoContext.setSegmentType(segmentType);
+    promoContext.setDeterminedOutcome("A promo about a future match.");
+    String customInstructions = "These are my custom instructions.";
+    promoContext.setInstructions(customInstructions);
+
+    // When
+    String prompt = service.buildTestPrompt(promoContext);
+
+    // Then
+    assertThat(prompt)
+        .isNotNull()
+        .isNotEmpty()
+        .contains("PROMO NARRATION INSTRUCTIONS:")
+        .contains(customInstructions);
+  }
+
+  @Test
+  @DisplayName("Should include custom instructions in match prompt")
+  void shouldIncludeCustomInstructionsInMatchPrompt() {
+    // Given
+    SegmentNarrationContext matchContext = createComprehensiveTestContext();
+    String customInstructions = "These are my custom instructions for a match.";
+    matchContext.setInstructions(customInstructions);
+
+    // When
+    String prompt = service.buildTestPrompt(matchContext);
+
+    // Then
+    assertThat(prompt)
+        .isNotNull()
+        .isNotEmpty()
+        .contains("NARRATION INSTRUCTIONS:")
+        .contains(customInstructions);
+  }
+
   /** Testable implementation of AbstractMatchNarrationService for testing prompt building. */
-  private static class TestableMatchNarrationService extends AbstractMatchNarrationService {
+  private static class TestableMatchNarrationService extends AbstractSegmentNarrationService {
 
     @Override
-    protected String callAIProvider(String prompt) {
+    protected String callAIProvider(@NonNull String prompt) {
       return "Test narration response";
     }
 
@@ -277,9 +321,14 @@ class AbstractMatchNarrationServiceTest {
       return true;
     }
 
+    @Override
+    public String generateText(@NonNull String prompt) {
+      return callAIProvider(prompt);
+    }
+
     // Expose the protected method for testing
-    public String buildTestPrompt(MatchNarrationContext context) {
-      return buildMatchNarrationPrompt(context);
+    public String buildTestPrompt(SegmentNarrationContext context) {
+      return buildSegmentNarrationPrompt(context);
     }
   }
 }

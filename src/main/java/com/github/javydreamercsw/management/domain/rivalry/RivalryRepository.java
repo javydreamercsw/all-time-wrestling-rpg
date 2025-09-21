@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.domain.rivalry;
 
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,9 @@ public interface RivalryRepository
 
   // If you don't need a total row count, Slice is better than Page.
   Page<Rivalry> findAllBy(Pageable pageable);
+
+  @Query("SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2")
+  Page<Rivalry> findAllWithWrestlers(Pageable pageable);
 
   /** Find active rivalries. */
   List<Rivalry> findByIsActiveTrue();
@@ -50,7 +54,7 @@ public interface RivalryRepository
   @Query("SELECT r FROM Rivalry r WHERE r.isActive = true AND r.heat >= 20")
   List<Rivalry> findRivalriesEligibleForResolution();
 
-  /** Find rivalries requiring stipulation matches (30+ heat). */
+  /** Find rivalries requiring rule matches (30+ heat). */
   @Query("SELECT r FROM Rivalry r WHERE r.isActive = true AND r.heat >= 30")
   List<Rivalry> findRivalriesRequiringStipulationMatches();
 
@@ -86,4 +90,13 @@ public interface RivalryRepository
       AND r.isActive = true
       """)
   long countActiveRivalriesForWrestler(@Param("wrestler") Wrestler wrestler);
+
+  @Query(
+      """
+      SELECT r FROM Rivalry r
+      WHERE (r.isActive = true AND r.startedDate <= :endDate) OR
+            (r.startedDate <= :endDate AND (r.endedDate IS NULL OR r.endedDate >= :startDate))
+      """)
+  List<Rivalry> findActiveRivalriesBetween(
+      @Param("startDate") Instant startDate, @Param("endDate") Instant endDate);
 }

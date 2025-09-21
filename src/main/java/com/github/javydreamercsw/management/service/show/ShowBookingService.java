@@ -3,22 +3,22 @@ package com.github.javydreamercsw.management.service.show;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
-import com.github.javydreamercsw.management.domain.show.match.stipulation.MatchRule;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchType;
-import com.github.javydreamercsw.management.domain.show.match.type.MatchTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.match.MatchRuleService;
-import com.github.javydreamercsw.management.service.match.MatchTeam;
-import com.github.javydreamercsw.management.service.match.NPCMatchResolutionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.SegmentTeam;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service for automated show booking in the ATW RPG system. Handles intelligent match creation
+ * Service for automated show booking in the ATW RPG system. Handles intelligent segment creation
  * based on storylines, rivalries, and wrestler availability.
  */
 @Service
@@ -45,14 +45,14 @@ public class ShowBookingService {
   private final ShowRepository showRepository;
   private final ShowTypeRepository showTypeRepository;
   private final ShowTemplateRepository showTemplateRepository;
-  private final MatchTypeRepository matchTypeRepository;
-  private final MatchResultRepository matchResultRepository;
+  private final SegmentTypeRepository segmentTypeRepository;
+  private final SegmentRepository segmentRepository;
   private final WrestlerRepository wrestlerRepository;
   private final SeasonService seasonService;
   private final RivalryService rivalryService;
-  private final NPCMatchResolutionService npcMatchResolutionService;
+  private final NPCSegmentResolutionService npcSegmentResolutionService;
   private final PromoBookingService promoBookingService;
-  private final MatchRuleService matchRuleService;
+  private final SegmentRuleService segmentRuleService;
   private final Clock clock;
   private final Random random = new Random();
 
@@ -62,39 +62,39 @@ public class ShowBookingService {
    * @param showName Name of the show
    * @param showDescription Description of the show
    * @param showTypeName Type of show (e.g., "Weekly Show", "PPV")
-   * @param matchCount Number of matches to book (3-8 for regular shows, 5-10 for PPVs)
+   * @param segmentCount Number of segments to book (3-8 for regular shows, 5-10 for PPVs)
    * @param templateName Name of the show template to use (optional)
    * @param showDate Date when the show takes place (optional)
-   * @return The booked show with all matches
+   * @return The booked show with all segments
    */
   @Transactional
   public Optional<Show> bookShow(
       @NonNull String showName,
       @NonNull String showDescription,
       @NonNull String showTypeName,
-      int matchCount,
+      int segmentCount,
       String templateName,
       LocalDate showDate) {
     return bookShowInternal(
-        showName, showDescription, showTypeName, matchCount, templateName, showDate);
+        showName, showDescription, showTypeName, segmentCount, templateName, showDate);
   }
 
   /**
-   * Book a complete show with automatically generated matches based on storylines and rivalries.
+   * Book a complete show with automatically generated segments based on storylines and rivalries.
    *
    * @param showName Name of the show
    * @param showDescription Description of the show
    * @param showTypeName Type of show (e.g., "Weekly Show", "PPV")
-   * @param matchCount Number of matches to book (3-8 for regular shows, 5-10 for PPVs)
-   * @return The booked show with all matches
+   * @param segmentCount Number of segments to book (3-8 for regular shows, 5-10 for PPVs)
+   * @return The booked show with all segments
    */
   @Transactional
   public Optional<Show> bookShow(
       @NonNull String showName,
       @NonNull String showDescription,
       @NonNull String showTypeName,
-      int matchCount) {
-    return bookShowInternal(showName, showDescription, showTypeName, matchCount, null, null);
+      int segmentCount) {
+    return bookShowInternal(showName, showDescription, showTypeName, segmentCount, null, null);
   }
 
   /** Internal method to book a show with all parameters. */
@@ -102,13 +102,13 @@ public class ShowBookingService {
       @NonNull String showName,
       @NonNull String showDescription,
       @NonNull String showTypeName,
-      int matchCount,
+      int segmentCount,
       String templateName,
       LocalDate showDate) {
     try {
       // Validate inputs
-      if (matchCount < 3 || matchCount > 10) {
-        log.warn("Invalid match count: {}. Must be between 3 and 10", matchCount);
+      if (segmentCount < 3 || segmentCount > 10) {
+        log.warn("Invalid segment count: {}. Must be between 3 and 10", segmentCount);
         return Optional.empty();
       }
 
@@ -144,14 +144,14 @@ public class ShowBookingService {
       // Add show to active season
       seasonService.addShowToActiveSeason(savedShow);
 
-      // Generate matches and promos for the show
-      List<MatchResult> matches = generateMatchesForShow(savedShow, matchCount);
-      List<MatchResult> promos = generatePromosForShow(savedShow, matchCount);
+      // Generate segments and promos for the show
+      List<Segment> segments = generateSegmentsForShow(savedShow, segmentCount);
+      List<Segment> promos = generatePromosForShow(savedShow, segmentCount);
 
       log.info(
-          "Successfully booked show '{}' with {} matches and {} promos",
+          "Successfully booked show '{}' with {} segments and {} promos",
           showName,
-          matches.size(),
+          segments.size(),
           promos.size());
       return Optional.of(savedShow);
 
@@ -162,7 +162,7 @@ public class ShowBookingService {
   }
 
   /**
-   * Book a PPV show with enhanced match quality and storyline focus.
+   * Book a PPV show with enhanced segment quality and storyline focus.
    *
    * @param ppvName Name of the PPV
    * @param ppvDescription Description of the PPV
@@ -193,15 +193,15 @@ public class ShowBookingService {
       // Add show to active season
       seasonService.addShowToActiveSeason(savedShow);
 
-      // Generate 6-8 matches for PPV (higher quality, storyline-focused)
-      int matchCount = 6 + random.nextInt(3); // 6-8 matches
-      List<MatchResult> matches = generatePPVMatches(savedShow, matchCount);
-      List<MatchResult> promos = generatePromosForPPV(savedShow, matchCount);
+      // Generate 6-8 segments for PPV (higher quality, storyline-focused)
+      int segmentCount = 6 + random.nextInt(3); // 6-8 segments
+      List<Segment> segments = generatePPVSegments(savedShow, segmentCount);
+      List<Segment> promos = generatePromosForPPV(savedShow, segmentCount);
 
       log.info(
-          "Successfully booked PPV '{}' with {} matches and {} promos",
+          "Successfully booked PPV '{}' with {} segments and {} promos",
           ppvName,
-          matches.size(),
+          segments.size(),
           promos.size());
       return Optional.of(savedShow);
 
@@ -211,80 +211,81 @@ public class ShowBookingService {
     }
   }
 
-  /** Generate matches for a regular show based on storylines and wrestler availability. */
-  private List<MatchResult> generateMatchesForShow(@NonNull Show show, int matchCount) {
-    List<MatchResult> matches = new ArrayList<>();
+  /** Generate segments for a regular show based on storylines and wrestler availability. */
+  private List<Segment> generateSegmentsForShow(@NonNull Show show, int segmentCount) {
+    List<Segment> segments = new ArrayList<>();
     List<Wrestler> availableWrestlers = new ArrayList<>(wrestlerRepository.findAll());
 
     if (availableWrestlers.size() < 4) {
       log.warn("Not enough wrestlers available for show booking");
-      return matches;
+      return segments;
     }
 
     // Shuffle wrestlers for variety
     Collections.shuffle(availableWrestlers, random);
 
-    // 1. Book rivalry matches first (high priority)
-    matches.addAll(bookRivalryMatches(show, availableWrestlers, Math.min(2, matchCount / 2)));
+    // 1. Book rivalry segments first (high priority)
+    segments.addAll(bookRivalrySegments(show, availableWrestlers, Math.min(2, segmentCount / 2)));
 
-    // 2. Book random matches to fill remaining slots
-    int remainingMatches = matchCount - matches.size();
-    matches.addAll(bookRandomMatches(show, availableWrestlers, remainingMatches));
+    // 2. Book random segments to fill remaining slots
+    int remainingSegments = segmentCount - segments.size();
+    segments.addAll(bookRandomSegments(show, availableWrestlers, remainingSegments));
 
-    return matches;
+    return segments;
   }
 
-  /** Generate enhanced matches for PPV shows with focus on major storylines. */
-  private List<MatchResult> generatePPVMatches(Show show, int matchCount) {
-    List<MatchResult> matches = new ArrayList<>();
+  /** Generate enhanced segments for PPV shows with focus on major storylines. */
+  private List<Segment> generatePPVSegments(Show show, int segmentCount) {
+    List<Segment> segments = new ArrayList<>();
     List<Wrestler> availableWrestlers = new ArrayList<>(wrestlerRepository.findAll());
 
     if (availableWrestlers.size() < 6) {
       log.warn("Not enough wrestlers available for PPV booking");
-      return matches;
+      return segments;
     }
 
     Collections.shuffle(availableWrestlers, random);
 
-    // 1. Book high-heat rivalry matches (60% of PPV matches)
-    int rivalryMatches = Math.max(3, (matchCount * 6) / 10);
-    matches.addAll(bookHighHeatRivalryMatches(show, availableWrestlers, rivalryMatches));
+    // 1. Book high-heat rivalry segments (60% of PPV segments)
+    int rivalrySegments = Math.max(3, (segmentCount * 6) / 10);
+    segments.addAll(bookHighHeatRivalrySegments(show, availableWrestlers, rivalrySegments));
 
-    // 2. Book multi-person matches for variety (20% of PPV matches)
-    int multiPersonMatches = Math.max(1, matchCount / 5);
-    matches.addAll(bookMultiPersonMatches(show, availableWrestlers, multiPersonMatches));
+    // 2. Book multi-person segments for variety (20% of PPV segments)
+    int multiPersonSegments = Math.max(1, segmentCount / 5);
+    segments.addAll(bookMultiPersonSegments(show, availableWrestlers, multiPersonSegments));
 
-    // 3. Fill remaining slots with quality singles matches
-    int remainingMatches = matchCount - matches.size();
-    matches.addAll(bookQualityMatches(show, availableWrestlers, remainingMatches));
+    // 3. Fill remaining slots with quality singles segments
+    int remainingSegments = segmentCount - segments.size();
+    segments.addAll(bookQualitySegments(show, availableWrestlers, remainingSegments));
 
-    return matches;
+    return segments;
   }
 
-  /** Book matches based on active rivalries. */
-  private List<MatchResult> bookRivalryMatches(
-      Show show, List<Wrestler> availableWrestlers, int maxMatches) {
-    List<MatchResult> matches = new ArrayList<>();
+  /** Book segments based on active rivalries. */
+  private List<Segment> bookRivalrySegments(
+      Show show, List<Wrestler> availableWrestlers, int maxSegments) {
+    List<Segment> segments = new ArrayList<>();
     List<Rivalry> activeRivalries = rivalryService.getActiveRivalries();
 
-    int bookedMatches = 0;
+    int bookedSegments = 0;
     for (Rivalry rivalry : activeRivalries) {
-      if (bookedMatches >= maxMatches) break;
+      if (bookedSegments >= maxSegments) break;
 
       Wrestler wrestler1 = rivalry.getWrestler1();
       Wrestler wrestler2 = rivalry.getWrestler2();
 
       // Check if both wrestlers are available
       if (availableWrestlers.contains(wrestler1) && availableWrestlers.contains(wrestler2)) {
-        Optional<MatchResult> match = bookSinglesMatch(show, wrestler1, wrestler2, "Rivalry Match");
-        if (match.isPresent()) {
-          matches.add(match.get());
+        Optional<Segment> segment =
+            bookSinglesSegment(show, wrestler1, wrestler2, "Rivalry Segment");
+        if (segment.isPresent()) {
+          segments.add(segment.get());
           availableWrestlers.remove(wrestler1);
           availableWrestlers.remove(wrestler2);
-          bookedMatches++;
+          bookedSegments++;
 
           log.info(
-              "Booked rivalry match: {} vs {} (Heat: {})",
+              "Booked rivalry segment: {} vs {} (Heat: {})",
               wrestler1.getName(),
               wrestler2.getName(),
               rivalry.getHeat());
@@ -292,37 +293,37 @@ public class ShowBookingService {
       }
     }
 
-    return matches;
+    return segments;
   }
 
-  /** Book high-heat rivalry matches for PPVs. */
-  private List<MatchResult> bookHighHeatRivalryMatches(
-      Show show, List<Wrestler> availableWrestlers, int maxMatches) {
-    List<MatchResult> matches = new ArrayList<>();
+  /** Book high-heat rivalry segments for PPVs. */
+  private List<Segment> bookHighHeatRivalrySegments(
+      Show show, List<Wrestler> availableWrestlers, int maxSegments) {
+    List<Segment> segments = new ArrayList<>();
     List<Rivalry> highHeatRivalries =
         rivalryService.getActiveRivalries().stream()
             .filter(rivalry -> rivalry.getHeat() >= 15) // High heat rivalries
             .toList();
 
-    int bookedMatches = 0;
+    int bookedSegments = 0;
     for (Rivalry rivalry : highHeatRivalries) {
-      if (bookedMatches >= maxMatches) break;
+      if (bookedSegments >= maxSegments) break;
 
       Wrestler wrestler1 = rivalry.getWrestler1();
       Wrestler wrestler2 = rivalry.getWrestler2();
 
       if (availableWrestlers.contains(wrestler1) && availableWrestlers.contains(wrestler2)) {
-        // Use special stipulations for high-heat matches
+        // Use special stipulations for high-heat segments
         String stipulation = getHighHeatStipulation(rivalry.getHeat());
-        Optional<MatchResult> match = bookSinglesMatch(show, wrestler1, wrestler2, stipulation);
-        if (match.isPresent()) {
-          matches.add(match.get());
+        Optional<Segment> segment = bookSinglesSegment(show, wrestler1, wrestler2, stipulation);
+        if (segment.isPresent()) {
+          segments.add(segment.get());
           availableWrestlers.remove(wrestler1);
           availableWrestlers.remove(wrestler2);
-          bookedMatches++;
+          bookedSegments++;
 
           log.info(
-              "Booked high-heat PPV match: {} vs {} ({}, Heat: {})",
+              "Booked high-heat PPV segment: {} vs {} ({}, Heat: {})",
               wrestler1.getName(),
               wrestler2.getName(),
               stipulation,
@@ -331,16 +332,16 @@ public class ShowBookingService {
       }
     }
 
-    return matches;
+    return segments;
   }
 
-  /** Book multi-person matches for variety. */
-  private List<MatchResult> bookMultiPersonMatches(
-      Show show, List<Wrestler> availableWrestlers, int maxMatches) {
-    List<MatchResult> matches = new ArrayList<>();
+  /** Book multi-person segments for variety. */
+  private List<Segment> bookMultiPersonSegments(
+      Show show, List<Wrestler> availableWrestlers, int maxSegments) {
+    List<Segment> segments = new ArrayList<>();
 
-    for (int i = 0; i < maxMatches && availableWrestlers.size() >= 3; i++) {
-      // Create 3-4 person matches
+    for (int i = 0; i < maxSegments && availableWrestlers.size() >= 3; i++) {
+      // Create 3-4 person segments
       int participantCount = 3 + random.nextInt(2); // 3 or 4 wrestlers
       if (availableWrestlers.size() < participantCount) {
         participantCount = availableWrestlers.size();
@@ -351,133 +352,133 @@ public class ShowBookingService {
         participants.add(availableWrestlers.remove(0));
       }
 
-      Optional<MatchResult> match = bookMultiPersonMatch(show, participants);
-      if (match.isPresent()) {
-        matches.add(match.get());
-        log.info("Booked multi-person match with {} wrestlers", participantCount);
+      Optional<Segment> segment = bookMultiPersonSegment(show, participants);
+      if (segment.isPresent()) {
+        segments.add(segment.get());
+        log.info("Booked multi-person segment with {} wrestlers", participantCount);
       }
     }
 
-    return matches;
+    return segments;
   }
 
-  /** Book random matches to fill show slots. */
-  private List<MatchResult> bookRandomMatches(
-      Show show, List<Wrestler> availableWrestlers, int maxMatches) {
-    List<MatchResult> matches = new ArrayList<>();
+  /** Book random segments to fill show slots. */
+  private List<Segment> bookRandomSegments(
+      Show show, List<Wrestler> availableWrestlers, int maxSegments) {
+    List<Segment> segments = new ArrayList<>();
 
-    for (int i = 0; i < maxMatches && availableWrestlers.size() >= 2; i++) {
+    for (int i = 0; i < maxSegments && availableWrestlers.size() >= 2; i++) {
       Wrestler wrestler1 = availableWrestlers.remove(0);
       Wrestler wrestler2 = availableWrestlers.remove(0);
 
-      Optional<MatchResult> match = bookSinglesMatch(show, wrestler1, wrestler2, "Standard Match");
-      if (match.isPresent()) {
-        matches.add(match.get());
-        log.debug("Booked random match: {} vs {}", wrestler1.getName(), wrestler2.getName());
+      Optional<Segment> segment = bookSinglesSegment(show, wrestler1, wrestler2, "Standard Match");
+      if (segment.isPresent()) {
+        segments.add(segment.get());
+        log.debug("Booked random segment: {} vs {}", wrestler1.getName(), wrestler2.getName());
       }
     }
 
-    return matches;
+    return segments;
   }
 
-  /** Book quality matches for PPV fill-in slots. */
-  private List<MatchResult> bookQualityMatches(
-      Show show, List<Wrestler> availableWrestlers, int maxMatches) {
-    // For now, same as random matches but could be enhanced with tier matching
-    return bookRandomMatches(show, availableWrestlers, maxMatches);
+  /** Book quality segments for PPV fill-in slots. */
+  private List<Segment> bookQualitySegments(
+      Show show, List<Wrestler> availableWrestlers, int maxSegments) {
+    // For now, same as random segments but could be enhanced with tier matching
+    return bookRandomSegments(show, availableWrestlers, maxSegments);
   }
 
   /** Generate promo segments for a regular show. */
-  private List<MatchResult> generatePromosForShow(Show show, int matchCount) {
+  private List<Segment> generatePromosForShow(Show show, int segmentCount) {
     List<Wrestler> availableWrestlers = new ArrayList<>(wrestlerRepository.findAll());
     Collections.shuffle(availableWrestlers, random);
 
-    // Regular shows: 1-2 promos (20-30% of match count)
-    int promoCount = Math.max(1, matchCount / 4); // 1-2 promos typically
+    // Regular shows: 1-2 promos (20-30% of segment count)
+    int promoCount = Math.max(1, segmentCount / 4); // 1-2 promos typically
 
     return promoBookingService.bookPromosForShow(show, availableWrestlers, promoCount);
   }
 
   /** Generate enhanced promo segments for PPV shows. */
-  private List<MatchResult> generatePromosForPPV(Show show, int matchCount) {
+  private List<Segment> generatePromosForPPV(Show show, int segmentCount) {
     List<Wrestler> availableWrestlers = new ArrayList<>(wrestlerRepository.findAll());
     Collections.shuffle(availableWrestlers, random);
 
     // PPVs: 2-4 promos (more storyline development)
-    int promoCount = Math.max(2, matchCount / 3); // 2-4 promos typically
+    int promoCount = Math.max(2, segmentCount / 3); // 2-4 promos typically
 
     return promoBookingService.bookPromosForShow(show, availableWrestlers, promoCount);
   }
 
   // ==================== HELPER METHODS ====================
 
-  /** Book a singles match between two wrestlers. */
-  private Optional<MatchResult> bookSinglesMatch(
+  /** Book a singles segment between two wrestlers. */
+  private Optional<Segment> bookSinglesSegment(
       Show show, Wrestler wrestler1, Wrestler wrestler2, String stipulation) {
     try {
-      // Get one-on-one match type from database
-      Optional<MatchType> matchTypeOpt = matchTypeRepository.findByName("One on One");
-      if (matchTypeOpt.isEmpty()) {
-        log.warn("One on One match type not found in database");
+      // Get one-on-one segment type from database
+      Optional<SegmentType> segmentTypeOpt = segmentTypeRepository.findByName("One on One");
+      if (segmentTypeOpt.isEmpty()) {
+        log.warn("One on One segment type not found in database");
         return Optional.empty();
       }
 
       // Create teams
-      MatchTeam team1 = new MatchTeam(wrestler1);
-      MatchTeam team2 = new MatchTeam(wrestler2);
+      SegmentTeam team1 = new SegmentTeam(wrestler1);
+      SegmentTeam team2 = new SegmentTeam(wrestler2);
 
-      // Resolve the match
-      MatchResult result =
-          npcMatchResolutionService.resolveTeamMatch(
-              team1, team2, matchTypeOpt.get(), show, stipulation);
+      // Resolve the segment
+      Segment result =
+          npcSegmentResolutionService.resolveTeamSegment(
+              team1, team2, segmentTypeOpt.get(), show, stipulation);
 
       return Optional.of(result);
 
     } catch (Exception e) {
-      log.error("Error booking singles match: {}", e.getMessage(), e);
+      log.error("Error booking singles segment: {}", e.getMessage(), e);
       return Optional.empty();
     }
   }
 
-  /** Book a multi-person match. */
-  private Optional<MatchResult> bookMultiPersonMatch(Show show, List<Wrestler> participants) {
+  /** Book a multi-person segment. */
+  private Optional<Segment> bookMultiPersonSegment(Show show, List<Wrestler> participants) {
     try {
       if (participants.size() < 3) {
         return Optional.empty();
       }
 
-      // Get appropriate match type from database
-      String matchTypeName =
+      // Get appropriate segment type from database
+      String segmentTypeName =
           participants.size() == 3
               ? "Free-for-All"
               : "Free-for-All"; // Use Free-for-All for multi-person
-      Optional<MatchType> matchTypeOpt = matchTypeRepository.findByName(matchTypeName);
-      if (matchTypeOpt.isEmpty()) {
+      Optional<SegmentType> segmentTypeOpt = segmentTypeRepository.findByName(segmentTypeName);
+      if (segmentTypeOpt.isEmpty()) {
         // Fallback to One on One if specific type not found
-        matchTypeOpt = matchTypeRepository.findByName("One on One");
-        if (matchTypeOpt.isEmpty()) {
-          log.warn("No suitable match type found for multi-person match");
+        segmentTypeOpt = segmentTypeRepository.findByName("One on One");
+        if (segmentTypeOpt.isEmpty()) {
+          log.warn("No suitable segment type found for multi-person segment");
           return Optional.empty();
         }
       }
 
       // Create teams (each wrestler is their own team)
-      List<MatchTeam> teams = participants.stream().map(MatchTeam::new).toList();
+      List<SegmentTeam> teams = participants.stream().map(SegmentTeam::new).toList();
 
-      // Resolve the match
-      MatchResult result =
-          npcMatchResolutionService.resolveMultiTeamMatch(
-              teams, matchTypeOpt.get(), show, matchTypeName + " Match");
+      // Resolve the segment
+      Segment result =
+          npcSegmentResolutionService.resolveMultiTeamSegment(
+              teams, segmentTypeOpt.get(), show, segmentTypeName + " Segment");
 
       return Optional.of(result);
 
     } catch (Exception e) {
-      log.error("Error booking multi-person match: {}", e.getMessage(), e);
+      log.error("Error booking multi-person segment: {}", e.getMessage(), e);
       return Optional.empty();
     }
   }
 
-  /** Get appropriate stipulation for high-heat rivalries using database-driven rule selection. */
+  /** Get appropriate rule for high-heat rivalries using database-driven rule selection. */
   private String getHighHeatStipulation(int heat) {
     List<String> availableStipulations = new ArrayList<>();
 
@@ -486,13 +487,13 @@ public class ShowBookingService {
       availableStipulations.addAll(
           getStipulationsByNames(
               List.of(
-                  "Steel Cage Match",
+                  "Steel Cage Segment",
                   "Hell in a Cell",
                   "Last Man Standing",
-                  "I Quit Match",
-                  "Hardcore Match",
-                  "Buried Alive Match",
-                  "Inferno Match")));
+                  "I Quit Segment",
+                  "Hardcore Segment",
+                  "Buried Alive Segment",
+                  "Inferno Segment")));
     } else if (heat >= 20) {
       // High heat - get intense stipulations from database
       availableStipulations.addAll(
@@ -500,23 +501,24 @@ public class ShowBookingService {
               List.of(
                   "No Disqualification",
                   "Falls Count Anywhere",
-                  "Steel Cage Match",
-                  "Submission Match",
-                  "Iron Man Match",
-                  "Ladder Match",
-                  "Tables Match")));
+                  "Steel Cage Segment",
+                  "Submission Segment",
+                  "Iron Man Segment",
+                  "Ladder Segment",
+                  "Tables Segment")));
     } else {
-      // Medium heat - get standard enhanced matches from database
+      // Medium heat - get standard enhanced segments from database
       availableStipulations.addAll(
           getStipulationsByNames(
-              List.of("No Count Out", "No Disqualification", "Submission Match", "Chairs Match")));
+              List.of(
+                  "No Count Out", "No Disqualification", "Submission Segment", "Chairs Segment")));
     }
 
     // If no specific stipulations found, fall back to high heat rules from database
     if (availableStipulations.isEmpty()) {
-      List<MatchRule> highHeatRules = matchRuleService.getHighHeatRules();
+      List<SegmentRule> highHeatRules = segmentRuleService.getHighHeatRules();
       if (!highHeatRules.isEmpty()) {
-        MatchRule selectedRule = highHeatRules.get(random.nextInt(highHeatRules.size()));
+        SegmentRule selectedRule = highHeatRules.get(random.nextInt(highHeatRules.size()));
         return selectedRule.getName();
       }
       // Ultimate fallback
@@ -526,35 +528,35 @@ public class ShowBookingService {
     return availableStipulations.get(random.nextInt(availableStipulations.size()));
   }
 
-  /** Get stipulation names from database, filtering out non-existent ones. */
+  /** Get rule names from database, filtering out non-existent ones. */
   private List<String> getStipulationsByNames(List<String> requestedNames) {
-    return requestedNames.stream().filter(name -> matchRuleService.existsByName(name)).toList();
+    return requestedNames.stream().filter(name -> segmentRuleService.existsByName(name)).toList();
   }
 
-  /** Get all matches for a specific show. */
-  public List<MatchResult> getMatchesForShow(Long showId) {
-    return showRepository.findById(showId).map(matchResultRepository::findByShow).orElse(List.of());
+  /** Get all segments for a specific show. */
+  public List<Segment> getSegmentsForShow(Long showId) {
+    return showRepository.findById(showId).map(segmentRepository::findByShow).orElse(List.of());
   }
 
   /** Get show statistics. */
   public ShowStatistics getShowStatistics(Long showId) {
     Optional<Show> showOpt = showRepository.findById(showId);
     if (showOpt.isEmpty()) {
-      return new ShowStatistics(0, 0, 0.0, 0, 0, 0);
+      return new ShowStatistics(0, 0, 0, 0, 0);
     }
 
-    List<MatchResult> allSegments = getMatchesForShow(showId);
+    List<Segment> allSegments = getSegmentsForShow(showId);
 
-    // Separate matches from promos
-    List<MatchResult> matches =
+    // Separate segments from promos
+    List<Segment> segments =
         allSegments.stream()
             .filter(segment -> !promoBookingService.isPromoSegment(segment))
             .toList();
 
-    List<MatchResult> promos =
+    List<Segment> promos =
         allSegments.stream().filter(promoBookingService::isPromoSegment).toList();
 
-    int totalMatches = matches.size();
+    int totalSegments = segments.size();
     int totalPromos = promos.size();
     int totalWrestlers =
         (int)
@@ -563,31 +565,23 @@ public class ShowBookingService {
                 .distinct()
                 .count();
 
-    double averageRating =
-        allSegments.stream().mapToInt(MatchResult::getMatchRating).average().orElse(0.0);
-
-    int rivalryMatches =
+    int rivalrySegments =
         (int)
-            matches.stream()
-                .filter(match -> match.getWrestlers().size() == 2)
-                .filter(this::isRivalryMatch)
+            segments.stream()
+                .filter(segment -> segment.getWrestlers().size() == 2)
+                .filter(this::isRivalrySegment)
                 .count();
 
-    int multiPersonMatches =
-        (int) matches.stream().filter(match -> match.getWrestlers().size() > 2).count();
+    int multiPersonSegments =
+        (int) segments.stream().filter(segment -> segment.getWrestlers().size() > 2).count();
 
     return new ShowStatistics(
-        totalMatches,
-        totalWrestlers,
-        averageRating,
-        rivalryMatches,
-        multiPersonMatches,
-        totalPromos);
+        totalSegments, totalWrestlers, rivalrySegments, multiPersonSegments, totalPromos);
   }
 
-  /** Check if a match involves wrestlers with an active rivalry. */
-  private boolean isRivalryMatch(MatchResult match) {
-    List<Wrestler> wrestlers = match.getWrestlers();
+  /** Check if a segment involves wrestlers with an active rivalry. */
+  private boolean isRivalrySegment(Segment segment) {
+    List<Wrestler> wrestlers = segment.getWrestlers();
     if (wrestlers.size() != 2) return false;
 
     return rivalryService
@@ -597,10 +591,9 @@ public class ShowBookingService {
 
   /** Record class for show statistics. */
   public record ShowStatistics(
-      int totalMatches,
+      int totalSegments,
       int totalWrestlers,
-      double averageRating,
-      int rivalryMatches,
-      int multiPersonMatches,
+      int rivalrySegments,
+      int multiPersonSegments,
       int totalPromos) {}
 }

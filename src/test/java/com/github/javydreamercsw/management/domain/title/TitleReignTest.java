@@ -2,8 +2,8 @@ package com.github.javydreamercsw.management.domain.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,7 +21,7 @@ class TitleReignTest {
   void setUp() {
     title = new Title();
     title.setName("Test Championship");
-    title.setTier(TitleTier.WORLD);
+    title.setTier(WrestlerTier.MAIN_EVENTER);
 
     wrestler = new Wrestler();
     wrestler.setName("Test Champion");
@@ -30,7 +30,7 @@ class TitleReignTest {
 
     titleReign = new TitleReign();
     titleReign.setTitle(title);
-    titleReign.setChampion(wrestler);
+    titleReign.getChampions().add(wrestler);
     titleReign.setReignNumber(1);
     titleReign.setStartDate(Instant.now());
   }
@@ -149,7 +149,7 @@ class TitleReignTest {
   @Test
   @DisplayName("Should handle notes field")
   void shouldHandleNotesField() {
-    String notes = "Won title in a steel cage match at WrestleMania";
+    String notes = "Won title in a steel cage segment at WrestleMania";
     titleReign.setNotes(notes);
 
     assertThat(titleReign.getNotes()).isEqualTo(notes);
@@ -159,9 +159,9 @@ class TitleReignTest {
   @DisplayName("Should maintain relationships correctly")
   void shouldMaintainRelationshipsCorrectly() {
     assertThat(titleReign.getTitle()).isEqualTo(title);
-    assertThat(titleReign.getChampion()).isEqualTo(wrestler);
+    assertThat(titleReign.getChampions()).containsExactly(wrestler);
     assertThat(titleReign.getTitle().getName()).isEqualTo("Test Championship");
-    assertThat(titleReign.getChampion().getName()).isEqualTo("Test Champion");
+    assertThat(titleReign.getChampions().get(0).getName()).isEqualTo("Test Champion");
   }
 
   @Test

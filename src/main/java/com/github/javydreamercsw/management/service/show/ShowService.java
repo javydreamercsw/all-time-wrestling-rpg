@@ -78,6 +78,15 @@ public class ShowService {
     return showRepository.findByExternalId(externalId);
   }
 
+  /**
+   * Gets all external IDs of all shows.
+   *
+   * @return List of all external IDs.
+   */
+  public List<String> getAllExternalIds() {
+    return showRepository.findAllExternalIds();
+  }
+
   // ==================== CALENDAR-SPECIFIC METHODS ====================
 
   /**

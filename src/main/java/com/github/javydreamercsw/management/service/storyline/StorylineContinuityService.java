@@ -7,8 +7,8 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.match.MatchResult;
-import com.github.javydreamercsw.management.domain.show.match.MatchResultRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import java.time.Clock;
@@ -38,7 +38,7 @@ public class StorylineContinuityService {
 
   @Autowired private final SeasonRepository seasonRepository;
   @Autowired private final ShowRepository showRepository;
-  @Autowired private final MatchResultRepository matchResultRepository;
+  @Autowired private final SegmentRepository segmentRepository;
   @Autowired private final DramaEventRepository dramaEventRepository;
   @Autowired private final RivalryService rivalryService;
   @Autowired private final Clock clock;
@@ -116,40 +116,30 @@ public class StorylineContinuityService {
    * @return Storyline progression analysis
    */
   public StorylineProgression analyzeStorylineProgression(@NonNull Long showId) {
-    List<MatchResult> matches =
-        showRepository.findById(showId).map(matchResultRepository::findByShow).orElse(List.of());
+    List<Segment> segments =
+        showRepository.findById(showId).map(segmentRepository::findByShow).orElse(List.of());
 
-    int rivalryMatches = 0;
+    int rivalrySegments = 0;
     int storylineAdvancement = 0;
     List<String> progressionNotes = new ArrayList<>();
 
-    for (MatchResult match : matches) {
-      // Check if match involves rivalry
-      List<Wrestler> wrestlers = match.getWrestlers();
+    for (Segment segment : segments) {
+      // Check if segment involves rivalry
+      List<Wrestler> wrestlers = segment.getWrestlers();
       if (wrestlers.size() == 2) {
         Optional<Rivalry> rivalryOpt =
             rivalryService.getRivalryBetweenWrestlers(
                 wrestlers.get(0).getId(), wrestlers.get(1).getId());
 
         if (rivalryOpt.isPresent()) {
-          rivalryMatches++;
+          rivalrySegments++;
           Rivalry rivalry = rivalryOpt.get();
 
           // Analyze storyline impact
-          if (match.getMatchRating() >= 4) {
-            storylineAdvancement++;
-            progressionNotes.add(
-                String.format(
-                    "High-quality rivalry match between %s and %s (Rating: %d)",
-                    wrestlers.get(0).getName(),
-                    wrestlers.get(1).getName(),
-                    match.getMatchRating()));
-          }
-
           if (rivalry.getHeat() >= 20) {
             progressionNotes.add(
                 String.format(
-                    "High-heat rivalry match: %s vs %s (Heat: %d)",
+                    "High-heat rivalry segment: %s vs %s (Heat: %d)",
                     wrestlers.get(0).getName(), wrestlers.get(1).getName(), rivalry.getHeat()));
           }
         }
@@ -157,7 +147,7 @@ public class StorylineContinuityService {
     }
 
     // Check for drama events on the same day
-    Instant showDate = matches.isEmpty() ? clock.instant() : matches.get(0).getMatchDate();
+    Instant showDate = segments.isEmpty() ? clock.instant() : segments.get(0).getSegmentDate();
     List<DramaEvent> showDayEvents =
         dramaEventRepository.findRecentEvents(showDate.minus(1, ChronoUnit.DAYS)).stream()
             .filter(event -> ChronoUnit.DAYS.between(event.getEventDate(), showDate) <= 1)
@@ -170,8 +160,8 @@ public class StorylineContinuityService {
     }
 
     return new StorylineProgression(
-        matches.size(),
-        rivalryMatches,
+        segments.size(),
+        rivalrySegments,
         storylineAdvancement,
         showDayEvents.size(),
         progressionNotes);
@@ -199,10 +189,10 @@ public class StorylineContinuityService {
 
     if (activeRivalries.isEmpty()) {
       issues.add("No active rivalries found");
-      recommendations.add("Create new rivalries through drama events or match outcomes");
+      recommendations.add("Create new rivalries through drama events or segment outcomes");
     } else if (healthyRivalries < activeRivalries.size() / 2) {
       issues.add("Many rivalries have low heat");
-      recommendations.add("Book more matches between rivals to increase heat");
+      recommendations.add("Book more segments between rivals to increase heat");
     }
 
     // Check drama event frequency
@@ -217,26 +207,26 @@ public class StorylineContinuityService {
       recommendations.add("Allow current storylines to develop before adding new drama");
     }
 
-    // Check match variety
+    // Check segment variety
     List<Show> recentShows =
         activeSeason.getShows().stream()
             .filter(
                 show -> {
-                  // Get first match date as proxy for show date
-                  List<MatchResult> matches = matchResultRepository.findByShow(show);
-                  if (matches.isEmpty()) return false;
+                  // Get first segment date as proxy for show date
+                  List<Segment> segments = segmentRepository.findByShow(show);
+                  if (segments.isEmpty()) return false;
 
-                  Instant showDate = matches.get(0).getMatchDate();
+                  Instant showDate = segments.get(0).getSegmentDate();
                   return ChronoUnit.DAYS.between(showDate, clock.instant()) <= 30;
                 })
             .toList();
 
-    int totalRecentMatches =
-        recentShows.stream().mapToInt(show -> matchResultRepository.findByShow(show).size()).sum();
+    int totalRecentSegments =
+        recentShows.stream().mapToInt(show -> segmentRepository.findByShow(show).size()).sum();
 
-    if (totalRecentMatches < 10) {
-      issues.add("Low match activity in recent shows");
-      recommendations.add("Increase match frequency to maintain storyline momentum");
+    if (totalRecentSegments < 10) {
+      issues.add("Low segment activity in recent shows");
+      recommendations.add("Increase segment frequency to maintain storyline momentum");
     }
 
     // Calculate health score (0-100)
@@ -302,7 +292,7 @@ public class StorylineContinuityService {
                   + rivalry.getWrestler1().getName()
                   + " vs "
                   + rivalry.getWrestler2().getName(),
-              "Book a high-stakes match with special stipulation",
+              "Book a high-stakes segment with special rule",
               StorylinePriority.HIGH));
     } else if (rivalry.getHeat() >= 10 && rivalry.getHeat() < 20) {
       suggestions.add(
@@ -325,7 +315,7 @@ public class StorylineContinuityService {
       suggestions.add(
           new StorylineSuggestion(
               "Follow up on " + event.getTitle(),
-              "Book a match between the involved wrestlers",
+              "Book a segment between the involved wrestlers",
               StorylinePriority.HIGH));
     }
 
@@ -351,8 +341,8 @@ public class StorylineContinuityService {
       @NonNull String title, @NonNull String description, @NonNull StorylinePriority priority) {}
 
   public record StorylineProgression(
-      int totalMatches,
-      int rivalryMatches,
+      int totalSegments,
+      int rivalrySegments,
       int storylineAdvancement,
       int dramaEvents,
       @NonNull List<String> progressionNotes) {}

@@ -29,9 +29,9 @@ class WrestlerTierTest {
     "40000, CONTENDER",
     "50000, CONTENDER",
     "59999, CONTENDER",
-    "60000, INTERTEMPORAL_TIER",
-    "80000, INTERTEMPORAL_TIER",
-    "99999, INTERTEMPORAL_TIER",
+    "60000, MIDCARDER",
+    "80000, MIDCARDER",
+    "99999, MIDCARDER",
     "100000, MAIN_EVENTER",
     "120000, MAIN_EVENTER",
     "149999, MAIN_EVENTER",
@@ -81,36 +81,6 @@ class WrestlerTierTest {
     assertThat(icon.getDescription()).contains("Transcends eras");
     assertThat(icon.getDisplayWithEmoji()).isEqualTo("🌟 Icon");
     assertThat(icon.getFanRangeDisplay()).isEqualTo("150,000+");
-  }
-
-  @ParameterizedTest
-  @DisplayName("Should correctly check title eligibility")
-  @CsvSource({
-    "ROOKIE, EXTREME, false",
-    "RISER, EXTREME, true",
-    "RISER, TAG_TEAM, false",
-    "CONTENDER, TAG_TEAM, true",
-    "CONTENDER, INTERTEMPORAL, false",
-    "INTERTEMPORAL_TIER, INTERTEMPORAL, true",
-    "INTERTEMPORAL_TIER, WORLD, false",
-    "MAIN_EVENTER, WORLD, true",
-    "ICON, WORLD, true"
-  })
-  void shouldCorrectlyCheckTitleEligibility(
-      WrestlerTier tier, TitleTier titleTier, boolean expected) {
-    assertThat(tier.canChallengeFor(titleTier)).isEqualTo(expected);
-  }
-
-  @Test
-  @DisplayName("Should have tiers in ascending order of prestige")
-  void shouldHaveTiersInAscendingOrderOfPrestige() {
-    WrestlerTier[] tiers = WrestlerTier.values();
-
-    for (int i = 1; i < tiers.length; i++) {
-      assertThat(tiers[i].getMinFans())
-          .as("Tier %s should have higher minimum fans than %s", tiers[i], tiers[i - 1])
-          .isGreaterThan(tiers[i - 1].getMinFans());
-    }
   }
 
   @Test

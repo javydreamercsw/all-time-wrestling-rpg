@@ -79,4 +79,8 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
       ORDER BY s.creationDate DESC
       """)
   List<Show> findAllWithRelationships();
+
+  /** Find all external IDs. */
+  @Query("SELECT s.externalId FROM Show s WHERE s.externalId IS NOT NULL")
+  List<String> findAllExternalIds();
 }

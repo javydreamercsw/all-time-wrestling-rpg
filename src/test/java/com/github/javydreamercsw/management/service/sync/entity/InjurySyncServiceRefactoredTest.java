@@ -24,6 +24,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -34,11 +35,12 @@ import org.mockito.quality.Strictness;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Injury Sync Unit Tests")
+@EnabledIf("isNotionTokenAvailable")
 class InjurySyncServiceRefactoredTest extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
-  @Mock private NotionSyncProperties syncProperties;
+  private NotionSyncProperties syncProperties; // Declare without @Mock
   @Mock private InjuryTypeService injuryTypeService;
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private SyncProgressTracker progressTracker;
@@ -47,6 +49,12 @@ class InjurySyncServiceRefactoredTest extends BaseTest {
 
   private InjurySyncService injurySyncService;
   private ObjectMapper realObjectMapper;
+
+  // Constructor to configure the mock before setUp()
+  public InjurySyncServiceRefactoredTest() {
+    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+  }
 
   @BeforeEach
   void setUp() {

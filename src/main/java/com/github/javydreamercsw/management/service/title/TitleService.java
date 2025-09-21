@@ -2,13 +2,14 @@ package com.github.javydreamercsw.management.service.title;
 
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.wrestler.TitleTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -30,13 +31,13 @@ public class TitleService {
 
   /** Create a new title. */
   public Title createTitle(
-      @NonNull String name, @NonNull String description, @NonNull TitleTier tier) {
+      @NonNull String name, @NonNull String description, @NonNull WrestlerTier tier) {
     Title title = new Title();
     title.setName(name);
     title.setDescription(description);
     title.setTier(tier);
     title.setIsActive(true);
-    title.setIsVacant(true);
+
     title.setCreationDate(Instant.now(clock));
 
     return titleRepository.saveAndFlush(title);
@@ -73,7 +74,7 @@ public class TitleService {
 
   /** Get titles by tier. */
   @Transactional(readOnly = true)
-  public List<Title> getTitlesByTier(@NonNull TitleTier tier) {
+  public List<Title> getTitlesByTier(@NonNull WrestlerTier tier) {
     return titleRepository.findActiveTitlesByTier(tier);
   }
 
@@ -91,7 +92,7 @@ public class TitleService {
         return Optional.empty();
       }
 
-      title.awardTitle(wrestler);
+      title.awardTitleTo(List.of(wrestler), Instant.now(clock));
       return Optional.of(titleRepository.saveAndFlush(title));
     }
 
@@ -180,7 +181,7 @@ public class TitleService {
   public List<Title> getTitlesHeldBy(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
-        .map(titleRepository::findByCurrentChampion)
+        .map(wrestler -> titleRepository.findTitlesHeldByWrestler(wrestler))
         .orElse(List.of());
   }
 
@@ -205,7 +206,7 @@ public class TitleService {
   public boolean deleteTitle(Long titleId) {
     return titleRepository
         .findById(titleId)
-        .filter(title -> !title.getIsActive() && title.getIsVacant())
+        .filter(title -> !title.getIsActive() && title.isVacant())
         .map(
             title -> {
               titleRepository.delete(title);
@@ -225,9 +226,11 @@ public class TitleService {
                     title.getId(),
                     title.getName(),
                     title.getTier(),
-                    title.getIsVacant(),
-                    title.getCurrentChampion() != null
-                        ? title.getCurrentChampion().getName()
+                    title.isVacant(),
+                    !title.getCurrentChampions().isEmpty()
+                        ? title.getCurrentChampions().stream()
+                            .map(Wrestler::getName)
+                            .collect(Collectors.joining(" & "))
                         : null,
                     title.getCurrentReignDays(),
                     title.getTotalReigns(),
@@ -241,6 +244,14 @@ public class TitleService {
     return titleRepository.existsByName(name);
   }
 
+  public List<Title> findAll() {
+    return titleRepository.findAll();
+  }
+
+  public Title save(Title title) {
+    return titleRepository.save(title);
+  }
+
   /** Challenge result data class. */
   public record ChallengeResult(
       boolean success, @NonNull String message, Title title, Wrestler challenger) {}
@@ -249,7 +260,7 @@ public class TitleService {
   public record TitleStats(
       Long titleId,
       String name,
-      TitleTier tier,
+      WrestlerTier tier,
       boolean isVacant,
       String currentChampion,
       long currentReignDays,

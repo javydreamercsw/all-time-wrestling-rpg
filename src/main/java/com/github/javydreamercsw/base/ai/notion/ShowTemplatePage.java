@@ -81,9 +81,9 @@ public class ShowTemplatePage extends NotionPage {
   }
 
   /**
-   * Get the match count for this template.
+   * Get the segment count for this template.
    *
-   * @return match count or null if not available
+   * @return segment count or null if not available
    */
   public String getMatchCount() {
     if (getRawProperties() != null && getRawProperties().containsKey("Match Count")) {
