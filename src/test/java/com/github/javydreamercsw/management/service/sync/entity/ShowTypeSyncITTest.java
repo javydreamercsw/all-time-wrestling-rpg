@@ -1,15 +1,13 @@
-package com.github.javydreamercsw.management.service.sync;
+package com.github.javydreamercsw.management.service.sync.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.base.test.BaseTest;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.ShowTypeSyncService;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("test")
 @TestPropertySource(
     properties = {
+      "notion.sync.enabled=true",
       "notion.sync.scheduler.enabled=false",
       "notion.token=${notion.token:test-token}",
       "notion.databases.show-types=${notion.databases.show-types:test-db-id}"
@@ -41,12 +40,11 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Slf4j
 @DisplayName("Show Type Sync Integration Tests")
-class ShowTypeSyncIT extends BaseTest {
+class ShowTypeSyncITTest extends BaseTest {
 
   @Autowired private ShowTypeSyncService showTypeSyncService;
   @Autowired private ShowTypeService showTypeService;
   @Autowired private ShowTypeRepository showTypeRepository;
-  @Autowired private ShowTemplateRepository showTemplateRepository;
 
   private static final String TEST_OPERATION_ID = "integration-test-show-types";
 
@@ -54,7 +52,6 @@ class ShowTypeSyncIT extends BaseTest {
   @Transactional
   void cleanupData() {
     log.debug("🧹 Cleaning up test data before test execution");
-    showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
     log.debug("✅ Test data cleanup completed");
   }

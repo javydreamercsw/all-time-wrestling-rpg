@@ -242,6 +242,7 @@ public class NarrationDialog extends Dialog {
               wc.setDescription(wrestlerDTO.getDescription());
               wc.setGender(wrestlerDTO.getGender());
               wc.setTier(wrestlerDTO.getTier());
+              wc.setMoveSet(wrestlerDTO.getMoveSet());
               fullRosterContexts.add(wc);
             });
     context.setFullRoster(fullRosterContexts);
@@ -275,6 +276,7 @@ public class NarrationDialog extends Dialog {
         wc.setTeam("Team " + (i + 1));
         wc.setGender(wrestler.getGender()); // Set gender
         wc.setTier(wrestler.getTier()); // Set tier
+        wc.setMoveSet(wrestler.getMoveSet()); // Add this line
         wrestlerContexts.add(wc);
       }
     }
@@ -341,12 +343,36 @@ public class NarrationDialog extends Dialog {
 
     // Add explicit instructions for the AI
     context.setInstructions(
-        "Only use wrestler names and details from the provided 'fullRoster' and 'wrestlers' lists."
-            + " Do NOT introduce any new wrestler names or details not present in these lists.");
+        "You will be provided with a context object in JSON format.\n"
+            + "The fields in this JSON object are described below.\n"
+            + "Please adhere to the following rules when generating the narration:\n\n"
+            + "1.  **Participants & Roles:** The characters physically present and acting in this"
+            + " segment are exclusively those in the 'wrestlers' and 'npcs' lists. Wrestlers from"
+            + " the 'fullRoster' who are not in the 'wrestlers' list are not present and cannot act"
+            + " or speak, but they can be mentioned or referenced (e.g., in an announcement for a"
+            + " future match).\n"
+            + "2.  **Data Integrity:** All characters, champions, and contenders mentioned in the"
+            + " narration MUST come from the 'fullRoster', 'npcs', and 'titles' lists provided. If"
+            + " a title's champion is not specified or is empty, you must state that it is vacant"
+            + " and not invent a champion. Do not invent new names or assume the existence of"
+            + " characters not listed.\n"
+            + "3.  **Empty Wrestler List:** If the 'wrestlers' list is empty, it signifies that no"
+            + " wrestlers are physically present. The segment should only feature the characters"
+            + " from the 'npcs' list.\n"
+            + "4.  **No New Characters:** Do not invent or introduce any characters not listed in"
+            + " the provided context. This is a strict rule.");
+
+    if (segment.getSummary() != null && !segment.getSummary().isEmpty()) {
+      context.setDeterminedOutcome(segment.getSummary());
+    }
 
     if (!feedbackArea.isEmpty()) {
-      context.setDeterminedOutcome(
-          context.getDeterminedOutcome() + "\n\nUser Feedback: " + feedbackArea.getValue());
+      String outcome = context.getDeterminedOutcome() == null ? "" : context.getDeterminedOutcome();
+      if (!outcome.isEmpty()) {
+        outcome += "\n\n";
+      }
+      outcome += "User Feedback: " + feedbackArea.getValue();
+      context.setDeterminedOutcome(outcome);
     }
 
     return context;
