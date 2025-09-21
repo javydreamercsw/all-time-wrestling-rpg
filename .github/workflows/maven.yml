@@ -17,7 +17,7 @@ permissions:
   security-events: write
 
 jobs:
-  coverage-tests:
+  build-and-unit-test:
 
     runs-on: ubuntu-latest
 
@@ -33,11 +33,8 @@ jobs:
     - name: Apply code formatting
       run: mvn spotless:apply
 
-    - name: Build with Maven
-      run: mvn -B package -DskipTests=true --file pom.xml
-
-    - name: Run tests with coverage
-      run: mvn clean verify -Pintegration-test,coverage -Dmaven.surefire.skip=true
+    - name: Run unit tests with coverage
+      run: mvn -B clean verify -Pcoverage
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
@@ -47,15 +44,14 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
 
-    # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Update dependency graph
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
       continue-on-error: true
 
-  sync-tests:
+  integration-tests:
     runs-on: ubuntu-latest
-    needs: coverage-tests
+    needs: build-and-unit-test
     env:
       NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
     steps:
@@ -67,6 +63,5 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Run Sync Integration Tests
-      run: mvn failsafe:integration-test -Dtest=MatchSyncServiceIT -Pintegration-test
-
+    - name: Run Integration Tests
+      run: mvn -B clean verify -Pintegration-test
