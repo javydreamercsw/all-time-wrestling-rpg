@@ -353,8 +353,8 @@ public class AdvancedRivalryIntegrationService {
     }
 
     // More heat if one wrestler won
-    if (match.getWinner() != null
-        && (match.getWinner().equals(wrestler1) || match.getWinner().equals(wrestler2))) {
+    List<Wrestler> winners = match.getWinners();
+    if (!winners.isEmpty() && (winners.contains(wrestler1) || winners.contains(wrestler2))) {
       baseHeat += 1;
     }
 

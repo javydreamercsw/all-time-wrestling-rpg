@@ -123,7 +123,8 @@ class NPCSegmentResolutionServiceIT {
     assertThat(result.getId()).isNotNull();
     assertThat(result.getShow()).isEqualTo(testShow);
     assertThat(result.getSegmentType()).isEqualTo(singlesSegmentType);
-    assertThat(result.getWinner()).isIn(rookie1, rookie2);
+    assertThat(result.getWinners()).hasSize(1);
+    assertThat(result.getWinners().get(0)).isIn(rookie1, rookie2);
     assertThat(result.getIsNpcGenerated()).isTrue();
     assertThat(result.getParticipants()).hasSize(2);
 
@@ -147,7 +148,7 @@ class NPCSegmentResolutionServiceIT {
           npcSegmentResolutionService.resolveTeamSegment(
               team1, team2, singlesSegmentType, testShow, "Test Match " + i);
 
-      if (result.getWinner().equals(contender)) {
+      if (result.getWinners().contains(contender)) {
         contenderWins++;
       }
     }
@@ -175,7 +176,8 @@ class NPCSegmentResolutionServiceIT {
     assertThat(result.getId()).isNotNull();
     assertThat(result.getShow()).isEqualTo(testShow);
     assertThat(result.getSegmentType()).isEqualTo(tagTeamType);
-    assertThat(result.getWinner()).isIn(rookie1, rookie2, contender);
+    assertThat(result.getWinners()).hasSize(1);
+    assertThat(result.getWinners().get(0)).isIn(rookie1, rookie2, contender);
     assertThat(result.getIsNpcGenerated()).isTrue();
     assertThat(result.getParticipants()).hasSize(3);
 
@@ -220,7 +222,7 @@ class NPCSegmentResolutionServiceIT {
           npcSegmentResolutionService.resolveTeamSegment(
               team1, team2, singlesSegmentType, testShow, "Injury Test " + i);
 
-      if (result.getWinner().equals(rookie2)) {
+      if (result.getWinners().contains(rookie2)) {
         rookie2Wins++;
       }
     }

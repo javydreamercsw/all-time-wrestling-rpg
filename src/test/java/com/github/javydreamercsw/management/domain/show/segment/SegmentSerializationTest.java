@@ -68,7 +68,7 @@ class SegmentSerializationTest {
     segment.setShow(show);
     segment.setSegmentType(segmentType);
     segment.addParticipant(wrestler);
-    segment.setWinner(wrestler);
+    segment.setWinners(java.util.List.of(wrestler));
     segment.addSegmentRule(segmentRule);
     segment.setNarration("Test narration");
     segment.setSummary("Test summary");

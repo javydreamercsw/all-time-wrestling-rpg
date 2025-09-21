@@ -130,17 +130,6 @@ public class SegmentService {
   }
 
   /**
-   * Gets all matches won by a specific wrestler.
-   *
-   * @param wrestler The wrestler to search for
-   * @return List of Segment objects won by the wrestler
-   */
-  @Transactional(readOnly = true)
-  public List<Segment> getSegmentsByWinner(@NonNull Wrestler wrestler) {
-    return segmentRepository.findByWinner(wrestler);
-  }
-
-  /**
    * Gets matches between two specific wrestlers.
    *
    * @param wrestler1 First wrestler

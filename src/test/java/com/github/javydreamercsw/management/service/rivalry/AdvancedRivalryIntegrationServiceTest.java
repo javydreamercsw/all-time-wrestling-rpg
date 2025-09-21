@@ -139,7 +139,7 @@ class AdvancedRivalryIntegrationServiceTest {
     // Add participants
     segment.addParticipant(wrestler1);
     segment.addParticipant(wrestler2);
-    segment.setWinner(wrestler1);
+    segment.setWinners(java.util.List.of(wrestler1));
 
     // When
     advancedRivalryService.processSegmentOutcome(segment);

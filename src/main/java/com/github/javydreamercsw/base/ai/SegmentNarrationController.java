@@ -125,9 +125,11 @@ public class SegmentNarrationController {
       response.put("segmentType", context.getSegmentType().getSegmentType());
       response.put(
           "wrestlers",
-          context.getWrestlers().stream()
-              .map(WrestlerContext::getName)
-              .collect(Collectors.toList()));
+          context.getWrestlers() == null
+              ? List.of()
+              : context.getWrestlers().stream()
+                  .map(WrestlerContext::getName)
+                  .collect(Collectors.toList()));
       response.put("outcome", context.getDeterminedOutcome());
       response.put("estimatedCost", estimatedCost);
       return ResponseEntity.ok(response);

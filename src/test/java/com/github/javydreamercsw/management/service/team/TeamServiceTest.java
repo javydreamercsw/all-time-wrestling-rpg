@@ -75,14 +75,14 @@ class TeamServiceTest {
     // Given
     Pageable pageable = PageRequest.of(0, 10);
     Page<Team> expectedPage = new PageImpl<>(Arrays.asList(team));
-    when(teamRepository.findAllBy(pageable)).thenReturn(expectedPage);
+    when(teamRepository.findAll(pageable)).thenReturn(expectedPage);
 
     // When
     Page<Team> result = teamService.getAllTeams(pageable);
 
     // Then
     assertThat(result).isEqualTo(expectedPage);
-    verify(teamRepository).findAllBy(pageable);
+    verify(teamRepository).findAll(pageable);
   }
 
   @Test

@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 import org.jspecify.annotations.Nullable;
@@ -57,11 +58,6 @@ public class Segment extends AbstractEntity<Long> {
   @ManyToOne(optional = false)
   @JoinColumn(name = "segment_type_id", nullable = false)
   private SegmentType segmentType;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "winner_id")
-  @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns"})
-  private Wrestler winner;
 
   @Column(name = "segment_date", nullable = false)
   private Instant segmentDate;
@@ -136,21 +132,12 @@ public class Segment extends AbstractEntity<Long> {
   }
 
   /** Add a participant to the segment. */
-  public void addParticipant(Wrestler wrestler) {
+  public void addParticipant(@NonNull Wrestler wrestler) {
     SegmentParticipant participant = new SegmentParticipant();
     participant.setSegment(this);
     participant.setWrestler(wrestler);
     participant.setIsWinner(false); // Winner is set separately
     participants.add(participant);
-  }
-
-  /** Set the winner of the segment. */
-  public void setWinner(Wrestler wrestler) {
-    if (wrestler == null) {
-      setWinners(new ArrayList<>());
-    } else {
-      setWinners(List.of(wrestler));
-    }
   }
 
   /** Get all wrestlers participating in the segment. */
@@ -167,12 +154,10 @@ public class Segment extends AbstractEntity<Long> {
 
   public void setWinners(List<Wrestler> winners) {
     if (winners == null || winners.isEmpty()) {
-      this.winner = null;
       for (SegmentParticipant participant : participants) {
         participant.setIsWinner(false);
       }
     } else {
-      this.winner = winners.get(0); // Keep single winner for backward compatibility
       for (SegmentParticipant participant : participants) {
         participant.setIsWinner(winners.contains(participant.getWrestler()));
       }

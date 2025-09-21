@@ -61,7 +61,8 @@ class SegmentServiceTest {
     testSegment.setId(1L);
     testSegment.setShow(testShow);
     testSegment.setSegmentType(testSegmentType);
-    testSegment.setWinner(testWinner);
+    testSegment.addParticipant(testWinner);
+    testSegment.setWinners(java.util.List.of(testWinner));
     testSegment.setSegmentDate(testDate);
     testSegment.setNarration("Great segment!");
     testSegment.setIsTitleSegment(false);
@@ -92,7 +93,8 @@ class SegmentServiceTest {
   @DisplayName("Should update segment successfully")
   void shouldUpdateSegmentSuccessfully() {
     // Given
-    when(matchRepository.save(testSegment)).thenReturn(testSegment);
+    when(matchRepository.findById(1L)).thenReturn(Optional.of(testSegment));
+    when(matchRepository.save(any(Segment.class))).thenReturn(testSegment);
 
     // When
     Segment result = segmentService.updateSegment(testSegment);
@@ -179,22 +181,6 @@ class SegmentServiceTest {
     assertThat(result).hasSize(1);
     assertThat(result.get(0)).isEqualTo(testSegment);
     verify(matchRepository).findByWrestlerParticipation(testWinner);
-  }
-
-  @Test
-  @DisplayName("Should get matches by winner")
-  void shouldGetSegmentsByWinner() {
-    // Given
-    List<Segment> matches = Arrays.asList(testSegment);
-    when(matchRepository.findByWinner(testWinner)).thenReturn(matches);
-
-    // When
-    List<Segment> result = segmentService.getSegmentsByWinner(testWinner);
-
-    // Then
-    assertThat(result).hasSize(1);
-    assertThat(result.get(0)).isEqualTo(testSegment);
-    verify(matchRepository).findByWinner(testWinner);
   }
 
   @Test

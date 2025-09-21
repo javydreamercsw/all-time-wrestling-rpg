@@ -36,21 +36,30 @@ public class MatchAdjudicationService {
 
     // Award fans to winners
     for (Wrestler winner : winners) {
-      DiceBag wdb = new DiceBag(6, 6);
-      // for winners 2d6 + 3 + (quality bonus) fans
-      wrestlerService.awardFans(winner.getId(), (wdb.roll() + 3) * 1_000L + matchQualityBonus);
+      Long id = winner.getId();
+      if (id != null) {
+        DiceBag wdb = new DiceBag(6, 6);
+        // for winners 2d6 + 3 + (quality bonus) fans
+        wrestlerService.awardFans(id, (wdb.roll() + 3) * 1_000L + matchQualityBonus);
+      }
     }
 
     // Award fans from losers
     for (Wrestler loser : losers) {
-      DiceBag ldb = new DiceBag(6);
-      // for winners 1d6 + 3 + (quality bonus) fans
-      wrestlerService.awardFans(loser.getId(), (ldb.roll() + 3) * 1_000L + matchQualityBonus);
+      Long id = loser.getId();
+      if (id != null) {
+        DiceBag ldb = new DiceBag(6);
+        // for winners 1d6 + 3 + (quality bonus) fans
+        wrestlerService.awardFans(loser.getId(), (ldb.roll() + 3) * 1_000L + matchQualityBonus);
+      }
     }
 
     // Assign bumps to all participants
     for (Wrestler participant : segment.getWrestlers()) {
-      wrestlerService.addBump(participant.getId());
+      Long id = participant.getId();
+      if (id != null) {
+        wrestlerService.addBump(id);
+      }
     }
   }
 }

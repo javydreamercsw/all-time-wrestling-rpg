@@ -2,6 +2,8 @@ package com.github.javydreamercsw.base.ai;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
@@ -26,6 +28,7 @@ class AbstractMatchNarrationServiceTest {
 
   private TestableMatchNarrationService service;
   private SegmentNarrationContext testContext;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
   void setUp() {
@@ -35,126 +38,25 @@ class AbstractMatchNarrationServiceTest {
 
   @Test
   @DisplayName("Should build comprehensive prompt with all context elements")
-  void shouldBuildComprehensivePromptWithAllContextElements() {
+  void shouldBuildComprehensivePromptWithAllContextElements() throws JsonProcessingException {
     String prompt = service.buildTestPrompt(testContext);
+    String jsonContext =
+        objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(testContext);
 
     assertThat(prompt)
         .isNotNull()
         .isNotEmpty()
-        .contains("professional wrestling play-by-play commentator")
-        .contains("SEGMENT SETUP:")
-        .contains("WRESTLERS:")
-        .contains("REFEREE:")
-        .contains("SUPPORTING CHARACTERS:")
-        .contains("PREDETERMINED OUTCOME:")
-        .contains("NARRATION INSTRUCTIONS:");
-  }
-
-  @Test
-  @DisplayName("Should include segment type and rule in prompt")
-  void shouldIncludeMatchTypeAndStipulationInPrompt() {
-    String prompt = service.buildTestPrompt(testContext);
-
-    assertThat(prompt)
-        .contains("Segment Type: Championship Match")
-        .contains("Stipulation: World Heavyweight Championship")
-        .contains("Special Rules: No DQ, Falls Count Anywhere")
-        .contains("Time Limit: 60 minutes");
-  }
-
-  @Test
-  @DisplayName("Should include detailed venue information in prompt")
-  void shouldIncludeDetailedVenueInformationInPrompt() {
-    String prompt = service.buildTestPrompt(testContext);
-
-    assertThat(prompt)
-        .contains("Venue: Madison Square Garden")
-        .contains("Location: New York City, New York")
-        .contains("Type: Indoor Arena")
-        .contains("Capacity: 20000")
-        .contains("Description: The World's Most Famous Arena")
-        .contains("Atmosphere: Electric and historic")
-        .contains("Significance: The Mecca of professional wrestling")
-        .contains("Notable Segments: Hulk Hogan vs Andre the Giant");
-  }
-
-  @Test
-  @DisplayName("Should include wrestler details with movesets in prompt")
-  void shouldIncludeWrestlerDetailsWithMovesetsInPrompt() {
-    String prompt = service.buildTestPrompt(testContext);
-
-    assertThat(prompt)
-        .contains("- John Cena:")
-        .contains("Description: The Leader of Cenation - Never Give Up")
-        .contains("Finishers: Attitude Adjustment (Fireman's carry slam)")
-        .contains("Trademark Moves: Five Knuckle Shuffle (Theatrical fist drop)")
-        .contains("Current Feuds/Heat: Face of the company")
-        .contains("Recent Segment History: Defeated Randy Orton");
-  }
-
-  @Test
-  @DisplayName("Should include referee personality in prompt")
-  void shouldIncludeRefereePersonalityInPrompt() {
-    String prompt = service.buildTestPrompt(testContext);
-
-    assertThat(prompt)
-        .contains("REFEREE:")
-        .contains("- Charles Robinson:")
-        .contains("Description: Veteran WWE referee known for his athleticism")
-        .contains("Personality: Fair and professional");
-  }
-
-  @Test
-  @DisplayName("Should include NPC characters in prompt")
-  void shouldIncludeNPCCharactersInPrompt() {
-    String prompt = service.buildTestPrompt(testContext);
-
-    assertThat(prompt)
-        .contains("SUPPORTING CHARACTERS:")
-        .contains("- Michael Cole (Play-by-Play Commentator):")
-        .contains("Description: Lead WWE announcer")
-        .contains("Personality: Energetic and professional");
-  }
-
-  @Test
-  @DisplayName("Should include predetermined outcome in prompt")
-  void shouldIncludePredeterminedOutcomeInPrompt() {
-    String prompt = service.buildTestPrompt(testContext);
-
-    assertThat(prompt)
-        .contains("PREDETERMINED OUTCOME:")
-        .contains("John Cena wins via Attitude Adjustment");
-  }
-
-  @Test
-  @DisplayName("Should include recent segment context for continuity")
-  void shouldIncludeRecentMatchContextForContinuity() {
-    String prompt = service.buildTestPrompt(testContext);
-
-    assertThat(prompt)
-        .contains("RECENT SEGMENT CONTEXT")
-        .contains("Recent Segment 1: Previous epic encounter");
-  }
-
-  @Test
-  @DisplayName("Should include comprehensive narration instructions")
-  void shouldIncludeComprehensiveNarrationInstructions() {
-    String prompt = service.buildTestPrompt(testContext);
-
-    assertThat(prompt)
-        .contains("NARRATION INSTRUCTIONS:")
-        .contains("1. Create a compelling 3-act structure")
-        .contains("2. Use the wrestlers' signature moves")
-        .contains("3. Include realistic crowd reactions")
-        .contains("4. Incorporate the referee's personality")
-        .contains("5. Reference the feuds/heat")
-        .contains("10. Create a detailed, comprehensive segment narration of 1500-2500 words")
-        .contains("Begin the segment narration now:");
+        .contains("You are a professional wrestling commentator and storyteller.")
+        .contains("You will be provided with a context object in JSON format.")
+        .contains("Generate a compelling wrestling narration based on the data in the JSON object.")
+        .contains("The JSON object contains instructions that you must follow.")
+        .contains("Here is the JSON context:")
+        .contains(jsonContext);
   }
 
   @Test
   @DisplayName("Should handle minimal context gracefully")
-  void shouldHandleMinimalContextGracefully() {
+  void shouldHandleMinimalContextGracefully() throws JsonProcessingException {
     SegmentNarrationContext minimalContext = new SegmentNarrationContext();
 
     // Set only required fields
@@ -174,13 +76,10 @@ class AbstractMatchNarrationServiceTest {
     minimalContext.setAudience("Crowd");
 
     String prompt = service.buildTestPrompt(minimalContext);
+    String jsonContext =
+        objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(minimalContext);
 
-    assertThat(prompt)
-        .isNotNull()
-        .isNotEmpty()
-        .contains("Wrestler A")
-        .contains("Wrestler B")
-        .contains("Singles Match");
+    assertThat(prompt).isNotNull().isNotEmpty().contains(jsonContext);
   }
 
   /** Creates a comprehensive test context with all possible fields populated. */
@@ -259,48 +158,6 @@ class AbstractMatchNarrationServiceTest {
         List.of("Previous epic encounter between these two rivals..."));
 
     return context;
-  }
-
-  @Test
-  @DisplayName("Should include custom instructions in promo prompt")
-  void shouldIncludeCustomInstructionsInPromoPrompt() {
-    // Given
-    SegmentNarrationContext promoContext = new SegmentNarrationContext();
-    SegmentTypeContext segmentType = new SegmentTypeContext();
-    segmentType.setSegmentType("Promo");
-    promoContext.setSegmentType(segmentType);
-    promoContext.setDeterminedOutcome("A promo about a future match.");
-    String customInstructions = "These are my custom instructions.";
-    promoContext.setInstructions(customInstructions);
-
-    // When
-    String prompt = service.buildTestPrompt(promoContext);
-
-    // Then
-    assertThat(prompt)
-        .isNotNull()
-        .isNotEmpty()
-        .contains("PROMO NARRATION INSTRUCTIONS:")
-        .contains(customInstructions);
-  }
-
-  @Test
-  @DisplayName("Should include custom instructions in match prompt")
-  void shouldIncludeCustomInstructionsInMatchPrompt() {
-    // Given
-    SegmentNarrationContext matchContext = createComprehensiveTestContext();
-    String customInstructions = "These are my custom instructions for a match.";
-    matchContext.setInstructions(customInstructions);
-
-    // When
-    String prompt = service.buildTestPrompt(matchContext);
-
-    // Then
-    assertThat(prompt)
-        .isNotNull()
-        .isNotEmpty()
-        .contains("NARRATION INSTRUCTIONS:")
-        .contains(customInstructions);
   }
 
   /** Testable implementation of AbstractMatchNarrationService for testing prompt building. */

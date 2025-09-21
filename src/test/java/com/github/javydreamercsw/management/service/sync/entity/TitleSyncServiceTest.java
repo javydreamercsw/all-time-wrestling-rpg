@@ -35,6 +35,10 @@ class TitleSyncServiceTest {
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private NotionRateLimitService rateLimitService;
 
+  @Mock
+  private com.github.javydreamercsw.management.domain.title.TitleReignRepository
+      titleReignRepository;
+
   private TitleSyncService titleSyncService;
 
   @BeforeEach
@@ -49,6 +53,7 @@ class TitleSyncServiceTest {
     ReflectionTestUtils.setField(titleSyncService, "notionHandler", notionHandler);
     ReflectionTestUtils.setField(titleSyncService, "healthMonitor", healthMonitor);
     ReflectionTestUtils.setField(titleSyncService, "rateLimitService", rateLimitService);
+    ReflectionTestUtils.setField(titleSyncService, "titleReignRepository", titleReignRepository);
   }
 
   @Test
@@ -84,7 +89,7 @@ class TitleSyncServiceTest {
 
     // Assert
     ArgumentCaptor<Title> titleCaptor = ArgumentCaptor.forClass(Title.class);
-    verify(titleRepository, atLeastOnce()).save(titleCaptor.capture());
+    verify(titleRepository, atLeastOnce()).saveAndFlush(titleCaptor.capture());
 
     Title finalSave = titleCaptor.getValue();
 

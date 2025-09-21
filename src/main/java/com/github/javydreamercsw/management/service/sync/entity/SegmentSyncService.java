@@ -365,7 +365,7 @@ public class SegmentSyncService extends BaseSyncService {
       }
 
       if (!winners.isEmpty()) {
-        segment.setWinner(winners.get(0));
+        segment.setWinners(winners);
       }
 
       segment.setSegmentDate(segmentDTO.getSegmentDate());

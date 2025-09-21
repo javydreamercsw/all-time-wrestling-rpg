@@ -43,6 +43,7 @@ class SegmentNarrationControllerTest extends BaseControllerTest {
         .thenAnswer(i -> i.getArguments()[0]);
 
     SegmentNarrationContext context = new SegmentNarrationContext();
+    context.setSegmentType(new SegmentNarrationService.SegmentTypeContext());
 
     // When & Then
     mockMvc

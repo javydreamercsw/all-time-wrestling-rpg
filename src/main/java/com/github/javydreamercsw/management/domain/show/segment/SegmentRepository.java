@@ -44,7 +44,8 @@ public interface SegmentRepository
   @Query(
       """
       SELECT s FROM Segment s
-      WHERE s.winner = :wrestler
+      JOIN s.participants p
+      WHERE p.wrestler = :wrestler AND p.isWinner = true
       ORDER BY s.segmentDate DESC
       """)
   List<Segment> findByWinner(@Param("wrestler") Wrestler wrestler);
@@ -78,7 +79,8 @@ public interface SegmentRepository
   @Query(
       """
       SELECT COUNT(s) FROM Segment s
-      WHERE s.winner = :wrestler
+      JOIN s.participants p
+      WHERE p.wrestler = :wrestler AND p.isWinner = true
       """)
   long countWinsByWrestler(@Param("wrestler") Wrestler wrestler);
 

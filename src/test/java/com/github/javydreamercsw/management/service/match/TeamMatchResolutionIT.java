@@ -147,7 +147,12 @@ class TeamMatchResolutionIT {
     assertThat(result.getId()).isNotNull();
     assertThat(result.getShow()).isEqualTo(testShow);
     assertThat(result.getSegmentType()).isEqualTo(tagTeamSegmentType);
-    assertThat(result.getWinner()).isIn(rookie1, rookie2, rookie3, rookie4);
+    assertThat(result.getWinners()).hasSize(2);
+    // Check that the winners are from the same team
+    List<Wrestler> team1Members = Arrays.asList(rookie1, rookie2);
+    List<Wrestler> team2Members = Arrays.asList(rookie3, rookie4);
+    List<Wrestler> winners = result.getWinners();
+    assertThat(winners.containsAll(team1Members) || winners.containsAll(team2Members)).isTrue();
     assertThat(result.getIsNpcGenerated()).isTrue();
     assertThat(result.getParticipants()).hasSize(4);
 
@@ -196,7 +201,7 @@ class TeamMatchResolutionIT {
               rookieTeam, contenderTeam, tagTeamSegmentType, testShow, "Test Match " + i);
 
       // Check if any contender won (representing their team)
-      if (result.getWinner().equals(contender1) || result.getWinner().equals(contender2)) {
+      if (result.getWinners().contains(contender1) || result.getWinners().contains(contender2)) {
         contenderTeamWins++;
       }
     }
@@ -249,7 +254,8 @@ class TeamMatchResolutionIT {
     assertThat(result.getWrestlers()).containsExactlyInAnyOrder(rookie1, contender1);
 
     // Should still favor the contender
-    assertThat(result.getWinner()).isEqualTo(contender1);
+    assertThat(result.getWinners()).hasSize(1);
+    assertThat(result.getWinners().get(0)).isEqualTo(contender1);
   }
 
   @Test
