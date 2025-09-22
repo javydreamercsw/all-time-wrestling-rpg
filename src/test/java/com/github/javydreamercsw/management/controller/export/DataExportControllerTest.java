@@ -32,9 +32,11 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 
 /** Unit tests for DataExportController. Tests the controller logic without Spring context. */
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 class DataExportControllerTest {
 
   @Mock private ShowService showService;
@@ -52,7 +54,6 @@ class DataExportControllerTest {
   private Show testShow;
   private ShowTemplate testShowTemplate;
   private ShowType testShowType;
-  private Season testSeason;
 
   @BeforeEach
   void setUp() {
@@ -60,7 +61,7 @@ class DataExportControllerTest {
     testShowType = new ShowType();
     testShowType.setName("Weekly Show");
 
-    testSeason = new Season();
+    Season testSeason = new Season();
     testSeason.setName("Season 1");
 
     testShow = new Show();
