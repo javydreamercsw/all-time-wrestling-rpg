@@ -10,6 +10,7 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,20 @@ class TeamServiceIT extends AbstractIntegrationTest {
   private Wrestler wrestler2;
   private Wrestler wrestler3;
   private Faction faction;
+
+  @BeforeEach
+  public void setUp() {
+    teamRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+    factionRepository.deleteAll();
+    wrestler1 = wrestlerRepository.save(createTestWrestler("Wrestler 1"));
+    wrestler2 = wrestlerRepository.save(createTestWrestler("Wrestler 2"));
+    wrestler3 = wrestlerRepository.save(createTestWrestler("Wrestler 3"));
+
+    faction = new Faction();
+    faction.setName("Test Faction");
+    faction = factionRepository.save(faction);
+  }
 
   @Test
   @DisplayName("Should create team successfully with real database")
