@@ -34,13 +34,16 @@ jobs:
       run: mvn spotless:apply
 
     - name: Run unit tests with coverage
-      run: mvn -B clean verify -Pcoverage -DskipITs
+      run: mvn -B verify -Pcoverage -DskipITs
 
     - name: Upload unit test coverage data
       uses: actions/upload-artifact@v4
       with:
         name: jacoco-exec
         path: target/jacoco.exec
+
+    - name: Clean target directory
+      run: mvn clean
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -57,13 +60,16 @@ jobs:
         cache: maven
 
     - name: Run Integration Tests
-      run: mvn -B clean verify -Pintegration-test
+      run: mvn -B verify -Pintegration-test
 
     - name: Upload integration test coverage data
       uses: actions/upload-artifact@v4
       with:
         name: jacoco-it-exec
         path: target/jacoco-it.exec
+
+    - name: Clean target directory
+      run: mvn clean
   coverage-and-analysis:
     runs-on: ubuntu-latest
     needs: [build-and-unit-test, integration-tests]
