@@ -17,6 +17,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
@@ -45,7 +46,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -58,11 +58,11 @@ public class DataInitializer {
   @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private DeckRepository deckRepository;
   @Autowired private TitleRepository titleRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerService wrestlerService;
 
   @Bean
   @Order(-1)
-  @Transactional
   public ApplicationRunner loadSegmentRulesFromFile(
       @NonNull SegmentRuleService segmentRuleService) {
     return args -> {
@@ -88,7 +88,6 @@ public class DataInitializer {
               log.debug("Segment rule {} already exists, skipping creation.", dto.getName());
             }
           }
-          segmentRuleRepository.flush();
           log.info("Segment rule loading completed - {} rules loaded", segmentRulesFromFile.size());
         } catch (Exception e) {
           log.error("Error loading segment rules from file", e);
@@ -101,7 +100,6 @@ public class DataInitializer {
 
   @Bean
   @Order(0)
-  @Transactional
   public ApplicationRunner syncShowTypesFromFile(@NonNull ShowTypeService showTypeService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("show_types.json");
@@ -127,7 +125,6 @@ public class DataInitializer {
 
   @Bean
   @Order(1)
-  @Transactional
   public ApplicationRunner loadSegmentTypesFromFile(
       @NonNull SegmentTypeService segmentTypeService) {
     return args -> {
@@ -166,7 +163,6 @@ public class DataInitializer {
 
   @Bean
   @Order(2)
-  @Transactional
   public ApplicationRunner loadShowTemplatesFromFile(
       @NonNull ShowTemplateService showTemplateService) {
     return args -> {
@@ -216,7 +212,6 @@ public class DataInitializer {
 
   @Bean
   @Order(3)
-  @Transactional
   public ApplicationRunner syncSetsFromFile(@NonNull CardSetService cardSetService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("sets.json");
@@ -241,14 +236,12 @@ public class DataInitializer {
             }
           }
         }
-        cardSetRepository.flush();
       }
     };
   }
 
   @Bean
   @Order(4)
-  @Transactional
   public ApplicationRunner syncCardsFromFile(
       @NonNull CardService cardService, @NonNull CardSetService cardSetService) {
     return args -> {
@@ -291,7 +284,6 @@ public class DataInitializer {
               log.info("Saved new card: {}", card.getName());
             }
           }
-          cardRepository.flush();
         }
       }
     };
@@ -299,7 +291,6 @@ public class DataInitializer {
 
   @Bean
   @Order(5)
-  @Transactional
   public ApplicationRunner syncWrestlersFromFile(@NonNull WrestlerService wrestlerService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("wrestlers.json");
@@ -368,7 +359,6 @@ public class DataInitializer {
 
   @Bean
   @Order(6)
-  @Transactional
   public ApplicationRunner syncChampionshipsFromFile(@NonNull TitleService titleService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("championships.json");
@@ -420,7 +410,6 @@ public class DataInitializer {
               log.info("Vacated title {} as no champion was specified in DTO.", title.getName());
             }
           }
-          titleRepository.flush();
         } catch (Exception e) {
           log.error("Error loading championships from file", e);
         }
@@ -430,7 +419,6 @@ public class DataInitializer {
 
   @Bean
   @Order(7)
-  @Transactional
   public ApplicationRunner syncDecksFromFile(
       @NonNull CardService cardService,
       @NonNull WrestlerService wrestlerService,
