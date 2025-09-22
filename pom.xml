@@ -228,18 +228,7 @@
             -Djdk.instrument.traceUsage=false
             -javaagent:${org.mockito:mockito-core:jar}</argLine>
         </configuration>
-        <executions>
-          <execution>
-            <id>pre-integration-test</id>
-            <goals>
-              <goal>test</goal>
-            </goals>
-            <phase>pre-integration-test</phase>
-            <configuration>
-              <test>**/run-data-initializer.sh</test>
-            </configuration>
-          </execution>
-        </executions>
+
       </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
