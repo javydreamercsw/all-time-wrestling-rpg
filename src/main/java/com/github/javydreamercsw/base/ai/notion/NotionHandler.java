@@ -1495,7 +1495,9 @@ public class NotionHandler {
       log.warn("NOTION_TOKEN not available. Cannot create NotionClient.");
       return null;
     }
-    return new NotionClient(notionToken);
+    NotionClient client = new NotionClient(notionToken);
+    client.setLogger(new notion.api.v1.logging.Slf4jLogger());
+    return client;
   }
 
   /** Optimized method to load all entities for sync operations with minimal processing. */
