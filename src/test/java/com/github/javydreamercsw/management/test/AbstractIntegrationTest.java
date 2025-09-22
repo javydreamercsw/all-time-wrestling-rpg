@@ -28,7 +28,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
-@ActiveProfiles("integration-test")
+@ActiveProfiles("test")
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected SegmentRuleService segmentRuleService;
@@ -80,7 +80,7 @@ public abstract class AbstractIntegrationTest {
   protected Wrestler createTestWrestler(String name) {
     Wrestler wrestler = new Wrestler();
     wrestler.setName(name);
-    wrestler.setFans(10000L);
+    wrestler.setFans(10_000L);
     wrestler.setStartingHealth(15);
     wrestler.setLowHealth(0);
     wrestler.setStartingStamina(0);
@@ -109,7 +109,7 @@ public abstract class AbstractIntegrationTest {
     venue.setName("Civic Arena");
     venue.setLocation("Pittsburgh, Pennsylvania");
     venue.setType("Indoor Arena");
-    venue.setCapacity(17000);
+    venue.setCapacity(17_000);
     venue.setDescription("Historic venue for legendary matches");
     venue.setAtmosphere("Intense and foreboding");
     venue.setSignificance("Site of the most famous Hell in a Cell segment");
