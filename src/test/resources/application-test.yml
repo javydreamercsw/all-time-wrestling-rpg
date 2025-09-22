@@ -19,7 +19,7 @@ spring:
 
   # Disable Flyway for tests - use JPA schema generation instead
   flyway:
-    enabled: false
+    enabled: true
 
 # Match narration configuration for testing
 match-narration:

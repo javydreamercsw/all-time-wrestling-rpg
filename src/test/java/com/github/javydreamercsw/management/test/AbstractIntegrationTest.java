@@ -1,6 +1,9 @@
 package com.github.javydreamercsw.management.test;
 
 import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.management.domain.card.CardRepository;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -50,6 +53,9 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected TeamService teamService;
   @Autowired protected TeamRepository teamRepository;
   @Autowired protected ShowService showService;
+  @Autowired protected DeckRepository deckRepository;
+  @Autowired protected CardRepository cardRepository;
+  @Autowired protected CardSetRepository cardSetRepository;
 
   protected DataInitializer dataInitializer;
 
