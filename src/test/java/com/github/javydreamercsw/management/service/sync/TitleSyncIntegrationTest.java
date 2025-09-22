@@ -2,61 +2,18 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.sync.entity.TitleSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@TestPropertySource(
-    properties = {
-      "notion.sync.enabled=true",
-      "notion.sync.entities.specific.titles.enabled=true",
-      "notion.sync.entities.specific.titlereigns.enabled=true",
-      "notion.sync.scheduler.enabled=false"
-    })
-@EnabledIf("isNotionTokenAvailable")
 @Slf4j
-@Transactional
-class TitleSyncIntegrationTest extends BaseTest {
-
-  @Autowired private NotionSyncService notionSyncService;
-
-  @Autowired private TitleRepository titleRepository;
-
-  @Autowired private WrestlerRepository wrestlerRepository;
-
-  @Autowired private WrestlerSyncService wrestlerSyncService;
-
-  @Autowired private TitleReignRepository titleReignRepository;
-
-  @Autowired private TitleSyncService titleSyncService;
-
-  @BeforeEach
-  void setUp() {
-    // Ensure wrestlers are synced first so champion relations can be resolved.
-    log.info("🚀 Pre-syncing wrestlers for title test...");
-    wrestlerSyncService.syncWrestlers("wrestler-sync-for-titles");
-    log.info("✅ Wrestlers synced.");
-  }
+class TitleSyncIntegrationTest extends AbstractIntegrationTest {
 
   @Test
   @DisplayName("Should Sync Titles From Notion")

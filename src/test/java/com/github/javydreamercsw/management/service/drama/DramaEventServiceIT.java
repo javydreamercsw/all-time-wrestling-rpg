@@ -9,35 +9,22 @@ import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
-class DramaEventServiceIT {
+@DisplayName("DramaEventService Integration Tests")
+class DramaEventServiceIT extends AbstractIntegrationTest {
 
+  private Wrestler testWrestler1;
+  private Wrestler testWrestler2;
   @Autowired DramaEventService dramaEventService;
   @Autowired WrestlerService wrestlerService;
   @Autowired WrestlerRepository wrestlerRepository;
   @Autowired DramaEventRepository dramaEventRepository;
-
-  private Wrestler testWrestler1;
-  private Wrestler testWrestler2;
-
-  @BeforeEach
-  void setUp() {
-    // Create test wrestlers
-    testWrestler1 = createTestWrestler("Drama Test Wrestler 1");
-    testWrestler2 = createTestWrestler("Drama Test Wrestler 2");
-  }
 
   @Test
   @DisplayName("Should create single-wrestler drama event successfully")
@@ -257,18 +244,5 @@ class DramaEventServiceIT {
     assertThat(event.getFanImpact()).isNotNull();
     assertThat(event.getFanImpact()).isPositive();
     assertThat(event.hasPositiveImpact()).isTrue();
-  }
-
-  private Wrestler createTestWrestler(String name) {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName(name);
-    wrestler.setFans(10000L);
-    wrestler.setStartingHealth(15);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingStamina(0);
-    wrestler.setLowStamina(0);
-    wrestler.setDeckSize(15);
-    wrestler.setIsPlayer(false);
-    return wrestlerRepository.save(wrestler);
   }
 }

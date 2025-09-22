@@ -7,42 +7,29 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.season.Season;
-import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.dto.ShowDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Integration tests for DataExportController. Tests the full export functionality with real
  * database and file system operations.
  */
-@SpringBootTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class DataExportControllerIntegrationTest {
+class DataExportControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
 
@@ -50,75 +37,12 @@ class DataExportControllerIntegrationTest {
 
   @Autowired private ShowTemplateRepository showTemplateRepository;
 
-  @Autowired private ShowTypeRepository showTypeRepository;
-
-  @Autowired private SeasonRepository seasonRepository;
-
   @Autowired private ObjectMapper objectMapper;
 
   private ShowType testShowType;
   private Season testSeason;
   private Show testShow;
   private ShowTemplate testShowTemplate;
-
-  @BeforeEach
-  void setUp() {
-    // Clean up any existing test data
-    showRepository.deleteAll();
-    showTemplateRepository.deleteAll();
-    seasonRepository.deleteAll();
-    showTypeRepository.deleteAll();
-
-    // Create test data
-    testShowType = new ShowType();
-    testShowType.setName("Integration Test Show Type");
-    testShowType.setDescription("Integration test show type description");
-    testShowType.setCreationDate(Instant.now());
-    testShowType = showTypeRepository.save(testShowType);
-
-    testSeason = new Season();
-    testSeason.setName("Integration Test Season");
-    testSeason.setDescription("Integration test season description");
-    testSeason.setCreationDate(Instant.now());
-    testSeason = seasonRepository.save(testSeason);
-
-    testShow = new Show();
-    testShow.setName("Integration Test Show");
-    testShow.setDescription("Integration test description");
-    testShow.setShowDate(LocalDate.of(2024, 6, 15));
-    testShow.setType(testShowType);
-    testShow.setSeason(testSeason);
-    testShow.setExternalId("integration-test-123");
-    testShow.setCreationDate(Instant.now());
-    testShow = showRepository.save(testShow);
-
-    testShowTemplate = new ShowTemplate();
-    testShowTemplate.setName("Integration Test Template");
-    testShowTemplate.setDescription("Integration test template description");
-    testShowTemplate.setShowType(testShowType);
-    testShowTemplate.setNotionUrl("https://notion.so/integration-test");
-    testShowTemplate.setExternalId("template-integration-456");
-    testShowTemplate.setCreationDate(Instant.now());
-    testShowTemplate = showTemplateRepository.save(testShowTemplate);
-  }
-
-  @AfterEach
-  void tearDown() throws IOException {
-    // Clean up exported files
-    Path exportsDir = Paths.get("target/exports");
-    if (Files.exists(exportsDir)) {
-      Files.walk(exportsDir)
-          .sorted((a, b) -> b.compareTo(a)) // Delete files before directories
-          .forEach(
-              path -> {
-                try {
-                  Files.deleteIfExists(path);
-                } catch (IOException e) {
-                  // Ignore cleanup errors
-                }
-              });
-    }
-  }
 
   @Test
   void exportShows_CreatesFileWithCorrectContent() throws Exception {

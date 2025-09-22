@@ -2,22 +2,15 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
-import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 /**
  * Real integration test for faction sync that uses actual Spring services and real Notion API Real
@@ -26,27 +19,11 @@ import org.springframework.test.context.TestPropertySource;
  *
  * <p>Run with: mvn test -Dtest=FactionSyncIntegrationTest -DNOTION_TOKEN=your_token
  */
-@SpringBootTest
-@ActiveProfiles("test")
-@TestPropertySource(
-    properties = {
-      "notion.sync.enabled=true",
-      "notion.sync.entities=factions",
-      "notion.sync.scheduler.enabled=true"
-    })
-@EnabledIf("isNotionTokenAvailable")
 @Slf4j
-class FactionSyncIntegrationTest extends BaseTest {
-
+@DisplayName("Faction Sync Integration Tests")
+class FactionSyncIntegrationTest extends AbstractIntegrationTest {
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private FactionService factionService;
-  @Autowired private FactionRepository factionRepository;
-  @Autowired private WrestlerSyncService wrestlerSyncService;
-
-  @BeforeEach
-  public void syncWrestlers() {
-    wrestlerSyncService.syncWrestlers("sync-test");
-  }
 
   @Test
   @DisplayName("Should sync factions from Notion with real services")
@@ -209,9 +186,6 @@ class FactionSyncIntegrationTest extends BaseTest {
     // Then - Verify the result structure
     assertNotNull(result, "Sync result should not be null");
     assertEquals("Factions", result.getEntityType(), "Entity type should be 'Factions'");
-
-    // The operation should complete (success or failure is less important than proper handling)
-    assertNotNull(result.isSuccess(), "Success status should be defined");
 
     log.info("✅ Faction sync operation ID handling validated");
     log.info("   Operation ID: {}", operationId);

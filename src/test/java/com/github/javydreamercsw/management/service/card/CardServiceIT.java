@@ -3,41 +3,18 @@ package com.github.javydreamercsw.management.service.card;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.github.javydreamercsw.TestcontainersConfiguration;
-import com.github.javydreamercsw.management.config.TestConfig;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
-import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
-@Import({TestcontainersConfiguration.class, TestConfig.class})
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@ActiveProfiles("test")
-@Transactional
-class CardServiceIT {
-
-  @Autowired CardService cardService;
-
+class CardServiceIT extends AbstractIntegrationTest {
   @Autowired CardRepository cardRepository;
-
   @Autowired CardSetRepository cardSetRepository;
-
-  @BeforeEach
-  void setUp() {
-    // Create a test CardSet for the tests
-    CardSet testSet = new CardSet();
-    testSet.setName("TST");
-    cardSetRepository.save(testSet);
-  }
 
   @Test
   public void tasks_are_stored_in_the_database_with_the_current_timestamp() {

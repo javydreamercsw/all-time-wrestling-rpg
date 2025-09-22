@@ -2,50 +2,31 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for Teams Sync functionality. These tests require NOTION_TOKEN to be available
  * and use the real database.
  */
-@SpringBootTest
-@ActiveProfiles("test")
-@TestPropertySource(properties = {"notion.sync.enabled=true"})
-@Transactional
-@EnabledIf("isNotionTokenAvailable")
-class NotionSyncServiceTeamsIntegrationTest extends BaseTest {
-
+class NotionSyncServiceTeamsIntegrationTest extends AbstractIntegrationTest {
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private TeamRepository teamRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private TeamService teamService;
-
   private Wrestler wrestler1;
   private Wrestler wrestler2;
-
-  @BeforeEach
-  void setUp() {
-    // Clean up existing data
-    teamRepository.deleteAll();
-    notionSyncService.syncWrestlers("test-setup");
-  }
 
   @Test
   void shouldSyncTeamsFromNotionSuccessfully() {
@@ -206,6 +187,7 @@ class NotionSyncServiceTeamsIntegrationTest extends BaseTest {
     assertThat(team.getFormedDate()).isNotNull();
 
     // Verify it's persisted in database
+    Assertions.assertNotNull(team.getId());
     Optional<Team> foundTeam = teamRepository.findById(team.getId());
     assertThat(foundTeam).isPresent();
     assertThat(foundTeam.get().getName()).isEqualTo(teamName);

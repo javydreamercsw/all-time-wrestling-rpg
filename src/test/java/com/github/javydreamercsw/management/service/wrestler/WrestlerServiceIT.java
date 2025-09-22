@@ -2,43 +2,21 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.TestcontainersConfiguration;
-import com.github.javydreamercsw.management.config.TestConfig;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for WrestlerService ATW RPG functionality. Tests the complete service layer
  * with real database interactions.
  */
-@Import({TestcontainersConfiguration.class, TestConfig.class})
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@ActiveProfiles("test")
-@Transactional
 @DisplayName("WrestlerService Integration Tests")
-class WrestlerServiceIT {
-
-  @Autowired WrestlerService wrestlerService;
-  @Autowired WrestlerRepository wrestlerRepository;
-  @Autowired DeckRepository deckRepository;
-
-  @BeforeEach
-  void clean() {
-    wrestlerRepository.deleteAll();
-  }
+class WrestlerServiceIT extends AbstractIntegrationTest {
 
   @Test
   @DisplayName("Should create wrestler with ATW RPG defaults")

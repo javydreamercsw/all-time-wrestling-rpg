@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.management.ui.view.faction;
+package com.github.javydreamercsw.management.service.faction;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -19,30 +18,23 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * Integration tests for Faction CRUD operations through the UI. Tests the interaction between the
- * UI layer and service layer.
- */
+/** Unit tests for Faction CRUD operations through the service layer. */
 @ExtendWith(MockitoExtension.class)
-class FactionCrudIntegrationTest {
+class FactionCrudTest {
 
   @Mock private FactionService factionService;
   @Mock private WrestlerService wrestlerService;
 
-  private FactionListView factionListView;
   private List<Faction> testFactions;
   private List<Wrestler> testWrestlers;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     testWrestlers = createTestWrestlers();
     testFactions = createTestFactions();
 
     // Mock service responses
-    when(factionService.findAllWithMembers()).thenReturn(testFactions);
     lenient().when(wrestlerService.findAll()).thenReturn(testWrestlers);
-
-    factionListView = new FactionListView(factionService, wrestlerService);
   }
 
   @Test
@@ -114,6 +106,8 @@ class FactionCrudIntegrationTest {
     Faction faction = testFactions.get(0);
     Wrestler newMember = testWrestlers.get(0);
 
+    assertNotNull(faction.getId());
+    assertNotNull(newMember.getId());
     when(factionService.addMemberToFaction(faction.getId(), newMember.getId()))
         .thenReturn(Optional.of(faction));
 
@@ -133,6 +127,8 @@ class FactionCrudIntegrationTest {
     Faction faction = testFactions.get(0);
     Wrestler memberToRemove = testWrestlers.get(0);
 
+    assertNotNull(faction.getId());
+    assertNotNull(memberToRemove.getId());
     when(factionService.removeMemberFromFaction(
             faction.getId(), memberToRemove.getId(), "Removed via UI"))
         .thenReturn(Optional.of(faction));
@@ -172,7 +168,7 @@ class FactionCrudIntegrationTest {
   @DisplayName("Should refresh data after CRUD operations")
   void shouldRefreshDataAfterCrudOperations() {
     // Given - Initial data load
-    verify(factionService, atLeastOnce()).findAllWithMembers();
+    when(factionService.findAll()).thenReturn(testFactions);
 
     // When - Simulate data refresh after operation
     List<Faction> updatedFactions = new ArrayList<>(testFactions);
@@ -190,20 +186,6 @@ class FactionCrudIntegrationTest {
     assertNotNull(refreshedData);
     assertEquals(3, refreshedData.size()); // Original 2 + 1 new
     assertTrue(refreshedData.stream().anyMatch(f -> "Newly Added Faction".equals(f.getName())));
-  }
-
-  @Test
-  @DisplayName("Should handle empty wrestler list for member management")
-  void shouldHandleEmptyWrestlerListForMemberManagement() {
-    // Given
-    when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
-
-    // When
-    FactionListView viewWithNoWrestlers = new FactionListView(factionService, wrestlerService);
-
-    // Then
-    assertNotNull(viewWithNoWrestlers);
-    verify(wrestlerService, atLeastOnce()).findAll();
   }
 
   @Test
@@ -240,47 +222,31 @@ class FactionCrudIntegrationTest {
     verify(factionService).save(faction2);
   }
 
-  /** Helper method to create test factions for integration testing. */
-  private List<Faction> createTestFactions() {
-    List<Faction> factions = new ArrayList<>();
-
-    Faction evolution = new Faction();
-    evolution.setId(1L);
-    evolution.setName("Evolution");
-    evolution.setDescription("A dominant faction");
-    evolution.setIsActive(false);
-    evolution.setCreationDate(Instant.now());
-
-    Faction dx = new Faction();
-    dx.setId(2L);
-    dx.setName("D-Generation X");
-    dx.setDescription("Rebellious faction");
-    dx.setIsActive(true);
-    dx.setCreationDate(Instant.now());
-
-    factions.add(evolution);
-    factions.add(dx);
-
-    return factions;
-  }
-
-  /** Helper method to create test wrestlers for integration testing. */
   private List<Wrestler> createTestWrestlers() {
     List<Wrestler> wrestlers = new ArrayList<>();
-
     Wrestler wrestler1 = new Wrestler();
     wrestler1.setId(1L);
-    wrestler1.setName("Triple H");
-    wrestler1.setFans(95L);
+    wrestler1.setName("Wrestler 1");
+    wrestlers.add(wrestler1);
 
     Wrestler wrestler2 = new Wrestler();
     wrestler2.setId(2L);
-    wrestler2.setName("Shawn Michaels");
-    wrestler2.setFans(90L);
-
-    wrestlers.add(wrestler1);
+    wrestler2.setName("Wrestler 2");
     wrestlers.add(wrestler2);
-
     return wrestlers;
+  }
+
+  private List<Faction> createTestFactions() {
+    List<Faction> factions = new ArrayList<>();
+    Faction faction1 = new Faction();
+    faction1.setId(1L);
+    faction1.setName("Faction 1");
+    factions.add(faction1);
+
+    Faction faction2 = new Faction();
+    faction2.setId(2L);
+    faction2.setName("Faction 2");
+    factions.add(faction2);
+    return factions;
   }
 }

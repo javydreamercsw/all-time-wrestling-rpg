@@ -2,52 +2,22 @@ package com.github.javydreamercsw.management.service.match;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.TestcontainersConfiguration;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
-import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
-import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentTeam;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.Arrays;
 import java.util.List;
-import lombok.NonNull;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
-@Import(TestcontainersConfiguration.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@ActiveProfiles("test")
-@Transactional
 @DisplayName("Team Match Resolution Integration Tests")
-class TeamMatchResolutionIT {
-
+class TeamMatchResolutionIT extends AbstractIntegrationTest {
   @Autowired NPCSegmentResolutionService npcSegmentResolutionService;
-  @Autowired WrestlerService wrestlerService;
-  @Autowired WrestlerRepository wrestlerRepository;
-  @Autowired SegmentRepository matchRepository;
-  @Autowired SegmentTypeRepository matchTypeRepository;
-  @Autowired ShowRepository showRepository;
-  @Autowired ShowTypeRepository showTypeRepository;
-  @Autowired SegmentRuleService matchRuleService;
-  @Autowired DeckRepository deckRepository; // Autowire DeckRepository
 
   private Wrestler rookie1;
   private Wrestler rookie2;
@@ -58,77 +28,6 @@ class TeamMatchResolutionIT {
   private SegmentType tagTeamSegmentType;
   private SegmentType handicapSegmentType;
   private Show testShow;
-
-  private Wrestler createWrestler(@NonNull String name) {
-    Wrestler w = new Wrestler();
-    w.setName("Rookie One");
-    w.setIsPlayer(true);
-    w.setDeckSize(0);
-    w.setStartingStamina(100);
-    w.setLowStamina(25);
-    w.setStartingHealth(100);
-    w.setLowHealth(25);
-    w = wrestlerRepository.saveAndFlush(w);
-    return w;
-  }
-
-  @BeforeEach
-  void setUp() {
-    // Create and save test wrestlers
-    rookie1 = createWrestler("Rookie One");
-
-    rookie2 = createWrestler("Rookie Two");
-
-    rookie3 = createWrestler("Rookie Three");
-
-    rookie4 = createWrestler("Rookie Four");
-
-    contender1 = createWrestler("Contender One");
-
-    contender2 = createWrestler("Contender Two");
-
-    // Award fans to create tier differences
-    // Now that wrestlers are saved, their IDs are available and they are managed
-    Assertions.assertNotNull(contender1.getId());
-    wrestlerService.awardFans(contender1.getId(), 45_000L); // CONTENDER tier
-    Assertions.assertNotNull(contender2.getId());
-    wrestlerService.awardFans(contender2.getId(), 45_000L); // CONTENDER tier
-
-    // Refresh wrestler entities from database to get updated fan counts
-    // These should now be found as they were explicitly saved and flushed
-    contender1 = wrestlerRepository.findById(contender1.getId()).orElseThrow();
-    contender2 = wrestlerRepository.findById(contender2.getId()).orElseThrow();
-
-    // Create segment types (rely on DataInitializer for these)
-    tagTeamSegmentType = matchTypeRepository.findByName("Tag Team").orElseThrow();
-    handicapSegmentType = matchTypeRepository.findByName("Handicap Match").orElseThrow();
-
-    // Create segment rules for testing
-    matchRuleService.createOrUpdateRule(
-        "Handicap Match", "Handicap segment with uneven teams", false);
-
-    // Create test show
-    ShowType showType = new ShowType();
-    showType.setName("Weekly Show");
-    showType.setDescription("Weekly wrestling show for testing");
-    showType = showTypeRepository.save(showType);
-
-    testShow = new Show();
-    testShow.setName("Test Show");
-    testShow.setDescription("Test show for team matches");
-    testShow.setType(showType);
-    testShow = showRepository.save(testShow);
-  }
-
-  @AfterEach
-  void cleanUp() {
-    matchRepository.deleteAll();
-    deckRepository.deleteAll(); // Delete decks before wrestlers
-    wrestlerRepository.deleteAll();
-    matchTypeRepository.deleteAll();
-    showRepository.deleteAll();
-    showTypeRepository.deleteAll();
-  }
 
   @Test
   @DisplayName("Should resolve tag team segment (2v2)")

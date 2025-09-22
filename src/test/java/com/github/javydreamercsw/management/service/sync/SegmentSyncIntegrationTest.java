@@ -2,122 +2,28 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.base.test.BaseTest;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
-import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
-import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest(properties = {"notion.sync.enabled=true", "notion.sync.entities.matches=true"})
-@ActiveProfiles("test")
-@Transactional
+@Slf4j
 @DisplayName("Segment Sync Integration Tests")
-@EnabledIf("isNotionTokenAvailable")
-class SegmentSyncIntegrationTest extends BaseTest {
-
-  @Autowired private NotionSyncService notionSyncService;
-  @Autowired private ShowService showService;
-
-  @Autowired private SegmentRepository segmentRepository;
-  @Autowired private ShowRepository showRepository;
-  @Autowired private ShowTypeRepository showTypeRepository;
-  @Autowired private SegmentTypeRepository matchTypeRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private DeckRepository deckRepository;
+class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
 
   private Show testShow;
   private SegmentType testMatchType;
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;
-
-  @BeforeEach
-  void setUp() {
-    // Clean up existing data
-    segmentRepository.deleteAll();
-    showRepository.deleteAll();
-    deckRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    matchTypeRepository.deleteAll();
-    showTypeRepository.deleteAll();
-
-    // Create test data
-    ShowType showType = new ShowType();
-    showType.setName("Weekly Show");
-    showType.setDescription("Regular weekly show");
-    showType = showTypeRepository.saveAndFlush(showType);
-
-    testShow = new Show();
-    testShow.setName("Test Show");
-    testShow.setDescription("Test show for integration testing");
-    testShow.setType(showType);
-    testShow = showRepository.saveAndFlush(testShow);
-
-    // Verify show was saved and can be found
-    System.out.println(
-        "DEBUG: Saved show with ID: " + testShow.getId() + ", Name: '" + testShow.getName() + "'");
-    Optional<Show> foundShow = showRepository.findByName("Test Show");
-    System.out.println(
-        "DEBUG: Found show by name: "
-            + foundShow.isPresent()
-            + (foundShow.map(show -> " (ID: " + show.getId() + ")").orElse("")));
-
-    // Test ShowService directly
-    Optional<Show> foundByService = showService.findByName("Test Show");
-    System.out.println(
-        "DEBUG: Found show by service: "
-            + foundByService.isPresent()
-            + (foundByService.map(show -> " (ID: " + show.getId() + ")").orElse("")));
-
-    testMatchType = new SegmentType();
-    testMatchType.setName("Singles");
-    testMatchType.setDescription("One-on-one segment");
-    testMatchType = matchTypeRepository.saveAndFlush(testMatchType);
-
-    testWrestler1 = new Wrestler();
-    testWrestler1.setName("Test Wrestler 1");
-    testWrestler1.setDescription("First test wrestler");
-    testWrestler1.setIsPlayer(false);
-    testWrestler1.setTier(WrestlerTier.ROOKIE);
-    testWrestler1.setStartingHealth(100);
-    testWrestler1.setStartingStamina(100);
-    testWrestler1.setLowHealth(20);
-    testWrestler1.setLowStamina(20);
-    testWrestler1.setDeckSize(40);
-    testWrestler1.setFans(1000L);
-    testWrestler1 = wrestlerRepository.saveAndFlush(testWrestler1);
-
-    testWrestler2 = new Wrestler();
-    testWrestler2.setName("Test Wrestler 2");
-    testWrestler2.setDescription("Second test wrestler");
-    testWrestler2.setIsPlayer(false);
-    testWrestler2.setTier(WrestlerTier.ROOKIE);
-    testWrestler2.setStartingHealth(100);
-    testWrestler2.setStartingStamina(100);
-    testWrestler2.setLowHealth(20);
-    testWrestler2.setLowStamina(20);
-    testWrestler2.setDeckSize(40);
-    testWrestler2.setFans(1000L);
-    testWrestler2 = wrestlerRepository.saveAndFlush(testWrestler2);
-  }
+  @Autowired private SegmentRepository segmentRepository;
+  @Autowired private NotionSyncService notionSyncService;
 
   @Test
   @DisplayName("Should sync matches from Notion to database successfully")

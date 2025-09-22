@@ -2,55 +2,36 @@ package com.github.javydreamercsw.management.service.injury;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.TestcontainersConfiguration;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
-import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for the complete injury system including bump conversion, segment integration,
  * and health calculations.
  */
-@Import(TestcontainersConfiguration.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@ActiveProfiles("test")
-@Transactional
 @DisplayName("Injury System Integration Tests")
-class InjurySystemIntegrationTest {
-
+class InjurySystemIntegrationTest extends AbstractIntegrationTest {
   @Autowired private InjuryService injuryService;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private NPCSegmentResolutionService npcSegmentResolutionService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private InjuryRepository injuryRepository;
-  @Autowired private SegmentRepository segmentRepository;
-  @Autowired private SegmentTypeRepository segmentTypeRepository;
-  @Autowired private ShowRepository showRepository;
-  @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private DeckRepository deckRepository;
 
   @PersistenceContext private EntityManager entityManager;
@@ -59,48 +40,6 @@ class InjurySystemIntegrationTest {
   private Wrestler wrestler2;
   private Show testShow;
   private SegmentType singlesSegmentType;
-
-  @BeforeEach
-  void setUp() {
-    // Clean up
-    segmentRepository.deleteAll();
-    injuryRepository.deleteAll();
-    deckRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    showRepository.deleteAll();
-    showTypeRepository.deleteAll();
-    segmentTypeRepository.deleteAll();
-
-    // Create test data
-    wrestler1 = wrestlerService.createWrestler("Test Wrestler 1", true, null);
-    wrestler1.setFans(25000L); // Riser tier
-    wrestler1.updateTier();
-    wrestler1 = wrestlerRepository.save(wrestler1);
-
-    wrestler2 = wrestlerService.createWrestler("Test Wrestler 2", true, null);
-    wrestler2.setFans(25000L); // Riser tier
-    wrestler2.updateTier();
-    wrestler2 = wrestlerRepository.save(wrestler2);
-
-    // Create show type and show
-    ShowType showType = new ShowType();
-    showType.setName("Test Show Type");
-    showType.setDescription("Test show type for integration tests");
-    showType = showTypeRepository.save(showType);
-
-    testShow = new Show();
-    testShow.setName("Test Show");
-    testShow.setDescription("Test show for integration tests");
-    testShow.setType(showType);
-    testShow.setShowDate(java.time.LocalDate.now());
-    testShow = showRepository.save(testShow);
-
-    // Create segment type
-    singlesSegmentType = new SegmentType();
-    singlesSegmentType.setName("Singles Segment");
-    singlesSegmentType.setDescription("One-on-one wrestling segment");
-    singlesSegmentType = segmentTypeRepository.save(singlesSegmentType);
-  }
 
   @Test
   @DisplayName("Should convert 3 bumps to injury and reset bumps")

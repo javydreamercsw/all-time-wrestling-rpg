@@ -2,102 +2,30 @@ package com.github.javydreamercsw.management.service.team;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.TestcontainersConfiguration;
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
-import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
-import java.time.Instant;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for TeamService. Tests the complete service layer with real database
  * interactions.
  */
-@Import(TestcontainersConfiguration.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@ActiveProfiles("test")
-@Transactional(propagation = Propagation.NOT_SUPPORTED)
 @DisplayName("TeamService Integration Tests")
-class TeamServiceIT {
-
-  @Autowired private TeamService teamService;
-  @Autowired private TeamRepository teamRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private FactionRepository factionRepository;
+class TeamServiceIT extends AbstractIntegrationTest {
 
   private Wrestler wrestler1;
   private Wrestler wrestler2;
   private Wrestler wrestler3;
   private Faction faction;
-
-  @BeforeEach
-  void setUp() {
-    // Create test wrestlers with all required fields
-    wrestler1 = new Wrestler();
-    wrestler1.setName("John Cena");
-    wrestler1.setTier(WrestlerTier.MAIN_EVENTER);
-    wrestler1.setStartingStamina(100);
-    wrestler1.setLowStamina(25);
-    wrestler1.setStartingHealth(100);
-    wrestler1.setLowHealth(25);
-    wrestler1.setDeckSize(40);
-    wrestler1.setCreationDate(Instant.now());
-    wrestler1 = wrestlerRepository.saveAndFlush(wrestler1);
-
-    wrestler2 = new Wrestler();
-    wrestler2.setName("The Rock");
-    wrestler2.setTier(WrestlerTier.MAIN_EVENTER);
-    wrestler2.setStartingStamina(100);
-    wrestler2.setLowStamina(25);
-    wrestler2.setStartingHealth(100);
-    wrestler2.setLowHealth(25);
-    wrestler2.setDeckSize(40);
-    wrestler2.setCreationDate(Instant.now());
-    wrestler2 = wrestlerRepository.saveAndFlush(wrestler2);
-
-    wrestler3 = new Wrestler();
-    wrestler3.setName("Stone Cold");
-    wrestler3.setTier(WrestlerTier.MAIN_EVENTER);
-    wrestler3.setStartingStamina(100);
-    wrestler3.setLowStamina(25);
-    wrestler3.setStartingHealth(100);
-    wrestler3.setLowHealth(25);
-    wrestler3.setDeckSize(40);
-    wrestler3.setCreationDate(Instant.now());
-    wrestler3 = wrestlerRepository.saveAndFlush(wrestler3);
-
-    // Create test faction
-    faction = new Faction();
-    faction.setName("Test Faction");
-    faction.setDescription("Test faction description");
-    faction.setLeader(wrestler1);
-    faction = factionRepository.saveAndFlush(faction);
-  }
-
-  @AfterEach
-  void tearDown() {
-    teamRepository.deleteAll();
-    factionRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-  }
 
   @Test
   @DisplayName("Should create team successfully with real database")
@@ -122,6 +50,7 @@ class TeamServiceIT {
     assertThat(savedTeam.getFormedDate()).isNotNull();
 
     // Verify it's persisted
+    Assertions.assertNotNull(savedTeam.getId());
     Optional<Team> fromDb = teamRepository.findById(savedTeam.getId());
     assertThat(fromDb).isPresent();
     assertThat(fromDb.get().getName()).isEqualTo("The Cenation");
@@ -190,6 +119,7 @@ class TeamServiceIT {
     assertThat(updatedTeam.getDescription()).isEqualTo("Updated Description");
 
     // Verify it's persisted
+    Assertions.assertNotNull(teamId);
     Optional<Team> fromDb = teamRepository.findById(teamId);
     assertThat(fromDb).isPresent();
     assertThat(fromDb.get().getName()).isEqualTo("Updated Name");
@@ -240,6 +170,7 @@ class TeamServiceIT {
     assertThat(result).isTrue();
 
     // Verify it's deleted
+    Assertions.assertNotNull(teamId);
     Optional<Team> fromDb = teamRepository.findById(teamId);
     assertThat(fromDb).isEmpty();
   }
@@ -276,9 +207,12 @@ class TeamServiceIT {
     assertThat(wrestler1Teams).hasSize(2);
     assertThat(wrestler1Teams)
         .allMatch(
-            team ->
-                team.getWrestler1().getId().equals(wrestler1.getId())
-                    || team.getWrestler2().getId().equals(wrestler1.getId()));
+            team -> {
+              Assertions.assertNotNull(team.getWrestler1().getId());
+              if (team.getWrestler1().getId().equals(wrestler1.getId())) return true;
+              Assertions.assertNotNull(team.getWrestler2().getId());
+              return team.getWrestler2().getId().equals(wrestler1.getId());
+            });
   }
 
   @Test

@@ -2,32 +2,19 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 /**
  * Real integration test for NPC sync that uses actual Spring services and real Notion API calls.
  * This test requires the NOTION_TOKEN environment variable to be set.
  */
-@SpringBootTest
-@ActiveProfiles("test")
-@TestPropertySource(
-    properties = {
-      "notion.sync.enabled=true",
-      "notion.sync.entities=npcs",
-      "notion.sync.scheduler.enabled=true"
-    })
-@EnabledIf("isNotionTokenAvailable")
 @Slf4j
-class NpcSyncIntegrationTest extends BaseTest {
+class NpcSyncIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private NotionSyncService notionSyncService;
 

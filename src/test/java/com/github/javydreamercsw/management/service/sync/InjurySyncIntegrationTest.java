@@ -3,48 +3,23 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
-import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Integration tests for Injury Sync functionality. These tests require NOTION_TOKEN to be available
- * and test the real integration with Notion API and database.
- *
- * <p>NO MOCKING - These tests use real services and real database operations.
- */
-@SpringBootTest
-@ActiveProfiles("test")
-@TestPropertySource(properties = {"notion.sync.enabled=true", "notion.sync.scheduler.enabled=true"})
-@Transactional
-@EnabledIf("isNotionTokenAvailable")
 @Slf4j
-class InjurySyncIntegrationTest extends BaseTest {
+@DisplayName("Injury Sync Integration Tests")
+class InjurySyncIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private NotionSyncService notionSyncService;
 
-  @Autowired private InjuryTypeService injuryTypeService;
-
   @Autowired private InjuryTypeRepository injuryTypeRepository;
-
-  @BeforeEach
-  void setUp() {
-    log.info("🧪 Setting up InjurySyncIntegrationTest");
-    log.info("NOTION_TOKEN available: {}", BaseTest.isNotionTokenAvailable());
-  }
 
   @Test
   @DisplayName("Should sync injury types from real Notion database")

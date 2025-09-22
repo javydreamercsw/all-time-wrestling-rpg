@@ -2,21 +2,12 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(classes = Application.class)
-@AutoConfigureTestDatabase
-@ActiveProfiles("test")
-public class WrestlerDTOIntegrationTest {
-
-  @Autowired private WrestlerService wrestlerService;
+public class WrestlerDTOIntegrationTest extends AbstractIntegrationTest {
 
   @Test
   void robVanDamMoveSetShouldBePopulatedCorrectly() {
