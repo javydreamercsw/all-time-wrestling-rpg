@@ -23,8 +23,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
@@ -36,12 +42,69 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Notion Property Resolution Tests")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 class NotionPropertyResolutionTest {
 
-  @Autowired private NotionSyncService notionSyncService; // Changed from @InjectMocks
+  @TestConfiguration
+  static class NotionPropertyResolutionTestConfiguration {
 
-  // REMOVED: @Mock private NotionSyncProperties notionSyncProperties;
+    @Bean
+    @Order(-1)
+    public ApplicationRunner loadSegmentRulesFromFile() {
+      return args -> {}; // No-op
+    }
 
+    @Bean
+    @Order(0)
+    public ApplicationRunner syncShowTypesFromFile() {
+      return args -> {}; // No-op
+    }
+
+    @Bean
+    @Order(1)
+    public ApplicationRunner loadSegmentTypesFromFile() {
+      return args -> {}; // No-op
+    }
+
+    @Bean
+    @Order(2)
+    public ApplicationRunner loadShowTemplatesFromFile() {
+      return args -> {}; // No-op
+    }
+
+    @Bean
+    @Order(3)
+    public ApplicationRunner syncSetsFromFile() {
+      return args -> {}; // No-op
+    }
+
+    @Bean
+    @Order(4)
+    public ApplicationRunner syncCardsFromFile() {
+      return args -> {}; // No-op
+    }
+
+    @Bean
+    @Order(5)
+    public ApplicationRunner syncWrestlersFromFile() {
+      return args -> {}; // No-op
+    }
+
+    @Bean
+    @Order(6)
+    public ApplicationRunner syncChampionshipsFromFile() {
+      return args -> {}; // No-op
+    }
+
+    @Bean
+    @Order(7)
+    public ApplicationRunner syncDecksFromFile() {
+      return args -> {}; // No-op
+    }
+  }
+
+  @Autowired private NotionSyncService notionSyncService;
   @MockitoBean private NotionHandler notionHandler;
   @MockitoBean private ShowService showService;
   @MockitoBean private SegmentTypeService matchTypeService;

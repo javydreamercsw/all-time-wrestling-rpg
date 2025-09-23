@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -28,9 +29,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
+@ActiveProfiles("dev")
 @SpringBootTest(properties = "spring.config.name=application-test")
+@ContextConfiguration(classes = Application.class)
+@Import(DataInitializer.class)
 class DataInitializerTest {
 
   @Autowired private DataInitializer dataInitializer;
@@ -47,7 +54,7 @@ class DataInitializerTest {
   @Autowired private DeckCardService deckCardService;
 
   @BeforeEach
-  void setUp() throws Exception {
+  void setUp() {
     dataInitializer.loadSegmentRulesFromFile(segmentRuleService);
     dataInitializer.syncShowTypesFromFile(showTypeService);
     dataInitializer.loadSegmentTypesFromFile(segmentTypeService);
