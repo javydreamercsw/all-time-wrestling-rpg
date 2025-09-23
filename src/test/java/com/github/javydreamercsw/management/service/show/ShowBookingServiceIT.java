@@ -14,10 +14,15 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ShowBookingServiceIT extends AbstractIntegrationTest {
   @Autowired ShowBookingService showBookingService;
   @Autowired SeasonRepository seasonRepository;
@@ -25,6 +30,34 @@ class ShowBookingServiceIT extends AbstractIntegrationTest {
   @Autowired DeckRepository deckRepository; // Autowire DeckRepository
   private Season testSeason;
   private ShowType weeklyShowType;
+
+  @BeforeEach
+  public void setUp() throws Exception {
+    super.setUp();
+    // Find or create a test season
+    Optional<Season> seasonOpt = seasonRepository.findByName("Test Season");
+    if (seasonOpt.isEmpty()) {
+      testSeason = new Season();
+      testSeason.setName("Test Season");
+      testSeason.setStartDate(
+          java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+      testSeason.setIsActive(true);
+      seasonRepository.save(testSeason);
+    } else {
+      testSeason = seasonOpt.get();
+    }
+
+    // Create and save a weekly show type
+    Optional<ShowType> showTypeOpt = showTypeService.findByName("Weekly Show");
+    if (showTypeOpt.isEmpty()) {
+      weeklyShowType = new ShowType();
+      weeklyShowType.setName("Weekly Show");
+      weeklyShowType.setDescription("A weekly wrestling show");
+      showTypeService.save(weeklyShowType);
+    } else {
+      weeklyShowType = showTypeOpt.get();
+    }
+  }
 
   @Test
   @DisplayName("Should book regular show with specified segment count")
@@ -53,7 +86,6 @@ class ShowBookingServiceIT extends AbstractIntegrationTest {
 
     // Verify all segments have valid participants
     for (Segment segment : allSegments) {
-      System.out.println(segment);
       assertThat(segment.getWrestlers()).isNotEmpty();
       if (!segment.getSegmentType().getName().equals("Promo")) {
         assertThat(segment.getWinners()).isNotEmpty();
@@ -115,7 +147,9 @@ class ShowBookingServiceIT extends AbstractIntegrationTest {
     for (int i = 2; i < allWrestlers.size(); i++) {
       Wrestler wrestlerToDelete = allWrestlers.get(i);
       // Delete associated decks first
-      deckRepository.deleteByWrestler(wrestlerToDelete);
+      List<com.github.javydreamercsw.management.domain.deck.Deck> decksToDelete =
+          deckRepository.findByWrestler(wrestlerToDelete);
+      deckRepository.deleteAll(decksToDelete);
       wrestlerRepository.delete(wrestlerToDelete);
     }
 

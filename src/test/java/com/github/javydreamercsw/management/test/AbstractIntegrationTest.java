@@ -25,13 +25,16 @@ import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@EnabledIf("isNotionTokenAvailable")
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected SegmentRuleService segmentRuleService;
@@ -57,11 +60,11 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected CardRepository cardRepository;
   @Autowired protected CardSetRepository cardSetRepository;
 
-  protected DataInitializer dataInitializer;
+  @Autowired protected DataInitializer dataInitializer;
 
   @BeforeEach
+  @Transactional(rollbackFor = Exception.class)
   public void setUp() throws Exception {
-    dataInitializer = new DataInitializer();
     dataInitializer
         .loadSegmentRulesFromFile(segmentRuleService)
         .run(new DefaultApplicationArguments());

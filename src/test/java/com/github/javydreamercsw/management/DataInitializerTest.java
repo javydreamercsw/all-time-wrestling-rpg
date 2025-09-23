@@ -27,7 +27,6 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,25 +48,15 @@ class DataInitializerTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    dataInitializer
-        .loadSegmentRulesFromFile(segmentRuleService)
-        .run(new DefaultApplicationArguments());
-    dataInitializer.syncShowTypesFromFile(showTypeService).run(new DefaultApplicationArguments());
-    dataInitializer
-        .loadSegmentTypesFromFile(segmentTypeService)
-        .run(new DefaultApplicationArguments());
-    dataInitializer
-        .loadShowTemplatesFromFile(showTemplateService)
-        .run(new DefaultApplicationArguments());
-    dataInitializer.syncSetsFromFile(cardSetService).run(new DefaultApplicationArguments());
-    dataInitializer
-        .syncCardsFromFile(cardService, cardSetService)
-        .run(new DefaultApplicationArguments());
-    dataInitializer.syncWrestlersFromFile(wrestlerService).run(new DefaultApplicationArguments());
-    dataInitializer.syncChampionshipsFromFile(titleService).run(new DefaultApplicationArguments());
-    dataInitializer
-        .syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService)
-        .run(new DefaultApplicationArguments());
+    dataInitializer.loadSegmentRulesFromFile(segmentRuleService);
+    dataInitializer.syncShowTypesFromFile(showTypeService);
+    dataInitializer.loadSegmentTypesFromFile(segmentTypeService);
+    dataInitializer.loadShowTemplatesFromFile(showTemplateService);
+    dataInitializer.syncSetsFromFile(cardSetService);
+    dataInitializer.syncCardsFromFile(cardService, cardSetService);
+    dataInitializer.syncWrestlersFromFile(wrestlerService);
+    dataInitializer.syncChampionshipsFromFile(titleService);
+    dataInitializer.syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService);
   }
 
   @Test

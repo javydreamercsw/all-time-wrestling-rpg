@@ -11,11 +11,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * Integration tests for WrestlerService ATW RPG functionality. Tests the complete service layer
- * with real database interactions.
- */
-@DisplayName("WrestlerService Integration Tests")
 class WrestlerServiceIT extends AbstractIntegrationTest {
 
   @Test
@@ -45,17 +40,18 @@ class WrestlerServiceIT extends AbstractIntegrationTest {
     assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.ROOKIE);
 
     // When - Award enough fans to reach Contender tier
-    Optional<Wrestler> updated = wrestlerService.awardFans(wrestler.getId(), 45000L);
+    Assertions.assertNotNull(wrestler.getId());
+    Optional<Wrestler> updated = wrestlerService.awardFans(wrestler.getId(), 45_000L);
 
     // Then
     assertThat(updated).isPresent();
-    assertThat(updated.get().getFans()).isEqualTo(45000L);
+    assertThat(updated.get().getFans()).isEqualTo(45_000L);
     assertThat(updated.get().getTier()).isEqualTo(WrestlerTier.CONTENDER);
 
     // Verify persistence
     Optional<Wrestler> fromDb = wrestlerRepository.findById(wrestler.getId());
     assertThat(fromDb).isPresent();
-    assertThat(fromDb.get().getFans()).isEqualTo(45000L);
+    assertThat(fromDb.get().getFans()).isEqualTo(45_000L);
     assertThat(fromDb.get().getTier()).isEqualTo(WrestlerTier.CONTENDER);
   }
 
@@ -66,6 +62,7 @@ class WrestlerServiceIT extends AbstractIntegrationTest {
     Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
 
     // When - Add bumps
+    Assertions.assertNotNull(wrestler.getId());
     wrestlerService.addBump(wrestler.getId());
     wrestlerService.addBump(wrestler.getId());
     Optional<Wrestler> afterTwoBumps = wrestlerService.addBump(wrestler.getId());
@@ -85,10 +82,11 @@ class WrestlerServiceIT extends AbstractIntegrationTest {
   void shouldSpendFansAndUpdateTier() {
     // Given
     Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
-    wrestlerService.awardFans(wrestler.getId(), 50000L); // Contender tier
+    Assertions.assertNotNull(wrestler.getId());
+    wrestlerService.awardFans(wrestler.getId(), 50_000L); // Contender tier
 
     // When
-    boolean success = wrestlerService.spendFans(wrestler.getId(), 15000L);
+    boolean success = wrestlerService.spendFans(wrestler.getId(), 15_000L);
 
     // Then
     assertThat(success).isTrue();
@@ -96,38 +94,46 @@ class WrestlerServiceIT extends AbstractIntegrationTest {
     // Verify persistence and tier update
     Optional<Wrestler> fromDb = wrestlerRepository.findById(wrestler.getId());
     assertThat(fromDb).isPresent();
-    assertThat(fromDb.get().getFans()).isEqualTo(35000L);
+    assertThat(fromDb.get().getFans()).isEqualTo(35_000L);
     assertThat(fromDb.get().getTier()).isEqualTo(WrestlerTier.RISER);
   }
 
   @Test
   @DisplayName("Should filter wrestlers by eligibility")
   void shouldFilterWrestlersByEligibility() {
+    int initialEligibleRookieWrestlers =
+        wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE).size();
+    int initialEligibleMainEventerWrestlers =
+        wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER).size();
     // Given - Create wrestlers with different fan levels
-    Wrestler rookie = wrestlerService.createWrestler("Rookie", true, null);
+    wrestlerService.createWrestler("Rookie", true, null);
     // rookie has 0 fans (Rookie tier)
 
     Wrestler riser = wrestlerService.createWrestler("Riser", true, null);
-    wrestlerService.awardFans(riser.getId(), 30000L); // Riser tier
+    Assertions.assertNotNull(riser.getId());
+    wrestlerService.awardFans(riser.getId(), 30_000L); // Riser tier
 
     Wrestler contender = wrestlerService.createWrestler("Contender", true, null);
-    wrestlerService.awardFans(contender.getId(), 45000L); // Contender tier
+    Assertions.assertNotNull(contender.getId());
+    wrestlerService.awardFans(contender.getId(), 45_000L); // Contender tier
 
     Wrestler mainEventer = wrestlerService.createWrestler("Main Eventer", true, null);
-    wrestlerService.awardFans(mainEventer.getId(), 120000L); // Main Eventer tier
+    Assertions.assertNotNull(mainEventer.getId());
+    wrestlerService.awardFans(mainEventer.getId(), 120_000L); // Main Eventer tier
 
     // When
     List<Wrestler> extremeEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE);
     List<Wrestler> worldEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER);
 
     // Then
-    assertThat(extremeEligible).hasSize(4); // Rookie, Riser, Contender, Main Eventer
+    assertThat(extremeEligible)
+        .hasSize(initialEligibleRookieWrestlers + 4); // Rookie, Riser, Contender, Main Eventer
     assertThat(extremeEligible)
         .extracting(Wrestler::getName)
-        .containsExactlyInAnyOrder("Rookie", "Riser", "Contender", "Main Eventer");
+        .contains("Rookie", "Riser", "Contender", "Main Eventer");
 
-    assertThat(worldEligible).hasSize(1); // Only Main Eventer
-    assertThat(worldEligible).extracting(Wrestler::getName).containsExactly("Main Eventer");
+    assertThat(worldEligible).hasSize(initialEligibleMainEventerWrestlers + 1); // Only Main Eventer
+    assertThat(worldEligible).extracting(Wrestler::getName).contains("Main Eventer");
   }
 
   @Test
@@ -138,10 +144,12 @@ class WrestlerServiceIT extends AbstractIntegrationTest {
     wrestlerService.createWrestler("Rookie 2", true, null);
 
     Wrestler riser = wrestlerService.createWrestler("Riser", true, null);
-    wrestlerService.awardFans(riser.getId(), 30000L);
+    Assertions.assertNotNull(riser.getId());
+    wrestlerService.awardFans(riser.getId(), 30_000L);
 
     Wrestler contender = wrestlerService.createWrestler("Contender", true, null);
-    wrestlerService.awardFans(contender.getId(), 45000L);
+    Assertions.assertNotNull(contender.getId());
+    wrestlerService.awardFans(contender.getId(), 45_000L);
 
     // When
     List<Wrestler> rookies = wrestlerService.getWrestlersByTier(WrestlerTier.ROOKIE);
@@ -161,18 +169,19 @@ class WrestlerServiceIT extends AbstractIntegrationTest {
   @Test
   @DisplayName("Should filter wrestlers by player status")
   void shouldFilterWrestlersByPlayerStatus() {
+    int initialSize = wrestlerService.getPlayerWrestlers().size();
     // Given
-    Wrestler player1 = wrestlerService.createWrestler("Player 1", true, null);
-    Wrestler player2 = wrestlerService.createWrestler("Player 2", true, null);
-    Wrestler npc1 = wrestlerService.createWrestler("NPC 1", false, null);
-    Wrestler npc2 = wrestlerService.createWrestler("NPC 2", false, null);
+    wrestlerService.createWrestler("Player 1", true, null);
+    wrestlerService.createWrestler("Player 2", true, null);
+    wrestlerService.createWrestler("NPC 1", false, null);
+    wrestlerService.createWrestler("NPC 2", false, null);
 
     // When
     List<Wrestler> players = wrestlerService.getPlayerWrestlers();
     List<Wrestler> npcs = wrestlerService.getNpcWrestlers();
 
     // Then
-    assertThat(players).hasSize(2);
+    assertThat(players).hasSize(initialSize + 2);
     assertThat(players).extracting(Wrestler::getName).contains("Player 1", "Player 2");
 
     assertThat(npcs).extracting(Wrestler::getName).contains("NPC 1", "NPC 2");
@@ -187,9 +196,10 @@ class WrestlerServiceIT extends AbstractIntegrationTest {
             "Complex Test", true, "Test wrestler for complex operations");
 
     // When - Perform multiple operations
-    wrestlerService.awardFans(wrestler.getId(), 60000L); // Intertemporal tier
+    Assertions.assertNotNull(wrestler.getId());
+    wrestlerService.awardFans(wrestler.getId(), 60_000L); // Intertemporal tier
     wrestlerService.addBump(wrestler.getId());
-    wrestlerService.spendFans(wrestler.getId(), 10000L); // Still Intertemporal
+    wrestlerService.spendFans(wrestler.getId(), 10_000L); // Still Intertemporal
     wrestlerService.addBump(wrestler.getId());
 
     // Then - Verify final state
@@ -198,7 +208,7 @@ class WrestlerServiceIT extends AbstractIntegrationTest {
     assertThat(finalState).isPresent();
 
     Wrestler finalWrestler = finalState.get();
-    assertThat(finalWrestler.getFans()).isEqualTo(50000L);
+    assertThat(finalWrestler.getFans()).isEqualTo(50_000L);
     assertThat(finalWrestler.getTier())
         .isEqualTo(WrestlerTier.CONTENDER); // Dropped from Intertemporal
     assertThat(finalWrestler.getBumps()).isEqualTo(2);

@@ -42,14 +42,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
-@Profile("!test")
 public class DataInitializer {
 
   @Autowired private CardRepository cardRepository;
@@ -63,6 +63,7 @@ public class DataInitializer {
 
   @Bean
   @Order(-1)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public ApplicationRunner loadSegmentRulesFromFile(
       @NonNull SegmentRuleService segmentRuleService) {
     return args -> {
@@ -75,7 +76,7 @@ public class DataInitializer {
               mapper.readValue(is, new TypeReference<List<SegmentRuleDTO>>() {});
 
           for (SegmentRuleDTO dto : segmentRulesFromFile) {
-            // Only create if it doesn't exist
+            // Only create if it's new
             Optional<SegmentRule> existingRule = segmentRuleService.findByName(dto.getName());
             if (existingRule.isEmpty()) {
               segmentRuleService.createOrUpdateRule(
@@ -89,7 +90,7 @@ public class DataInitializer {
             }
           }
           log.info("Segment rule loading completed - {} rules loaded", segmentRulesFromFile.size());
-        } catch (Exception e) {
+        } catch (java.io.IOException e) {
           log.error("Error loading segment rules from file", e);
         }
       } else {
@@ -100,6 +101,7 @@ public class DataInitializer {
 
   @Bean
   @Order(0)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public ApplicationRunner syncShowTypesFromFile(@NonNull ShowTypeService showTypeService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("show_types.json");
@@ -118,6 +120,8 @@ public class DataInitializer {
               log.info("Saved new show type: {}", st.getName());
             }
           }
+        } catch (java.io.IOException e) {
+          log.error("Error loading show types from file", e);
         }
       }
     };
@@ -125,6 +129,7 @@ public class DataInitializer {
 
   @Bean
   @Order(1)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public ApplicationRunner loadSegmentTypesFromFile(
       @NonNull SegmentTypeService segmentTypeService) {
     return args -> {
@@ -137,7 +142,7 @@ public class DataInitializer {
               mapper.readValue(is, new TypeReference<List<SegmentTypeDTO>>() {});
 
           for (SegmentTypeDTO dto : segmentTypesFromFile) {
-            // Only create if it doesn't exist
+            // Only create if it's new
             Optional<SegmentType> existingType = segmentTypeService.findByName(dto.getName());
             if (existingType.isEmpty()) {
               SegmentType segmentType =
@@ -152,7 +157,7 @@ public class DataInitializer {
           }
 
           log.info("Segment type loading completed");
-        } catch (Exception e) {
+        } catch (java.io.IOException e) {
           log.error("Error loading segment types from file", e);
         }
       } else {
@@ -163,6 +168,7 @@ public class DataInitializer {
 
   @Bean
   @Order(2)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public ApplicationRunner loadShowTemplatesFromFile(
       @NonNull ShowTemplateService showTemplateService) {
     return args -> {
@@ -201,7 +207,7 @@ public class DataInitializer {
           showTemplateRepository.flush();
           log.info(
               "Show template loading completed - {} templates processed", templatesFromFile.size());
-        } catch (Exception e) {
+        } catch (java.io.IOException e) {
           log.error("Error loading show templates from file", e);
         }
       } else {
@@ -212,6 +218,7 @@ public class DataInitializer {
 
   @Bean
   @Order(3)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public ApplicationRunner syncSetsFromFile(@NonNull CardSetService cardSetService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("sets.json");
@@ -235,6 +242,8 @@ public class DataInitializer {
               log.info("Saved new card set: {}", c.getName());
             }
           }
+        } catch (java.io.IOException e) {
+          log.error("Error loading card sets from file", e);
         }
       }
     };
@@ -242,6 +251,7 @@ public class DataInitializer {
 
   @Bean
   @Order(4)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public ApplicationRunner syncCardsFromFile(
       @NonNull CardService cardService, @NonNull CardSetService cardSetService) {
     return args -> {
@@ -284,6 +294,8 @@ public class DataInitializer {
               log.info("Saved new card: {}", card.getName());
             }
           }
+        } catch (java.io.IOException e) {
+          log.error("Error loading cards from file", e);
         }
       }
     };
@@ -291,6 +303,7 @@ public class DataInitializer {
 
   @Bean
   @Order(5)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public ApplicationRunner syncWrestlersFromFile(@NonNull WrestlerService wrestlerService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("wrestlers.json");
@@ -352,6 +365,8 @@ public class DataInitializer {
               log.info("Saved new wrestler: {}", w.getName());
             }
           }
+        } catch (java.io.IOException e) {
+          log.error("Error loading wrestlers from file", e);
         }
       }
     };
@@ -359,6 +374,7 @@ public class DataInitializer {
 
   @Bean
   @Order(6)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public ApplicationRunner syncChampionshipsFromFile(@NonNull TitleService titleService) {
     return args -> {
       ClassPathResource resource = new ClassPathResource("championships.json");
@@ -410,7 +426,7 @@ public class DataInitializer {
               log.info("Vacated title {} as no champion was specified in DTO.", title.getName());
             }
           }
-        } catch (Exception e) {
+        } catch (java.io.IOException e) {
           log.error("Error loading championships from file", e);
         }
       }
@@ -419,6 +435,7 @@ public class DataInitializer {
 
   @Bean
   @Order(7)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public ApplicationRunner syncDecksFromFile(
       @NonNull CardService cardService,
       @NonNull WrestlerService wrestlerService,
@@ -469,6 +486,8 @@ public class DataInitializer {
             deckService.save(deck);
             log.info("Saved deck for wrestler: {}", wrestler.getName());
           }
+        } catch (java.io.IOException e) {
+          log.error("Error loading decks from file", e);
         }
       }
     };
