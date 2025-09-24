@@ -2,9 +2,17 @@
 # Ensures tests run with mock AI provider and don't require external API keys
 
 spring:
-  # Use in-memory database for tests
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
   flyway:
-    enabled: true
+    enabled: false
 
 # Match narration configuration for testing
 match-narration:
