@@ -3,28 +3,30 @@ package com.github.javydreamercsw.management.service.drama;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
-import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 @DisplayName("DramaEventService Integration Tests")
+@Transactional
 class DramaEventServiceIT extends AbstractIntegrationTest {
 
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;
-  @Autowired DramaEventService dramaEventService;
-  @Autowired WrestlerService wrestlerService;
-  @Autowired WrestlerRepository wrestlerRepository;
-  @Autowired DramaEventRepository dramaEventRepository;
+
+  @BeforeEach
+  void setUp() {
+    // Create test wrestlers
+    testWrestler1 = wrestlerRepository.save(createTestWrestler("Drama Test Wrestler 1"));
+    testWrestler2 = wrestlerRepository.save(createTestWrestler("Drama Test Wrestler 2"));
+  }
 
   @Test
   @DisplayName("Should create single-wrestler drama event successfully")

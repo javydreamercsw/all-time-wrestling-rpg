@@ -9,8 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class CardSetServiceIT extends AbstractIntegrationTest {
-  @Autowired private CardSetService cardSetService;
-  @Autowired private CardSetRepository cardSetRepository;
 
   @Test
   void testCreateCardSetSet() {

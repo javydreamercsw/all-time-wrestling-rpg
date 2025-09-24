@@ -2,7 +2,6 @@ package com.github.javydreamercsw.management.service.segment;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -63,26 +62,7 @@ public class SegmentService {
    * @return The updated Segment
    */
   public Segment updateSegment(@NonNull Segment segment) {
-    Segment existingSegment = segmentRepository.findById(segment.getId()).orElseThrow();
-
-    existingSegment.setSegmentType(segment.getSegmentType());
-    existingSegment.setNarration(segment.getNarration());
-    existingSegment.setSummary(segment.getSummary());
-
-    existingSegment.getParticipants().clear();
-    for (SegmentParticipant p : segment.getParticipants()) {
-      existingSegment.addParticipant(p.getWrestler());
-    }
-
-    existingSegment.getSegmentRules().clear();
-    for (com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule rule :
-        segment.getSegmentRules()) {
-      existingSegment.addSegmentRule(rule);
-    }
-
-    existingSegment.setWinners(segment.getWinners());
-
-    return segmentRepository.save(existingSegment);
+    return segmentRepository.save(segment);
   }
 
   /**

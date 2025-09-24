@@ -1,10 +1,16 @@
 package com.github.javydreamercsw.management.test;
 
+import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -14,6 +20,7 @@ import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckCardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -24,13 +31,11 @@ import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncServ
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import org.junit.jupiter.api.BeforeEach;
+import lombok.NonNull;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -39,6 +44,8 @@ public abstract class AbstractIntegrationTest {
 
   @Autowired protected SegmentRuleService segmentRuleService;
   @Autowired protected ShowTypeService showTypeService;
+  @Autowired protected ShowTypeRepository showTypeRepository;
+  @Autowired protected ShowRepository showRepository;
   @Autowired protected SegmentTypeService segmentTypeService;
   @Autowired protected ShowTemplateService showTemplateService;
   @Autowired protected CardSetService cardSetService;
@@ -59,34 +66,13 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected DeckRepository deckRepository;
   @Autowired protected CardRepository cardRepository;
   @Autowired protected CardSetRepository cardSetRepository;
+  @Autowired protected SegmentTypeRepository segmentTypeRepository;
+  @Autowired protected DramaEventService dramaEventService;
+  @Autowired protected DramaEventRepository dramaEventRepository;
 
   @Autowired protected DataInitializer dataInitializer;
 
-  @BeforeEach
-  @Transactional(rollbackFor = Exception.class)
-  public void setUp() throws Exception {
-    dataInitializer
-        .loadSegmentRulesFromFile(segmentRuleService)
-        .run(new DefaultApplicationArguments());
-    dataInitializer.syncShowTypesFromFile(showTypeService).run(new DefaultApplicationArguments());
-    dataInitializer
-        .loadSegmentTypesFromFile(segmentTypeService)
-        .run(new DefaultApplicationArguments());
-    dataInitializer
-        .loadShowTemplatesFromFile(showTemplateService)
-        .run(new DefaultApplicationArguments());
-    dataInitializer.syncSetsFromFile(cardSetService).run(new DefaultApplicationArguments());
-    dataInitializer
-        .syncCardsFromFile(cardService, cardSetService)
-        .run(new DefaultApplicationArguments());
-    dataInitializer.syncWrestlersFromFile(wrestlerService).run(new DefaultApplicationArguments());
-    dataInitializer.syncChampionshipsFromFile(titleService).run(new DefaultApplicationArguments());
-    dataInitializer
-        .syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService)
-        .run(new DefaultApplicationArguments());
-  }
-
-  protected Wrestler createTestWrestler(String name) {
+  protected Wrestler createTestWrestler(@NonNull String name) {
     Wrestler wrestler = new Wrestler();
     wrestler.setName(name);
     wrestler.setFans(10_000L);
@@ -99,22 +85,20 @@ public abstract class AbstractIntegrationTest {
     return wrestler;
   }
 
-  protected com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext
-      createCustomSegmentContext() {
-    com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext context =
-        new com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext();
+  protected SegmentNarrationService.SegmentNarrationContext createCustomSegmentContext() {
+    SegmentNarrationService.SegmentNarrationContext context =
+        new SegmentNarrationService.SegmentNarrationContext();
 
     // Match Type
-    com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext matchType =
-        new com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext();
+    SegmentNarrationService.SegmentTypeContext matchType =
+        new SegmentNarrationService.SegmentTypeContext();
     matchType.setSegmentType("Hell in a Cell");
     matchType.setStipulation("King of the Ring 1998");
     matchType.setRules(java.util.Arrays.asList("No Disqualification", "Falls Count Anywhere"));
     context.setSegmentType(matchType);
 
     // Venue
-    com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext venue =
-        new com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext();
+    SegmentNarrationService.VenueContext venue = new SegmentNarrationService.VenueContext();
     venue.setName("Civic Arena");
     venue.setLocation("Pittsburgh, Pennsylvania");
     venue.setType("Indoor Arena");
@@ -125,8 +109,8 @@ public abstract class AbstractIntegrationTest {
     context.setVenue(venue);
 
     // Wrestlers
-    com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext undertaker =
-        new com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext();
+    SegmentNarrationService.WrestlerContext undertaker =
+        new SegmentNarrationService.WrestlerContext();
     undertaker.setName("The Undertaker");
     undertaker.setDescription("The Deadman - Phenom of WWE");
 
@@ -143,5 +127,9 @@ public abstract class AbstractIntegrationTest {
         "The Undertaker wins after Mankind is thrown off the Hell in a Cell");
 
     return context;
+  }
+
+  protected static boolean isNotionTokenAvailable() {
+    return EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 }

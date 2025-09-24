@@ -27,9 +27,6 @@ class FactionServiceIntegrationTest extends AbstractIntegrationTest {
 
   @BeforeEach
   public void setUp() throws Exception {
-    // Call super.setUp() to initialize the database with base data
-    super.setUp();
-
     // Create test wrestlers with all required fields
     testWrestler1 = wrestlerService.createWrestler("John Cena", true, null);
     testWrestler2 = wrestlerService.createWrestler("The Rock", true, null);

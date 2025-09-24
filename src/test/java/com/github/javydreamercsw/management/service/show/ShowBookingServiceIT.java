@@ -33,7 +33,6 @@ class ShowBookingServiceIT extends AbstractIntegrationTest {
 
   @BeforeEach
   public void setUp() throws Exception {
-    super.setUp();
     // Find or create a test season
     Optional<Season> seasonOpt = seasonRepository.findByName("Test Season");
     if (seasonOpt.isEmpty()) {
