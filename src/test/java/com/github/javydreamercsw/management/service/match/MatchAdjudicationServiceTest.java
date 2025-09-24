@@ -36,7 +36,9 @@ class MatchAdjudicationServiceTest {
   @Autowired private WrestlerService wrestlerService;
 
   @Test
-  @Disabled("Disabled due to pipeline failures; needs investigation into Testcontainers/MySQL setup. See: https://github.com/javydreamercsw/all-time-wrestling-rpg/issues/10")
+  @Disabled(
+      "Disabled due to pipeline failures; needs investigation into Testcontainers/MySQL setup. See:"
+          + " https://github.com/javydreamercsw/all-time-wrestling-rpg/issues/10")
   void testAdjudicateMatch() {
     // Given
     long initialFans = 10_000L;
