@@ -42,20 +42,4 @@ public class CardSet extends AbstractEntity<Long> {
       creationDate = Instant.now();
     }
   }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public Instant getCreationDate() {
-    return creationDate;
-  }
-
-  public void setCreationDate(Instant creationDate) {
-    this.creationDate = creationDate;
-  }
 }

@@ -21,6 +21,8 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -58,11 +60,13 @@ public class DramaEvent extends AbstractEntity<Long> {
   // Primary wrestler involved (always required)
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "primary_wrestler_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Wrestler primaryWrestler;
 
   // Secondary wrestler involved (optional - for multi-wrestler events)
   @ManyToOne(optional = true, fetch = FetchType.LAZY)
   @JoinColumn(name = "secondary_wrestler_id")
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Wrestler secondaryWrestler;
 
   @Column(name = "event_date", nullable = false)
@@ -134,26 +138,26 @@ public class DramaEvent extends AbstractEntity<Long> {
     }
 
     if (heatImpact != null && heatImpact != 0) {
-      if (summary.length() > 0) summary.append(", ");
+      if (!summary.isEmpty()) summary.append(", ");
       summary.append(heatImpact > 0 ? "+" : "").append(heatImpact).append(" heat");
     }
 
     if (injuryCaused) {
-      if (summary.length() > 0) summary.append(", ");
+      if (!summary.isEmpty()) summary.append(", ");
       summary.append("injury caused");
     }
 
     if (rivalryCreated) {
-      if (summary.length() > 0) summary.append(", ");
+      if (!summary.isEmpty()) summary.append(", ");
       summary.append("rivalry created");
     }
 
     if (rivalryEnded) {
-      if (summary.length() > 0) summary.append(", ");
+      if (!summary.isEmpty()) summary.append(", ");
       summary.append("rivalry ended");
     }
 
-    return summary.length() > 0 ? summary.toString() : "no impact";
+    return !summary.isEmpty() ? summary.toString() : "no impact";
   }
 
   /** Get emoji representation of the event severity. */
