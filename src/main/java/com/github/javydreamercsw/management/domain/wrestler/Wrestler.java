@@ -62,6 +62,7 @@ public class Wrestler extends AbstractEntity<Long> {
   private WrestlerTier tier;
 
   @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
   private Gender gender;
 
   @Column(name = "bumps")
@@ -221,6 +222,9 @@ public class Wrestler extends AbstractEntity<Long> {
     }
     if (bumps == null) {
       bumps = 0;
+    }
+    if (gender == null) {
+      gender = Gender.MALE;
     }
     updateTier();
   }

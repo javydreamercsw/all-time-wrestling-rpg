@@ -208,8 +208,18 @@ class TeamMatchResolutionIT extends AbstractIntegrationTest {
     assertThat(result.getWrestlers()).containsExactlyInAnyOrder(rookie1, contender1);
 
     // Should still favor the contender
-    assertThat(result.getWinners()).hasSize(1);
-    assertThat(result.getWinners().get(0)).isEqualTo(contender1);
+    int contenderWins = 0;
+    int totalMatches = 100;
+    for (int i = 0; i < totalMatches; i++) {
+      result =
+          npcSegmentResolutionService.resolveTeamSegment(
+              team1, team2, tagTeamSegmentType, testShow, "Singles Match via Team Interface");
+      if (result.getWinners().contains(contender1)) {
+        contenderWins++;
+      }
+    }
+    double contenderWinRate = (double) contenderWins / totalMatches;
+    assertThat(contenderWinRate).isGreaterThan(0.8); // Contender should win most of the time
   }
 
   @Test

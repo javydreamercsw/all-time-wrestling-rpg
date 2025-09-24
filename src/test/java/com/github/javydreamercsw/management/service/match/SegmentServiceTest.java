@@ -93,7 +93,6 @@ class SegmentServiceTest {
   @DisplayName("Should update segment successfully")
   void shouldUpdateSegmentSuccessfully() {
     // Given
-    when(matchRepository.findById(1L)).thenReturn(Optional.of(testSegment));
     when(matchRepository.save(any(Segment.class))).thenReturn(testSegment);
 
     // When

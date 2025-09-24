@@ -14,6 +14,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.card.CardService;
@@ -82,6 +83,7 @@ public abstract class AbstractIntegrationTest {
     wrestler.setLowStamina(0);
     wrestler.setDeckSize(15);
     wrestler.setIsPlayer(false);
+    wrestler.setGender(Gender.MALE);
     return wrestler;
   }
 
