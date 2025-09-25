@@ -10,6 +10,7 @@ import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -46,6 +47,7 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected SegmentRuleService segmentRuleService;
   @Autowired protected ShowTypeService showTypeService;
   @Autowired protected ShowTypeRepository showTypeRepository;
+  @Autowired protected ShowTemplateRepository showTemplateRepository;
   @Autowired protected ShowRepository showRepository;
   @Autowired protected SegmentTypeService segmentTypeService;
   @Autowired protected ShowTemplateService showTemplateService;

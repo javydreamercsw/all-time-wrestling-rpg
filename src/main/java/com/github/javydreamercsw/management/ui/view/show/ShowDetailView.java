@@ -215,6 +215,21 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     H3 title = new H3(show.getName());
     title.addClassNames(LumoUtility.Margin.NONE, LumoUtility.TextColor.PRIMARY);
 
+    Button editNameButton = new Button(new Icon(VaadinIcon.EDIT));
+    editNameButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    editNameButton.setTooltipText("Edit Show Name");
+    editNameButton.addClickListener(
+        e -> {
+          EditShowNameDialog dialog = new EditShowNameDialog(showService, show);
+          dialog.addOpenedChangeListener(
+              event -> {
+                if (!event.isOpened()) {
+                  loadShow(show.getId());
+                }
+              });
+          dialog.open();
+        });
+
     // Show type badge
     Span typeBadge = new Span(show.getType().getName());
     typeBadge.addClassNames(
@@ -234,7 +249,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
           LumoUtility.Background.SUCCESS, LumoUtility.TextColor.SUCCESS_CONTRAST);
     }
 
-    HorizontalLayout titleLayout = new HorizontalLayout(title, typeBadge);
+    HorizontalLayout titleLayout = new HorizontalLayout(title, editNameButton, typeBadge);
     titleLayout.setAlignItems(HorizontalLayout.Alignment.CENTER);
     titleLayout.setSpacing(true);
 
