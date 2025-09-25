@@ -271,7 +271,7 @@ class NotionPropertyResolutionTest {
     // Mock ShowService
     Show timelessShow = new Show();
     timelessShow.setName("Timeless");
-    when(showService.findByName("Timeless")).thenReturn(Optional.of(timelessShow));
+    when(showService.findByName("Timeless")).thenReturn(List.of(timelessShow));
 
     // Mock MatchTypeService
     SegmentType tagTeamType = new SegmentType();

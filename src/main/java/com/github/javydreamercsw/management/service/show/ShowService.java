@@ -70,8 +70,12 @@ public class ShowService {
     return showRepository.findAllWithRelationships();
   }
 
-  public Optional<Show> findByName(String showName) {
+  public List<Show> findByName(String showName) {
     return showRepository.findByName(showName);
+  }
+
+  public boolean existsByNameAndShowDate(String name, LocalDate showDate) {
+    return showRepository.findByNameAndShowDate(name, showDate).isPresent();
   }
 
   public Optional<Show> findByExternalId(String externalId) {

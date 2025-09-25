@@ -1,6 +1,8 @@
 package com.github.javydreamercsw.management.domain.wrestler;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -22,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "wrestler")
 @Getter
 @Setter
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Wrestler extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -161,6 +164,7 @@ public class Wrestler extends AbstractEntity<Long> {
 
   // ==================== ATW RPG RELATIONSHIP METHODS ====================
 
+  @JsonIgnore
   public List<Rivalry> getActiveRivalries() {
     List<Rivalry> allRivalries = new ArrayList<>();
     allRivalries.addAll(rivalriesAsWrestler1.stream().filter(Rivalry::getIsActive).toList());

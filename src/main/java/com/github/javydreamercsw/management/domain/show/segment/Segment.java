@@ -1,7 +1,9 @@
 package com.github.javydreamercsw.management.domain.show.segment;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -43,6 +45,7 @@ import org.jspecify.annotations.Nullable;
 @Getter
 @Setter
 @ToString
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Segment extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
