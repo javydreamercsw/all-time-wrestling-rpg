@@ -3,21 +3,15 @@ package com.github.javydreamercsw.management;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.Card;
-import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
-import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
@@ -52,13 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class DataInitializer {
 
-  @Autowired private CardRepository cardRepository;
-  @Autowired private CardSetRepository cardSetRepository;
-  @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private ShowTemplateRepository showTemplateRepository;
-  @Autowired private DeckRepository deckRepository;
-  @Autowired private TitleRepository titleRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerService wrestlerService;
 
   @Bean
@@ -403,7 +391,7 @@ public class DataInitializer {
                 // Check if the title is already held by this champion
                 if (title.getCurrentChampions().isEmpty()
                     || !title.getCurrentChampions().contains(championOpt.get())) {
-                  titleService.awardTitle(title.getId(), championOpt.get().getId());
+                  titleService.awardTitleTo(title, List.of(championOpt.get()));
                   log.info(
                       "Awarded title {} to champion {}",
                       title.getName(),

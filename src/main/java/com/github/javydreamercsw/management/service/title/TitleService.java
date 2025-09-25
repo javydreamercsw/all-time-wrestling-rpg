@@ -78,25 +78,9 @@ public class TitleService {
     return titleRepository.findActiveTitlesByTier(tier);
   }
 
-  /** Award title to a wrestler. */
-  public Optional<Title> awardTitle(@NonNull Long titleId, @NonNull Long wrestlerId) {
-    Optional<Title> titleOpt = titleRepository.findById(titleId);
-    Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
-
-    if (titleOpt.isPresent() && wrestlerOpt.isPresent()) {
-      Title title = titleOpt.get();
-      Wrestler wrestler = wrestlerOpt.get();
-
-      // Check if wrestler is eligible
-      if (!title.isWrestlerEligible(wrestler)) {
-        return Optional.empty();
-      }
-
-      title.awardTitleTo(List.of(wrestler), Instant.now(clock));
-      return Optional.of(titleRepository.saveAndFlush(title));
-    }
-
-    return Optional.empty();
+  public void awardTitleTo(@NonNull Title title, @NonNull List<Wrestler> newChampions) {
+    title.awardTitleTo(newChampions, Instant.now(clock));
+    titleRepository.saveAndFlush(title);
   }
 
   /** Vacate a title. */
@@ -203,13 +187,14 @@ public class TitleService {
   }
 
   /** Delete a title (only if vacant and inactive). */
-  public boolean deleteTitle(Long titleId) {
+  public boolean deleteTitle(@NonNull Long titleId) {
     return titleRepository
         .findById(titleId)
         .filter(title -> !title.getIsActive() && title.isVacant())
         .map(
             title -> {
-              titleRepository.delete(title);
+              assert title.getId() != null;
+              titleRepository.deleteById(title.getId());
               return true;
             })
         .orElse(false);

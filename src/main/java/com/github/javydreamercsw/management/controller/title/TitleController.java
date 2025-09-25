@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.controller.title;
 
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,9 +36,11 @@ import org.springframework.web.bind.annotation.*;
 public class TitleController {
 
   private final TitleService titleService;
+  private final WrestlerRepository wrestlerRepository;
 
-  public TitleController(TitleService titleService) {
+  public TitleController(TitleService titleService, WrestlerRepository wrestlerRepository) {
     this.titleService = titleService;
+    this.wrestlerRepository = wrestlerRepository;
   }
 
   @Operation(summary = "Create a new title", description = "Creates a new championship title")
@@ -104,26 +107,29 @@ public class TitleController {
     return ResponseEntity.ok(titles);
   }
 
-  @Operation(summary = "Award title", description = "Awards a title to a wrestler")
+  @Operation(summary = "Award title", description = "Awards a title to a list of wrestlers")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Title awarded successfully"),
         @ApiResponse(responseCode = "404", description = "Title or wrestler not found"),
         @ApiResponse(responseCode = "400", description = "Wrestler not eligible for title")
       })
-  @PostMapping("/{titleId}/award/{wrestlerId}")
+  @PostMapping("/{titleId}/award")
   public ResponseEntity<Object> awardTitle(
-      @PathVariable Long titleId, @PathVariable Long wrestlerId) {
-    Optional<Title> title = titleService.awardTitle(titleId, wrestlerId);
-    return title
-        .<ResponseEntity<Object>>map(ResponseEntity::ok)
-        .orElseGet(
-            () ->
-                ResponseEntity.badRequest()
-                    .body(
-                        new ErrorResponse(
-                            "Cannot award title - wrestler may not be eligible or entities not"
-                                + " found")));
+      @PathVariable Long titleId, @RequestBody List<Long> wrestlerIds) {
+    Optional<Title> titleOpt = titleService.getTitleById(titleId);
+    if (titleOpt.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
+    Title title = titleOpt.get();
+
+    List<Wrestler> wrestlers = wrestlerRepository.findAllById(wrestlerIds);
+    if (wrestlers.size() != wrestlerIds.size()) {
+      return ResponseEntity.badRequest().body(new ErrorResponse("One or more wrestlers not found"));
+    }
+
+    titleService.awardTitleTo(title, wrestlers);
+    return ResponseEntity.ok(title);
   }
 
   @Operation(summary = "Vacate title", description = "Vacates a title (removes current champion)")
