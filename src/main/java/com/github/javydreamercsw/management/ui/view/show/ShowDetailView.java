@@ -594,7 +594,14 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     narrateButton.addClickListener(
         e -> {
           NarrationDialog dialog =
-              new NarrationDialog(segment, npcService, wrestlerService, titleService);
+              new NarrationDialog(
+                  segment,
+                  npcService,
+                  wrestlerService,
+                  titleService,
+                  updatedSegment -> {
+                    displayShow(updatedSegment.getShow());
+                  });
           dialog.open();
         });
 
@@ -613,14 +620,15 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   private void generateSummary(@NonNull Segment segment) {
     String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
-    new org.springframework.web.client.RestTemplate()
-        .postForObject(
-            baseUrl + "/api/segments/" + segment.getId() + "/summarize",
-            null,
-            com.github.javydreamercsw.management.domain.show.segment.Segment.class);
+    Segment updatedSegment =
+        new org.springframework.web.client.RestTemplate()
+            .postForObject(
+                baseUrl + "/api/segments/" + segment.getId() + "/summarize",
+                null,
+                com.github.javydreamercsw.management.domain.show.segment.Segment.class);
     Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    displayShow(segment.getShow()); // Refresh the grid
+    displayShow(updatedSegment.getShow()); // Refresh the grid
   }
 
   private void openAddSegmentDialog(@NonNull Show show) {

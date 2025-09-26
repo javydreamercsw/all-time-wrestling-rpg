@@ -28,6 +28,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -53,17 +54,20 @@ public class NarrationDialog extends Dialog {
   private final ComboBox<Npc> ringAnnouncerField;
   private final MultiSelectComboBox<Npc> otherNpcsField;
   private final VerticalLayout teamsLayout;
+  private final Consumer<Segment> onSaveCallback; // New field for callback
 
   public NarrationDialog(
       Segment segment,
       NpcService npcService,
       WrestlerService wrestlerService,
-      TitleService titleService) {
+      TitleService titleService,
+      Consumer<Segment> onSaveCallback) { // Modified constructor
     this.segment = segment;
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
     this.titleService = titleService;
+    this.onSaveCallback = onSaveCallback; // Assign callback
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
     setWidth("800px");
@@ -481,6 +485,7 @@ public class NarrationDialog extends Dialog {
           baseUrl + "/api/segments/" + segment.getId() + "/narration", narrationDisplay.getText());
       Notification.show("Narration saved successfully!", 3000, Notification.Position.BOTTOM_END)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      onSaveCallback.accept(segment); // Call the callback with the updated segment
       close();
     } catch (Exception e) {
       log.error("Error saving narration", e);
