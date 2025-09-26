@@ -194,7 +194,7 @@ public class NarrationDialog extends Dialog {
 
     try {
       SegmentNarrationService.SegmentNarrationContext context = buildSegmentContext();
-      log.info("Sending narration context to AI: {}", context);
+      log.debug("Sending narration context to AI: {}", context);
 
       String baseUrl = UrlUtil.getBaseUrl();
       ResponseEntity<String> response =

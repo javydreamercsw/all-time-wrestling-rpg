@@ -33,7 +33,7 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     prompt.append("Here is the JSON context:\n\n");
     prompt.append(jsonContext);
 
-    log.info("Generated AI Prompt: {}", prompt.toString());
+    log.debug("Generated AI Prompt: {}", prompt);
     return prompt.toString();
   }
 

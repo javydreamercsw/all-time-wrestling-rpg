@@ -1,3 +1,8 @@
+ai:
+  gemini:
+    model-name: gemini-2.0-flash-001
+    api-url: https://generativelanguage.googleapis.com/v1beta/models/
+
 # Entity-specific sync configuration example
 # Add this to your application.yml or application.properties
 
