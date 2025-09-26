@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.base.ai.claude;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -11,32 +12,30 @@ import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * Anthropic Claude implementation of the SegmentNarrationService interface. Uses Claude's API for
- * wrestling segment narration with rich context.
- *
- * <p>Enable by setting: CLAUDE_API_KEY environment variable
+ * Anthropic Claude implementation of the SegmentNarrationService interface. Uses Anthropic's Claude
+ * API for wrestling segment narration with rich context.
  */
 @Service
 @Slf4j
 public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private static final String CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
-  private static final String DEFAULT_MODEL = "claude-3-haiku-20240307"; // Cheapest option
-  private static final int MAX_TOKENS = 4_000; // Longer output for detailed segment narration
-  private static final Duration TIMEOUT =
-      Duration.ofSeconds(90); // Longer timeout for segment narration
+  private static final Duration TIMEOUT = Duration.ofSeconds(60);
 
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
   private final String apiKey;
+  private final ClaudeConfigProperties claudeConfigProperties;
 
-  public ClaudeSegmentNarrationService() {
+  @Autowired
+  public ClaudeSegmentNarrationService(ClaudeConfigProperties claudeConfigProperties) {
     this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
     this.objectMapper = new ObjectMapper();
-    this.apiKey = System.getenv("CLAUDE_API_KEY");
+    this.apiKey = System.getenv("ANTHROPIC_API_KEY");
+    this.claudeConfigProperties = claudeConfigProperties;
   }
 
   @Override
@@ -61,39 +60,24 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
 
   /** Makes a call to the Claude API with the given prompt. */
   private String callClaude(@NonNull String prompt) {
-    if (!isAvailable()) {
-      throw new com.github.javydreamercsw.base.ai.AIServiceException(
-          400,
-          "Bad Request",
-          getProviderName(),
-          "Claude API key not configured. Please set CLAUDE_API_KEY environment variable.");
-    }
-
     try {
-      // Create request body for Claude API
+      String fullApiUrl = claudeConfigProperties.getApiUrl();
+      String modelName = claudeConfigProperties.getModelName();
+
       Map<String, Object> requestBody =
           Map.of(
               "model",
-              DEFAULT_MODEL,
+              modelName,
               "max_tokens",
-              MAX_TOKENS,
+              4000,
               "messages",
-              List.of(
-                  Map.of(
-                      "role",
-                      "user",
-                      "content",
-                      "You are a professional wrestling analyst and creative writer with deep"
-                          + " knowledge of wrestling storylines, character development, and segment"
-                          + " psychology. "
-                          + prompt)));
+              List.of(Map.of("role", "user", "content", prompt)));
 
       String jsonBody = objectMapper.writeValueAsString(requestBody);
 
-      // Create HTTP request
       HttpRequest request =
           HttpRequest.newBuilder()
-              .uri(URI.create(CLAUDE_API_URL))
+              .uri(URI.create(fullApiUrl))
               .header("Content-Type", "application/json")
               .header("x-api-key", apiKey)
               .header("anthropic-version", "2023-06-01")
@@ -101,14 +85,13 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
 
-      // Send request and get response
       HttpResponse<String> response =
           httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
         return extractContentFromResponse(response.body());
       } else {
-        throw new com.github.javydreamercsw.base.ai.AIServiceException(
+        throw new AIServiceException(
             response.statusCode(),
             "Claude API Error",
             getProviderName(),
@@ -117,7 +100,7 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
 
     } catch (Exception e) {
       log.error("Failed to call Claude API for segment narration", e);
-      throw new com.github.javydreamercsw.base.ai.AIServiceException(
+      throw new AIServiceException(
           500, "Internal Server Error", getProviderName(), e.getMessage(), e);
     }
   }
@@ -135,10 +118,10 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
         return (String) content.get(0).get("text");
       }
 
-      return "No content in Claude AI response";
+      return "No content in AI response";
     } catch (Exception e) {
       log.error("Failed to parse Claude response", e);
-      return "Error parsing Claude AI response: " + e.getMessage();
+      return "Error parsing AI response: " + e.getMessage();
     }
   }
 }

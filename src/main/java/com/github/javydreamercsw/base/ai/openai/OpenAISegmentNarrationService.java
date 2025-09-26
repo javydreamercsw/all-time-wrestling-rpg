@@ -12,6 +12,7 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,10 +28,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class OpenAISegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
-  private static final String DEFAULT_MODEL = "gpt-3.5-turbo"; // Cost-effective default
-  private static final String PREMIUM_MODEL = "gpt-4"; // Premium quality option
-  private static final int MAX_TOKENS = 4000; // Longer output for detailed segment narration
   private static final Duration TIMEOUT =
       Duration.ofSeconds(90); // Longer timeout for segment narration
 
@@ -38,8 +35,10 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   private final ObjectMapper objectMapper;
   private final String apiKey;
   @Getter private final String model;
+  private final OpenAIConfigProperties openAIConfigProperties;
 
-  public OpenAISegmentNarrationService() {
+  @Autowired
+  public OpenAISegmentNarrationService(OpenAIConfigProperties openAIConfigProperties) {
     this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
     this.objectMapper = new ObjectMapper();
     this.apiKey = System.getenv("OPENAI_API_KEY");
@@ -49,7 +48,8 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
     this.model =
         (configuredModel != null && !configuredModel.trim().isEmpty())
             ? configuredModel.trim()
-            : DEFAULT_MODEL;
+            : openAIConfigProperties.getDefaultModel(); // Use configured default model
+    this.openAIConfigProperties = openAIConfigProperties;
   }
 
   @Override
@@ -59,7 +59,10 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
 
   @Override
   public String getProviderName() {
-    return "OpenAI " + (model.contains("gpt-4") ? "GPT-4" : "GPT-3.5");
+    return "OpenAI "
+        + (model.contains(openAIConfigProperties.getPremiumModel())
+            ? "GPT-4"
+            : "GPT-3.5"); // Use configured premium model
   }
 
   @Override
@@ -101,7 +104,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
                           + " wrestling."),
                   Map.of("role", "user", "content", prompt)),
               "max_tokens",
-              MAX_TOKENS,
+              openAIConfigProperties.getMaxTokens(), // Use configured max tokens
               "temperature",
               0.8, // Good balance for creative storytelling
               "top_p",
@@ -117,7 +120,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
       // Create HTTP request
       HttpRequest request =
           HttpRequest.newBuilder()
-              .uri(URI.create(OPENAI_API_URL))
+              .uri(URI.create(openAIConfigProperties.getApiUrl())) // Use configured API URL
               .header("Content-Type", "application/json")
               .header("Authorization", "Bearer " + apiKey)
               .timeout(TIMEOUT)
@@ -166,10 +169,10 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
         }
       }
 
-      return "No content in OpenAI response";
+      return "No content in AI response";
     } catch (Exception e) {
       log.error("Failed to parse OpenAI response", e);
-      return "Error parsing OpenAI response: " + e.getMessage();
+      return "Error parsing AI response: " + e.getMessage();
     }
   }
 
@@ -179,7 +182,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
    * @return true if using GPT-4, false if using GPT-3.5
    */
   public boolean isUsingPremiumModel() {
-    return model.contains(PREMIUM_MODEL);
+    return model.contains(openAIConfigProperties.getPremiumModel());
   }
 
   /**
@@ -188,7 +191,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
    * @return Cost per 1K input tokens in USD
    */
   public double getCostPer1KTokens() {
-    if (model.contains(PREMIUM_MODEL)) {
+    if (model.contains(openAIConfigProperties.getPremiumModel())) {
       return 10.0; // GPT-4: $10/1K input, $30/1K output
     } else {
       return 0.50; // GPT-3.5: $0.50/1K input, $1.50/1K output
