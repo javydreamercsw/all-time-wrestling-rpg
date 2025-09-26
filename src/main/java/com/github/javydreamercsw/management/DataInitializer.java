@@ -325,23 +325,6 @@ public class DataInitializer {
               existingWrestler.setStartingStamina(w.getStartingStamina());
               existingWrestler.setLowStamina(w.getLowStamina());
 
-              // Update ATW RPG fields if they exist in the JSON
-              if (w.getFans() != null) {
-                existingWrestler.setFans(w.getFans());
-              }
-              if (w.getIsPlayer() != null) {
-                existingWrestler.setIsPlayer(w.getIsPlayer());
-              }
-              if (w.getBumps() != null) {
-                existingWrestler.setBumps(w.getBumps());
-              }
-              if (w.getFaction() != null) {
-                existingWrestler.setFaction(w.getFaction());
-              }
-              if (w.getDescription() != null) {
-                existingWrestler.setDescription(w.getDescription());
-              }
-
               if (w.getExternalId() != null) {
                 existingWrestler.setExternalId(w.getExternalId());
               }
@@ -353,6 +336,7 @@ public class DataInitializer {
               log.info("Saved new wrestler: {}", w.getName());
             }
           }
+          log.info("Total wrestlers in database after sync: {}", wrestlerService.count());
         } catch (java.io.IOException e) {
           log.error("Error loading wrestlers from file", e);
         }
