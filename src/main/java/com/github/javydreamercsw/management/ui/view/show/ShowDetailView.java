@@ -82,6 +82,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   private H2 showTitle;
   private VerticalLayout contentLayout;
+  private Long currentShowId;
 
   public ShowDetailView(
       ShowService showService,
@@ -155,6 +156,8 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
             .getParameters()
             .getOrDefault("ref", List.of("shows"))
             .get(0);
+
+    this.currentShowId = showId; // Store the showId
 
     if (showId != null) {
       loadShow(showId);
@@ -628,7 +631,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
                 com.github.javydreamercsw.management.domain.show.segment.Segment.class);
     Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    displayShow(updatedSegment.getShow()); // Refresh the grid
+    loadShow(this.currentShowId);
   }
 
   private void openAddSegmentDialog(@NonNull Show show) {

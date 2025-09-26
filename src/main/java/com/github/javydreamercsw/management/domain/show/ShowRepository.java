@@ -78,7 +78,7 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
       LEFT JOIN FETCH s.season
       LEFT JOIN FETCH s.template
       LEFT JOIN FETCH s.type
-      ORDER BY s.creationDate DESC
+      ORDER BY s.showDate DESC
       """)
   List<Show> findAllWithRelationships();
 

@@ -145,7 +145,9 @@ public class Segment extends AbstractEntity<Long> {
 
   /** Get all wrestlers participating in the segment. */
   public List<Wrestler> getWrestlers() {
-    return participants.stream().map(SegmentParticipant::getWrestler).toList();
+    return participants.stream()
+        .map(SegmentParticipant::getWrestler)
+        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
   }
 
   public List<Wrestler> getWinners() {

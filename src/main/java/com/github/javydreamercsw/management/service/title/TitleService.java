@@ -237,6 +237,21 @@ public class TitleService {
     return titleRepository.save(title);
   }
 
+  /** Check if a wrestler is currently a champion of any active title. */
+  @Transactional(readOnly = true)
+  public boolean isChampion(@NonNull Wrestler wrestler) {
+    return titleRepository.findAll().stream()
+        .anyMatch(title -> title.getCurrentChampions().contains(wrestler));
+  }
+
+  /** Get all active titles held by a specific wrestler. */
+  @Transactional(readOnly = true)
+  public List<Title> findTitlesByChampion(@NonNull Wrestler wrestler) {
+    return titleRepository.findAll().stream()
+        .filter(title -> title.getCurrentChampions().contains(wrestler))
+        .collect(Collectors.toList());
+  }
+
   /** Challenge result data class. */
   public record ChallengeResult(
       boolean success, @NonNull String message, Title title, Wrestler challenger) {}
