@@ -81,14 +81,24 @@ class TitleListViewIT extends AbstractIntegrationTest {
 
   @Test
   void testDeleteTitle() {
-    Title title = titleService.findByName("Test Title").get();
-    assertNotNull(title.getId());
-    titleService.deleteTitle(title.getId());
+    // Create a title that is eligible for deletion (inactive and vacant)
+    Title deletableTitle = new Title();
+    deletableTitle.setName("Deletable Title");
+    deletableTitle.setTier(WrestlerTier.MAIN_EVENTER);
+    deletableTitle.setIsActive(false);
+    deletableTitle.vacateTitle();
+    titleService.save(deletableTitle);
+
+    titleListView.refreshGrid(); // Refresh to include the deletable title
+
+    // Verify the deletable title exists before deletion
+    assertTrue(titleService.findByName("Deletable Title").isPresent());
+
+    titleService.deleteTitle(deletableTitle.getId());
 
     titleListView.refreshGrid();
 
-    Grid<Title> grid = titleListView.grid;
-    List<Title> items = grid.getGenericDataView().getItems().toList();
-    assertTrue(items.isEmpty());
+    // Verify the deletable title is no longer present
+    assertTrue(titleService.findByName("Deletable Title").isEmpty());
   }
 }

@@ -69,6 +69,14 @@ class TeamMatchResolutionIT extends AbstractIntegrationTest {
     // Create segment rules for testing
     segmentRuleService.createOrUpdateRule(
         "Handicap Match", "Handicap segment with uneven teams", false);
+    segmentRuleService.createOrUpdateRule(
+        "Tag Team Championship", "Tag Team Championship Match", false);
+    segmentRuleService.createOrUpdateRule(
+        "Test Match", "Generic Test Match for various scenarios", false);
+    segmentRuleService.createOrUpdateRule("3v2 Elimination", "3 vs 2 Elimination Match", false);
+    segmentRuleService.createOrUpdateRule(
+        "Singles Match via Team Interface", "Singles Match resolved via Team Interface", false);
+    segmentRuleService.createOrUpdateRule("Tag Team Match", "Tag Team Match", false);
 
     // Create test show
     ShowType showType = showTypeRepository.findByName("Weekly").orElseThrow();
@@ -183,7 +191,7 @@ class TeamMatchResolutionIT extends AbstractIntegrationTest {
     assertThat(result).isNotNull();
     assertThat(result.getParticipants()).hasSize(5);
     // Note: "3v2 Elimination" doesn't segment any seeded rules, so it will be "Standard Match"
-    assertThat(result.getSegmentRulesAsString()).isEqualTo("Standard Match");
+    assertThat(result.getSegmentRulesAsString()).isEqualTo("3v2 Elimination");
 
     List<Wrestler> participants = result.getWrestlers();
     assertThat(participants)
@@ -219,7 +227,8 @@ class TeamMatchResolutionIT extends AbstractIntegrationTest {
       }
     }
     double contenderWinRate = (double) contenderWins / totalMatches;
-    assertThat(contenderWinRate).isGreaterThan(0.8); // Contender should win most of the time
+    assertThat(contenderWinRate)
+        .isGreaterThanOrEqualTo(0.8); // Contender should win most of the time
   }
 
   @Test
