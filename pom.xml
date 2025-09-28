@@ -237,8 +237,7 @@
           <!-- JVM arguments for better performance and JaCoCo coverage -->
           <argLine>${surefireArgLine} -Xmx2g
             -XX:+EnableDynamicAgentLoading
-            -Djdk.instrument.traceUsage=false
-            -javaagent:${org.mockito:mockito-core:jar}</argLine>
+            -Djdk.instrument.traceUsage=false</argLine>
         </configuration>
 
       </plugin>
