@@ -235,9 +235,7 @@
             <exclude>**/*IntegrationTest.java</exclude>
           </excludes>
           <!-- JVM arguments for better performance and JaCoCo coverage -->
-          <argLine>${surefireArgLine} -Xmx2g
-            -XX:+EnableDynamicAgentLoading
-            -Djdk.instrument.traceUsage=false</argLine>
+          <argLine>@{surefireArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false</argLine>
         </configuration>
 
       </plugin>
@@ -515,18 +513,6 @@
                 </configuration>
               </execution>
 
-              <!-- Prepare agent for integration tests -->
-              <execution>
-                <id>prepare-agent-integration</id>
-                <goals>
-                  <goal>prepare-agent-integration</goal>
-                </goals>
-                <configuration>
-                  <propertyName>failsafeArgLine</propertyName>
-                  <destFile>${project.build.directory}/jacoco-it.exec</destFile>
-                </configuration>
-              </execution>
-
               <!-- Generate unit test coverage report -->
               <execution>
                 <id>report</id>
@@ -534,15 +520,6 @@
                   <goal>report</goal>
                 </goals>
                 <phase>test</phase>
-              </execution>
-
-              <!-- Generate integration test coverage report -->
-              <execution>
-                <id>report-integration</id>
-                <goals>
-                  <goal>report-integration</goal>
-                </goals>
-                <phase>post-integration-test</phase>
               </execution>
 
               <!-- Coverage verification -->
@@ -626,6 +603,32 @@
       <id>integration-test</id>
       <build>
         <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>${jacoco.version}</version>
+            <executions>
+              <!-- Prepare agent for integration tests -->
+              <execution>
+                <id>prepare-agent-integration</id>
+                <goals>
+                  <goal>prepare-agent-integration</goal>
+                </goals>
+                <configuration>
+                  <propertyName>failsafeArgLine</propertyName>
+                  <destFile>${project.build.directory}/jacoco-it.exec</destFile>
+                </configuration>
+              </execution>
+              <!-- Generate integration test coverage report -->
+              <execution>
+                <id>report-integration</id>
+                <goals>
+                  <goal>report-integration</goal>
+                </goals>
+                <phase>post-integration-test</phase>
+              </execution>
+            </executions>
+          </plugin>
           <!-- Run integration tests with Surefire (sequential for safety) -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
