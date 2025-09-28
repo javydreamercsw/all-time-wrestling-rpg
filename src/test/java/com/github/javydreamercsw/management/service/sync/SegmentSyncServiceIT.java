@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
-
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,8 +26,7 @@ class SegmentSyncServiceIT extends AbstractIntegrationTest {
   @DisplayName("Should sync a single segment by ID")
   void shouldSyncSingleSegmentById() {
     List<String> matchIds = segmentSyncService.getSegmentIds();
-    Assumptions.assumeFalse(
-        matchIds.isEmpty(), "No segments found in Notion to test sync.");
+    Assumptions.assumeFalse(matchIds.isEmpty(), "No segments found in Notion to test sync.");
     Random r = new Random();
     Arrays.asList(
             matchIds.get(r.nextInt(matchIds.size())), matchIds.get(r.nextInt(matchIds.size())))
