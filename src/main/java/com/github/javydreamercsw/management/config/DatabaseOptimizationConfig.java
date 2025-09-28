@@ -19,7 +19,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 @Configuration
 @Slf4j
 @Order(100)
-@DependsOn("flywayCommandLineRunner")
+@DependsOn("flyway")
 public class DatabaseOptimizationConfig implements ApplicationRunner {
 
   private final DataSource dataSource;

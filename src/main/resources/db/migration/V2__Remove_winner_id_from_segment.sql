@@ -1,1 +1,0 @@
-ALTER TABLE segment DROP COLUMN IF EXISTS winner_id;

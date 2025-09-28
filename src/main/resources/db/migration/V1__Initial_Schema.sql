@@ -73,8 +73,8 @@ CREATE TABLE npc (
 -- =================================================================
 
 CREATE TABLE card_set (
-    card_set_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE,
+    set_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    set_code VARCHAR(255) NOT NULL UNIQUE,
     description LONGTEXT,
     release_date DATE,
     creation_date TIMESTAMP NOT NULL
@@ -89,15 +89,15 @@ CREATE TABLE card (
     momentum INT NOT NULL DEFAULT 0,
     target INT NOT NULL DEFAULT 0,
     number INT NOT NULL,
-    is_finisher BOOLEAN NOT NULL DEFAULT FALSE,
-    is_signature BOOLEAN NOT NULL DEFAULT FALSE,
-    is_pin BOOLEAN NOT NULL DEFAULT FALSE,
-    is_taunt BOOLEAN NOT NULL DEFAULT FALSE,
-    is_recover BOOLEAN NOT NULL DEFAULT FALSE,
+    finisher BOOLEAN NOT NULL DEFAULT FALSE,
+    signature BOOLEAN NOT NULL DEFAULT FALSE,
+    pin BOOLEAN NOT NULL DEFAULT FALSE,
+    taunt BOOLEAN NOT NULL DEFAULT FALSE,
+    recover BOOLEAN NOT NULL DEFAULT FALSE,
     creation_date TIMESTAMP NOT NULL,
-    card_set_id BIGINT NOT NULL,
-    FOREIGN KEY (card_set_id) REFERENCES card_set(card_set_id) ON DELETE CASCADE,
-    UNIQUE (name, number, card_set_id)
+    set_id BIGINT NOT NULL,
+    FOREIGN KEY (set_id) REFERENCES card_set(set_id) ON DELETE CASCADE,
+    UNIQUE (name, number, set_id)
 );
 
 CREATE TABLE deck (
@@ -108,7 +108,7 @@ CREATE TABLE deck (
 );
 
 CREATE TABLE deck_card (
-    deck_card_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     deck_id BIGINT NOT NULL,
     card_id BIGINT NOT NULL,
     amount INT NOT NULL DEFAULT 1,
@@ -223,19 +223,28 @@ CREATE TABLE segment_segment_rule (
     FOREIGN KEY (segment_rule_id) REFERENCES segment_rule(segment_rule_id) ON DELETE CASCADE
 );
 
--- =================================================================
--- TITLE SYSTEM
--- =================================================================
-
 CREATE TABLE title (
     title_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     description LONGTEXT,
     tier VARCHAR(255),
+    gender VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     creation_date TIMESTAMP NOT NULL,
     external_id VARCHAR(255) UNIQUE
 );
+
+CREATE TABLE segment_title (
+    segment_id BIGINT NOT NULL,
+    title_id BIGINT NOT NULL,
+    PRIMARY KEY (segment_id, title_id),
+    FOREIGN KEY (segment_id) REFERENCES segment(segment_id) ON DELETE CASCADE,
+    FOREIGN KEY (title_id) REFERENCES title(title_id) ON DELETE CASCADE
+);
+
+-- =================================================================
+-- TITLE SYSTEM
+-- =================================================================
 
 CREATE TABLE title_champion (
     title_id BIGINT NOT NULL,
@@ -320,7 +329,66 @@ CREATE TABLE faction_rivalry (
     CHECK (faction1_id <> faction2_id)
 );
 
--- Note: Other tables like multi_wrestler_feud, storyline_branch, etc. from V3
--- are being omitted for this initial consolidated schema unless they are directly
--- reflected in the current primary entities. They can be added in later migrations
--- if the features are implemented. This keeps the initial schema clean and focused.
+CREATE TABLE drama_event (
+    drama_event_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description LONGTEXT NOT NULL,
+    event_type VARCHAR(255) NOT NULL,
+    severity VARCHAR(255) NOT NULL,
+    event_date TIMESTAMP NOT NULL,
+    creation_date TIMESTAMP NOT NULL,
+    heat_impact INT,
+    fan_impact INT,
+    injury_caused BOOLEAN NOT NULL,
+    rivalry_created BOOLEAN NOT NULL,
+    rivalry_ended BOOLEAN NOT NULL,
+    is_processed BOOLEAN NOT NULL,
+    processed_date TIMESTAMP,
+    processing_notes LONGTEXT,
+    primary_wrestler_id BIGINT,
+    secondary_wrestler_id BIGINT,
+    FOREIGN KEY (primary_wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE SET NULL,
+    FOREIGN KEY (secondary_wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE SET NULL
+);
+
+-- =================================================================
+-- MULTI-WRESTLER FEUD SYSTEM (ADDED)
+-- =================================================================
+
+CREATE TABLE multi_wrestler_feud (
+    multi_wrestler_feud_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description LONGTEXT,
+    heat INT NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    started_date TIMESTAMP NOT NULL,
+    ended_date TIMESTAMP,
+    storyline_notes LONGTEXT,
+    creation_date TIMESTAMP NOT NULL
+);
+
+CREATE TABLE feud_participant (
+    feud_participant_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    feud_id BIGINT NOT NULL,
+    wrestler_id BIGINT NOT NULL,
+    role VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    joined_date TIMESTAMP NOT NULL,
+    left_date TIMESTAMP,
+    left_reason VARCHAR(255),
+    creation_date TIMESTAMP NOT NULL,
+    FOREIGN KEY (feud_id) REFERENCES multi_wrestler_feud(multi_wrestler_feud_id) ON DELETE CASCADE,
+    FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE,
+    UNIQUE (feud_id, wrestler_id)
+);
+
+CREATE TABLE feud_heat_event (
+    feud_heat_event_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    multi_wrestler_feud_id BIGINT NOT NULL,
+    heat_change INT NOT NULL,
+    heat_after_event INT NOT NULL,
+    reason VARCHAR(500) NOT NULL,
+    event_date TIMESTAMP NOT NULL,
+    creation_date TIMESTAMP NOT NULL,
+    FOREIGN KEY (multi_wrestler_feud_id) REFERENCES multi_wrestler_feud(multi_wrestler_feud_id) ON DELETE CASCADE
+);
