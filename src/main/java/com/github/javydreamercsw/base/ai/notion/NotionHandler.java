@@ -1479,8 +1479,7 @@ public class NotionHandler {
   protected NotionClient createNotionClient() {
     String notionToken = EnvironmentVariableUtil.getNotionToken();
     if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("NOTION_TOKEN not available. Cannot create NotionClient.");
-      return null;
+      throw new IllegalStateException("NOTION_TOKEN not available. Cannot create NotionClient.");
     }
     NotionClient client = new NotionClient(notionToken);
     client.setLogger(new notion.api.v1.logging.Slf4jLogger());

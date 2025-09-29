@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mockStatic;
 import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -15,6 +16,7 @@ import org.mockito.MockedStatic;
 /**
  * Tests for NotionHandler teams functionality. These tests require NOTION_TOKEN to be available.
  */
+@EnabledIf("isNotionTokenAvailable")
 class NotionHandlerTeamsTest extends BaseTest {
 
   private NotionHandler notionHandler;
@@ -25,7 +27,6 @@ class NotionHandlerTeamsTest extends BaseTest {
   }
 
   @Test
-  @EnabledIf("isNotionTokenAvailable")
   void shouldLoadAllTeamsSuccessfully() {
     // When
     List<TeamPage> teams = notionHandler.loadAllTeams();
