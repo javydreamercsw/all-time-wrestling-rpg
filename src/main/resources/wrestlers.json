@@ -115,4 +115,17 @@
   "faction" : null,
   "description" : "The pride of England with incredible power and technical skill",
   "gender" : "MALE"
+}, {
+  "name" : "Sgt. Slaughter",
+  "deckSize" : 16,
+  "startingHealth" : 15,
+  "lowHealth" : 4,
+  "startingStamina" : 13,
+  "lowStamina" : 4,
+  "fans" : 0,
+  "isPlayer" : false,
+  "bumps" : 0,
+  "faction" : null,
+  "description" : "That's an order",
+  "gender" : "MALE"
 } ]
