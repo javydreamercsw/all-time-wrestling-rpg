@@ -41,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Slf4j
 @DisplayName("Show Type Sync Integration Tests")
+@EnabledIf("isNotionTokenAvailable")
 class ShowTypeSyncITTest extends BaseTest {
 
   @Autowired private ShowTemplateRepository showTemplateRepository;
