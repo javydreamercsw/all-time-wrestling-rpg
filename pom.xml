@@ -17,6 +17,7 @@
   <name>All Time Wrestling RPG</name>
 
   <properties>
+    <NOTION_TOKEN/>
     <archunit.version>1.4.1</archunit.version>
 
     <!-- JaCoCo Coverage Properties -->
@@ -587,6 +588,18 @@
                   <goal>merge</goal>
                 </goals>
                 <phase>verify</phase>
+                <configuration>
+                  <fileSets>
+                    <fileSet>
+                      <directory>${project.build.directory}</directory>
+                      <includes>
+                        <include>jacoco.exec</include>
+                        <include>jacoco-it.exec</include>
+                      </includes>
+                    </fileSet>
+                  </fileSets>
+                  <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+                </configuration>
               </execution>
 
               <!-- Generate merged coverage report -->
