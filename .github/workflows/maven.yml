@@ -93,7 +93,7 @@ jobs:
     - name: Merge and report coverage
       run: |
         mvn -B jacoco:merge -Pcoverage
-        mvn -B jacoco:report-merged -Pcoverage
+        mvn -B jacoco:report -Pcoverage
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
