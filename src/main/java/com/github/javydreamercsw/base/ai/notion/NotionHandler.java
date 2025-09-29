@@ -67,7 +67,7 @@ public class NotionHandler {
    * called automatically on first access to the singleton.
    */
   private void initializeDatabases() {
-    if (initialized) {
+    if (initialized || !EnvironmentVariableUtil.isNotionTokenAvailable()) {
       return;
     }
 
@@ -128,7 +128,6 @@ public class NotionHandler {
   public void querySpecificDatabase(@NonNull String databaseId) {
     log.debug("Querying specific database: {}", databaseId);
 
-    String notionToken = EnvironmentVariableUtil.getNotionToken();
     try (NotionClient client = createNotionClient()) {
       querySpecificDatabase(client, databaseId);
     } catch (Exception e) {
@@ -209,7 +208,7 @@ public class NotionHandler {
       @NonNull NotionClient client, @NonNull PageProperty value, boolean resolveRelationships) {
     try {
       // Handle cases where type is null but we can infer the type from populated fields
-      String propertyType = null;
+      String propertyType;
 
       if (value.getType() != null) {
         propertyType = value.getType().getValue();
