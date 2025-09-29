@@ -39,7 +39,7 @@ public class ShowPage extends NotionPage {
 
     List<SegmentPage> matches = new ArrayList<>();
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = NotionHandler.getInstance().createNotionClient()) {
       try {
         Page pageData = client.retrievePage(this.getId(), Collections.emptyList());
 

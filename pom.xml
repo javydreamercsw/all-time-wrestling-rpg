@@ -474,6 +474,16 @@
             <artifactId>jacoco-maven-plugin</artifactId>
             <version>${jacoco.version}</version>
             <configuration>
+              <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+              <fileSets>
+                <fileSet>
+                  <directory>${project.build.directory}</directory>
+                  <includes>
+                    <include>jacoco.exec</include>
+                    <include>jacoco-it.exec</include>
+                  </includes>
+                </fileSet>
+              </fileSets>
               <excludes>
                 <!-- Exclude generated code -->
                 <exclude>**/generated/**</exclude>
@@ -577,18 +587,6 @@
                   <goal>merge</goal>
                 </goals>
                 <phase>verify</phase>
-                <configuration>
-                  <fileSets>
-                    <fileSet>
-                      <directory>${project.build.directory}</directory>
-                      <includes>
-                        <include>jacoco.exec</include>
-                        <include>jacoco-it.exec</include>
-                      </includes>
-                    </fileSet>
-                  </fileSets>
-                  <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
-                </configuration>
               </execution>
 
               <!-- Generate merged coverage report -->

@@ -44,6 +44,16 @@ CREATE TABLE wrestler (
 -- Add the foreign key constraint for faction's leader
 ALTER TABLE faction ADD CONSTRAINT fk_faction_leader FOREIGN KEY (leader_id) REFERENCES wrestler(wrestler_id) ON DELETE SET NULL;
 
+CREATE TABLE injury_type (
+    injury_type_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    injury_name VARCHAR(100) NOT NULL UNIQUE,
+    health_effect INT,
+    stamina_effect INT,
+    card_effect INT,
+    special_effects LONGTEXT,
+    external_id VARCHAR(255) UNIQUE
+);
+
 CREATE TABLE injury (
     injury_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     wrestler_id BIGINT NOT NULL,
@@ -66,6 +76,26 @@ CREATE TABLE npc (
     name VARCHAR(255) NOT NULL UNIQUE,
     npc_type VARCHAR(255) NOT NULL,
     external_id VARCHAR(255)
+);
+
+-- =================================================================
+-- TEAM SYSTEM
+-- =================================================================
+
+CREATE TABLE team (
+    team_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    description LONGTEXT,
+    wrestler1_id BIGINT NOT NULL,
+    wrestler2_id BIGINT NOT NULL,
+    faction_id BIGINT,
+    status VARCHAR(255) NOT NULL,
+    formed_date TIMESTAMP NOT NULL,
+    disbanded_date TIMESTAMP,
+    external_id VARCHAR(255),
+    FOREIGN KEY (wrestler1_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE,
+    FOREIGN KEY (wrestler2_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE,
+    FOREIGN KEY (faction_id) REFERENCES faction(faction_id) ON DELETE SET NULL
 );
 
 -- =================================================================
@@ -328,6 +358,17 @@ CREATE TABLE faction_rivalry (
     FOREIGN KEY (faction2_id) REFERENCES faction(faction_id) ON DELETE CASCADE,
     UNIQUE (faction1_id, faction2_id),
     CHECK (faction1_id <> faction2_id)
+);
+
+CREATE TABLE faction_heat_event (
+    faction_heat_event_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    faction_rivalry_id BIGINT NOT NULL,
+    heat_change INT NOT NULL,
+    heat_after_event INT NOT NULL,
+    reason VARCHAR(255) NOT NULL,
+    event_date TIMESTAMP NOT NULL,
+    creation_date TIMESTAMP NOT NULL,
+    FOREIGN KEY (faction_rivalry_id) REFERENCES faction_rivalry(faction_rivalry_id) ON DELETE CASCADE
 );
 
 CREATE TABLE drama_event (
