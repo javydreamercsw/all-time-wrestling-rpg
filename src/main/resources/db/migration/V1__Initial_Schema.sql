@@ -197,6 +197,7 @@ CREATE TABLE segment (
     segment_rating INT,
     status VARCHAR(255) NOT NULL,
     narration LONGTEXT,
+    summary LONGTEXT,
     is_title_segment BOOLEAN NOT NULL DEFAULT FALSE,
     is_npc_generated BOOLEAN NOT NULL DEFAULT FALSE,
     external_id VARCHAR(255) UNIQUE,
