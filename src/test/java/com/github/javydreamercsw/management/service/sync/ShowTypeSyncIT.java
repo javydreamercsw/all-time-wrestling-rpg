@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles("integration-test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @Slf4j
+@EnabledIf("isNotionTokenAvailable")
 public class ShowTypeSyncIT extends AbstractIntegrationTest {
 
   @Autowired private ShowTypeSyncService showTypeSyncService;

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
@@ -21,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
  * interactions.
  */
 @DisplayName("TeamService Integration Tests")
+@EnabledIf("isNotionTokenAvailable")
 class TeamServiceIT extends AbstractIntegrationTest {
 
   private Wrestler wrestler1;

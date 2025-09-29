@@ -10,7 +10,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 
+@EnabledIf("isNotionTokenAvailable")
 class WrestlerServiceIT extends AbstractIntegrationTest {
 
   @Test

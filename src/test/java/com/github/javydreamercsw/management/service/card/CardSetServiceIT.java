@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 
+@EnabledIf("isNotionTokenAvailable")
 class CardSetServiceIT extends AbstractIntegrationTest {
 
   @Test

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -26,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * and health calculations.
  */
 @DisplayName("Injury System Integration Tests")
+@EnabledIf("isNotionTokenAvailable")
 class InjurySystemIntegrationTest extends AbstractIntegrationTest {
   @Autowired private InjuryService injuryService;
   @Autowired private WrestlerService wrestlerService;

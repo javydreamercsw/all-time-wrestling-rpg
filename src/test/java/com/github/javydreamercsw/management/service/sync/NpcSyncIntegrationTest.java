@@ -7,6 +7,7 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * This test requires the NOTION_TOKEN environment variable to be set.
  */
 @Slf4j
+@EnabledIf("isNotionTokenAvailable")
 class NpcSyncIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private NotionSyncService notionSyncService;

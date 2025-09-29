@@ -12,9 +12,11 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisplayName("Faction Service Integration Tests")
+@EnabledIf("isNotionTokenAvailable")
 class FactionServiceIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private FactionService factionService;

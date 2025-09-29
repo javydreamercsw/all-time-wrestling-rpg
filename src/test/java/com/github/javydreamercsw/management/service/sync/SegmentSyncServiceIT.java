@@ -14,9 +14,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @DisplayName("SegmentSyncService Integration Tests")
+@EnabledIf("isNotionTokenAvailable")
 class SegmentSyncServiceIT extends AbstractIntegrationTest {
 
   @Autowired private SegmentSyncService segmentSyncService;

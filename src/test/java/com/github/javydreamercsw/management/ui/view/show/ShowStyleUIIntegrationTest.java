@@ -23,9 +23,11 @@ import java.util.Locale;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.vaadin.stefan.fullcalendar.Entry;
 import org.vaadin.stefan.fullcalendar.dataprovider.EntryQuery;
 
+@EnabledIf("isNotionTokenAvailable")
 class ShowStyleUIIntegrationTest extends AbstractIntegrationTest {
 
   private Show pleShow;

@@ -16,6 +16,7 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * management.
  */
 @DisplayName("TitleController Integration Tests")
+@EnabledIf("isNotionTokenAvailable")
 class TitleControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private MockMvc mockMvc;

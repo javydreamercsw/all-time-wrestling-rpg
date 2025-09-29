@@ -17,11 +17,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 @DisplayName("Team Match Resolution Integration Tests")
 @Transactional
+@EnabledIf("isNotionTokenAvailable")
 class TeamMatchResolutionIT extends AbstractIntegrationTest {
   @Autowired NPCSegmentResolutionService npcSegmentResolutionService;
 

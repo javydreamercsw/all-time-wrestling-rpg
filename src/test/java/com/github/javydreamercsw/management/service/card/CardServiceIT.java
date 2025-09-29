@@ -10,8 +10,10 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@EnabledIf("isNotionTokenAvailable")
 class CardServiceIT extends AbstractIntegrationTest {
   @Autowired CardRepository cardRepository;
   @Autowired CardSetRepository cardSetRepository;

@@ -13,32 +13,25 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@ActiveProfiles("test")
-class MatchAdjudicationServiceTest {
+@EnabledIf("isNotionTokenAvailable")
+class MatchAdjudicationServiceTest extends AbstractIntegrationTest {
   @Autowired private MatchAdjudicationService matchAdjudicationService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
-  @Autowired private WrestlerService wrestlerService;
 
   @Test
-  @Disabled(
-      "Disabled due to pipeline failures; needs investigation into Testcontainers/MySQL setup. See:"
-          + " https://github.com/javydreamercsw/all-time-wrestling-rpg/issues/10")
   void testAdjudicateMatch() {
     // Given
     long initialFans = 10_000L;

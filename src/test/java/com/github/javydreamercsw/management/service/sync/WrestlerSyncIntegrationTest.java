@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 /**
  * Real integration test for wrestler sync that uses actual Spring services and real Notion API
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
  * <p>Run with: mvn test -Dtest=WrestlerSyncIntegrationTest -DNOTION_TOKEN=your_token
  */
 @Slf4j
+@EnabledIf("isNotionTokenAvailable")
 class WrestlerSyncIntegrationTest extends AbstractIntegrationTest {
 
   @Test
