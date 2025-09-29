@@ -219,7 +219,7 @@ class TeamMatchResolutionIT extends AbstractIntegrationTest {
 
     // Should still favor the contender
     int contenderWins = 0;
-    int totalMatches = 100;
+    int totalMatches = 1_000;
     for (int i = 0; i < totalMatches; i++) {
       result =
           npcSegmentResolutionService.resolveTeamSegment(
