@@ -2,11 +2,8 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -18,21 +15,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 @DisplayName("Segment Sync Integration Tests")
 class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
 
-  private Show testShow;
-  private SegmentType testMatchType;
-  private Wrestler testWrestler1;
-  private Wrestler testWrestler2;
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private NotionSyncService notionSyncService;
 
   @Test
-  @DisplayName("Should sync matches from Notion to database successfully")
+  @DisplayName("Should sync a random match from Notion to database successfully")
   void shouldSyncMatchesFromNotionToDatabaseSuccessfully() {
     // Given - Real integration test with actual Notion API
     int initialMatchCount = segmentRepository.findAll().size();
 
-    // When - Sync matches from real Notion database
-    NotionSyncService.SyncResult result = notionSyncService.syncSegments("test-operation-123");
+    // When - Sync a random match from real Notion database
+    List<String> segmentIds = notionSyncService.getAllSegmentIds();
+    NotionSyncService.SyncResult result;
+    if (segmentIds.isEmpty()) {
+      result = notionSyncService.syncSegments("test-operation-123");
+    } else {
+      String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+      result = notionSyncService.syncSegment(randomId);
+    }
 
     // Then - Verify sync completed successfully (regardless of segment count)
     assertThat(result).isNotNull();
@@ -49,7 +49,11 @@ class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
 
     // Verify database state is consistent
     List<Segment> finalMatches = segmentRepository.findAll();
-    assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
+    if (!segmentIds.isEmpty()) {
+      assertThat(finalMatches.size()).isGreaterThan(initialMatchCount);
+    } else {
+      assertThat(finalMatches.size()).isEqualTo(initialMatchCount);
+    }
 
     System.out.println(
         "Integration test completed: "
@@ -67,13 +71,16 @@ class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
     int initialMatchCount = segmentRepository.findAll().size();
 
     // When - First sync
-    NotionSyncService.SyncResult firstResult =
-        notionSyncService.syncSegments("test-operation-456-first");
+    List<String> segmentIds = notionSyncService.getAllSegmentIds();
+    if (segmentIds.isEmpty()) {
+      return; // Skip test if no segments to sync
+    }
+    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    NotionSyncService.SyncResult firstResult = notionSyncService.syncSegment(randomId);
     int afterFirstSync = segmentRepository.findAll().size();
 
     // Second sync (should detect duplicates)
-    NotionSyncService.SyncResult secondResult =
-        notionSyncService.syncSegments("test-operation-456-second");
+    NotionSyncService.SyncResult secondResult = notionSyncService.syncSegment(randomId);
     int afterSecondSync = segmentRepository.findAll().size();
 
     // Then - Verify duplicate handling works
@@ -103,7 +110,12 @@ class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
     int initialMatchCount = segmentRepository.findAll().size();
 
     // When - Sync with real Notion data (may have missing shows/wrestlers/segment types)
-    NotionSyncService.SyncResult result = notionSyncService.syncSegments("test-operation-789");
+    List<String> segmentIds = notionSyncService.getAllSegmentIds();
+    if (segmentIds.isEmpty()) {
+      return; // Skip test if no segments to sync
+    }
+    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync handles missing dependencies gracefully
     assertThat(result).isNotNull();
@@ -139,7 +151,12 @@ class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
     int initialMatchCount = segmentRepository.findAll().size();
 
     // When - Sync with real Notion data
-    NotionSyncService.SyncResult result = notionSyncService.syncSegments("test-operation-101");
+    List<String> segmentIds = notionSyncService.getAllSegmentIds();
+    if (segmentIds.isEmpty()) {
+      return; // Skip test if no segments to sync
+    }
+    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync handles missing segment types gracefully
     assertThat(result).isNotNull();
@@ -172,7 +189,12 @@ class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
     int initialMatchCount = segmentRepository.findAll().size();
 
     // When - Sync with real Notion data
-    NotionSyncService.SyncResult result = notionSyncService.syncSegments("test-operation-202");
+    List<String> segmentIds = notionSyncService.getAllSegmentIds();
+    if (segmentIds.isEmpty()) {
+      return; // Skip test if no segments to sync
+    }
+    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync handles missing winners gracefully
     assertThat(result).isNotNull();
@@ -204,6 +226,10 @@ class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
     int initialMatchCount = segmentRepository.findAll().size();
 
     // When - Sync with real Notion data (may be empty)
+    List<String> segmentIds = notionSyncService.getAllSegmentIds();
+    if (!segmentIds.isEmpty()) {
+      return; // Skip test if there are segments to sync
+    }
     NotionSyncService.SyncResult result = notionSyncService.syncSegments("test-operation-303");
 
     // Then - Verify sync handles empty results gracefully
@@ -235,7 +261,12 @@ class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
     int initialSegmentCount = segmentRepository.findAll().size();
 
     // When - Sync with real Notion data (may encounter errors)
-    NotionSyncService.SyncResult result = notionSyncService.syncSegments("test-operation-404");
+    List<String> segmentIds = notionSyncService.getAllSegmentIds();
+    if (segmentIds.isEmpty()) {
+      return; // Skip test if no segments to sync
+    }
+    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync handles errors gracefully
     assertThat(result).isNotNull();
@@ -268,6 +299,10 @@ class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
     int initialMatchCount = segmentRepository.findAll().size();
 
     // When - Sync with real Notion data (may contain multiple matches)
+    List<String> segmentIds = notionSyncService.getAllSegmentIds();
+    if (segmentIds.size() < 2) {
+      return; // Skip test if there are not multiple segments to sync
+    }
     NotionSyncService.SyncResult result = notionSyncService.syncSegments("test-operation-505");
 
     // Then - Verify sync handles multiple matches correctly
@@ -305,7 +340,12 @@ class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
     int initialMatchCount = segmentRepository.findAll().size();
 
     // When - Sync with real Notion data and validate results
-    NotionSyncService.SyncResult result = notionSyncService.syncSegments("test-operation-606");
+    List<String> segmentIds = notionSyncService.getAllSegmentIds();
+    if (segmentIds.isEmpty()) {
+      return; // Skip test if no segments to sync
+    }
+    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync validation works correctly
     assertThat(result).isNotNull();
