@@ -2,7 +2,6 @@ package com.github.javydreamercsw.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -24,21 +23,16 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
-@ActiveProfiles("dev")
-@SpringBootTest(properties = "spring.config.name=application-test")
-@ContextConfiguration(classes = Application.class)
-@Import(DataInitializer.class)
-class DataInitializerTest {
+@EnabledIf("isNotionTokenAvailable")
+class DataInitializerTest extends AbstractIntegrationTest {
 
   @Autowired private DataInitializer dataInitializer;
   @Autowired private CardService cardService;
