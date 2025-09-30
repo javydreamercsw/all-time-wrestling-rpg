@@ -1,131 +1,141 @@
 package com.github.javydreamercsw.management.ui.view.title;
 
+import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import java.util.stream.Collectors;
+import java.util.List;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 @Route("title-list")
-@PageTitle("Title List")
-@Menu(order = 1, icon = "vaadin:trophy", title = "Title List")
+@PageTitle("Titles")
 @PermitAll
+@Menu(order = 4, icon = "vaadin:trophy", title = "Titles")
+@Slf4j
 public class TitleListView extends Main {
 
   private final TitleService titleService;
+  private final WrestlerService wrestlerService;
+  public final Grid<Title> grid = new Grid<>(Title.class, false);
 
-  private final Grid<Title> grid = new Grid<>(Title.class);
-  private final Button deleteButton = new Button("Delete");
-
-  private final Binder<Title> binder = new Binder<>(Title.class);
-
-  public TitleListView(TitleService titleService) {
+  public TitleListView(
+      @NonNull TitleService titleService, @NonNull WrestlerService wrestlerService) {
     this.titleService = titleService;
+    this.wrestlerService = wrestlerService;
 
-    ComboBox<WrestlerTier> tier = new ComboBox<>("Tier");
-    tier.setItems(WrestlerTier.values());
-    grid.removeAllColumns();
+    addClassNames(
+        LumoUtility.BoxSizing.BORDER,
+        LumoUtility.Display.FLEX,
+        LumoUtility.FlexDirection.COLUMN,
+        LumoUtility.Padding.MEDIUM,
+        LumoUtility.Gap.SMALL);
 
-    // Add columns with minimum widths and no flex grow
-    grid.addColumn(Title::getName).setHeader("Name").setWidth("300px").setFlexGrow(0);
-    grid.addColumn(Title::getDescription).setHeader("Description").setWidth("300px").setFlexGrow(0);
-    grid.addColumn(
-            title ->
-                title.getChampion().stream()
-                    .map(Wrestler::getName)
-                    .collect(Collectors.joining(" & ")))
-        .setHeader("Champion")
-        .setWidth("300px")
-        .setFlexGrow(0);
-    grid.addColumn(
-            title ->
-                title.getContender().stream()
-                    .map(Wrestler::getName)
-                    .collect(Collectors.joining(" & ")))
-        .setHeader("Contender")
-        .setWidth("300px")
-        .setFlexGrow(0);
-    grid.addColumn(Title::getTier).setHeader("Tier").setWidth("150px").setFlexGrow(0);
-    grid.setWidthFull();
+    Button createButton = new Button("Create Title", new Icon(VaadinIcon.PLUS));
+    createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    createButton.addClickListener(e -> openCreateDialog());
 
-    // Optionally wrap grid in a scrollable container for horizontal scrolling
-    com.vaadin.flow.component.html.Div gridContainer = new com.vaadin.flow.component.html.Div(grid);
-    gridContainer.getStyle().set("overflow-x", "auto");
-    gridContainer.setWidth("100%");
+    add(new ViewToolbar("Title List", ViewToolbar.group(createButton)));
 
-    grid.asSingleSelect().addValueChangeListener(event -> populateForm(event.getValue()));
-
-    TextField name = new TextField("Name");
-    binder.forField(name).bind(Title::getName, Title::setName);
-    TextArea description = new TextArea("Description");
-    binder.forField(description).bind(Title::getDescription, Title::setDescription);
-    binder.forField(tier).bind(Title::getTier, Title::setTier);
-
-    Button saveButton = new Button("Save");
-    saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    saveButton.addClickListener(event -> saveTitle());
-
-    deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-    deleteButton.addClickListener(event -> deleteTitle());
-
-    Button newButton = new Button("New");
-    newButton.addClickListener(event -> createTitle());
-
-    FormLayout formLayout = new FormLayout(name, description, tier);
-    HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, deleteButton, newButton);
-    VerticalLayout form = new VerticalLayout(formLayout, buttonLayout);
-
-    add(gridContainer, form);
-
+    setupGrid();
+    add(grid);
     refreshGrid();
   }
 
-  private void refreshGrid() {
-    grid.setItems(titleService.findAll());
+  private void setupGrid() {
+    grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+    grid.addColumn(Title::getName).setHeader("Name").setSortable(true);
+    grid.addColumn(Title::getTier).setHeader("Tier").setSortable(true);
+    grid.addColumn(Title::getChampionNames).setHeader("Champion(s)").setSortable(true);
+    grid.addColumn(Title::getIsActive).setHeader("Active").setSortable(true);
+
+    grid.addComponentColumn(
+            title -> {
+              Button editButton = new Button("Edit", new Icon(VaadinIcon.EDIT));
+              editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              editButton.addClickListener(e -> openEditDialog(title));
+
+              Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
+              deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
+              deleteButton.addClickListener(e -> deleteTitle(title));
+
+              return new HorizontalLayout(editButton, deleteButton);
+            })
+        .setHeader("Actions");
   }
 
-  private void populateForm(Title title) {
-    binder.setBean(title);
-    deleteButton.setEnabled(title != null);
+  public void refreshGrid() {
+    List<Title> titles = titleService.findAll();
+    grid.setItems(titles);
   }
 
-  private void saveTitle() {
-    Title title = binder.getBean();
-    if (title != null) {
-      titleService.save(title);
-      refreshGrid();
-      populateForm(null);
-      Notification.show("Title saved successfully.", 3000, Notification.Position.BOTTOM_END);
-    }
+  private void openCreateDialog() {
+    Title newTitle = new Title();
+    newTitle.setIsActive(true);
+    TitleFormDialog dialog =
+        new TitleFormDialog(titleService, wrestlerService, newTitle, this::refreshGrid);
+    dialog.setHeaderTitle("Create New Title");
+    dialog.open();
   }
 
-  private void createTitle() {
-    populateForm(new Title());
+  private void openEditDialog(@NonNull Title title) {
+    TitleFormDialog dialog =
+        new TitleFormDialog(titleService, wrestlerService, title, this::refreshGrid);
+    dialog.setHeaderTitle("Edit Title: " + title.getName());
+    dialog.open();
   }
 
-  private void deleteTitle() {
-    Title title = binder.getBean();
-    if (title != null) {
-      titleService.deleteTitle(title.getId());
-      refreshGrid();
-      populateForm(null);
-      Notification.show("Title deleted successfully.", 3000, Notification.Position.BOTTOM_END);
-    }
+  private void deleteTitle(@NonNull Title title) {
+    ConfirmDialog confirmDialog = new ConfirmDialog();
+    confirmDialog.setHeader("Delete Title");
+    confirmDialog.setText("Are you sure you want to delete the title '" + title.getName() + "'?");
+    confirmDialog.setCancelable(true);
+    confirmDialog.setConfirmText("Delete");
+    confirmDialog.setConfirmButtonTheme("error primary");
+
+    confirmDialog.addConfirmListener(
+        e -> {
+          try {
+            assert title.getId() != null;
+            boolean deleted = titleService.deleteTitle(title.getId());
+            if (deleted) {
+              refreshGrid();
+              Notification.show(
+                      "Title deleted successfully", 3000, Notification.Position.BOTTOM_END)
+                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            } else {
+              Notification.show(
+                      "Title cannot be deleted. It must be inactive and vacant.",
+                      5000,
+                      Notification.Position.BOTTOM_END)
+                  .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+          } catch (Exception ex) {
+            log.error("Error deleting title", ex);
+            Notification.show(
+                    "Error deleting title: " + ex.getMessage(),
+                    5000,
+                    Notification.Position.BOTTOM_END)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+          }
+        });
+
+    confirmDialog.open();
   }
 }

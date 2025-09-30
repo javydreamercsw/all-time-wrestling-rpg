@@ -19,7 +19,7 @@ public class WrestlerDTO {
   public WrestlerDTO(@NonNull Wrestler wrestler) {
     this.name = wrestler.getName();
     this.description = wrestler.getDescription();
-    this.gender = wrestler.getGender().name();
+    this.gender = wrestler.getGender() != null ? wrestler.getGender().name() : Gender.MALE.name();
     this.tier = wrestler.getTier().name();
     this.moveSet = convertToMoveSet(wrestler); // Populate MoveSet
   }

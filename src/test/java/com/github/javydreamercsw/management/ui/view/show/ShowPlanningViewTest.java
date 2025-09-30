@@ -16,6 +16,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.router.BeforeEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -105,5 +106,64 @@ class ShowPlanningViewTest {
     assertEquals(2, items.size());
     assertEquals("Match", items.get(0).getType());
     assertEquals("Promo", items.get(1).getType());
+  }
+
+  @Test
+  void setParameterTest() throws Exception {
+    // Create a mock Show
+    long showId = 1L;
+    Show show = new Show();
+    show.setId(showId);
+    show.setName("Test Show");
+
+    // Mock the ShowService to return the mock Show
+    when(showService.getShowById(showId)).thenReturn(Optional.of(show));
+
+    // Create a mock ShowPlanningContext
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    context.setCurrentRivalries(new ArrayList<>());
+    context.setLastMonthPromos(new ArrayList<>());
+    context.setLastMonthSegments(new ArrayList<>());
+
+    // Create a mock ProposedShow
+    ProposedShow proposedShow = new ProposedShow();
+    ProposedSegment segment1 = new ProposedSegment();
+    segment1.setType("Match");
+    segment1.setDescription("A vs B");
+    segment1.setParticipants(Arrays.asList("A", "B"));
+    proposedShow.setSegments(List.of(segment1));
+
+    // Mock the RestTemplate
+    when(restTemplate.getForObject(any(String.class), eq(ShowPlanningContextDTO.class)))
+        .thenReturn(context);
+    when(restTemplate.postForObject(
+            any(String.class), any(ShowPlanningContextDTO.class), eq(ProposedShow.class)))
+        .thenReturn(proposedShow);
+
+    // Mock the ObjectMapper
+    ObjectMapper objectMapper = new ObjectMapper();
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
+
+    // Call the method to be tested
+    showPlanningView.setParameter(mock(BeforeEvent.class), showId);
+
+    // Verify the results
+    @SuppressWarnings("unchecked")
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    assertEquals(show, showComboBox.getValue());
+
+    TextArea contextArea = (TextArea) ReflectionTestUtils.getField(showPlanningView, "contextArea");
+    assertEquals(
+        objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context),
+        contextArea.getValue());
+
+    @SuppressWarnings("unchecked")
+    Grid<ProposedSegment> proposedSegmentsGrid =
+        (Grid<ProposedSegment>)
+            ReflectionTestUtils.getField(showPlanningView, "proposedSegmentsGrid");
+    List<ProposedSegment> items = proposedSegmentsGrid.getGenericDataView().getItems().toList();
+    assertEquals(1, items.size());
+    assertEquals("Match", items.get(0).getType());
   }
 }

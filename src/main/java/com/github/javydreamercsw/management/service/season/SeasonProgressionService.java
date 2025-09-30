@@ -71,7 +71,8 @@ public class SeasonProgressionService {
 
     Map<Wrestler, Long> wrestlerWinCounts =
         allMatches.stream()
-            .collect(Collectors.groupingBy(Segment::getWinner, Collectors.counting()));
+            .flatMap(match -> match.getWinners().stream())
+            .collect(Collectors.groupingBy(wrestler -> wrestler, Collectors.counting()));
 
     // Find most active wrestler
     Optional<Wrestler> mostActiveWrestler =

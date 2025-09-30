@@ -2,17 +2,14 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.base.test.BaseTest;
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 /**
  * Real integration test for show sync that uses actual Spring services and real Notion API calls.
@@ -20,80 +17,15 @@ import org.springframework.test.context.TestPropertySource;
  *
  * <p>Run with: mvn test -Dtest=ShowSyncRealIntegrationTest -DNOTION_TOKEN=your_token
  */
-@SpringBootTest
-@ActiveProfiles("test")
-@TestPropertySource(
-    properties = {
-      "notion.sync.enabled=true",
-      "notion.sync.entities=shows",
-      "notion.sync.scheduler.enabled=true"
-    })
-@EnabledIf("isNotionTokenAvailable")
 @Slf4j
-class ShowSyncIntegrationTest extends BaseTest {
+@DisplayName("Show Sync Integration Tests")
+@EnabledIf("isNotionTokenAvailable")
+class ShowSyncIntegrationTest extends AbstractIntegrationTest {
 
-  @Autowired private NotionSyncService notionSyncService;
+  @Autowired
+  private NotionSyncService notionSyncService; // When - Perform real sync with real services
 
-  @Test
-  @DisplayName("Should sync shows from Notion with real services")
-  void shouldSyncShowsFromNotionWithRealServices() {
-    // Skip test if no NOTION_TOKEN available
-    String notionToken = EnvironmentVariableUtil.getValue("NOTION_TOKEN");
-    if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("⏭️ Skipping real integration test - no NOTION_TOKEN provided");
-      return;
-    }
-
-    log.info("🚀 Starting real show sync integration test...");
-
-    // When - Perform real sync with real services
-    List<String> showIds = notionSyncService.getAllShowIds();
-    if (showIds.isEmpty()) {
-      log.warn("⏭️ Skipping real integration test - no shows found in Notion");
-      return;
-    }
-    String showIdToSync = showIds.get(0); // Or a random one
-    log.info("🚀 Starting real show sync integration test for show ID: {}", showIdToSync);
-
-    NotionSyncService.SyncResult result = notionSyncService.syncShow(showIdToSync);
-
-    // Then - Verify the sync result
-    assertNotNull(result, "Sync result should not be null");
-    assertEquals("Show", result.getEntityType(), "Entity type should be 'Show'");
-
-    if (result.isSuccess()) {
-      log.info("✅ Show sync completed successfully!");
-      log.info("   - Synced: {} shows", result.getSyncedCount());
-      log.info("   - Errors: {} shows", result.getErrorCount());
-
-      // Verify we actually synced some data
-      assertTrue(result.getSyncedCount() >= 0, "Should have synced 0 or more shows");
-      assertTrue(result.getErrorCount() >= 0, "Should have 0 or more errors");
-
-    } else {
-      log.error("❌ Show sync failed: {}", result.getErrorMessage());
-
-      // For debugging - log the full error details
-      if (result.getErrorMessage() != null) {
-        log.error("   Error details: {}", result.getErrorMessage());
-      }
-
-      // Don't fail the test immediately - let's see what the actual error is
-      // This helps with debugging real integration issues
-      log.warn("   This might be expected if there are data quality issues in Notion");
-      log.warn("   Check the error message above to see if it's a known issue");
-    }
-
-    // Always log the result for debugging
-    log.info("📊 Sync Result Summary:");
-    log.info("   - Success: {}", result.isSuccess());
-    log.info("   - Entity: {}", result.getEntityType());
-    log.info("   - Synced: {}", result.getSyncedCount());
-    log.info("   - Errors: {}", result.getErrorCount());
-    if (!result.isSuccess()) {
-      log.info("   - Error: {}", result.getErrorMessage());
-    }
-  }
+  @Autowired private ShowRepository showRepository;
 
   @Test
   @DisplayName("Should validate sync result structure")
@@ -106,7 +38,7 @@ class ShowSyncIntegrationTest extends BaseTest {
       log.warn("⏭️ Skipping real integration test - no shows found in Notion");
       return;
     }
-    String showIdToSync = showIds.get(0);
+    String showIdToSync = showIds.get(new java.util.Random().nextInt(showIds.size()));
     NotionSyncService.SyncResult result = notionSyncService.syncShow(showIdToSync);
 
     // Then - Verify result structure is always valid
@@ -125,5 +57,160 @@ class ShowSyncIntegrationTest extends BaseTest {
     }
 
     log.info("✅ Sync result structure is valid");
+  }
+
+  @Test
+  @DisplayName("Should sync a random show from Notion to database successfully")
+  void shouldSyncShowsFromNotionToDatabaseSuccessfully() {
+    // Given - Real integration test with actual Notion API
+    int initialShowCount = showRepository.findAll().size();
+
+    // When - Sync a random show from real Notion database
+    List<String> showIds = notionSyncService.getAllShowIds();
+    NotionSyncService.SyncResult result;
+    if (showIds.isEmpty()) {
+      result = notionSyncService.syncShows("test-operation-123");
+    } else {
+      String randomId = showIds.get(new java.util.Random().nextInt(showIds.size()));
+      result = notionSyncService.syncShow(randomId);
+    }
+
+    // Then - Verify sync completed successfully (regardless of show count)
+    assertNotNull(result);
+
+    boolean syncSuccessful =
+        result.isSuccess()
+            || (result.getErrorMessage() != null
+                && result.getErrorMessage().contains("No shows found"));
+
+    assertTrue(syncSuccessful);
+
+    // Verify database state is consistent
+    List<com.github.javydreamercsw.management.domain.show.Show> finalShows =
+        showRepository.findAll();
+    if (!showIds.isEmpty()) {
+      assertTrue(finalShows.size() > initialShowCount);
+    } else {
+      assertEquals(initialShowCount, finalShows.size());
+    }
+
+    System.out.println(
+        "Integration test completed: "
+            + (result.isSuccess() ? "SUCCESS" : "INFO")
+            + " - Synced: "
+            + result.getSyncedCount()
+            + " shows, Final DB count: "
+            + finalShows.size());
+  }
+
+  @Test
+  @DisplayName("Should handle duplicate detection during real sync")
+  void shouldSkipDuplicateShowsDuringSync() {
+    // Given - Run sync twice to test duplicate handling
+    int initialShowCount = showRepository.findAll().size();
+
+    // When - First sync
+    List<String> showIds = notionSyncService.getAllShowIds();
+    if (showIds.isEmpty()) {
+      return; // Skip test if no shows to sync
+    }
+    String randomId = showIds.get(new java.util.Random().nextInt(showIds.size()));
+    NotionSyncService.SyncResult firstResult = notionSyncService.syncShow(randomId);
+    int afterFirstSync = showRepository.findAll().size();
+
+    // Second sync (should detect duplicates)
+    NotionSyncService.SyncResult secondResult = notionSyncService.syncShow(randomId);
+    int afterSecondSync = showRepository.findAll().size();
+
+    // Then - Verify duplicate handling works
+    assertNotNull(firstResult);
+    assertNotNull(secondResult);
+
+    boolean duplicateHandlingWorks =
+        (firstResult.isSuccess() && secondResult.isSuccess())
+            || (afterSecondSync == afterFirstSync); // No new shows added on second sync
+
+    assertTrue(duplicateHandlingWorks);
+
+    System.out.println(
+        "Duplicate handling test: Initial="
+            + initialShowCount
+            + ", After 1st="
+            + afterFirstSync
+            + ", After 2nd="
+            + afterSecondSync);
+  }
+
+  @Test
+  @DisplayName("Should handle missing dependencies gracefully during real sync")
+  void shouldHandleMissingDependenciesGracefully() {
+    // Given - Real sync that may encounter missing dependencies
+    int initialShowCount = showRepository.findAll().size();
+
+    // When - Sync with real Notion data (may have missing shows/wrestlers/segment types)
+    List<String> showIds = notionSyncService.getAllShowIds();
+    if (showIds.isEmpty()) {
+      return; // Skip test if no shows to sync
+    }
+    String randomId = showIds.get(new java.util.Random().nextInt(showIds.size()));
+    NotionSyncService.SyncResult result = notionSyncService.syncShow(randomId);
+
+    // Then - Verify sync handles missing dependencies gracefully
+    assertNotNull(result);
+
+    boolean handledGracefully =
+        result.isSuccess()
+            || (result.getErrorMessage() != null
+                && (result.getErrorMessage().contains("Could not resolve")
+                    || result.getErrorMessage().contains("validation failed")
+                    || result.getErrorMessage().contains("No shows found")));
+
+    assertTrue(handledGracefully);
+
+    // Verify database remains consistent
+    List<com.github.javydreamercsw.management.domain.show.Show> finalShows =
+        showRepository.findAll();
+    assertTrue(finalShows.size() >= initialShowCount);
+
+    System.out.println(
+        "Missing dependencies test: "
+            + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
+            + " - "
+            + result.getErrorMessage());
+  }
+
+  @Test
+  @DisplayName("Should handle empty show list from Notion")
+  void shouldHandleEmptyShowListFromNotion() {
+    // Given - Real sync that may encounter empty results
+    int initialShowCount = showRepository.findAll().size();
+
+    // When - Sync with real Notion data (may be empty)
+    List<String> showIds = notionSyncService.getAllShowIds();
+    if (!showIds.isEmpty()) {
+      return; // Skip test if there are shows to sync
+    }
+    NotionSyncService.SyncResult result = notionSyncService.syncShows("test-operation-303");
+
+    // Then - Verify sync handles empty results gracefully
+    assertNotNull(result);
+
+    boolean handledGracefully =
+        result.isSuccess()
+            || (result.getErrorMessage() != null
+                && result.getErrorMessage().contains("No shows found"));
+
+    assertTrue(handledGracefully);
+
+    // Verify database remains consistent
+    List<com.github.javydreamercsw.management.domain.show.Show> finalShows =
+        showRepository.findAll();
+    assertEquals(initialShowCount, finalShows.size());
+
+    System.out.println(
+        "Empty show list test: "
+            + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
+            + " - Synced: "
+            + result.getSyncedCount());
   }
 }

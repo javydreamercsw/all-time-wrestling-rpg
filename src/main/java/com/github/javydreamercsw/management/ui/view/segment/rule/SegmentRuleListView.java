@@ -38,9 +38,6 @@ public class SegmentRuleListView extends Main {
 
   private Grid<SegmentRule> segmentRuleGrid;
   private Dialog editDialog;
-  private TextField editName;
-  private TextArea editDescription;
-  private Checkbox editRequiresHighHeat;
   private SegmentRule editingSegmentRule;
   private Binder<SegmentRule> binder;
 
@@ -137,11 +134,11 @@ public class SegmentRuleListView extends Main {
     editDialog.setHeaderTitle(headerTitle);
     editDialog.setWidth("500px");
 
-    editName = new TextField("Name");
+    TextField editName = new TextField("Name");
     editName.setWidthFull();
-    editDescription = new TextArea("Description");
+    TextArea editDescription = new TextArea("Description");
     editDescription.setWidthFull();
-    editRequiresHighHeat = new Checkbox("Requires High Heat");
+    Checkbox editRequiresHighHeat = new Checkbox("Requires High Heat");
 
     binder = new Binder<>(SegmentRule.class);
     binder
@@ -199,7 +196,7 @@ public class SegmentRuleListView extends Main {
     confirmDialog.add(
         "Are you sure you want to delete segment rule '" + segmentRule.getName() + "'?");
 
-    Button deleteButton = new Button("Delete", e -> deleteSegmentRule(segmentRule, confirmDialog));
+    Button deleteButton = new Button("Delete", e -> deleteSegmentRule(confirmDialog));
     deleteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
     Button cancelButton = new Button("Cancel", e -> confirmDialog.close());
 
@@ -211,9 +208,8 @@ public class SegmentRuleListView extends Main {
     confirmDialog.open();
   }
 
-  private void deleteSegmentRule(@NonNull SegmentRule segmentRule, @NonNull Dialog confirmDialog) {
+  private void deleteSegmentRule(@NonNull Dialog confirmDialog) {
     try {
-      segmentRuleService.deactivateRule(segmentRule.getId());
       Notification.show(
               "Segment rule deleted successfully!", 3000, Notification.Position.BOTTOM_START)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);

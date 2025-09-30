@@ -2,59 +2,19 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.service.sync.entity.TitleSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@TestPropertySource(
-    properties = {
-      "notion.sync.enabled=true",
-      "notion.sync.entities.specific.titles.enabled=true",
-      "notion.sync.entities.specific.titlereigns.enabled=true",
-      "notion.sync.scheduler.enabled=false"
-    })
-@EnabledIf("isNotionTokenAvailable")
 @Slf4j
-class TitleReignSyncIntegrationTest extends BaseTest {
-
-  @Autowired private NotionSyncService notionSyncService;
-
-  @Autowired private TitleRepository titleRepository;
-
-  @Autowired private TitleReignRepository titleReignRepository;
-
-  @Autowired private WrestlerSyncService wrestlerSyncService;
-
-  @Autowired private TitleSyncService titleSyncService;
-
-  @BeforeEach
-  void setUp() {
-    // Ensure wrestlers and titles are synced first as title reigns depend on them.
-    log.info("🚀 Pre-syncing wrestlers for title reign test...");
-    wrestlerSyncService.syncWrestlers("wrestler-sync-for-reigns");
-    log.info("✅ Wrestlers synced.");
-
-    log.info("🏆 Pre-syncing titles for title reign test...");
-    titleSyncService.syncTitles("title-sync-for-reigns");
-    log.info("✅ Titles synced.");
-  }
+@EnabledIf("isNotionTokenAvailable")
+class TitleReignSyncIntegrationTest extends AbstractIntegrationTest {
 
   @Test
   @DisplayName("Should Sync Title Reigns From Notion")

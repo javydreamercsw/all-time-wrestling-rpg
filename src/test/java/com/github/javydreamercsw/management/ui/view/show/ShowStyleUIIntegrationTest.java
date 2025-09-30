@@ -4,18 +4,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.base.test.BaseTest;
-import com.github.javydreamercsw.management.config.TestConfig;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.season.SeasonService;
-import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
-import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
@@ -30,26 +23,12 @@ import java.util.Locale;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.vaadin.stefan.fullcalendar.Entry;
 import org.vaadin.stefan.fullcalendar.dataprovider.EntryQuery;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
-@Import(TestConfig.class)
-class ShowStyleUIIntegrationTest extends BaseTest {
-
-  @Autowired private ShowService showService;
-  @Autowired private ShowRepository showRepository;
-  @Autowired private ShowTypeService showTypeService;
-  @Autowired private ShowTypeRepository showTypeRepository;
-  @Autowired private ShowTemplateService showTemplateService;
-  @Autowired private ShowTemplateRepository showTemplateRepository;
+@EnabledIf("isNotionTokenAvailable")
+class ShowStyleUIIntegrationTest extends AbstractIntegrationTest {
 
   private Show pleShow;
   private Show weeklyShow;

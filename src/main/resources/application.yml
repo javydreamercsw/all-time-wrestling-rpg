@@ -1,3 +1,16 @@
+ai:
+  gemini:
+    model-name: gemini-2.0-flash-001
+    api-url: https://generativelanguage.googleapis.com/v1beta/models/
+  claude:
+    model-name: claude-3-haiku-20240307
+    api-url: https://api.anthropic.com/v1/messages/
+  openai:
+    api-url: https://api.openai.com/v1/chat/completions
+    default-model: gpt-3.5-turbo
+    premium-model: gpt-4
+    max-tokens: 4000
+
 # Entity-specific sync configuration example
 # Add this to your application.yml or application.properties
 

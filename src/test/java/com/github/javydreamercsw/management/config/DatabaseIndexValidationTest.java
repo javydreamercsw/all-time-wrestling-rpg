@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.config;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -16,11 +17,10 @@ import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
-import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Comprehensive test to validate that all database indexes in the optimization script reference
@@ -30,9 +30,8 @@ import org.springframework.test.context.ActiveProfiles;
  * columns, which would otherwise only be discovered during application startup.
  */
 @Slf4j
-@SpringBootTest
-@ActiveProfiles("test")
-class DatabaseIndexValidationTest {
+@EnabledIf("isNotionTokenAvailable")
+class DatabaseIndexValidationTest extends AbstractIntegrationTest {
 
   @Autowired private DataSource dataSource;
 

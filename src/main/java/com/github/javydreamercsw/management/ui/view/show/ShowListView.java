@@ -35,8 +35,10 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 @Route("show-list")
@@ -49,6 +51,10 @@ public class ShowListView extends Main {
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
+  private final Clock clock; // Add this field
+
+  private ComboBox<Season> newSeason; // New field
+  private ComboBox<ShowTemplate> newTemplate; // New field
 
   private Dialog editDialog;
   private TextField editName;
@@ -60,6 +66,8 @@ public class ShowListView extends Main {
   private Show editingShow;
 
   final TextField name;
+  private ComboBox<ShowType> newShowType;
+  private DatePicker newShowDate;
   final Button createBtn;
   final Grid<Show> showGrid;
 
@@ -73,6 +81,8 @@ public class ShowListView extends Main {
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
+    this.clock =
+        (clock != null) ? clock : Clock.systemDefaultZone(); // Assign clock here, with fallback
 
     name = new TextField();
     name.setPlaceholder("What do you want the show name to be?");
@@ -80,11 +90,38 @@ public class ShowListView extends Main {
     name.setMaxLength(255);
     name.setMinWidth("20em");
 
+    newShowType = new ComboBox<>("Show Type");
+    newShowType.setItems(showTypeService.findAll());
+    newShowType.setItemLabelGenerator(ShowType::getName);
+    newShowType.setRequired(true);
+    newShowType.setPlaceholder("Select a type");
+
+    newSeason = new ComboBox<>("Season");
+    Page<Season> seasonsPage = seasonService.getAllSeasons(Pageable.unpaged());
+    if (seasonsPage != null) {
+      newSeason.setItems(seasonsPage.getContent());
+    }
+    newSeason.setItemLabelGenerator(Season::getName);
+    newSeason.setClearButtonVisible(true);
+    newSeason.setPlaceholder("Select a season (optional)");
+
+    newTemplate = new ComboBox<>("Template");
+    newTemplate.setItems(showTemplateService.findAll());
+    newTemplate.setItemLabelGenerator(ShowTemplate::getName);
+    newTemplate.setClearButtonVisible(true);
+    newTemplate.setPlaceholder("Select a template (optional)");
+
+    newShowDate = new DatePicker("Show Date");
+    newShowDate.setPlaceholder("Select date (optional)");
+    newShowDate.setClearButtonVisible(true);
+
     createBtn = new Button("Create", event -> createShow());
     createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-    HorizontalLayout formLayout = new HorizontalLayout(name, createBtn);
+    HorizontalLayout formLayout =
+        new HorizontalLayout(name, newShowType, newSeason, newTemplate, newShowDate, createBtn);
     formLayout.setSpacing(true);
+    formLayout.setAlignItems(FlexComponent.Alignment.BASELINE); // Align items nicely
 
     showGrid = new Grid<>(Show.class, false);
     showGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
@@ -246,15 +283,31 @@ public class ShowListView extends Main {
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return;
     }
-    if (showService.findByName(showName).isPresent()) {
-      Notification.show("Show with this name already exists.", 3_000, Notification.Position.MIDDLE)
+    if (newShowType.getValue() == null) {
+      Notification.show("Please select a Show Type.", 3_000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return;
     }
-    Show show = new Show();
-    show.setName(showName);
-    showService.save(show);
+    LocalDate selectedDate = newShowDate.getValue();
+    if (showService.existsByNameAndShowDate(showName, selectedDate)) {
+      Notification.show(
+              "Show with this name and date already exists.", 3_000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      return;
+    }
+
+    showService.createShow(
+        showName,
+        "", // No description input in this form
+        newShowType.getValue().getId(),
+        selectedDate,
+        newSeason.getValue() != null ? newSeason.getValue().getId() : null,
+        newTemplate.getValue() != null ? newTemplate.getValue().getId() : null);
     name.clear();
+    newShowType.clear();
+    newSeason.clear();
+    newTemplate.clear();
+    newShowDate.setValue(LocalDate.now(this.clock)); // Reset to today
     refreshGrid();
     Notification.show("Show created.", 3_000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);

@@ -9,7 +9,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -33,6 +35,16 @@ public class DeckCard extends AbstractEntity<Long> {
 
   @Column(nullable = false, name = "amount")
   private int amount;
+
+  @Column(name = "creation_date", nullable = false)
+  private Instant creationDate;
+
+  @PrePersist
+  private void ensureDefaults() {
+    if (creationDate == null) {
+      creationDate = Instant.now();
+    }
+  }
 
   @Override
   public @Nullable Long getId() {

@@ -12,7 +12,6 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -186,15 +185,16 @@ class ShowPlanningServiceTest {
     Wrestler champion = new Wrestler();
     champion.setName("Champion");
 
-    TitleReign currentReign = new TitleReign();
-    currentReign.getChampions().add(champion);
-    title.getTitleReigns().add(currentReign);
+    title.getCurrentChampions().add(champion);
 
     Wrestler numberOneContender = new Wrestler();
     numberOneContender.setName("Number One Contender");
     title.setContender(Collections.singletonList(numberOneContender));
 
     when(titleService.getActiveTitles()).thenReturn(Collections.singletonList(title));
+
+    when(titleService.getEligibleChallengers(anyLong()))
+        .thenReturn(Collections.singletonList(numberOneContender));
 
     // Act
     ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);

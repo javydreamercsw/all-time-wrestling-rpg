@@ -3,31 +3,22 @@ package com.github.javydreamercsw.management.service.drama;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
-import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
-@ActiveProfiles("test")
+@DisplayName("DramaEventService Integration Tests")
 @Transactional
-class DramaEventServiceIT {
-
-  @Autowired DramaEventService dramaEventService;
-  @Autowired WrestlerService wrestlerService;
-  @Autowired WrestlerRepository wrestlerRepository;
-  @Autowired DramaEventRepository dramaEventRepository;
+@EnabledIf("isNotionTokenAvailable")
+class DramaEventServiceIT extends AbstractIntegrationTest {
 
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;
@@ -35,8 +26,8 @@ class DramaEventServiceIT {
   @BeforeEach
   void setUp() {
     // Create test wrestlers
-    testWrestler1 = createTestWrestler("Drama Test Wrestler 1");
-    testWrestler2 = createTestWrestler("Drama Test Wrestler 2");
+    testWrestler1 = wrestlerRepository.save(createTestWrestler("Drama Test Wrestler 1"));
+    testWrestler2 = wrestlerRepository.save(createTestWrestler("Drama Test Wrestler 2"));
   }
 
   @Test
@@ -257,18 +248,5 @@ class DramaEventServiceIT {
     assertThat(event.getFanImpact()).isNotNull();
     assertThat(event.getFanImpact()).isPositive();
     assertThat(event.hasPositiveImpact()).isTrue();
-  }
-
-  private Wrestler createTestWrestler(String name) {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName(name);
-    wrestler.setFans(10000L);
-    wrestler.setStartingHealth(15);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingStamina(0);
-    wrestler.setLowStamina(0);
-    wrestler.setDeckSize(15);
-    wrestler.setIsPlayer(false);
-    return wrestlerRepository.save(wrestler);
   }
 }

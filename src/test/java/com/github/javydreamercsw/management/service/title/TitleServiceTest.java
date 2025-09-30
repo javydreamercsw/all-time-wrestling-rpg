@@ -2,6 +2,9 @@ package com.github.javydreamercsw.management.service.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,7 +18,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TitleService Tests")
 class TitleServiceTest {
-
   @Mock private TitleRepository titleRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private Clock clock;
@@ -35,11 +37,6 @@ class TitleServiceTest {
   @InjectMocks private TitleService titleService;
 
   private final Instant fixedInstant = Instant.parse("2024-01-01T00:00:00Z");
-
-  @BeforeEach
-  void setUp() {
-    // Move stubbing to specific tests to avoid UnnecessaryStubbingException
-  }
 
   @Test
   @DisplayName("Should create new title")
@@ -90,15 +87,9 @@ class TitleServiceTest {
     Title title = createTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler wrestler = createWrestler("Champion", 120000L);
 
-    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(titleRepository.saveAndFlush(any(Title.class))).thenReturn(title);
-
-    // When
-    Optional<Title> result = titleService.awardTitle(1L, 1L);
+    titleService.awardTitleTo(title, List.of(wrestler));
 
     // Then
-    assertThat(result).isPresent();
     assertThat(title.getCurrentChampions()).containsExactly(wrestler);
     assertThat(title.isVacant()).isFalse();
     verify(titleRepository).saveAndFlush(title);
@@ -109,16 +100,18 @@ class TitleServiceTest {
   void shouldNotAwardTitleToIneligibleWrestler() {
     // Given
     Title title = createTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    title.vacateTitle(); // Explicitly ensure title is vacant
     Wrestler wrestler = createWrestler("Rookie", 50000L);
 
-    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-
     // When
-    Optional<Title> result = titleService.awardTitle(1L, 1L);
+    Assertions.assertNotNull(wrestler.getId());
+    Assertions.assertNotNull(title.getId());
+    TitleService.ChallengeResult result =
+        titleService.challengeForTitle(wrestler.getId(), title.getId());
 
     // Then
-    assertThat(result).isEmpty();
+    assertThat(result.success()).isFalse();
+    assertThat(title.isVacant()).isTrue();
   }
 
   @Test
@@ -262,19 +255,15 @@ class TitleServiceTest {
   }
 
   @Test
-  @DisplayName("Should delete inactive vacant title")
-  void shouldDeleteInactiveVacantTitle() {
-    // Given
-    Title title = createTitle("Test Title", WrestlerTier.MAIN_EVENTER);
-    title.setIsActive(false);
-    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-
-    // When
-    boolean result = titleService.deleteTitle(1L);
-
-    // Then
-    assertThat(result).isTrue();
-    verify(titleRepository).delete(title);
+  void testDelete() {
+    Title testTitle = createTitle("Old Name", WrestlerTier.MAIN_EVENTER);
+    testTitle.setIsActive(false); // Ensure title is inactive
+    testTitle.vacateTitle(); // Ensure title is vacant
+    when(titleRepository.findById(anyLong())).thenReturn(Optional.of(testTitle));
+    doNothing().when(titleRepository).deleteById(anyLong());
+    Assertions.assertNotNull(testTitle.getId());
+    titleService.deleteTitle(testTitle.getId());
+    verify(titleRepository, times(1)).deleteById(testTitle.getId());
   }
 
   @Test

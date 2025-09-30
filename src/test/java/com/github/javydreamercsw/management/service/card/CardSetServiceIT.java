@@ -2,25 +2,13 @@ package com.github.javydreamercsw.management.service.card;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.TestcontainersConfiguration;
-import com.github.javydreamercsw.management.config.TestConfig;
-import com.github.javydreamercsw.management.domain.card.CardSetRepository;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import org.junit.jupiter.api.condition.EnabledIf;
 
-@Import({TestcontainersConfiguration.class, TestConfig.class})
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@ActiveProfiles("test")
-@Transactional
-class CardSetServiceIT {
-
-  @Autowired private CardSetService cardSetService;
-  @Autowired private CardSetRepository cardSetRepository;
+@EnabledIf("isNotionTokenAvailable")
+class CardSetServiceIT extends AbstractIntegrationTest {
 
   @Test
   void testCreateCardSetSet() {

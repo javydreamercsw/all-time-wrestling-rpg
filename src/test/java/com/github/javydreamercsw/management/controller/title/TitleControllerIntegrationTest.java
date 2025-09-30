@@ -12,44 +12,28 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.time.Instant;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for TitleController. Tests the complete REST API functionality for title
  * management.
  */
-@SpringBootTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
 @DisplayName("TitleController Integration Tests")
-class TitleControllerIntegrationTest {
+@EnabledIf("isNotionTokenAvailable")
+class TitleControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private TitleRepository titleRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private DeckRepository deckRepository;
-
-  @BeforeEach
-  void setUp() {
-    // Delete in correct order to avoid foreign key constraint violations
-    titleRepository.deleteAll();
-    deckRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-  }
 
   @Test
   @DisplayName("Should create new title successfully")

@@ -2,6 +2,7 @@ package com.github.javydreamercsw.base.ui.view;
 
 import com.vaadin.flow.component.icon.VaadinIcon;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -14,23 +15,22 @@ public class MenuService {
     // Manually define the menu structure
     MenuItem dashboards = new MenuItem("Dashboards", VaadinIcon.DASHBOARD, null);
     dashboards.addChild(new MenuItem("Show Calendar", VaadinIcon.CALENDAR, "show-calendar"));
+    dashboards.addChild(new MenuItem("Wrestler Rankings", VaadinIcon.STAR, "wrestler-rankings"));
 
     MenuItem entities = new MenuItem("Entities", VaadinIcon.DATABASE, null);
-    entities.addChild(new MenuItem("Factions", VaadinIcon.GROUP, "faction-list"));
-    entities.addChild(new MenuItem("Rivalries", VaadinIcon.FIRE, "rivalry-list"));
     entities.addChild(new MenuItem("Faction Rivalries", VaadinIcon.GROUP, "faction-rivalry-list"));
+    entities.addChild(new MenuItem("Factions", VaadinIcon.GROUP, "faction-list"));
     entities.addChild(new MenuItem("Injury Types", VaadinIcon.PLUS_CIRCLE, "injury-types"));
     entities.addChild(new MenuItem("NPCs", VaadinIcon.USERS, "npc-list"));
+    entities.addChild(new MenuItem("Rivalries", VaadinIcon.FIRE, "rivalry-list"));
     entities.addChild(new MenuItem("Seasons", VaadinIcon.CALENDAR_CLOCK, "season-list"));
-    entities.addChild(new MenuItem("Titles", VaadinIcon.TROPHY, "title-list"));
-    // Removed Rivalries
-    // Removed Titles
     entities.addChild(new MenuItem("Segment Rules", VaadinIcon.LIST_OL, "segment-rule-list"));
     entities.addChild(new MenuItem("Segment Types", VaadinIcon.PUZZLE_PIECE, "segment-type-list"));
-    entities.addChild(new MenuItem("Shows", VaadinIcon.CALENDAR_O, "show-list"));
     entities.addChild(
         new MenuItem("Show Templates", VaadinIcon.CLIPBOARD_TEXT, "show-template-list"));
+    entities.addChild(new MenuItem("Shows", VaadinIcon.CALENDAR_O, "show-list"));
     entities.addChild(new MenuItem("Teams", VaadinIcon.USERS, "teams"));
+    entities.addChild(new MenuItem("Titles", VaadinIcon.TROPHY, "title-list"));
     entities.addChild(new MenuItem("Wrestlers", VaadinIcon.USER, "wrestler-list"));
 
     MenuItem contentGeneration = new MenuItem("Content Generation", VaadinIcon.AUTOMATION, null);
@@ -52,6 +52,19 @@ public class MenuService {
     menuItems.add(cardGame);
     menuItems.add(configuration);
 
+    // Sort top-level menu items
+    menuItems.sort(Comparator.comparing(MenuItem::getTitle));
+
+    // Recursively sort sub-menus
+    menuItems.forEach(this::sortSubMenus);
+
     return menuItems;
+  }
+
+  private void sortSubMenus(MenuItem menuItem) {
+    if (!menuItem.getChildren().isEmpty()) {
+      menuItem.getChildren().sort(Comparator.comparing(MenuItem::getTitle));
+      menuItem.getChildren().forEach(this::sortSubMenus);
+    }
   }
 }

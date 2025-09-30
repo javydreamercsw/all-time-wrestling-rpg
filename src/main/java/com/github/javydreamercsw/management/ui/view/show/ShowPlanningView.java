@@ -18,6 +18,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.router.BeforeEvent;
+import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -30,7 +32,7 @@ import org.springframework.web.client.RestTemplate;
 @PageTitle("Show Planning")
 @Menu(order = 6, icon = "vaadin:calendar", title = "Show Planning")
 @PermitAll
-public class ShowPlanningView extends Main {
+public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private final ShowService showService;
   private final RestTemplate restTemplate = new RestTemplate();
@@ -210,6 +212,19 @@ public class ShowPlanningView extends Main {
       Notification.show(
           "Error approving segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
       ex.printStackTrace();
+    }
+  }
+
+  @Override
+  public void setParameter(BeforeEvent event, Long parameter) {
+    if (parameter != null) {
+      showService
+          .getShowById(parameter)
+          .ifPresent(
+              show -> {
+                showComboBox.setValue(show);
+                loadContext();
+              });
     }
   }
 }

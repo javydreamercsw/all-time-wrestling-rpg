@@ -1,7 +1,9 @@
 package com.github.javydreamercsw.management.domain.show.segment;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -29,6 +31,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 import org.jspecify.annotations.Nullable;
@@ -42,6 +45,7 @@ import org.jspecify.annotations.Nullable;
 @Getter
 @Setter
 @ToString
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Segment extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,11 +61,6 @@ public class Segment extends AbstractEntity<Long> {
   @ManyToOne(optional = false)
   @JoinColumn(name = "segment_type_id", nullable = false)
   private SegmentType segmentType;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "winner_id")
-  @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns"})
-  private Wrestler winner;
 
   @Column(name = "segment_date", nullable = false)
   private Instant segmentDate;
@@ -136,7 +135,7 @@ public class Segment extends AbstractEntity<Long> {
   }
 
   /** Add a participant to the segment. */
-  public void addParticipant(Wrestler wrestler) {
+  public void addParticipant(@NonNull Wrestler wrestler) {
     SegmentParticipant participant = new SegmentParticipant();
     participant.setSegment(this);
     participant.setWrestler(wrestler);
@@ -144,18 +143,11 @@ public class Segment extends AbstractEntity<Long> {
     participants.add(participant);
   }
 
-  /** Set the winner of the segment. */
-  public void setWinner(Wrestler wrestler) {
-    if (wrestler == null) {
-      setWinners(new ArrayList<>());
-    } else {
-      setWinners(List.of(wrestler));
-    }
-  }
-
   /** Get all wrestlers participating in the segment. */
   public List<Wrestler> getWrestlers() {
-    return participants.stream().map(SegmentParticipant::getWrestler).toList();
+    return participants.stream()
+        .map(SegmentParticipant::getWrestler)
+        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
   }
 
   public List<Wrestler> getWinners() {
@@ -167,12 +159,10 @@ public class Segment extends AbstractEntity<Long> {
 
   public void setWinners(List<Wrestler> winners) {
     if (winners == null || winners.isEmpty()) {
-      this.winner = null;
       for (SegmentParticipant participant : participants) {
         participant.setIsWinner(false);
       }
     } else {
-      this.winner = winners.get(0); // Keep single winner for backward compatibility
       for (SegmentParticipant participant : participants) {
         participant.setIsWinner(winners.contains(participant.getWrestler()));
       }

@@ -7,37 +7,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.controller.season.SeasonController.CreateSeasonRequest;
 import com.github.javydreamercsw.management.controller.season.SeasonController.UpdateSeasonRequest;
 import com.github.javydreamercsw.management.domain.season.Season;
-import org.junit.jupiter.api.BeforeEach;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for SeasonController. Tests the complete REST API functionality for season
  * management.
  */
-@SpringBootTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
 @DisplayName("SeasonController Integration Tests")
-class SeasonControllerIntegrationTest {
+@EnabledIf("isNotionTokenAvailable")
+class SeasonControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
-
-  @BeforeEach
-  void setUp() {
-    // Test cleanup is handled by @Transactional
-  }
 
   @Test
   @DisplayName("Should create new season successfully")

@@ -14,6 +14,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
+import com.github.javydreamercsw.management.service.deck.DeckCardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -22,37 +23,45 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest(properties = "spring.config.name=application-test")
-@Transactional
-class DataInitializerTest {
+@EnabledIf("isNotionTokenAvailable")
+class DataInitializerTest extends AbstractIntegrationTest {
 
+  @Autowired private DataInitializer dataInitializer;
   @Autowired private CardService cardService;
-
   @Autowired private CardSetService cardSetService;
-
   @Autowired private WrestlerService wrestlerService;
-
   @Autowired private DeckService deckService;
-
   @Autowired private ShowTypeService showTypeService;
-
   @Autowired private ShowService showService;
-
   @Autowired private TitleService titleService;
-
   @Autowired private SegmentRuleService segmentRuleService;
-
   @Autowired private ShowTemplateService showTemplateService;
-
   @Autowired private SegmentTypeService segmentTypeService;
+  @Autowired private DeckCardService deckCardService;
+
+  @BeforeEach
+  void setUp() {
+    dataInitializer.loadSegmentRulesFromFile(segmentRuleService);
+    dataInitializer.syncShowTypesFromFile(showTypeService);
+    dataInitializer.loadSegmentTypesFromFile(segmentTypeService);
+    dataInitializer.loadShowTemplatesFromFile(showTemplateService);
+    dataInitializer.syncSetsFromFile(cardSetService);
+    dataInitializer.syncCardsFromFile(cardService, cardSetService);
+    dataInitializer.syncWrestlersFromFile(wrestlerService);
+    dataInitializer.syncChampionshipsFromFile(titleService);
+    dataInitializer.syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService);
+  }
 
   @Test
+  @Transactional
   void testDataLoadedFromFile() {
     List<Card> cards = cardService.findAll();
     List<CardSet> sets = cardSetService.findAll();

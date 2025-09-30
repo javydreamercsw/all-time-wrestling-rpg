@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
 import notion.api.v1.exception.NotionAPIError;
 import notion.api.v1.model.databases.DatabaseProperty;
@@ -23,11 +24,9 @@ import notion.api.v1.model.search.SearchResults;
 import notion.api.v1.model.users.User;
 import notion.api.v1.request.databases.QueryDatabaseRequest;
 import notion.api.v1.request.search.SearchRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@Slf4j
 public class NotionHandler {
-  private static final Logger log = LoggerFactory.getLogger(NotionHandler.class);
 
   // Singleton instance
   private static volatile NotionHandler instance;
@@ -68,20 +67,13 @@ public class NotionHandler {
    * called automatically on first access to the singleton.
    */
   private void initializeDatabases() {
-    if (initialized) {
+    if (initialized || !EnvironmentVariableUtil.isNotionTokenAvailable()) {
       return;
     }
 
     log.debug("Initializing NotionHandler - loading databases from workspace");
 
-    String notionToken = EnvironmentVariableUtil.getNotionToken();
-    if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("NOTION_TOKEN not available. NotionHandler will be initialized in disabled mode.");
-      initialized = true; // Mark as initialized but in disabled state
-      return;
-    }
-
-    try (NotionClient client = new NotionClient(notionToken)) {
+    try (NotionClient client = createNotionClient()) {
       loadDatabases(client);
       initialized = true;
       log.debug("NotionHandler initialized successfully with {} databases", databaseMap.size());
@@ -136,13 +128,7 @@ public class NotionHandler {
   public void querySpecificDatabase(@NonNull String databaseId) {
     log.debug("Querying specific database: {}", databaseId);
 
-    String notionToken = EnvironmentVariableUtil.getNotionToken();
-    if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("NOTION_TOKEN not available. Cannot query database: {}", databaseId);
-      return;
-    }
-
-    try (NotionClient client = new NotionClient(notionToken)) {
+    try (NotionClient client = createNotionClient()) {
       querySpecificDatabase(client, databaseId);
     } catch (Exception e) {
       log.error("Failed to query database: {}", databaseId, e);
@@ -222,7 +208,7 @@ public class NotionHandler {
       @NonNull NotionClient client, @NonNull PageProperty value, boolean resolveRelationships) {
     try {
       // Handle cases where type is null but we can infer the type from populated fields
-      String propertyType = null;
+      String propertyType;
 
       if (value.getType() != null) {
         propertyType = value.getType().getValue();
@@ -732,7 +718,7 @@ public class NotionHandler {
     wrestlerPage.setParent(parent);
 
     // Extract and log all property values using the same logic as querySpecificDatabase
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = createNotionClient()) {
       Map<String, PageProperty> properties = pageData.getProperties();
       log.debug("Extracting {} properties for wrestler: {}", properties.size(), wrestlerName);
 
@@ -864,7 +850,7 @@ public class NotionHandler {
       return Optional.empty();
     }
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = createNotionClient()) {
       return loadEntityFromDatabase(client, showDbId, showName, "Show", this::mapPageToShowPage);
     } catch (Exception e) {
       log.error("Failed to load show: {}", showName, e);
@@ -972,7 +958,7 @@ public class NotionHandler {
       return Optional.empty();
     }
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = createNotionClient()) {
       return loadEntityFromDatabase(
           client,
           templateDbId,
@@ -1095,7 +1081,7 @@ public class NotionHandler {
       return Optional.empty();
     }
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = createNotionClient()) {
       return loadEntityFromDatabase(
           client, matchDbId, segmentName, "Segment", this::mapPageToSegmentPage);
     } catch (Exception e) {
@@ -1159,7 +1145,7 @@ public class NotionHandler {
       return Optional.empty();
     }
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = createNotionClient()) {
       return loadEntityFromDatabase(client, heatDbId, heatName, "Heat", this::mapPageToHeatPage);
     } catch (Exception e) {
       log.error("Failed to load heat: {}", heatName, e);
@@ -1184,7 +1170,7 @@ public class NotionHandler {
       return Optional.empty();
     }
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = createNotionClient()) {
       return loadEntityFromDatabase(client, teamDbId, teamName, "Team", this::mapPageToTeamPage);
     } catch (Exception e) {
       log.error("Failed to load team: {}", teamName, e);
@@ -1240,7 +1226,7 @@ public class NotionHandler {
       return Optional.empty();
     }
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = createNotionClient()) {
       return loadEntityFromDatabase(
           client, seasonDbId, seasonName, "Season", this::mapPageToSeasonPage);
     } catch (Exception e) {
@@ -1298,7 +1284,7 @@ public class NotionHandler {
       return Optional.empty();
     }
 
-    try (NotionClient client = new NotionClient(System.getenv("NOTION_TOKEN"))) {
+    try (NotionClient client = createNotionClient()) {
       return loadEntityFromDatabase(
           client, factionDbId, factionName, "Faction", this::mapPageToFactionPage);
     } catch (Exception e) {
@@ -1489,13 +1475,14 @@ public class NotionHandler {
    *
    * @return NotionClient instance, or null if token is not available
    */
-  private NotionClient createNotionClient() {
+  protected NotionClient createNotionClient() {
     String notionToken = EnvironmentVariableUtil.getNotionToken();
     if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("NOTION_TOKEN not available. Cannot create NotionClient.");
-      return null;
+      throw new IllegalStateException("NOTION_TOKEN not available. Cannot create NotionClient.");
     }
-    return new NotionClient(notionToken);
+    NotionClient client = new NotionClient(notionToken);
+    client.setLogger(new notion.api.v1.logging.Slf4jLogger());
+    return client;
   }
 
   /** Optimized method to load all entities for sync operations with minimal processing. */
@@ -2027,7 +2014,7 @@ public class NotionHandler {
       @NonNull String entityName,
       @NonNull String entityType,
       boolean resolveRelationships) {
-    try (NotionClient client = new NotionClient(EnvironmentVariableUtil.getNotionToken())) {
+    try (NotionClient client = createNotionClient()) {
       Map<String, PageProperty> properties = pageData.getProperties();
       log.debug("Extracting {} properties for {}: {}", properties.size(), entityType, entityName);
 
@@ -2084,7 +2071,7 @@ public class NotionHandler {
       return null;
     }
 
-    try (NotionClient client = new NotionClient(notionToken)) {
+    try (NotionClient client = createNotionClient()) {
       try {
         Page pageData =
             executeWithRetry(() -> client.retrievePage(showPage.getId(), Collections.emptyList()));

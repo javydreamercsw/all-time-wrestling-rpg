@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,10 @@ class ShowPlanningAiServiceTest {
 
     when(narrationServiceFactory.getBestAvailableService()).thenReturn(segmentNarrationService);
 
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("One on One");
+    when(segmentTypeService.findAll()).thenReturn(java.util.List.of(segmentType));
+
     showPlanningAiService =
         new ShowPlanningAiService(narrationServiceFactory, objectMapper, segmentTypeService);
   }
@@ -34,9 +39,10 @@ class ShowPlanningAiServiceTest {
   void planShow() {
     // Given
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
-    // Populate context with some dummy data if needed for prompt building
-    // context.setShowName("Test Show");
-    // context.setShowDescription("A test show description");
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(2);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
 
     // Mock AI response
     String aiResponseJson =
@@ -67,11 +73,11 @@ class ShowPlanningAiServiceTest {
     assertEquals(2, proposedShow.getSegments().size());
 
     ProposedSegment segment1 = proposedShow.getSegments().get(0);
-    assertEquals("match", segment1.getType());
+    assertEquals("One on One", segment1.getType());
     assertEquals("Main Event: John Cena vs Randy Orton", segment1.getDescription());
 
     ProposedSegment segment2 = proposedShow.getSegments().get(1);
-    assertEquals("promo", segment2.getType());
+    assertEquals("Promo", segment2.getType());
     assertEquals("CM Punk cuts a promo on the Authority", segment2.getDescription());
 
     // Verify that the AI service was called
@@ -83,6 +89,10 @@ class ShowPlanningAiServiceTest {
     // Given
     when(narrationServiceFactory.getBestAvailableService()).thenReturn(null);
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(2);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
 
     // When
     ProposedShow proposedShow = showPlanningAiService.planShow(context);
@@ -98,6 +108,10 @@ class ShowPlanningAiServiceTest {
     // Given
     when(segmentNarrationService.generateText(anyString())).thenReturn("");
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(2);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
 
     // When
     ProposedShow proposedShow = showPlanningAiService.planShow(context);
@@ -113,6 +127,10 @@ class ShowPlanningAiServiceTest {
     // Given
     when(segmentNarrationService.generateText(anyString())).thenReturn("invalid json");
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(2);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
 
     // When
     ProposedShow proposedShow = showPlanningAiService.planShow(context);

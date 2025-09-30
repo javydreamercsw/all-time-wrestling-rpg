@@ -11,29 +11,25 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for RivalryController. Tests the complete REST API functionality for rivalry
  * management.
  */
-@SpringBootTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
 @DisplayName("RivalryController Integration Tests")
-class RivalryControllerIntegrationTest {
+@EnabledIf("isNotionTokenAvailable")
+class RivalryControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
@@ -42,7 +38,7 @@ class RivalryControllerIntegrationTest {
   @Autowired private DeckRepository deckRepository;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() throws Exception {
     // Delete in correct order to avoid foreign key constraint violations
     rivalryRepository.deleteAll();
     deckRepository.deleteAll();
@@ -52,8 +48,8 @@ class RivalryControllerIntegrationTest {
   @Test
   @DisplayName("Should create new rivalry successfully")
   void shouldCreateNewRivalrySuccessfully() throws Exception {
-    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50000L);
-    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50000L);
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50_000L);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
 
     CreateRivalryRequest request =
         new CreateRivalryRequest(wrestler1.getId(), wrestler2.getId(), "Test storyline");
@@ -74,8 +70,8 @@ class RivalryControllerIntegrationTest {
   @Test
   @DisplayName("Should return existing rivalry if already exists")
   void shouldReturnExistingRivalryIfAlreadyExists() throws Exception {
-    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50000L);
-    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50000L);
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50_000L);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
 
     // Create existing rivalry
     Rivalry existingRivalry = createTestRivalry(wrestler1, wrestler2, 10);
@@ -95,8 +91,8 @@ class RivalryControllerIntegrationTest {
   @Test
   @DisplayName("Should add heat to rivalry")
   void shouldAddHeatToRivalry() throws Exception {
-    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50000L);
-    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50000L);
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50_000L);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
     Rivalry rivalry = createTestRivalry(wrestler1, wrestler2, 5);
 
     AddHeatRequest request = new AddHeatRequest(3, "Backstage confrontation");
@@ -113,9 +109,9 @@ class RivalryControllerIntegrationTest {
   @Test
   @DisplayName("Should get all rivalries with pagination")
   void shouldGetAllRivalriesWithPagination() throws Exception {
-    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50000L);
-    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50000L);
-    Wrestler wrestler3 = createTestWrestler("Wrestler 3", 50000L);
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50_000L);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
+    Wrestler wrestler3 = createTestWrestler("Wrestler 3", 50_000L);
 
     createTestRivalry(wrestler1, wrestler2, 10);
     createTestRivalry(wrestler1, wrestler3, 15);
@@ -131,8 +127,8 @@ class RivalryControllerIntegrationTest {
   @Test
   @DisplayName("Should get rivalry by ID")
   void shouldGetRivalryById() throws Exception {
-    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50000L);
-    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50000L);
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50_000L);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
     Rivalry rivalry = createTestRivalry(wrestler1, wrestler2, 15);
 
     mockMvc
@@ -146,9 +142,9 @@ class RivalryControllerIntegrationTest {
   @Test
   @DisplayName("Should get active rivalries")
   void shouldGetActiveRivalries() throws Exception {
-    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50000L);
-    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50000L);
-    Wrestler wrestler3 = createTestWrestler("Wrestler 3", 50000L);
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50_000L);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
+    Wrestler wrestler3 = createTestWrestler("Wrestler 3", 50_000L);
 
     Rivalry activeRivalry = createTestRivalry(wrestler1, wrestler2, 10);
     Rivalry inactiveRivalry = createTestRivalry(wrestler1, wrestler3, 5);
@@ -166,9 +162,9 @@ class RivalryControllerIntegrationTest {
   @Test
   @DisplayName("Should get rivalries for wrestler")
   void shouldGetRivalriesForWrestler() throws Exception {
-    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50000L);
-    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50000L);
-    Wrestler wrestler3 = createTestWrestler("Wrestler 3", 50000L);
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50_000L);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
+    Wrestler wrestler3 = createTestWrestler("Wrestler 3", 50_000L);
 
     createTestRivalry(wrestler1, wrestler2, 10);
     createTestRivalry(wrestler1, wrestler3, 15);
@@ -184,9 +180,9 @@ class RivalryControllerIntegrationTest {
   @Test
   @DisplayName("Should get rivalries requiring matches")
   void shouldGetRivalriesRequiringMatches() throws Exception {
-    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50000L);
-    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50000L);
-    Wrestler wrestler3 = createTestWrestler("Wrestler 3", 50000L);
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50_000L);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
+    Wrestler wrestler3 = createTestWrestler("Wrestler 3", 50_000L);
 
     createTestRivalry(wrestler1, wrestler2, 12); // Requires segment (10+ heat)
     createTestRivalry(wrestler1, wrestler3, 5); // Doesn't require segment
@@ -219,8 +215,8 @@ class RivalryControllerIntegrationTest {
   @Test
   @DisplayName("Should validate heat gain limits")
   void shouldValidateHeatGainLimits() throws Exception {
-    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50000L);
-    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50000L);
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50_000L);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
     Rivalry rivalry = createTestRivalry(wrestler1, wrestler2, 5);
 
     AddHeatRequest request = new AddHeatRequest(100, "Too much heat"); // Exceeds max of 50
@@ -239,7 +235,7 @@ class RivalryControllerIntegrationTest {
     mockMvc.perform(get("/api/rivalries/{id}", 999L)).andExpect(status().isNotFound());
   }
 
-  private Wrestler createTestWrestler(String name, Long fans) {
+  private Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
     Wrestler wrestler = new Wrestler();
     wrestler.setName(name);
     wrestler.setFans(fans);
@@ -255,7 +251,8 @@ class RivalryControllerIntegrationTest {
     return wrestlerRepository.save(wrestler);
   }
 
-  private Rivalry createTestRivalry(Wrestler wrestler1, Wrestler wrestler2, int heat) {
+  private Rivalry createTestRivalry(
+      @NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2, int heat) {
     Rivalry rivalry = new Rivalry();
     rivalry.setWrestler1(wrestler1);
     rivalry.setWrestler2(wrestler2);

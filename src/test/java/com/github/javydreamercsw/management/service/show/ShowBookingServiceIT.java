@@ -7,77 +7,56 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.season.SeasonService;
-import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
-@ActiveProfiles("test")
 @Transactional
-@Import(com.github.javydreamercsw.management.config.TestConfig.class)
-class ShowBookingServiceIT {
-
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@EnabledIf("isNotionTokenAvailable")
+class ShowBookingServiceIT extends AbstractIntegrationTest {
   @Autowired ShowBookingService showBookingService;
-  @Autowired SeasonService seasonService;
   @Autowired SeasonRepository seasonRepository;
-  @Autowired ShowTypeRepository showTypeRepository;
-  @Autowired SegmentTypeRepository matchTypeRepository;
-  @Autowired SegmentTypeService matchTypeService;
-  @Autowired SegmentRepository matchRepository;
   @Autowired WrestlerRepository wrestlerRepository;
   @Autowired DeckRepository deckRepository; // Autowire DeckRepository
-
   private Season testSeason;
   private ShowType weeklyShowType;
-  private ShowType ppvShowType;
-  private SegmentType singlesMatchType;
 
   @BeforeEach
-  void setUp() {
-    // Create test season
-    testSeason = new Season();
-    testSeason.setName("Test Season");
-    testSeason.setDescription("Test season for show booking");
+  public void setUp() throws Exception {
+    // Find or create a test season
+    Optional<Season> seasonOpt = seasonRepository.findByName("Test Season");
+    if (seasonOpt.isEmpty()) {
+      testSeason = new Season();
+      testSeason.setName("Test Season");
+      testSeason.setStartDate(
+          java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+      testSeason.setIsActive(true);
+      seasonRepository.save(testSeason);
+    } else {
+      testSeason = seasonOpt.get();
+    }
 
-    testSeason.setShowsPerPpv(5);
-    testSeason.setIsActive(true);
-    testSeason = seasonRepository.save(testSeason);
-
-    // Create show types
-    weeklyShowType = new ShowType();
-    weeklyShowType.setName("Weekly Show");
-    weeklyShowType.setDescription("Regular weekly wrestling show");
-    weeklyShowType = showTypeRepository.save(weeklyShowType);
-
-    ppvShowType = new ShowType();
-    ppvShowType.setName("PPV");
-    ppvShowType.setDescription("Pay-Per-View special event");
-    ppvShowType = showTypeRepository.save(ppvShowType);
-
-    // Get the singles segment type for tests
-    singlesMatchType = matchTypeRepository.findByName("One on One").orElseThrow();
-
-    // Create test wrestlers
-    for (int i = 1; i <= 8; i++) {
-      Wrestler wrestler = createTestWrestler("Test Wrestler " + i);
-      wrestlerRepository.save(wrestler);
+    // Create and save a weekly show type
+    Optional<ShowType> showTypeOpt = showTypeService.findByName("Weekly Show");
+    if (showTypeOpt.isEmpty()) {
+      weeklyShowType = new ShowType();
+      weeklyShowType.setName("Weekly Show");
+      weeklyShowType.setDescription("A weekly wrestling show");
+      showTypeService.save(weeklyShowType);
+    } else {
+      weeklyShowType = showTypeOpt.get();
     }
   }
 
@@ -108,10 +87,9 @@ class ShowBookingServiceIT {
 
     // Verify all segments have valid participants
     for (Segment segment : allSegments) {
-      System.out.println(segment);
       assertThat(segment.getWrestlers()).isNotEmpty();
       if (!segment.getSegmentType().getName().equals("Promo")) {
-        assertThat(segment.getWinner()).isNotNull();
+        assertThat(segment.getWinners()).isNotEmpty();
       }
       assertThat(segment.getShow()).isEqualTo(show);
     }
@@ -170,7 +148,9 @@ class ShowBookingServiceIT {
     for (int i = 2; i < allWrestlers.size(); i++) {
       Wrestler wrestlerToDelete = allWrestlers.get(i);
       // Delete associated decks first
-      deckRepository.deleteByWrestler(wrestlerToDelete);
+      List<com.github.javydreamercsw.management.domain.deck.Deck> decksToDelete =
+          deckRepository.findByWrestler(wrestlerToDelete);
+      deckRepository.deleteAll(decksToDelete);
       wrestlerRepository.delete(wrestlerToDelete);
     }
 
@@ -265,25 +245,12 @@ class ShowBookingServiceIT {
     for (Segment segment : allSegments) {
       // Each segment should have basic required fields
       if (!segment.getSegmentType().getName().equals("Promo")) { // Only matches have winners
-        assertThat(segment.getWinner()).isNotNull();
+        assertThat(segment.getWinners()).isNotEmpty();
       }
       assertThat(segment.getSegmentDate()).isNotNull();
       assertThat(segment.getShow()).isEqualTo(show);
       assertThat(segment.getWrestlers()).isNotEmpty();
       assertThat(segment.getIsNpcGenerated()).isTrue();
     }
-  }
-
-  private Wrestler createTestWrestler(String name) {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName(name);
-    wrestler.setFans(10000L);
-    wrestler.setStartingHealth(15);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingStamina(0);
-    wrestler.setLowStamina(0);
-    wrestler.setDeckSize(15);
-    wrestler.setIsPlayer(false);
-    return wrestler;
   }
 }

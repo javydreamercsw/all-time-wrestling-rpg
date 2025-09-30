@@ -3,24 +3,22 @@ package com.github.javydreamercsw.management.service.sync.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -29,19 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>NO MOCKING - These tests use real services and real database operations.
  */
-@SpringBootTest
-@ActiveProfiles("test")
-@TestPropertySource(
-    properties = {
-      "notion.sync.enabled=true",
-      "notion.sync.scheduler.enabled=false",
-      "notion.token=${notion.token:test-token}",
-      "notion.databases.show-templates=${notion.databases.show-templates:test-db-id}"
-    })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Slf4j
 @DisplayName("Show Template Sync Integration Tests")
-class ShowTemplateSyncIntegrationTest extends BaseTest {
+@EnabledIf("isNotionTokenAvailable")
+class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private ShowTemplateService showTemplateService;

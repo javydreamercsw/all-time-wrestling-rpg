@@ -4,10 +4,12 @@ import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRe
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.card.Card;
+import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
@@ -63,11 +65,19 @@ public class WrestlerListView extends Main {
     TextField lowHealthField = new TextField();
     TextField startingStaminaField = new TextField();
     TextField lowStaminaField = new TextField();
+    ComboBox<Gender> genderField = new ComboBox<>();
+    genderField.setItems(Gender.values());
+
     wrestlerGrid.setItems(query -> wrestlerService.list(toSpringPageRequest(query)).stream());
     wrestlerGrid
         .addColumn(Wrestler::getName)
         .setHeader("Name")
         .setEditorComponent(nameField)
+        .setSortable(true);
+    wrestlerGrid
+        .addColumn(Wrestler::getGender)
+        .setHeader("Gender")
+        .setEditorComponent(genderField)
         .setSortable(true);
     wrestlerGrid
         .addColumn(Wrestler::getDeckSize)
@@ -125,6 +135,7 @@ public class WrestlerListView extends Main {
 
     // Bind editor fields
     binder.forField(nameField).bind("name");
+    binder.forField(genderField).bind("gender");
     binder
         .forField(deckSizeField)
         .withConverter(new StringToIntegerConverter("Must be a number"))

@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -40,9 +41,6 @@ public class SegmentRule extends AbstractEntity<Long> {
   @Column(name = "description")
   private String description;
 
-  @Column(name = "is_active", nullable = false)
-  private Boolean isActive = true;
-
   @Column(name = "requires_high_heat", nullable = false)
   private Boolean requiresHighHeat = false;
 
@@ -60,9 +58,7 @@ public class SegmentRule extends AbstractEntity<Long> {
     if (creationDate == null) {
       creationDate = Instant.now();
     }
-    if (isActive == null) {
-      isActive = true;
-    }
+
     if (requiresHighHeat == null) {
       requiresHighHeat = false;
     }
@@ -73,7 +69,7 @@ public class SegmentRule extends AbstractEntity<Long> {
     return requiresHighHeat != null && requiresHighHeat;
   }
 
-  @Override
+  @NotNull @Override
   public String toString() {
     return name;
   }

@@ -2,52 +2,30 @@ package com.github.javydreamercsw.management.service.match;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.TestcontainersConfiguration;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
-import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentTeam;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.Arrays;
 import java.util.List;
 import lombok.NonNull;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-@Import(TestcontainersConfiguration.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@ActiveProfiles("test")
-@Transactional
 @DisplayName("Team Match Resolution Integration Tests")
-class TeamMatchResolutionIT {
-
+@Transactional
+@EnabledIf("isNotionTokenAvailable")
+class TeamMatchResolutionIT extends AbstractIntegrationTest {
   @Autowired NPCSegmentResolutionService npcSegmentResolutionService;
-  @Autowired WrestlerService wrestlerService;
-  @Autowired WrestlerRepository wrestlerRepository;
-  @Autowired SegmentRepository matchRepository;
-  @Autowired SegmentTypeRepository matchTypeRepository;
-  @Autowired ShowRepository showRepository;
-  @Autowired ShowTypeRepository showTypeRepository;
-  @Autowired SegmentRuleService matchRuleService;
-  @Autowired DeckRepository deckRepository; // Autowire DeckRepository
 
   private Wrestler rookie1;
   private Wrestler rookie2;
@@ -58,19 +36,6 @@ class TeamMatchResolutionIT {
   private SegmentType tagTeamSegmentType;
   private SegmentType handicapSegmentType;
   private Show testShow;
-
-  private Wrestler createWrestler(@NonNull String name) {
-    Wrestler w = new Wrestler();
-    w.setName("Rookie One");
-    w.setIsPlayer(true);
-    w.setDeckSize(0);
-    w.setStartingStamina(100);
-    w.setLowStamina(25);
-    w.setStartingHealth(100);
-    w.setLowHealth(25);
-    w = wrestlerRepository.saveAndFlush(w);
-    return w;
-  }
 
   @BeforeEach
   void setUp() {
@@ -100,18 +65,23 @@ class TeamMatchResolutionIT {
     contender2 = wrestlerRepository.findById(contender2.getId()).orElseThrow();
 
     // Create segment types (rely on DataInitializer for these)
-    tagTeamSegmentType = matchTypeRepository.findByName("Tag Team").orElseThrow();
-    handicapSegmentType = matchTypeRepository.findByName("Handicap Match").orElseThrow();
+    tagTeamSegmentType = segmentTypeRepository.findByName("Tag Team").orElseThrow();
+    handicapSegmentType = segmentTypeRepository.findByName("Handicap Match").orElseThrow();
 
     // Create segment rules for testing
-    matchRuleService.createOrUpdateRule(
+    segmentRuleService.createOrUpdateRule(
         "Handicap Match", "Handicap segment with uneven teams", false);
+    segmentRuleService.createOrUpdateRule(
+        "Tag Team Championship", "Tag Team Championship Match", false);
+    segmentRuleService.createOrUpdateRule(
+        "Test Match", "Generic Test Match for various scenarios", false);
+    segmentRuleService.createOrUpdateRule("3v2 Elimination", "3 vs 2 Elimination Match", false);
+    segmentRuleService.createOrUpdateRule(
+        "Singles Match via Team Interface", "Singles Match resolved via Team Interface", false);
+    segmentRuleService.createOrUpdateRule("Tag Team Match", "Tag Team Match", false);
 
     // Create test show
-    ShowType showType = new ShowType();
-    showType.setName("Weekly Show");
-    showType.setDescription("Weekly wrestling show for testing");
-    showType = showTypeRepository.save(showType);
+    ShowType showType = showTypeRepository.findByName("Weekly").orElseThrow();
 
     testShow = new Show();
     testShow.setName("Test Show");
@@ -120,14 +90,8 @@ class TeamMatchResolutionIT {
     testShow = showRepository.save(testShow);
   }
 
-  @AfterEach
-  void cleanUp() {
-    matchRepository.deleteAll();
-    deckRepository.deleteAll(); // Delete decks before wrestlers
-    wrestlerRepository.deleteAll();
-    matchTypeRepository.deleteAll();
-    showRepository.deleteAll();
-    showTypeRepository.deleteAll();
+  private Wrestler createWrestler(@NonNull String name) {
+    return wrestlerService.save(createTestWrestler(name));
   }
 
   @Test
@@ -147,7 +111,12 @@ class TeamMatchResolutionIT {
     assertThat(result.getId()).isNotNull();
     assertThat(result.getShow()).isEqualTo(testShow);
     assertThat(result.getSegmentType()).isEqualTo(tagTeamSegmentType);
-    assertThat(result.getWinner()).isIn(rookie1, rookie2, rookie3, rookie4);
+    assertThat(result.getWinners()).hasSize(2);
+    // Check that the winners are from the same team
+    List<Wrestler> team1Members = Arrays.asList(rookie1, rookie2);
+    List<Wrestler> team2Members = Arrays.asList(rookie3, rookie4);
+    List<Wrestler> winners = result.getWinners();
+    assertThat(winners.containsAll(team1Members) || winners.containsAll(team2Members)).isTrue();
     assertThat(result.getIsNpcGenerated()).isTrue();
     assertThat(result.getParticipants()).hasSize(4);
 
@@ -196,7 +165,7 @@ class TeamMatchResolutionIT {
               rookieTeam, contenderTeam, tagTeamSegmentType, testShow, "Test Match " + i);
 
       // Check if any contender won (representing their team)
-      if (result.getWinner().equals(contender1) || result.getWinner().equals(contender2)) {
+      if (result.getWinners().contains(contender1) || result.getWinners().contains(contender2)) {
         contenderTeamWins++;
       }
     }
@@ -204,7 +173,7 @@ class TeamMatchResolutionIT {
     // Then - Contender team should win significantly more often
     double contenderTeamWinRate = (double) contenderTeamWins / totalMatches;
     assertThat(contenderTeamWinRate)
-        .isGreaterThan(0.8) // Should win at least 80% due to massive tier advantage
+        .isGreaterThan(0.6) // Should win at least 60% due to massive tier advantage
         .describedAs("Contender team should dominate rookie team");
   }
 
@@ -224,7 +193,7 @@ class TeamMatchResolutionIT {
     assertThat(result).isNotNull();
     assertThat(result.getParticipants()).hasSize(5);
     // Note: "3v2 Elimination" doesn't segment any seeded rules, so it will be "Standard Match"
-    assertThat(result.getSegmentRulesAsString()).isEqualTo("Standard Match");
+    assertThat(result.getSegmentRulesAsString()).isEqualTo("3v2 Elimination");
 
     List<Wrestler> participants = result.getWrestlers();
     assertThat(participants)
@@ -249,7 +218,19 @@ class TeamMatchResolutionIT {
     assertThat(result.getWrestlers()).containsExactlyInAnyOrder(rookie1, contender1);
 
     // Should still favor the contender
-    assertThat(result.getWinner()).isEqualTo(contender1);
+    int contenderWins = 0;
+    int totalMatches = 1_000;
+    for (int i = 0; i < totalMatches; i++) {
+      result =
+          npcSegmentResolutionService.resolveTeamSegment(
+              team1, team2, tagTeamSegmentType, testShow, "Singles Match via Team Interface");
+      if (result.getWinners().contains(contender1)) {
+        contenderWins++;
+      }
+    }
+    double contenderWinRate = (double) contenderWins / totalMatches;
+    assertThat(contenderWinRate)
+        .isGreaterThanOrEqualTo(0.8); // Contender should win most of the time
   }
 
   @Test

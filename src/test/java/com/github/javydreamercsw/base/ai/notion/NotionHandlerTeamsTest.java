@@ -15,6 +15,7 @@ import org.mockito.MockedStatic;
 /**
  * Tests for NotionHandler teams functionality. These tests require NOTION_TOKEN to be available.
  */
+@EnabledIf("isNotionTokenAvailable")
 class NotionHandlerTeamsTest extends BaseTest {
 
   private NotionHandler notionHandler;
@@ -25,7 +26,6 @@ class NotionHandlerTeamsTest extends BaseTest {
   }
 
   @Test
-  @EnabledIf("isNotionTokenAvailable")
   void shouldLoadAllTeamsSuccessfully() {
     // When
     List<TeamPage> teams = notionHandler.loadAllTeams();

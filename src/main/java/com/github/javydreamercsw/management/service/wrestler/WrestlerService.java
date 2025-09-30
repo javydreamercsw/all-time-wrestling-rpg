@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
+import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
@@ -13,18 +14,22 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
+@Slf4j
 public class WrestlerService {
 
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private DramaEventRepository dramaEventRepository;
   @Autowired private Clock clock;
   @Autowired private InjuryService injuryService;
 
@@ -60,16 +65,16 @@ public class WrestlerService {
     return wrestlerRepository.saveAndFlush(wrestler);
   }
 
-  @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
-      allEntries = true)
+  @Transactional
   public void delete(@NonNull Wrestler wrestler) {
+    dramaEventRepository.deleteByPrimaryWrestlerOrSecondaryWrestler(wrestler, wrestler);
     wrestlerRepository.delete(wrestler);
+    log.info("Deleted wrestler: {}", wrestler.getName());
   }
 
-  @Cacheable(value = WRESTLERS_CACHE, key = "'all'")
+  // @Cacheable(value = WRESTLERS_CACHE, key = "'all'")
   public List<Wrestler> findAll() {
-    return wrestlerRepository.findAll();
+    return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans"));
   }
 
   /** Get wrestler by ID. */

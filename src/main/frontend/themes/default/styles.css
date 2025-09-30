@@ -1,0 +1,37 @@
+.wrestler-tier-rookie {
+    background-color: #A9A9A9; /* DarkGray */
+    color: white;
+}
+
+.wrestler-tier-riser {
+    background-color: #FFD700; /* Gold */
+    color: black;
+}
+
+.wrestler-tier-contender {
+    background-color: #00BFFF; /* DeepSkyBlue */
+    color: white;
+}
+
+.wrestler-tier-midcarder {
+    background-color: #8A2BE2; /* BlueViolet */
+    color: white;
+}
+
+.wrestler-tier-main_eventer {
+    background-color: #FF4500; /* OrangeRed */
+    color: white;
+}
+
+.wrestler-tier-icon {
+    background-color: #FF1493; /* DeepPink */
+    color: white;
+}
+
+.wrestler-tier-badge {
+    padding: var(--lumo-space-xs) var(--lumo-space-s);
+    border-radius: var(--lumo-border-radius-m);
+    font-size: var(--lumo-font-size-s);
+    font-weight: var(--lumo-font-weight-semibold);
+    margin-left: var(--lumo-space-s);
+}

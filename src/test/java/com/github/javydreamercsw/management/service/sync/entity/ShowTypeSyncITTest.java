@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.base.test.BaseTest;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
@@ -40,8 +41,10 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Slf4j
 @DisplayName("Show Type Sync Integration Tests")
+@EnabledIf("isNotionTokenAvailable")
 class ShowTypeSyncITTest extends BaseTest {
 
+  @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private ShowTypeSyncService showTypeSyncService;
   @Autowired private ShowTypeService showTypeService;
   @Autowired private ShowTypeRepository showTypeRepository;
@@ -52,6 +55,7 @@ class ShowTypeSyncITTest extends BaseTest {
   @Transactional
   void cleanupData() {
     log.debug("🧹 Cleaning up test data before test execution");
+    showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
     log.debug("✅ Test data cleanup completed");
   }

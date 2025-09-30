@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.base.ai;
+package com.github.javydreamercsw.management.controller.ai;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -8,30 +8,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
-import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
-import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
-import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
-import java.util.Arrays;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Integration tests for MatchNarrationController. Tests the complete flow from REST endpoints to AI
  * services using the mock provider.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@AutoConfigureWebMvc
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
 @DisplayName("Segment Narration Controller Integration Tests")
-class SegmentNarrationControllerIntegrationTest {
+@EnabledIf("isNotionTokenAvailable")
+class SegmentNarrationControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
 
@@ -111,7 +102,7 @@ class SegmentNarrationControllerIntegrationTest {
   @DisplayName("POST /api/segment-narration/narrate should accept custom segment context")
   void shouldAcceptCustomSegmentContext() throws Exception {
     // Given
-    SegmentNarrationContext customContext = createCustomSegmentContext();
+    SegmentNarrationContext customContext = super.createCustomSegmentContext();
     String requestBody = objectMapper.writeValueAsString(customContext);
 
     // When & Then
@@ -195,46 +186,5 @@ class SegmentNarrationControllerIntegrationTest {
         .andExpect(jsonPath("$.provider").exists())
         .andExpect(jsonPath("$.narration").exists())
         .andExpect(jsonPath("$.estimatedCost").exists());
-  }
-
-  /** Creates a custom segment context for testing. */
-  private SegmentNarrationContext createCustomSegmentContext() {
-    SegmentNarrationContext context = new SegmentNarrationContext();
-
-    // Match Type
-    SegmentTypeContext matchType = new SegmentTypeContext();
-    matchType.setSegmentType("Hell in a Cell");
-    matchType.setStipulation("King of the Ring 1998");
-    matchType.setRules(Arrays.asList("No Disqualification", "Falls Count Anywhere"));
-    context.setSegmentType(matchType);
-
-    // Venue
-    VenueContext venue = new VenueContext();
-    venue.setName("Civic Arena");
-    venue.setLocation("Pittsburgh, Pennsylvania");
-    venue.setType("Indoor Arena");
-    venue.setCapacity(17000);
-    venue.setDescription("Historic venue for legendary matches");
-    venue.setAtmosphere("Intense and foreboding");
-    venue.setSignificance("Site of the most famous Hell in a Cell segment");
-    context.setVenue(venue);
-
-    // Wrestlers
-    WrestlerContext undertaker = new WrestlerContext();
-    undertaker.setName("The Undertaker");
-    undertaker.setDescription("The Deadman - Phenom of WWE");
-
-    WrestlerContext mankind = new WrestlerContext();
-    mankind.setName("Mankind");
-    mankind.setDescription("Hardcore legend Mick Foley");
-
-    context.setWrestlers(Arrays.asList(undertaker, mankind));
-
-    // Context
-    context.setAudience("Shocked and horrified crowd of 17,000");
-    context.setDeterminedOutcome(
-        "The Undertaker wins after Mankind is thrown off the Hell in a Cell");
-
-    return context;
   }
 }

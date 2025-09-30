@@ -29,7 +29,7 @@ public class SegmentRuleService {
    * @return List of active segment rules
    */
   public List<SegmentRule> getAllActiveRules() {
-    return segmentRuleRepository.findByIsActiveTrue();
+    return segmentRuleRepository.findAll();
   }
 
   /**
@@ -79,7 +79,6 @@ public class SegmentRuleService {
     rule.setName(name);
     rule.setDescription(description);
     rule.setRequiresHighHeat(requiresHighHeat);
-    rule.setIsActive(true);
 
     SegmentRule savedRule = segmentRuleRepository.save(rule);
     log.info("Created new segment rule: {}", savedRule.getName());
@@ -93,7 +92,6 @@ public class SegmentRuleService {
    * @param name New name (optional)
    * @param description New description (optional)
    * @param requiresHighHeat New high heat requirement (optional)
-   * @param isActive New active status (optional)
    * @return The updated segment rule
    */
   @Transactional
@@ -101,8 +99,7 @@ public class SegmentRuleService {
       @NonNull Long id,
       @NonNull String name,
       @NonNull String description,
-      @NonNull Boolean requiresHighHeat,
-      @NonNull Boolean isActive) {
+      @NonNull Boolean requiresHighHeat) {
     SegmentRule rule =
         segmentRuleRepository
             .findById(id)
@@ -120,29 +117,9 @@ public class SegmentRuleService {
 
     rule.setRequiresHighHeat(requiresHighHeat);
 
-    rule.setIsActive(isActive);
-
     SegmentRule savedRule = segmentRuleRepository.save(rule);
     log.info("Updated segment rule: {}", savedRule.getName());
     return savedRule;
-  }
-
-  /**
-   * Deactivate a segment rule (soft delete).
-   *
-   * @param id The ID of the segment rule to deactivate
-   */
-  @Transactional
-  public void deactivateRule(@NonNull Long id) {
-    SegmentRule rule =
-        segmentRuleRepository
-            .findById(id)
-            .orElseThrow(
-                () -> new IllegalArgumentException("Segment rule not found with ID: " + id));
-
-    rule.setIsActive(false);
-    segmentRuleRepository.save(rule);
-    log.info("Deactivated segment rule: {}", rule.getName());
   }
 
   /**
@@ -199,7 +176,6 @@ public class SegmentRuleService {
     segmentRule.setName(name);
     segmentRule.setDescription(description);
     segmentRule.setRequiresHighHeat(requiresHighHeat);
-    segmentRule.setIsActive(true);
 
     return segmentRuleRepository.save(segmentRule);
   }

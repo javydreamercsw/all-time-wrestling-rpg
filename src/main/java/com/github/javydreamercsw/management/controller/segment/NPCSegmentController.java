@@ -93,9 +93,20 @@ public class NPCSegmentController {
       // Create response map (Map.of() has a 10 key-value pair limit)
       Map<String, Object> response = new HashMap<>();
       response.put("segmentResult", result);
-      response.put("winner", result.getWinner().getName());
-      response.put(
-          "winningTeam", result.getWinner().getName()); // Primary wrestler represents the team
+      List<Wrestler> winners = result.getWinners();
+      List<String> winnerNames = winners.stream().map(Wrestler::getName).toList();
+
+      // Determine winning team
+      String winningTeamName = "";
+      if (!winners.isEmpty()) {
+        if (team1.getMembers().contains(winners.get(0))) {
+          winningTeamName = team1.getTeamName();
+        } else {
+          winningTeamName = team2.getTeamName();
+        }
+      }
+      response.put("winners", winnerNames);
+      response.put("winningTeam", winningTeamName);
       response.put("participants", result.getWrestlers().stream().map(Wrestler::getName).toList());
       response.put("team1", team1.getMemberNames());
       response.put("team2", team2.getMemberNames());

@@ -14,9 +14,11 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
   // If you don't need a total row count, Slice is better than Page.
   Page<Show> findAllBy(Pageable pageable);
 
-  Optional<Show> findByName(String name);
+  List<Show> findByName(String name);
 
   Optional<Show> findByExternalId(String externalId);
+
+  Optional<Show> findByNameAndShowDate(String name, LocalDate showDate);
 
   // ==================== CALENDAR-SPECIFIC QUERIES ====================
 
@@ -76,7 +78,7 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
       LEFT JOIN FETCH s.season
       LEFT JOIN FETCH s.template
       LEFT JOIN FETCH s.type
-      ORDER BY s.creationDate DESC
+      ORDER BY s.showDate DESC
       """)
   List<Show> findAllWithRelationships();
 

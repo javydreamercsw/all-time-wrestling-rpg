@@ -73,10 +73,16 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       segmentRuleRepository;
   private final com.github.javydreamercsw.management.service.match.MatchAdjudicationService
       matchAdjudicationService;
+  private final com.github.javydreamercsw.management.service.show.type.ShowTypeService
+      showTypeService;
+  private final com.github.javydreamercsw.management.service.season.SeasonService seasonService;
+  private final com.github.javydreamercsw.management.service.show.template.ShowTemplateService
+      showTemplateService;
   private String referrer = "shows"; // Default referrer
 
   private H2 showTitle;
   private VerticalLayout contentLayout;
+  private Long currentShowId;
 
   public ShowDetailView(
       ShowService showService,
@@ -90,7 +96,11 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository
           segmentRuleRepository,
       com.github.javydreamercsw.management.service.match.MatchAdjudicationService
-          matchAdjudicationService) {
+          matchAdjudicationService,
+      com.github.javydreamercsw.management.service.show.type.ShowTypeService showTypeService,
+      com.github.javydreamercsw.management.service.season.SeasonService seasonService,
+      com.github.javydreamercsw.management.service.show.template.ShowTemplateService
+          showTemplateService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -101,6 +111,9 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     this.titleService = titleService;
     this.segmentRuleRepository = segmentRuleRepository;
     this.matchAdjudicationService = matchAdjudicationService;
+    this.showTypeService = showTypeService;
+    this.seasonService = seasonService;
+    this.showTemplateService = showTemplateService;
     initializeComponents();
   }
 
@@ -143,6 +156,8 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
             .getParameters()
             .getOrDefault("ref", List.of("shows"))
             .get(0);
+
+    this.currentShowId = showId; // Store the showId
 
     if (showId != null) {
       loadShow(showId);
@@ -215,6 +230,21 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     H3 title = new H3(show.getName());
     title.addClassNames(LumoUtility.Margin.NONE, LumoUtility.TextColor.PRIMARY);
 
+    Button editNameButton = new Button(new Icon(VaadinIcon.EDIT));
+    editNameButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    editNameButton.setTooltipText("Edit Show Name");
+    editNameButton.addClickListener(
+        e -> {
+          EditShowNameDialog dialog = new EditShowNameDialog(showService, show);
+          dialog.addOpenedChangeListener(
+              event -> {
+                if (!event.isOpened()) {
+                  loadShow(show.getId());
+                }
+              });
+          dialog.open();
+        });
+
     // Show type badge
     Span typeBadge = new Span(show.getType().getName());
     typeBadge.addClassNames(
@@ -234,7 +264,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
           LumoUtility.Background.SUCCESS, LumoUtility.TextColor.SUCCESS_CONTRAST);
     }
 
-    HorizontalLayout titleLayout = new HorizontalLayout(title, typeBadge);
+    HorizontalLayout titleLayout = new HorizontalLayout(title, editNameButton, typeBadge);
     titleLayout.setAlignItems(HorizontalLayout.Alignment.CENTER);
     titleLayout.setSpacing(true);
 
@@ -321,7 +351,38 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       detailsLayout.add(createdLayout);
     }
 
-    card.add(detailsTitle, detailsLayout);
+    HorizontalLayout detailsHeader = new HorizontalLayout(detailsTitle);
+    detailsHeader.setAlignItems(FlexComponent.Alignment.CENTER);
+    detailsHeader.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+    detailsHeader.setWidthFull();
+
+    Button planShowButton = new Button("Plan Show", new Icon(VaadinIcon.CALENDAR_CLOCK));
+    planShowButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    planShowButton.setTooltipText("Plan this show");
+    planShowButton.addClickListener(
+        e -> getUI().ifPresent(ui -> ui.navigate(ShowPlanningView.class, show.getId())));
+
+    Button editDetailsButton = new Button(new Icon(VaadinIcon.EDIT));
+    editDetailsButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    editDetailsButton.setTooltipText("Edit Show Details");
+    editDetailsButton.addClickListener(
+        e -> {
+          EditShowDetailsDialog dialog =
+              new EditShowDetailsDialog(
+                  showService, showTypeService, seasonService, showTemplateService, show);
+          dialog.addOpenedChangeListener(
+              event -> {
+                if (!event.isOpened()) {
+                  loadShow(show.getId());
+                }
+              });
+          dialog.open();
+        });
+
+    HorizontalLayout buttonGroup = new HorizontalLayout(planShowButton, editDetailsButton);
+    detailsHeader.add(buttonGroup);
+
+    card.add(detailsHeader, detailsLayout);
     return card;
   }
 
@@ -536,7 +597,14 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     narrateButton.addClickListener(
         e -> {
           NarrationDialog dialog =
-              new NarrationDialog(segment, npcService, wrestlerService, titleService);
+              new NarrationDialog(
+                  segment,
+                  npcService,
+                  wrestlerService,
+                  titleService,
+                  updatedSegment -> {
+                    displayShow(updatedSegment.getShow());
+                  });
           dialog.open();
         });
 
@@ -555,14 +623,15 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   private void generateSummary(@NonNull Segment segment) {
     String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
-    new org.springframework.web.client.RestTemplate()
-        .postForObject(
-            baseUrl + "/api/segments/" + segment.getId() + "/summarize",
-            null,
-            com.github.javydreamercsw.management.domain.show.segment.Segment.class);
+    Segment updatedSegment =
+        new org.springframework.web.client.RestTemplate()
+            .postForObject(
+                baseUrl + "/api/segments/" + segment.getId() + "/summarize",
+                null,
+                com.github.javydreamercsw.management.domain.show.segment.Segment.class);
     Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    displayShow(segment.getShow()); // Refresh the grid
+    loadShow(this.currentShowId);
   }
 
   private void openAddSegmentDialog(@NonNull Show show) {

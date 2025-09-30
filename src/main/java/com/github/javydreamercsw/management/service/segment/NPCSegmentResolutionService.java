@@ -86,9 +86,7 @@ public class NPCSegmentResolutionService {
     // Add all participants from both teams
     addTeamParticipants(result, team1);
     addTeamParticipants(result, team2);
-    wrestlerRepository
-        .findById(winningTeam.getPrimaryWrestler().getId())
-        .ifPresent(result::setWinner);
+    result.setWinners(winningTeam.getMembers());
 
     // Save and return
     Segment savedResult = segmentRepository.save(result);
@@ -155,9 +153,7 @@ public class NPCSegmentResolutionService {
     for (SegmentTeam team : teams) {
       addTeamParticipants(result, team);
     }
-    wrestlerRepository
-        .findById(winningTeam.getPrimaryWrestler().getId())
-        .ifPresent(result::setWinner);
+    result.setWinners(winningTeam.getMembers());
 
     // Save and return
     Segment savedResult = segmentRepository.save(result);

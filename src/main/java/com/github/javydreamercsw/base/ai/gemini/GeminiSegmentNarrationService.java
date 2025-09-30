@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -22,19 +23,20 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class GeminiSegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private static final String GEMINI_API_URL =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
   private static final Duration TIMEOUT =
       Duration.ofSeconds(60); // Longer timeout for segment narration
 
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
   private final String apiKey;
+  private final GeminiConfigProperties geminiConfigProperties; // Inject configuration properties
 
-  public GeminiSegmentNarrationService() {
+  @Autowired // Autowire the configuration properties
+  public GeminiSegmentNarrationService(GeminiConfigProperties geminiConfigProperties) {
     this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
     this.objectMapper = new ObjectMapper();
     this.apiKey = System.getenv("GEMINI_API_KEY");
+    this.geminiConfigProperties = geminiConfigProperties; // Assign injected properties
   }
 
   @Override
@@ -60,7 +62,12 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
   /** Makes a call to the Gemini API with the given prompt. */
   private String callGemini(@NonNull String prompt) {
     try {
-      String url = GEMINI_API_URL + "?key=" + apiKey;
+      // Use configured API URL and model name
+      String fullApiUrl =
+          geminiConfigProperties.getApiUrl()
+              + geminiConfigProperties.getModelName()
+              + ":generateContent";
+      String url = fullApiUrl + "?key=" + apiKey;
 
       // Create request body for Gemini API
       Map<String, Object> requestBody =
