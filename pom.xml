@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.4.5</version>
+    <version>3.5.6</version>
     <relativePath/>
   </parent>
 
@@ -26,6 +26,7 @@
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.version>0.8.13</jacoco.version>
     <java.version>17</java.version>
+    <lombok.version>1.18.42</lombok.version>
     <surefireArgLine/>
     <testcontainers.version>1.21.3</testcontainers.version>
     <vaadin.version>24.9.0</vaadin.version>
@@ -252,6 +253,17 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <layout>ZIP</layout>
+          <executable>true</executable>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -434,6 +446,9 @@
   <profiles>
     <profile>
       <id>production</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
       <dependencies>
         <!-- Exclude development dependencies from production -->
         <dependency>
