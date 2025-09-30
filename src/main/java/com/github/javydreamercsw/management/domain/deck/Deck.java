@@ -15,8 +15,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -41,7 +41,7 @@ public class Deck extends AbstractEntity<Long> {
       mappedBy = "deck",
       cascade = CascadeType.ALL,
       orphanRemoval = true)
-  private List<DeckCard> cards = new ArrayList<>();
+  private Set<DeckCard> cards = new HashSet<>();
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
@@ -52,10 +52,14 @@ public class Deck extends AbstractEntity<Long> {
   }
 
   public void addCard(@NonNull Card card, int amount) {
-    DeckCard deckCard = new DeckCard();
-    deckCard.setCard(card);
-    deckCard.setAmount(amount);
-    deckCard.setDeck(this);
-    getCards().add(deckCard);
+    DeckCard newDeckCard = new DeckCard();
+    newDeckCard.setCard(card);
+    newDeckCard.setAmount(amount);
+    newDeckCard.setDeck(this);
+
+    // Remove the old one if it exists, then add the new one.
+    // This ensures the amount is updated.
+    getCards().remove(newDeckCard);
+    getCards().add(newDeckCard);
   }
 }

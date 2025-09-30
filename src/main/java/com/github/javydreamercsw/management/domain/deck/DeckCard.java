@@ -12,6 +12,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -49,5 +50,19 @@ public class DeckCard extends AbstractEntity<Long> {
   @Override
   public @Nullable Long getId() {
     return id;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+    DeckCard deckCard = (DeckCard) o;
+    return Objects.equals(deck, deckCard.deck) && Objects.equals(card, deckCard.card);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), deck, card);
   }
 }

@@ -103,6 +103,28 @@ Run the label setup script to create all necessary labels:
 ./scripts/setup-labels.sh
 ```
 
+## Building Native Installers (Windows, macOS, Linux)
+
+You can create platform-specific installers using Maven profiles. This uses the JDK's jpackage tool to generate MSI (Windows), DMG (macOS), or DEB (Linux) installers.
+
+### Prerequisites
+- JDK 14 or newer (with jpackage)
+- Build the JAR: `./mvnw -Pproduction package`
+
+### Usage
+1. Open a terminal in the project root.
+2. Build the JAR:
+```bash
+./mvnw -Pproduction package
+```
+3. Create an installer for your platform using Maven profiles:
+- **Windows:** `./mvnw package -Pwindows-installer`
+- **macOS:** `./mvnw package -Pmac-installer`
+- **Linux:** `./mvnw package -Plinux-installer`
+4. The installer will be created in the `installers/` directory.
+
+You can customize icons and metadata by editing the relevant Maven profile in `pom.xml`.
+
 ## Getting Started
 
 The [Getting Started](https://vaadin.com/docs/latest/getting-started) guide will quickly familiarize you with your new

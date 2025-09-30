@@ -10,12 +10,14 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.dto.CardDTO;
+import com.github.javydreamercsw.management.dto.DeckCardDTO;
+import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
+import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckCardService;
@@ -30,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -254,13 +255,16 @@ public class DataInitializer {
               cardService.findAll().stream()
                   .collect(
                       Collectors.toMap(
-                          c -> c.getName() + "#" + c.getNumber(), // Unique key: name + number
+                          c ->
+                              c.getSet().getName()
+                                  + "#"
+                                  + c.getNumber(), // Unique key: set name + number
                           c -> c));
           Map<String, CardSet> sets =
               cardSetService.findAll().stream().collect(Collectors.toMap(CardSet::getName, s -> s));
           for (CardDTO dto : cardsFromFile) {
             CardSet set = sets.get(dto.getSet());
-            final String key = dto.getName() + "#" + dto.getNumber();
+            final String key = dto.getSet() + "#" + dto.getNumber();
             Card card = existing.getOrDefault(key, new Card());
             card.setName(dto.getName());
             card.setDamage(dto.getDamage());
@@ -436,10 +440,10 @@ public class DataInitializer {
             if (byWrestler.isEmpty()) {
               deck = deckService.createDeck(wrestler);
             } else {
-              continue; // Skip if a deck already exists for this wrestler
+              deck = byWrestler.get(0); // Get the existing deck
             }
             deck.setWrestler(wrestler);
-            deck.getCards().forEach(deckCardService::delete);
+            deck.getCards().clear(); // Clear the existing cards
             for (DeckCardDTO cardDTO : deckDTO.getCards()) {
               Card card =
                   cardService
@@ -463,45 +467,5 @@ public class DataInitializer {
         }
       }
     };
-  }
-
-  @Data
-  public static class CardDTO {
-    private String name;
-    private String type;
-    private int damage;
-    private boolean finisher = false;
-    private boolean signature = false;
-    private boolean pin = false;
-    private boolean taunt = false;
-    private boolean recover = false;
-    private int stamina;
-    private int momentum;
-    private int target;
-    private int number;
-    private String set;
-  }
-
-  // DTOs for deserialization
-  @Data
-  public static class DeckDTO {
-    private String wrestler;
-    private List<DeckCardDTO> cards;
-  }
-
-  @Data
-  public static class DeckCardDTO {
-    private int number;
-    private String set;
-    private int amount;
-  }
-
-  @Data
-  public static class TitleDTO {
-    private String name;
-    private String description;
-    private WrestlerTier tier;
-    private Gender gender;
-    private String currentChampionName;
   }
 }

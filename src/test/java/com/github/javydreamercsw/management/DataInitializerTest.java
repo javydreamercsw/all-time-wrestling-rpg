@@ -2,6 +2,8 @@ package com.github.javydreamercsw.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -12,6 +14,12 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.dto.CardDTO;
+import com.github.javydreamercsw.management.dto.DeckDTO;
+import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
+import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
+import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
+import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckCardService;
@@ -24,11 +32,15 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.annotation.Transactional;
 
 @EnabledIf("isNotionTokenAvailable")
@@ -58,6 +70,151 @@ class DataInitializerTest extends AbstractIntegrationTest {
     dataInitializer.syncWrestlersFromFile(wrestlerService);
     dataInitializer.syncChampionshipsFromFile(titleService);
     dataInitializer.syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService);
+  }
+
+  @Test
+  void validateSegmentRulesJson() throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    ClassPathResource resource = new ClassPathResource("segment_rules.json");
+    List<SegmentRuleDTO> segmentRules =
+        mapper.readValue(resource.getInputStream(), new TypeReference<>() {});
+
+    Set<String> uniqueNames = new HashSet<>();
+    for (SegmentRuleDTO segmentRule : segmentRules) {
+      assertThat(uniqueNames.add(segmentRule.getName()))
+          .withFailMessage("Duplicate segment rule name found: %s", segmentRule.getName())
+          .isTrue();
+    }
+  }
+
+  @Test
+  void validateShowTypesJson() throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    ClassPathResource resource = new ClassPathResource("show_types.json");
+    List<ShowType> showTypes =
+        mapper.readValue(resource.getInputStream(), new TypeReference<>() {});
+
+    Set<String> uniqueNames = new HashSet<>();
+    for (ShowType showType : showTypes) {
+      assertThat(uniqueNames.add(showType.getName()))
+          .withFailMessage("Duplicate show type name found: %s", showType.getName())
+          .isTrue();
+    }
+  }
+
+  @Test
+  void validateSegmentTypesJson() throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    ClassPathResource resource = new ClassPathResource("segment_types.json");
+    List<SegmentTypeDTO> segmentTypes =
+        mapper.readValue(resource.getInputStream(), new TypeReference<>() {});
+
+    Set<String> uniqueNames = new HashSet<>();
+    for (SegmentTypeDTO segmentType : segmentTypes) {
+      assertThat(uniqueNames.add(segmentType.getName()))
+          .withFailMessage("Duplicate segment type name found: %s", segmentType.getName())
+          .isTrue();
+    }
+  }
+
+  @Test
+  void validateShowTemplatesJson() throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    ClassPathResource resource = new ClassPathResource("show_templates.json");
+    List<ShowTemplateDTO> showTemplates =
+        mapper.readValue(resource.getInputStream(), new TypeReference<>() {});
+
+    Set<String> uniqueNames = new HashSet<>();
+    for (ShowTemplateDTO showTemplate : showTemplates) {
+      assertThat(uniqueNames.add(showTemplate.getName()))
+          .withFailMessage("Duplicate show template name found: %s", showTemplate.getName())
+          .isTrue();
+    }
+  }
+
+  @Test
+  void validateSetsJson() throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    ClassPathResource resource = new ClassPathResource("sets.json");
+    List<CardSet> sets = mapper.readValue(resource.getInputStream(), new TypeReference<>() {});
+
+    Set<String> uniqueNames = new HashSet<>();
+    for (CardSet set : sets) {
+      assertThat(uniqueNames.add(set.getName()))
+          .withFailMessage("Duplicate set name found: %s", set.getName())
+          .isTrue();
+    }
+  }
+
+  @Test
+  void validateCardsJson() throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    ClassPathResource resource = new ClassPathResource("cards.json");
+    List<CardDTO> cards = mapper.readValue(resource.getInputStream(), new TypeReference<>() {});
+
+    Set<String> uniqueCards = new HashSet<>();
+    for (CardDTO card : cards) {
+      String cardIdentifier = card.getSet() + "-" + card.getNumber();
+      assertThat(uniqueCards.add(cardIdentifier))
+          .withFailMessage(
+              "Duplicate card found: set %s, number %d", card.getSet(), card.getNumber())
+          .isTrue();
+    }
+  }
+
+  @Test
+  void validateWrestlersJson() throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    ClassPathResource resource = new ClassPathResource("wrestlers.json");
+    List<Wrestler> wrestlers =
+        mapper.readValue(resource.getInputStream(), new TypeReference<>() {});
+
+    Set<String> uniqueNames = new HashSet<>();
+    Set<String> uniqueExternalIds = new HashSet<>();
+    for (Wrestler wrestler : wrestlers) {
+      assertThat(uniqueNames.add(wrestler.getName()))
+          .withFailMessage("Duplicate wrestler name found: %s", wrestler.getName())
+          .isTrue();
+      if (wrestler.getExternalId() != null && !wrestler.getExternalId().trim().isEmpty()) {
+        assertThat(uniqueExternalIds.add(wrestler.getExternalId()))
+            .withFailMessage("Duplicate wrestler external ID found: %s", wrestler.getExternalId())
+            .isTrue();
+      }
+    }
+  }
+
+  @Test
+  void validateChampionshipsJson() throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    ClassPathResource resource = new ClassPathResource("championships.json");
+    List<TitleDTO> championships =
+        mapper.readValue(resource.getInputStream(), new TypeReference<>() {});
+
+    Set<String> uniqueNames = new HashSet<>();
+    for (TitleDTO championship : championships) {
+      assertThat(uniqueNames.add(championship.getName()))
+          .withFailMessage("Duplicate championship name found: %s", championship.getName())
+          .isTrue();
+    }
+  }
+
+  @Test
+  void validateDecksJson() throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    ClassPathResource resource = new ClassPathResource("decks.json");
+    List<DeckDTO> decks = mapper.readValue(resource.getInputStream(), new TypeReference<>() {});
+
+    for (DeckDTO deck : decks) {
+      Set<String> uniqueCards = new HashSet<>();
+      for (var card : deck.getCards()) {
+        String cardIdentifier = card.getSet() + "-" + card.getNumber();
+        assertThat(uniqueCards.add(cardIdentifier))
+            .withFailMessage(
+                "Duplicate card found in deck for %s: set %s, number %d",
+                deck.getWrestler(), card.getSet(), card.getNumber())
+            .isTrue();
+      }
+    }
   }
 
   @Test
