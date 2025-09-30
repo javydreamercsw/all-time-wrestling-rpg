@@ -26,6 +26,7 @@
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.version>0.8.13</jacoco.version>
     <java.version>17</java.version>
+    <jib.image.tags>${project.version}</jib.image.tags>
     <lombok.version>1.18.42</lombok.version>
     <surefireArgLine/>
     <testcontainers.version>1.21.3</testcontainers.version>
@@ -439,6 +440,30 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.google.cloud.tools</groupId>
+        <artifactId>jib-maven-plugin</artifactId>
+        <version>3.4.6</version>
+        <configuration>
+          <from>
+            <image>eclipse-temurin:21-jre</image>
+          </from>
+          <to>
+            <image>javydreamercsw/all-time-wrestling-rpg</image>
+            <tags>
+              <!-- Use property for tags, comma-separated -->
+              <!-- Jib will split on comma -->
+              <tag>${jib.image.tags}</tag>
+            </tags>
+          </to>
+          <container>
+            <ports>
+              <port>8080</port>
+            </ports>
+            <mainClass>com.github.javydreamercsw.Application</mainClass>
+          </container>
+        </configuration>
       </plugin>
     </plugins>
   </build>
