@@ -142,6 +142,7 @@ public class DeckListView extends VerticalLayout {
                 DeckCard dc = new DeckCard();
                 dc.setDeck(deck);
                 dc.setCard(selected);
+                dc.setSet(selected.getSet());
                 dc.setAmount(amount);
                 deckCardService.save(dc);
                 cardGrid.setItems(deckService.findById(deck.getId()).getCards());

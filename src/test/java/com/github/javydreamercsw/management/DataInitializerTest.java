@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -253,5 +254,38 @@ class DataInitializerTest extends AbstractIntegrationTest {
             .orElseThrow();
     assertThat(card.getSet()).isNotNull();
     assertThat(card.getSet().getName()).isEqualTo("RVD");
+  }
+
+  @Test
+  @Transactional
+  void testDeckImportIsIdempotentAndNoDuplicates() throws Exception {
+    // Initial import
+    dataInitializer
+        .syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService)
+        .run(null);
+    // Import again (simulate repeated import)
+    dataInitializer
+        .syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService)
+        .run(null);
+
+    // For each deck, ensure no duplicate DeckCard entries for the same (deck, card, set)
+    List<Deck> decks = deckService.findAll();
+    for (Deck deck : decks) {
+      List<DeckCard> deckCards =
+          deckCardService.findAll().stream()
+              .filter(dc -> dc.getDeck().getId().equals(deck.getId()))
+              .toList();
+      // Check for duplicates by (cardId, setId)
+      java.util.Set<String> uniqueKeys = new java.util.HashSet<>();
+      for (DeckCard dc : deckCards) {
+        String key = dc.getCard().getId() + "-" + dc.getSet().getId();
+        boolean added = uniqueKeys.add(key);
+        assertThat(added)
+            .withFailMessage(
+                "Duplicate DeckCard for deck %s, card %s, set %s",
+                deck.getId(), dc.getCard().getId(), dc.getSet().getId())
+            .isTrue();
+      }
+    }
   }
 }

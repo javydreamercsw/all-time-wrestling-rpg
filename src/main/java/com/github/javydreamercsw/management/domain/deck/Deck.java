@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.domain.deck;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.card.Card;
+import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -51,9 +52,10 @@ public class Deck extends AbstractEntity<Long> {
     return id;
   }
 
-  public void addCard(@NonNull Card card, int amount) {
+  public void addCard(@NonNull Card card, @NonNull CardSet set, int amount) {
     DeckCard newDeckCard = new DeckCard();
     newDeckCard.setCard(card);
+    newDeckCard.setSet(set);
     newDeckCard.setAmount(amount);
     newDeckCard.setDeck(this);
 

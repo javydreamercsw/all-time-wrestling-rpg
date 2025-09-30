@@ -74,7 +74,6 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-      <version>${lombok.version}</version>
       <scope>provided</scope>
     </dependency>
     <!-- Vaadin -->
@@ -102,7 +101,6 @@
       <!-- Replace with the database you will be using in production -->
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-      <version>2.3.232</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -148,13 +146,11 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>${testcontainers.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>mysql</artifactId>
-      <version>${testcontainers.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -269,7 +265,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>
-        <version>2.18.0</version>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
@@ -385,6 +380,7 @@
               <exclude>package-lock.json</exclude>
               <exclude>**/package.json</exclude>
               <exclude>**/package-lock.json</exclude>
+              <exclude>**/generated/**</exclude>
             </excludes>
             <jackson/>
           </json>
@@ -465,6 +461,17 @@
           </container>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-maven-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.2.224</version>
+          </dependency>
+        </dependencies>
+      </plugin>
     </plugins>
   </build>
 
@@ -513,7 +520,6 @@
           <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-            <version>${jacoco.version}</version>
             <configuration>
               <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
               <fileSets>
@@ -666,7 +672,6 @@
           <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-            <version>${jacoco.version}</version>
             <executions>
               <!-- Prepare agent for integration tests -->
               <execution>
@@ -735,6 +740,15 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>release</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <properties>
+        <jib.image.tags>${project.version},latest</jib.image.tags>
+      </properties>
     </profile>
   </profiles>
 </project>

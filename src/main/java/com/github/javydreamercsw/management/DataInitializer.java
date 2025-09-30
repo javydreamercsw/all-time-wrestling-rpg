@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -444,6 +445,17 @@ public class DataInitializer {
             }
             deck.setWrestler(wrestler);
             deck.getCards().clear(); // Clear the existing cards
+            // Remove existing DeckCards for this deck from the database
+            List<DeckCard> existingDeckCards =
+                deckCardService.findAll().stream()
+                    .filter(dc -> dc.getDeck().getId().equals(deck.getId()))
+                    .toList();
+            for (DeckCard dc : existingDeckCards) {
+              deckCardService.delete(dc);
+            }
+            // Aggregate by (card_id, set_id)
+            Map<String, Integer> cardKeyToAmount = new java.util.HashMap<>();
+            Map<String, Card> cardKeyToCard = new java.util.HashMap<>();
             for (DeckCardDTO cardDTO : deckDTO.getCards()) {
               Card card =
                   cardService
@@ -457,7 +469,25 @@ public class DataInitializer {
                     wrestler.getName());
                 continue;
               }
-              deck.addCard(card, cardDTO.getAmount());
+              String key = card.getSet().getName() + "-" + card.getId();
+              cardKeyToAmount.merge(key, cardDTO.getAmount(), Integer::sum);
+              cardKeyToCard.putIfAbsent(key, card);
+            }
+            for (var entry : cardKeyToAmount.entrySet()) {
+              Card card = cardKeyToCard.get(entry.getKey());
+              log.debug(
+                  "Adding {} {}-{} set ({})",
+                  card.getName(),
+                  card.getSet().getName(),
+                  card.getId(),
+                  entry.getValue());
+              // Use DeckCardService.saveOrUpdate to avoid unique constraint violations
+              var deckCard = new com.github.javydreamercsw.management.domain.deck.DeckCard();
+              deckCard.setDeck(deck);
+              deckCard.setCard(card);
+              deckCard.setSet(card.getSet());
+              deckCard.setAmount(entry.getValue());
+              deckCardService.saveOrUpdate(deckCard);
             }
             deckService.save(deck);
             log.info("Saved deck for wrestler: {}", wrestler.getName());

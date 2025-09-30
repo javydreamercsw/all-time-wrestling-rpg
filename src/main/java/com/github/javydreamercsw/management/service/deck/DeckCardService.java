@@ -41,4 +41,20 @@ public class DeckCardService {
   public void delete(DeckCard dc) {
     deckCardRepository.delete(dc);
   }
+
+  public DeckCard saveOrUpdate(@NonNull DeckCard deckCard) {
+    var existing =
+        deckCardRepository.findByDeckIdAndCardIdAndSetId(
+            deckCard.getDeck().getId(), deckCard.getCard().getId(), deckCard.getSet().getId());
+    if (existing.isPresent()) {
+      DeckCard found = existing.get();
+      // Example: update amount, or update other fields as needed
+      found.setAmount(deckCard.getAmount());
+      found.setCreationDate(clock.instant());
+      return deckCardRepository.saveAndFlush(found);
+    } else {
+      deckCard.setCreationDate(clock.instant());
+      return deckCardRepository.saveAndFlush(deckCard);
+    }
+  }
 }
