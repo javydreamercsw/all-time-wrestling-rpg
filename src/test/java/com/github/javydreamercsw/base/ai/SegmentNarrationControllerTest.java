@@ -37,7 +37,7 @@ class SegmentNarrationControllerTest extends BaseControllerTest {
   void testNarrateMatch() throws Exception {
     // Given
     SegmentNarrationService service = mock(SegmentNarrationService.class);
-    when(serviceFactory.getBestAvailableService()).thenReturn(service);
+    when(serviceFactory.getServiceByProvider("Mock AI")).thenReturn(service);
     when(service.narrateSegment(any(SegmentNarrationContext.class))).thenReturn("Test narration");
     when(matchOutcomeService.determineOutcomeIfNeeded(any(SegmentNarrationContext.class)))
         .thenAnswer(i -> i.getArguments()[0]);
@@ -48,7 +48,7 @@ class SegmentNarrationControllerTest extends BaseControllerTest {
     // When & Then
     mockMvc
         .perform(
-            post("/api/segment-narration/narrate")
+            post("/api/segment-narration/narrate/Mock AI")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(context)))
         .andExpect(status().isOk());
