@@ -1,10 +1,14 @@
 package com.github.javydreamercsw.management.controller.segment;
 
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +32,28 @@ class SegmentSummaryControllerTest {
   @Test
   void testSummarizeSegment() throws Exception {
     Long segmentId = 1L;
+    Segment mockSegment = new Segment();
+    mockSegment.setId(segmentId);
+    mockSegment.setSummary("Test summary");
+    when(segmentSummaryService.summarizeSegment(segmentId)).thenReturn(mockSegment);
+
     mockMvc
         .perform(post("/api/segments/{segmentId}/summarize", segmentId))
-        .andExpect(status().isOk());
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.summary", is("Test summary")));
+
+    verify(segmentSummaryService, times(1)).summarizeSegment(segmentId);
+  }
+
+  @Test
+  void testSummarizeSegmentNotFound() throws Exception {
+    Long segmentId = 999L;
+    when(segmentSummaryService.summarizeSegment(segmentId))
+        .thenThrow(new IllegalArgumentException("Invalid segment Id:" + segmentId));
+
+    mockMvc
+        .perform(post("/api/segments/{segmentId}/summarize", segmentId))
+        .andExpect(status().isBadRequest()); // or isNotFound() if you map to 404
 
     verify(segmentSummaryService, times(1)).summarizeSegment(segmentId);
   }
