@@ -823,7 +823,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <includes>
-                <include>**/*E2EIT.java</include>
+                <include>**/*E2E*.java</include>
               </includes>
               <systemPropertyVariables>
                 <spring.profiles.active>test</spring.profiles.active>

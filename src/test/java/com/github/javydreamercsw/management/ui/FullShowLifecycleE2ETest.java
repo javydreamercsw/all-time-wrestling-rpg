@@ -31,7 +31,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ActiveProfiles("test")
 @EnabledIf("isNotionTokenAvailable")
-public class FullShowLifecycleE2EIT extends AbstractE2ETest {
+public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SHOW_TYPE_NAME = "Weekly";
   private static final String SEASON_NAME = "Test Season";
   private static final String TEMPLATE_NAME = "Continuum";
