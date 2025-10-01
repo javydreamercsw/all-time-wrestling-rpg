@@ -897,32 +897,22 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       Segment segment;
       if (segmentToUpdate != null) {
         segment = segmentToUpdate;
-        segment.getParticipants().clear();
-        segment.getSegmentRules().clear();
+        segment.syncParticipants(new ArrayList<>(wrestlers));
+        segment.syncSegmentRules(new ArrayList<>(rules));
       } else {
         segment = new Segment();
         segment.setShow(show);
         segment.setSegmentDate(java.time.Instant.now());
         segment.setIsTitleSegment(false);
         segment.setIsNpcGenerated(false);
+        segment.syncParticipants(new ArrayList<>(wrestlers));
+        segment.syncSegmentRules(new ArrayList<>(rules));
       }
 
       segment.setSegmentType(segmentType);
 
-      // Add participants
-      for (Wrestler wrestler : wrestlers) {
-        segment.addParticipant(wrestler);
-      }
-
       if (winners != null) {
         segment.setWinners(new ArrayList<>(winners));
-      }
-
-      // Add segment rules
-      if (rules != null) {
-        for (SegmentRule rule : rules) {
-          segment.addSegmentRule(rule);
-        }
       }
 
       // Save or update the segment

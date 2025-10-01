@@ -359,10 +359,7 @@ public class SegmentSyncService extends BaseSyncService {
         wrestlerService.findByName(winnerName).ifPresent(winners::add);
       }
 
-      segment.getParticipants().clear();
-      for (Wrestler participant : participants) {
-        segment.addParticipant(participant);
-      }
+      segment.syncParticipants(participants);
 
       if (!winners.isEmpty()) {
         segment.setWinners(winners);

@@ -170,6 +170,24 @@ public class Segment extends AbstractEntity<Long> {
     this.status = SegmentStatus.COMPLETED;
   }
 
+  public void syncParticipants(List<Wrestler> newParticipantWrestlers) {
+    // Remove participants that are no longer in the new list
+    participants.removeIf(
+        existingParticipant ->
+            !newParticipantWrestlers.contains(existingParticipant.getWrestler()));
+
+    // Add new participants that are not already in the list
+    for (Wrestler newWrestler : newParticipantWrestlers) {
+      boolean alreadyExists =
+          participants.stream()
+              .anyMatch(
+                  existingParticipant -> existingParticipant.getWrestler().equals(newWrestler));
+      if (!alreadyExists) {
+        addParticipant(newWrestler);
+      }
+    }
+  }
+
   /** Check if this was a singles segment (2 participants). */
   public boolean isSinglesSegment() {
     return participants.size() == 2;
@@ -190,6 +208,18 @@ public class Segment extends AbstractEntity<Long> {
   /** Remove a segment rule from this segment. */
   public void removeSegmentRule(SegmentRule segmentRule) {
     segmentRules.remove(segmentRule);
+  }
+
+  public void syncSegmentRules(List<SegmentRule> newSegmentRules) {
+    // Remove rules that are no longer in the new list
+    segmentRules.removeIf(existingRule -> !newSegmentRules.contains(existingRule));
+
+    // Add new rules that are not already in the list
+    for (SegmentRule newRule : newSegmentRules) {
+      if (!segmentRules.contains(newRule)) {
+        addSegmentRule(newRule);
+      }
+    }
   }
 
   /** Check if this segment has a specific rule. */
