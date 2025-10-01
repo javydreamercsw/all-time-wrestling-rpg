@@ -19,6 +19,7 @@
   <properties>
     <NOTION_TOKEN/>
     <archunit.version>1.4.1</archunit.version>
+    <failsafeArgLine/>
 
     <!-- JaCoCo Coverage Properties -->
     <jacoco.coverage.minimum>0.90</jacoco.coverage.minimum>
@@ -42,6 +43,7 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+
       <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
@@ -165,6 +167,24 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.github.bonigarcia</groupId>
+      <artifactId>webdrivermanager</artifactId>
+      <version>6.3.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>4.35.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-chrome-driver</artifactId>
+      <version>4.35.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-inline</artifactId>
       <version>5.2.0</version>
@@ -243,7 +263,7 @@
             <exclude>**/*IntegrationTest.java</exclude>
           </excludes>
           <!-- JVM arguments for better performance and JaCoCo coverage -->
-          <argLine>@{surefireArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false</argLine>
+          <argLine>@{surefireArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test</argLine>
         </configuration>
 
       </plugin>
@@ -259,6 +279,22 @@
             <goals>
               <goal>repackage</goal>
             </goals>
+          </execution>
+          <execution>
+            <id>post-integration-test</id>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>pre-integration-test</id>
+            <goals>
+              <goal>start</goal>
+            </goals>
+            <configuration>
+              <wait>30000</wait>
+              <maxAttempts>60</maxAttempts>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -478,9 +514,6 @@
   <profiles>
     <profile>
       <id>production</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
       <dependencies>
         <!-- Exclude development dependencies from production -->
         <dependency>
@@ -528,6 +561,7 @@
                   <includes>
                     <include>jacoco.exec</include>
                     <include>jacoco-it.exec</include>
+                    <include>jacoco-e2e.exec</include>
                   </includes>
                 </fileSet>
               </fileSets>
@@ -641,6 +675,7 @@
                       <includes>
                         <include>jacoco.exec</include>
                         <include>jacoco-it.exec</include>
+                        <include>jacoco-e2e.exec</include>
                       </includes>
                     </fileSet>
                   </fileSets>
@@ -714,7 +749,7 @@
                 <exclude>**/*TestCase.java</exclude>
               </excludes>
               <!-- JVM arguments for integration tests with JaCoCo coverage -->
-              <argLine>@{failsafeArgLine} -Xmx3g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -DNOTION_TOKEN=${NOTION_TOKEN}</argLine>
+              <argLine>@{failsafeArgLine} -Xmx3g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -DNOTION_TOKEN=${NOTION_TOKEN}</argLine>
             </configuration>
           </plugin>
           <!-- Failsafe plugin for additional integration test support -->
@@ -722,12 +757,18 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
-              <argLine>@{failsafeArgLine}</argLine>
+              <argLine>@{failsafeArgLine} -Dspring.profiles.active=test</argLine>
               <trimStackTrace>false</trimStackTrace>
               <enableAssertions>true</enableAssertions>
               <!-- Sequential execution for integration tests -->
               <parallel>none</parallel>
               <threadCount>1</threadCount>
+              <includes>
+                <include>**/*IT.java</include>
+              </includes>
+              <systemPropertyVariables>
+                <spring.profiles.active>test</spring.profiles.active>
+              </systemPropertyVariables>
             </configuration>
             <executions>
               <execution>
@@ -749,6 +790,57 @@
       <properties>
         <jib.image.tags>${project.version},latest</jib.image.tags>
       </properties>
+    </profile>
+    <profile>
+      <id>e2e</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>prepare-agent-e2e</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+                <configuration>
+                  <propertyName>failsafeArgLine</propertyName>
+                  <destFile>${project.build.directory}/jacoco-e2e.exec</destFile>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*E2EIT.java</include>
+              </includes>
+              <systemPropertyVariables>
+                <spring.profiles.active>test</spring.profiles.active>
+              </systemPropertyVariables>
+              <argLine>@{failsafeArgLine}</argLine>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>
