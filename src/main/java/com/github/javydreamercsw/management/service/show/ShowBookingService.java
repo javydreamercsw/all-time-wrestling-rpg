@@ -54,7 +54,7 @@ public class ShowBookingService {
   private final PromoBookingService promoBookingService;
   private final SegmentRuleService segmentRuleService;
   private final Clock clock;
-  private final Random random = new Random();
+  private final Random random;
 
   /**
    * Book a wrestling show with template and date support.
