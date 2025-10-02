@@ -10,20 +10,21 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.vaadin.flow.component.grid.Grid;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 @EnabledIf("isNotionTokenAvailable")
+@Transactional
 class TitleListViewIT extends AbstractIntegrationTest {
 
   @Autowired private TitleService titleService;
   @Autowired private TeamRepository teamRepository;
-
   @Autowired private WrestlerService wrestlerService;
-
   private TitleListView titleListView;
 
   @BeforeEach
@@ -39,7 +40,7 @@ class TitleListViewIT extends AbstractIntegrationTest {
     title.setName("Test Title");
     title.setTier(WrestlerTier.MAIN_EVENTER);
     title.setIsActive(true);
-    title.setChampion(List.of(wrestler));
+    title.setChampion(new ArrayList<>(List.of(wrestler)));
     titleService.save(title);
 
     titleListView = new TitleListView(titleService, wrestlerService);

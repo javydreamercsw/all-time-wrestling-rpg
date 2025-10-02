@@ -14,7 +14,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.time.LocalDate;
 import java.util.List;
@@ -23,12 +22,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 @EnabledIf("isNotionTokenAvailable")
+@Transactional
 class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
   @Autowired private SegmentAdjudicationService segmentAdjudicationService;
   @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private WrestlerService wrestlerService;
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
