@@ -92,13 +92,13 @@ class NPCSegmentResolutionServiceTest {
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(w1));
     when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(w2));
 
-    // Let's say Team 1 has 80% win probability. Team 2 has 20%.
-    // We make the random roll be greater than that to ensure Team 2 wins.
-    when(random.nextDouble()).thenReturn(0.81); // 81 is more than 80
+    // Team 1 win probability is ~83.34%. We need the random value to be higher than that.
+    // random.nextDouble() * 100 must be > 83.34. So nextDouble() must be > 0.8334.
+    when(random.nextDouble()).thenReturn(0.8335);
 
     // When
     Segment result =
-        npcSegmentResolutionService.resolveTeamSegment(team1, team2, segmentType, show, "");
+        npcSegmentResolutionService.resolveTeamSegment(team1, team2, segmentType, show, "Normal");
 
     // Then
     assertEquals(team2.getMembers(), result.getWinners());
