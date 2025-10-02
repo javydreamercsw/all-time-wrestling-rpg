@@ -46,7 +46,7 @@ public class InjuryService {
               injury.setName(name);
               injury.setDescription(description);
               injury.setSeverity(severity);
-              injury.setHealthPenalty(severity.getRandomHealthPenalty());
+              injury.setHealthPenalty(severity.getRandomHealthPenalty(random));
               injury.setHealingCost(severity.getBaseHealingCost());
               injury.setIsActive(true);
               injury.setInjuryDate(Instant.now(clock));
@@ -79,7 +79,7 @@ public class InjuryService {
               injury.setName(injuryName);
               injury.setDescription(description);
               injury.setSeverity(severity);
-              injury.setHealthPenalty(severity.getRandomHealthPenalty());
+              injury.setHealthPenalty(severity.getRandomHealthPenalty(random));
               injury.setHealingCost(severity.getBaseHealingCost());
               injury.setIsActive(true);
               injury.setInjuryDate(Instant.now(clock));
@@ -94,7 +94,7 @@ public class InjuryService {
   }
 
   /** Attempt to heal an injury. */
-  public HealingResult attemptHealing(@NonNull Long injuryId, @NonNull Integer diceRoll) {
+  public HealingResult attemptHealing(@NonNull Long injuryId, Integer diceRoll) {
     Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
 
     if (injuryOpt.isEmpty()) {

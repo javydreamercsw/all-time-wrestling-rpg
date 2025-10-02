@@ -1,6 +1,6 @@
-package com.github.javydreamercsw.management.service.injury;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
@@ -11,6 +11,8 @@ import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -18,11 +20,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -43,7 +46,6 @@ class InjuryServiceTest {
   void setUp() {
     fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
     lenient().when(clock.instant()).thenReturn(fixedClock.instant());
-    lenient().when(clock.getZone()).thenReturn(fixedClock.getZone());
   }
 
   @Test
@@ -59,6 +61,7 @@ class InjuryServiceTest {
               injury.setId(1L);
               return injury;
             });
+    when(random.nextInt(any(int.class))).thenReturn(1); // Control random for health penalty
 
     // When
     Optional<Injury> result =
@@ -72,7 +75,75 @@ class InjuryServiceTest {
     assertThat(result.get().getSeverity()).isEqualTo(InjurySeverity.SEVERE);
     assertThat(result.get().getWrestler()).isEqualTo(wrestler);
     assertThat(result.get().getIsActive()).isTrue();
+    assertThat(result.get().getHealthPenalty()).isEqualTo(4); // SEVERE min is 3, so 3 + 1 = 4
     verify(injuryRepository).saveAndFlush(any(Injury.class));
+  }
+
+  @ParameterizedTest(name = "Tier {0}, Roll {1} -> Severity {2}")
+  @CsvSource({
+    "ROOKIE, 34, MINOR",
+    "ROOKIE, 64, MODERATE",
+    "ROOKIE, 89, SEVERE",
+    "ROOKIE, 99, CRITICAL",
+    "RISER, 39, MINOR",
+    "RISER, 69, MODERATE",
+    "RISER, 91, SEVERE",
+    "RISER, 99, CRITICAL",
+    "CONTENDER, 44, MINOR",
+    "CONTENDER, 74, MODERATE",
+    "CONTENDER, 93, SEVERE",
+    "CONTENDER, 99, CRITICAL",
+    "MIDCARDER, 54, MINOR",
+    "MIDCARDER, 79, MODERATE",
+    "MIDCARDER, 95, SEVERE",
+    "MIDCARDER, 99, CRITICAL",
+    "MAIN_EVENTER, 59, MINOR",
+    "MAIN_EVENTER, 84, MODERATE",
+    "MAIN_EVENTER, 96, SEVERE",
+    "MAIN_EVENTER, 99, CRITICAL",
+    "ICON, 64, MINOR",
+    "ICON, 87, MODERATE",
+    "ICON, 97, SEVERE",
+    "ICON, 99, CRITICAL"
+  })
+  @DisplayName("Should create injury from bumps with correct severity based on tier and roll")
+  void testCreateInjuryFromBumpsSeverity(
+      WrestlerTier tier, int roll, InjurySeverity expectedSeverity) {
+    // Given
+    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
+    wrestler.setTier(tier);
+    wrestler.setBumps(3);
+    when(wrestlerRepository.findById(wrestler.getId())).thenReturn(Optional.of(wrestler));
+    when(random.nextInt(100)).thenReturn(roll - 1); // Control the d100 roll
+    when(random.nextInt(4)).thenReturn(0); // For injury name generation
+
+    when(injuryRepository.saveAndFlush(any(Injury.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // When
+    Optional<Injury> result = injuryService.createInjuryFromBumps(wrestler.getId());
+
+    // Then
+    assertTrue(result.isPresent());
+    assertEquals(expectedSeverity, result.get().getSeverity());
+  }
+
+  @Test
+  @DisplayName("Should attempt healing with a random roll")
+  void shouldAttemptHealingWithRandomRoll() {
+    // Given
+    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
+    Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
+    when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
+    when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(wrestler);
+    when(random.nextInt(6)).thenReturn(5); // Roll a 6 (5+1)
+
+    // When
+    InjuryService.HealingResult result = injuryService.attemptHealing(1L, null);
+
+    // Then
+    assertTrue(result.success());
+    assertEquals(6, result.diceRoll());
   }
 
   @Test
@@ -96,7 +167,7 @@ class InjuryServiceTest {
 
     // Then
     assertThat(result).isNotNull();
-    Assertions.assertTrue(result.isPresent());
+    assertTrue(result.isPresent());
     assertThat(result.get().getWrestler()).isEqualTo(wrestler);
     assertThat(result.get().getIsActive()).isTrue();
     assertThat(wrestler.getInjuries()).contains(result.get());
@@ -311,7 +382,7 @@ class InjuryServiceTest {
     injury.setName("Test Injury");
     injury.setDescription("Test injury description");
     injury.setSeverity(severity);
-    injury.setHealthPenalty(severity.getRandomHealthPenalty());
+    injury.setHealthPenalty(severity.getRandomHealthPenalty(random));
     injury.setHealingCost(severity.getBaseHealingCost());
     injury.setIsActive(true);
     injury.setInjuryDate(Instant.now(fixedClock));
