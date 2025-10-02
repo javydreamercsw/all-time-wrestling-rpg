@@ -72,12 +72,14 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Navigate to the Show List view
     driver.get("http://localhost:8080/show-list");
 
+    final String showName = "My E2E Show";
+
     // Click the "Create" button
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Fill in the form
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("vaadin-text-field")))
-        .sendKeys("My E2E Show");
+        .sendKeys(showName);
     List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
     comboBoxes.get(0).sendKeys(SHOW_TYPE_NAME);
     comboBoxes.get(1).sendKeys(SEASON_NAME);
@@ -94,14 +96,14 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         RetryPolicy.builder()
             .withDelay(Duration.ofMillis(500))
             .withMaxDuration(Duration.ofSeconds(10))
-            .handleResultIf(result -> !((WebElement) result).getText().contains("My E2E Show"))
+            .handleResultIf(result -> !((WebElement) result).getText().contains(showName))
             .build();
     Failsafe.with(retryPolicy)
         .get(
             () -> {
               // Re-fetch the grid to ensure it's up-to-date
               WebElement refreshedGrid = driver.findElement(By.tagName("vaadin-grid"));
-              assertTrue(refreshedGrid.getText().contains("My E2E Show"), refreshedGrid.getText());
+              assertTrue(refreshedGrid.getText().contains(showName), refreshedGrid.getText());
               return refreshedGrid;
             });
   }
