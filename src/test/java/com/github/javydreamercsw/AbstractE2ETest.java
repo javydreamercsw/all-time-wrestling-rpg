@@ -7,12 +7,14 @@ import java.net.URL;
 import lombok.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
+@ExtendWith(UITestWatcher.class)
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;

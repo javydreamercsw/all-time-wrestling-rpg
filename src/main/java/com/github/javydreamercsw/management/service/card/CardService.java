@@ -22,7 +22,7 @@ public class CardService {
   @Autowired private CardSetRepository cardSetRepository;
   @Autowired private Clock clock;
 
-  public void createCard(@NonNull String name) {
+  public Card createCard(@NonNull String name) {
     Card card = new Card();
     card.setName(name);
     // Set default values
@@ -32,7 +32,7 @@ public class CardService {
     card.setStamina(1);
     card.setSignature(false);
     card.setFinisher(false);
-    card.setType("TBD");
+    card.setType("Strike");
 
     // Set default CardSet (use the first available one)
     CardSet defaultSet =
@@ -41,7 +41,10 @@ public class CardService {
             .orElseThrow(() -> new IllegalStateException("No CardSet available for default"));
     card.setSet(defaultSet);
 
-    save(card);
+    Integer maxCardNumber = cardRepository.findMaxCardNumberBySet(defaultSet.getId());
+    card.setNumber(maxCardNumber == null ? 1 : maxCardNumber + 1);
+
+    return save(card);
   }
 
   public List<Card> list(Pageable pageable) {

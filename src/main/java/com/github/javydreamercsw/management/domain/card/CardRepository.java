@@ -5,6 +5,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface CardRepository extends JpaRepository<Card, Long>, JpaSpecificationExecutor<Card> {
 
@@ -12,4 +14,7 @@ public interface CardRepository extends JpaRepository<Card, Long>, JpaSpecificat
   Page<Card> findAllBy(Pageable pageable);
 
   Optional<Card> findByNumberAndSetName(Integer number, String setName);
+
+  @Query("SELECT MAX(c.number) FROM Card c WHERE c.set.id = :setId")
+  Integer findMaxCardNumberBySet(@Param("setId") Long setId);
 }
