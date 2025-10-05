@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
@@ -15,7 +16,6 @@ import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.openqa.selenium.By;
@@ -69,7 +69,7 @@ public class CardListViewIT extends AbstractE2ETest {
     nameField.sendKeys("New E2E Card");
 
     WebElement createButton = driver.findElement(By.xpath("//vaadin-button[text()='Create']"));
-    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", createButton);
+    createButton.click();
 
     // Verify the new card is in the grid
     RetryPolicy<Object> retryPolicy =
@@ -88,7 +88,6 @@ public class CardListViewIT extends AbstractE2ETest {
   }
 
   @Test
-  @Disabled
   public void testUpdateCard() {
     String cardName = "Card to Update";
     // First, create a card to update
@@ -97,8 +96,7 @@ public class CardListViewIT extends AbstractE2ETest {
             .filter(set -> set.getName().equals("TST"))
             .findFirst()
             .get();
-    com.github.javydreamercsw.management.domain.card.Card card =
-        new com.github.javydreamercsw.management.domain.card.Card();
+    Card card = new Card();
     card.setName(cardName);
     card.setSet(testSet);
     card.setDamage(1);
@@ -146,14 +144,15 @@ public class CardListViewIT extends AbstractE2ETest {
     WebElement editorNameField =
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector("vaadin-text-field[name='name']")));
+                By.cssSelector("vaadin-text-field[data-testid='name-editor']")));
     String updatedName = cardName + " - Updated";
-    editorNameField.clear();
+    wait.until(ExpectedConditions.elementToBeClickable(editorNameField));
+    ((JavascriptExecutor) driver).executeScript("arguments[0].value = ''", editorNameField);
     editorNameField.sendKeys(updatedName);
 
     WebElement saveButton = grid.findElement(By.xpath("//vaadin-button[text()='Save']"));
     wait.until(ExpectedConditions.elementToBeClickable(saveButton));
-    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", saveButton);
+    saveButton.click();
 
     // Verify the update
     RetryPolicy<Object> retryPolicy =
@@ -172,7 +171,6 @@ public class CardListViewIT extends AbstractE2ETest {
   }
 
   @Test
-  @Disabled
   public void testDeleteCard() {
     String cardName = "Card to Delete";
     // First, create a card to delete
@@ -212,14 +210,15 @@ public class CardListViewIT extends AbstractE2ETest {
     WebElement deleteButton =
         cardRow.findElement(
             By.xpath(
-                "./following-sibling::vaadin-grid-cell-content/vaadin-button[text()='Delete']"));
+                "./following-sibling::vaadin-grid-cell-content//vaadin-button[@data-testid='delete-button']"));
     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", deleteButton);
 
     // The confirmation dialog should appear. Click "Delete".
     WebElement confirmDeleteButton =
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//vaadin-button[text()='Delete' and @theme='primary error']")));
+                By.cssSelector(
+                    "vaadin-confirm-dialog-overlay vaadin-button[slot='confirm-button']")));
     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", confirmDeleteButton);
 
     // Verify the card is gone

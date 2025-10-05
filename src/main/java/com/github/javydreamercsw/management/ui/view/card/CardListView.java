@@ -11,6 +11,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
@@ -26,6 +27,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.Clock;
+import lombok.NonNull;
 
 @Route("card-list")
 @PageTitle("Card List")
@@ -40,7 +42,10 @@ public class CardListView extends Main {
   final Button createBtn;
   final Grid<Card> cardGrid;
 
-  public CardListView(CardService cardService, CardSetService cardSetService, Clock clock) {
+  public CardListView(
+      @NonNull CardService cardService,
+      @NonNull CardSetService cardSetService,
+      @NonNull Clock clock) {
     this.cardService = cardService;
     this.cardSetService = cardSetService;
 
@@ -63,6 +68,7 @@ public class CardListView extends Main {
 
     // Editor fields
     TextField nameField = new TextField();
+    nameField.getElement().setAttribute("data-testid", "name-editor");
     TextField damageField = new TextField();
     TextField targetField = new TextField();
     TextField momentumField = new TextField();
@@ -151,7 +157,10 @@ public class CardListView extends Main {
                   e -> {
                     cardGrid.getEditor().editItem(card);
                   });
-              return editButton;
+              Button deleteButton = new Button("Delete");
+              deleteButton.getElement().setAttribute("data-testid", "delete-button");
+              deleteButton.addClickListener(e -> deleteCard(card));
+              return new HorizontalLayout(editButton, deleteButton);
             })
         .setHeader("Actions");
     cardGrid.setSizeFull();
@@ -206,5 +215,24 @@ public class CardListView extends Main {
     name.clear();
     Notification.show("Card added", 3_000, Notification.Position.BOTTOM_END)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+  }
+
+  private void deleteCard(@NonNull Card card) {
+    ConfirmDialog dialog = new ConfirmDialog();
+    dialog.setHeader("Delete Card?");
+    dialog.setText("Are you sure you want to delete this card?");
+
+    dialog.setConfirmButton(
+        "Delete",
+        e -> {
+          cardService.delete(card.getId());
+          cardGrid.getDataProvider().refreshAll();
+          Notification.show("Card deleted", 3_000, Notification.Position.BOTTOM_END)
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    dialog.setCancelButton("Cancel", e -> dialog.close());
+
+    dialog.open();
   }
 }

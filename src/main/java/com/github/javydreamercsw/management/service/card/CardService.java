@@ -67,4 +67,8 @@ public class CardService {
   public Optional<Card> findByNumberAndSet(Integer number, String setName) {
     return cardRepository.findByNumberAndSetName(number, setName);
   }
+
+  public void delete(Long id) {
+    cardRepository.deleteById(id);
+  }
 }
