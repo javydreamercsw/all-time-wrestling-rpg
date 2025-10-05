@@ -95,7 +95,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
     // Determine winner using weighted random selection
     int totalWeight = weight1 + weight2;
-    double randomValue = new DiceBag(totalWeight).roll();
+    double randomValue = new DiceBag(random, new int[] {totalWeight}).roll();
 
     WrestlerContext winnerContext;
     WrestlerContext loserContext;
@@ -131,7 +131,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
     // Determine winner using weighted random selection
     int totalWeight = wrestlerWeights.stream().mapToInt(WrestlerWeight::weight).sum();
-    double randomValue = new DiceBag(totalWeight).roll();
+    double randomValue = new DiceBag(random, new int[] {totalWeight}).roll();
 
     double cumulativeWeight = 0;
     WrestlerContext winnerContext = wrestlers.get(0); // fallback

@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.segment;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
@@ -35,9 +36,6 @@ class SegmentOutcomeServiceTest {
 
   @BeforeEach
   void setUp() {
-    // Initialize Random to ensure predictable outcomes for testing
-    // segmentOutcomeService = new SegmentOutcomeService(wrestlerRepository, new Random(123L)); //
-    // No longer needed
     when(random.nextInt(anyInt())).thenReturn(0); // Make random predictable
 
     CardSet testCardSet = new CardSet();
@@ -115,8 +113,47 @@ class SegmentOutcomeServiceTest {
     angleDeck.setCards(angleDeckCards);
     kurtAngle.setDecks(List.of(angleDeck));
 
+    // Generic Wrestler setup
+    Wrestler genericWrestler = new Wrestler();
+    genericWrestler.setName("Generic Wrestler");
+    genericWrestler.setFans(50L);
+    genericWrestler.setTier(WrestlerTier.MIDCARDER);
+    genericWrestler.setStartingStamina(8);
+    genericWrestler.setLowStamina(2);
+    genericWrestler.setStartingHealth(8);
+    genericWrestler.setLowHealth(2);
+    genericWrestler.setDeckSize(10);
+    genericWrestler.setCreationDate(Instant.now());
+
+    Card genericFinisher = new Card();
+    genericFinisher.setName("Generic Finisher");
+    genericFinisher.setFinisher(true);
+    genericFinisher.setSet(testCardSet);
+    genericFinisher.setDamage(4);
+    genericFinisher.setTarget(1);
+    genericFinisher.setStamina(1);
+    genericFinisher.setMomentum(1);
+    genericFinisher.setType("Finisher");
+    genericFinisher.setCreationDate(Instant.now());
+
+    Deck genericDeck = new Deck();
+    genericDeck.setWrestler(genericWrestler);
+    genericDeck.setCreationDate(Instant.now());
+    Set<DeckCard> genericDeckCards = new HashSet<>();
+    DeckCard genericDeckCard = new DeckCard();
+    genericDeckCard.setCard(genericFinisher);
+    genericDeckCard.setSet(testCardSet);
+    genericDeckCard.setAmount(1);
+    genericDeckCard.setDeck(genericDeck);
+    genericDeckCards.add(genericDeckCard);
+    genericDeck.setCards(genericDeckCards);
+    genericWrestler.setDecks(List.of(genericDeck));
+
     when(wrestlerRepository.findByName("Rob Van Dam")).thenReturn(Optional.of(robVanDam));
     when(wrestlerRepository.findByName("Kurt Angle")).thenReturn(Optional.of(kurtAngle));
+    lenient()
+        .when(wrestlerRepository.findByName("Generic Wrestler"))
+        .thenReturn(Optional.of(genericWrestler));
   }
 
   @Test
@@ -143,9 +180,13 @@ class SegmentOutcomeServiceTest {
         segmentOutcomeService.determineOutcomeIfNeeded(context);
 
     assertNotNull(result.getDeterminedOutcome());
-    // With Random(123), Rob Van Dam should win, but with the current mock, Kurt Angle wins.
-    assertTrue(result.getDeterminedOutcome().contains("Kurt Angle"));
-    assertTrue(result.getDeterminedOutcome().contains("Angle Slam"));
+
+    // With a deterministic random mock, Rob Van Dam should always win.
+    assertTrue(
+        result.getDeterminedOutcome().contains("Rob Van Dam"), result.getDeterminedOutcome());
+    assertTrue(
+        result.getDeterminedOutcome().contains("Five-Star Frog Splash"),
+        result.getDeterminedOutcome());
   }
 
   @Test
@@ -175,8 +216,11 @@ class SegmentOutcomeServiceTest {
         segmentOutcomeService.determineOutcomeIfNeeded(context);
 
     assertNotNull(result.getDeterminedOutcome());
-    // With the current mock, Generic Wrestler wins.
-    assertTrue(result.getDeterminedOutcome().contains("Generic Wrestler"));
-    assertTrue(result.getDeterminedOutcome().contains("finishing move"));
+    // With full data, Rob Van Dam should win.
+    assertTrue(
+        result.getDeterminedOutcome().contains("Rob Van Dam"), result.getDeterminedOutcome());
+    assertTrue(
+        result.getDeterminedOutcome().contains("Five-Star Frog Splash"),
+        result.getDeterminedOutcome());
   }
 }
