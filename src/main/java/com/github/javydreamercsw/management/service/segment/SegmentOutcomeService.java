@@ -3,10 +3,14 @@ package com.github.javydreamercsw.management.service.segment;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
+import com.github.javydreamercsw.management.domain.card.Card;
+import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.utils.DiceBag;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -26,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
   private final WrestlerRepository wrestlerRepository;
-  private final Random random = new Random();
+  private final Random random;
 
   /**
    * Determines the match outcome if none is provided in the context. Uses wrestler stats, tier
@@ -93,19 +97,23 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
     int totalWeight = weight1 + weight2;
     double randomValue = new DiceBag(totalWeight).roll();
 
-    WrestlerContext winner;
-    WrestlerContext loser;
+    WrestlerContext winnerContext;
+    WrestlerContext loserContext;
+    Optional<Wrestler> winner;
     if (randomValue < weight1) {
-      winner = wrestler1;
-      loser = wrestler2;
+      winnerContext = wrestler1;
+      loserContext = wrestler2;
+      winner = dbWrestler1;
     } else {
-      winner = wrestler2;
-      loser = wrestler1;
+      winnerContext = wrestler2;
+      loserContext = wrestler1;
+      winner = dbWrestler2;
     }
 
     // Generate outcome description
-    String finishingMove = getRandomFinishingMove(winner);
-    return String.format("%s defeats %s with %s", winner.getName(), loser.getName(), finishingMove);
+    String finishingMove = getRandomFinishingMove(winner.orElse(null));
+    return String.format(
+        "%s defeats %s with %s", winnerContext.getName(), loserContext.getName(), finishingMove);
   }
 
   /** Determines outcome for a multi-wrestler match. */
@@ -126,20 +134,21 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
     double randomValue = new DiceBag(totalWeight).roll();
 
     double cumulativeWeight = 0;
-    WrestlerContext winner = wrestlers.get(0); // fallback
+    WrestlerContext winnerContext = wrestlers.get(0); // fallback
     for (WrestlerWeight wrestlerWeight : wrestlerWeights) {
       cumulativeWeight += wrestlerWeight.weight();
       if (randomValue <= cumulativeWeight) {
-        winner = wrestlerWeight.wrestler();
+        winnerContext = wrestlerWeight.wrestler();
         break;
       }
     }
+    Optional<Wrestler> dbWinner = findWrestlerByName(winnerContext.getName());
 
     // Generate outcome description
-    String finishingMove = getRandomFinishingMove(winner);
+    String finishingMove = getRandomFinishingMove(dbWinner.orElse(null));
     return String.format(
         "%s emerges victorious from the %d-way match with %s",
-        winner.getName(), wrestlers.size(), finishingMove);
+        winnerContext.getName(), wrestlers.size(), finishingMove);
   }
 
   /** Calculates wrestler weight for match outcome determination. */
@@ -204,29 +213,31 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
   }
 
   /** Gets a random finishing move for the winner. */
-  private String getRandomFinishingMove(@NonNull WrestlerContext wrestler) {
-    // Check if wrestler has finishers defined in their moveset
-    if (wrestler.getMoveSet() != null
-        && wrestler.getMoveSet().getFinishers() != null
-        && !wrestler.getMoveSet().getFinishers().isEmpty()) {
-      List<String> finisherNames =
-          wrestler.getMoveSet().getFinishers().stream()
-              .map(SegmentNarrationService.Move::getName)
-              .toList();
-      return finisherNames.get(random.nextInt(finisherNames.size()));
-    }
+  private String getRandomFinishingMove(Wrestler wrestler) {
+    if (wrestler != null) {
+      List<Card> finishers = new ArrayList<>();
+      List<Card> signatures = new ArrayList<>();
 
-    // Check if wrestler has trademark moves as fallback
-    if (wrestler.getMoveSet() != null
-        && wrestler.getMoveSet().getTrademarks() != null
-        && !wrestler.getMoveSet().getTrademarks().isEmpty()) {
-      List<String> trademarkNames =
-          wrestler.getMoveSet().getTrademarks().stream()
-              .map(SegmentNarrationService.Move::getName)
-              .toList();
-      return trademarkNames.get(random.nextInt(trademarkNames.size()));
-    }
+      for (Deck deck : wrestler.getDecks()) {
+        for (DeckCard deckCard : deck.getCards()) {
+          Card card = deckCard.getCard();
+          if (card.getFinisher()) {
+            finishers.add(card);
+          }
+          if (card.getSignature()) {
+            signatures.add(card);
+          }
+        }
+      }
 
+      if (!finishers.isEmpty()) {
+        return finishers.get(random.nextInt(finishers.size())).getName();
+      }
+
+      if (!signatures.isEmpty()) {
+        return signatures.get(random.nextInt(signatures.size())).getName();
+      }
+    }
     // Use generic finishing moves
     String[] genericFinishers = {
       "a devastating finishing move",
@@ -238,7 +249,6 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
       "a crushing blow",
       "their ultimate technique"
     };
-
     return genericFinishers[random.nextInt(genericFinishers.length)];
   }
 
