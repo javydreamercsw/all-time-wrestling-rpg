@@ -75,7 +75,15 @@ public class ParallelSyncOrchestrator {
       long totalTime = System.currentTimeMillis() - startTime;
       log.info("✅ Parallel sync completed in {}ms", totalTime);
 
-      return new ParallelSyncResult(results, totalTime, true, null);
+      boolean allSuccess =
+          results.stream()
+              .allMatch(r -> r.getSyncResult() != null && r.getSyncResult().isSuccess());
+
+      return new ParallelSyncResult(
+          results,
+          totalTime,
+          allSuccess,
+          allSuccess ? null : "One or more entities failed to sync.");
     } catch (Exception e) {
       log.error("❌ Parallel sync failed", e);
       return new ParallelSyncResult(

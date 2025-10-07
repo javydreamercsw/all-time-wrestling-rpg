@@ -144,7 +144,7 @@ class ParallelSyncOrchestratorTest {
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
 
     // Then
-    assertTrue(result.isSuccess()); // Overall success despite some failures
+    assertFalse(result.isSuccess());
     assertEquals(12, result.getEntityResults().size());
     assertEquals(10, result.getSuccessfulSyncs());
     assertEquals(2, result.getFailedSyncs());
@@ -196,7 +196,7 @@ class ParallelSyncOrchestratorTest {
 
     // Then
     // The orchestrator should handle exceptions gracefully and continue with other entities
-    assertTrue(result.isSuccess()); // Overall operation fails
+    assertFalse(result.isSuccess());
     assertEquals(12, result.getEntityResults().size());
 
     // At least one entity should have failed

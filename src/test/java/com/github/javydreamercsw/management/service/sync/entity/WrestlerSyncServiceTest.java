@@ -56,6 +56,9 @@ class WrestlerSyncServiceTest {
 
   @BeforeEach
   void setUp() {
+    lenient()
+        .when(objectMapper.getTypeFactory())
+        .thenReturn(com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance());
     wrestlerSyncService = new WrestlerSyncService(objectMapper, syncProperties);
     injectMockDependencies();
   }
