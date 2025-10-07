@@ -145,15 +145,21 @@ public class ShowService {
    * @return List of upcoming shows
    */
   public List<Show> getUpcomingShows(int limit) {
-    LocalDate today = LocalDate.now(clock);
+    return getUpcomingShows(LocalDate.now(clock), limit);
+  }
+
+  public List<Show> getUpcomingShows(LocalDate referenceDate, int limit) {
     Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
-    return showRepository.findByShowDateGreaterThanEqualOrderByShowDate(today, pageable);
+    return showRepository.findByShowDateGreaterThanEqualOrderByShowDate(referenceDate, pageable);
   }
 
   public List<Show> getUpcomingShowsWithRelationships(int limit) {
-    LocalDate today = LocalDate.now(clock);
+    return getUpcomingShowsWithRelationships(LocalDate.now(clock), limit);
+  }
+
+  public List<Show> getUpcomingShowsWithRelationships(LocalDate referenceDate, int limit) {
     Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
-    return showRepository.findUpcomingWithRelationships(today, pageable);
+    return showRepository.findUpcomingWithRelationships(referenceDate, pageable);
   }
 
   /**

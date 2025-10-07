@@ -3,17 +3,20 @@ package com.github.javydreamercsw.management.service.show.planning.dto;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningContext;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningPle;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ShowPlanningDtoMapper {
 
-  public ShowPlanningContextDTO toDto(ShowPlanningContext context) {
+  public ShowPlanningContextDTO toDto(@NonNull ShowPlanningContext context) {
     ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
     dto.setLastMonthSegments(
         context.getLastMonthSegments().stream().map(this::toDto).collect(Collectors.toList()));
@@ -32,7 +35,7 @@ public class ShowPlanningDtoMapper {
     return dto;
   }
 
-  public ShowPlanningSegmentDTO toDto(Segment segment) {
+  public ShowPlanningSegmentDTO toDto(@NonNull Segment segment) {
     ShowPlanningSegmentDTO dto = new ShowPlanningSegmentDTO();
     dto.setId(segment.getId());
     if (segment.getSegmentType() != null && "Promo".equals(segment.getSegmentType().getName())) {
@@ -48,21 +51,21 @@ public class ShowPlanningDtoMapper {
             .collect(Collectors.toList()));
     dto.setWinners(
         segment.getParticipants().stream()
-            .filter(p -> p.getIsWinner())
+            .filter(SegmentParticipant::getIsWinner)
             .map(p -> p.getWrestler().getName())
             .collect(Collectors.toList()));
     dto.setSummary(segment.getSummary());
     return dto;
   }
 
-  public ShowPlanningShowDTO toDto(Show show) {
+  public ShowPlanningShowDTO toDto(@NonNull Show show) {
     ShowPlanningShowDTO dto = new ShowPlanningShowDTO();
     dto.setId(show.getId());
     dto.setName(show.getName());
     return dto;
   }
 
-  public ShowPlanningRivalryDTO toDto(Rivalry rivalry) {
+  public ShowPlanningRivalryDTO toDto(@NonNull Rivalry rivalry) {
     ShowPlanningRivalryDTO dto = new ShowPlanningRivalryDTO();
     dto.setId(rivalry.getId());
     dto.setName(rivalry.getDisplayName());
@@ -72,25 +75,25 @@ public class ShowPlanningDtoMapper {
     return dto;
   }
 
-  public ShowPlanningChampionshipDTO toDto(ShowPlanningChampionship championship) {
+  public ShowPlanningChampionshipDTO toDto(@NonNull ShowPlanningChampionship championship) {
     ShowPlanningChampionshipDTO dto = new ShowPlanningChampionshipDTO();
     dto.setChampionshipName(championship.getTitle().getName());
     if (!championship.getChampions().isEmpty()) {
       dto.setChampionName(
           championship.getChampions().stream()
-              .map(w -> w.getName())
+              .map(Wrestler::getName)
               .collect(Collectors.joining(" & ")));
     }
     if (!championship.getContenders().isEmpty()) {
       dto.setContenderName(
           championship.getContenders().stream()
-              .map(w -> w.getName())
+              .map(Wrestler::getName)
               .collect(Collectors.joining(" & ")));
     }
     return dto;
   }
 
-  public ShowPlanningPleDTO toDto(ShowPlanningPle ple) {
+  public ShowPlanningPleDTO toDto(@NonNull ShowPlanningPle ple) {
     ShowPlanningPleDTO dto = new ShowPlanningPleDTO();
     dto.setPleName(ple.getPle().getName());
     dto.setPleDate(ple.getPle().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
