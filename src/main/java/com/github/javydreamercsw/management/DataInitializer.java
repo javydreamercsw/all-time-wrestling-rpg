@@ -240,14 +240,12 @@ public class DataInitializer {
           ObjectMapper mapper = new ObjectMapper();
           try (var is = resource.getInputStream()) {
             var setsFromFile = mapper.readValue(is, new TypeReference<List<CardSet>>() {});
-            // Map existing cards by name
-            Map<String, CardSet> existing =
-                cardSetService.findAll().stream()
-                    .collect(Collectors.toMap(CardSet::getName, c -> c));
             for (CardSet c : setsFromFile) {
-              CardSet existingSet = existing.get(c.getName());
-              if (existingSet != null) {
+              Optional<CardSet> existingSetOpt = cardSetService.findBySetCode(c.getSetCode());
+              if (existingSetOpt.isPresent()) {
+                CardSet existingSet = existingSetOpt.get();
                 // Update fields
+                existingSet.setName(c.getName());
                 cardSetService.save(existingSet);
                 log.info("Updated existing card set: {}", existingSet.getName());
               } else {
@@ -282,13 +280,13 @@ public class DataInitializer {
                     .collect(
                         Collectors.toMap(
                             c ->
-                                c.getSet().getName()
+                                c.getSet().getSetCode()
                                     + "#"
-                                    + c.getNumber(), // Unique key: set name + number
+                                    + c.getNumber(), // Unique key: set code + number
                             c -> c));
             Map<String, CardSet> sets =
                 cardSetService.findAll().stream()
-                    .collect(Collectors.toMap(CardSet::getName, s -> s));
+                    .collect(Collectors.toMap(CardSet::getSetCode, s -> s));
             for (CardDTO dto : cardsFromFile) {
               CardSet set = sets.get(dto.getSet());
               final String key = dto.getSet() + "#" + dto.getNumber();

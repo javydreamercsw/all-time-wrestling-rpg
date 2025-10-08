@@ -5,6 +5,7 @@ import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -35,8 +36,10 @@ public class CardService {
     card.setType("Strike");
 
     // Set default CardSet (use the first available one)
+    List<CardSet> sets = new ArrayList<>();
+    cardSetRepository.findAll().forEach(sets::add);
     CardSet defaultSet =
-        cardSetRepository.findAll().stream()
+        sets.stream()
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("No CardSet available for default"));
     card.setSet(defaultSet);
@@ -48,7 +51,7 @@ public class CardService {
   }
 
   public List<Card> list(Pageable pageable) {
-    return cardRepository.findAllBy(pageable).toList();
+    return cardRepository.findAll(pageable).toList();
   }
 
   public long count() {

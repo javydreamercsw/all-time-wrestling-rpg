@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.domain.card;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,7 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,8 +24,13 @@ public class CardSet extends AbstractEntity<Long> {
   @Column(name = "set_id")
   private Long id;
 
-  @Column(name = "set_code", nullable = false)
-  @Size(max = 3) private String name;
+  @Column(name = "name", nullable = false, unique = true)
+  @JsonProperty("name")
+  private String name;
+
+  @Column(name = "set_code", nullable = false, length = 3, unique = true)
+  @JsonProperty("set_code")
+  private String setCode;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;

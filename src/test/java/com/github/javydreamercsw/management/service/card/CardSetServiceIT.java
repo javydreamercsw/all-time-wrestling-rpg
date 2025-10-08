@@ -13,7 +13,7 @@ class CardSetServiceIT extends AbstractIntegrationTest {
   @Test
   void testCreateCardSetSet() {
     int initialSize = cardSetRepository.findAll().size();
-    cardSetService.createCardSet("TST");
+    cardSetService.createCardSet("TST", "TST");
     assertThat(cardSetRepository.findAll()).hasSize(initialSize + 1);
     Assertions.assertTrue(
         cardSetRepository.findAll().stream().anyMatch(set -> set.getName().equals("TST")));

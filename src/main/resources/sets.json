@@ -1,9 +1,13 @@
 [ {
-  "name" : "ATW"
+  "name" : "All Time Wrestling",
+  "set_code" : "ATW"
 }, {
-  "name" : "RVD"
+  "name" : "Rob Van Dam",
+  "set_code" : "RVD"
 }, {
-  "name" : "OT"
+  "name" : "Oda Tsurugi",
+  "set_code" : "OT"
 }, {
-  "name" : "SGT"
+  "name" : "Sgt. Slaughter",
+  "set_code" : "SGT"
 } ]
