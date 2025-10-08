@@ -427,10 +427,9 @@ public class DataInitializer {
                       dto.getCurrentChampionName(),
                       dto.getName());
                 }
-              } else if (!title.isVacant()) {
-                // If no champion is specified in DTO but title is not vacant, vacate it
-                titleService.vacateTitle(title.getId());
-                log.info("Vacated title {} as no champion was specified in DTO.", title.getName());
+              } else {
+                // If no champion is specified in DTO leave it as it is currently.
+                log.info("Leaving title {} as is in the database.", title.getName());
               }
             }
           } catch (java.io.IOException e) {
