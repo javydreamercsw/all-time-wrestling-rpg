@@ -11,6 +11,7 @@ import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -204,9 +205,11 @@ public class InjurySyncService extends BaseSyncService {
       return null;
     }
 
-    if (injuryTypeRepository.existsByInjuryName(dto.getInjuryName())) {
-      log.warn("Injury type already exists, skipping: {}", dto.getInjuryName());
-      return null;
+    Optional<InjuryType> existingInjuryType =
+        injuryTypeRepository.findByInjuryName(dto.getInjuryName());
+    if (existingInjuryType.isPresent()) {
+      log.info("Injury type already exists, retrieving: {}", dto.getInjuryName());
+      return existingInjuryType.get();
     }
 
     try {
@@ -236,11 +239,6 @@ public class InjurySyncService extends BaseSyncService {
       log.debug("Updated injury type with external ID: {}", dto.getExternalId());
 
       return updated;
-
-    } catch (IllegalArgumentException e) {
-      // Handle duplicate name exception gracefully
-      log.info("Injury type '{}' already exists: {}", dto.getInjuryName(), e.getMessage());
-      return null;
     } catch (Exception e) {
       log.error("Failed to create injury type '{}': {}", dto.getInjuryName(), e.getMessage(), e);
       return null;
@@ -249,7 +247,7 @@ public class InjurySyncService extends BaseSyncService {
 
   /** Validates injury sync results. */
   private boolean validateInjurySyncResults(List<InjuryDTO> injuryDTOs, int syncedCount) {
-    if (injuryDTOs.isEmpty()) {
+    if (injuryDTOs.isEmpty() || syncedCount == 0) {
       return true; // No injuries to validate
     }
 
