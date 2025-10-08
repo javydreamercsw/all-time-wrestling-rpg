@@ -1,7 +1,6 @@
 package com.github.javydreamercsw.management.domain.card;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @DataJpaTest
 class CardSetTest {
@@ -60,16 +60,16 @@ class CardSetTest {
     cardSet2.setSetCode("S2");
     repository.save(cardSet2);
 
-    assertEquals(cardSet1, cardSet1);
-    assertFalse(cardSet1.equals(cardSet2));
-    assertTrue(cardSet1.equals(repository.findById(cardSet1.getId()).get()));
+    assertNotNull(cardSet1.getId());
+    assertTrue(repository.findById(cardSet1.getId()).isPresent());
+    assertEquals(cardSet1, repository.findById(cardSet1.getId()).get());
   }
 
   @Test
   void testSetCodeNotNull() {
     CardSet cardSet = new CardSet();
     cardSet.setName("Set");
-    assertThrows(Exception.class, () -> repository.save(cardSet));
+    assertThrows(DataIntegrityViolationException.class, () -> repository.saveAndFlush(cardSet));
   }
 
   @Test
@@ -77,13 +77,32 @@ class CardSetTest {
     CardSet cardSet = new CardSet();
     cardSet.setName("Set");
     cardSet.setSetCode("S123");
-    assertThrows(Exception.class, () -> repository.save(cardSet));
+    assertThrows(DataIntegrityViolationException.class, () -> repository.saveAndFlush(cardSet));
   }
 
   @Test
-  void testNameNotNull() {
-    CardSet cardSet = new CardSet();
-    cardSet.setSetCode("S1");
-    assertThrows(Exception.class, () -> repository.save(cardSet));
+  void testNameUnique() {
+    CardSet cardSet1 = new CardSet();
+    cardSet1.setName("Set");
+    cardSet1.setSetCode("S1");
+    repository.save(cardSet1);
+
+    CardSet cardSet2 = new CardSet();
+    cardSet2.setName("Set");
+    cardSet2.setSetCode("S2");
+    assertThrows(DataIntegrityViolationException.class, () -> repository.saveAndFlush(cardSet2));
+  }
+
+  @Test
+  void testSetCodeUnique() {
+    CardSet cardSet1 = new CardSet();
+    cardSet1.setName("Set1");
+    cardSet1.setSetCode("S");
+    repository.save(cardSet1);
+
+    CardSet cardSet2 = new CardSet();
+    cardSet2.setName("Set2");
+    cardSet2.setSetCode("S");
+    assertThrows(DataIntegrityViolationException.class, () -> repository.saveAndFlush(cardSet2));
   }
 }
