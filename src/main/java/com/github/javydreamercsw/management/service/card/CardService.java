@@ -74,4 +74,8 @@ public class CardService {
   public void delete(Long id) {
     cardRepository.deleteById(id);
   }
+
+  public Optional<Card> findById(Long id) {
+    return cardRepository.findById(id);
+  }
 }

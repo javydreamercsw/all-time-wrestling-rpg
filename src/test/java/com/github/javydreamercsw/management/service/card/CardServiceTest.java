@@ -42,6 +42,12 @@ class CardServiceTest {
     assertNotNull(card.getCreationDate());
     assertEquals("Card 1", card.getName());
     assertEquals("Strike", card.getType());
+    assertEquals(1, card.getDamage());
+    assertEquals(1, card.getStamina());
+    assertEquals(1, card.getMomentum());
+    assertEquals(1, card.getTarget());
+    assertEquals(false, card.getFinisher());
+    assertEquals(false, card.getSignature());
     assertEquals(cardSet.getId(), card.getSet().getId());
     assertEquals(1, card.getNumber());
   }
@@ -65,11 +71,11 @@ class CardServiceTest {
   void testSave() {
     Card card = cardService.createCard("Card 1");
     card.setName("Updated Card");
-    cardService.save(card);
+    Card savedCard = cardService.save(card);
 
-    assertEquals(
-        "Updated Card",
-        cardService.list(org.springframework.data.domain.Pageable.unpaged()).get(0).getName());
+    Optional<Card> foundCard = cardService.findById(savedCard.getId());
+    assertTrue(foundCard.isPresent());
+    assertEquals("Updated Card", foundCard.get().getName());
   }
 
   @Test
@@ -96,5 +102,15 @@ class CardServiceTest {
 
     cardService.delete(card.getId());
     assertEquals(0, cardService.count());
+  }
+
+  @Test
+  void testCreateCardWithExistingCards() {
+    cardService.createCard("Card 1");
+    Card card2 = cardService.createCard("Card 2");
+    assertEquals(2, card2.getNumber());
+
+    Card card3 = cardService.createCard("Card 3");
+    assertEquals(3, card3.getNumber());
   }
 }

@@ -116,4 +116,28 @@ class CardSetServiceTest {
 
     Assertions.assertTrue(cardSetService.findBySetCode(setCode).isPresent());
   }
+
+  @Test
+  void testCreateCardSetWithDuplicateName() {
+    String name = "Duplicate Name";
+    String setCode1 = generateUniqueSetCode();
+    cardSetService.createCardSet(name, setCode1);
+
+    String setCode2 = generateUniqueSetCode();
+    Assertions.assertThrows(
+        org.springframework.dao.DataIntegrityViolationException.class,
+        () -> cardSetService.createCardSet(name, setCode2));
+  }
+
+  @Test
+  void testCreateCardSetWithDuplicateSetCode() {
+    String setCode = generateUniqueSetCode();
+    String name1 = "Name 1 " + UUID.randomUUID();
+    cardSetService.createCardSet(name1, setCode);
+
+    String name2 = "Name 2 " + UUID.randomUUID();
+    Assertions.assertThrows(
+        org.springframework.dao.DataIntegrityViolationException.class,
+        () -> cardSetService.createCardSet(name2, setCode));
+  }
 }
