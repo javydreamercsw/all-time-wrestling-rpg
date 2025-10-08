@@ -129,13 +129,17 @@ public class RetryService {
     if (matcher.find()) {
       try {
         int seconds = Integer.parseInt(matcher.group(1));
-        return seconds * 1000L; // Convert to milliseconds
+        return seconds * 1_000L; // Convert to milliseconds
       } catch (NumberFormatException e) {
         log.warn("Failed to parse Retry-After value: {}", matcher.group(1));
       }
     }
-
-    return 0;
+    log.warn(
+        "Could not extract numeric Retry-After value from rate limit error. "
+            + "This might indicate an unsupported format (e.g., HTTP-date). "
+            + "Error message: {}",
+        message);
+    return 10_000L;
   }
 
   public RetryContext createContext(@NonNull String entityType, @NonNull String operationName) {
