@@ -12,8 +12,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 @EnabledIf("isNotionTokenAvailable")
+@Transactional
 class CardServiceIT extends AbstractIntegrationTest {
   @Autowired CardRepository cardRepository;
   @Autowired CardSetRepository cardSetRepository;

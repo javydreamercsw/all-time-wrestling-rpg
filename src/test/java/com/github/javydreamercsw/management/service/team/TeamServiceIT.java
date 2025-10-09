@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for TeamService. Tests the complete service layer with real database
@@ -23,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
  */
 @DisplayName("TeamService Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
+@Transactional
 class TeamServiceIT extends AbstractIntegrationTest {
 
   private Wrestler wrestler1;
