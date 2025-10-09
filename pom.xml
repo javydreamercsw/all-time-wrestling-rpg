@@ -828,7 +828,7 @@
               <systemPropertyVariables>
                 <spring.profiles.active>test</spring.profiles.active>
               </systemPropertyVariables>
-              <argLine>@{failsafeArgLine}</argLine>
+              <argLine>@{failsafeArgLine} -DNOTION_TOKEN=${env.NOTION_TOKEN}</argLine>
             </configuration>
             <executions>
               <execution>
