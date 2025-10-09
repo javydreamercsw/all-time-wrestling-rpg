@@ -290,49 +290,6 @@ public class InjurySyncService extends BaseSyncService {
   }
 
   // Injury property extraction methods
-  private String extractSeverityFromInjuryPage(InjuryPage injuryPage) {
-    try {
-      if (injuryPage.getRawProperties() != null) {
-        Object severity = injuryPage.getRawProperties().get("Severity");
-        return severity != null ? severity.toString() : "MINOR";
-      }
-      return "MINOR";
-    } catch (Exception e) {
-      log.warn("Failed to extract severity from injury page: {}", injuryPage.getId(), e);
-      return "MINOR";
-    }
-  }
-
-  private Integer extractRecoveryTimeFromInjuryPage(InjuryPage injuryPage) {
-    try {
-      if (injuryPage.getRawProperties() != null) {
-        Object recoveryTime = injuryPage.getRawProperties().get("Recovery Time");
-        if (recoveryTime instanceof Number number) {
-          return number.intValue();
-        } else if (recoveryTime instanceof String str) {
-          return Integer.parseInt(str);
-        }
-      }
-      return 1;
-    } catch (Exception e) {
-      log.warn("Failed to extract recovery time from injury page: {}", injuryPage.getId(), e);
-      return 1;
-    }
-  }
-
-  private String extractBodyPartFromInjuryPage(InjuryPage injuryPage) {
-    try {
-      if (injuryPage.getRawProperties() != null) {
-        Object bodyPart = injuryPage.getRawProperties().get("Body Part");
-        return bodyPart != null ? bodyPart.toString() : "General";
-      }
-      return "General";
-    } catch (Exception e) {
-      log.warn("Failed to extract body part from injury page: {}", injuryPage.getId(), e);
-      return "General";
-    }
-  }
-
   private Integer extractHealthEffectFromInjuryPage(InjuryPage injuryPage) {
     try {
       if (injuryPage.getRawProperties() != null) {
