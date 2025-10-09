@@ -5,17 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.github.javydreamercsw.AbstractE2ETest;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.openqa.selenium.By;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ActiveProfiles("test")
-@EnabledIf("isNotionTokenAvailable")
-public class SeasonListViewIT extends AbstractE2ETest {
+public class SeasonListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNavigateToSeasonListView() {

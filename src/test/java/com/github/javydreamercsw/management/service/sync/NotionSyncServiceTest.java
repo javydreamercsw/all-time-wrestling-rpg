@@ -207,22 +207,22 @@ class NotionSyncServiceTest extends BaseTest {
     verify(teamSyncService).syncTeams(operationId);
   }
 
-  // ==================== MATCHES SYNC TESTS ====================
+  // ==================== SEGMENTS SYNC TESTS ====================
 
   @Test
-  @DisplayName("Should delegate matches sync to MatchSyncService")
-  void shouldDelegateMatchesSyncToMatchSyncService() {
+  @DisplayName("Should delegate segments sync to SegmentSyncService")
+  void shouldDelegateSegmentsSyncToSegmentSyncService() {
     // Given
     String testOperationId = "my-test-operation-id";
     BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Segments", 15, 3);
-    when(segmentSyncService.syncSegments(testOperationId + "-matches")).thenReturn(mockResult);
+    when(segmentSyncService.syncSegments(testOperationId + "-segments")).thenReturn(mockResult);
 
     // When
     BaseSyncService.SyncResult result = notionSyncService.syncSegments(testOperationId);
 
     // Then
     assertThat(result).isEqualTo(mockResult);
-    verify(segmentSyncService).syncSegments(testOperationId + "-matches");
+    verify(segmentSyncService).syncSegments(testOperationId + "-segments");
   }
 
   // ==================== SEASONS SYNC TESTS ====================

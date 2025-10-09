@@ -5,51 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.github.javydreamercsw.AbstractE2ETest;
-import com.github.javydreamercsw.management.domain.card.Card;
-import com.github.javydreamercsw.management.domain.card.CardRepository;
-import com.github.javydreamercsw.management.domain.card.CardSet;
-import com.github.javydreamercsw.management.domain.card.CardSetRepository;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
-import com.github.javydreamercsw.management.service.card.CardService;
-import com.github.javydreamercsw.management.service.card.CardSetService;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 import java.time.Duration;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ActiveProfiles("test")
-@EnabledIf("isNotionTokenAvailable")
-@TestPropertySource(properties = "data.initializer.enabled=false")
-public class CardListViewIT extends AbstractE2ETest {
-
-  @Autowired private CardService cardService;
-  @Autowired private DeckRepository deckRepository;
-  @Autowired private CardRepository cardRepository;
-  @Autowired private CardSetRepository cardSetRepository;
-  @Autowired private CardSetService cardSetService;
-
-  @BeforeEach
-  public void setup() {
-    super.setup();
-    deckRepository.deleteAll();
-    cardRepository.deleteAll();
-    cardSetRepository.deleteAll();
-    CardSet testSet = new CardSet();
-    testSet.setName("TST");
-    cardSetService.save(testSet);
-  }
+public class CardListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testCreateCard() {
@@ -90,23 +56,6 @@ public class CardListViewIT extends AbstractE2ETest {
   @Test
   public void testUpdateCard() {
     String cardName = "Card to Update";
-    // First, create a card to update
-    CardSet testSet =
-        cardSetRepository.findAll().stream()
-            .filter(set -> set.getName().equals("TST"))
-            .findFirst()
-            .get();
-    Card card = new Card();
-    card.setName(cardName);
-    card.setSet(testSet);
-    card.setDamage(1);
-    card.setTarget(1);
-    card.setStamina(1);
-    card.setMomentum(1);
-    card.setType("Strike");
-    card.setCreationDate(java.time.Instant.now());
-    cardRepository.save(card);
-
     driver.get("http://localhost:8080/card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
@@ -173,8 +122,6 @@ public class CardListViewIT extends AbstractE2ETest {
   @Test
   public void testDeleteCard() {
     String cardName = "Card to Delete";
-    // First, create a card to delete
-    cardService.createCard(cardName);
 
     driver.get("http://localhost:8080/card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
