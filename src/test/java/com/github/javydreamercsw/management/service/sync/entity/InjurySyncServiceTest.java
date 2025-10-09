@@ -44,7 +44,7 @@ class InjurySyncServiceTest {
   @Mock private InjuryTypeService injuryTypeService;
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private NotionHandler notionHandler;
-  private NotionSyncProperties syncProperties; // Declare without @Mock
+  private final NotionSyncProperties syncProperties; // Declare without @Mock
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private ObjectMapper objectMapper;
@@ -202,10 +202,17 @@ class InjurySyncServiceTest {
 
       List<InjuryPage> mockPages = createMockInjuryPages();
       when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
-      when(injuryTypeRepository.existsByInjuryName("Head Injury")).thenReturn(true);
-      when(injuryTypeRepository.existsByInjuryName("Back Injury")).thenReturn(false);
+
+      // Correctly mock repository behavior
+      com.github.javydreamercsw.management.domain.injury.InjuryType existingInjury =
+          createMockInjuryType();
+      when(injuryTypeRepository.findByInjuryName("Head Injury"))
+          .thenReturn(java.util.Optional.of(existingInjury));
+      when(injuryTypeRepository.findByInjuryName("Back Injury"))
+          .thenReturn(java.util.Optional.empty());
+
       when(injuryTypeService.createInjuryType(
-              anyString(), anyInt(), anyInt(), anyInt(), anyString()))
+              eq("Back Injury"), anyInt(), anyInt(), anyInt(), anyString()))
           .thenReturn(createMockInjuryType());
       when(injuryTypeService.updateInjuryType(any())).thenReturn(createMockInjuryType());
 
@@ -214,9 +221,13 @@ class InjurySyncServiceTest {
 
       // Then
       assertTrue(result.isSuccess());
-      assertEquals(1, result.getSyncedCount()); // Only one new injury
+      assertEquals(2, result.getSyncedCount()); // Both processed
+
+      // Verify that create is only called for the new injury
       verify(injuryTypeService, times(1))
-          .createInjuryType(anyString(), anyInt(), anyInt(), anyInt(), anyString());
+          .createInjuryType(eq("Back Injury"), anyInt(), anyInt(), anyInt(), anyString());
+      verify(injuryTypeService, never())
+          .createInjuryType(eq("Head Injury"), anyInt(), anyInt(), anyInt(), anyString());
     }
   }
 

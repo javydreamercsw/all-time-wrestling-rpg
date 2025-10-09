@@ -229,6 +229,12 @@ public class InjurySyncService extends BaseSyncService {
               dto.getCardEffect(),
               dto.getSpecialEffects());
 
+      if (injuryType == null) {
+        log.error(
+            "Failed to create injury type ''{}'' as service returned null.", dto.getInjuryName());
+        return null;
+      }
+
       log.debug("Successfully created injury type with ID: {}", injuryType.getId());
 
       // Set external ID for tracking
@@ -240,15 +246,19 @@ public class InjurySyncService extends BaseSyncService {
 
       return updated;
     } catch (Exception e) {
-      log.error("Failed to create injury type '{}': {}", dto.getInjuryName(), e.getMessage(), e);
+      log.error("Failed to create injury type ''{}' ': {}", dto.getInjuryName(), e.getMessage(), e);
       return null;
     }
   }
 
-  /** Validates injury sync results. */
   private boolean validateInjurySyncResults(List<InjuryDTO> injuryDTOs, int syncedCount) {
-    if (injuryDTOs.isEmpty() || syncedCount == 0) {
+    if (injuryDTOs.isEmpty()) {
       return true; // No injuries to validate
+    }
+
+    if (syncedCount == 0) {
+      log.warn("Injury sync validation failed: 0 out of {} injuries synced.", injuryDTOs.size());
+      return false;
     }
 
     // Basic validation: check if at least some injuries were synced
@@ -259,7 +269,6 @@ public class InjurySyncService extends BaseSyncService {
           syncedCount, injuryDTOs.size(), Math.round(syncRate * 100));
       return false;
     }
-
     log.info(
         "Injury sync validation passed: {}/{} injuries synced ({}%)",
         syncedCount, injuryDTOs.size(), Math.round(syncRate * 100));

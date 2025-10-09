@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,6 +29,7 @@ class CardSetServiceTest {
 
   @Autowired private CardSetService cardSetService;
   @Autowired private CardSetRepository cardSetRepository;
+  @Autowired private CardRepository cardRepository;
 
   private static int setCodeCounter;
 
@@ -39,25 +42,46 @@ class CardSetServiceTest {
     return String.format("T%02d", setCodeCounter++);
   }
 
+  @BeforeEach
+  void setUp() {
+
+    cardRepository.deleteAll();
+    cardSetRepository.deleteAll();
+  }
+
   @Test
   void testCardSetServiceFlow() {
+
     String setCode1 = generateUniqueSetCode();
+
     String setName1 = "Test Set " + UUID.randomUUID();
+
     CardSet cardSet1 = cardSetService.createCardSet(setName1, setCode1);
+
     assertNotNull(cardSet1);
+
     assertNotNull(cardSet1.getCreationDate());
+
     assertEquals(setName1, cardSet1.getName());
+
     assertEquals(setCode1, cardSet1.getSetCode());
 
     String setCode2 = generateUniqueSetCode();
+
     String setName2 = "Test Set " + UUID.randomUUID();
+
     CardSet cardSet2 = cardSetService.createCardSet(setName2, setCode2);
+
     assertNotNull(cardSet2);
+
     assertNotNull(cardSet2.getCreationDate());
+
     assertEquals(setName2, cardSet2.getName());
+
     assertEquals(setCode2, cardSet2.getSetCode());
 
     assertEquals(2, cardSetService.list(Pageable.unpaged()).size());
+
     assertEquals(2, cardSetService.count());
 
     cardSet1.setName("Updated Set 1");
@@ -103,10 +127,11 @@ class CardSetServiceTest {
 
   @Test
   void testFindAll() {
+    int initialSize = cardSetService.findAll().size();
     cardSetService.createCardSet("Test Set " + UUID.randomUUID(), generateUniqueSetCode());
     cardSetService.createCardSet("Test Set " + UUID.randomUUID(), generateUniqueSetCode());
 
-    assertEquals(2, cardSetService.findAll().size());
+    assertEquals(initialSize + 2, cardSetService.findAll().size());
   }
 
   @Test

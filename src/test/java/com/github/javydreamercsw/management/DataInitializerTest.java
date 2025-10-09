@@ -253,7 +253,7 @@ class DataInitializerTest extends AbstractIntegrationTest {
             .findFirst()
             .orElseThrow();
     assertThat(card.getSet()).isNotNull();
-    assertThat(card.getSet().getName()).isEqualTo("RVD");
+    assertThat(card.getSet().getSetCode()).isEqualTo("RVD");
   }
 
   @Test
