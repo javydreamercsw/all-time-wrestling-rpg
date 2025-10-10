@@ -286,10 +286,9 @@ public class DataInitializer {
                                 c.getSet().getSetCode()
                                     + "#"
                                     + c.getNumber(), // Unique key: set code + number
-                            c -> c));
-            Map<String, CardSet> sets =
-                cardSetService.findAll().stream()
-                    .collect(Collectors.toMap(CardSet::getSetCode, s -> s));
+                            c -> c,
+                            (existingCard, duplicateCard) -> existingCard));
+
             for (CardDTO dto : cardsFromFile) {
               Optional<CardSet> setOpt = cardSetService.findBySetCode(dto.getSet());
               if (setOpt.isEmpty()) {
