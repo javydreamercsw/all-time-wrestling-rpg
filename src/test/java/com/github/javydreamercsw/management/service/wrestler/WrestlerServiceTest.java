@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 
 /**
  * Unit tests for WrestlerService ATW RPG functionality. Tests the service layer methods for fan
@@ -35,6 +37,7 @@ class WrestlerServiceTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private InjuryService injuryService;
   @Mock private Clock clock;
+  @Mock private DramaEventRepository dramaEventRepository;
 
   @InjectMocks private WrestlerService wrestlerService;
 
@@ -315,6 +318,155 @@ class WrestlerServiceTest {
     assertThat(result.getDeckSize()).isEqualTo(15);
     assertThat(result.getStartingHealth()).isEqualTo(15);
     verify(wrestlerRepository).saveAndFlush(any(Wrestler.class));
+  }
+
+  @Test
+  void testCreateCard() {
+    wrestlerService.createCard("New Wrestler");
+    verify(wrestlerRepository).saveAndFlush(any(Wrestler.class));
+  }
+
+  @Test
+  void testList() {
+    Wrestler wrestler = new Wrestler();
+    when(wrestlerRepository.findAllBy(any()))
+        .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(wrestler)));
+    List<Wrestler> result =
+        wrestlerService.list(org.springframework.data.domain.PageRequest.of(0, 10));
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void testCount() {
+    when(wrestlerRepository.count()).thenReturn(42L);
+    assertThat(wrestlerService.count()).isEqualTo(42L);
+  }
+
+  @Test
+  void testSave() {
+    Wrestler wrestler = new Wrestler();
+    when(clock.instant()).thenReturn(fixedInstant);
+    when(wrestlerRepository.saveAndFlush(wrestler)).thenReturn(wrestler);
+    Wrestler result = wrestlerService.save(wrestler);
+    assertThat(result.getCreationDate()).isEqualTo(fixedInstant);
+    verify(wrestlerRepository).saveAndFlush(wrestler);
+  }
+
+  @Test
+  void testDelete() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setName("DeleteMe");
+    wrestler.setId(1L);
+    wrestlerService.delete(wrestler);
+    verify(dramaEventRepository).deleteByPrimaryWrestlerOrSecondaryWrestler(wrestler, wrestler);
+    verify(wrestlerRepository).delete(wrestler);
+  }
+
+  @Test
+  void testFindAll() {
+    Wrestler wrestler = new Wrestler();
+    when(wrestlerRepository.findAll(any(Sort.class))).thenReturn(List.of(wrestler));
+    List<Wrestler> result = wrestlerService.findAll();
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void testGetWrestlerById_found() {
+    Wrestler wrestler = new Wrestler();
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    Optional<Wrestler> result = wrestlerService.getWrestlerById(1L);
+    assertThat(result).isPresent();
+  }
+
+  @Test
+  void testGetWrestlerById_notFound() {
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.empty());
+    Optional<Wrestler> result = wrestlerService.getWrestlerById(2L);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void testFindByName_found() {
+    Wrestler wrestler = new Wrestler();
+    when(wrestlerRepository.findByName("Name")).thenReturn(Optional.of(wrestler));
+    Optional<Wrestler> result = wrestlerService.findByName("Name");
+    assertThat(result).isPresent();
+  }
+
+  @Test
+  void testFindByName_notFound() {
+    when(wrestlerRepository.findByName("Missing")).thenReturn(Optional.empty());
+    Optional<Wrestler> result = wrestlerService.findByName("Missing");
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void testFindByExternalId_found() {
+    Wrestler wrestler = new Wrestler();
+    when(wrestlerRepository.findByExternalId("extid")).thenReturn(Optional.of(wrestler));
+    Optional<Wrestler> result = wrestlerService.findByExternalId("extid");
+    assertThat(result).isPresent();
+  }
+
+  @Test
+  void testFindByExternalId_notFound() {
+    when(wrestlerRepository.findByExternalId("missing")).thenReturn(Optional.empty());
+    Optional<Wrestler> result = wrestlerService.findByExternalId("missing");
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void testAwardFans_found() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setFans(100L);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    when(wrestlerRepository.saveAndFlush(wrestler)).thenReturn(wrestler);
+    Optional<Wrestler> result = wrestlerService.awardFans(1L, 50L);
+    assertThat(result).isPresent();
+    assertThat(result.get().getFans()).isEqualTo(150L);
+  }
+
+  @Test
+  void testAwardFans_notFound() {
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.empty());
+    Optional<Wrestler> result = wrestlerService.awardFans(2L, 50L);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void testAddBump_found_noInjury() {
+    Wrestler wrestler = new Wrestler();
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    when(wrestlerRepository.saveAndFlush(wrestler)).thenReturn(wrestler);
+    Optional<Wrestler> result = wrestlerService.addBump(1L);
+    assertThat(result).isPresent();
+  }
+
+  @Test
+  void testAddBump_found_withInjury() {
+    Wrestler wrestler =
+        new Wrestler() {
+          @Override
+          public boolean addBump() {
+            return true;
+          }
+        };
+    wrestler.setId(1L);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    Injury injury = new Injury();
+    injury.setSeverity(InjurySeverity.MINOR); // Ensure severity is set to avoid NPE
+    when(injuryService.createInjuryFromBumps(any())).thenReturn(Optional.of(injury));
+    when(wrestlerRepository.saveAndFlush(wrestler)).thenReturn(wrestler);
+    Optional<Wrestler> result = wrestlerService.addBump(1L);
+    assertThat(result).isPresent();
+    verify(injuryService).createInjuryFromBumps(any());
+  }
+
+  @Test
+  void testAddBump_notFound() {
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.empty());
+    Optional<Wrestler> result = wrestlerService.addBump(2L);
+    assertThat(result).isEmpty();
   }
 
   private Wrestler createWrestler(String name, Long fans) {
