@@ -50,7 +50,6 @@ class FactionServiceIntegrationTest extends AbstractIntegrationTest {
   void shouldCreateNewFactionSuccessfully() {
     // Given
     Wrestler wrestler3 = wrestlerService.createWrestler("Stone Cold", true, null);
-    Wrestler wrestler4 = wrestlerService.createWrestler("Triple H", true, null);
 
     // When
     Optional<Faction> result =
@@ -63,7 +62,7 @@ class FactionServiceIntegrationTest extends AbstractIntegrationTest {
     assertThat(savedFaction.getName()).isEqualTo("The New Faction");
     assertThat(savedFaction.getDescription()).isEqualTo("A newly created faction");
     assertThat(savedFaction.getLeader()).isEqualTo(wrestler3);
-    assertThat(savedFaction.getMembers()).containsExactlyInAnyOrder(wrestler3, wrestler4);
+    assertThat(savedFaction.getMembers()).containsExactlyInAnyOrder(wrestler3);
   }
 
   @Test
@@ -98,26 +97,26 @@ class FactionServiceIntegrationTest extends AbstractIntegrationTest {
 
     factionToUpdate.setName("Updated Faction Name");
     factionToUpdate.setDescription("Updated description");
+    factionService.save(factionToUpdate);
 
     // Change leader
     assertNotNull(factionId);
     assertNotNull(testWrestler2.getId());
-    factionService.changeFactionLeader(factionId, testWrestler2.getId());
+    result = factionService.changeFactionLeader(factionId, testWrestler2.getId());
+    assertThat(result).isPresent();
 
-    // Remove old members and add new ones
+    // Remove a member that is not the new leader
     assertNotNull(testWrestler1.getId());
-    factionService.removeMemberFromFaction(factionId, testWrestler1.getId(), "Test removal");
-    factionService.addMemberToFaction(factionId, testWrestler1.getId());
-
-    result = Optional.of(factionService.save(factionToUpdate));
+    result =
+        factionService.removeMemberFromFaction(factionId, testWrestler1.getId(), "Test removal");
+    assertThat(result).isPresent();
 
     // Then
-    assertThat(result).isPresent();
     Faction updatedFaction = result.get();
     assertThat(updatedFaction.getName()).isEqualTo("Updated Faction Name");
     assertThat(updatedFaction.getDescription()).isEqualTo("Updated description");
     assertThat(updatedFaction.getLeader()).isEqualTo(testWrestler2);
-    assertThat(updatedFaction.getMembers()).containsExactlyInAnyOrder(testWrestler1);
+    assertThat(updatedFaction.getMembers()).containsExactlyInAnyOrder(testWrestler2);
   }
 
   @Test

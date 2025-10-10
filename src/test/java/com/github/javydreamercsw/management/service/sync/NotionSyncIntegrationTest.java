@@ -318,7 +318,7 @@ class NotionSyncIntegrationTest extends ManagementIntegrationTest {
     log.info("🔍 Validating factions in database...");
 
     // Get all factions from database
-    List<Faction> factions = factionRepository.findAll();
+    List<Faction> factions = factionRepository.findAllWithMembers();
     log.info("📋 Found {} factions in database", factions.size());
 
     if (factions.isEmpty()) {

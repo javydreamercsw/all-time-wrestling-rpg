@@ -13,6 +13,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,6 +22,8 @@ import org.springframework.test.web.servlet.MockMvc;
  * Integration tests for MatchNarrationController. Tests the complete flow from REST endpoints to AI
  * services using the mock provider.
  */
+@SpringBootTest
+@AutoConfigureMockMvc
 @DisplayName("Segment Narration Controller Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
 class SegmentNarrationControllerIntegrationTest extends AbstractIntegrationTest {

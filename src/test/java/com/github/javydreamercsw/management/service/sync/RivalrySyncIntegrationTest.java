@@ -66,6 +66,7 @@ class RivalrySyncIntegrationTest extends ManagementIntegrationTest {
     int initialRivalryCount = factionRivalryRepository.findAll().size();
 
     // When - Sync faction rivalries from real Notion database
+    notionSyncService.syncFactions("test-operation-faction-123");
     NotionSyncService.SyncResult result =
         notionSyncService.syncFactionRivalries("test-operation-faction-rivalry-123");
 

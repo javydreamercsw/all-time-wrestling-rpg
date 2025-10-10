@@ -30,14 +30,8 @@ public class RetryService {
   }
 
   public <T> T executeWithRetry(String entityType, AttemptCallable<T> callable) throws Exception {
-    int maxAttempts = config.getMaxAttempts();
-    // Support entity-specific config
-    if ("shows".equals(entityType)
-        && config.getEntities() != null
-        && config.getEntities().getShows() != null) {
-      maxAttempts = config.getEntities().getShows().getMaxAttempts();
-    }
-    long delay = config.getInitialDelayMs();
+    int maxAttempts = config.getMaxAttempts(entityType);
+    long delay = config.getInitialDelayMs(entityType);
     double backoff = config.getBackoffMultiplier();
     Exception lastException = null;
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -143,12 +137,7 @@ public class RetryService {
   }
 
   public RetryContext createContext(@NonNull String entityType, @NonNull String operationName) {
-    int maxAttempts = config.getMaxAttempts();
-    if ("shows".equals(entityType)
-        && config.getEntities() != null
-        && config.getEntities().getShows() != null) {
-      maxAttempts = config.getEntities().getShows().getMaxAttempts();
-    }
+    int maxAttempts = config.getMaxAttempts(entityType);
     return new RetryContext(entityType, operationName, maxAttempts);
   }
 
