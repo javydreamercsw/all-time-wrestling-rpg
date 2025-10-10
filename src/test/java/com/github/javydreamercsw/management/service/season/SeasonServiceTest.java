@@ -325,6 +325,21 @@ class SeasonServiceTest {
     assertThat(result.isActive()).isTrue();
   }
 
+  @Test
+  void testCreateSeasonWithDefaults() {
+    Season activeSeason = new Season();
+    activeSeason.setIsActive(true);
+    when(seasonRepository.findActiveSeason()).thenReturn(Optional.of(activeSeason));
+    when(seasonRepository.saveAndFlush(any(Season.class))).thenAnswer(i -> i.getArgument(0));
+    Season newSeason = seasonService.createSeason("Season 1", "Description", null);
+    assertThat(newSeason.getName()).isEqualTo("Season 1");
+    assertThat(newSeason.getDescription()).isEqualTo("Description");
+    assertThat(newSeason.getIsActive()).isTrue();
+    assertThat(newSeason.getShowsPerPpv()).isEqualTo(5); // Default value
+    assertThat(newSeason.getStartDate()).isNotNull();
+    assertThat(newSeason.getCreationDate()).isNotNull();
+  }
+
   private Season createSeason(String name, Integer seasonNumber) {
     Season season = new Season();
     season.setId(seasonNumber.longValue());
