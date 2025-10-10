@@ -178,9 +178,23 @@ public class NotionHandler {
     RetryPolicy<T> rateLimitPolicy =
         RetryPolicy.<T>builder()
             .handleIf(
-                e ->
-                    e instanceof NotionAPIError
-                        && ((NotionAPIError) e).getError().getStatus() == 429)
+                e -> {
+                  if (e instanceof NotionAPIError) {
+                    NotionAPIError notionError = (NotionAPIError) e;
+                    String message = notionError.getMessage().toLowerCase();
+                    if (message.contains("429")
+                        || message.contains("rate limit")
+                        || message.contains("too many requests")
+                        || message.contains("rate_limited")) {
+                      return true;
+                    }
+                    if (notionError.getError() != null) {
+                      return notionError.getError().getStatus() == 429
+                          || "rate_limited".equals(notionError.getError().getCode());
+                    }
+                  }
+                  return false;
+                })
             .withBackoff(1, 5, java.time.temporal.ChronoUnit.SECONDS)
             .withMaxRetries(3)
             .onRetry(e -> log.warn("Rate limited by Notion API. Retrying...", e.getLastException()))
@@ -191,6 +205,7 @@ public class NotionHandler {
             .handleIf(
                 e ->
                     e instanceof NotionAPIError
+                        && ((NotionAPIError) e).getError() != null
                         && ((NotionAPIError) e).getError().getStatus() >= 500)
             .withBackoff(1, 5, java.time.temporal.ChronoUnit.SECONDS)
             .withMaxRetries(3)
