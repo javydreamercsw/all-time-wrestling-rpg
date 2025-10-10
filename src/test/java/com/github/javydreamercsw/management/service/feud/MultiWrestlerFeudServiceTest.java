@@ -3,8 +3,10 @@ package com.github.javydreamercsw.management.service.feud;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.lang.reflect.Field;
 import java.time.Clock;
@@ -95,5 +97,77 @@ class MultiWrestlerFeudServiceTest {
     var result = service.getActiveFeuds();
     assertEquals(1, result.size());
     assertTrue(result.get(0).getIsActive());
+  }
+
+  @Test
+  void testGetFeudByName_found() {
+    MultiWrestlerFeud feud = new MultiWrestlerFeud();
+    feud.setName("FeudName");
+    when(feudRepository.findByName("FeudName")).thenReturn(Optional.of(feud));
+    var result = service.getFeudByName("FeudName");
+    assertTrue(result.isPresent());
+    assertEquals("FeudName", result.get().getName());
+  }
+
+  @Test
+  void testGetFeudByName_notFound() {
+    when(feudRepository.findByName("MissingFeud")).thenReturn(Optional.empty());
+    var result = service.getFeudByName("MissingFeud");
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
+  void testGetActiveFeudsForWrestler_wrestlerNotFound() {
+    when(wrestlerRepository.findById(99L)).thenReturn(Optional.empty());
+    var result = service.getActiveFeudsForWrestler(99L);
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
+  void testGetActiveFeudsForWrestler_noFeuds() {
+    Wrestler wrestler = mock(Wrestler.class);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    when(feudRepository.findActiveFeudsForWrestler(wrestler))
+        .thenReturn(java.util.Collections.emptyList());
+    var result = service.getActiveFeudsForWrestler(1L);
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
+  void testAddParticipant_missingFeudOrWrestler() {
+    when(feudRepository.findById(1L)).thenReturn(Optional.empty());
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.empty());
+    var result = service.addParticipant(1L, 2L, FeudRole.PROTAGONIST);
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
+  void testAddParticipant_nullRole_throws() {
+    when(feudRepository.findById(1L)).thenReturn(Optional.empty());
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.empty());
+    assertThrows(NullPointerException.class, () -> service.addParticipant(1L, 2L, null));
+  }
+
+  @Test
+  void testAddParticipant_inactiveFeud() {
+    MultiWrestlerFeud feud = mock(MultiWrestlerFeud.class);
+    Wrestler wrestler = mock(Wrestler.class);
+    when(feud.getIsActive()).thenReturn(false);
+    when(feudRepository.findById(1L)).thenReturn(Optional.of(feud));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(wrestler));
+    var result = service.addParticipant(1L, 2L, FeudRole.ANTAGONIST);
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
+  void testAddParticipant_alreadyParticipant() {
+    MultiWrestlerFeud feud = mock(MultiWrestlerFeud.class);
+    Wrestler wrestler = mock(Wrestler.class);
+    when(feud.getIsActive()).thenReturn(true);
+    when(feud.hasParticipant(wrestler)).thenReturn(true);
+    when(feudRepository.findById(1L)).thenReturn(Optional.of(feud));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(wrestler));
+    var result = service.addParticipant(1L, 2L, FeudRole.PROTAGONIST);
+    assertTrue(result.isEmpty());
   }
 }
