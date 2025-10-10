@@ -2,10 +2,10 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ import org.junit.jupiter.api.condition.EnabledIf;
 
 @Slf4j
 @EnabledIf("isNotionTokenAvailable")
-class TitleSyncIntegrationTest extends AbstractIntegrationTest {
+class TitleSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should Sync Titles From Notion")

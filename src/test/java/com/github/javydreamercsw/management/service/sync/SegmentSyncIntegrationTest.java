@@ -2,9 +2,9 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 @DisplayName("Segment Sync Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
-class SegmentSyncIntegrationTest extends AbstractIntegrationTest {
+class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private NotionSyncService notionSyncService;

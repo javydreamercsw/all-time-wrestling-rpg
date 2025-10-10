@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.controller.title.TitleController.CreateTitleRequest;
 import com.github.javydreamercsw.management.controller.title.TitleController.UpdateTitleRequest;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
@@ -12,7 +13,6 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @DisplayName("TitleController Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
-class TitleControllerIntegrationTest extends AbstractIntegrationTest {
+class TitleControllerIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;

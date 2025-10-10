@@ -2,7 +2,7 @@ package com.github.javydreamercsw.management.service.card;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @EnabledIf("isNotionTokenAvailable")
 @Transactional
-class CardSetServiceIT extends AbstractIntegrationTest {
+class CardSetServiceIT extends ManagementIntegrationTest {
 
   @Test
   void testCreateCardSetSet() {

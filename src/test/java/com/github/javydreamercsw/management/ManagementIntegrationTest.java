@@ -1,8 +1,6 @@
-package com.github.javydreamercsw.management.test;
+package com.github.javydreamercsw.management;
 
-import com.github.javydreamercsw.base.ai.SegmentNarrationService;
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
@@ -15,8 +13,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.wrestler.Gender;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
@@ -33,14 +29,13 @@ import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncServ
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-public abstract class AbstractIntegrationTest {
+public abstract class ManagementIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired protected SegmentRuleService segmentRuleService;
   @Autowired protected ShowTypeService showTypeService;
@@ -70,11 +65,12 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected SegmentTypeRepository segmentTypeRepository;
   @Autowired protected DramaEventService dramaEventService;
   @Autowired protected DramaEventRepository dramaEventRepository;
-
   @Autowired protected DataInitializer dataInitializer;
 
-  protected Wrestler createTestWrestler(@NonNull String name) {
-    Wrestler wrestler = new Wrestler();
+  protected com.github.javydreamercsw.management.domain.wrestler.Wrestler createTestWrestler(
+      @lombok.NonNull String name) {
+    com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
+        new com.github.javydreamercsw.management.domain.wrestler.Wrestler();
     wrestler.setName(name);
     wrestler.setFans(10_000L);
     wrestler.setStartingHealth(15);
@@ -83,55 +79,7 @@ public abstract class AbstractIntegrationTest {
     wrestler.setLowStamina(0);
     wrestler.setDeckSize(15);
     wrestler.setIsPlayer(false);
-    wrestler.setGender(Gender.MALE);
+    wrestler.setGender(com.github.javydreamercsw.management.domain.wrestler.Gender.MALE);
     return wrestler;
-  }
-
-  protected SegmentNarrationService.SegmentNarrationContext createCustomSegmentContext() {
-    SegmentNarrationService.SegmentNarrationContext context =
-        new SegmentNarrationService.SegmentNarrationContext();
-
-    // Match Type
-    SegmentNarrationService.SegmentTypeContext matchType =
-        new SegmentNarrationService.SegmentTypeContext();
-    matchType.setSegmentType("Hell in a Cell");
-    matchType.setStipulation("King of the Ring 1998");
-    matchType.setRules(java.util.Arrays.asList("No Disqualification", "Falls Count Anywhere"));
-    context.setSegmentType(matchType);
-
-    // Venue
-    SegmentNarrationService.VenueContext venue = new SegmentNarrationService.VenueContext();
-    venue.setName("Civic Arena");
-    venue.setLocation("Pittsburgh, Pennsylvania");
-    venue.setType("Indoor Arena");
-    venue.setCapacity(17_000);
-    venue.setDescription("Historic venue for legendary matches");
-    venue.setAtmosphere("Intense and foreboding");
-    venue.setSignificance("Site of the most famous Hell in a Cell segment");
-    context.setVenue(venue);
-
-    // Wrestlers
-    SegmentNarrationService.WrestlerContext undertaker =
-        new SegmentNarrationService.WrestlerContext();
-    undertaker.setName("The Undertaker");
-    undertaker.setDescription("The Deadman - Phenom of WWE");
-
-    com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext mankind =
-        new com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext();
-    mankind.setName("Mankind");
-    mankind.setDescription("Hardcore legend Mick Foley");
-
-    context.setWrestlers(java.util.Arrays.asList(undertaker, mankind));
-
-    // Context
-    context.setAudience("Shocked and horrified crowd of 17,000");
-    context.setDeterminedOutcome(
-        "The Undertaker wins after Mankind is thrown off the Hell in a Cell");
-
-    return context;
-  }
-
-  protected static boolean isNotionTokenAvailable() {
-    return EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 }

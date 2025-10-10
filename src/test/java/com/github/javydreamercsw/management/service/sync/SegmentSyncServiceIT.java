@@ -2,10 +2,10 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.sync.entity.SegmentSyncService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -19,7 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @DisplayName("SegmentSyncService Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
-class SegmentSyncServiceIT extends AbstractIntegrationTest {
+class SegmentSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentSyncService segmentSyncService;
   @Autowired private SegmentService segmentService;

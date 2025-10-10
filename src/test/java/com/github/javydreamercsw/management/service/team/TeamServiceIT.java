@@ -2,11 +2,11 @@ package com.github.javydreamercsw.management.service.team;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @DisplayName("TeamService Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
 @Transactional
-class TeamServiceIT extends AbstractIntegrationTest {
+class TeamServiceIT extends ManagementIntegrationTest {
 
   private Wrestler wrestler1;
   private Wrestler wrestler2;

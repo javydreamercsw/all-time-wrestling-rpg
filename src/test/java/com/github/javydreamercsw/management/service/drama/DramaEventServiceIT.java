@@ -2,11 +2,11 @@ package com.github.javydreamercsw.management.service.drama;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @DisplayName("DramaEventService Integration Tests")
 @Transactional
 @EnabledIf("isNotionTokenAvailable")
-class DramaEventServiceIT extends AbstractIntegrationTest {
+class DramaEventServiceIT extends ManagementIntegrationTest {
 
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;

@@ -5,9 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.Card;
+import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
+import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -32,24 +35,23 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.annotation.Transactional;
 
-@EnabledIf("isNotionTokenAvailable")
-class DataInitializerTest extends AbstractIntegrationTest {
+class DataInitializerTest extends ManagementIntegrationTest {
 
   @Autowired private DataInitializer dataInitializer;
   @Autowired private CardService cardService;
   @Autowired private CardSetService cardSetService;
+  @Autowired private CardSetRepository cardSetRepository;
+  @Autowired private CardRepository cardRepository;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private DeckService deckService;
   @Autowired private ShowTypeService showTypeService;
@@ -59,6 +61,7 @@ class DataInitializerTest extends AbstractIntegrationTest {
   @Autowired private ShowTemplateService showTemplateService;
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private DeckCardService deckCardService;
+  @Autowired private DeckCardRepository deckCardRepository;
 
   @BeforeEach
   void setUp() {

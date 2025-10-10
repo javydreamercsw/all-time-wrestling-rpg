@@ -3,10 +3,10 @@ package com.github.javydreamercsw.management.service.card;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @EnabledIf("isNotionTokenAvailable")
 @Transactional
-class CardServiceIT extends AbstractIntegrationTest {
+class CardServiceIT extends ManagementIntegrationTest {
   @Autowired CardRepository cardRepository;
   @Autowired CardSetRepository cardSetRepository;
 

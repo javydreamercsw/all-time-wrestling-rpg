@@ -2,12 +2,12 @@ package com.github.javydreamercsw.management.service.segment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.Arrays;
 import java.util.List;
 import lombok.NonNull;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @DisplayName("Team Match Resolution Integration Tests")
 @Transactional
 @EnabledIf("isNotionTokenAvailable")
-class TeamMatchResolutionIT extends AbstractIntegrationTest {
+class TeamMatchResolutionIT extends ManagementIntegrationTest {
   @Autowired NPCSegmentResolutionService npcSegmentResolutionService;
 
   private Wrestler rookie1;

@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -38,7 +37,6 @@ import org.mockito.quality.Strictness;
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@EnabledIf("isNotionTokenAvailable")
 class InjurySyncServiceTest {
 
   @Mock private InjuryTypeService injuryTypeService;
@@ -370,9 +368,5 @@ class InjurySyncServiceTest {
     injuryType.setId(1L);
     injuryType.setInjuryName("Test Injury");
     return injuryType;
-  }
-
-  private static boolean isNotionTokenAvailable() {
-    return EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 }

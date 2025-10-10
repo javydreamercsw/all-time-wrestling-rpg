@@ -3,12 +3,12 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTemplateSyncService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 @DisplayName("Show Template Sync Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
-class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
+class ShowTemplateSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private ShowTemplateService showTemplateService;

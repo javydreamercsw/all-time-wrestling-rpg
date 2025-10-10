@@ -3,7 +3,7 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 @Slf4j
 @EnabledIf("isNotionTokenAvailable")
-class NpcSyncIntegrationTest extends AbstractIntegrationTest {
+class NpcSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private NotionSyncService notionSyncService;
 

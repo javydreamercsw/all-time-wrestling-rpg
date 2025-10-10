@@ -23,13 +23,11 @@ import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOr
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@EnabledIf("isNotionTokenAvailable")
 class NotionSyncServiceTest extends BaseTest {
 
   @Mock private ObjectMapper objectMapper;

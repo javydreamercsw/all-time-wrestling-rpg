@@ -1,13 +1,12 @@
 package com.github.javydreamercsw.management.service.sync;
 
-import static com.github.javydreamercsw.base.test.BaseTest.isNotionTokenAvailable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +17,7 @@ import org.junit.jupiter.api.condition.EnabledIf;
 @Slf4j
 @DisplayName("Notion Sync Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
-class NotionSyncIntegrationTest extends AbstractIntegrationTest {
+class NotionSyncIntegrationTest extends ManagementIntegrationTest {
 
   @BeforeEach
   public void setUp() {

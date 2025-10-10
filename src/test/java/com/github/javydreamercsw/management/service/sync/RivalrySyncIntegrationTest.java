@@ -2,11 +2,11 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 @DisplayName("Rivalry Sync Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
-class RivalrySyncIntegrationTest extends AbstractIntegrationTest {
+class RivalrySyncIntegrationTest extends ManagementIntegrationTest {
   @Autowired private NotionSyncService notionSyncService;
 
   @Autowired private RivalryRepository rivalryRepository;

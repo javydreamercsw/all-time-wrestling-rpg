@@ -10,6 +10,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.CardDTO;
@@ -54,6 +55,7 @@ public class DataInitializer {
 
   @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private WrestlerService wrestlerService;
+  @Autowired private ShowTypeRepository showTypeRepository;
 
   @Bean
   @Order(-1)
@@ -118,6 +120,7 @@ public class DataInitializer {
                 log.info("Saved new show type: {}", st.getName());
               }
             }
+            showTypeRepository.flush();
           } catch (java.io.IOException e) {
             log.error("Error loading show types from file", e);
           }
@@ -288,7 +291,15 @@ public class DataInitializer {
                 cardSetService.findAll().stream()
                     .collect(Collectors.toMap(CardSet::getSetCode, s -> s));
             for (CardDTO dto : cardsFromFile) {
-              CardSet set = sets.get(dto.getSet());
+              Optional<CardSet> setOpt = cardSetService.findBySetCode(dto.getSet());
+              if (setOpt.isEmpty()) {
+                log.warn(
+                    "CardSet with code {} not found for card {}. Skipping card.",
+                    dto.getSet(),
+                    dto.getName());
+                continue;
+              }
+              CardSet set = setOpt.get();
               final String key = dto.getSet() + "#" + dto.getNumber();
               Card card = existing.getOrDefault(key, new Card());
               card.setName(dto.getName());

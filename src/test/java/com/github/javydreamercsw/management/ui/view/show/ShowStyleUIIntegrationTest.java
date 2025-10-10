@@ -4,11 +4,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.season.SeasonService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
@@ -28,7 +28,7 @@ import org.vaadin.stefan.fullcalendar.Entry;
 import org.vaadin.stefan.fullcalendar.dataprovider.EntryQuery;
 
 @EnabledIf("isNotionTokenAvailable")
-class ShowStyleUIIntegrationTest extends AbstractIntegrationTest {
+class ShowStyleUIIntegrationTest extends ManagementIntegrationTest {
 
   private Show pleShow;
   private Show weeklyShow;

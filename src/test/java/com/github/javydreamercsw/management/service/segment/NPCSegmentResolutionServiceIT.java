@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.segment;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -11,7 +12,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.Arrays;
 import java.util.List;
 import lombok.SneakyThrows;
@@ -27,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @DisplayName("NPC Segment Resolution Service Integration Tests")
 @Transactional
 @EnabledIf("isNotionTokenAvailable")
-class NPCSegmentResolutionServiceIT extends AbstractIntegrationTest {
+class NPCSegmentResolutionServiceIT extends ManagementIntegrationTest {
   @Autowired NPCSegmentResolutionService npcSegmentResolutionService;
   @Autowired WrestlerService wrestlerService;
   @Autowired WrestlerRepository wrestlerRepository;

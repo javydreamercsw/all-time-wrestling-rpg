@@ -3,114 +3,164 @@ package com.github.javydreamercsw.management.service.card;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
-@SpringBootTest
-@TestPropertySource(properties = "data.initializer.enabled=false")
+@ExtendWith(MockitoExtension.class)
 class CardServiceTest {
 
-  @Autowired private CardService cardService;
-  @Autowired private CardRepository cardRepository;
-  @Autowired private CardSetRepository cardSetRepository;
+  @Mock private CardRepository cardRepository;
+  @Mock private CardSetRepository cardSetRepository;
+  @Mock private Clock clock;
+
+  @InjectMocks private CardService cardService;
+
   private CardSet cardSet;
+  private Card card;
 
   @BeforeEach
   void setUp() {
-    cardRepository.deleteAll();
-    cardSetRepository.deleteAll();
     cardSet = new CardSet();
+    cardSet.setId(1L);
     cardSet.setName("Test Set");
     cardSet.setSetCode("TS");
-    cardSetRepository.save(cardSet);
+    cardSet.setCreationDate(Instant.now());
+
+    card = new Card();
+    card.setId(1L);
+    card.setName("Test Card");
+    card.setSet(cardSet);
+    card.setNumber(1);
+    card.setCreationDate(Instant.now());
   }
 
   @Test
   void testCreateCard() {
-    Card card = cardService.createCard("Card 1");
-    assertNotNull(card);
-    assertNotNull(card.getCreationDate());
-    assertEquals("Card 1", card.getName());
-    assertEquals("Strike", card.getType());
-    assertEquals(1, card.getDamage());
-    assertEquals(1, card.getStamina());
-    assertEquals(1, card.getMomentum());
-    assertEquals(1, card.getTarget());
-    assertEquals(false, card.getFinisher());
-    assertEquals(false, card.getSignature());
-    assertEquals(cardSet.getId(), card.getSet().getId());
-    assertEquals(1, card.getNumber());
+    when(cardSetRepository.findAll()).thenReturn(List.of(cardSet));
+    when(cardRepository.findMaxCardNumberBySet(cardSet.getId())).thenReturn(1);
+    when(cardRepository.saveAndFlush(any(Card.class)))
+        .thenAnswer(
+            invocation -> {
+              Card card = invocation.getArgument(0);
+              card.setId(1L);
+              return card;
+            });
+
+    Card newCard = cardService.createCard("New Card");
+
+    assertNotNull(newCard.getId());
+    assertEquals("New Card", newCard.getName());
+    assertEquals(2, newCard.getNumber());
+    assertEquals(cardSet, newCard.getSet());
+  }
+
+  @Test
+  void testCreateCardFirstInSet() {
+    when(cardSetRepository.findAll()).thenReturn(List.of(cardSet));
+    when(cardRepository.findMaxCardNumberBySet(cardSet.getId())).thenReturn(null);
+    when(cardRepository.saveAndFlush(any(Card.class)))
+        .thenAnswer(
+            invocation -> {
+              Card card = invocation.getArgument(0);
+              card.setId(1L);
+              return card;
+            });
+
+    Card newCard = cardService.createCard("New Card");
+
+    assertNotNull(newCard.getId());
+    assertEquals("New Card", newCard.getName());
+    assertEquals(1, newCard.getNumber());
+    assertEquals(cardSet, newCard.getSet());
   }
 
   @Test
   void testCreateCardNoSet() {
-    cardSetRepository.deleteAll();
-    assertThrows(IllegalStateException.class, () -> cardService.createCard("Card 1"));
+    when(cardSetRepository.findAll()).thenReturn(new ArrayList<>());
+    assertThrows(IllegalStateException.class, () -> cardService.createCard("New Card"));
   }
 
   @Test
-  void testListAndCount() {
-    cardService.createCard("Card 1");
-    cardService.createCard("Card 2");
+  void testList() {
+    List<Card> cards = List.of(card);
+    when(cardRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(cards));
 
-    assertEquals(2, cardService.list(org.springframework.data.domain.Pageable.unpaged()).size());
-    assertEquals(2, cardService.count());
+    List<Card> result = cardService.list(Pageable.unpaged());
+
+    assertEquals(1, result.size());
+    assertEquals(card, result.get(0));
+  }
+
+  @Test
+  void testCount() {
+    when(cardRepository.count()).thenReturn(1L);
+    assertEquals(1L, cardService.count());
   }
 
   @Test
   void testSave() {
-    Card card = cardService.createCard("Card 1");
-    card.setName("Updated Card");
+    Instant now = Instant.now();
+    when(clock.instant()).thenReturn(now);
+    when(cardRepository.saveAndFlush(any(Card.class))).thenReturn(card);
+
     Card savedCard = cardService.save(card);
 
-    Optional<Card> foundCard = cardService.findById(savedCard.getId());
-    assertTrue(foundCard.isPresent());
-    assertEquals("Updated Card", foundCard.get().getName());
+    assertEquals(now, savedCard.getCreationDate());
+    verify(cardRepository, times(1)).saveAndFlush(card);
   }
 
   @Test
   void testFindAll() {
-    cardService.createCard("Card 1");
-    cardService.createCard("Card 2");
+    List<Card> cards = List.of(card);
+    when(cardRepository.findAll()).thenReturn(cards);
 
-    assertEquals(2, cardService.findAll().size());
+    List<Card> result = cardService.findAll();
+
+    assertEquals(1, result.size());
+    assertEquals(card, result.get(0));
   }
 
   @Test
   void testFindByNumberAndSet() {
-    Card card = cardService.createCard("Card 1");
+    when(cardRepository.findByNumberAndSetSetCode(1, "TS")).thenReturn(Optional.of(card));
 
-    Optional<Card> foundCard = cardService.findByNumberAndSet(card.getNumber(), cardSet.getName());
-    assertTrue(foundCard.isPresent());
-    assertEquals(card.getId(), foundCard.get().getId());
+    Optional<Card> result = cardService.findByNumberAndSet(1, "TS");
+
+    assertEquals(Optional.of(card), result);
   }
 
   @Test
   void testDelete() {
-    Card card = cardService.createCard("Card 1");
-    assertEquals(1, cardService.count());
-
-    cardService.delete(card.getId());
-    assertEquals(0, cardService.count());
+    cardService.delete(1L);
+    verify(cardRepository, times(1)).deleteById(1L);
   }
 
   @Test
-  void testCreateCardWithExistingCards() {
-    cardService.createCard("Card 1");
-    Card card2 = cardService.createCard("Card 2");
-    assertEquals(2, card2.getNumber());
+  void testFindById() {
+    when(cardRepository.findById(1L)).thenReturn(Optional.of(card));
 
-    Card card3 = cardService.createCard("Card 3");
-    assertEquals(3, card3.getNumber());
+    Optional<Card> result = cardService.findById(1L);
+
+    assertEquals(Optional.of(card), result);
   }
 }

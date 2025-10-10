@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.sync.entity;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.spy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
@@ -24,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -35,7 +35,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * relationship handling and error conditions.
  */
 @ExtendWith(MockitoExtension.class)
-@EnabledIf("isNotionTokenAvailable")
 class FactionSyncServiceTest extends BaseTest {
 
   @Mock private FactionRepository factionRepository;
@@ -51,14 +50,18 @@ class FactionSyncServiceTest extends BaseTest {
 
   @BeforeEach
   void setUp() {
-    // This needs to be stubbed before the constructor is called.
+    // Stub this before the constructor is called.
     Mockito.lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    Mockito.lenient().when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
 
     factionSyncService = new FactionSyncService(objectMapper, syncProperties);
     injectMockDependencies();
+    factionSyncService = spy(factionSyncService); // create a spy for stubbing
 
     // Setup default behavior
     lenient().when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
+
+    lenient().doReturn(true).when(factionSyncService).validateNotionToken("Factions");
   }
 
   private void injectMockDependencies() {

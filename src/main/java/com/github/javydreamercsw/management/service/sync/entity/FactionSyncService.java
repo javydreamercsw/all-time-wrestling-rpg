@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,8 +27,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class FactionSyncService extends BaseSyncService {
 
-  @Autowired private FactionRepository factionRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired @Setter private FactionRepository factionRepository;
+  @Autowired @Setter private WrestlerRepository wrestlerRepository;
 
   public FactionSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);

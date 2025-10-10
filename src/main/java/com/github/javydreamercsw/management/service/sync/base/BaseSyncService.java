@@ -303,7 +303,7 @@ public abstract class BaseSyncService {
    * @param entityType The entity type being synced (for error messages)
    * @return true if token is available, false otherwise
    */
-  protected boolean validateNotionToken(@NonNull String entityType) {
+  public boolean validateNotionToken(@NonNull String entityType) {
     if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
       log.warn("NOTION_TOKEN not available. Cannot sync {} from Notion.", entityType);
       return false;

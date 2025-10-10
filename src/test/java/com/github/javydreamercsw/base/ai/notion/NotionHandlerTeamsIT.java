@@ -4,19 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
-import com.github.javydreamercsw.base.test.BaseTest;
+import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.mockito.MockedStatic;
 
 /**
  * Tests for NotionHandler teams functionality. These tests require NOTION_TOKEN to be available.
  */
-@EnabledIf("isNotionTokenAvailable")
-class NotionHandlerTeamsTest extends BaseTest {
+class NotionHandlerTeamsIT extends AbstractIntegrationTest {
 
   private NotionHandler notionHandler;
 
@@ -57,7 +55,6 @@ class NotionHandlerTeamsTest extends BaseTest {
   }
 
   @Test
-  @EnabledIf("isNotionTokenAvailable")
   void shouldReturnEmptyListWhenTeamsDatabaseNotFound() {
     // Given - This test assumes Teams database might not exist in some workspaces
     // When
@@ -94,7 +91,6 @@ class NotionHandlerTeamsTest extends BaseTest {
   }
 
   @Test
-  @EnabledIf("isNotionTokenAvailable")
   void shouldLoadTeamsWithCorrectStructure() {
     // When
     List<TeamPage> teams = notionHandler.loadAllTeams();

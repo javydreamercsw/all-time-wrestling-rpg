@@ -2,7 +2,7 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.condition.EnabledIf;
  */
 @Slf4j
 @EnabledIf("isNotionTokenAvailable")
-class WrestlerSyncIntegrationTest extends AbstractIntegrationTest {
+class WrestlerSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should correctly sync fans property from Notion")

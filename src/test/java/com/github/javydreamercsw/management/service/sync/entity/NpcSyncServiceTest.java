@@ -25,14 +25,12 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@EnabledIf("isNotionTokenAvailable")
 class NpcSyncServiceTest extends BaseTest {
 
   @Mock private NpcService npcService;
@@ -73,7 +71,6 @@ class NpcSyncServiceTest extends BaseTest {
   }
 
   @Test
-  @EnabledIf("isNotionTokenAvailable") // Add this annotation
   void testSyncNpcs() throws InterruptedException {
     // Given
     when(syncProperties.isEntityEnabled("npcs")).thenReturn(true);

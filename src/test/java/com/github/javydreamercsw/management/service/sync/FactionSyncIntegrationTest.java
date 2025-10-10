@@ -2,10 +2,10 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -23,7 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 @DisplayName("Faction Sync Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
-class FactionSyncIntegrationTest extends AbstractIntegrationTest {
+class FactionSyncIntegrationTest extends ManagementIntegrationTest {
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private FactionService factionService;
 

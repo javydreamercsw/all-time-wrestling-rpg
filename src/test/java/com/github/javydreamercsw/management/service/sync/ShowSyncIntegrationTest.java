@@ -2,8 +2,8 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -20,7 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 @DisplayName("Show Sync Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
-class ShowSyncIntegrationTest extends AbstractIntegrationTest {
+class ShowSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired
   private NotionSyncService notionSyncService; // When - Perform real sync with real services

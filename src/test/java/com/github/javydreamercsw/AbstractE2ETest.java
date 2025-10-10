@@ -1,6 +1,6 @@
 package com.github.javydreamercsw;
 
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.net.HttpURLConnection;
 import java.net.URL;

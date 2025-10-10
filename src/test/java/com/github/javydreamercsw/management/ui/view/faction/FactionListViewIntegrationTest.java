@@ -2,7 +2,7 @@ package com.github.javydreamercsw.management.ui.view.faction;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.condition.EnabledIf;
 
