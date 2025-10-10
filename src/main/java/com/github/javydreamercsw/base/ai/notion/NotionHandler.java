@@ -32,7 +32,7 @@ public class NotionHandler {
   private static volatile NotionHandler instance;
 
   // Map to store database names and their corresponding IDs for later reference
-  private final Map<String, String> databaseMap = new HashMap<>();
+  protected final Map<String, String> databaseMap = new HashMap<>();
 
   // Flag to track if databases have been loaded
   private volatile boolean initialized = false;
