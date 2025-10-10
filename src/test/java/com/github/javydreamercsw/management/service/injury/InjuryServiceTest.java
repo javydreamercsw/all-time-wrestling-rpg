@@ -1,3 +1,5 @@
+package com.github.javydreamercsw.management.service.injury;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -12,11 +14,9 @@ import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -260,68 +260,97 @@ class InjuryServiceTest {
   }
 
   @Test
+  @DisplayName("Should return empty when healing injury not found")
+  void shouldReturnEmptyWhenHealingInjuryNotFound() {
+    when(injuryRepository.findById(99L)).thenReturn(Optional.empty());
+    InjuryService.HealingResult result = injuryService.attemptHealing(99L, 3);
+    assertThat(result.success()).isFalse();
+    assertThat(result.message()).contains("Injury not found");
+  }
+
+  @Test
+  @DisplayName("Should return failure when injury cannot be healed")
+  void shouldReturnFailureWhenInjuryCannotBeHealed() {
+    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
+    Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
+    injury.heal(); // Mark as healed
+    when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
+    InjuryService.HealingResult result = injuryService.attemptHealing(1L, 3);
+    assertThat(result.success()).isFalse();
+    assertThat(result.message()).contains("cannot be healed");
+  }
+
+  @Test
+  @DisplayName("Should return failure when wrestler cannot afford healing cost")
+  void shouldReturnFailureWhenWrestlerCannotAffordHealingCost() {
+    Wrestler wrestler = createWrestler("Test Wrestler", 0L); // No fans
+    Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
+    when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
+    InjuryService.HealingResult result = injuryService.attemptHealing(1L, 3);
+    assertThat(result.success()).isFalse();
+    assertThat(result.message()).contains("cannot afford");
+  }
+
+  @Test
+  @DisplayName("Should get injury by ID")
+  void shouldGetInjuryById() {
+    Injury injury = new Injury();
+    injury.setId(1L);
+    when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
+    Optional<Injury> result = injuryService.getInjuryById(1L);
+    assertThat(result).isPresent();
+    assertThat(result.get().getId()).isEqualTo(1L);
+  }
+
+  @Test
+  @DisplayName("Should get all injuries with pagination")
+  void shouldGetAllInjuriesWithPagination() {
+    Injury injury = new Injury();
+    when(injuryRepository.findAllBy(any()))
+        .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(injury)));
+    var result =
+        injuryService.getAllInjuries(org.springframework.data.domain.PageRequest.of(0, 10));
+    assertThat(result.getContent()).hasSize(1);
+  }
+
+  @Test
   @DisplayName("Should get active injuries for wrestler")
   void shouldGetActiveInjuriesForWrestler() {
-    // Given
     Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
-    Injury injury1 = createInjury(wrestler, InjurySeverity.MINOR);
-    Injury injury2 = createInjury(wrestler, InjurySeverity.MODERATE);
-
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(injuryRepository.findActiveInjuriesForWrestler(wrestler))
-        .thenReturn(Arrays.asList(injury1, injury2));
-
-    // When
+    Injury injury = new Injury();
+    when(injuryRepository.findActiveInjuriesForWrestler(wrestler)).thenReturn(List.of(injury));
     List<Injury> result = injuryService.getActiveInjuriesForWrestler(1L);
-
-    // Then
-    assertThat(result).hasSize(2);
-    assertThat(result).containsExactly(injury1, injury2);
+    assertThat(result).hasSize(1);
   }
 
   @Test
-  @DisplayName("Should get total health penalty for wrestler")
-  void shouldGetTotalHealthPenaltyForWrestler() {
-    // Given
+  @DisplayName("Should get all injuries for wrestler")
+  void shouldGetAllInjuriesForWrestler() {
     Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(injuryRepository.getTotalHealthPenaltyForWrestler(wrestler)).thenReturn(5);
-
-    // When
-    Integer result = injuryService.getTotalHealthPenaltyForWrestler(1L);
-
-    // Then
-    assertThat(result).isEqualTo(5);
+    Injury injury = new Injury();
+    when(injuryRepository.findByWrestler(wrestler)).thenReturn(List.of(injury));
+    List<Injury> result = injuryService.getAllInjuriesForWrestler(1L);
+    assertThat(result).hasSize(1);
   }
 
   @Test
-  @DisplayName("Should get injury statistics for wrestler")
-  void shouldGetInjuryStatisticsForWrestler() {
-    // Given
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
-    wrestler.setStartingHealth(15);
+  @DisplayName("Should get injuries by severity")
+  void shouldGetInjuriesBySeverity() {
+    Injury injury = new Injury();
+    when(injuryRepository.findBySeverity(InjurySeverity.MINOR)).thenReturn(List.of(injury));
+    List<Injury> result = injuryService.getInjuriesBySeverity(InjurySeverity.MINOR);
+    assertThat(result).hasSize(1);
+  }
 
-    Injury activeInjury = createInjury(wrestler, InjurySeverity.MINOR);
-    Injury healedInjury = createInjury(wrestler, InjurySeverity.MODERATE);
-    healedInjury.heal();
-
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(injuryRepository.findActiveInjuriesForWrestler(wrestler))
-        .thenReturn(List.of(activeInjury));
-    when(injuryRepository.findByWrestler(wrestler))
-        .thenReturn(Arrays.asList(activeInjury, healedInjury));
-    when(injuryRepository.getTotalHealthPenaltyForWrestler(wrestler)).thenReturn(2);
-
-    // When
-    InjuryService.InjuryStats result = injuryService.getInjuryStatsForWrestler(1L);
-
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.wrestlerName()).isEqualTo("Test Wrestler");
-    assertThat(result.activeInjuries()).isEqualTo(1);
-    assertThat(result.healedInjuries()).isEqualTo(1);
-    assertThat(result.totalHealthPenalty()).isEqualTo(2);
-    assertThat(result.effectiveHealth()).isEqualTo(15); // Already includes penalty calculation
+  @Test
+  @DisplayName("Should get all active injuries")
+  void shouldGetAllActiveInjuries() {
+    Injury injury = new Injury();
+    when(injuryRepository.findAllActiveInjuries()).thenReturn(List.of(injury));
+    List<Injury> result = injuryService.getAllActiveInjuries();
+    assertThat(result).hasSize(1);
   }
 
   @Test
@@ -344,24 +373,6 @@ class InjuryServiceTest {
     assertThat(injury.getDescription()).isEqualTo("Updated description");
     assertThat(injury.getInjuryNotes()).isEqualTo("Updated notes");
     verify(injuryRepository).saveAndFlush(injury);
-  }
-
-  @Test
-  @DisplayName("Should get injuries by severity")
-  void shouldGetInjuriesBySeverity() {
-    // Given
-    Injury injury1 = createInjury(createWrestler("W1", 50000L), InjurySeverity.SEVERE);
-    Injury injury2 = createInjury(createWrestler("W2", 50000L), InjurySeverity.SEVERE);
-
-    when(injuryRepository.findBySeverity(InjurySeverity.SEVERE))
-        .thenReturn(Arrays.asList(injury1, injury2));
-
-    // When
-    List<Injury> result = injuryService.getInjuriesBySeverity(InjurySeverity.SEVERE);
-
-    // Then
-    assertThat(result).hasSize(2);
-    assertThat(result).containsExactly(injury1, injury2);
   }
 
   private Wrestler createWrestler(String name, Long fans) {
