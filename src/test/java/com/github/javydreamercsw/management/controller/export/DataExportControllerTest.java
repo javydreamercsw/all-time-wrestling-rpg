@@ -34,4 +34,23 @@ class DataExportControllerTest {
         .perform(post("/api/export/shows").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
   }
+
+  @Test
+  void exportShowTemplates() throws Exception {
+    when(showTemplateService.findAll()).thenReturn(new ArrayList<>());
+
+    mockMvc
+        .perform(post("/api/export/show-templates").contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void exportAll() throws Exception {
+    when(showService.findAllWithRelationships()).thenReturn(new ArrayList<>());
+    when(showTemplateService.findAll()).thenReturn(new ArrayList<>());
+
+    mockMvc
+        .perform(post("/api/export/all").contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk());
+  }
 }
