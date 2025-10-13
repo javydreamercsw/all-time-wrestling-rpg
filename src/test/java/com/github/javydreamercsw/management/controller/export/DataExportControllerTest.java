@@ -20,8 +20,7 @@ class DataExportControllerTest {
 
   @Autowired private MockMvc mockMvc;
 
-  @MockitoBean
-  private ShowService showService;
+  @MockitoBean private ShowService showService;
 
   @MockitoBean private ShowTemplateService showTemplateService;
 
