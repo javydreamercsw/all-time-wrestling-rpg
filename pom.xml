@@ -570,6 +570,9 @@
                 <!-- Exclude Vaadin UI components (hard to test) -->
                 <exclude>**/ui/view/**</exclude>
                 <exclude>**/ui/component/**</exclude>
+                <!-- Exclude frontend and bundle resources -->
+                <exclude>**/frontend/**</exclude>
+                <exclude>**/bundles/**</exclude>
 
                 <!-- Exclude test utilities -->
                 <exclude>**/TestcontainersConfiguration.class</exclude>
