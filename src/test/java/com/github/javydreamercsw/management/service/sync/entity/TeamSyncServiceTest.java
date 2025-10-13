@@ -7,7 +7,6 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -30,15 +29,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-@TestPropertySource(properties = "notion.sync.enabled=false")
-class TeamSyncServiceTest extends BaseTest {
+class TeamSyncServiceTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
-  private final NotionSyncProperties syncProperties; // Declare without @Mock
+  @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private WrestlerService wrestlerService;
@@ -48,25 +46,20 @@ class TeamSyncServiceTest extends BaseTest {
 
   private TeamSyncService teamSyncService;
 
-  // Constructor to configure the mock before setUp()
-  public TeamSyncServiceTest() {
-    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-  }
-
   @BeforeEach
   void setUp() {
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
     teamSyncService = new TeamSyncService(objectMapper, syncProperties);
 
     // Manually inject the mocked dependencies using reflection
-    setField(teamSyncService, "notionHandler", notionHandler);
-    setField(teamSyncService, "progressTracker", progressTracker);
-    setField(teamSyncService, "healthMonitor", healthMonitor);
-    setField(teamSyncService, "wrestlerService", wrestlerService);
-    setField(teamSyncService, "teamService", teamService);
-    setField(teamSyncService, "teamRepository", teamRepository);
-    setField(teamSyncService, "rateLimitService", rateLimitService);
+    ReflectionTestUtils.setField(teamSyncService, "notionHandler", notionHandler);
+    ReflectionTestUtils.setField(teamSyncService, "progressTracker", progressTracker);
+    ReflectionTestUtils.setField(teamSyncService, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(teamSyncService, "wrestlerService", wrestlerService);
+    ReflectionTestUtils.setField(teamSyncService, "teamService", teamService);
+    ReflectionTestUtils.setField(teamSyncService, "teamRepository", teamRepository);
+    ReflectionTestUtils.setField(teamSyncService, "rateLimitService", rateLimitService);
   }
 
   @Test

@@ -16,9 +16,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
-import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class TitleReignSyncServiceTest {
@@ -48,29 +47,18 @@ class TitleReignSyncServiceTest {
   private TitleReignSyncService service;
 
   @BeforeEach
-  void setUp() throws Exception {
+  void setUp() {
     when(syncProperties.getParallelThreads()).thenReturn(1);
     service = new TitleReignSyncService(objectMapper, syncProperties);
 
     // Manually inject mocks into the private fields of the base class
-    Field handlerField = BaseSyncService.class.getDeclaredField("notionHandler");
-    handlerField.setAccessible(true);
-    handlerField.set(service, notionHandler);
+    ReflectionTestUtils.setField(service, "notionHandler", notionHandler);
+    ReflectionTestUtils.setField(service, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(service, "rateLimitService", rateLimitService);
 
-    Field healthMonitorField = BaseSyncService.class.getDeclaredField("healthMonitor");
-    healthMonitorField.setAccessible(true);
-    healthMonitorField.set(service, healthMonitor);
-
-    Field rateLimitServiceField = BaseSyncService.class.getDeclaredField("rateLimitService");
-    rateLimitServiceField.setAccessible(true);
-    rateLimitServiceField.set(service, rateLimitService);
-
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        service, "titleReignRepository", titleReignRepository);
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        service, "titleRepository", titleRepository);
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        service, "wrestlerRepository", wrestlerRepository);
+    ReflectionTestUtils.setField(service, "titleReignRepository", titleReignRepository);
+    ReflectionTestUtils.setField(service, "titleRepository", titleRepository);
+    ReflectionTestUtils.setField(service, "wrestlerRepository", wrestlerRepository);
 
     service.clearSyncSession();
   }

@@ -47,7 +47,7 @@ public class WrestlerSyncService extends BaseSyncService {
     // Check if already synced in current session
     if (isAlreadySyncedInSession("wrestlers")) {
       log.info("⏭️ Wrestlers already synced in current session, skipping");
-      return SyncResult.success("Wrestlers", 0, 0);
+      return SyncResult.success("Wrestlers", 0, 0, 0);
     }
 
     log.info("🤼 Starting wrestlers synchronization from Notion...");
@@ -70,7 +70,7 @@ public class WrestlerSyncService extends BaseSyncService {
       // Check if entity is enabled
       if (!syncProperties.isEntityEnabled("wrestlers")) {
         log.info("Wrestlers sync is disabled in configuration");
-        return SyncResult.success("Wrestlers", 0, 0);
+        return SyncResult.success("Wrestlers", 0, 0, 0);
       }
 
       // Initialize progress tracking
@@ -151,7 +151,7 @@ public class WrestlerSyncService extends BaseSyncService {
       // Record success in health monitor
       healthMonitor.recordSuccess("Wrestlers", totalTime, wrestlerDTOs.size());
 
-      return SyncResult.success("Wrestlers", wrestlerDTOs.size(), 0);
+      return SyncResult.success("Wrestlers", wrestlerDTOs.size(), 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;

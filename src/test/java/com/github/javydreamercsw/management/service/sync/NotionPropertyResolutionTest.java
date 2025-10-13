@@ -1,130 +1,43 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.SegmentPage;
-import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
-import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.core.annotation.Order;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 /**
  * Unit tests for Notion property resolution using real captured data samples. These tests verify
  * that Date, Title(s), Winners, and other properties are resolved correctly without needing live
  * Notion API calls.
  */
-@SpringBootTest(properties = {"notion.sync.enabled=true", "notion.sync.entities.matches=true"})
+@ExtendWith({SpringExtension.class, MockitoExtension.class})
+@SpringBootTest
 @ActiveProfiles("test")
-@ExtendWith(MockitoExtension.class)
 @DisplayName("Notion Property Resolution Tests")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 class NotionPropertyResolutionTest {
-
-  @TestConfiguration
-  static class NotionPropertyResolutionTestConfiguration {
-
-    @Bean
-    @Order(-1)
-    public ApplicationRunner loadSegmentRulesFromFile() {
-      return args -> {}; // No-op
-    }
-
-    @Bean
-    @Order(0)
-    public ApplicationRunner syncShowTypesFromFile() {
-      return args -> {}; // No-op
-    }
-
-    @Bean
-    @Order(1)
-    public ApplicationRunner loadSegmentTypesFromFile() {
-      return args -> {}; // No-op
-    }
-
-    @Bean
-    @Order(2)
-    public ApplicationRunner loadShowTemplatesFromFile() {
-      return args -> {}; // No-op
-    }
-
-    @Bean
-    @Order(3)
-    public ApplicationRunner syncSetsFromFile() {
-      return args -> {}; // No-op
-    }
-
-    @Bean
-    @Order(4)
-    public ApplicationRunner syncCardsFromFile() {
-      return args -> {}; // No-op
-    }
-
-    @Bean
-    @Order(5)
-    public ApplicationRunner syncWrestlersFromFile() {
-      return args -> {}; // No-op
-    }
-
-    @Bean
-    @Order(6)
-    public ApplicationRunner syncChampionshipsFromFile() {
-      return args -> {}; // No-op
-    }
-
-    @Bean
-    @Order(7)
-    public ApplicationRunner syncDecksFromFile() {
-      return args -> {}; // No-op
-    }
-  }
-
-  @Autowired private NotionSyncService notionSyncService;
-  @MockitoBean private NotionHandler notionHandler;
-  @MockitoBean private ShowService showService;
-  @MockitoBean private SegmentTypeService matchTypeService;
-  @MockitoBean private WrestlerService wrestlerService;
 
   private ObjectMapper objectMapper;
   private List<SegmentPage> sampleSegments;
 
   @BeforeEach
   void setUp() throws Exception {
+    MockitoAnnotations.openMocks(this);
     objectMapper = new ObjectMapper();
 
     // Load sample segment data from JSON files
     sampleSegments = loadSampleMatches();
-
-    // Mock the NotionHandler to return our sample data
-    when(notionHandler.loadAllSegments()).thenReturn(sampleSegments);
-
-    // Mock the service dependencies
-    setupServiceMocks();
   }
 
   @Test
@@ -264,36 +177,5 @@ class NotionPropertyResolutionTest {
         objectMapper.readValue(new File(samplesDir, "sample-segment-3.json"), SegmentPage.class);
 
     return Arrays.asList(sample1, sample2, sample3);
-  }
-
-  /** Setup mocks for service dependencies. */
-  private void setupServiceMocks() {
-    // Mock ShowService
-    Show timelessShow = new Show();
-    timelessShow.setName("Timeless");
-    when(showService.findByName("Timeless")).thenReturn(List.of(timelessShow));
-
-    // Mock MatchTypeService
-    SegmentType tagTeamType = new SegmentType();
-    tagTeamType.setName("Tag Team");
-    when(matchTypeService.findByName("Tag Team")).thenReturn(Optional.of(tagTeamType));
-
-    SegmentType oneOnOneType = new SegmentType();
-    oneOnOneType.setName("One on One");
-    when(matchTypeService.findByName("One on One")).thenReturn(Optional.of(oneOnOneType));
-
-    SegmentType promoType = new SegmentType();
-    promoType.setName("Promo");
-    when(matchTypeService.findByName("Promo")).thenReturn(Optional.of(promoType));
-
-    // Mock WrestlerService
-    when(wrestlerService.findByName(any(String.class)))
-        .thenAnswer(
-            invocation -> {
-              String name = invocation.getArgument(0);
-              Wrestler wrestler = new Wrestler();
-              wrestler.setName(name);
-              return Optional.of(wrestler);
-            });
   }
 }

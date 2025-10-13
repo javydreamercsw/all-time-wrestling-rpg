@@ -66,7 +66,7 @@ public class ShowSyncService extends BaseSyncService {
       // Check if already synced in current session
       if (isAlreadySyncedInSession("shows")) {
         log.info("⏭️ Shows already synced in current session, skipping");
-        return SyncResult.success("Shows", 0, 0);
+        return SyncResult.success("Shows", 0, 0, 0);
       }
 
       try {
@@ -86,8 +86,8 @@ public class ShowSyncService extends BaseSyncService {
   /** Internal method to perform the actual shows sync logic. */
   private SyncResult performShowsSync(@NonNull String operationId) {
     if (!syncProperties.isEntityEnabled("shows")) {
-      log.debug("Shows synchronization is disabled in configuration");
-      return SyncResult.success("Shows", 0, 0);
+      log.info("Shows sync is disabled in configuration");
+      return SyncResult.success("Shows", 0, 0, 0);
     }
 
     // Check if NOTION_TOKEN is available before starting sync
@@ -169,7 +169,7 @@ public class ShowSyncService extends BaseSyncService {
       if (newShowIds.isEmpty()) {
         log.info("No new shows to sync from Notion.");
         progressTracker.completeOperation(operationId, true, "No new shows to sync.", 0);
-        return SyncResult.success("Shows", 0, 0);
+        return SyncResult.success("Shows", 0, 0, 0);
       }
       log.info("Found {} new shows to sync from Notion.", newShowIds.size());
 
@@ -215,10 +215,11 @@ public class ShowSyncService extends BaseSyncService {
       progressTracker.completeOperation(operationId, success, message, savedCount);
 
       if (success) {
-        return SyncResult.success("Shows", savedCount, errorCount);
+        return SyncResult.success("Shows", savedCount, 0, errorCount);
       } else {
-        return SyncResult.failure("Shows", "Some new shows failed to sync.");
+        return SyncResult.failure("Shows", message);
       }
+
     } catch (Exception e) {
       throw new RuntimeException("Shows sync operation failed: " + e.getMessage(), e);
     }
@@ -572,7 +573,7 @@ public class ShowSyncService extends BaseSyncService {
       String message = "Show sync completed successfully. Synced " + savedCount + " show.";
       log.info(message);
       progressTracker.completeOperation(operationId, true, message, savedCount);
-      return SyncResult.success("Show", savedCount, 0);
+      return SyncResult.success("Show", savedCount, 0, 0);
     } catch (Exception e) {
       String errorMessage = "Failed to synchronize show from Notion: " + e.getMessage();
       log.error(errorMessage, e);

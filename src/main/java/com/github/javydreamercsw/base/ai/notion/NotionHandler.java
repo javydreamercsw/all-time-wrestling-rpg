@@ -40,6 +40,11 @@ public class NotionHandler {
   // Private constructor to prevent instantiation
   private NotionHandler() {}
 
+  /** Constructor for testing purposes. */
+  public NotionHandler(boolean test) {
+    // Do nothing
+  }
+
   /** Gets the singleton instance of NotionHandler. Initializes databases on first call. */
   public static NotionHandler getInstance() {
     if (instance == null) {

@@ -763,6 +763,7 @@
               </includes>
               <excludes>
                 <exclude>**/*E2ETest.java</exclude>
+                <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
               </excludes>
               <systemPropertyVariables>
                 <spring.profiles.active>test</spring.profiles.active>

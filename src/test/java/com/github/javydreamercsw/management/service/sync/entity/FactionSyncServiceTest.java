@@ -3,12 +3,10 @@ package com.github.javydreamercsw.management.service.sync.entity;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.spy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -29,13 +27,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Unit tests for FactionSyncService covering faction synchronization scenarios including
  * relationship handling and error conditions.
  */
 @ExtendWith(MockitoExtension.class)
-class FactionSyncServiceTest extends BaseTest {
+class FactionSyncServiceTest {
 
   @Mock private FactionRepository factionRepository;
   @Mock private WrestlerRepository wrestlerRepository;
@@ -50,54 +49,23 @@ class FactionSyncServiceTest extends BaseTest {
 
   @BeforeEach
   void setUp() {
-    // Stub this before the constructor is called.
     Mockito.lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    Mockito.lenient().when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
+    Mockito.lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
 
     factionSyncService = new FactionSyncService(objectMapper, syncProperties);
     injectMockDependencies();
     factionSyncService = spy(factionSyncService); // create a spy for stubbing
 
-    // Setup default behavior
-    lenient().when(syncProperties.isEntityEnabled("factions")).thenReturn(true);
-
     lenient().doReturn(true).when(factionSyncService).validateNotionToken("Factions");
   }
 
   private void injectMockDependencies() {
-    try {
-      // Inject mocked dependencies using reflection
-      var factionRepositoryField = FactionSyncService.class.getDeclaredField("factionRepository");
-      factionRepositoryField.setAccessible(true);
-      factionRepositoryField.set(factionSyncService, factionRepository);
-
-      var wrestlerRepositoryField = FactionSyncService.class.getDeclaredField("wrestlerRepository");
-      wrestlerRepositoryField.setAccessible(true);
-      wrestlerRepositoryField.set(factionSyncService, wrestlerRepository);
-
-      // Inject base service dependencies
-      var notionHandlerField =
-          FactionSyncService.class.getSuperclass().getDeclaredField("notionHandler");
-      notionHandlerField.setAccessible(true);
-      notionHandlerField.set(factionSyncService, notionHandler);
-
-      var progressTrackerField =
-          FactionSyncService.class.getSuperclass().getDeclaredField("progressTracker");
-      progressTrackerField.setAccessible(true);
-      progressTrackerField.set(factionSyncService, progressTracker);
-
-      var healthMonitorField =
-          FactionSyncService.class.getSuperclass().getDeclaredField("healthMonitor");
-      healthMonitorField.setAccessible(true);
-      healthMonitorField.set(factionSyncService, healthMonitor);
-
-      var rateLimitServiceField =
-          FactionSyncService.class.getSuperclass().getDeclaredField("rateLimitService");
-      rateLimitServiceField.setAccessible(true);
-      rateLimitServiceField.set(factionSyncService, rateLimitService);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to inject mock dependencies", e);
-    }
+    ReflectionTestUtils.setField(factionSyncService, "factionRepository", factionRepository);
+    ReflectionTestUtils.setField(factionSyncService, "wrestlerRepository", wrestlerRepository);
+    ReflectionTestUtils.setField(factionSyncService, "notionHandler", notionHandler);
+    ReflectionTestUtils.setField(factionSyncService, "progressTracker", progressTracker);
+    ReflectionTestUtils.setField(factionSyncService, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(factionSyncService, "rateLimitService", rateLimitService);
   }
 
   @Test

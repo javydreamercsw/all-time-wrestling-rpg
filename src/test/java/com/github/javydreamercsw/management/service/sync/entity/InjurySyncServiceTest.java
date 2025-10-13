@@ -30,6 +30,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Unit tests for InjurySyncService covering all major functionality including error handling,
@@ -42,7 +43,7 @@ class InjurySyncServiceTest {
   @Mock private InjuryTypeService injuryTypeService;
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private NotionHandler notionHandler;
-  private final NotionSyncProperties syncProperties; // Declare without @Mock
+  @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private ObjectMapper objectMapper;
@@ -50,15 +51,10 @@ class InjurySyncServiceTest {
 
   private InjurySyncService injurySyncService;
 
-  // Constructor to configure the mock before setUp()
-  public InjurySyncServiceTest() {
-    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-  }
-
   @BeforeEach
   void setUp() {
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
     injurySyncService = new InjurySyncService(objectMapper, syncProperties);
 
     // Use reflection to inject mocked dependencies
@@ -66,40 +62,12 @@ class InjurySyncServiceTest {
   }
 
   private void injectMockDependencies() {
-    try {
-      // Inject mocked dependencies using reflection
-      var injuryTypeServiceField = InjurySyncService.class.getDeclaredField("injuryTypeService");
-      injuryTypeServiceField.setAccessible(true);
-      injuryTypeServiceField.set(injurySyncService, injuryTypeService);
-
-      var injuryTypeRepositoryField =
-          InjurySyncService.class.getDeclaredField("injuryTypeRepository");
-      injuryTypeRepositoryField.setAccessible(true);
-      injuryTypeRepositoryField.set(injurySyncService, injuryTypeRepository);
-
-      // Inject base service dependencies
-      var notionHandlerField =
-          InjurySyncService.class.getSuperclass().getDeclaredField("notionHandler");
-      notionHandlerField.setAccessible(true);
-      notionHandlerField.set(injurySyncService, notionHandler);
-
-      var progressTrackerField =
-          InjurySyncService.class.getSuperclass().getDeclaredField("progressTracker");
-      progressTrackerField.setAccessible(true);
-      progressTrackerField.set(injurySyncService, progressTracker);
-
-      var healthMonitorField =
-          InjurySyncService.class.getSuperclass().getDeclaredField("healthMonitor");
-      healthMonitorField.setAccessible(true);
-      healthMonitorField.set(injurySyncService, healthMonitor);
-
-      var rateLimitServiceField =
-          InjurySyncService.class.getSuperclass().getDeclaredField("rateLimitService");
-      rateLimitServiceField.setAccessible(true);
-      rateLimitServiceField.set(injurySyncService, rateLimitService);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to inject mock dependencies", e);
-    }
+    ReflectionTestUtils.setField(injurySyncService, "injuryTypeService", injuryTypeService);
+    ReflectionTestUtils.setField(injurySyncService, "injuryTypeRepository", injuryTypeRepository);
+    ReflectionTestUtils.setField(injurySyncService, "notionHandler", notionHandler);
+    ReflectionTestUtils.setField(injurySyncService, "progressTracker", progressTracker);
+    ReflectionTestUtils.setField(injurySyncService, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(injurySyncService, "rateLimitService", rateLimitService);
   }
 
   @Test

@@ -50,9 +50,9 @@ class NotionSyncSchedulerTest extends BaseTest {
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
     when(notionSyncService.syncShows(anyString()))
-        .thenReturn(NotionSyncService.SyncResult.success("Shows", 5, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 5, 0, 0));
     when(notionSyncService.syncWrestlers(anyString()))
-        .thenReturn(NotionSyncService.SyncResult.success("Wrestlers", 3, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Wrestlers", 3, 0, 0));
 
     // When
     notionSyncScheduler.performScheduledSync();
@@ -83,7 +83,7 @@ class NotionSyncSchedulerTest extends BaseTest {
     // Given
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows"));
     when(notionSyncService.syncShows(anyString()))
-        .thenReturn(NotionSyncService.SyncResult.success("Shows", 10, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 10, 0, 0));
 
     // When
     List<NotionSyncService.SyncResult> results = notionSyncScheduler.triggerManualSync();
@@ -101,7 +101,7 @@ class NotionSyncSchedulerTest extends BaseTest {
   void shouldTriggerSyncForSpecificEntity() {
     // Given
     when(notionSyncService.syncShows(anyString()))
-        .thenReturn(NotionSyncService.SyncResult.success("Shows", 7, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 7, 0, 0));
 
     // When
     NotionSyncService.SyncResult result = notionSyncScheduler.triggerEntitySync("shows");

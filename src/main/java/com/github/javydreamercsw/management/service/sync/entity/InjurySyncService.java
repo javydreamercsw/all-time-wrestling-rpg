@@ -39,12 +39,12 @@ public class InjurySyncService extends BaseSyncService {
     // Check if already synced in current session
     if (isAlreadySyncedInSession("injury-types")) {
       log.info("⏭️ Injury types already synced in current session, skipping");
-      return SyncResult.success("Injuries", 0, 0);
+      return SyncResult.success("Injuries", 0, 0, 0);
     }
 
     if (!syncProperties.isEntityEnabled("injuries")) {
       log.debug("Injuries synchronization is disabled in configuration");
-      return SyncResult.success("Injuries", 0, 0);
+      return SyncResult.success("Injuries", 0, 0, 0);
     }
 
     try {
@@ -106,7 +106,7 @@ public class InjurySyncService extends BaseSyncService {
       if (injuryPages.isEmpty()) {
         log.info("No injuries found in Notion database");
         progressTracker.completeOperation(operationId, true, "No injuries to sync", 0);
-        return SyncResult.success("Injuries", 0, 0);
+        return SyncResult.success("Injuries", 0, 0, 0);
       }
 
       // Convert to DTOs with parallel processing
@@ -136,7 +136,7 @@ public class InjurySyncService extends BaseSyncService {
       // Record success in health monitor
       healthMonitor.recordSuccess("Injuries", totalTime, syncedCount);
 
-      return SyncResult.success("Injuries", syncedCount, 0);
+      return SyncResult.success("Injuries", syncedCount, 0, 0);
 
     } catch (Exception e) {
       log.error("Failed to perform injuries sync", e);

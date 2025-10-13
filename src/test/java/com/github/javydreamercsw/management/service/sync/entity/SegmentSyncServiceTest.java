@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -33,9 +32,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class SegmentSyncServiceTest extends BaseTest {
+class SegmentSyncServiceTest {
 
   @Mock private SegmentService segmentService;
   @Mock private ShowService showService;
@@ -59,19 +59,15 @@ class SegmentSyncServiceTest extends BaseTest {
   }
 
   private void injectMockDependencies() {
-    try {
-      setField(segmentSyncService, "segmentService", segmentService);
-      setField(segmentSyncService, "showService", showService);
-      setField(segmentSyncService, "wrestlerService", wrestlerService);
-      setField(segmentSyncService, "segmentTypeService", segmentTypeService);
-      setField(segmentSyncService, "showSyncService", showSyncService);
-      setField(segmentSyncService, "notionHandler", notionHandler);
-      setField(segmentSyncService, "progressTracker", progressTracker);
-      setField(segmentSyncService, "healthMonitor", healthMonitor);
-      setField(segmentSyncService, "rateLimitService", rateLimitService);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to inject mock dependencies", e);
-    }
+    ReflectionTestUtils.setField(segmentSyncService, "segmentService", segmentService);
+    ReflectionTestUtils.setField(segmentSyncService, "showService", showService);
+    ReflectionTestUtils.setField(segmentSyncService, "wrestlerService", wrestlerService);
+    ReflectionTestUtils.setField(segmentSyncService, "segmentTypeService", segmentTypeService);
+    ReflectionTestUtils.setField(segmentSyncService, "showSyncService", showSyncService);
+    ReflectionTestUtils.setField(segmentSyncService, "notionHandler", notionHandler);
+    ReflectionTestUtils.setField(segmentSyncService, "progressTracker", progressTracker);
+    ReflectionTestUtils.setField(segmentSyncService, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(segmentSyncService, "rateLimitService", rateLimitService);
   }
 
   @Test

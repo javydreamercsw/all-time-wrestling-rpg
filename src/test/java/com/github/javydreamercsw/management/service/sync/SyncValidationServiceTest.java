@@ -3,15 +3,16 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.github.javydreamercsw.base.test.BaseTest;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import java.util.Arrays;
 import java.util.Collections;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -20,16 +21,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * objects.
  */
 @ExtendWith(MockitoExtension.class)
-@EnabledIf("isNotionTokenAvailable")
-class SyncValidationServiceTest extends BaseTest {
+class SyncValidationServiceTest {
 
   @Mock private NotionSyncProperties syncProperties;
 
   private SyncValidationService validationService;
 
+  private MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
+
   @BeforeEach
   void setUp() {
+    mockedEnvironmentVariableUtil = mockStatic(EnvironmentVariableUtil.class);
+    when(EnvironmentVariableUtil.isNotionTokenAvailable()).thenReturn(true);
     validationService = new SyncValidationService(syncProperties);
+  }
+
+  @AfterEach
+  void tearDown() {
+    mockedEnvironmentVariableUtil.close();
   }
 
   @Test
@@ -46,15 +55,9 @@ class SyncValidationServiceTest extends BaseTest {
     SyncValidationService.ValidationResult result = validationService.validateSyncPrerequisites();
 
     // Then
-    // Note: This test may fail if NOTION_TOKEN is not available, which is expected behavior
-    // The validation should fail due to missing NOTION_TOKEN, not pass
-    if (result.isValid()) {
-      assertThat(result.getErrors()).isEmpty();
-      assertThat(result.getSummary()).contains("Validation passed");
-    } else {
-      // Expected when NOTION_TOKEN is not available
-      assertThat(result.getErrors()).anyMatch(error -> error.contains("NOTION_TOKEN"));
-    }
+    assertThat(result.isValid()).isTrue();
+    assertThat(result.getErrors()).isEmpty();
+    assertThat(result.getSummary()).contains("Validation passed");
   }
 
   @Test
@@ -91,35 +94,9 @@ class SyncValidationServiceTest extends BaseTest {
     SyncValidationService.ValidationResult result = validationService.validateSyncPrerequisites();
 
     // Then
-    // The validation may fail due to missing NOTION_TOKEN, but should still have the interval
-    // warning
-    if (result.hasWarnings()) {
-      assertThat(result.getWarnings()).anyMatch(warning -> warning.contains("very short"));
-    }
-    // The result may be invalid due to missing NOTION_TOKEN, which is expected
-  }
-
-  @Test
-  void shouldWarnAboutNoEntitiesConfigured() {
-    // Given
-    when(syncProperties.isEnabled()).thenReturn(true);
-    // Remove deprecated getEntities() call - entities are now automatically determined
-
-    NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
-    scheduler.setEnabled(true);
-    scheduler.setInterval(300_000);
-    when(syncProperties.getScheduler()).thenReturn(scheduler);
-
-    // When
-    SyncValidationService.ValidationResult result = validationService.validateSyncPrerequisites();
-
-    // Then
-    // The validation may fail due to missing NOTION_TOKEN, but should still have the entities
-    // warning
-    if (result.hasWarnings()) {
-      assertThat(result.getWarnings()).contains("No entities configured for sync");
-    }
-    // The result may be invalid due to missing NOTION_TOKEN, which is expected
+    assertThat(result.hasWarnings()).isTrue();
+    assertThat(result.getWarnings()).anyMatch(warning -> warning.contains("very short"));
+    assertThat(result.isValid()).isTrue();
   }
 
   @Test

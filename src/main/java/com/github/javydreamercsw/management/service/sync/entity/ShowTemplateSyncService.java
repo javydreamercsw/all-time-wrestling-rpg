@@ -36,7 +36,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
     // Check if already synced in current session
     if (isAlreadySyncedInSession("templates")) {
       log.info("⏭️ Show templates already synced in current session, skipping");
-      return SyncResult.success("Show Templates", 0, 0);
+      return SyncResult.success("Show Templates", 0, 0, 0);
     }
 
     log.info("🎭 Starting show templates synchronization from Notion...");
@@ -59,7 +59,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
       // Check if entity is enabled
       if (!syncProperties.isEntityEnabled("templates")) {
         log.info("Show templates sync is disabled in configuration");
-        return SyncResult.success("Show Templates", 0, 0);
+        return SyncResult.success("Show Templates", 0, 0, 0);
       }
 
       // Initialize progress tracking (3 steps: retrieve, convert, save to database)
@@ -123,7 +123,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
       // Record success in health monitor
       healthMonitor.recordSuccess("Show Templates", totalTime, savedCount);
 
-      return SyncResult.success("Show Templates", savedCount, 0);
+      return SyncResult.success("Show Templates", savedCount, 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;

@@ -71,7 +71,7 @@ public class TeamSyncService extends BaseSyncService {
         long totalTime = System.currentTimeMillis() - startTime;
         healthMonitor.recordSuccess("Teams", totalTime, 0);
 
-        return SyncResult.success("Teams", 0, 0);
+        return SyncResult.success("Teams", 0, 0, 0);
       }
 
       progressTracker.addLogMessage(
@@ -115,7 +115,7 @@ public class TeamSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       healthMonitor.recordSuccess("Teams", totalTime, savedCount);
 
-      return SyncResult.success("Teams", savedCount, 0);
+      return SyncResult.success("Teams", savedCount, 0, 0);
 
     } catch (Exception e) {
       log.error("❌ Teams sync failed", e);

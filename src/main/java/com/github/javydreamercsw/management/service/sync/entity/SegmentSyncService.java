@@ -74,7 +74,7 @@ public class SegmentSyncService extends BaseSyncService {
     if (newSegmentIds.isEmpty()) {
       log.info("No new segments to sync from Notion.");
       progressTracker.completeOperation(operationId, true, "No new segments to sync.", 0);
-      return SyncResult.success("Segments", 0, 0);
+      return SyncResult.success("Segments", 0, 0, 0);
     }
     log.info("Found {} new segments to sync from Notion.", newSegmentIds.size());
 
@@ -124,7 +124,7 @@ public class SegmentSyncService extends BaseSyncService {
 
     SyncResult result;
     if (success) {
-      result = SyncResult.success("Segments", savedCount, errorCount);
+      result = SyncResult.success("Segments", savedCount, 0, errorCount);
     } else {
       result = SyncResult.failure("Segments", "Some new segments failed to sync.");
     }
@@ -408,7 +408,7 @@ public class SegmentSyncService extends BaseSyncService {
         String message = "Segment sync completed successfully. Synced 1 segment.";
         log.info(message);
         progressTracker.completeOperation(operationId, true, message, 1);
-        SyncResult result = SyncResult.success("Segment", 1, 0);
+        SyncResult result = SyncResult.success("Segment", 1, 0, 0);
         result.getMessages().addAll(messages);
         return result;
       } else {

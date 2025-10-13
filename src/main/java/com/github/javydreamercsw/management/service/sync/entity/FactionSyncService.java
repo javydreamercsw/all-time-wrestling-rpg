@@ -49,7 +49,7 @@ public class FactionSyncService extends BaseSyncService {
       // Check if entity is enabled
       if (!syncProperties.isEntityEnabled("factions")) {
         log.info("Factions sync is disabled in configuration");
-        return SyncResult.success("Factions", 0, 0);
+        return SyncResult.success("Factions", 0, 0, 0);
       }
 
       // Check if NOTION_TOKEN is available before starting sync
@@ -142,7 +142,7 @@ public class FactionSyncService extends BaseSyncService {
       if (savedCount < factionDTOs.size()) {
         return SyncResult.failure("Factions", "Some factions failed to sync");
       }
-      return SyncResult.success("Factions", savedCount, 0);
+      return SyncResult.success("Factions", savedCount, 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;

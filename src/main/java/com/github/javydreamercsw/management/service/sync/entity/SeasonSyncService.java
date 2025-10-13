@@ -35,8 +35,7 @@ public class SeasonSyncService extends BaseSyncService {
   public SyncResult syncSeasons(@NonNull String operationId) {
     // Check if already synced in current session
     if (isAlreadySyncedInSession("seasons")) {
-      log.info("⏭️ Seasons already synced in current session, skipping");
-      return SyncResult.success("Seasons", 0, 0);
+      return SyncResult.success("Seasons", 0, 0, 0);
     }
 
     log.info("📅 Starting seasons synchronization from Notion...");
@@ -106,7 +105,7 @@ public class SeasonSyncService extends BaseSyncService {
 
       long totalTime = System.currentTimeMillis() - startTime;
       log.info("🎉 Successfully synchronized {} seasons in {}ms total", savedCount, totalTime);
-      return SyncResult.success("Seasons", savedCount, 0);
+      return SyncResult.success("Seasons", savedCount, 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;
@@ -219,14 +218,11 @@ public class SeasonSyncService extends BaseSyncService {
                 "Season 1", "Default season created by sync process", 5 // 5 shows per PPV
                 );
 
-        log.info(
-            "✅ Created default season: {} (ID: {})",
-            defaultSeason.getName(),
-            defaultSeason.getId());
-        return SyncResult.success("Seasons", 1, 0);
+        log.info("Created new season: {}", defaultSeason.getName());
+        return SyncResult.success("Seasons", 1, 0, 0);
       } else {
-        log.info("Found {} existing seasons in database", existingSeasons.getTotalElements());
-        return SyncResult.success("Seasons", 0, 0);
+        log.info("Season already exists: {}", existingSeasons.iterator().next().getName());
+        return SyncResult.success("Seasons", 0, 0, 0);
       }
     } catch (Exception e) {
       log.error("Failed to create default season", e);

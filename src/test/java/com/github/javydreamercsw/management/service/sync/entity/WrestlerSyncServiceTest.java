@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Unit tests for WrestlerSyncService covering wrestler synchronization including stats,
@@ -39,7 +40,7 @@ class WrestlerSyncServiceTest {
   @Mock private WrestlerService wrestlerService;
 
   @Mock private NotionHandler notionHandler;
-  private final NotionSyncProperties syncProperties; // Declare without @Mock
+  @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private ObjectMapper objectMapper;
@@ -47,15 +48,10 @@ class WrestlerSyncServiceTest {
 
   private WrestlerSyncService wrestlerSyncService;
 
-  // Constructor to configure the mock before setUp()
-  public WrestlerSyncServiceTest() {
-    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-  }
-
   @BeforeEach
   void setUp() {
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
     lenient()
         .when(objectMapper.getTypeFactory())
         .thenReturn(com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance());
@@ -64,38 +60,12 @@ class WrestlerSyncServiceTest {
   }
 
   private void injectMockDependencies() {
-    try {
-      var wrestlerRepositoryField =
-          WrestlerSyncService.class.getDeclaredField("wrestlerRepository");
-      wrestlerRepositoryField.setAccessible(true);
-      wrestlerRepositoryField.set(wrestlerSyncService, wrestlerRepository);
-
-      var wrestlerServiceField = WrestlerSyncService.class.getDeclaredField("wrestlerService");
-      wrestlerServiceField.setAccessible(true);
-      wrestlerServiceField.set(wrestlerSyncService, wrestlerService);
-
-      var notionHandlerField =
-          WrestlerSyncService.class.getSuperclass().getDeclaredField("notionHandler");
-      notionHandlerField.setAccessible(true);
-      notionHandlerField.set(wrestlerSyncService, notionHandler);
-
-      var progressTrackerField =
-          WrestlerSyncService.class.getSuperclass().getDeclaredField("progressTracker");
-      progressTrackerField.setAccessible(true);
-      progressTrackerField.set(wrestlerSyncService, progressTracker);
-
-      var healthMonitorField =
-          WrestlerSyncService.class.getSuperclass().getDeclaredField("healthMonitor");
-      healthMonitorField.setAccessible(true);
-      healthMonitorField.set(wrestlerSyncService, healthMonitor);
-
-      var rateLimitServiceField =
-          WrestlerSyncService.class.getSuperclass().getDeclaredField("rateLimitService");
-      rateLimitServiceField.setAccessible(true);
-      rateLimitServiceField.set(wrestlerSyncService, rateLimitService);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to inject mock dependencies", e);
-    }
+    ReflectionTestUtils.setField(wrestlerSyncService, "wrestlerRepository", wrestlerRepository);
+    ReflectionTestUtils.setField(wrestlerSyncService, "wrestlerService", wrestlerService);
+    ReflectionTestUtils.setField(wrestlerSyncService, "notionHandler", notionHandler);
+    ReflectionTestUtils.setField(wrestlerSyncService, "progressTracker", progressTracker);
+    ReflectionTestUtils.setField(wrestlerSyncService, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(wrestlerSyncService, "rateLimitService", rateLimitService);
   }
 
   @Test

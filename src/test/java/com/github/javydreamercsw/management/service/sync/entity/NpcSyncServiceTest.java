@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NpcPage;
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -26,16 +25,16 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class NpcSyncServiceTest extends BaseTest {
+class NpcSyncServiceTest {
 
   @Mock private NpcService npcService;
   @Mock private ObjectMapper objectMapper;
-  private NotionSyncProperties syncProperties; // Declare without @Mock
+  @Mock private NotionSyncProperties syncProperties;
   @Mock private NotionHandler notionHandler;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
@@ -46,28 +45,25 @@ class NpcSyncServiceTest extends BaseTest {
   @Mock private DataIntegrityChecker integrityChecker;
   @Mock private NotionRateLimitService rateLimitService;
 
-  @InjectMocks NpcSyncService npcSyncService;
-
-  // Constructor to configure the mock before setUp()
-  public NpcSyncServiceTest() {
-    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-  }
+  private NpcSyncService npcSyncService;
 
   @BeforeEach
   void setUp() {
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+    npcSyncService = new NpcSyncService(objectMapper, syncProperties);
+
     // Manually inject all mocked dependencies using reflection
-    setField(npcSyncService, "npcService", npcService); // Add this line
-    setField(npcSyncService, "notionHandler", notionHandler);
-    setField(npcSyncService, "progressTracker", progressTracker);
-    setField(npcSyncService, "healthMonitor", healthMonitor);
-    setField(npcSyncService, "retryService", retryService);
-    setField(npcSyncService, "circuitBreakerService", circuitBreakerService);
-    setField(npcSyncService, "validationService", validationService);
-    setField(npcSyncService, "syncTransactionManager", syncTransactionManager);
-    setField(npcSyncService, "integrityChecker", integrityChecker);
-    setField(npcSyncService, "rateLimitService", rateLimitService);
+    ReflectionTestUtils.setField(npcSyncService, "npcService", npcService);
+    ReflectionTestUtils.setField(npcSyncService, "notionHandler", notionHandler);
+    ReflectionTestUtils.setField(npcSyncService, "progressTracker", progressTracker);
+    ReflectionTestUtils.setField(npcSyncService, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(npcSyncService, "retryService", retryService);
+    ReflectionTestUtils.setField(npcSyncService, "circuitBreakerService", circuitBreakerService);
+    ReflectionTestUtils.setField(npcSyncService, "validationService", validationService);
+    ReflectionTestUtils.setField(npcSyncService, "syncTransactionManager", syncTransactionManager);
+    ReflectionTestUtils.setField(npcSyncService, "integrityChecker", integrityChecker);
+    ReflectionTestUtils.setField(npcSyncService, "rateLimitService", rateLimitService);
   }
 
   @Test

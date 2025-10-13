@@ -35,8 +35,7 @@ public class TitleSyncService extends BaseSyncService {
   @Transactional
   public SyncResult syncTitles(@NonNull String operationId) {
     if (isAlreadySyncedInSession("titles")) {
-      log.info("⏭️ Titles already synced in current session, skipping");
-      return SyncResult.success("Titles", 0, 0);
+      return SyncResult.success("Titles", 0, 0, 0);
     }
 
     log.info("🏆 Starting titles synchronization from Notion...");
@@ -57,7 +56,7 @@ public class TitleSyncService extends BaseSyncService {
   private SyncResult performTitlesSync(@NonNull String operationId, long startTime) {
     if (!syncProperties.isEntityEnabled("titles")) {
       log.info("Titles sync is disabled in configuration");
-      return SyncResult.success("Titles", 0, 0);
+      return SyncResult.success("Titles", 0, 0, 0);
     }
 
     if (!isNotionHandlerAvailable()) {
@@ -122,7 +121,7 @@ public class TitleSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.info("🎉 Successfully synchronized titles in {}ms total", totalTime);
       healthMonitor.recordSuccess("Titles", totalTime, titlePages.size());
-      return SyncResult.success("Titles", titlePages.size(), 0);
+      return SyncResult.success("Titles", titlePages.size(), 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;
