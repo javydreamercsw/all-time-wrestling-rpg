@@ -17,7 +17,7 @@
   <name>All Time Wrestling RPG</name>
 
   <properties>
-    <NOTION_TOKEN/>
+
     <archunit.version>1.4.1</archunit.version>
     <failsafeArgLine/>
 
@@ -744,7 +744,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
-              <argLine>@{failsafeArgLine} -Dspring.profiles.active=test -DNOTION_TOKEN=${NOTION_TOKEN}</argLine>
+              <argLine>@{failsafeArgLine} -Dspring.profiles.active=test</argLine>
               <trimStackTrace>false</trimStackTrace>
               <enableAssertions>true</enableAssertions>
               <!-- Sequential execution for integration tests -->
@@ -842,7 +842,7 @@
               <systemPropertyVariables>
                 <spring.profiles.active>test</spring.profiles.active>
               </systemPropertyVariables>
-              <argLine>@{failsafeArgLine} -DNOTION_TOKEN=${env.NOTION_TOKEN}</argLine>
+              <argLine>@{failsafeArgLine}</argLine>
               <!-- Sequential execution for e2e tests -->
               <parallel>none</parallel>
               <threadCount>1</threadCount>
