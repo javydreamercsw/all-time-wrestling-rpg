@@ -136,6 +136,7 @@ public class ShowTypeSyncService extends BaseSyncService {
 
       progressTracker.completeOperation(
           operationId, false, "Failed to sync show types: " + e.getMessage(), 0);
+      healthMonitor.recordFailure("Show Types", e.getMessage());
 
       return SyncResult.failure("Show Types", "Failed to sync show types: " + e.getMessage());
     }
@@ -202,28 +203,38 @@ public class ShowTypeSyncService extends BaseSyncService {
   /** Creates default show types if none exist in the database. */
   private SyncResult createDefaultShowTypesIfNeeded() {
     try {
+      log.info("createDefaultShowTypesIfNeeded called");
       // Check if any show types exist
       List<ShowType> existingShowTypes = showTypeService.findAll();
+      log.info("existingShowTypes: {}", existingShowTypes);
       if (existingShowTypes.isEmpty()) {
         log.info("No show types found in database. Creating default show types...");
 
         int createdCount = 0;
 
         // Create Weekly show type
-        ShowType weeklyType = new ShowType();
-        weeklyType.setName("Weekly");
-        weeklyType.setDescription("Weekly television show format");
-        showTypeService.save(weeklyType);
-        createdCount++;
-        log.info("Created show type: Weekly");
+        log.info("Checking for Weekly show type");
+        if (showTypeService.findByName("Weekly").isEmpty()) {
+          log.info("Creating Weekly show type");
+          ShowType weeklyType = new ShowType();
+          weeklyType.setName("Weekly");
+          weeklyType.setDescription("Weekly television show format");
+          showTypeService.save(weeklyType);
+          createdCount++;
+          log.info("Created show type: Weekly");
+        }
 
         // Create Premium Live Event (PLE) show type
-        ShowType pleType = new ShowType();
-        pleType.setName("Premium Live Event (PLE)");
-        pleType.setDescription("Premium live event or pay-per-view format");
-        showTypeService.save(pleType);
-        createdCount++;
-        log.info("Created show type: Premium Live Event (PLE)");
+        log.info("Checking for Premium Live Event (PLE) show type");
+        if (showTypeService.findByName("Premium Live Event (PLE)").isEmpty()) {
+          log.info("Creating Premium Live Event (PLE) show type");
+          ShowType pleType = new ShowType();
+          pleType.setName("Premium Live Event (PLE)");
+          pleType.setDescription("Premium live event or pay-per-view format");
+          showTypeService.save(pleType);
+          createdCount++;
+          log.info("Created show type: Premium Live Event (PLE)");
+        }
 
         log.info("✅ Created {} default show types", createdCount);
         return SyncResult.success("Show Types", createdCount, 0, 0);

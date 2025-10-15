@@ -73,22 +73,7 @@ class NotionPropertyTest {
     // Given - Mock SegmentSyncService behavior
     List<String> mockSegmentIds =
         Arrays.asList(UUID.randomUUID().toString(), UUID.randomUUID().toString());
-    // Mock NotionHandler behavior
-    when(notionHandler.getDatabaseId("Segments")).thenReturn("segment-db-id");
-    when(notionHandler.getDatabaseId("Wrestlers")).thenReturn("wrestler-db-id");
-    when(notionHandler.getDatabaseId("Factions")).thenReturn("faction-db-id");
-    when(notionHandler.getDatabaseId("Teams")).thenReturn("team-db-id");
-    when(notionHandler.getDatabaseId("Shows")).thenReturn("show-db-id");
-    when(notionHandler.getDatabaseId("Show Types")).thenReturn("show-type-db-id");
-    when(notionHandler.getDatabaseId("Show Templates")).thenReturn("show-template-db-id");
-    when(notionHandler.getDatabaseId("Injuries")).thenReturn("injury-db-id");
-    when(notionHandler.getDatabaseId("NPCs")).thenReturn("npc-db-id");
-    when(notionHandler.getDatabaseId("Titles")).thenReturn("title-db-id");
-    when(notionHandler.getDatabaseId("Title Reigns")).thenReturn("title-reign-db-id");
-    when(notionHandler.getDatabaseId("Rivalries")).thenReturn("rivalry-db-id");
-    when(notionHandler.getDatabaseId("Faction Rivalries")).thenReturn("faction-rivalry-db-id");
-    when(segmentSyncService.syncSegment(anyString()))
-        .thenReturn(BaseSyncService.SyncResult.success("Segment", 1, 0, 0));
+    when(segmentSyncService.getSegmentIds()).thenReturn(mockSegmentIds);
     when(segmentSyncService.syncSegments(anyString()))
         .thenReturn(BaseSyncService.SyncResult.success("Segment", 2, 0, 0));
 

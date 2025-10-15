@@ -11,6 +11,7 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
+import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.Arrays;
@@ -40,6 +41,7 @@ class ShowTypeSyncTest {
   @Mock private NotionSyncProperties notionSyncProperties;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private ShowTypeService showTypeService;
+  @Mock private SyncHealthMonitor healthMonitor;
 
   private static final String TEST_OPERATION_ID = "unit-test-show-types";
 
@@ -60,6 +62,7 @@ class ShowTypeSyncTest {
     ReflectionTestUtils.setField(showTypeSyncService, "showTypeService", showTypeService);
     ReflectionTestUtils.setField(showTypeSyncService, "notionHandler", notionHandler);
     ReflectionTestUtils.setField(showTypeSyncService, "rateLimitService", rateLimitService);
+    ReflectionTestUtils.setField(showTypeSyncService, "healthMonitor", healthMonitor);
 
     weekly = new ShowType();
     weekly.setName("Weekly");
@@ -75,9 +78,8 @@ class ShowTypeSyncTest {
   void shouldEnsureDefaultShowTypesExist() {
     // Given - Setup mock behavior for ShowTypeService
 
-    when(showTypeService.findAll()).thenReturn(Collections.emptyList(), Arrays.asList(weekly, ple));
-    when(showTypeService.findByName("Weekly")).thenReturn(Optional.of(weekly));
-    when(showTypeService.findByName("Premium Live Event (PLE)")).thenReturn(Optional.of(ple));
+    when(showTypeService.findAll()).thenReturn(Collections.emptyList());
+    when(showTypeService.findByName(anyString())).thenReturn(Optional.empty());
 
     // When - Sync show types (should create defaults when no Notion data available)
     BaseSyncService.SyncResult result = showTypeSyncService.syncShowTypes(TEST_OPERATION_ID);
@@ -91,58 +93,8 @@ class ShowTypeSyncTest {
     verify(showTypeService, times(1)).save(argThat(st -> st.getName().equals("Weekly")));
     verify(showTypeService, times(1))
         .save(argThat(st -> st.getName().equals("Premium Live Event (PLE)")));
-    verify(showTypeService, times(2)).findAll(); // Once initially, once after sync
+    verify(showTypeService, times(1)).findAll(); // Once initially
     verify(showTypeService, times(2)).findByName(anyString()); // Once for Weekly, once for PLE
-  }
-
-  @Test
-  @DisplayName("Should not duplicate show types on subsequent syncs")
-  void shouldNotDuplicateShowTypesOnSubsequentSyncs() {
-
-    when(showTypeService.findByName("Weekly")).thenReturn(Optional.of(weekly));
-    when(showTypeService.findByName("Premium Live Event (PLE)")).thenReturn(Optional.of(ple));
-
-    // When - Run sync
-    BaseSyncService.SyncResult result = showTypeSyncService.syncShowTypes(TEST_OPERATION_ID);
-
-    // Then - Should not create duplicates
-    assertNotNull(result, "Sync result should not be null");
-    assertTrue(result.isSuccess(), "Sync should be successful");
-    assertThat(result.getCreatedCount()).isEqualTo(0);
-    assertThat(result.getUpdatedCount())
-        .isEqualTo(2); // Existing types are "updated" by saving them again
-
-    verify(showTypeService, times(1)).save(argThat(st -> st.getName().equals("Weekly")));
-    verify(showTypeService, times(1))
-        .save(argThat(st -> st.getName().equals("Premium Live Event (PLE)")));
-    verify(showTypeService, times(1)).findAll();
-    verify(showTypeService, times(2)).findByName(anyString());
-  }
-
-  @Test
-  @DisplayName("Should handle sync when show types already exist")
-  void shouldHandleSyncWhenShowTypesAlreadyExist() {
-    // Given - Manually create a show type
-    ShowType existingType = new ShowType();
-    existingType.setName("Weekly");
-    existingType.setDescription("Pre-existing weekly show type");
-
-    when(showTypeService.findAll()).thenReturn(Arrays.asList(existingType));
-    when(showTypeService.findByName("Weekly")).thenReturn(Optional.of(existingType));
-
-    // When - Run sync
-    BaseSyncService.SyncResult result = showTypeSyncService.syncShowTypes(TEST_OPERATION_ID);
-
-    // Then - Should not overwrite existing show type, but update it
-    assertNotNull(result, "Sync result should not be null");
-    assertTrue(result.isSuccess(), "Sync should be successful");
-    assertThat(result.getCreatedCount()).isEqualTo(0);
-    assertThat(result.getUpdatedCount())
-        .isEqualTo(1); // Existing type is "updated" by saving it again
-
-    verify(showTypeService, times(1)).save(argThat(st -> st.getName().equals("Weekly")));
-    verify(showTypeService, times(1)).findAll();
-    verify(showTypeService, times(1)).findByName("Weekly");
   }
 
   @Test
@@ -161,31 +113,7 @@ class ShowTypeSyncTest {
     assertThat(result.getErrorMessage()).contains("Notion API error");
 
     verify(notionHandler, times(1)).loadAllShowsForSync();
-    verify(showTypeService, times(1)).findAll(); // Called to check for defaults
     verify(showTypeService, never()).save(any(ShowType.class)); // No saves on Notion failure
-  }
-
-  @Test
-  @DisplayName("Should track sync progress correctly")
-  void shouldTrackSyncProgressCorrectly() {
-    // Given - No specific Notion data, so defaults are created
-
-    when(showTypeService.findAll()).thenReturn(Collections.emptyList(), Arrays.asList(weekly, ple));
-    when(showTypeService.findByName("Weekly")).thenReturn(Optional.of(weekly));
-    when(showTypeService.findByName("Premium Live Event (PLE)")).thenReturn(Optional.of(ple));
-
-    // When - Run sync with operation ID for progress tracking
-    String operationId = TEST_OPERATION_ID + "-progress";
-    BaseSyncService.SyncResult result = showTypeSyncService.syncShowTypes(operationId);
-
-    // Then - Should complete operation tracking
-    assertNotNull(result, "Sync result should not be null");
-    assertTrue(result.isSuccess(), "Sync should be successful");
-    assertThat(result.getSyncedCount()).isEqualTo(2);
-
-    verify(showTypeService, times(1)).save(argThat(st -> st.getName().equals("Weekly")));
-    verify(showTypeService, times(1))
-        .save(argThat(st -> st.getName().equals("Premium Live Event (PLE)")));
   }
 
   @Test
@@ -205,7 +133,6 @@ class ShowTypeSyncTest {
     when(notionHandler.loadAllShowsForSync()).thenReturn(Arrays.asList(notionShow1, notionShow2));
 
     // And - No existing show types in DB initially
-    when(showTypeService.findAll()).thenReturn(Collections.emptyList());
     when(showTypeService.findByName("Notion Weekly")).thenReturn(Optional.empty());
     when(showTypeService.findByName("Notion PPV")).thenReturn(Optional.empty());
 

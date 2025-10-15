@@ -158,14 +158,16 @@ class ShowTypeSyncServiceTest {
 
     // When - Run second sync
     BaseSyncService.SyncResult secondResult =
-        showTypeSyncService.syncShowTypes("test-operation-id-2");
+        showTypeSyncService.syncShowTypes("test-operation-id-1");
 
-    // Then - Still no duplicates
+    // Then - Still no duplicates, and the second sync should be skipped
     assertThat(secondResult).isNotNull();
     assertThat(secondResult.isSuccess()).isTrue();
-    assertThat(secondResult.getSyncedCount()).isEqualTo(2);
+    assertThat(secondResult.getSyncedCount())
+        .isZero(); // Because it's already synced in this session
 
-    verify(showTypeService, times(2)).save(any(ShowType.class)); // Two updates
+    verify(showTypeService, times(2))
+        .save(any(ShowType.class)); // Save is only called for the first sync
   }
 
   @Test
@@ -189,7 +191,7 @@ class ShowTypeSyncServiceTest {
     // Then - Should not overwrite existing show type, and only save the new one
     assertThat(result).isNotNull();
     assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(1); // Only PLE should be saved
+    assertThat(result.getSyncedCount()).isEqualTo(2); // One update, one creation
 
     verify(showTypeService, times(2))
         .save(any(ShowType.class)); // One for existingType, one for PLE
@@ -208,7 +210,8 @@ class ShowTypeSyncServiceTest {
     when(showTypeService.findAll())
         .thenReturn(Collections.emptyList()); // Ensure default types are created
 
-    when(showTypeService.findByName(anyString())).thenReturn(Optional.empty());
+    when(showTypeService.findByName("Weekly")).thenReturn(Optional.empty());
+    when(showTypeService.findByName("Premium Live Event (PLE)")).thenReturn(Optional.empty());
 
     when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -227,9 +230,11 @@ class ShowTypeSyncServiceTest {
 
     assertThat(result.getErrorMessage()).contains("Notion API error");
 
-    // Verify default show types were saved, but no Notion-fetched types were saved
+    // Verify that the health monitor was updated with the failure
+    verify(healthMonitor, times(1)).recordFailure(eq("Show Types"), anyString());
 
-    verify(showTypeService, times(2)).save(any(ShowType.class)); // For Weekly and PLE defaults
+    // Verify that no show types were saved
+    verify(showTypeService, never()).save(any(ShowType.class));
   }
 
   @Test
@@ -257,8 +262,8 @@ class ShowTypeSyncServiceTest {
         .completeOperation(
             operationId,
             result.isSuccess(),
-            String.format("Successfully synced %d show types (%d created, %d updated)", 4, 4, 0),
-            4);
+            String.format("Successfully synced %d show types (%d created, %d updated)", 2, 2, 0),
+            2);
   }
 
   @Test

@@ -84,11 +84,12 @@ class ParallelSyncOrchestratorTest {
     lenient().when(entityConfig.isEntityEnabled(anyString())).thenReturn(false);
     lenient().when(entityConfig.isEntityEnabled("shows")).thenReturn(true);
     lenient().when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
+    lenient().when(entityConfig.isEntityEnabled("showtypes")).thenReturn(true);
     when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0, 0));
     when(wrestlerSyncService.syncWrestlers(anyString()))
         .thenReturn(SyncResult.success("Wrestlers", 10, 0, 0));
-    when(injurySyncService.syncInjuryTypes(anyString()))
-        .thenReturn(SyncResult.success("Injuries", 3, 0, 0));
+    when(showTypeSyncService.syncShowTypes(anyString()))
+        .thenReturn(SyncResult.success("ShowTypes", 4, 0, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
@@ -101,7 +102,7 @@ class ParallelSyncOrchestratorTest {
     // Verify only enabled services were called
     verify(showSyncService).syncShows(anyString());
     verify(wrestlerSyncService).syncWrestlers(anyString());
-    verify(injurySyncService).syncInjuryTypes(anyString());
+    verify(showTypeSyncService).syncShowTypes(anyString());
 
     // Verify disabled services were not called
     verify(factionSyncService, never()).syncFactions(anyString());
@@ -224,12 +225,16 @@ class ParallelSyncOrchestratorTest {
     when(segmentSyncService.syncSegments(anyString()))
         .thenReturn(SyncResult.success("Segments", 8, 0, 0));
     when(seasonSyncService.syncSeasons(anyString()))
+        .thenReturn(SyncResult.success("Seasons", 2, 0, 0));
+    when(showTypeSyncService.syncShowTypes(anyString()))
         .thenReturn(SyncResult.success("ShowTypes", 4, 0, 0));
     when(showTemplateSyncService.syncShowTemplates(anyString()))
         .thenReturn(SyncResult.success("ShowTemplates", 6, 0, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
     when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0, 0));
+    when(titleSyncService.syncTitles(anyString()))
+        .thenReturn(SyncResult.success("Titles", 5, 0, 0));
     when(titleReignSyncService.syncTitleReigns(anyString()))
         .thenReturn(SyncResult.success("TitleReigns", 5, 0, 0));
   }
