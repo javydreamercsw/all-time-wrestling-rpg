@@ -5,12 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.Card;
-import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
-import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
-import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -24,57 +21,15 @@ import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
-import com.github.javydreamercsw.management.service.card.CardService;
-import com.github.javydreamercsw.management.service.card.CardSetService;
-import com.github.javydreamercsw.management.service.deck.DeckCardService;
-import com.github.javydreamercsw.management.service.deck.DeckService;
-import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
-import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
-import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
-import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
-import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.annotation.Transactional;
 
 class DataInitializerTest extends ManagementIntegrationTest {
-
-  @Autowired private DataInitializer dataInitializer;
-  @Autowired private CardService cardService;
-  @Autowired private CardSetService cardSetService;
-  @Autowired private CardSetRepository cardSetRepository;
-  @Autowired private CardRepository cardRepository;
-  @Autowired private WrestlerService wrestlerService;
-  @Autowired private DeckService deckService;
-  @Autowired private ShowTypeService showTypeService;
-  @Autowired private ShowService showService;
-  @Autowired private TitleService titleService;
-  @Autowired private SegmentRuleService segmentRuleService;
-  @Autowired private ShowTemplateService showTemplateService;
-  @Autowired private SegmentTypeService segmentTypeService;
-  @Autowired private DeckCardService deckCardService;
-  @Autowired private DeckCardRepository deckCardRepository;
-
-  @BeforeEach
-  void setUp() {
-    dataInitializer.loadSegmentRulesFromFile(segmentRuleService);
-    dataInitializer.syncShowTypesFromFile(showTypeService);
-    dataInitializer.loadSegmentTypesFromFile(segmentTypeService);
-    dataInitializer.loadShowTemplatesFromFile(showTemplateService);
-    dataInitializer.syncSetsFromFile(cardSetService);
-    dataInitializer.syncCardsFromFile(cardService, cardSetService);
-    dataInitializer.syncWrestlersFromFile(wrestlerService);
-    dataInitializer.syncChampionshipsFromFile(titleService);
-    dataInitializer.syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService);
-  }
 
   @Test
   void validateSegmentRulesJson() throws IOException {

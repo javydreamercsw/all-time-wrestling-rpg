@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.UUID;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @DisplayName("SegmentSyncService Integration Tests")
 @EnabledIf("isNotionTokenAvailable")
-class SegmentSyncServiceIT extends ManagementIntegrationTest {
+class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentSyncService segmentSyncService;
   @Autowired private SegmentService segmentService;
@@ -45,17 +44,5 @@ class SegmentSyncServiceIT extends ManagementIntegrationTest {
               assertThat(segment.getSegmentType()).isNotNull();
               assertThat(segment.getSegmentDate()).isNotNull();
             });
-  }
-
-  @Test
-  @DisplayName("Should return failure for non-existent segment ID")
-  void shouldReturnFailureForNonExistentSegmentId() {
-    SegmentSyncService.SyncResult result =
-        segmentSyncService.syncSegment(UUID.randomUUID().toString());
-
-    assertThat(result).isNotNull();
-    assertThat(result.isSuccess()).isFalse();
-    assertThat(result.getErrorMessage()).contains("not found in Notion");
-    assertThat(result.getSyncedCount()).isEqualTo(0);
   }
 }

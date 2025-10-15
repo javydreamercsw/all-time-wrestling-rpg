@@ -14,13 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
-@EnabledIf("isNotionTokenAvailable")
-@Transactional
-class TitleListViewIT extends ManagementIntegrationTest {
+class TitleListViewTest extends ManagementIntegrationTest {
 
   @Autowired private TitleService titleService;
   @Autowired private TeamRepository teamRepository;

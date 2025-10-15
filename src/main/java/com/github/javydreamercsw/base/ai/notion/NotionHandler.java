@@ -1762,10 +1762,85 @@ public class NotionHandler {
     }
   }
 
+  /**
+   * Loads a segment from the Notion database by ID.
+   *
+   * @param segmentId The ID of the segment to load.
+   * @return Optional containing the MatchPage object if found, empty otherwise.
+   */
+  public Optional<SegmentPage> getSegmentPage(@NonNull String segmentId) {
+    log.debug("Loading segment with ID: '{}'", segmentId);
+    return loadPage(segmentId).map(page -> mapPageToSegmentPage(page, ""));
+  }
+
+  /**
+   * Loads all show types from the Notion Show Types database.
+   *
+   * @return List of all ShowTypePage objects from the Show Types database
+   */
+  public List<ShowTypePage> getShowTypePages() {
+    log.debug("Loading all show types from Show Types database");
+
+    // Check if NOTION_TOKEN is available first
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      throw new IllegalStateException("NOTION_TOKEN is required for sync operations");
+    }
+
+    String dbId = getDatabaseId("Show Types");
+    if (dbId == null) {
+      log.warn("Show Types database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        throw new IllegalStateException(
+            "Failed to create NotionClient - NOTION_TOKEN may be invalid");
+      }
+      return loadAllEntitiesFromDatabase(
+          client, dbId, "Show Type", this::mapPageToShowTypePage, false);
+    } catch (Exception e) {
+      log.error("Failed to load all show types", e);
+      throw new RuntimeException("Failed to load show types from Notion: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Gets all segment IDs from the Notion database.
+   *
+   * @return List of segment IDs.
+   */
+  public List<String> getSegmentIds() {
+    log.debug("Loading all segment IDs from Segments database");
+
+    String dbId = getDatabaseId("Segments");
+    if (dbId == null) {
+      log.warn("'Segments' database not found in workspace");
+      return new ArrayList<>();
+    }
+
+    try (NotionClient client = createNotionClient()) {
+      if (client == null) {
+        return new ArrayList<>();
+      }
+      return loadAllEntitiesFromDatabase(
+          client, dbId, "Segments", (page, name) -> page.getId(), false);
+    } catch (Exception e) {
+      log.error("Failed to load all segment IDs from database 'Segments'", e);
+      return new ArrayList<>();
+    }
+  }
+
   /** Maps a Notion page to a ShowPage object with full relationship resolution. */
   private ShowPage mapPageToShowPage(@NonNull Page pageData, @NonNull String showName) {
     return mapPageToGenericEntity(
         pageData, showName, "Show", ShowPage::new, ShowPage.NotionParent::new, true);
+  }
+
+  /** Maps a Notion page to a ShowTypePage object. */
+  private ShowTypePage mapPageToShowTypePage(@NonNull Page pageData, @NonNull String showTypeName) {
+    return mapPageToGenericEntity(
+        pageData, showTypeName, "Show Type", ShowTypePage::new, ShowTypePage.NotionParent::new);
   }
 
   /** Maps a Notion page to a ShowPage object with minimal relationship resolution for sync. */

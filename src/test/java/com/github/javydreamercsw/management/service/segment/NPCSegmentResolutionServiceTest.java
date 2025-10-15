@@ -1,145 +1,279 @@
 package com.github.javydreamercsw.management.service.segment;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mockStatic;
 
+import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
-import java.time.Clock;
-import java.time.Instant;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockedStatic;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.annotation.Transactional;
 
-@ExtendWith(MockitoExtension.class)
-@DisplayName("NPC Segment Resolution Service Tests")
-class NPCSegmentResolutionServiceTest {
+@DisplayName("NPC Segment Resolution Service Integration Tests")
+@Transactional
+class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
+  @Autowired NPCSegmentResolutionService npcSegmentResolutionService;
+  @Autowired WrestlerService wrestlerService;
+  @Autowired WrestlerRepository wrestlerRepository;
+  @Autowired SegmentRepository matchRepository;
+  @MockitoBean private OpenAISegmentNarrationService openAIService;
 
-  @Mock private SegmentRepository segmentRepository;
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private SegmentRuleService segmentRuleService;
-  @Mock private Clock clock;
-  @Mock private Random random;
+  @Autowired
+  com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository
+      showTemplateRepository;
 
-  @InjectMocks private NPCSegmentResolutionService npcSegmentResolutionService;
-
-  private Show show;
-  private SegmentType segmentType;
+  private Wrestler rookie1;
+  private Wrestler rookie2;
+  private Wrestler contender;
+  private SegmentType singlesSegmentType;
+  private SegmentType tagTeamType;
+  private Show testShow;
 
   @BeforeEach
+  @SneakyThrows
   void setUp() {
-    show = new Show();
-    show.setId(1L);
-    show.setName("Test Show");
+    dataInitializer.loadSegmentTypesFromFile(segmentTypeService).run(null);
+    // Create test wrestlers with different tiers
+    rookie1 = wrestlerService.createWrestler("Rookie One", true, null);
+    rookie2 = wrestlerService.createWrestler("Rookie Two", true, null);
+    contender = wrestlerService.createWrestler("The Contender", true, null);
 
-    segmentType = new SegmentType();
-    segmentType.setName("Test Segment");
+    // Award fans to create tier differences
+    Assertions.assertNotNull(contender.getId());
+    wrestlerService.awardFans(contender.getId(), 450_00L); // CONTENDER tier
 
-    when(clock.instant()).thenReturn(Instant.now());
-    when(segmentRepository.save(any(Segment.class))).thenAnswer(i -> i.getArgument(0));
+    // Refresh wrestler entities from database to get updated fan counts
+    contender = wrestlerRepository.findById(contender.getId()).orElseThrow();
+
+    // Create segment types (rely on DataInitializer for these)
+    singlesSegmentType = segmentTypeRepository.findByName("One on One").orElseThrow();
+    tagTeamType = segmentTypeRepository.findByName("Tag Team").orElseThrow();
+
+    // Create segment rules for testing
+    segmentRuleService.createOrUpdateRule(
+        "Steel Cage Match", "Steel cage segment with no escape", false);
+    segmentRuleService.createOrUpdateRule(
+        "Test Match", "Generic Test Match for various scenarios", false);
+    segmentRuleService.createOrUpdateRule("Triple Threat Match", "Triple Threat Match", false);
+    segmentRuleService.createOrUpdateRule("Injury Test", "Injury Test Match", false);
+
+    // Create test show
+    ShowType showType = showTypeRepository.findByName("Weekly").orElseThrow();
+
+    testShow = new Show();
+    testShow.setName("Test Show");
+    testShow.setDescription("Test show for NPC matches");
+    testShow.setType(showType);
+    testShow = showRepository.save(testShow);
+  }
+
+  @AfterEach
+  void cleanUp() {
+    matchRepository.deleteAll();
+    deckRepository.deleteAll(); // Delete decks before wrestlers
+    wrestlerRepository.deleteAll();
+    segmentTypeRepository.deleteAll();
+    showRepository.deleteAll();
+    showTemplateRepository.deleteAll();
+    showTypeRepository.deleteAll();
   }
 
   @Test
-  @DisplayName("Test Team 1 wins with weighted random selection")
-  void testResolveTeamSegment_Team1Wins() {
-    // Given
-    Wrestler w1 = createWrestler(1L, "W1", WrestlerTier.MIDCARDER, 50000);
-    Wrestler w2 = createWrestler(2L, "W2", WrestlerTier.ROOKIE, 10000);
-    SegmentTeam team1 = new SegmentTeam(List.of(w1), "Team 1");
-    SegmentTeam team2 = new SegmentTeam(List.of(w2), "Team 2");
+  @DisplayName("Should resolve singles segment between two rookies")
+  void shouldResolveSinglesMatchBetweenRookies() {
+    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
+      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
+      // When
+      SegmentTeam team1 = new SegmentTeam(rookie1);
+      SegmentTeam team2 = new SegmentTeam(rookie2);
+      Segment result =
+          npcSegmentResolutionService.resolveTeamSegment(
+              team1, team2, singlesSegmentType, testShow, "Standard Match");
 
-    // Mocking wrestler repo to handle participant adding
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(w1));
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(w2));
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.getId()).isNotNull();
+      assertThat(result.getShow()).isEqualTo(testShow);
+      assertThat(result.getSegmentType()).isEqualTo(singlesSegmentType);
+      assertThat(result.getWinners()).hasSize(1);
+      assertThat(result.getWinners().get(0)).isIn(rookie1, rookie2);
+      assertThat(result.getIsNpcGenerated()).isTrue();
+      assertThat(result.getParticipants()).hasSize(2);
 
-    // Team 1 has a much higher weight, so they should have a higher win probability.
-    // Let's say Team 1 has 80% win probability.
-    // We make the random roll be less than that to ensure Team 1 wins.
-    when(random.nextDouble()).thenReturn(0.79); // 79 is less than 80
-
-    // When
-    Segment result =
-        npcSegmentResolutionService.resolveTeamSegment(team1, team2, segmentType, show, "");
-
-    // Then
-    assertEquals(team1.getMembers(), result.getWinners());
+      // Verify participants
+      List<Wrestler> participants = result.getWrestlers();
+      assertThat(participants).containsExactlyInAnyOrder(rookie1, rookie2);
+    }
   }
 
   @Test
-  @DisplayName("Test Team 2 wins with weighted random selection")
-  void testResolveTeamSegment_Team2Wins() {
-    // Given
-    Wrestler w1 = createWrestler(1L, "W1", WrestlerTier.MIDCARDER, 50000);
-    Wrestler w2 = createWrestler(2L, "W2", WrestlerTier.ROOKIE, 10000);
-    SegmentTeam team1 = new SegmentTeam(List.of(w1), "Team 1");
-    SegmentTeam team2 = new SegmentTeam(List.of(w2), "Team 2");
+  @DisplayName("Should favor higher tier wrestler in singles segment")
+  void shouldFavorHigherTierWrestlerInSinglesMatch() {
+    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
+      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
+      // Given - Run multiple matches to test probability
+      int contenderWins = 0;
+      int totalMatches = 100;
 
-    // Mocking wrestler repo to handle participant adding
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(w1));
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(w2));
+      // When - Simulate many matches
+      for (int i = 0; i < totalMatches; i++) {
+        SegmentTeam team1 = new SegmentTeam(rookie1);
+        SegmentTeam team2 = new SegmentTeam(contender);
+        Segment result =
+            npcSegmentResolutionService.resolveTeamSegment(
+                team1, team2, singlesSegmentType, testShow, "Test Match " + i);
 
-    // Team 1 win probability is ~83.34%. We need the random value to be higher than that.
-    // random.nextDouble() * 100 must be > 83.34. So nextDouble() must be > 0.8334.
-    when(random.nextDouble()).thenReturn(0.8335);
+        if (result.getWinners().contains(contender)) {
+          contenderWins++;
+        }
+      }
 
-    // When
-    Segment result =
-        npcSegmentResolutionService.resolveTeamSegment(team1, team2, segmentType, show, "Normal");
-
-    // Then
-    assertEquals(team2.getMembers(), result.getWinners());
+      // Then - Contender should win significantly more often than rookie
+      double contenderWinRate = (double) contenderWins / totalMatches;
+      assertThat(contenderWinRate)
+          .isGreaterThan(0.9) // Should win at least 90% due to massive tier advantage
+          .describedAs("Contender with 45,000 fans should dominate rookie with 0 fans");
+    }
   }
 
   @Test
-  @DisplayName("Test multi-team segment winner selection")
-  void testResolveMultiTeamSegment() {
-    // Given
-    Wrestler w1 = createWrestler(1L, "W1", WrestlerTier.MAIN_EVENTER, 100000);
-    Wrestler w2 = createWrestler(2L, "W2", WrestlerTier.MIDCARDER, 50000);
-    Wrestler w3 = createWrestler(3L, "W3", WrestlerTier.ROOKIE, 10000);
-    SegmentTeam team1 = new SegmentTeam(List.of(w1), "Team 1"); // Highest weight
-    SegmentTeam team2 = new SegmentTeam(List.of(w2), "Team 2");
-    SegmentTeam team3 = new SegmentTeam(List.of(w3), "Team 3"); // Lowest weight
+  @DisplayName("Should resolve triple threat segment")
+  void shouldResolveTripleThreatMatch() {
+    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
+      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
+      // When
+      List<SegmentTeam> teams =
+          Arrays.asList(
+              new SegmentTeam(rookie1), new SegmentTeam(rookie2), new SegmentTeam(contender));
+      Segment result =
+          npcSegmentResolutionService.resolveMultiTeamSegment(
+              teams, tagTeamType, testShow, "Triple Threat Match");
 
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(w1));
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(w2));
-    when(wrestlerRepository.findById(3L)).thenReturn(Optional.of(w3));
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.getId()).isNotNull();
+      assertThat(result.getShow()).isEqualTo(testShow);
+      assertThat(result.getSegmentType()).isEqualTo(tagTeamType);
+      assertThat(result.getWinners()).hasSize(1);
+      assertThat(result.getWinners().get(0)).isIn(rookie1, rookie2, contender);
+      assertThat(result.getIsNpcGenerated()).isTrue();
+      assertThat(result.getParticipants()).hasSize(3);
 
-    // Let's say weights are Team1=100, Team2=50, Team3=10. Total=160.
-    // To make Team 2 win, randomValue should be > 100 and <= 150.
-    // random.nextDouble() * 160 should be in that range.
-    // e.g., if nextDouble() returns 0.7, randomValue = 112.
-    when(random.nextDouble()).thenReturn(0.7);
-
-    // When
-    Segment result =
-        npcSegmentResolutionService.resolveMultiTeamSegment(
-            Arrays.asList(team1, team2, team3), segmentType, show, "");
-
-    // Then
-    assertEquals(team2.getMembers(), result.getWinners());
+      // Verify all participants
+      List<Wrestler> participants = result.getWrestlers();
+      assertThat(participants).containsExactlyInAnyOrder(rookie1, rookie2, contender);
+    }
   }
 
-  private Wrestler createWrestler(Long id, String name, WrestlerTier tier, long fans) {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setId(id);
-    wrestler.setName(name);
-    wrestler.setTier(tier);
-    wrestler.setFans(fans);
-    return wrestler;
+  @Test
+  @DisplayName("Should throw exception for multi-person segment with less than 3 wrestlers")
+  void shouldThrowExceptionForInvalidMultiPersonMatch() {
+    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
+      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
+      // When/Then
+      List<SegmentTeam> twoTeams =
+          Arrays.asList(new SegmentTeam(rookie1), new SegmentTeam(rookie2));
+      assertThatThrownBy(
+              () ->
+                  npcSegmentResolutionService.resolveMultiTeamSegment(
+                      twoTeams, tagTeamType, testShow, "Invalid Match"))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Multi-team segment requires at least 3 teams");
+    }
+  }
+
+  @Test
+  @DisplayName("Should handle wrestler with injuries and bumps")
+  void shouldHandleWrestlerWithInjuriesAndBumps() {
+    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
+      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
+      // Given - Add bumps to rookie1
+      Assertions.assertNotNull(rookie1.getId());
+      wrestlerService.addBump(rookie1.getId());
+      wrestlerService.addBump(rookie1.getId());
+      wrestlerService.addBump(rookie1.getId()); // This should create an injury
+
+      // Refresh wrestler from database
+      rookie1 = wrestlerRepository.findById(rookie1.getId()).orElseThrow();
+
+      // When - Run multiple matches to test impact
+      int rookie2Wins = 0;
+      int totalMatches = 100;
+
+      for (int i = 0; i < totalMatches; i++) {
+        SegmentTeam team1 = new SegmentTeam(rookie1);
+        SegmentTeam team2 = new SegmentTeam(rookie2);
+        Segment result =
+            npcSegmentResolutionService.resolveTeamSegment(
+                team1, team2, singlesSegmentType, testShow, "Injury Test " + i);
+
+        if (result.getWinners().contains(rookie2)) {
+          rookie2Wins++;
+        }
+      }
+
+      // Then - Injured wrestler should win less often
+      double rookie2WinRate = (double) rookie2Wins / totalMatches;
+      assertThat(rookie2WinRate)
+          .isGreaterThanOrEqualTo(0.4) // Should have some advantage due to opponent's injuries
+          .describedAs("Healthy wrestler should have some advantage over injured opponent");
+    }
+  }
+
+  @Test
+  @DisplayName("Should save segment with rule")
+  void shouldSaveMatchWithStipulation() {
+    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
+        mockStatic(EnvironmentVariableUtil.class)) {
+      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
+      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
+      // Given
+      String stipulation = "Steel Cage Match";
+
+      // When
+      SegmentTeam team1 = new SegmentTeam(rookie1);
+      SegmentTeam team2 = new SegmentTeam(rookie2);
+      Segment result =
+          npcSegmentResolutionService.resolveTeamSegment(
+              team1, team2, singlesSegmentType, testShow, stipulation);
+
+      // Then
+      assertThat(result.getSegmentRulesAsString()).contains("Steel Cage");
+
+      // Verify persistence
+      Assertions.assertNotNull(result.getId());
+      Segment savedResult = matchRepository.findById(result.getId()).orElseThrow();
+      assertThat(savedResult.getSegmentRulesAsString()).contains("Steel Cage");
+    }
   }
 }

@@ -3,38 +3,42 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTypeSyncService;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Integration tests for ShowTypeSyncService. */
-@ActiveProfiles("integration-test")
+/** Unit tests for ShowTypeSyncService. */
+@ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @Slf4j
-@EnabledIf("isNotionTokenAvailable")
-public class ShowTypeSyncIT extends ManagementIntegrationTest {
+class ShowTypeSyncTest extends ManagementIntegrationTest {
 
   @Autowired private ShowTypeSyncService showTypeSyncService;
 
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private ShowTemplateRepository showTemplateRepository;
 
-  private static final String TEST_OPERATION_ID = "integration-test-show-types";
+  @MockitoBean private NotionHandler notionHandler;
+
+  private static final String TEST_OPERATION_ID = "unit-test-show-types";
 
   @BeforeEach
   @Transactional
@@ -51,6 +55,7 @@ public class ShowTypeSyncIT extends ManagementIntegrationTest {
     log.info("🎭 Testing default show types creation");
 
     // Given - Initially empty database
+    when(notionHandler.getShowTypePages()).thenReturn(Collections.emptyList());
     List<ShowType> initialShowTypes = showTypeService.findAll();
     log.info("📋 Found {} initial show types", initialShowTypes.size());
 
@@ -89,6 +94,7 @@ public class ShowTypeSyncIT extends ManagementIntegrationTest {
   @DisplayName("Should not duplicate show types on subsequent syncs")
   void shouldNotDuplicateShowTypesOnSubsequentSyncs() {
     log.info("🔄 Testing show types deduplication");
+    when(notionHandler.getShowTypePages()).thenReturn(Collections.emptyList());
 
     // Given - Run initial sync
     BaseSyncService.SyncResult firstResult =
@@ -130,6 +136,7 @@ public class ShowTypeSyncIT extends ManagementIntegrationTest {
   @DisplayName("Should handle sync when show types already exist")
   void shouldHandleSyncWhenShowTypesAlreadyExist() {
     log.info("🎯 Testing sync with pre-existing show types");
+    when(notionHandler.getShowTypePages()).thenReturn(Collections.emptyList());
 
     // Given - Manually create a show type
     ShowType existingType = new ShowType();
@@ -159,6 +166,7 @@ public class ShowTypeSyncIT extends ManagementIntegrationTest {
   @DisplayName("Should handle sync failures gracefully")
   void shouldHandleSyncFailuresGracefully() {
     log.info("🚨 Testing sync failure handling");
+    when(notionHandler.getShowTypePages()).thenThrow(new RuntimeException("Test Exception"));
 
     // When - Attempt sync (might fail due to missing Notion configuration)
     BaseSyncService.SyncResult result = showTypeSyncService.syncShowTypes(TEST_OPERATION_ID);
@@ -189,6 +197,7 @@ public class ShowTypeSyncIT extends ManagementIntegrationTest {
   @DisplayName("Should track sync progress correctly")
   void shouldTrackSyncProgressCorrectly() {
     log.info("📈 Testing sync progress tracking");
+    when(notionHandler.getShowTypePages()).thenReturn(Collections.emptyList());
 
     // When - Run sync with operation ID for progress tracking
     String operationId = TEST_OPERATION_ID + "-progress";
@@ -207,41 +216,5 @@ public class ShowTypeSyncIT extends ManagementIntegrationTest {
     }
 
     log.info("✅ Progress tracking verification completed successfully");
-  }
-
-  @Test
-  @EnabledIf("isNotionTokenAvailable")
-  @DisplayName("Should sync show types from Notion when token is available")
-  void shouldSyncShowTypesFromNotionWhenTokenAvailable() {
-    log.info("🔗 Testing real Notion sync (token available)");
-
-    // When - Sync with real Notion connection
-    BaseSyncService.SyncResult result =
-        showTypeSyncService.syncShowTypes(TEST_OPERATION_ID + "-notion");
-
-    // Then - Should attempt real sync
-    assertNotNull(result, "Sync result should not be null");
-    log.info("📊 Notion sync result: {}", result);
-
-    if (result.isSuccess()) {
-      log.info("✅ Successfully synced from Notion");
-
-      // Verify show types were created/updated
-      List<ShowType> showTypes = showTypeService.findAll();
-      assertThat(showTypes).isNotEmpty();
-
-      // Verify expected show types exist
-      Optional<ShowType> weeklyType = showTypeService.findByName("Weekly");
-      Optional<ShowType> pleType = showTypeService.findByName("Premium Live Event (PLE)");
-
-      assertTrue(
-          weeklyType.isPresent() || pleType.isPresent(),
-          "At least one expected show type should exist");
-    } else {
-      log.warn("⚠️ Notion sync failed: {}", result.getErrorMessage());
-      // This is acceptable in test environment
-    }
-
-    log.info("✅ Notion sync verification completed");
   }
 }

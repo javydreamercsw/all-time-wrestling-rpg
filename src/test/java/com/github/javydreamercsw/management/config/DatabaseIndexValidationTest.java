@@ -50,7 +50,6 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
     List<String> errors = new ArrayList<>();
 
     for (IndexDefinition index : indexDefinitions) {
-      log.debug("Validating index: {} on table: {}", index.indexName, index.tableName);
 
       // Check if table exists
       if (!tableColumns.containsKey(index.tableName.toLowerCase())) {
