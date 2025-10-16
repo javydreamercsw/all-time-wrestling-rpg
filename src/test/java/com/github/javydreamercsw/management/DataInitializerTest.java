@@ -104,14 +104,14 @@ class DataInitializerTest {
   private void clearRepositories() {
     deckCardRepository.deleteAll();
     deckRepository.deleteAll();
+    showRepository.deleteAll();
+    titleRepository.deleteAll();
+    wrestlerRepository.deleteAll();
     cardRepository.deleteAll();
     cardSetRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    titleRepository.deleteAll();
-    showRepository.deleteAll();
+    showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
     segmentRuleRepository.deleteAll();
-    showTemplateRepository.deleteAll();
     segmentTypeRepository.deleteAll();
   }
 

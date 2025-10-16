@@ -485,15 +485,17 @@ public class DataInitializer {
               Deck deck;
               if (byWrestler.isEmpty()) {
                 deck = deckService.createDeck(wrestler);
+                deck = deckService.save(deck); // Save the deck to get an ID
               } else {
                 deck = byWrestler.get(0); // Get the existing deck
               }
+              final Deck finalDeck = deck; // Create a final variable
               deck.setWrestler(wrestler);
               deck.getCards().clear(); // Clear the existing cards
               // Remove existing DeckCards for this deck from the database
               List<DeckCard> existingDeckCards =
                   deckCardService.findAll().stream()
-                      .filter(dc -> dc.getDeck().getId().equals(deck.getId()))
+                      .filter(dc -> dc.getDeck().getId().equals(finalDeck.getId()))
                       .toList();
               for (DeckCard dc : existingDeckCards) {
                 deckCardService.delete(dc);
