@@ -90,7 +90,11 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   @Autowired protected DataInitializer dataInitializer;
 
   @BeforeEach
-  public void clearDatabase() {
+  void setUp() {
+    clearAllRepositories();
+  }
+
+  protected void clearAllRepositories() {
     deckCardRepository.deleteAll();
     deckRepository.deleteAll();
     dramaEventRepository.deleteAll();

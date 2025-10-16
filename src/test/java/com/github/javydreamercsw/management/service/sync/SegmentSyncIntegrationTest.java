@@ -1,24 +1,35 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
 @DisplayName("Segment Sync Integration Tests")
-@EnabledIf("isNotionTokenAvailable")
 class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private SegmentRepository segmentRepository;
-  @Autowired private NotionSyncService notionSyncService;
+  @MockitoBean private NotionSyncService notionSyncService;
+
+  @BeforeEach
+  void setUp() {
+    when(notionSyncService.getAllSegmentIds()).thenReturn(List.of("mock-segment-id-1"));
+    when(notionSyncService.syncSegments(anyString()))
+        .thenReturn(NotionSyncService.SyncResult.success("Segments", 0, 0, 0));
+    when(notionSyncService.syncSegment(anyString()))
+        .thenReturn(NotionSyncService.SyncResult.success("Segment", 0, 0, 0));
+  }
 
   @Test
   @DisplayName("Should sync a random match from Notion to database successfully")

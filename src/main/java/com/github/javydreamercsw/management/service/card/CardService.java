@@ -4,6 +4,8 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
+import jakarta.validation.ValidationException;
+import jakarta.validation.Validator;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,16 +14,16 @@ import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional(propagation = Propagation.REQUIRES_NEW)
+@Transactional
 public class CardService {
 
   @Autowired private CardRepository cardRepository;
   @Autowired private CardSetRepository cardSetRepository;
   @Autowired private Clock clock;
+  @Autowired private Validator validator;
 
   public Card createCard(@NonNull String name) {
     Card card = new Card();
@@ -60,6 +62,10 @@ public class CardService {
 
   public Card save(@NonNull Card card) {
     card.setCreationDate(clock.instant());
+    var violations = validator.validate(card);
+    if (!violations.isEmpty()) {
+      throw new ValidationException(violations.toString());
+    }
     return cardRepository.saveAndFlush(card);
   }
 

@@ -5,22 +5,18 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * Real integration test for show sync that uses actual Spring services and real Notion API calls.
- * This test requires the NOTION_TOKEN environment variable to be set.
- *
- * <p>Run with: mvn test -Dtest=ShowSyncRealIntegrationTest -DNOTION_TOKEN=your_token
+ * @author Javier Ortiz Bultron @date Oct 10, 2023
  */
-@Slf4j
-@DisplayName("Show Sync Integration Tests")
-@EnabledIf("isNotionTokenAvailable")
 class ShowSyncIntegrationTest extends ManagementIntegrationTest {
+
+  private static final Logger log = LoggerFactory.getLogger(ShowSyncIntegrationTest.class);
 
   @Autowired
   private NotionSyncService notionSyncService; // When - Perform real sync with real services

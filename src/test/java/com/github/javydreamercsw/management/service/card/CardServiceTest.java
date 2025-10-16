@@ -6,9 +6,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
+import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import jakarta.validation.ValidationException;
+import java.time.Instant;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +20,17 @@ import org.springframework.transaction.annotation.Transactional;
 class CardServiceTest extends ManagementIntegrationTest {
   @Autowired CardRepository cardRepository;
   @Autowired CardSetRepository cardSetRepository;
+
+  @BeforeEach
+  public void setUp() {
+    clearAllRepositories();
+    // Create a default CardSet as CardServiceTest expects it.
+    CardSet defaultCardSet = new CardSet();
+    defaultCardSet.setName("Default");
+    defaultCardSet.setSetCode("DEF"); // Use a short, unique code
+    defaultCardSet.setCreationDate(Instant.now());
+    cardSetRepository.save(defaultCardSet);
+  }
 
   @Test
   public void tasks_are_stored_in_the_database_with_the_current_timestamp() {

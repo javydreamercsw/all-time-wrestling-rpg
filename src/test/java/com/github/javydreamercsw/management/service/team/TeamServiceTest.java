@@ -30,6 +30,7 @@ class TeamServiceTest extends ManagementIntegrationTest {
 
   @BeforeEach
   public void setUp() {
+    clearAllRepositories();
     wrestler1 = wrestlerRepository.save(createTestWrestler("Wrestler 1"));
     wrestler2 = wrestlerRepository.save(createTestWrestler("Wrestler 2"));
     wrestler3 = wrestlerRepository.save(createTestWrestler("Wrestler 3"));

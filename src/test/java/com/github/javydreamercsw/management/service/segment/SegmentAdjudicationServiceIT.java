@@ -20,11 +20,9 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-@EnabledIf("isNotionTokenAvailable")
 @Transactional
 class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
   @Autowired private SegmentAdjudicationService segmentAdjudicationService;

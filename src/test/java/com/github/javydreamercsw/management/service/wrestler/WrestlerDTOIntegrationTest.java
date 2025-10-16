@@ -6,9 +6,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 
-@EnabledIf("isNotionTokenAvailable")
 public class WrestlerDTOIntegrationTest extends ManagementIntegrationTest {
 
   @Test

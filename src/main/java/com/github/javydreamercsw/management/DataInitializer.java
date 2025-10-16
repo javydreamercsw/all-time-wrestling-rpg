@@ -50,6 +50,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class DataInitializer {
 
+  public DataInitializer() {
+    log.info("DataInitializer initialized.");
+  }
+
   @Value("${data.initializer.enabled:true}")
   private boolean enabled;
 

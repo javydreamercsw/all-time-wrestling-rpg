@@ -13,18 +13,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 /**
  * Unit tests for Notion property resolution using real captured data samples. These tests verify
  * that Date, Title(s), Winners, and other properties are resolved correctly without needing live
  * Notion API calls.
  */
-@ExtendWith({SpringExtension.class, MockitoExtension.class})
-@SpringBootTest
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 @DisplayName("Notion Property Resolution Tests")
 class NotionPropertyResolutionTest {
 

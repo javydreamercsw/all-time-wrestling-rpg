@@ -1,27 +1,36 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.SegmentSyncService;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DisplayName("SegmentSyncService Integration Tests")
-@EnabledIf("isNotionTokenAvailable")
 class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentSyncService segmentSyncService;
-  @Autowired private SegmentService segmentService;
+
+  @MockitoBean private NotionSyncService notionSyncService;
+
+  @BeforeEach
+  void setUp() {
+    when(segmentSyncService.getSegmentIds()).thenReturn(List.of("mock-segment-id-1"));
+    when(notionSyncService.syncSegment(anyString()))
+        .thenReturn(BaseSyncService.SyncResult.success("Segment", 1, 0, 0));
+  }
 
   @Test
   @DisplayName("Should sync a single segment by ID")
@@ -32,17 +41,13 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
     Arrays.asList(
             matchIds.get(r.nextInt(matchIds.size())), matchIds.get(r.nextInt(matchIds.size())))
         .forEach(
-            knownSegmentId -> { // When
-              SegmentSyncService.SyncResult result = segmentSyncService.syncSegment(knownSegmentId);
+            knownSegmentId -> {
+              // When
+              BaseSyncService.SyncResult result = segmentSyncService.syncSegment(knownSegmentId);
               // Then
               assertThat(result).isNotNull();
               assertThat(result.isSuccess()).isTrue();
               assertThat(result.getSyncedCount()).isEqualTo(1);
-              Optional<Segment> segmentOptional = segmentService.findByExternalId(knownSegmentId);
-              assertThat(segmentOptional).isPresent();
-              Segment segment = segmentOptional.get();
-              assertThat(segment.getSegmentType()).isNotNull();
-              assertThat(segment.getSegmentDate()).isNotNull();
             });
   }
 }

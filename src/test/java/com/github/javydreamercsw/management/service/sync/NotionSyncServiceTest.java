@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.FactionRivalrySyncService;
@@ -21,19 +22,20 @@ import com.github.javydreamercsw.management.service.sync.entity.TeamSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.TitleReignSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.TitleSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@Slf4j
-@DisplayName("Notion Sync Service Unit Tests")
-@ExtendWith(MockitoExtension.class)
-class NotionSyncServiceTest {
+/**
+ * @author Javier Ortiz Bultron @date Oct 10, 2023
+ */
+class NotionSyncServiceTest extends ManagementIntegrationTest {
+
+  private static final Logger log = LoggerFactory.getLogger(NotionSyncServiceTest.class);
 
   @Mock private ShowTypeSyncService showTypeSyncService;
   @Mock private SeasonSyncService seasonSyncService;
