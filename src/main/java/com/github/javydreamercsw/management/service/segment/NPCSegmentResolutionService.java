@@ -51,15 +51,9 @@ public class NPCSegmentResolutionService {
   public Segment resolveTeamSegment(
       @NonNull SegmentTeam team1,
       @NonNull SegmentTeam team2,
-      @NonNull String segmentTypeName,
+      @NonNull SegmentType segmentType,
       @NonNull Show show,
       String stipulation) {
-
-    SegmentType segmentType =
-        segmentTypeRepository
-            .findByName(segmentTypeName)
-            .orElseThrow(
-                () -> new IllegalArgumentException("SegmentType not found: " + segmentTypeName));
 
     // Default to "Standard Match" if no rule provided
     String finalStipulation =
@@ -203,12 +197,7 @@ public class NPCSegmentResolutionService {
   /** Add all team members as participants in the segment. */
   private void addTeamParticipants(@NonNull Segment result, @NonNull SegmentTeam team) {
     for (Wrestler wrestler : team.getMembers()) {
-      wrestlerRepository
-          .findById(wrestler.getId())
-          .ifPresent(
-              managedWrestler -> {
-                result.addParticipant(managedWrestler);
-              });
+      wrestlerRepository.findById(wrestler.getId()).ifPresent(result::addParticipant);
     }
   }
 

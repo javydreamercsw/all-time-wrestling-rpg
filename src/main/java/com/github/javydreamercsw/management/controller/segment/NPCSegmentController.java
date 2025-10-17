@@ -88,7 +88,7 @@ public class NPCSegmentController {
       // Resolve segment
       Segment result =
           npcSegmentResolutionService.resolveTeamSegment(
-              team1, team2, segmentTypeOpt.get().getName(), showOpt.get(), request.stipulation());
+              team1, team2, segmentTypeOpt.get(), showOpt.get(), request.stipulation());
 
       // Create response map (Map.of() has a 10 key-value pair limit)
       Map<String, Object> response = new HashMap<>();

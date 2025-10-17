@@ -430,7 +430,7 @@ public class ShowBookingService {
       // Resolve the segment
       Segment result =
           npcSegmentResolutionService.resolveTeamSegment(
-              team1, team2, segmentTypeOpt.get().getName(), show, stipulation);
+              team1, team2, segmentTypeOpt.get(), show, stipulation);
 
       return Optional.of(result);
 

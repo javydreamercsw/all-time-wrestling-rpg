@@ -121,7 +121,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
       SegmentTeam team2 = new SegmentTeam(rookie2);
       Segment result =
           npcSegmentResolutionService.resolveTeamSegment(
-              team1, team2, singlesSegmentType.getName(), testShow, "Standard Match");
+              team1, team2, singlesSegmentType, testShow, "Standard Match");
 
       // Then
       assertThat(result).isNotNull();
@@ -157,7 +157,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
         SegmentTeam team2 = new SegmentTeam(contender);
         Segment result =
             npcSegmentResolutionService.resolveTeamSegment(
-                team1, team2, singlesSegmentType.getName(), testShow, "Test Match " + i);
+                team1, team2, singlesSegmentType, testShow, "Test Match " + i);
 
         if (result.getWinners().contains(contender)) {
           contenderWins++;
@@ -249,7 +249,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
         SegmentTeam team2 = new SegmentTeam(rookie2);
         Segment result =
             npcSegmentResolutionService.resolveTeamSegment(
-                team1, team2, singlesSegmentType.getName(), testShow, "Injury Test " + i);
+                team1, team2, singlesSegmentType, testShow, "Injury Test " + i);
 
         if (result.getWinners().contains(rookie2)) {
           rookie2Wins++;
@@ -279,7 +279,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
       SegmentTeam team2 = new SegmentTeam(rookie2);
       Segment result =
           npcSegmentResolutionService.resolveTeamSegment(
-              team1, team2, singlesSegmentType.getName(), testShow, stipulation);
+              team1, team2, singlesSegmentType, testShow, stipulation);
 
       // Then
       assertThat(result.getSegmentRulesAsString()).contains("Steel Cage");
