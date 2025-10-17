@@ -302,8 +302,10 @@ class DataInitializerTest {
     // For each deck, ensure no duplicate DeckCard entries for the same (deck, card, set)
     List<Deck> decks = deckService.findAll();
     for (Deck deck : decks) {
-      List<DeckCard> deckCards =
-          deckCardService.findAll().stream()
+      List<DeckCard> deckCards = new java.util.ArrayList<>();
+      deckCardService.findAll().forEach(deckCards::add);
+      List<DeckCard> filteredDeckCards =
+          deckCards.stream()
               .filter(
                   dc -> {
                     Assertions.assertNotNull(dc.getDeck().getId());

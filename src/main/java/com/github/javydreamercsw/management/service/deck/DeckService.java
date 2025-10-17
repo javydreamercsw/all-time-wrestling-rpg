@@ -48,6 +48,10 @@ public class DeckService {
     return deckRepository.findAll();
   }
 
+  public void delete(Deck deck) {
+    deckRepository.delete(deck);
+  }
+
   public Deck findById(@NonNull Long id) {
     return deckRepository
         .findById(id)

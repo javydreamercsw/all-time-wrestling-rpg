@@ -3,22 +3,19 @@ package com.github.javydreamercsw.management.service.show;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
-import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import java.util.ArrayList;
+import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
@@ -35,8 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ShowBookingServiceTest extends ManagementIntegrationTest {
   @Autowired ShowBookingService showBookingService;
-  @Autowired SeasonRepository seasonRepository;
-  @Autowired WrestlerRepository wrestlerRepository;
+  @Autowired SeasonService seasonService;
+  @Autowired WrestlerService wrestlerService;
   @Autowired DeckRepository deckRepository;
   @Autowired SegmentTypeRepository segmentTypeRepository;
   @MockitoBean private OpenAISegmentNarrationService openAIService;
@@ -45,50 +42,23 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
 
   @BeforeEach
   public void setUp() throws Exception {
-    // Find or create a test season
-    Optional<Season> seasonOpt = seasonRepository.findByName("Test Season");
-    if (seasonOpt.isEmpty()) {
-      testSeason = new Season();
-      testSeason.setName("Test Season");
-      testSeason.setStartDate(
-          java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
-      testSeason.setIsActive(true);
-      seasonRepository.save(testSeason);
-    } else {
-      testSeason = seasonOpt.get();
-    }
+    testSeason =
+        seasonService.createOrUpdateSeason(
+            "Test Season",
+            java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant(),
+            true);
 
     // Create and save a weekly show type
-    Optional<ShowType> showTypeOpt = showTypeService.findByName("Weekly Show");
-    if (showTypeOpt.isEmpty()) {
-      weeklyShowType = new ShowType();
-      weeklyShowType.setName("Weekly Show");
-      weeklyShowType.setDescription("A weekly wrestling show");
-      showTypeService.save(weeklyShowType);
-    } else {
-      weeklyShowType = showTypeOpt.get();
-    }
+    weeklyShowType =
+        showTypeService.createOrUpdateShowType("Weekly Show", "A weekly wrestling show");
 
     // Create segment types
-    if (segmentTypeRepository.findByName("One on One").isEmpty()) {
-      SegmentType oneOnOne = new SegmentType();
-      oneOnOne.setName("One on One");
-      segmentTypeRepository.save(oneOnOne);
-    }
+    segmentTypeService.createOrUpdateSegmentType("One on One", "1 vs 1 match");
+    segmentTypeService.createOrUpdateSegmentType("Promo", "A promotional segment");
 
-    if (segmentTypeRepository.findByName("Promo").isEmpty()) {
-      SegmentType promo = new SegmentType();
-      promo.setName("Promo");
-      segmentTypeRepository.save(promo);
-    }
-
-    List<Wrestler> wrestlers = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
-      Wrestler wrestler = new Wrestler();
-      wrestler.setName("Wrestler " + i);
-      wrestlers.add(wrestler);
+      wrestlerService.createWrestler("Wrestler " + i, true, null);
     }
-    when(wrestlerRepository.findAll()).thenReturn(wrestlers);
   }
 
   @Test

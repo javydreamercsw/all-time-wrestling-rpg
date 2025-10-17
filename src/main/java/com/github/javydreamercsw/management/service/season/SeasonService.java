@@ -25,6 +25,16 @@ public class SeasonService {
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private Clock clock;
 
+  public Season createOrUpdateSeason(
+      @NonNull String name, @NonNull Instant startDate, boolean isActive) {
+    Optional<Season> existingSeason = seasonRepository.findByName(name);
+    Season season = existingSeason.orElseGet(Season::new);
+    season.setName(name);
+    season.setStartDate(startDate);
+    season.setIsActive(isActive);
+    return save(season);
+  }
+
   /** Create a new season. */
   public Season createSeason(
       @NonNull String name, @NonNull String description, Integer showsPerPpv) {

@@ -7,7 +7,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,10 +37,8 @@ public class Deck extends AbstractEntity<Long> {
   private Wrestler wrestler;
 
   @OneToMany(
-      fetch = FetchType.EAGER,
       mappedBy = "deck",
-      cascade = CascadeType.ALL,
-      orphanRemoval = true)
+      cascade = {CascadeType.PERSIST, CascadeType.MERGE})
   private Set<DeckCard> cards = new HashSet<>();
 
   @Column(name = "creation_date", nullable = false)

@@ -483,24 +483,18 @@ public class DataInitializer {
               // Try to find an existing deck for this wrestler
               List<Deck> byWrestler = deckService.findByWrestler(wrestler);
               Deck deck;
-              if (byWrestler.isEmpty()) {
-                deck = deckService.createDeck(wrestler);
-                deck = deckService.save(deck); // Save the deck to get an ID
-              } else {
+              if (!byWrestler.isEmpty()) {
                 deck = byWrestler.get(0); // Get the existing deck
+                // Manually delete old cards
+                for (DeckCard dc : deck.getCards()) {
+                  deckCardService.delete(dc);
+                }
+                deck.getCards().clear();
+              } else {
+                deck = deckService.createDeck(wrestler);
               }
-              final Deck finalDeck = deck; // Create a final variable
-              deck.setWrestler(wrestler);
-              deck.getCards().clear(); // Clear the existing cards
-              // Remove existing DeckCards for this deck from the database
-              List<DeckCard> existingDeckCards =
-                  deckCardService.findAll().stream()
-                      .filter(dc -> dc.getDeck().getId().equals(finalDeck.getId()))
-                      .toList();
-              for (DeckCard dc : existingDeckCards) {
-                deckCardService.delete(dc);
-              }
-              // Aggregate by (card_id, set_id)
+
+              // Aggregate cards from DTO
               Map<String, Integer> cardKeyToAmount = new java.util.HashMap<>();
               Map<String, Card> cardKeyToCard = new java.util.HashMap<>();
               for (DeckCardDTO cardDTO : deckDTO.getCards()) {
@@ -520,6 +514,7 @@ public class DataInitializer {
                 cardKeyToAmount.merge(key, cardDTO.getAmount(), Integer::sum);
                 cardKeyToCard.putIfAbsent(key, card);
               }
+
               for (var entry : cardKeyToAmount.entrySet()) {
                 Card card = cardKeyToCard.get(entry.getKey());
                 log.debug(
@@ -528,15 +523,15 @@ public class DataInitializer {
                     card.getSet().getName(),
                     card.getId(),
                     entry.getValue());
-                // Use DeckCardService.saveOrUpdate to avoid unique constraint violations
-                var deckCard = new com.github.javydreamercsw.management.domain.deck.DeckCard();
-                deckCard.setDeck(deck);
-                deckCard.setCard(card);
-                deckCard.setSet(card.getSet());
-                deckCard.setAmount(entry.getValue());
-                deckCardService.saveOrUpdate(deckCard);
+                DeckCard newDeckCard = new DeckCard();
+                newDeckCard.setCard(card);
+                newDeckCard.setSet(card.getSet());
+                newDeckCard.setAmount(entry.getValue());
+                newDeckCard.setDeck(deck); // Set the back-reference
+                deck.getCards().add(newDeckCard); // Add to the collection
               }
-              deckService.save(deck);
+
+              deckService.save(deck); // Save the deck, which will cascade to the new cards.
               log.info("Saved deck for wrestler: {}", wrestler.getName());
             }
           } catch (java.io.IOException e) {

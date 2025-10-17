@@ -5,6 +5,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
@@ -31,6 +32,7 @@ public class NPCSegmentResolutionService {
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private SegmentRuleService segmentRuleService;
+  @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private Clock clock;
   @Autowired private Random random;
 
@@ -49,9 +51,15 @@ public class NPCSegmentResolutionService {
   public Segment resolveTeamSegment(
       @NonNull SegmentTeam team1,
       @NonNull SegmentTeam team2,
-      @NonNull SegmentType segmentType,
+      @NonNull String segmentTypeName,
       @NonNull Show show,
       String stipulation) {
+
+    SegmentType segmentType =
+        segmentTypeRepository
+            .findByName(segmentTypeName)
+            .orElseThrow(
+                () -> new IllegalArgumentException("SegmentType not found: " + segmentTypeName));
 
     // Default to "Standard Match" if no rule provided
     String finalStipulation =
