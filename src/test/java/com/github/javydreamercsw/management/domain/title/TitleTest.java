@@ -237,7 +237,7 @@ class TitleTest {
   }
 
   private Wrestler createWrestler(String name, Long fans) {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(wrestlerIdCounter++);
     wrestler.setName(name);
     wrestler.setFans(fans);

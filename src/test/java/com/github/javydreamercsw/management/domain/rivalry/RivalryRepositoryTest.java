@@ -20,7 +20,7 @@ class RivalryRepositoryTest {
   @Autowired private WrestlerRepository wrestlerRepository;
 
   private Wrestler createWrestler(String name) {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
     wrestler.setDeckSize(30);
     wrestler.setStartingHealth(100);

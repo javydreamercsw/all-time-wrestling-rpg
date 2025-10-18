@@ -34,7 +34,7 @@ public class NPCSegmentResolutionService {
   @Autowired private SegmentRuleService segmentRuleService;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private Clock clock;
-  @Autowired private Random random;
+  @Autowired protected Random random;
 
   /**
    * Resolve a team-based segment using ATW RPG mechanics. This is the core method that handles all
@@ -172,11 +172,11 @@ public class NPCSegmentResolutionService {
   private int getTierBonus(@NonNull WrestlerTier tier) {
     return switch (tier) {
       case ROOKIE -> 0;
-      case RISER -> 2;
-      case CONTENDER -> 4;
-      case MIDCARDER -> 6;
-      case MAIN_EVENTER -> 8;
-      case ICON -> 10;
+      case RISER -> 4;
+      case CONTENDER -> 8;
+      case MIDCARDER -> 12;
+      case MAIN_EVENTER -> 16;
+      case ICON -> 20;
     };
   }
 
@@ -206,6 +206,8 @@ public class NPCSegmentResolutionService {
       @NonNull SegmentTeam team1, @NonNull SegmentTeam team2) {
     int team1TotalWeight = team1.getTotalWeight();
     int team2TotalWeight = team2.getTotalWeight();
+    log.debug("Team1 Total Weight: {}", team1TotalWeight);
+    log.debug("Team2 Total Weight: {}", team2TotalWeight);
     int totalWeight = team1TotalWeight + team2TotalWeight;
 
     // Convert to percentages
@@ -235,8 +237,14 @@ public class NPCSegmentResolutionService {
       @NonNull SegmentTeam team1,
       @NonNull SegmentTeam team2,
       @NonNull TeamSegmentProbabilities probabilities) {
-    double randomValue = random.nextDouble() * 100;
-    return randomValue < probabilities.team1WinProbability() ? team1 : team2;
+    int totalWeight = probabilities.team1TotalWeight() + probabilities.team2TotalWeight();
+    int randomValue = random.nextInt(totalWeight);
+
+    if (randomValue < probabilities.team1TotalWeight()) {
+      return team1;
+    } else {
+      return team2;
+    }
   }
 
   /** Determine winning team from multiple teams using weighted random selection. */

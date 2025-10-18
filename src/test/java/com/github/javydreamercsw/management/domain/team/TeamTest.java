@@ -23,12 +23,12 @@ class TeamTest {
   @BeforeEach
   void setUp() {
     // Create test wrestlers
-    wrestler1 = new Wrestler();
+    wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("John Cena");
     wrestler1.setTier(WrestlerTier.MAIN_EVENTER);
 
-    wrestler2 = new Wrestler();
+    wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("The Rock");
     wrestler2.setTier(WrestlerTier.MAIN_EVENTER);
@@ -123,7 +123,7 @@ class TeamTest {
     assertThat(team.hasMember(wrestler2)).isTrue();
 
     // Given - different wrestler
-    Wrestler otherWrestler = new Wrestler();
+    Wrestler otherWrestler = Wrestler.builder().build();
     otherWrestler.setId(3L);
     otherWrestler.setName("Stone Cold");
 
@@ -143,7 +143,7 @@ class TeamTest {
   @DisplayName("Should throw exception when getting partner for non-member")
   void shouldThrowExceptionWhenGettingPartnerForNonMember() {
     // Given
-    Wrestler nonMember = new Wrestler();
+    Wrestler nonMember = Wrestler.builder().build();
     nonMember.setId(3L);
     nonMember.setName("Stone Cold");
 

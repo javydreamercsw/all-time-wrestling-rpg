@@ -376,7 +376,7 @@ class InjuryServiceTest {
   }
 
   private Wrestler createWrestler(String name, Long fans) {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(1L);
     wrestler.setName(name);
     wrestler.setFans(fans);

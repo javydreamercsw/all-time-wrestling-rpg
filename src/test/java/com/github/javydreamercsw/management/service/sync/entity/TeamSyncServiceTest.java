@@ -233,7 +233,7 @@ class TeamSyncServiceTest {
   }
 
   private Wrestler createMockWrestler(String name) {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(name.equals("John Doe") ? 1L : 2L); // Different IDs for different wrestlers
     wrestler.setName(name);
     return wrestler;

@@ -286,7 +286,7 @@ class RivalryTest {
   }
 
   private Wrestler createWrestler(String name) {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(System.nanoTime()); // Unique ID for testing
     wrestler.setName(name);
     wrestler.setFans(50000L);

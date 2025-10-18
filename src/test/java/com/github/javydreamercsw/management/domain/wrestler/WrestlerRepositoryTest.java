@@ -17,7 +17,7 @@ class WrestlerRepositoryTest {
 
   @Test
   void testFindAllByPagination() {
-    Wrestler wrestler1 = new Wrestler();
+    Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setName("Wrestler One");
     wrestler1.setDeckSize(15);
     wrestler1.setLowHealth(0);
@@ -32,7 +32,7 @@ class WrestlerRepositoryTest {
     wrestler1.setGender(Gender.MALE);
     wrestler1.setTier(WrestlerTier.ROOKIE);
     wrestlerRepository.save(wrestler1);
-    Wrestler wrestler2 = new Wrestler();
+    Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setName("Wrestler Two");
     wrestler2.setDeckSize(15);
     wrestler2.setLowHealth(0);
@@ -55,7 +55,7 @@ class WrestlerRepositoryTest {
 
   @Test
   void testFindByName() {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName("Decked Wrestler");
     wrestler.setDeckSize(15);
     wrestler.setLowHealth(0);
@@ -78,7 +78,7 @@ class WrestlerRepositoryTest {
 
   @Test
   void testFindByExternalId() {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName("External Wrestler");
     wrestler.setExternalId("ext-123");
     wrestler.setDeckSize(15);

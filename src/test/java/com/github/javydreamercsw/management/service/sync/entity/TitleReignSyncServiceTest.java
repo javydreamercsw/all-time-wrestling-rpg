@@ -115,7 +115,7 @@ class TitleReignSyncServiceTest {
     title.setName("World Championship");
     when(titleRepository.findByExternalId("title-id-1")).thenReturn(Optional.of(title));
 
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setExternalId("wrestler-id-1");
     wrestler.setName("Champion Wrestler");
     when(wrestlerRepository.findByExternalId("wrestler-id-1")).thenReturn(Optional.of(wrestler));

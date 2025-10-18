@@ -38,15 +38,15 @@ class FactionSyncTest {
   @BeforeEach
   void setUp() {
     // Create test wrestlers
-    testLeader = new Wrestler();
+    testLeader = Wrestler.builder().build();
     testLeader.setId(1L);
     testLeader.setName("John Cena");
 
-    testMember1 = new Wrestler();
+    testMember1 = Wrestler.builder().build();
     testMember1.setId(2L);
     testMember1.setName("Randy Orton");
 
-    testMember2 = new Wrestler();
+    testMember2 = Wrestler.builder().build();
     testMember2.setId(3L);
     testMember2.setName("Batista");
 

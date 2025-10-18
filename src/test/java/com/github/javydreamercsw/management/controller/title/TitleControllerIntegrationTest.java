@@ -340,7 +340,7 @@ class TitleControllerIntegrationTest extends ManagementIntegrationTest {
   }
 
   private Wrestler createTestWrestler(String name, Long fans) {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
     wrestler.setFans(fans);
     wrestler.setStartingHealth(15);

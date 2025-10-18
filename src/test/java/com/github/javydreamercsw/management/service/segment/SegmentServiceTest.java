@@ -52,7 +52,7 @@ class SegmentServiceTest {
     testSegmentType = new SegmentType();
     testSegmentType.setName("Singles");
 
-    testWinner = new Wrestler();
+    testWinner = Wrestler.builder().build();
     testWinner.setId(1L);
     testWinner.setName("Test Wrestler");
 
@@ -185,7 +185,7 @@ class SegmentServiceTest {
   @DisplayName("Should get matches between two wrestlers")
   void shouldGetSegmentesBetweenTwoWrestlers() {
     // Given
-    Wrestler wrestler2 = new Wrestler();
+    Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("Test Wrestler 2");
 

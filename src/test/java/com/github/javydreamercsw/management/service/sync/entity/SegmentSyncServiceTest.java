@@ -83,9 +83,9 @@ class SegmentSyncServiceTest {
     segmentDTO.setWinnerNames(List.of("Wrestler C"));
 
     Segment existingSegment = spy(new Segment());
-    Wrestler wrestlerA = new Wrestler();
+    Wrestler wrestlerA = Wrestler.builder().build();
     wrestlerA.setName("Wrestler A");
-    Wrestler wrestlerB = new Wrestler();
+    Wrestler wrestlerB = Wrestler.builder().build();
     wrestlerB.setName("Wrestler B");
     existingSegment.addParticipant(wrestlerA);
     existingSegment.addParticipant(wrestlerB);
@@ -96,7 +96,7 @@ class SegmentSyncServiceTest {
     SegmentType segmentType = new SegmentType();
     segmentType.setName("Test Type");
 
-    Wrestler wrestlerC = new Wrestler();
+    Wrestler wrestlerC = Wrestler.builder().build();
     wrestlerC.setName("Wrestler C");
 
     when(segmentService.findByExternalId("segment-1")).thenReturn(Optional.of(existingSegment));

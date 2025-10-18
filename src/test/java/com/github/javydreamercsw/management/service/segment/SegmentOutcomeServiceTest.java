@@ -42,7 +42,7 @@ class SegmentOutcomeServiceTest {
     testCardSet.setName("TestSet");
 
     // Rob Van Dam setup
-    Wrestler robVanDam = new Wrestler();
+    Wrestler robVanDam = Wrestler.builder().build();
     robVanDam.setName("Rob Van Dam");
     robVanDam.setFans(100L);
     robVanDam.setTier(WrestlerTier.ICON);
@@ -78,7 +78,7 @@ class SegmentOutcomeServiceTest {
     robVanDam.setDecks(List.of(rvdDeck));
 
     // Kurt Angle setup
-    Wrestler kurtAngle = new Wrestler();
+    Wrestler kurtAngle = Wrestler.builder().build();
     kurtAngle.setName("Kurt Angle");
     kurtAngle.setFans(90L);
     kurtAngle.setTier(WrestlerTier.MAIN_EVENTER);
@@ -114,7 +114,7 @@ class SegmentOutcomeServiceTest {
     kurtAngle.setDecks(List.of(angleDeck));
 
     // Generic Wrestler setup
-    Wrestler genericWrestler = new Wrestler();
+    Wrestler genericWrestler = Wrestler.builder().build();
     genericWrestler.setName("Generic Wrestler");
     genericWrestler.setFans(50L);
     genericWrestler.setTier(WrestlerTier.MIDCARDER);

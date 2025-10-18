@@ -37,7 +37,7 @@ class TitleServiceTest {
     testTitle.setIsActive(false); // Ensure title is inactive for deletion
     testTitle.vacateTitle(); // Ensure title is vacant for deletion
 
-    testWrestler = new Wrestler();
+    testWrestler = Wrestler.builder().build();
     testWrestler.setId(1L);
     testWrestler.setName("Test Wrestler");
   }

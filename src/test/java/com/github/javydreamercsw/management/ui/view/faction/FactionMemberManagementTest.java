@@ -251,12 +251,12 @@ class FactionMemberManagementTest {
   private List<Wrestler> createFactionMembers() {
     List<Wrestler> members = new ArrayList<>();
 
-    Wrestler member1 = new Wrestler();
+    Wrestler member1 = Wrestler.builder().build();
     member1.setId(10L);
     member1.setName("Faction Leader");
     member1.setFans(95L);
 
-    Wrestler member2 = new Wrestler();
+    Wrestler member2 = Wrestler.builder().build();
     member2.setId(11L);
     member2.setName("Faction Member");
     member2.setFans(85L);
@@ -271,12 +271,12 @@ class FactionMemberManagementTest {
   private List<Wrestler> createAvailableWrestlers() {
     List<Wrestler> wrestlers = new ArrayList<>();
 
-    Wrestler wrestler1 = new Wrestler();
+    Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(20L);
     wrestler1.setName("Available Wrestler 1");
     wrestler1.setFans(80L);
 
-    Wrestler wrestler2 = new Wrestler();
+    Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(21L);
     wrestler2.setName("Available Wrestler 2");
     wrestler2.setFans(75L);

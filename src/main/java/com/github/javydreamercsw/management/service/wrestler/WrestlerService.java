@@ -33,20 +33,8 @@ public class WrestlerService {
   @Autowired private Clock clock;
   @Autowired private InjuryService injuryService;
 
-  public void createCard(@NonNull String name) {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName(name);
-    // Set default card game values
-    wrestler.setDeckSize(15);
-    wrestler.setStartingHealth(15);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingStamina(0);
-    wrestler.setLowStamina(0);
-    // Set default ATW RPG values
-    wrestler.setFans(0L);
-    wrestler.setIsPlayer(false);
-    wrestler.setBumps(0);
-    save(wrestler);
+  public void createWrestler(@NonNull String name) {
+    createWrestler(name, false, "");
   }
 
   public List<Wrestler> list(@NonNull Pageable pageable) {
@@ -221,21 +209,19 @@ public class WrestlerService {
    * @return The created wrestler
    */
   public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName(name);
-
-    // Card game defaults
-    wrestler.setDeckSize(15);
-    wrestler.setStartingHealth(15);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingStamina(0);
-    wrestler.setLowStamina(0);
-
-    // ATW RPG defaults
-    wrestler.setFans(0L);
-    wrestler.setIsPlayer(isPlayer);
-    wrestler.setBumps(0);
-    wrestler.setDescription(description);
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name(name)
+            .description(description)
+            .deckSize(15)
+            .startingHealth(15)
+            .lowHealth(0)
+            .startingStamina(0)
+            .lowStamina(0)
+            .fans(0L)
+            .isPlayer(isPlayer)
+            .bumps(0)
+            .build();
 
     return save(wrestler);
   }

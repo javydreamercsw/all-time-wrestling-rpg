@@ -34,7 +34,7 @@ class InjuryControllerTest {
 
   @Test
   void createInjury() throws Exception {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
 

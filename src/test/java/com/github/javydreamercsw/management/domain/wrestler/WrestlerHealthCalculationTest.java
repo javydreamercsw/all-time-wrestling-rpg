@@ -22,7 +22,7 @@ class WrestlerHealthCalculationTest {
 
   @BeforeEach
   void setUp() {
-    wrestler = new Wrestler();
+    wrestler = Wrestler.builder().build();
     wrestler.setName("Test Wrestler");
     wrestler.setStartingHealth(15);
     wrestler.setCurrentHealth(15);

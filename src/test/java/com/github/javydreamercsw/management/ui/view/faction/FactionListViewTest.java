@@ -209,17 +209,17 @@ class FactionListViewTest {
   private List<Wrestler> createTestWrestlers() {
     List<Wrestler> wrestlers = new ArrayList<>();
 
-    Wrestler wrestler1 = new Wrestler();
+    Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Triple H");
     wrestler1.setFans(95L);
 
-    Wrestler wrestler2 = new Wrestler();
+    Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("Shawn Michaels");
     wrestler2.setFans(90L);
 
-    Wrestler wrestler3 = new Wrestler();
+    Wrestler wrestler3 = Wrestler.builder().build();
     wrestler3.setId(3L);
     wrestler3.setName("Randy Orton");
     wrestler3.setFans(85L);

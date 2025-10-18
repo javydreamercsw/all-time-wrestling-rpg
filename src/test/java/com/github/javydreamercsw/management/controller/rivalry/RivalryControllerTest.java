@@ -35,11 +35,11 @@ class RivalryControllerTest {
 
   @Test
   void createRivalry() throws Exception {
-    Wrestler wrestler1 = new Wrestler();
+    Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Test Wrestler 1");
 
-    Wrestler wrestler2 = new Wrestler();
+    Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("Test Wrestler 2");
 

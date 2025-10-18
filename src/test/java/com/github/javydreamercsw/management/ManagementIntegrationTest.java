@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.storyline.StorylineBranchRepo
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
@@ -121,10 +122,8 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
     segmentTypeRepository.deleteAll();
   }
 
-  protected com.github.javydreamercsw.management.domain.wrestler.Wrestler createTestWrestler(
-      @lombok.NonNull String name) {
-    com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
-        new com.github.javydreamercsw.management.domain.wrestler.Wrestler();
+  protected Wrestler createTestWrestler(@lombok.NonNull String name) {
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
     wrestler.setFans(10_000L);
     wrestler.setStartingHealth(15);

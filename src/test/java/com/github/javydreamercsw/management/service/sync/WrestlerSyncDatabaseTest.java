@@ -33,7 +33,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
   @DisplayName("Should use WrestlerService.save() for new wrestlers")
   void shouldUseWrestlerServiceSaveForNewWrestlers() {
     // Given - Mock wrestler service save
-    Wrestler savedWrestler = new Wrestler();
+    Wrestler savedWrestler = Wrestler.builder().build();
     savedWrestler.setId(1L);
     savedWrestler.setName("Test Wrestler");
     savedWrestler.setExternalId("notion-page-id-123");
@@ -41,7 +41,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
     when(wrestlerService.save(any(Wrestler.class))).thenReturn(savedWrestler);
 
     // When - Simulate the database persistence logic for a new wrestler
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName("Test Wrestler");
     wrestler.setExternalId("notion-page-id-123");
     wrestler.setDeckSize(15);
@@ -74,7 +74,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
   @DisplayName("Should use WrestlerRepository.saveAndFlush() for existing wrestlers")
   void shouldUseWrestlerRepositorySaveAndFlushForExistingWrestlers() {
     // Given - Existing wrestler
-    Wrestler existingWrestler = new Wrestler();
+    Wrestler existingWrestler = Wrestler.builder().build();
     existingWrestler.setId(2L);
     existingWrestler.setName("Existing Wrestler");
     existingWrestler.setDeckSize(20); // Different from default
@@ -82,7 +82,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
     existingWrestler.setCreationDate(Instant.now().minusSeconds(3600)); // Created 1 hour ago
 
     // Mock repository save for existing wrestler
-    Wrestler updatedWrestler = new Wrestler();
+    Wrestler updatedWrestler = Wrestler.builder().build();
     updatedWrestler.setId(2L);
     updatedWrestler.setName("Existing Wrestler");
     updatedWrestler.setExternalId("notion-page-id-456");
@@ -119,12 +119,12 @@ class WrestlerSyncDatabaseTest extends BaseTest {
   @DisplayName("Should verify WrestlerService.save() sets creation date automatically")
   void shouldVerifyWrestlerServiceSaveSetsCreationDateAutomatically() {
     // Given - This test verifies the behavior we discovered in WrestlerService
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName("Test Wrestler");
     wrestler.setExternalId("notion-page-id-789");
 
     // Mock the WrestlerService behavior (it always sets creation date)
-    Wrestler savedWrestler = new Wrestler();
+    Wrestler savedWrestler = Wrestler.builder().build();
     savedWrestler.setId(3L);
     savedWrestler.setName("Test Wrestler");
     savedWrestler.setExternalId("notion-page-id-789");

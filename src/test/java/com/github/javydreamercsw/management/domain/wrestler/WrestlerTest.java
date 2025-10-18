@@ -21,7 +21,7 @@ class WrestlerTest {
 
   @BeforeEach
   void setUp() {
-    wrestler = new Wrestler();
+    wrestler = Wrestler.builder().build();
     wrestler.setName("Test Wrestler");
     wrestler.setStartingHealth(15);
     wrestler.setFans(0L);
@@ -245,7 +245,7 @@ class WrestlerTest {
   @Test
   @DisplayName("Should get active rivalries correctly")
   void shouldGetActiveRivalriesCorrectly() {
-    Wrestler rival = new Wrestler();
+    Wrestler rival = Wrestler.builder().build();
     rival.setName("Rival");
     Rivalry rivalry = new Rivalry();
     rivalry.setIsActive(true);

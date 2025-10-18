@@ -236,7 +236,7 @@ class RivalryControllerIntegrationTest extends AbstractIntegrationTest {
   }
 
   private Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
     wrestler.setFans(fans);
     wrestler.setStartingHealth(15);

@@ -36,7 +36,7 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
   void testAdjudicateMatch() {
     // Given
     long initialFans = 10_000L;
-    Wrestler winner = new Wrestler();
+    Wrestler winner = Wrestler.builder().build();
     winner.setName("Winner");
     winner.setFans(initialFans);
     winner.setBumps(0);
@@ -49,7 +49,7 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
     winner.setIsPlayer(false);
     wrestlerRepository.save(winner);
 
-    Wrestler loser = new Wrestler();
+    Wrestler loser = Wrestler.builder().build();
     loser.setName("Loser");
     loser.setFans(initialFans);
     loser.setBumps(0);
@@ -117,7 +117,7 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
   void testAdjudicatePromo() {
     // Given
     long initialFans = 10_000L;
-    Wrestler participant1 = new Wrestler();
+    Wrestler participant1 = Wrestler.builder().build();
     participant1.setName("Participant 1");
     participant1.setFans(initialFans);
     participant1.setBumps(0);
@@ -130,7 +130,7 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
     participant1.setIsPlayer(false);
     wrestlerRepository.save(participant1);
 
-    Wrestler participant2 = new Wrestler();
+    Wrestler participant2 = Wrestler.builder().build();
     participant2.setName("Participant 2");
     participant2.setFans(initialFans);
     participant2.setBumps(0);

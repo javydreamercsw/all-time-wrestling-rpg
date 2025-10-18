@@ -61,9 +61,9 @@ class ShowPlanningServiceTest {
     when(show.getShowDate()).thenReturn(LocalDate.now());
     when(show.getId()).thenReturn(1L);
 
-    Wrestler wrestler1 = new Wrestler();
+    Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setName("Wrestler 1");
-    Wrestler wrestler2 = new Wrestler();
+    Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setName("Wrestler 2");
 
     SegmentType promoSegmentType = new SegmentType();
@@ -123,11 +123,11 @@ class ShowPlanningServiceTest {
     Title title = new Title();
     title.setId(1L);
     title.setName("Test Title");
-    Wrestler champion = new Wrestler();
+    Wrestler champion = Wrestler.builder().build();
     champion.setName("Champion");
     title.getCurrentChampions().add(champion);
     when(titleService.getActiveTitles()).thenReturn(Collections.singletonList(title));
-    Wrestler contender = new Wrestler();
+    Wrestler contender = Wrestler.builder().build();
     contender.setName("Contender");
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(contender));
@@ -300,12 +300,12 @@ class ShowPlanningServiceTest {
     Title title = new Title();
     title.setId(1L);
     title.setName("Test Title");
-    Wrestler champion = new Wrestler();
+    Wrestler champion = Wrestler.builder().build();
     champion.setName("Champion");
 
     title.getCurrentChampions().add(champion);
 
-    Wrestler numberOneContender = new Wrestler();
+    Wrestler numberOneContender = Wrestler.builder().build();
     numberOneContender.setName("Number One Contender");
     title.setContender(Collections.singletonList(numberOneContender));
 

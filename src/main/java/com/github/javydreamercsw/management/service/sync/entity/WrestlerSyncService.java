@@ -519,7 +519,7 @@ public class WrestlerSyncService extends BaseSyncService {
 
         // 3. Create new wrestler if no segment found
         if (wrestler == null) {
-          wrestler = new Wrestler();
+          wrestler = Wrestler.builder().build();
           isNewWrestler = true;
           log.info(
               "🆕 Creating new wrestler: {} with external ID: {}",

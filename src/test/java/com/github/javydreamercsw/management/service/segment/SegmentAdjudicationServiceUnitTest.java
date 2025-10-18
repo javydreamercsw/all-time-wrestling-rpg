@@ -33,11 +33,11 @@ class SegmentAdjudicationServiceUnitTest {
 
   @BeforeEach
   void setUp() {
-    wrestler1 = new Wrestler();
+    wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Wrestler 1");
 
-    wrestler2 = new Wrestler();
+    wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("Wrestler 2");
 

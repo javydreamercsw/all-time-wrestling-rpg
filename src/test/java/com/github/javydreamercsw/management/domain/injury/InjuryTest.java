@@ -17,7 +17,7 @@ class InjuryTest {
 
   @BeforeEach
   void setUp() {
-    wrestler = new Wrestler();
+    wrestler = Wrestler.builder().build();
     wrestler.setName("Test Wrestler");
     wrestler.setFans(50000L);
     wrestler.setStartingHealth(15);

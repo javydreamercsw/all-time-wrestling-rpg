@@ -11,9 +11,12 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,16 +44,124 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
   @BeforeEach
   void setUp() {
     // Create and save test wrestlers
-    rookie1 = wrestlerRepository.findByName("Rey Jaguar").get();
-    rookie2 = wrestlerRepository.findByName("Oda Tsurugi").get();
-    rookie3 = wrestlerRepository.findByName("André the Giant").get();
-    rookie4 = wrestlerRepository.findByName("Randy Savage").get();
-    contender1 = wrestlerRepository.findByName("Rob Van Dam").get();
-    contender2 = wrestlerRepository.findByName("Kurt Angle").get();
+    rookie1 =
+        wrestlerRepository.save(
+            Wrestler.builder()
+                .name("Rookie 1")
+                .gender(Gender.MALE)
+                .tier(WrestlerTier.ROOKIE)
+                .deckSize(15)
+                .startingHealth(15)
+                .lowHealth(0)
+                .startingStamina(0)
+                .lowStamina(0)
+                .fans(1000L)
+                .isPlayer(false)
+                .bumps(0)
+                .injuries(new java.util.ArrayList<>())
+                .build());
+    rookie2 =
+        wrestlerRepository.save(
+            Wrestler.builder()
+                .name("Rookie 2")
+                .gender(Gender.MALE)
+                .tier(WrestlerTier.ROOKIE)
+                .deckSize(15)
+                .startingHealth(15)
+                .lowHealth(0)
+                .startingStamina(0)
+                .lowStamina(0)
+                .fans(1000L)
+                .isPlayer(false)
+                .bumps(0)
+                .injuries(new java.util.ArrayList<>())
+                .build());
+    rookie3 =
+        wrestlerRepository.save(
+            Wrestler.builder()
+                .name("Rookie 3")
+                .gender(Gender.MALE)
+                .tier(WrestlerTier.ROOKIE)
+                .deckSize(15)
+                .startingHealth(15)
+                .lowHealth(0)
+                .startingStamina(0)
+                .lowStamina(0)
+                .fans(1000L)
+                .isPlayer(false)
+                .bumps(0)
+                .injuries(new java.util.ArrayList<>())
+                .build());
+    rookie4 =
+        wrestlerRepository.save(
+            Wrestler.builder()
+                .name("Rookie 4")
+                .gender(Gender.MALE)
+                .tier(WrestlerTier.ROOKIE)
+                .deckSize(15)
+                .startingHealth(15)
+                .lowHealth(0)
+                .startingStamina(0)
+                .lowStamina(0)
+                .fans(1000L)
+                .isPlayer(false)
+                .bumps(0)
+                .injuries(new java.util.ArrayList<>())
+                .build());
+    contender1 =
+        wrestlerRepository.save(
+            Wrestler.builder()
+                .name("Contender 1")
+                .gender(Gender.MALE)
+                .tier(WrestlerTier.CONTENDER)
+                .deckSize(15)
+                .startingHealth(15)
+                .lowHealth(0)
+                .startingStamina(0)
+                .lowStamina(0)
+                .fans(40000L)
+                .isPlayer(false)
+                .bumps(0)
+                .injuries(new java.util.ArrayList<>())
+                .build());
+    contender2 =
+        wrestlerRepository.save(
+            Wrestler.builder()
+                .name("Contender 1")
+                .gender(Gender.MALE)
+                .tier(WrestlerTier.CONTENDER)
+                .deckSize(15)
+                .startingHealth(15)
+                .lowHealth(0)
+                .startingStamina(0)
+                .lowStamina(0)
+                .fans(40000L)
+                .isPlayer(false)
+                .bumps(0)
+                .injuries(new java.util.ArrayList<>())
+                .build());
 
     // Create segment types (rely on DataInitializer for these)
-    tagTeamSegmentType = segmentTypeRepository.findByName("Tag Team").orElseThrow();
-    handicapSegmentType = segmentTypeRepository.findByName("Handicap Match").orElseThrow();
+    tagTeamSegmentType =
+        segmentTypeRepository
+            .findByName("Tag Team")
+            .orElseGet(
+                () -> {
+                  SegmentType tagTeam = new SegmentType();
+                  tagTeam.setName("Tag Team");
+                  tagTeam.setDescription("2 vs 2 match");
+                  return segmentTypeRepository.save(tagTeam);
+                });
+    handicapSegmentType =
+        segmentTypeRepository
+            .findByName("Handicap Match")
+            .orElseGet(
+                () -> {
+                  SegmentType handicap = new SegmentType();
+                  handicap.setName("Handicap Match");
+                  handicap.setDescription("Uneven teams match");
+                  return segmentTypeRepository.save(handicap);
+                });
 
     // Create segment rules for testing
     segmentRuleService.createOrUpdateRule(
@@ -65,13 +176,27 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
     segmentRuleService.createOrUpdateRule("Tag Team Match", "Tag Team Match", false);
 
     // Create test show
-    ShowType showType = showTypeRepository.findByName("Weekly").orElseThrow();
+    ShowType showType =
+        showTypeRepository
+            .findByName("Weekly")
+            .orElseGet(
+                () -> {
+                  ShowType weeklyShowType = new ShowType();
+                  weeklyShowType.setName("Weekly");
+                  weeklyShowType.setDescription("Weekly Show");
+                  return showTypeRepository.save(weeklyShowType);
+                });
 
     testShow = new Show();
     testShow.setName("Test Show");
     testShow.setDescription("Test show for team matches");
     testShow.setType(showType);
     testShow = showRepository.save(testShow);
+  }
+
+  @BeforeEach
+  void setupRandom() {
+    npcSegmentResolutionService.random = new Random(123L); // Fixed seed for deterministic tests
   }
 
   @Test
