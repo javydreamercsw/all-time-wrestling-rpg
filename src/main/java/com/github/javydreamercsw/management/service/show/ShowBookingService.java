@@ -112,6 +112,13 @@ public class ShowBookingService {
         return Optional.empty();
       }
 
+      log.info(
+          "Booking show '{}' with description '{}' of type '{}' with {} segments.",
+          showName,
+          showDescription,
+          showTypeName,
+          segmentCount);
+
       // Get show type
       Optional<ShowType> showTypeOpt = showTypeRepository.findByName(showTypeName);
       if (showTypeOpt.isEmpty()) {
@@ -215,6 +222,7 @@ public class ShowBookingService {
   private List<Segment> generateSegmentsForShow(@NonNull Show show, int segmentCount) {
     List<Segment> segments = new ArrayList<>();
     List<Wrestler> availableWrestlers = new ArrayList<>(wrestlerRepository.findAll());
+    log.info("Found {} available wrestlers for show booking.", availableWrestlers.size());
 
     if (availableWrestlers.size() < 4) {
       log.warn("Not enough wrestlers available for show booking");

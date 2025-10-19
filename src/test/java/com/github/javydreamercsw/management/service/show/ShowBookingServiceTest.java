@@ -19,6 +19,7 @@ import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +30,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Transactional
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ShowBookingServiceTest extends ManagementIntegrationTest {
@@ -39,6 +41,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   @Autowired DeckCardRepository deckCardRepository;
   @Autowired SegmentTypeRepository segmentTypeRepository;
   @MockitoBean private OpenAISegmentNarrationService openAIService;
+
   private Season testSeason;
   private ShowType weeklyShowType;
 
@@ -74,6 +77,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
       String showName = "Monday Night Wrestling";
       String showDescription = "Weekly wrestling showcase";
       int segmentCount = 5;
+      log.info("Booking show with {} segments", segmentCount);
 
       // When
       Optional<Show> result =
@@ -89,6 +93,14 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
       // Check segments and promos were created (may be fewer than requested due to wrestler
       // availability)
       List<Segment> allSegments = showBookingService.getSegmentsForShow(show.getId());
+      log.info("Booked {} segments", allSegments.size());
+      allSegments.forEach(
+          segment -> {
+            log.info("Segment: {}", segment.getSegmentType().getName());
+            segment
+                .getWrestlers()
+                .forEach(wrestler -> log.info("  Wrestler: {}", wrestler.getName()));
+          });
       assertThat(allSegments)
           .hasSizeGreaterThanOrEqualTo(3); // At least 3 segments (matches + promos)
 
