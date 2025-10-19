@@ -6,6 +6,7 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
+import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -30,9 +31,11 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +63,7 @@ public class DataInitializer {
   @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private DeckCardRepository deckCardRepository;
 
   @Bean
   @Order(-1)
@@ -485,14 +489,12 @@ public class DataInitializer {
               Deck deck;
               if (!byWrestler.isEmpty()) {
                 deck = byWrestler.get(0); // Get the existing deck
-                // Manually delete old cards
-                for (DeckCard dc : deck.getCards()) {
-                  deckCardService.delete(dc);
-                }
-                deck.getCards().clear();
               } else {
                 deck = deckService.createDeck(wrestler);
               }
+
+              // Keep track of cards to be removed
+              Set<DeckCard> cardsToRemove = new HashSet<>(deck.getCards());
 
               // Aggregate cards from DTO
               Map<String, Integer> cardKeyToAmount = new java.util.HashMap<>();
@@ -517,19 +519,42 @@ public class DataInitializer {
 
               for (var entry : cardKeyToAmount.entrySet()) {
                 Card card = cardKeyToCard.get(entry.getKey());
-                log.debug(
-                    "Adding {} {}-{} set ({})",
-                    card.getName(),
-                    card.getSet().getName(),
-                    card.getId(),
-                    entry.getValue());
-                DeckCard newDeckCard = new DeckCard();
-                newDeckCard.setCard(card);
-                newDeckCard.setSet(card.getSet());
-                newDeckCard.setAmount(entry.getValue());
-                newDeckCard.setDeck(deck); // Set the back-reference
-                deck.getCards().add(newDeckCard); // Add to the collection
+                int amount = entry.getValue();
+
+                Optional<DeckCard> existingDeckCardOpt =
+                    deck.getCards().stream()
+                        .filter(
+                            dc -> dc.getCard().equals(card) && dc.getSet().equals(card.getSet()))
+                        .findFirst();
+
+                if (existingDeckCardOpt.isPresent()) {
+                  DeckCard existingDeckCard = existingDeckCardOpt.get();
+                  existingDeckCard.setAmount(amount);
+                  cardsToRemove.remove(existingDeckCard); // Don't remove this card
+                  log.debug(
+                      "Updated existing deck card: {} {}-{} set (Amount: {})",
+                      card.getName(),
+                      card.getSet().getName(),
+                      card.getId(),
+                      amount);
+                } else {
+                  log.debug(
+                      "Adding new deck card: {} {}-{} set (Amount: {})",
+                      card.getName(),
+                      card.getSet().getName(),
+                      card.getId(),
+                      amount);
+                  DeckCard newDeckCard = new DeckCard();
+                  newDeckCard.setCard(card);
+                  newDeckCard.setSet(card.getSet());
+                  newDeckCard.setAmount(amount);
+                  newDeckCard.setDeck(deck); // Set the back-reference
+                  deck.getCards().add(newDeckCard); // Add to the collection
+                }
               }
+
+              // Remove cards that are no longer in the DTO
+              deck.getCards().removeAll(cardsToRemove);
 
               deckService.save(deck); // Save the deck, which will cascade to the new cards.
               log.info("Saved deck for wrestler: {}", wrestler.getName());

@@ -914,5 +914,28 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>embedded-tomcat</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <configuration>
+              <mainClass>com.github.javydreamercsw.Application</mainClass>
+              <jvmArguments>-Dserver.port=9090</jvmArguments>
+            </configuration>
+            <executions>
+              <execution>
+                <id>run-embedded</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>

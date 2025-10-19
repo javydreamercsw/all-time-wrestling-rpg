@@ -102,7 +102,7 @@ class DataInitializerTest {
   }
 
   private void clearRepositories() {
-    deckCardRepository.deleteAll();
+    deckCardRepository.deleteAllInBatch();
     deckRepository.deleteAll();
     showRepository.deleteAll();
     titleRepository.deleteAll();

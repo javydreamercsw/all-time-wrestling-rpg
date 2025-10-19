@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mockStatic;
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -35,6 +36,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   @Autowired SeasonService seasonService;
   @Autowired WrestlerService wrestlerService;
   @Autowired DeckRepository deckRepository;
+  @Autowired DeckCardRepository deckCardRepository;
   @Autowired SegmentTypeRepository segmentTypeRepository;
   @MockitoBean private OpenAISegmentNarrationService openAIService;
   private Season testSeason;
@@ -171,6 +173,9 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
         // Delete associated decks first
         List<com.github.javydreamercsw.management.domain.deck.Deck> decksToDelete =
             deckRepository.findByWrestler(wrestlerToDelete);
+        for (com.github.javydreamercsw.management.domain.deck.Deck deck : decksToDelete) {
+          deckCardRepository.deleteAll(deck.getCards());
+        }
         deckRepository.deleteAll(decksToDelete);
         wrestlerRepository.delete(wrestlerToDelete);
       }
