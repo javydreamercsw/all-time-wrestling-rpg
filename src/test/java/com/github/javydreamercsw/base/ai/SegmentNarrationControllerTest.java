@@ -24,13 +24,8 @@ import org.springframework.test.web.servlet.MockMvc;
     controllers = SegmentNarrationController.class,
     excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 class SegmentNarrationControllerTest extends BaseControllerTest {
-
-  @MockitoBean private CommandLineRunner commandLineRunner;
-
   @Autowired private MockMvc mockMvc;
-
   @MockitoBean private SegmentNarrationServiceFactory serviceFactory;
-  @MockitoBean private SegmentNarrationConfig config;
   @MockitoBean private SegmentOutcomeProvider matchOutcomeService;
 
   @Test

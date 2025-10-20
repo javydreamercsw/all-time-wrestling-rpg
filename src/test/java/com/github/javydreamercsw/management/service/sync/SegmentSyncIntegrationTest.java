@@ -1,35 +1,27 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import java.util.List;
+import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
 @DisplayName("Segment Sync Integration Tests")
 class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private SegmentRepository segmentRepository;
-  @MockitoBean private NotionSyncService notionSyncService;
+  @Autowired private NotionSyncService notionSyncService;
 
   @BeforeEach
-  void setUp() {
-    when(notionSyncService.getAllSegmentIds()).thenReturn(List.of("mock-segment-id-1"));
-    when(notionSyncService.syncSegments(anyString()))
-        .thenReturn(NotionSyncService.SyncResult.success("Segments", 0, 0, 0));
-    when(notionSyncService.syncSegment(anyString()))
-        .thenReturn(NotionSyncService.SyncResult.success("Segment", 0, 0, 0));
-  }
+  void setUp() {}
 
   @Test
   @DisplayName("Should sync a random match from Notion to database successfully")
@@ -43,7 +35,7 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     if (segmentIds.isEmpty()) {
       result = notionSyncService.syncSegments("test-operation-123");
     } else {
-      String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+      String randomId = segmentIds.get(new Random().nextInt(segmentIds.size()));
       result = notionSyncService.syncSegment(randomId);
     }
 
@@ -88,7 +80,7 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     if (segmentIds.isEmpty()) {
       return; // Skip test if no segments to sync
     }
-    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    String randomId = segmentIds.get(new Random().nextInt(segmentIds.size()));
     NotionSyncService.SyncResult firstResult = notionSyncService.syncSegment(randomId);
     int afterFirstSync = segmentRepository.findAll().size();
 
@@ -127,7 +119,7 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     if (segmentIds.isEmpty()) {
       return; // Skip test if no segments to sync
     }
-    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    String randomId = segmentIds.get(new Random().nextInt(segmentIds.size()));
     NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync handles missing dependencies gracefully
@@ -168,7 +160,7 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     if (segmentIds.isEmpty()) {
       return; // Skip test if no segments to sync
     }
-    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    String randomId = segmentIds.get(new Random().nextInt(segmentIds.size()));
     NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync handles missing segment types gracefully
@@ -206,7 +198,7 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     if (segmentIds.isEmpty()) {
       return; // Skip test if no segments to sync
     }
-    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    String randomId = segmentIds.get(new Random().nextInt(segmentIds.size()));
     NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync handles missing winners gracefully
@@ -278,7 +270,7 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     if (segmentIds.isEmpty()) {
       return; // Skip test if no segments to sync
     }
-    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    String randomId = segmentIds.get(new Random().nextInt(segmentIds.size()));
     NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync handles errors gracefully
@@ -357,7 +349,7 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     if (segmentIds.isEmpty()) {
       return; // Skip test if no segments to sync
     }
-    String randomId = segmentIds.get(new java.util.Random().nextInt(segmentIds.size()));
+    String randomId = segmentIds.get(new Random().nextInt(segmentIds.size()));
     NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync validation works correctly
