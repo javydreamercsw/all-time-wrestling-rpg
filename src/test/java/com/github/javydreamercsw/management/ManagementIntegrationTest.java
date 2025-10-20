@@ -41,6 +41,7 @@ import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncServ
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -150,7 +151,7 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
     log.info("Finished clearing repositories");
   }
 
-  protected Wrestler createTestWrestler(@lombok.NonNull String name) {
+  protected Wrestler createTestWrestler(@NonNull String name) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
     wrestler.setFans(10_000L);
