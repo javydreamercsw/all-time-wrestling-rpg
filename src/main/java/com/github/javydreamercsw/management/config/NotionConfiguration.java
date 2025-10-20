@@ -5,10 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /** Configuration class for Notion-related beans. Only active when Notion sync is enabled. */
 @Configuration
 @Slf4j
+@Profile("!test")
 public class NotionConfiguration {
 
   /**
