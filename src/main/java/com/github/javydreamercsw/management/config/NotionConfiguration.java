@@ -24,6 +24,6 @@ public class NotionConfiguration {
   @ConditionalOnExpression(
       "T(com.github.javydreamercsw.base.util.EnvironmentVariableUtil).isNotionTokenAvailable()")
   public NotionHandler notionHandler() {
-    return NotionHandler.getInstance();
+    return NotionHandler.getInstance().orElse(null);
   }
 }
