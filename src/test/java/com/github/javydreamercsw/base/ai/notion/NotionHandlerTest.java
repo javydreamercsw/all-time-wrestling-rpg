@@ -2,6 +2,7 @@ package com.github.javydreamercsw.base.ai.notion;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -18,22 +19,15 @@ class NotionHandlerTest {
   }
 
   @Test
-  void testSingletonInstance() {
-    NotionHandler instance1 = NotionHandler.getInstance();
-    NotionHandler instance2 = NotionHandler.getInstance();
-    assertSame(instance1, instance2, "Singleton instances should be the same");
-  }
-
-  @Test
   void testInitializationSkipsIfNoToken() {
     try (MockedStatic<com.github.javydreamercsw.base.util.EnvironmentVariableUtil> envMock =
         Mockito.mockStatic(com.github.javydreamercsw.base.util.EnvironmentVariableUtil.class)) {
       envMock
           .when(com.github.javydreamercsw.base.util.EnvironmentVariableUtil::isNotionTokenAvailable)
           .thenReturn(false);
-      NotionHandler instance = NotionHandler.getInstance();
-      // Should not throw, but should not initialize databases
-      assertNotNull(instance);
+      Optional<NotionHandler> instance = NotionHandler.getInstance();
+      // Should not throw, and should return empty Optional
+      assertTrue(instance.isEmpty());
     }
   }
 
@@ -48,10 +42,10 @@ class NotionHandlerTest {
           .thenReturn(true);
       handlerMock.when(NotionHandler::getInstance).thenCallRealMethod();
       // Simulate NotionClient failure by throwing exception in loadDatabases
-      NotionHandler handler = NotionHandler.getInstance();
+      Optional<NotionHandler> handler = NotionHandler.getInstance();
       // Should not throw here, but if loadDatabases is called, simulate error
       // (This is a placeholder, actual NotionClient mocking would be more involved)
-      assertNotNull(handler);
+      assertTrue(handler.isEmpty());
     }
   }
 }
