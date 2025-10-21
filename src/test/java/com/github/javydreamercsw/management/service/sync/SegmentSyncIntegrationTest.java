@@ -8,7 +8,6 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import java.util.List;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,13 +29,8 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
 
     // When - Sync a random match from real Notion database
     List<String> segmentIds = notionSyncService.getAllSegmentIds();
-    NotionSyncService.SyncResult result;
-    if (segmentIds.isEmpty()) {
-      result = notionSyncService.syncSegments("test-operation-123");
-    } else {
-      String randomId = segmentIds.get(new Random().nextInt(segmentIds.size()));
-      result = notionSyncService.syncSegment(randomId);
-    }
+    String randomId = segmentIds.get(new Random().nextInt(segmentIds.size()));
+    NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync completed successfully (regardless of segment count)
     assertThat(result).isNotNull();
@@ -242,7 +236,8 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     if (!segmentIds.isEmpty()) {
       return; // Skip test if there are segments to sync
     }
-    NotionSyncService.SyncResult result = notionSyncService.syncSegments("test-operation-303");
+    String randomId = segmentIds.get(new Random().nextInt(segmentIds.size()));
+    NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync handles empty results gracefully
     assertThat(result).isNotNull();
@@ -315,13 +310,28 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     if (segmentIds.size() < 2) {
       return; // Skip test if there are not multiple segments to sync
     }
-    NotionSyncService.SyncResult result = notionSyncService.syncSegments("test-operation-505");
+    String randomId = segmentIds.get(new Random().nextInt(segmentIds.size()));
+    NotionSyncService.SyncResult result = notionSyncService.syncSegment(randomId);
 
     // Then - Verify sync handles multiple matches correctly
     assertThat(result).isNotNull();
 
     // Should handle multiple matches by completing successfully or gracefully
     boolean handledGracefully =
+        result.isSuccess()
+            || (result.getErrorMessage() != null
+                && (result.getErrorMessage().contains("No matches found")
+                    || result.getErrorMessage().contains("validation failed")));
+
+    assertThat(handledGracefully).isTrue();
+
+    result = notionSyncService.syncSegment(randomId);
+
+    // Then - Verify sync handles multiple matches correctly
+    assertThat(result).isNotNull();
+
+    // Should handle multiple matches by completing successfully or gracefully
+    handledGracefully =
         result.isSuccess()
             || (result.getErrorMessage() != null
                 && (result.getErrorMessage().contains("No matches found")

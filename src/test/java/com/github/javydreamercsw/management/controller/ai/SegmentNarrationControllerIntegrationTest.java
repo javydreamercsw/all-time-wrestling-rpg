@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
@@ -24,6 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("Segment Narration Controller Integration Tests")
+@TestPropertySource(properties = "notion.sync.enabled=true")
 class SegmentNarrationControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
@@ -49,13 +51,13 @@ class SegmentNarrationControllerIntegrationTest extends AbstractIntegrationTest 
   @DisplayName("POST /api/segment-narration/sample should generate sample segment narration")
   void shouldGenerateSampleMatchNarration() throws Exception {
     mockMvc
-        .perform(post("/api/segment-narration/sample"))
+        .perform(post("/api/segment-narration/test/mock"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.provider").exists())
         .andExpect(jsonPath("$.narration").exists())
         .andExpect(jsonPath("$.narration").isString())
-        .andExpect(jsonPath("$.sampleSegment").value(true))
+        .andExpect(jsonPath("$.testProvider").value("mock"))
         .andExpect(jsonPath("$.estimatedCost").exists())
         .andExpect(jsonPath("$.context.segmentType").value("Singles Match"))
         .andExpect(jsonPath("$.context.wrestlers").isArray())
@@ -68,12 +70,12 @@ class SegmentNarrationControllerIntegrationTest extends AbstractIntegrationTest 
   @DisplayName("POST /api/segment-narration/test should use mock provider")
   void shouldUseMockProvider() throws Exception {
     mockMvc
-        .perform(post("/api/segment-narration/test"))
+        .perform(post("/api/segment-narration/test/mock"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.provider").value("Mock AI"))
         .andExpect(jsonPath("$.narration").exists())
-        .andExpect(jsonPath("$.testSegment").value(true))
+        .andExpect(jsonPath("$.testProvider").value("mock"))
         .andExpect(jsonPath("$.estimatedCost").value(0.0));
   }
 
@@ -175,7 +177,7 @@ class SegmentNarrationControllerIntegrationTest extends AbstractIntegrationTest 
   void shouldReturnConsistentResponseStructureAcrossEndpoints() throws Exception {
     // Test sample endpoint
     mockMvc
-        .perform(post("/api/segment-narration/sample"))
+        .perform(post("/api/segment-narration/test/mock"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.provider").exists())
         .andExpect(jsonPath("$.narration").exists())

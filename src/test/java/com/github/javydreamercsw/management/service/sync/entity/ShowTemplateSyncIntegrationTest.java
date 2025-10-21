@@ -18,6 +18,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Slf4j
 @DisplayName("Show Template Sync Integration Tests")
+@TestPropertySource(properties = "notion.sync.enabled=true")
 class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private ShowTemplateSyncService showTemplateSyncService;

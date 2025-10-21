@@ -69,6 +69,14 @@ class WrestlerSyncIntegrationTest extends ManagementIntegrationTest {
     // The operation should complete (success or failure is less important than proper handling)
     assertThat(result.isSuccess()).withFailMessage("Success status should be defined").isTrue();
     assertThat(result.getSyncedCount()).isEqualTo(1);
+
+    // Verify the fans property in the database
+    wrestlerRepository
+        .findByExternalId("dummy-id")
+        .ifPresentOrElse(
+            wrestler -> assertThat(wrestler.getFans()).isEqualTo(100000L),
+            () -> fail("Wrestler with externalId 'dummy-id' not found in database"));
+
     // Always log the result for debugging
     log.info("📊 Sync Result Summary:");
     log.info("   - Success: {}", result.isSuccess());

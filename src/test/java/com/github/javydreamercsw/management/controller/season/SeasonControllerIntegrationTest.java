@@ -27,6 +27,12 @@ class SeasonControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private com.github.javydreamercsw.management.DatabaseCleaner databaseCleaner;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUp() {
+    databaseCleaner.clearRepositories();
+  }
 
   @Test
   @DisplayName("Should create new season successfully")
@@ -194,25 +200,19 @@ class SeasonControllerIntegrationTest extends AbstractIntegrationTest {
         .andExpect(jsonPath("$.showsPerPpv").value(5));
   }
 
-  private Season createTestSeason(String name, Integer seasonNumber) {
-    // Create season via API instead of direct repository access
-    try {
-      CreateSeasonRequest request = new CreateSeasonRequest(name, "Test description", 5);
-      mockMvc.perform(
-          post("/api/seasons")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(objectMapper.writeValueAsString(request)));
+  private Season createTestSeason(String name, Integer seasonNumber) throws Exception {
+    CreateSeasonRequest request = new CreateSeasonRequest(name, "Test description", 5);
+    String responseContent =
+        mockMvc
+            .perform(
+                post("/api/seasons")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
 
-      // Return a mock season for test purposes
-      Season season = new Season();
-      season.setId((long) seasonNumber);
-      season.setName(name);
-      season.setDescription("Test description");
-      season.setShowsPerPpv(5);
-      season.setIsActive(false);
-      return season;
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to create test season", e);
-    }
+    return objectMapper.readValue(responseContent, Season.class);
   }
 }

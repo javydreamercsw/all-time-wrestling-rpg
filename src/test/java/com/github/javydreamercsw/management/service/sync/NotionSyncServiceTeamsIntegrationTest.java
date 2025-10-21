@@ -15,11 +15,13 @@ import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Integration tests for Teams Sync functionality. These tests require NOTION_TOKEN to be available
  * and use the real database.
  */
+@TestPropertySource(properties = "notion.sync.enabled=true")
 class NotionSyncServiceTeamsIntegrationTest extends ManagementIntegrationTest {
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private TeamRepository teamRepository;
@@ -27,6 +29,16 @@ class NotionSyncServiceTeamsIntegrationTest extends ManagementIntegrationTest {
   @Autowired private TeamService teamService;
   private Wrestler wrestler1;
   private Wrestler wrestler2;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUp() {
+    clearAllRepositories();
+    wrestler1 = createTestWrestler("Wrestler 1");
+    wrestlerRepository.save(wrestler1);
+
+    wrestler2 = createTestWrestler("Wrestler 2");
+    wrestlerRepository.save(wrestler2);
+  }
 
   @Test
   void shouldSyncTeamsFromNotionSuccessfully() {

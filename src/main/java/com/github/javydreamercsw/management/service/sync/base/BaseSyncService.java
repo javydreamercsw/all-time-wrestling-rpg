@@ -54,7 +54,6 @@ public abstract class BaseSyncService {
   private final ExecutorService syncExecutorService;
 
   // Optional NotionHandler for integration tests
-  @Autowired(required = false)
   public NotionHandler notionHandler;
 
   // Enhanced sync infrastructure services - autowired
@@ -72,6 +71,7 @@ public abstract class BaseSyncService {
     this.objectMapper = objectMapper;
     this.syncProperties = syncProperties;
     this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
+    this.notionHandler = NotionHandler.getInstance().orElse(null);
   }
 
   /**

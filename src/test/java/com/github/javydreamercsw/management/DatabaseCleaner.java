@@ -4,6 +4,7 @@ import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
@@ -29,6 +30,7 @@ public class DatabaseCleaner {
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
+  @Autowired private SeasonRepository seasonRepository;
 
   @Transactional
   public void clearRepositories() {
@@ -43,5 +45,6 @@ public class DatabaseCleaner {
     showTypeRepository.deleteAll();
     segmentRuleRepository.deleteAll();
     segmentTypeRepository.deleteAll();
+    seasonRepository.deleteAll();
   }
 }
