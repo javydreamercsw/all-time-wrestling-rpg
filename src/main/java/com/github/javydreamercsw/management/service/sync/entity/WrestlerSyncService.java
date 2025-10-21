@@ -168,8 +168,10 @@ public class WrestlerSyncService extends BaseSyncService {
 
   /** Converts WrestlerPage objects to WrestlerDTO objects and merges with existing JSON data. */
   private List<WrestlerDTO> convertAndMergeWrestlerData(@NonNull List<WrestlerPage> wrestlerPages) {
-    // Load existing wrestlers from JSON file
-    Map<String, WrestlerDTO> existingWrestlers = loadExistingWrestlersFromJson();
+    Map<String, WrestlerDTO> existingWrestlers = new HashMap<>();
+    if (syncProperties.isLoadFromJson()) {
+      existingWrestlers = loadExistingWrestlersFromJson();
+    }
 
     // Convert Notion pages to DTOs and merge with existing data
     List<WrestlerDTO> mergedWrestlers = new ArrayList<>();

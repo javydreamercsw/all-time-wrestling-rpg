@@ -2,7 +2,6 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
@@ -18,7 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Real integration test for wrestler sync that uses actual Spring services and real Notion API
@@ -27,18 +27,17 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * <p>Run with: mvn test -Dtest=WrestlerSyncIntegrationTest -DNOTION_TOKEN=your_token
  */
 @Slf4j
+@TestPropertySource(properties = "notion.sync.load-from-json=false")
 class WrestlerSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerSyncService wrestlerSyncService;
 
-  @MockitoBean private NotionSyncService notionSyncService;
-  @MockitoBean private NotionHandler notionHandler;
+  @MockBean private NotionHandler notionHandler;
 
   @BeforeEach
   void setUp() {
-    when(notionSyncService.syncWrestlers(anyString()))
-        .thenReturn(BaseSyncService.SyncResult.success("Wrestlers", 1, 0, 0));
+    wrestlerSyncService.notionHandler = notionHandler;
     // Mock NotionHandler to return a dummy NotionPage
     when(notionHandler.loadAllWrestlers())
         .thenReturn(
@@ -86,6 +85,5 @@ class WrestlerSyncIntegrationTest extends ManagementIntegrationTest {
     if (!result.isSuccess()) {
       log.info("   - Error: {}", result.getErrorMessage());
     }
-    assertAll();
   }
 }

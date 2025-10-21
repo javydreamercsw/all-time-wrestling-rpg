@@ -28,6 +28,9 @@ public class NotionSyncProperties {
   /** Number of threads to use for parallel processing during sync. */
   private int parallelThreads = 3;
 
+  /** Whether to load existing data from JSON files during sync. */
+  private boolean loadFromJson = true;
+
   /** Scheduler-specific configuration properties. */
   @Data
   public static class Scheduler {
