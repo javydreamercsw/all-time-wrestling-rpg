@@ -12,16 +12,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 @Slf4j
 @DisplayName("Segment Sync Integration Tests")
+@TestPropertySource(properties = "notion.sync.enabled=true")
 class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private NotionSyncService notionSyncService;
-
-  @BeforeEach
-  void setUp() {}
 
   @Test
   @DisplayName("Should sync a random match from Notion to database successfully")
@@ -55,18 +54,26 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     // Verify database state is consistent
     List<Segment> finalMatches = segmentRepository.findAll();
     if (!segmentIds.isEmpty()) {
-      assertThat(finalMatches.size()).isGreaterThan(initialMatchCount);
+      assertThat(finalMatches.size())
+          .withFailMessage(
+              "Integration test completed: "
+                  + (result.isSuccess() ? "SUCCESS" : "INFO")
+                  + " - Synced: "
+                  + result.getSyncedCount()
+                  + " matches, Final DB count: "
+                  + finalMatches.size())
+          .isGreaterThan(initialMatchCount);
     } else {
-      assertThat(finalMatches.size()).isEqualTo(initialMatchCount);
+      assertThat(finalMatches.size())
+          .withFailMessage(
+              "Integration test completed: "
+                  + (result.isSuccess() ? "SUCCESS" : "INFO")
+                  + " - Synced: "
+                  + result.getSyncedCount()
+                  + " matches, Final DB count: "
+                  + finalMatches.size())
+          .isEqualTo(initialMatchCount);
     }
-
-    System.out.println(
-        "Integration test completed: "
-            + (result.isSuccess() ? "SUCCESS" : "INFO")
-            + " - Synced: "
-            + result.getSyncedCount()
-            + " matches, Final DB count: "
-            + finalMatches.size());
   }
 
   @Test
@@ -97,15 +104,15 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
         (firstResult.isSuccess() && secondResult.isSuccess())
             || (afterSecondSync == afterFirstSync); // No new matches added on second sync
 
-    assertThat(duplicateHandlingWorks).isTrue();
-
-    System.out.println(
-        "Duplicate handling test: Initial="
-            + initialMatchCount
-            + ", After 1st="
-            + afterFirstSync
-            + ", After 2nd="
-            + afterSecondSync);
+    assertThat(duplicateHandlingWorks)
+        .withFailMessage(
+            "Duplicate handling test: Initial="
+                + initialMatchCount
+                + ", After 1st="
+                + afterFirstSync
+                + ", After 2nd="
+                + afterSecondSync)
+        .isTrue();
   }
 
   @Test
@@ -140,13 +147,13 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
 
     // Verify database remains consistent
     List<Segment> finalMatches = segmentRepository.findAll();
-    assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
-
-    System.out.println(
-        "Missing dependencies test: "
-            + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
-            + " - "
-            + result.getErrorMessage());
+    assertThat(finalMatches.size())
+        .withFailMessage(
+            "Missing dependencies test: "
+                + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
+                + " - "
+                + result.getErrorMessage())
+        .isGreaterThanOrEqualTo(initialMatchCount);
   }
 
   @Test
@@ -178,13 +185,13 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
 
     // Verify database consistency
     List<Segment> finalMatches = segmentRepository.findAll();
-    assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
-
-    System.out.println(
-        "Missing segment type test: "
-            + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
-            + " - "
-            + result.getErrorMessage());
+    assertThat(finalMatches.size())
+        .withFailMessage(
+            "Missing segment type test: "
+                + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
+                + " - "
+                + result.getErrorMessage())
+        .isGreaterThanOrEqualTo(initialMatchCount);
   }
 
   @Test
@@ -215,13 +222,13 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
 
     // Verify database consistency
     List<Segment> finalMatches = segmentRepository.findAll();
-    assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
-
-    System.out.println(
-        "Missing winner test: "
-            + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
-            + " - "
-            + result.getErrorMessage());
+    assertThat(finalMatches.size())
+        .withFailMessage(
+            "Missing winner test: "
+                + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
+                + " - "
+                + result.getErrorMessage())
+        .isGreaterThanOrEqualTo(initialMatchCount);
   }
 
   @Test
@@ -250,13 +257,13 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
 
     // Verify database remains consistent
     List<Segment> finalMatches = segmentRepository.findAll();
-    assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
-
-    System.out.println(
-        "Empty segment list test: "
-            + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
-            + " - Synced: "
-            + result.getSyncedCount());
+    assertThat(finalMatches.size())
+        .withFailMessage(
+            "Empty segment list test: "
+                + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
+                + " - Synced: "
+                + result.getSyncedCount())
+        .isGreaterThanOrEqualTo(initialMatchCount);
   }
 
   @Test
@@ -288,13 +295,13 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
 
     // Verify database remains consistent
     List<Segment> finalSegments = segmentRepository.findAll();
-    assertThat(finalSegments.size()).isGreaterThanOrEqualTo(initialSegmentCount);
-
-    System.out.println(
-        "Exception handling test: "
-            + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
-            + " - "
-            + result.getErrorMessage());
+    assertThat(finalSegments.size())
+        .withFailMessage(
+            "Exception handling test: "
+                + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
+                + " - "
+                + result.getErrorMessage())
+        .isGreaterThanOrEqualTo(initialSegmentCount);
   }
 
   @Test
@@ -327,15 +334,15 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
 
     // Verify sync metrics are reasonable
-    assertThat(result.getSyncedCount()).isGreaterThanOrEqualTo(0);
-
-    System.out.println(
-        "Multiple matches test: "
-            + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
-            + " - Synced: "
-            + result.getSyncedCount()
-            + ", DB count: "
-            + finalMatches.size());
+    assertThat(result.getSyncedCount())
+        .withFailMessage(
+            "Multiple matches test: "
+                + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
+                + " - Synced: "
+                + result.getSyncedCount()
+                + ", DB count: "
+                + finalMatches.size())
+        .isGreaterThanOrEqualTo(0);
   }
 
   @Test
@@ -373,14 +380,14 @@ class SegmentSyncIntegrationTest extends ManagementIntegrationTest {
     assertThat(finalMatches.size()).isGreaterThanOrEqualTo(initialMatchCount);
 
     // Verify sync metrics are reasonable
-    assertThat(result.getSyncedCount()).isGreaterThanOrEqualTo(0);
-
-    System.out.println(
-        "Validation test: "
-            + (result.isSuccess() ? "SUCCESS" : "VALIDATION_HANDLED")
-            + " - Synced: "
-            + result.getSyncedCount()
-            + ", DB count: "
-            + finalMatches.size());
+    assertThat(result.getSyncedCount())
+        .withFailMessage(
+            "Validation test: "
+                + (result.isSuccess() ? "SUCCESS" : "VALIDATION_HANDLED")
+                + " - Synced: "
+                + result.getSyncedCount()
+                + ", DB count: "
+                + finalMatches.size())
+        .isGreaterThanOrEqualTo(0);
   }
 }
