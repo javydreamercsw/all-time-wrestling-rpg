@@ -28,7 +28,7 @@ public class CardSet extends AbstractEntity<Long> {
   @JsonProperty("name")
   private String name;
 
-  @Column(name = "set_code", nullable = false, length = 3, unique = true)
+  @Column(name = "set_code", nullable = false, unique = true)
   @JsonProperty("set_code")
   private String setCode;
 

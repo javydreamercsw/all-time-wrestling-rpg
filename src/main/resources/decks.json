@@ -199,4 +199,71 @@
     "set" : "ATW",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Eddie Guerrero",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 18,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 30,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 59,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 32,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 31,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
 } ]
