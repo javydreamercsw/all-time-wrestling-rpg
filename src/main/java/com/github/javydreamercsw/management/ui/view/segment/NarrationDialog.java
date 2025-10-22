@@ -349,17 +349,32 @@ public class NarrationDialog extends Dialog {
             + "4.  **No New Characters:** Do not invent or introduce any characters not listed in"
             + " the provided context. This is a strict rule.");
 
-    if (segment.getSummary() != null && !segment.getSummary().isEmpty()) {
-      context.setDeterminedOutcome(segment.getSummary());
+    StringBuilder outcomeBuilder = new StringBuilder();
+
+    // Prioritize assigned winners
+    List<String> winners =
+        segment.getParticipants().stream()
+            .filter(p -> p.getIsWinner() != null && p.getIsWinner())
+            .map(p -> p.getWrestler().getName())
+            .collect(java.util.stream.Collectors.toList());
+
+    if (!winners.isEmpty()) {
+      outcomeBuilder.append(String.join(" and ", winners)).append(" wins the segment.");
+      // TODO: Add more detail about how they won (e.g., by pinfall, submission) if available
+    } else if (segment.getSummary() != null && !segment.getSummary().isEmpty()) {
+      outcomeBuilder.append(segment.getSummary());
     }
 
+    // Append user feedback
     if (!feedbackArea.isEmpty()) {
-      String outcome = context.getDeterminedOutcome() == null ? "" : context.getDeterminedOutcome();
-      if (!outcome.isEmpty()) {
-        outcome += "\n\n";
+      if (!outcomeBuilder.isEmpty()) {
+        outcomeBuilder.append("\n\n");
       }
-      outcome += "User Feedback: " + feedbackArea.getValue();
-      context.setDeterminedOutcome(outcome);
+      outcomeBuilder.append("User Feedback: ").append(feedbackArea.getValue());
+    }
+
+    if (!outcomeBuilder.isEmpty()) {
+      context.setDeterminedOutcome(outcomeBuilder.toString());
     }
 
     return context;
