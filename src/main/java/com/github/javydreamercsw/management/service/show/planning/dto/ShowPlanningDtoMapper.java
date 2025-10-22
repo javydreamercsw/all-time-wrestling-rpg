@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -7,6 +8,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningContext;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningPle;
@@ -33,6 +35,15 @@ public class ShowPlanningDtoMapper {
     }
     if (context.getNextPle() != null) {
       dto.setNextPle(toDto(context.getNextPle()));
+    }
+    if (context.getFullRoster() != null) {
+      dto.setFullRoster(
+          context.getFullRoster().stream()
+              .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO::new)
+              .collect(Collectors.toList()));
+    }
+    if (context.getFactions() != null) {
+      dto.setFactions(context.getFactions().stream().map(this::toDto).collect(Collectors.toList()));
     }
     return dto;
   }
@@ -116,6 +127,26 @@ public class ShowPlanningDtoMapper {
     dto.setPleName(ple.getPle().getName());
     dto.setPleDate(ple.getPle().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
     dto.setSummary(ple.getPle().getDescription());
+    return dto;
+  }
+
+  public FactionDTO toDto(@NonNull Faction faction) {
+    FactionDTO dto = new FactionDTO();
+    dto.setName(faction.getName());
+    dto.setDescription(faction.getDescription());
+    if (faction.getLeader() != null) {
+      dto.setLeader(faction.getLeader().getName());
+    }
+    dto.setMembers(
+        faction.getMembers().stream().map(Wrestler::getName).collect(Collectors.toList()));
+    dto.setIsActive(faction.getIsActive());
+    if (faction.getFormedDate() != null) {
+      dto.setFormedDate(faction.getFormedDate().toString());
+    }
+    if (faction.getDisbandedDate() != null) {
+      dto.setDisbandedDate(faction.getDisbandedDate().toString());
+    }
+    dto.setExternalId(faction.getExternalId());
     return dto;
   }
 }

@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * Detail view for displaying comprehensive information about a specific show. Accessible via URL
@@ -622,12 +623,12 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   private void generateSummary(@NonNull Segment segment) {
     String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
-    Segment updatedSegment =
-        new org.springframework.web.client.RestTemplate()
-            .postForObject(
-                baseUrl + "/api/segments/" + segment.getId() + "/summarize",
-                null,
-                com.github.javydreamercsw.management.domain.show.segment.Segment.class);
+
+    new RestTemplate()
+        .postForObject(
+            baseUrl + "/api/segments/" + segment.getId() + "/summarize",
+            null,
+            Segment.class);
     Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     loadShow(this.currentShowId);

@@ -183,6 +183,45 @@ public class ShowPlanningAiService {
                       .append("\n"));
     }
 
+    if (context.getFullRoster() != null && !context.getFullRoster().isEmpty()) {
+      prompt.append("\nFull Roster:\n");
+      context
+          .getFullRoster()
+          .forEach(
+              wrestler ->
+                  prompt
+                      .append("- Name: ")
+                      .append(wrestler.getName())
+                      .append(", Gender: ")
+                      .append(wrestler.getGender())
+                      .append(", Tier: ")
+                      .append(wrestler.getTier())
+                      .append(", Description: ")
+                      .append(wrestler.getDescription())
+                      .append("\n"));
+    }
+
+    if (context.getFactions() != null && !context.getFactions().isEmpty()) {
+      prompt.append("\nFactions:\n");
+      context
+          .getFactions()
+          .forEach(
+              faction -> {
+                prompt
+                    .append("- Name: ")
+                    .append(faction.getName())
+                    .append(", Description: ")
+                    .append(faction.getDescription());
+                if (faction.getLeader() != null) {
+                  prompt.append(", Leader: ").append(faction.getLeader());
+                }
+                if (faction.getMembers() != null && !faction.getMembers().isEmpty()) {
+                  prompt.append(", Members: ").append(String.join(", ", faction.getMembers()));
+                }
+                prompt.append("\n");
+              });
+    }
+
     if (context.getNextPle() != null) {
       prompt.append("Next PLE (Premium Live Event):\n");
       prompt.append("- Name: ").append(context.getNextPle().getPleName()).append("\n");

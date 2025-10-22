@@ -13,6 +13,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
@@ -20,6 +21,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -46,6 +48,8 @@ class ShowPlanningServiceTest {
   @Mock private ShowService showService;
   @Mock private SegmentService segmentService;
   @Mock private SegmentTypeRepository segmentTypeRepository;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private FactionService factionService;
 
   @Spy private ShowPlanningDtoMapper mapper; // Shows as not used but it is needed.
   @Spy private Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
@@ -132,6 +136,9 @@ class ShowPlanningServiceTest {
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(contender));
 
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
+    when(factionService.findAll()).thenReturn(Collections.emptyList());
+
     ShowType pleShowType = new ShowType();
     com.github.javydreamercsw.management.domain.show.template.ShowTemplate pleTemplate =
         mock(com.github.javydreamercsw.management.domain.show.template.ShowTemplate.class);
@@ -200,6 +207,8 @@ class ShowPlanningServiceTest {
     when(promoBookingService.isPromoSegment(any())).thenReturn(false);
     when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
     when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
+    when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
     ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
@@ -265,6 +274,8 @@ class ShowPlanningServiceTest {
     when(promoBookingService.isPromoSegment(any())).thenReturn(false);
     when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
     when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
+    when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
     ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
@@ -313,6 +324,9 @@ class ShowPlanningServiceTest {
 
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(numberOneContender));
+
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
+    when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
     ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);

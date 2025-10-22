@@ -13,4 +13,6 @@ public class ShowPlanningContext {
   private ShowTemplate showTemplate;
   private List<ShowPlanningChampionship> championships;
   private ShowPlanningPle nextPle;
+  private List<com.github.javydreamercsw.management.domain.wrestler.Wrestler> fullRoster;
+  private List<com.github.javydreamercsw.management.domain.faction.Faction> factions;
 }

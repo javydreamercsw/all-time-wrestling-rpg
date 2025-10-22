@@ -6,9 +6,11 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 @Data
+@NoArgsConstructor
 public class WrestlerDTO {
   private String name;
   private String description;
