@@ -20,6 +20,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for the complete injury system including bump conversion, segment integration,
@@ -41,7 +42,19 @@ class InjurySystemIntegrationTest extends AbstractIntegrationTest {
   private Show testShow;
   private SegmentType singlesSegmentType;
 
+  @org.junit.jupiter.api.BeforeEach
+  void setUp() {
+    wrestler1 = new Wrestler();
+    wrestler1.setName("Test Wrestler 1");
+    wrestler1.setFans(10000L);
+    wrestler1.setStartingHealth(100);
+    wrestler1.setStartingStamina(100);
+    wrestler1.setDeckSize(30);
+    wrestler1 = wrestlerRepository.save(wrestler1);
+  }
+
   @Test
+  @Transactional
   @DisplayName("Should convert 3 bumps to injury and reset bumps")
   void shouldConvert3BumpsToInjuryAndResetBumps() {
     // Given - Add 2 bumps first
