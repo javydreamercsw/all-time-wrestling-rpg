@@ -3,6 +3,7 @@ package com.github.javydreamercsw.base.ai;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 
@@ -18,7 +19,7 @@ public interface SegmentNarrationService {
    * @param segmentContext Complete segment context including all participants and details
    * @return AI-generated segment narration
    */
-  String narrateSegment(SegmentNarrationContext segmentContext);
+  String narrateSegment(@NonNull SegmentNarrationContext segmentContext);
 
   /**
    * Summarizes a segment narration.
@@ -26,7 +27,7 @@ public interface SegmentNarrationService {
    * @param narration The narration to summarize.
    * @return A summary of the narration.
    */
-  String summarizeNarration(String narration);
+  String summarizeNarration(@NonNull String narration);
 
   /**
    * Gets the name/type of this AI service provider.
@@ -48,7 +49,7 @@ public interface SegmentNarrationService {
    * @param prompt The prompt for text generation.
    * @return AI-generated text.
    */
-  String generateText(String prompt);
+  String generateText(@NonNull String prompt);
 
   /** Context object containing all information needed for segment narration. */
   @Setter
@@ -64,7 +65,6 @@ public interface SegmentNarrationService {
     private VenueContext venue;
     private String audience;
     private List<String> recentSegmentNarrations;
-    private List<WrestlerContext> fullRoster; // Add full roster
     private List<TitleContext> titles; // Add titles
     private String instructions; // Add instructions field
   }

@@ -234,23 +234,6 @@ public class NarrationDialog extends Dialog {
     SegmentNarrationService.SegmentNarrationContext context =
         new SegmentNarrationService.SegmentNarrationContext();
 
-    // Populate fullRoster
-    List<SegmentNarrationService.WrestlerContext> fullRosterContexts = new ArrayList<>();
-    wrestlerService
-        .findAllAsDTO()
-        .forEach(
-            wrestlerDTO -> {
-              SegmentNarrationService.WrestlerContext wc =
-                  new SegmentNarrationService.WrestlerContext();
-              wc.setName(wrestlerDTO.getName());
-              wc.setDescription(wrestlerDTO.getDescription());
-              wc.setGender(wrestlerDTO.getGender());
-              wc.setTier(wrestlerDTO.getTier());
-              wc.setMoveSet(wrestlerDTO.getMoveSet());
-              fullRosterContexts.add(wc);
-            });
-    context.setFullRoster(fullRosterContexts);
-
     // Populate titles
     List<SegmentNarrationService.TitleContext> titleContexts = new ArrayList<>();
     titleService

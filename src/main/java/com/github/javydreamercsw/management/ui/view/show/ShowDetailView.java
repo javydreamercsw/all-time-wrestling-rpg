@@ -626,9 +626,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
     new RestTemplate()
         .postForObject(
-            baseUrl + "/api/segments/" + segment.getId() + "/summarize",
-            null,
-            Segment.class);
+            baseUrl + "/api/segments/" + segment.getId() + "/summarize", null, Segment.class);
     Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     loadShow(this.currentShowId);
