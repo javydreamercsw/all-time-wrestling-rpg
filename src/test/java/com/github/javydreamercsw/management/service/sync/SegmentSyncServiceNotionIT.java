@@ -15,19 +15,22 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DisplayName("SegmentSyncService Integration Tests")
 class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
 
-  @Autowired private SegmentSyncService segmentSyncService;
+  @MockitoBean private SegmentSyncService segmentSyncService;
 
   @MockitoBean private NotionSyncService notionSyncService;
+  @MockitoBean private com.github.javydreamercsw.base.ai.notion.NotionHandler notionHandler;
 
   @BeforeEach
   void setUp() {
+    when(notionHandler.getDatabasePageIds(anyString())).thenReturn(List.of("mock-segment-id-1"));
     when(segmentSyncService.getSegmentIds()).thenReturn(List.of("mock-segment-id-1"));
+    when(segmentSyncService.syncSegment(anyString()))
+        .thenReturn(BaseSyncService.SyncResult.success("Segment", 1, 0, 0));
     when(notionSyncService.syncSegment(anyString()))
         .thenReturn(BaseSyncService.SyncResult.success("Segment", 1, 0, 0));
   }

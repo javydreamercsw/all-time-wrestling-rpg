@@ -191,7 +191,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     } catch (Exception ex) {
       Notification.show(
           "Error proposing segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
-      ex.printStackTrace();
     }
   }
 
@@ -211,7 +210,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     } catch (Exception ex) {
       Notification.show(
           "Error approving segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
-      ex.printStackTrace();
     }
   }
 

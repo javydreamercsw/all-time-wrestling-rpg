@@ -66,10 +66,6 @@ public class InjuryService {
         .findById(wrestlerId)
         .map(
             wrestler -> {
-              if (wrestler.getBumps() < 3) {
-                // This check is now redundant as it's done in the controller, but kept for safety.
-                return null;
-              }
               InjurySeverity severity = getRandomInjurySeverityForWrestler(wrestler);
               String injuryName = generateInjuryName(severity);
               String description = generateInjuryDescription(severity);
