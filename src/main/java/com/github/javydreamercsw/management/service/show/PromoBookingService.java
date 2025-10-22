@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -181,6 +182,9 @@ public class PromoBookingService {
       // Apply promo rule
       segmentRuleService.findByName(promoType).ifPresent(promo::addSegmentRule);
 
+      // Set narration for the promo segment
+      promo.setNarration(generatePromoNarration(wrestlers, promoType));
+
       Segment savedPromo = segmentRepository.save(promo);
       return Optional.of(savedPromo);
 
@@ -188,6 +192,13 @@ public class PromoBookingService {
       log.error("Error booking promo segment: {}", e.getMessage(), e);
       return Optional.empty();
     }
+  }
+
+  /** Generates a descriptive narration for a promo segment. */
+  private String generatePromoNarration(@NonNull List<Wrestler> wrestlers, @NonNull String promoType) {
+    String participantNames =
+        wrestlers.stream().map(Wrestler::getName).collect(Collectors.joining(" and "));
+    return String.format("%s cuts a %s promo.", participantNames, promoType.toLowerCase());
   }
 
   /** Get the promo segment type from database. */

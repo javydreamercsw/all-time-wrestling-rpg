@@ -28,8 +28,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
-import com.github.javydreamercsw.management.service.deck.DeckCardService;
-import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -37,9 +35,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
-import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -74,15 +70,11 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   @Autowired protected CardSetService cardSetService;
   @Autowired protected CardService cardService;
   @Autowired protected WrestlerService wrestlerService;
-  @Autowired protected TitleService titleService;
-  @Autowired protected DeckService deckService;
-  @Autowired protected DeckCardService deckCardService;
   @Autowired protected NotionSyncService notionSyncService;
   @Autowired protected FactionRepository factionRepository;
   @Autowired protected TitleReignRepository titleReignRepository;
   @Autowired protected TitleRepository titleRepository;
   @Autowired protected WrestlerRepository wrestlerRepository;
-  @Autowired protected WrestlerSyncService wrestlerSyncService;
   @Autowired protected TeamService teamService;
   @Autowired protected TeamRepository teamRepository;
   @Autowired protected ShowService showService;
@@ -91,7 +83,6 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   @Autowired protected CardSetRepository cardSetRepository;
   @Autowired protected SegmentTypeRepository segmentTypeRepository;
   @Autowired protected DramaEventService dramaEventService;
-  @Autowired protected DataInitializer dataInitializer;
 
   @BeforeEach
   void setUp() {

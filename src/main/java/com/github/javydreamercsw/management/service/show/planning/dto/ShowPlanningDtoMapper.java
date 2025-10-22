@@ -8,6 +8,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningContext;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningPle;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -38,22 +39,23 @@ public class ShowPlanningDtoMapper {
   public ShowPlanningSegmentDTO toDto(@NonNull Segment segment) {
     ShowPlanningSegmentDTO dto = new ShowPlanningSegmentDTO();
     dto.setId(segment.getId());
+      dto.setSegmentDate(segment.getSegmentDate());
+      dto.setShow(toDto(segment.getShow()));
+      dto.setParticipants(
+              segment.getParticipants().stream()
+                      .map(p -> p.getWrestler().getName())
+                      .collect(Collectors.toList()));
     if (segment.getSegmentType() != null && "Promo".equals(segment.getSegmentType().getName())) {
       dto.setName("Promo");
+      dto.setWinners(new ArrayList<>()); // Promos don't have winners
     } else {
       dto.setName(segment.getSegmentRulesAsString());
+      dto.setWinners(
+          segment.getParticipants().stream()
+              .filter(SegmentParticipant::getIsWinner)
+              .map(p -> p.getWrestler().getName())
+              .collect(Collectors.toList()));
     }
-    dto.setSegmentDate(segment.getSegmentDate());
-    dto.setShow(toDto(segment.getShow()));
-    dto.setParticipants(
-        segment.getParticipants().stream()
-            .map(p -> p.getWrestler().getName())
-            .collect(Collectors.toList()));
-    dto.setWinners(
-        segment.getParticipants().stream()
-            .filter(SegmentParticipant::getIsWinner)
-            .map(p -> p.getWrestler().getName())
-            .collect(Collectors.toList()));
     dto.setSummary(segment.getSummary());
     return dto;
   }

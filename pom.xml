@@ -97,8 +97,6 @@
       <version>6.3.1</version>
     </dependency>
 
-
-
     <!-- Persistence -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

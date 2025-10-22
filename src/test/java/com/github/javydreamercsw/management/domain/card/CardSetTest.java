@@ -84,7 +84,12 @@ class CardSetTest {
     CardSet cardSet = new CardSet();
     cardSet.setName("Set");
     cardSet.setSetCode("S123");
-    assertThrows(DataIntegrityViolationException.class, () -> repository.saveAndFlush(cardSet));
+    assertThrows(
+        DataIntegrityViolationException.class,
+        () -> {
+          repository.save(cardSet);
+          entityManager.flush();
+        });
   }
 
   @Test
