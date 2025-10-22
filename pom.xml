@@ -23,13 +23,13 @@
     <jacoco.coverage.minimum>0.90</jacoco.coverage.minimum>
     <jacoco.integration.coverage.minimum>0.80</jacoco.integration.coverage.minimum>
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
-    <jacoco.version>0.8.13</jacoco.version>
+    <jacoco.version>0.8.14</jacoco.version>
     <java.version>17</java.version>
     <jib.image.tags>${project.version}</jib.image.tags>
     <lombok.version>1.18.42</lombok.version>
     <surefireArgLine/>
     <testcontainers.version>1.21.3</testcontainers.version>
-    <vaadin.version>24.9.0</vaadin.version>
+    <vaadin.version>24.9.3</vaadin.version>
   </properties>
 
   <dependencyManagement>
@@ -96,6 +96,8 @@
       <artifactId>fullcalendar2</artifactId>
       <version>6.3.1</version>
     </dependency>
+
+
 
     <!-- Persistence -->
     <dependency>
@@ -178,13 +180,13 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-java</artifactId>
-      <version>4.35.0</version>
+      <version>4.37.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-chrome-driver</artifactId>
-      <version>4.35.0</version>
+      <version>4.37.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -286,7 +288,7 @@
             <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
           </excludes>
           <!-- JVM arguments for better performance and JaCoCo coverage -->
-          <argLine>@{surefireArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test</argLine>
+          <argLine>@{surefireArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
         </configuration>
       </plugin>
       <plugin>
@@ -760,7 +762,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
-              <argLine>@{failsafeArgLine} -Dspring.profiles.active=test</argLine>
+              <argLine>@{failsafeArgLine} -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
               <trimStackTrace>false</trimStackTrace>
               <enableAssertions>true</enableAssertions>
               <!-- Sequential execution for integration tests -->
