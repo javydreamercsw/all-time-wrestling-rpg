@@ -17,8 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * Real integration test for wrestler sync that uses actual Spring services and real Notion API
@@ -33,7 +33,7 @@ class WrestlerSyncIntegrationTest extends ManagementIntegrationTest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerSyncService wrestlerSyncService;
 
-  @MockBean private NotionHandler notionHandler;
+  @MockitoBean private NotionHandler notionHandler;
 
   @BeforeEach
   void setUp() {
