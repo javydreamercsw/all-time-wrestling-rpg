@@ -4,11 +4,12 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningContext;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningPle;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -39,15 +40,30 @@ public class ShowPlanningDtoMapper {
   public ShowPlanningSegmentDTO toDto(@NonNull Segment segment) {
     ShowPlanningSegmentDTO dto = new ShowPlanningSegmentDTO();
     dto.setId(segment.getId());
-      dto.setSegmentDate(segment.getSegmentDate());
-      dto.setShow(toDto(segment.getShow()));
-      dto.setParticipants(
-              segment.getParticipants().stream()
-                      .map(p -> p.getWrestler().getName())
-                      .collect(Collectors.toList()));
+    dto.setSegmentDate(segment.getSegmentDate());
+    dto.setShow(toDto(segment.getShow()));
+    dto.setParticipants(
+        segment.getParticipants().stream()
+            .map(p -> p.getWrestler().getName())
+            .collect(Collectors.toList()));
     if (segment.getSegmentType() != null && "Promo".equals(segment.getSegmentType().getName())) {
-      dto.setName("Promo");
-      dto.setWinners(new ArrayList<>()); // Promos don't have winners
+      // Find the first segment rule that matches a PromoType and use its display name
+      segment.getSegmentRules().stream()
+          .map(SegmentRule::getName)
+          .filter(
+              name ->
+                  Arrays.stream(PromoType.values())
+                      .anyMatch(pt -> pt.getDisplayName().equals(name)))
+          .findFirst()
+          .ifPresentOrElse(
+              dto::setName,
+              () -> dto.setName("Promo") // Fallback if no specific promo rule name is found
+              );
+      dto.setWinners(
+          segment.getParticipants().stream()
+              .filter(SegmentParticipant::getIsWinner)
+              .map(p -> p.getWrestler().getName())
+              .collect(Collectors.toList()));
     } else {
       dto.setName(segment.getSegmentRulesAsString());
       dto.setWinners(

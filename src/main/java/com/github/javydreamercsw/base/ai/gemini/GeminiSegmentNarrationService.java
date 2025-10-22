@@ -73,7 +73,10 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
       Map<String, Object> requestBody =
           Map.of(
               "contents",
-              List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
+              List.of(
+                  Map.of(
+                      "parts",
+                      List.of(Map.of("text", getSystemMessage(prompt) + "\n\n" + prompt)))),
               "generationConfig",
               Map.of(
                   "temperature",

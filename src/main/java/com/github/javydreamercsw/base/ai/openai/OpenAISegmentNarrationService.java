@@ -93,15 +93,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
               model,
               "messages",
               List.of(
-                  Map.of(
-                      "role",
-                      "system",
-                      "content",
-                      "You are a professional wrestling play-by-play commentator and creative"
-                          + " writer. You have deep knowledge of wrestling history, storytelling"
-                          + " techniques, and segment psychology. Create vivid, engaging segment"
-                          + " narrations that capture the drama and excitement of professional"
-                          + " wrestling."),
+                  Map.of("role", "system", "content", getSystemMessage(prompt)),
                   Map.of("role", "user", "content", prompt)),
               "max_tokens",
               openAIConfigProperties.getMaxTokens(), // Use configured max tokens

@@ -4,10 +4,10 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import java.time.Clock;
@@ -35,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PromoBookingService {
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private RivalryService rivalryService;
   @Autowired private SegmentRuleService segmentRuleService;
   @Autowired private Clock clock;
@@ -90,7 +89,7 @@ public class PromoBookingService {
 
       // Check if both wrestlers are available
       if (availableWrestlers.contains(wrestler1) && availableWrestlers.contains(wrestler2)) {
-        String promoType = selectRivalryPromoType(rivalry.getHeat());
+        PromoType promoType = selectRivalryPromoType(rivalry.getHeat());
         Optional<Segment> promo = bookPromoSegment(show, List.of(wrestler1, wrestler2), promoType);
 
         if (promo.isPresent()) {
@@ -103,7 +102,7 @@ public class PromoBookingService {
               "Booked rivalry promo: {} vs {} ({}, Heat: {})",
               wrestler1.getName(),
               wrestler2.getName(),
-              promoType,
+              promoType.getDisplayName(),
               rivalry.getHeat());
         }
       }
@@ -124,12 +123,12 @@ public class PromoBookingService {
       if (soloPromo || availableWrestlers.size() == 1) {
         // Book solo promo
         Wrestler wrestler = availableWrestlers.remove(0);
-        String promoType = selectSoloPromoType();
+        PromoType promoType = selectSoloPromoType();
         Optional<Segment> promo = bookPromoSegment(show, List.of(wrestler), promoType);
 
         if (promo.isPresent()) {
           promos.add(promo.get());
-          log.info("Booked solo promo: {} ({})", wrestler.getName(), promoType);
+          log.info("Booked solo promo: {} ({})", wrestler.getName(), promoType.getDisplayName());
         }
       } else {
         // Book group promo (2-3 wrestlers)
@@ -142,7 +141,7 @@ public class PromoBookingService {
           groupWrestlers.add(availableWrestlers.remove(0));
         }
 
-        String promoType = selectGroupPromoType();
+        PromoType promoType = selectGroupPromoType();
         Optional<Segment> promo = bookPromoSegment(show, groupWrestlers, promoType);
 
         if (promo.isPresent()) {
@@ -152,7 +151,7 @@ public class PromoBookingService {
                   .map(Wrestler::getName)
                   .reduce((a, b) -> a + ", " + b)
                   .orElse("Unknown");
-          log.info("Booked group promo: {} ({})", wrestlerNames, promoType);
+          log.info("Booked group promo: {} ({})", wrestlerNames, promoType.getDisplayName());
         }
       }
     }
@@ -162,7 +161,7 @@ public class PromoBookingService {
 
   /** Book a promo segment as a segment with promo rules. */
   private Optional<Segment> bookPromoSegment(
-      @NonNull Show show, @NonNull List<Wrestler> wrestlers, @NonNull String promoType) {
+      @NonNull Show show, @NonNull List<Wrestler> wrestlers, @NonNull PromoType promoType) {
     try {
       // Get promo segment type (create if doesn't exist)
       SegmentType promoSegmentType = getOrCreatePromoSegmentType();
@@ -180,7 +179,7 @@ public class PromoBookingService {
       }
 
       // Apply promo rule
-      segmentRuleService.findByName(promoType).ifPresent(promo::addSegmentRule);
+      segmentRuleService.findByName(promoType.getDisplayName()).ifPresent(promo::addSegmentRule);
 
       // Set narration for the promo segment
       promo.setNarration(generatePromoNarration(wrestlers, promoType));
@@ -195,10 +194,62 @@ public class PromoBookingService {
   }
 
   /** Generates a descriptive narration for a promo segment. */
-  private String generatePromoNarration(@NonNull List<Wrestler> wrestlers, @NonNull String promoType) {
+  private String generatePromoNarration(
+      @NonNull List<Wrestler> wrestlers, @NonNull PromoType promoType) {
     String participantNames =
         wrestlers.stream().map(Wrestler::getName).collect(Collectors.joining(" and "));
-    return String.format("%s cuts a %s promo.", participantNames, promoType.toLowerCase());
+    return switch (promoType) {
+      case CONFRONTATION_PROMO ->
+          String.format(
+              "%s and %s engage in a heated confrontation promo, exchanging insults and threats.",
+              wrestlers.get(0).getName(), wrestlers.get(1).getName());
+      case CONTRACT_SIGNING ->
+          String.format(
+              "%s and %s are in the ring for a contract signing, but tensions quickly escalate.",
+              participantNames, promoType.getDisplayName().toLowerCase());
+      case CHALLENGE_ISSUED ->
+          String.format(
+              "%s steps out to issue a challenge, calling out %s for a future match.",
+              wrestlers.get(0).getName(),
+              wrestlers.size() > 1 ? wrestlers.get(1).getName() : "anyone in the back");
+      case INTERVIEW_SEGMENT ->
+          String.format(
+              "%s gives a passionate interview backstage, discussing their career and future"
+                  + " aspirations.",
+              participantNames);
+      case BACKSTAGE_SEGMENT ->
+          String.format(
+              "A chaotic backstage segment unfolds with %s, leading to unexpected developments.",
+              participantNames);
+      case SOLO_PROMO ->
+          String.format(
+              "%s delivers a powerful solo promo in the center of the ring, addressing the fans and"
+                  + " their rivals.",
+              participantNames);
+      case GROUP_PROMO ->
+          String.format(
+              "The group %s cuts a promo, asserting their dominance and laying down a challenge to"
+                  + " the locker room.",
+              participantNames);
+      case CHAMPIONSHIP_PRESENTATION ->
+          String.format(
+              "A prestigious championship presentation is held for %s, celebrating their recent"
+                  + " victory.",
+              participantNames);
+      case RETIREMENT_SPEECH ->
+          String.format(
+              "%s delivers an emotional retirement speech, thanking the fans for their support.",
+              participantNames);
+      case ALLIANCE_ANNOUNCEMENT ->
+          String.format(
+              "%s make a shocking alliance announcement, promising to dominate the competition"
+                  + " together.",
+              participantNames);
+      default ->
+          String.format(
+              "%s cuts a %s promo, stirring up excitement among the fans.",
+              participantNames, promoType.getDisplayName().toLowerCase());
+    };
   }
 
   /** Get the promo segment type from database. */
@@ -218,76 +269,87 @@ public class PromoBookingService {
   }
 
   /** Select appropriate promo type based on rivalry heat using database-driven selection. */
-  private String selectRivalryPromoType(int heat) {
-    List<String> availablePromos = new ArrayList<>();
+  private PromoType selectRivalryPromoType(int heat) {
+    List<PromoType> availablePromos = new ArrayList<>();
 
     if (heat >= 25) {
       // High heat - intense confrontations
       availablePromos.addAll(
           getPromoTypesByNames(
-              List.of("Confrontation Promo", "Contract Signing", "Challenge Issued")));
+              List.of(
+                  PromoType.CONFRONTATION_PROMO,
+                  PromoType.CONTRACT_SIGNING,
+                  PromoType.CHALLENGE_ISSUED)));
     } else if (heat >= 15) {
       // Medium heat - building tension
       availablePromos.addAll(
           getPromoTypesByNames(
-              List.of("Confrontation Promo", "Interview Segment", "Challenge Issued")));
+              List.of(
+                  PromoType.CONFRONTATION_PROMO,
+                  PromoType.INTERVIEW_SEGMENT,
+                  PromoType.CHALLENGE_ISSUED)));
     } else {
       // Low heat - establishing rivalry
       availablePromos.addAll(
           getPromoTypesByNames(
-              List.of("Interview Segment", "Backstage Segment", "Challenge Issued")));
+              List.of(
+                  PromoType.INTERVIEW_SEGMENT,
+                  PromoType.BACKSTAGE_SEGMENT,
+                  PromoType.CHALLENGE_ISSUED)));
     }
 
     // Fallback to any available promo rule if none found
     if (availablePromos.isEmpty()) {
-      availablePromos.add("Interview Segment"); // Safe fallback
+      availablePromos.add(PromoType.INTERVIEW_SEGMENT); // Safe fallback
     }
 
     return availablePromos.get(random.nextInt(availablePromos.size()));
   }
 
   /** Select solo promo type using database-driven selection. */
-  private String selectSoloPromoType() {
-    List<String> availablePromos =
+  private PromoType selectSoloPromoType() {
+    List<PromoType> availablePromos =
         new ArrayList<>(
             getPromoTypesByNames(
                 List.of(
-                    "Solo Promo",
-                    "Interview Segment",
-                    "Championship Presentation",
-                    "Retirement Speech",
-                    "Challenge Issued")));
+                    PromoType.SOLO_PROMO,
+                    PromoType.INTERVIEW_SEGMENT,
+                    PromoType.CHAMPIONSHIP_PRESENTATION,
+                    PromoType.RETIREMENT_SPEECH,
+                    PromoType.CHALLENGE_ISSUED)));
 
     // Fallback if none found
     if (availablePromos.isEmpty()) {
-      availablePromos.add("Solo Promo"); // Safe fallback
+      availablePromos.add(PromoType.SOLO_PROMO); // Safe fallback
     }
 
     return availablePromos.get(random.nextInt(availablePromos.size()));
   }
 
   /** Select group promo type using database-driven selection. */
-  private String selectGroupPromoType() {
-    List<String> availablePromos =
+  private PromoType selectGroupPromoType() {
+    List<PromoType> availablePromos =
         new ArrayList<>(
             getPromoTypesByNames(
                 List.of(
-                    "Group Promo",
-                    "Alliance Announcement",
-                    "Backstage Segment",
-                    "Contract Signing")));
+                    PromoType.GROUP_PROMO,
+                    PromoType.ALLIANCE_ANNOUNCEMENT,
+                    PromoType.BACKSTAGE_SEGMENT,
+                    PromoType.CONTRACT_SIGNING)));
 
     // Fallback if none found
     if (availablePromos.isEmpty()) {
-      availablePromos.add("Group Promo"); // Safe fallback
+      availablePromos.add(PromoType.GROUP_PROMO); // Safe fallback
     }
 
     return availablePromos.get(random.nextInt(availablePromos.size()));
   }
 
   /** Get promo type names from database, filtering out non-existent ones. */
-  private List<String> getPromoTypesByNames(List<String> requestedNames) {
-    return requestedNames.stream().filter(segmentRuleService::existsByName).toList();
+  private List<PromoType> getPromoTypesByNames(List<PromoType> requestedNames) {
+    return requestedNames.stream()
+        .filter(promoType -> segmentRuleService.existsByName(promoType.getDisplayName()))
+        .toList();
   }
 
   /** Check if a segment is a promo segment. */
