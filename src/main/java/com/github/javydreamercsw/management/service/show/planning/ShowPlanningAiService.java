@@ -105,10 +105,10 @@ public class ShowPlanningAiService {
           .append("\n");
     }
 
-    if (context.getLastMonthSegments() != null && !context.getLastMonthSegments().isEmpty()) {
-      prompt.append("Last Month's Segments:\n");
+    if (context.getRecentSegments() != null && !context.getRecentSegments().isEmpty()) {
+      prompt.append("Recent Segments:\n");
       context
-          .getLastMonthSegments()
+          .getRecentSegments()
           .forEach(
               segment ->
                   prompt
@@ -118,13 +118,17 @@ public class ShowPlanningAiService {
                       .append(segment.getSummary())
                       .append(", Participants: ")
                       .append(String.join(", ", segment.getParticipants()))
+                      .append(", Show: ")
+                      .append(segment.getShowName())
+                      .append(", Date: ")
+                      .append(segment.getShowDate())
                       .append("\n"));
     }
 
-    if (context.getLastMonthPromos() != null && !context.getLastMonthPromos().isEmpty()) {
-      prompt.append("Last Month's Promos:\n");
+    if (context.getRecentPromos() != null && !context.getRecentPromos().isEmpty()) {
+      prompt.append("Recent Promos:\n");
       context
-          .getLastMonthPromos()
+          .getRecentPromos()
           .forEach(
               promo ->
                   prompt
@@ -134,6 +138,10 @@ public class ShowPlanningAiService {
                       .append(promo.getSummary())
                       .append(", Participants: ")
                       .append(String.join(", ", promo.getParticipants()))
+                      .append(", Show: ")
+                      .append(promo.getShowName())
+                      .append(", Date: ")
+                      .append(promo.getShowDate())
                       .append("\n"));
     }
 

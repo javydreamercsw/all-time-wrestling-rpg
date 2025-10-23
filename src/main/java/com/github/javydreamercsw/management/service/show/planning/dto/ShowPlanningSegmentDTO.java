@@ -8,7 +8,8 @@ import lombok.Data;
 public class ShowPlanningSegmentDTO {
   private Long id;
   private String name;
-  private ShowPlanningShowDTO show;
+  private String showName;
+  private Instant showDate;
   private Instant segmentDate;
   private List<String> participants;
   private List<String> winners;

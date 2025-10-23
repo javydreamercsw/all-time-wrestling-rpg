@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.deck;
 
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 
@@ -29,5 +30,9 @@ public class DeckCardService {
   public Iterable<DeckCard> findAll() {
 
     return deckCardRepository.findAll();
+  }
+
+  public List<DeckCard> findByDeck(com.github.javydreamercsw.management.domain.deck.Deck deck) {
+    return deckCardRepository.findByDeck(deck);
   }
 }

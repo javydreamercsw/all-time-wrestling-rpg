@@ -63,8 +63,8 @@ class ShowPlanningViewTest {
     // Create a mock ShowPlanningContext
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
     context.setCurrentRivalries(new ArrayList<>());
-    context.setLastMonthPromos(new ArrayList<>());
-    context.setLastMonthSegments(new ArrayList<>());
+    context.setRecentPromos(new ArrayList<>());
+    context.setRecentSegments(new ArrayList<>());
 
     // Create a mock ProposedShow
     ProposedShow proposedShow = new ProposedShow();
@@ -122,8 +122,8 @@ class ShowPlanningViewTest {
     // Create a mock ShowPlanningContext
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
     context.setCurrentRivalries(new ArrayList<>());
-    context.setLastMonthPromos(new ArrayList<>());
-    context.setLastMonthSegments(new ArrayList<>());
+    context.setRecentPromos(new ArrayList<>());
+    context.setRecentSegments(new ArrayList<>());
 
     // Create a mock ProposedShow
     ProposedShow proposedShow = new ProposedShow();

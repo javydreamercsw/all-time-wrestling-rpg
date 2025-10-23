@@ -48,7 +48,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.SneakyThrows;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -302,16 +301,7 @@ class DataInitializerTest {
     // For each deck, ensure no duplicate DeckCard entries for the same (deck, card, set)
     List<Deck> decks = deckService.findAll();
     for (Deck deck : decks) {
-      List<DeckCard> deckCards = new java.util.ArrayList<>();
-      deckCardService.findAll().forEach(deckCards::add);
-      List<DeckCard> filteredDeckCards =
-          deckCards.stream()
-              .filter(
-                  dc -> {
-                    Assertions.assertNotNull(dc.getDeck().getId());
-                    return dc.getDeck().getId().equals(deck.getId());
-                  })
-              .toList();
+      List<DeckCard> deckCards = deckCardService.findByDeck(deck);
       // Check for duplicates by (cardId, setId)
       java.util.Set<String> uniqueKeys = new java.util.HashSet<>();
       for (DeckCard dc : deckCards) {
@@ -320,7 +310,7 @@ class DataInitializerTest {
         assertThat(added)
             .withFailMessage(
                 "Duplicate DeckCard for deck %s, card %s, set %s",
-                deck.getId(), dc.getCard().getId(), dc.getSet().getId())
+                deck.getWrestler().getName(), dc.getCard().getNumber(), dc.getSet().getName())
             .isTrue();
       }
     }

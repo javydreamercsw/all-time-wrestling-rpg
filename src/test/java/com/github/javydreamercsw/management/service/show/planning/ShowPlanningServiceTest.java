@@ -262,6 +262,7 @@ class ShowPlanningServiceTest {
     Show segmentShow = new Show();
     segmentShow.setId(3L);
     segmentShow.setName("Segment Show");
+    segmentShow.setShowDate(futureShowDate.minusDays(10));
     segment1.setShow(segmentShow);
     segment2.setShow(segmentShow);
 
@@ -291,10 +292,10 @@ class ShowPlanningServiceTest {
         context.getNextPle().getPleDate());
 
     // Verify last month segments
-    assertNotNull(context.getLastMonthSegments());
-    assertEquals(2, context.getLastMonthSegments().size());
-    assertTrue(context.getLastMonthSegments().stream().anyMatch(s -> s.getId().equals(1L)));
-    assertTrue(context.getLastMonthSegments().stream().anyMatch(s -> s.getId().equals(2L)));
+    assertNotNull(context.getRecentSegments());
+    assertEquals(2, context.getRecentSegments().size());
+    assertTrue(context.getRecentSegments().stream().anyMatch(s -> s.getId().equals(1L)));
+    assertTrue(context.getRecentSegments().stream().anyMatch(s -> s.getId().equals(2L)));
 
     // Verify that getUpcomingShows was called with the correct reference date
     verify(showService, times(1)).getUpcomingShows(eq(futureShowDate), anyInt());

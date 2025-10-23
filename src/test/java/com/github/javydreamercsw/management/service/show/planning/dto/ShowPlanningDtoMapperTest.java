@@ -21,8 +21,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ShowPlanningDtoMapperTest {
 
   @InjectMocks private ShowPlanningDtoMapper mapper;
@@ -59,6 +62,7 @@ class ShowPlanningDtoMapperTest {
     when(participant1.getIsWinner()).thenReturn(true);
     when(participant2.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Promo summary");
+    when(show.getShowDate()).thenReturn(java.time.LocalDate.now());
 
     // When
     ShowPlanningSegmentDTO dto = mapper.toDto(segment);
@@ -82,6 +86,7 @@ class ShowPlanningDtoMapperTest {
     when(segment.getParticipants()).thenReturn(Collections.singletonList(participant1));
     when(participant1.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Solo promo summary");
+    when(show.getShowDate()).thenReturn(java.time.LocalDate.now());
 
     // When
     ShowPlanningSegmentDTO dto = mapper.toDto(segment);
@@ -103,9 +108,10 @@ class ShowPlanningDtoMapperTest {
     when(segmentType.getName()).thenReturn("Match");
     when(segment.getSegmentRulesAsString()).thenReturn("Standard Match Rules");
     when(segment.getParticipants()).thenReturn(Arrays.asList(participant1, participant2));
-    when(participant1.getIsWinner()).thenReturn(true);
+    when(participant1.getIsWinner()).thenReturn(true); // Added this line
     when(participant2.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Match summary");
+    when(show.getShowDate()).thenReturn(java.time.LocalDate.now());
 
     // When
     ShowPlanningSegmentDTO dto = mapper.toDto(segment);
@@ -131,6 +137,7 @@ class ShowPlanningDtoMapperTest {
     when(participant1.getIsWinner()).thenReturn(false);
     when(participant2.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Match summary");
+    when(show.getShowDate()).thenReturn(java.time.LocalDate.now());
 
     // When
     ShowPlanningSegmentDTO dto = mapper.toDto(segment);

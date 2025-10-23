@@ -7,9 +7,9 @@ import lombok.Data;
 
 @Data
 public class ShowPlanningContext {
-  private List<Segment> lastMonthSegments;
+  private List<Segment> recentSegments;
   private List<Rivalry> currentRivalries;
-  private List<Segment> lastMonthPromos;
+  private List<Segment> recentPromos;
   private ShowTemplate showTemplate;
   private List<ShowPlanningChampionship> championships;
   private ShowPlanningPle nextPle;

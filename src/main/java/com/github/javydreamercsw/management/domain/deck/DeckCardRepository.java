@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.domain.deck;
 
 import com.github.javydreamercsw.management.domain.card.Card;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -16,4 +17,6 @@ public interface DeckCardRepository extends JpaRepository<DeckCard, Long> {
   @Transactional
   @Query("DELETE FROM DeckCard dc WHERE dc.deck = :deck")
   void deleteAllByDeck(Deck deck);
+
+  List<DeckCard> findByDeck(Deck deck);
 }

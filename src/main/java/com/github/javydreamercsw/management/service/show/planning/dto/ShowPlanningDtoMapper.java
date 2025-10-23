@@ -22,12 +22,12 @@ public class ShowPlanningDtoMapper {
 
   public ShowPlanningContextDTO toDto(@NonNull ShowPlanningContext context) {
     ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
-    dto.setLastMonthSegments(
-        context.getLastMonthSegments().stream().map(this::toDto).collect(Collectors.toList()));
+    dto.setRecentSegments(
+        context.getRecentSegments().stream().map(this::toDto).collect(Collectors.toList()));
     dto.setCurrentRivalries(
         context.getCurrentRivalries().stream().map(this::toDto).collect(Collectors.toList()));
-    dto.setLastMonthPromos(
-        context.getLastMonthPromos().stream().map(this::toDto).collect(Collectors.toList()));
+    dto.setRecentPromos(
+        context.getRecentPromos().stream().map(this::toDto).collect(Collectors.toList()));
     dto.setShowTemplate(context.getShowTemplate());
     if (context.getChampionships() != null) {
       dto.setChampionships(
@@ -52,7 +52,9 @@ public class ShowPlanningDtoMapper {
     ShowPlanningSegmentDTO dto = new ShowPlanningSegmentDTO();
     dto.setId(segment.getId());
     dto.setSegmentDate(segment.getSegmentDate());
-    dto.setShow(toDto(segment.getShow()));
+    dto.setShowName(segment.getShow().getName());
+    dto.setShowDate(
+        segment.getShow().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
     dto.setParticipants(
         segment.getParticipants().stream()
             .map(p -> p.getWrestler().getName())

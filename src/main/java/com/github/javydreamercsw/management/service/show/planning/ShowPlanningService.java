@@ -52,7 +52,7 @@ public class ShowPlanningService {
 
     // Get segments from the last 30 days
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
-    Instant lastMonth = showDate.minus(30, ChronoUnit.DAYS);
+    Instant lastMonth = showDate.minus(7, ChronoUnit.DAYS);
     log.debug("Getting segments between {} and {}", lastMonth, showDate);
     List<Segment> lastMonthSegments =
         segmentRepository.findBySegmentDateBetween(lastMonth, showDate);
@@ -78,7 +78,7 @@ public class ShowPlanningService {
           }
         });
 
-    context.setLastMonthSegments(lastMonthSegments);
+    context.setRecentSegments(lastMonthSegments);
 
     // Get current rivalries
     List<Rivalry> currentRivalries = rivalryService.getActiveRivalriesBetween(lastMonth, showDate);
@@ -91,7 +91,7 @@ public class ShowPlanningService {
             .filter(promoBookingService::isPromoSegment)
             .collect(Collectors.toList());
     log.debug("Found {} promos in the last month", lastMonthPromos.size());
-    context.setLastMonthPromos(lastMonthPromos);
+    context.setRecentPromos(lastMonthPromos);
 
     // Get show template (hardcoded for now)
     ShowTemplate template = new ShowTemplate();
