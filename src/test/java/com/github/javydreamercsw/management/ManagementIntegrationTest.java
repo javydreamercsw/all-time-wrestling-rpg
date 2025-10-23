@@ -39,7 +39,6 @@ import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -83,11 +82,6 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   @Autowired protected CardSetRepository cardSetRepository;
   @Autowired protected SegmentTypeRepository segmentTypeRepository;
   @Autowired protected DramaEventService dramaEventService;
-
-  @BeforeEach
-  void setUp() {
-    clearAllRepositories();
-  }
 
   protected void clearAllRepositories() {
     log.info("Clearing DeckCard repository");

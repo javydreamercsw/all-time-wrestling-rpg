@@ -45,7 +45,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
     try {
       SyncResult result = performShowTemplatesSync(operationId, startTime);
       if (result.isSuccess()) {
-        markAsSyncedInSession("templates");
+        markAsSyncedInSession("Show Templates");
       }
       return result;
     } catch (Exception e) {
@@ -74,7 +74,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
       if (!isNotionHandlerAvailable()) {
         log.warn("NotionHandler not available. Cannot sync show templates from Notion.");
         return SyncResult.failure(
-            "ShowTemplates", "NotionHandler is not available for sync operations");
+            "Show Templates", "NotionHandler is not available for sync operations");
       }
 
       rateLimitService.acquirePermit();

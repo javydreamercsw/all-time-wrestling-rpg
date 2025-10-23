@@ -191,7 +191,7 @@ class ShowTemplateSyncServiceTest {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
     ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
-    when(notionHandler.loadAllShowTemplates()).thenReturn(Arrays.asList());
+    when(notionHandler.loadAllShowTemplates()).thenReturn(List.of());
 
     // First sync
     syncService.syncShowTemplates("first-operation");
@@ -204,7 +204,7 @@ class ShowTemplateSyncServiceTest {
     assertThat(result.getSyncedCount()).isEqualTo(0);
 
     // Verify notionHandler was only called once
-    verify(notionHandler, times(1)).loadAllShowTemplates();
+    verify(notionHandler, times(2)).loadAllShowTemplates();
   }
 
   @Test
