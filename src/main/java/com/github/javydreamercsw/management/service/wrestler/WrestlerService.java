@@ -9,6 +9,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.event.FanAwardedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Clock;
 import java.util.List;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ public class WrestlerService {
   @Autowired private DramaEventRepository dramaEventRepository;
   @Autowired private Clock clock;
   @Autowired private InjuryService injuryService;
+  @Autowired private ApplicationEventPublisher eventPublisher;
 
   public void createWrestler(@NonNull String name) {
     createWrestler(name, false, "");
@@ -104,7 +107,9 @@ public class WrestlerService {
         .map(
             wrestler -> {
               wrestler.addFans(fanGain);
-              return wrestlerRepository.saveAndFlush(wrestler);
+              Wrestler savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
+              eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, fanGain));
+              return savedWrestler;
             });
   }
 
@@ -192,7 +197,8 @@ public class WrestlerService {
         .map(
             wrestler -> {
               if (wrestler.spendFans(cost)) {
-                wrestlerRepository.saveAndFlush(wrestler);
+                Wrestler savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
+                eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, -cost));
                 return true;
               }
               return false;
