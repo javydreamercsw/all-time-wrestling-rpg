@@ -337,4 +337,75 @@
     "set" : "RS",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "The British Bulldog",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 16,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 17,
+    "set" : "BB",
+    "amount" : 1
+  } ]
 } ]
