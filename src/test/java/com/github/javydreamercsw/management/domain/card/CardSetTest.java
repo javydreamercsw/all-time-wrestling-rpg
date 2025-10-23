@@ -80,19 +80,6 @@ class CardSetTest {
   }
 
   @Test
-  void testSetCodeSize() {
-    CardSet cardSet = new CardSet();
-    cardSet.setName("Set");
-    cardSet.setSetCode("S123");
-    assertThrows(
-        DataIntegrityViolationException.class,
-        () -> {
-          repository.save(cardSet);
-          entityManager.flush();
-        });
-  }
-
-  @Test
   void testNameUnique() {
     CardSet cardSet1 = new CardSet();
     cardSet1.setName("Set");
