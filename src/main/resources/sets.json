@@ -13,4 +13,7 @@
 }, {
   "name" : "Eddie Guerrero",
   "set_code" : "EDDIE"
+}, {
+  "name" : "Randy Savage",
+  "set_code" : "RS"
 } ]

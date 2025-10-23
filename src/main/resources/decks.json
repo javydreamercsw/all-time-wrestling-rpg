@@ -266,4 +266,75 @@
     "set" : "ATW",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Randy Savage",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 16,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 17,
+    "set" : "RS",
+    "amount" : 1
+  } ]
 } ]
