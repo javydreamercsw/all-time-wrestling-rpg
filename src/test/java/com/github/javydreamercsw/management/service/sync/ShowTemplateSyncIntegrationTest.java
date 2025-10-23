@@ -11,10 +11,9 @@ import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTemplateSyncService;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -23,10 +22,9 @@ import org.springframework.beans.factory.annotation.Autowired;
  *
  * <p>NO MOCKING - These tests use real services and real database operations.
  */
+@Slf4j
 @DisplayName("Show Template Sync Integration Tests")
 class ShowTemplateSyncIntegrationTest extends ManagementIntegrationTest {
-
-  private static final Logger log = LoggerFactory.getLogger(ShowTemplateSyncIntegrationTest.class);
 
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private ShowTemplateService showTemplateService;

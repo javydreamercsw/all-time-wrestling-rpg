@@ -6,14 +6,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
-import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,29 +37,6 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   @Autowired private ShowTypeRepository showTypeRepository;
 
   private static final String TEST_OPERATION_ID = "integration-test-show-templates";
-
-  @BeforeEach
-  @Transactional
-  void setupTestData() {
-    log.debug("🧹 Setting up test data before test execution");
-
-    // Clean up existing data
-    showTemplateRepository.deleteAll();
-    showTypeRepository.deleteAll();
-
-    // Create required show types
-    ShowType weeklyType = new ShowType();
-    weeklyType.setName("Weekly");
-    weeklyType.setDescription("Weekly Event");
-    showTypeRepository.save(weeklyType);
-
-    ShowType pleType = new ShowType();
-    pleType.setName("Premium Live Event (PLE)");
-    pleType.setDescription("Premium Live Event");
-    showTypeRepository.save(pleType);
-
-    log.debug("✅ Test data setup completed");
-  }
 
   @Test
   @Transactional
@@ -230,7 +205,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
     log.info("📋 Found {} total templates in database", allTemplates.size());
 
     // Then - Verify mixed show types exist in database
-    assertThat(allTemplates).hasSize(4);
+    assertThat(allTemplates).hasSize(5);
 
     // Extract and verify show types from database entities
     List<ShowTemplate> weeklyTemplates =
@@ -244,7 +219,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
             .toList();
 
     // Verify correct distribution
-    assertThat(weeklyTemplates).hasSize(2);
+    assertThat(weeklyTemplates).hasSize(3);
     assertThat(pleTemplates).hasSize(2);
 
     // Verify specific templates and their show types
@@ -291,7 +266,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
             .filter(t -> "Premium Live Event (PLE)".equals(t.getShowType().getName()))
             .count();
 
-    assertThat(weeklyCount).isEqualTo(2);
+    assertThat(weeklyCount).isEqualTo(3);
     assertThat(pleCount).isEqualTo(2);
 
     log.info("📊 Database verification results:");
