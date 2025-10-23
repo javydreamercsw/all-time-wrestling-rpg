@@ -41,7 +41,6 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-
       <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
@@ -506,7 +505,7 @@
           <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>2.2.224</version>
+            <version>2.4.240</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -759,6 +758,7 @@
                 <configuration>
                   <wait>30000</wait>
                   <maxAttempts>60</maxAttempts>
+                  <jvmArguments>-Dspring.profiles.active=test -Dserver.port=9090</jvmArguments>
                 </configuration>
               </execution>
             </executions>
@@ -783,6 +783,7 @@
               </excludes>
               <systemPropertyVariables>
                 <spring.profiles.active>test</spring.profiles.active>
+                <server.port>9090</server.port>
               </systemPropertyVariables>
             </configuration>
             <executions>
@@ -844,7 +845,7 @@
                 <configuration>
                   <wait>30000</wait>
                   <maxAttempts>60</maxAttempts>
-                  <jvmArguments>-Dserver.port=8081</jvmArguments>
+                  <jvmArguments>-Dserver.port=9090</jvmArguments>
                 </configuration>
               </execution>
             </executions>

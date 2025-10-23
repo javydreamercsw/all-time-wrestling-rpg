@@ -500,6 +500,11 @@ public class DataInitializer {
               Map<String, Integer> cardKeyToAmount = new java.util.HashMap<>();
               Map<String, Card> cardKeyToCard = new java.util.HashMap<>();
               for (DeckCardDTO cardDTO : deckDTO.getCards()) {
+                log.info(
+                    "Looking for: {} in set {} from deck {}",
+                    cardDTO.getNumber(),
+                    cardDTO.getSet(),
+                    wrestler.getName());
                 Card card =
                     cardService
                         .findByNumberAndSet(cardDTO.getNumber(), cardDTO.getSet())

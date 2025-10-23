@@ -305,7 +305,7 @@ class DataInitializerTest {
     for (Deck deck : decks) {
       List<DeckCard> deckCards = deckCardService.findByDeck(deck);
       // Check for duplicates by (cardId, setId)
-      java.util.Set<String> uniqueKeys = new java.util.HashSet<>();
+      Set<String> uniqueKeys = new HashSet<>();
       for (DeckCard dc : deckCards) {
         String key = dc.getCard().getId() + "-" + dc.getSet().getId();
         boolean added = uniqueKeys.add(key);
