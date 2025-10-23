@@ -64,6 +64,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should handle sync when no Notion data is available")
   void shouldHandleSyncWhenNoNotionDataAvailable() {
     log.info("🎭 Testing show template sync with no Notion data");
@@ -95,6 +96,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should not duplicate show templates on subsequent syncs")
   void shouldNotDuplicateShowTemplatesOnSubsequentSyncs() {
     log.info("🔄 Testing show template deduplication");
@@ -141,6 +143,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should handle sync when show templates already exist")
   void shouldHandleSyncWhenShowTemplatesAlreadyExist() {
     log.info("🎯 Testing sync with pre-existing show templates");
@@ -188,6 +191,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should verify mixed Weekly and PLE show types in database after sync")
   void shouldVerifyMixedWeeklyAndPLEShowTypesInDatabaseAfterSync() {
     log.info("🎯 Testing database verification of mixed show types after sync");
@@ -299,6 +303,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should handle sync failures gracefully")
   void shouldHandleSyncFailuresGracefully() {
     log.info("🚨 Testing sync failure handling");
@@ -330,6 +335,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should track sync progress correctly")
   void shouldTrackSyncProgressCorrectly() {
     log.info("📈 Testing sync progress tracking");
@@ -354,6 +360,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should validate show type associations correctly")
   void shouldValidateShowTypeAssociationsCorrectly() {
     log.info("🔗 Testing show type associations");
@@ -397,6 +404,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should handle external ID updates correctly")
   void shouldHandleExternalIdUpdatesCorrectly() {
     log.info("🆔 Testing external ID handling");
@@ -425,6 +433,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should maintain data integrity during concurrent operations")
   void shouldMaintainDataIntegrityDuringConcurrentOperations() {
     log.info("⚡ Testing concurrent operation data integrity");
