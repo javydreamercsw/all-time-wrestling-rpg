@@ -6,7 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.test.BaseControllerTest;
+import com.github.javydreamercsw.base.config.TestSecurityConfiguration;
+import com.github.javydreamercsw.base.config.WithMockUser;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -15,13 +16,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -31,9 +30,10 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(
     controllers = ShowTemplateController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
-@DisplayName("ShowTemplate Controller Tests")
-class ShowTemplateControllerTest extends BaseControllerTest {
+    properties = {"spring.main.allow-bean-definition-overriding=true"})
+@Import(TestSecurityConfiguration.class)
+@WithMockUser
+class ShowTemplateControllerTest {
 
   @MockitoBean private CommandLineRunner commandLineRunner;
 
