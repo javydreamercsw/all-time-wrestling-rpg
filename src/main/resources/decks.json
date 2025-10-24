@@ -900,4 +900,51 @@
     "set" : "ATW",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "OMZ",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "OMZ",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "OMZ",
+    "amount" : 2
+  }, {
+    "number" : 3,
+    "set" : "OMZ",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "OMZ",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "OMZ",
+    "amount" : 1
+  }, {
+    "number" : 31,
+    "set" : "ATW",
+    "amount" : 2
+  }, {
+    "number" : 50,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 43,
+    "set" : "ATW",
+    "amount" : 2
+  }, {
+    "number" : 20,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 36,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
 } ]
