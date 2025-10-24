@@ -837,4 +837,67 @@
     "set" : "ATW",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Nick Aldis",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "NAD",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "NAD",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "NAD",
+    "amount" : 1
+  }, {
+    "number" : 27,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 42,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 40,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 38,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 39,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 37,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 1,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
 } ]
