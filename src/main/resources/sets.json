@@ -22,4 +22,7 @@
 }, {
   "name" : "Daemon",
   "set_code" : "DMN"
+}, {
+  "name" : "Rey Jaguar",
+  "set_code" : "RJ"
 } ]

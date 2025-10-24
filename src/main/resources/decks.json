@@ -471,4 +471,67 @@
     "set" : "ATW",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Rey Jaguar",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "RJ",
+    "amount" : 1
+  } ]
 } ]
