@@ -16,7 +16,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -54,7 +53,6 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     if (t.isEmpty()) {
       ShowTemplate template = new ShowTemplate();
       template.setName(TEMPLATE_NAME);
-      template.setShowType(showTypeRepository.findByName(SHOW_TYPE_NAME).get());
       showTemplateRepository.save(template);
     }
 
@@ -68,10 +66,9 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @SneakyThrows
   public void testFullShowLifecycle() {
     // Navigate to the Show List view
-    driver.get(getURL("/show-list").toString());
+    driver.get("http://localhost:8080/show-list");
 
     final String showName = "My E2E Show";
 

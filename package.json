@@ -27,7 +27,6 @@
     "lit": "3.3.1",
     "moment": "2.29.4",
     "moment-timezone": "0.5.40",
-    "multiselect-combo-box": "2.4.2",
     "proj4": "2.15.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -80,7 +79,6 @@
       "lit": "3.3.1",
       "moment": "2.29.4",
       "moment-timezone": "0.5.40",
-      "multiselect-combo-box": "2.4.2",
       "proj4": "2.15.0",
       "react": "18.3.1",
       "react-dom": "18.3.1",
@@ -107,7 +105,7 @@
       "workbox-core": "7.3.0",
       "workbox-precaching": "7.3.0"
     },
-    "hash": "bd821655c9c481a84b778db804c9b3bebce6c8495a9ebedb82e5399407bb1f50"
+    "hash": "d930c555ba2c5aaf2150e0cc0b0b9a5eba36cdbc408ab8600ae865b5c9ef99f1"
   },
   "overrides": {
     "@vaadin/bundles": "$@vaadin/bundles",
@@ -204,7 +202,6 @@
     "@vaadin/dashboard": "24.9.2",
     "@vaadin/grid-pro": "24.9.2",
     "@vaadin/map": "24.9.2",
-    "@vaadin/rich-text-editor": "24.9.2",
-    "multiselect-combo-box": "$multiselect-combo-box"
+    "@vaadin/rich-text-editor": "24.9.2"
   }
 }

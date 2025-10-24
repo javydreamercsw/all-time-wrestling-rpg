@@ -8,7 +8,6 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 import java.time.Duration;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -19,9 +18,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 public class CardListViewE2ETest extends AbstractE2ETest {
 
   @Test
-  @SneakyThrows
   public void testCreateCard() {
-    driver.get(getURL("/card-list").toString());
+    driver.get("http://localhost:8080/card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Wait for the grid to be present and populated
@@ -56,10 +54,9 @@ public class CardListViewE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @SneakyThrows
   public void testUpdateCard() {
     String cardName = "Card to Update";
-    driver.get(getURL("/card-list").toString());
+    driver.get("http://localhost:8080/card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Find the grid and wait for it to be populated
@@ -123,11 +120,10 @@ public class CardListViewE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  @SneakyThrows
   public void testDeleteCard() {
     String cardName = "Card to Delete";
 
-    driver.get(getURL("/card-list").toString());
+    driver.get("http://localhost:8080/card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Find the grid and wait for it to be populated

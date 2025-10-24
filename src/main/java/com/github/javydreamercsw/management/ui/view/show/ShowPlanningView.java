@@ -6,16 +6,18 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Menu;
@@ -33,7 +35,6 @@ import org.springframework.web.client.RestTemplate;
 public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private final ShowService showService;
-  private final WrestlerService wrestlerService;
   private final RestTemplate restTemplate = new RestTemplate();
   private final ObjectMapper objectMapper;
 
@@ -43,12 +44,11 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private Grid<ProposedSegment> proposedSegmentsGrid;
   private Button approveButton;
   private Button proposeSegmentsButton;
+  private Editor<ProposedSegment> editor;
   private List<ProposedSegment> segments = new ArrayList<>();
 
-  public ShowPlanningView(
-      ShowService showService, WrestlerService wrestlerService, ObjectMapper objectMapper) {
+  public ShowPlanningView(ShowService showService, ObjectMapper objectMapper) {
     this.showService = showService;
-    this.wrestlerService = wrestlerService;
     this.objectMapper = objectMapper;
 
     showComboBox = new ComboBox<>("Select Show");
@@ -72,36 +72,54 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     proposedSegmentsGrid = new Grid<>(ProposedSegment.class, false);
     proposedSegmentsGrid.addColumn(ProposedSegment::getType).setHeader("Type");
-    proposedSegmentsGrid.addColumn(ProposedSegment::getDescription).setHeader("Description");
+    Grid.Column<ProposedSegment> descriptionColumn =
+        proposedSegmentsGrid.addColumn(ProposedSegment::getDescription).setHeader("Description");
     proposedSegmentsGrid
         .addColumn(segment -> String.join(", ", segment.getParticipants()))
         .setHeader("Participants");
 
-    proposedSegmentsGrid.addComponentColumn(
-        segment -> {
-          Button editButton = new Button("Edit");
-          editButton.addClickListener(
-              e -> {
-                EditSegmentDialog dialog =
-                    new EditSegmentDialog(
-                        segment,
-                        wrestlerService,
-                        () -> proposedSegmentsGrid.getDataProvider().refreshAll());
-                dialog.open();
-              });
-          return editButton;
+    editor = proposedSegmentsGrid.getEditor();
+    Binder<ProposedSegment> binder = new Binder<>(ProposedSegment.class);
+    editor.setBinder(binder);
+
+    TextField descriptionField = new TextField();
+    binder.bind(descriptionField, "description");
+    descriptionColumn.setEditorComponent(descriptionField);
+
+    proposedSegmentsGrid.addItemDoubleClickListener(
+        e -> {
+          editor.editItem(e.getItem());
+          descriptionField.focus();
         });
 
-    proposedSegmentsGrid.addComponentColumn(
-        segment -> {
-          Button removeButton = new Button(VaadinIcon.TRASH.create());
-          removeButton.addClickListener(
-              e -> {
-                segments.remove(segment);
-                proposedSegmentsGrid.setItems(segments);
-              });
-          return removeButton;
+    editor.addSaveListener(
+        e -> {
+          // Save logic will go here
         });
+
+    Grid.Column<ProposedSegment> editorColumn =
+        proposedSegmentsGrid.addComponentColumn(
+            segment -> {
+              Button editButton = new Button("Edit");
+              editButton.addClickListener(
+                  e -> {
+                    if (editor.isOpen()) editor.cancel();
+                    proposedSegmentsGrid.getEditor().editItem(segment);
+                  });
+              return editButton;
+            });
+
+    Grid.Column<ProposedSegment> removeColumn =
+        proposedSegmentsGrid.addComponentColumn(
+            segment -> {
+              Button removeButton = new Button(VaadinIcon.TRASH.create());
+              removeButton.addClickListener(
+                  e -> {
+                    segments.remove(segment);
+                    proposedSegmentsGrid.setItems(segments);
+                  });
+              return removeButton;
+            });
     approveButton = new Button("Approve Segments");
     approveButton.addClickListener(e -> approveSegments());
 
