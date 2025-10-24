@@ -14,11 +14,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CircuitBreakerServiceTest {
 
   private CircuitBreakerService circuitBreakerService;
-  private RetryConfig retryConfig;
 
-  @BeforeEach
+    @BeforeEach
   void setUp() {
-    retryConfig = new RetryConfig();
+        RetryConfig retryConfig = new RetryConfig();
     retryConfig.getCircuitBreaker().setFailureThreshold(3);
     retryConfig.getCircuitBreaker().setRecoveryTimeoutMs(1000);
     retryConfig.getCircuitBreaker().setSuccessThreshold(0.5);
