@@ -402,6 +402,9 @@
               <!-- You have to set the target manually -->
               <include>**/*.md</include>
             </includes>
+            <excludes>
+              <exclude>node_modules/**</exclude>
+            </excludes>
           </markdown>
           <json>
             <includes>
