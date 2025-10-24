@@ -664,4 +664,71 @@
     "set" : "ATW",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Jax Felix",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 16,
+    "set" : "JF",
+    "amount" : 1
+  } ]
 } ]
