@@ -597,4 +597,71 @@
     "set" : "ATW",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Dynamite Kid",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "DYN",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "DYN",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "DYN",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "DYN",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "DYN",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 31,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 32,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 36,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 30,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 33,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 34,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 35,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
 } ]
