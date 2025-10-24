@@ -731,4 +731,67 @@
     "set" : "JF",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Sabu",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 18,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 16,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 1,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
 } ]
