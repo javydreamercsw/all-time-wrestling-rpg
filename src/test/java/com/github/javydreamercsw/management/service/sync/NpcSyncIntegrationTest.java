@@ -4,18 +4,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author Javier Ortiz Bultron @date Oct 10, 2023
  */
+@Slf4j
 class NpcSyncIntegrationTest extends ManagementIntegrationTest {
-
-  private static final Logger log = LoggerFactory.getLogger(NpcSyncIntegrationTest.class);
 
   @Autowired private NotionSyncService notionSyncService;
 

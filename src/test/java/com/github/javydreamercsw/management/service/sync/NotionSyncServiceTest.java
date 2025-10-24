@@ -22,20 +22,18 @@ import com.github.javydreamercsw.management.service.sync.entity.TeamSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.TitleReignSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.TitleSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * @author Javier Ortiz Bultron @date Oct 10, 2023
  */
+@Slf4j
 class NotionSyncServiceTest extends ManagementIntegrationTest {
-
-  private static final Logger log = LoggerFactory.getLogger(NotionSyncServiceTest.class);
 
   @Mock private ShowTypeSyncService showTypeSyncService;
   @Mock private SeasonSyncService seasonSyncService;

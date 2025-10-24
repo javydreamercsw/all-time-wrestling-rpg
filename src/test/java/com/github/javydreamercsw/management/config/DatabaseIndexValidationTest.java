@@ -14,10 +14,9 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
@@ -29,9 +28,8 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * <p>This test prevents runtime errors caused by index scripts referencing non-existent tables or
  * columns, which would otherwise only be discovered during application startup.
  */
+@Slf4j
 class DatabaseIndexValidationTest extends ManagementIntegrationTest {
-
-  private static final Logger log = LoggerFactory.getLogger(DatabaseIndexValidationTest.class);
 
   @Autowired private DataSource dataSource;
 

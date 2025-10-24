@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -33,7 +32,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private ShowTemplateService showTemplateService;
-  @Autowired private ShowTemplateRepository showTemplateRepository;
+
   @Autowired private ShowTypeRepository showTypeRepository;
 
   private static final String TEST_OPERATION_ID = "integration-test-show-templates";
@@ -176,27 +175,27 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
     weeklyTemplate1.setName("Monday Night RAW");
     weeklyTemplate1.setDescription("Weekly wrestling show");
     weeklyTemplate1.setShowType(showTypeRepository.findByName("Weekly").orElseThrow());
-    ShowTemplate savedWeekly1 = showTemplateService.save(weeklyTemplate1);
+    showTemplateService.save(weeklyTemplate1);
 
     ShowTemplate weeklyTemplate2 = new ShowTemplate();
     weeklyTemplate2.setName("Friday Night SmackDown");
     weeklyTemplate2.setDescription("Weekly wrestling show");
     weeklyTemplate2.setShowType(showTypeRepository.findByName("Weekly").orElseThrow());
-    ShowTemplate savedWeekly2 = showTemplateService.save(weeklyTemplate2);
+    showTemplateService.save(weeklyTemplate2);
 
     ShowTemplate pleTemplate1 = new ShowTemplate();
     pleTemplate1.setName("WrestleMania");
     pleTemplate1.setDescription("Premium Live Event");
     pleTemplate1.setShowType(
         showTypeRepository.findByName("Premium Live Event (PLE)").orElseThrow());
-    ShowTemplate savedPLE1 = showTemplateService.save(pleTemplate1);
+    showTemplateService.save(pleTemplate1);
 
     ShowTemplate pleTemplate2 = new ShowTemplate();
     pleTemplate2.setName("SummerSlam");
     pleTemplate2.setDescription("Premium Live Event");
     pleTemplate2.setShowType(
         showTypeRepository.findByName("Premium Live Event (PLE)").orElseThrow());
-    ShowTemplate savedPLE2 = showTemplateService.save(pleTemplate2);
+    showTemplateService.save(pleTemplate2);
 
     log.info("📝 Created test templates: {} Weekly, {} PLE", 2, 2);
 

@@ -9,23 +9,20 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Test class specifically for testing wrestler database persistence logic. This test verifies that
  * wrestlers are properly saved to the database with correct data using the right save methods.
  */
 @ExtendWith(MockitoExtension.class)
+@Slf4j
 class WrestlerSyncDatabaseTest extends BaseTest {
-
-  private static final Logger log = LoggerFactory.getLogger(WrestlerSyncDatabaseTest.class);
-
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerRepository wrestlerRepository;
 

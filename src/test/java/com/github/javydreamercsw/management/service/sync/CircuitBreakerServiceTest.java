@@ -15,9 +15,9 @@ class CircuitBreakerServiceTest {
 
   private CircuitBreakerService circuitBreakerService;
 
-    @BeforeEach
+  @BeforeEach
   void setUp() {
-        RetryConfig retryConfig = new RetryConfig();
+    RetryConfig retryConfig = new RetryConfig();
     retryConfig.getCircuitBreaker().setFailureThreshold(3);
     retryConfig.getCircuitBreaker().setRecoveryTimeoutMs(1000);
     retryConfig.getCircuitBreaker().setSuccessThreshold(0.5);
