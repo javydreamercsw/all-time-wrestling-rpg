@@ -95,6 +95,11 @@
       <artifactId>fullcalendar2</artifactId>
       <version>6.3.1</version>
     </dependency>
+    <dependency>
+      <groupId>org.vaadin.gatanaso</groupId>
+      <artifactId>multiselect-combo-box-flow</artifactId>
+      <version>3.0.2</version>
+    </dependency>
 
     <!-- Persistence -->
     <dependency>
@@ -200,6 +205,10 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-cache</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
@@ -845,7 +854,7 @@
                 <configuration>
                   <wait>30000</wait>
                   <maxAttempts>60</maxAttempts>
-                  <jvmArguments>-Dserver.port=9090</jvmArguments>
+                  <jvmArguments>-Dspring.profiles.active=test -Dserver.port=9090</jvmArguments>
                 </configuration>
               </execution>
             </executions>
@@ -863,7 +872,8 @@
             <configuration>
               <systemPropertyVariables>
                 <spring.profiles.active>test</spring.profiles.active>
-                <server.port>8081</server.port>
+                <server.port>9090</server.port>
+                <vaadin.url>http://localhost:9090</vaadin.url>
               </systemPropertyVariables>
               <argLine>@{failsafeArgLine}</argLine>
               <!-- Sequential execution for e2e tests -->

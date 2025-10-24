@@ -3,6 +3,7 @@ package com.github.javydreamercsw;
 import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import lombok.NonNull;
 import org.junit.jupiter.api.AfterEach;
@@ -13,9 +14,17 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.springframework.beans.factory.annotation.Value;
 
 @ExtendWith(UITestWatcher.class)
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
+
+  @Value("${server.port}")
+  private int port;
+
+  protected URL getURL(@NonNull String path) throws MalformedURLException {
+    return new URL("http", "localhost", port, path);
+  }
 
   protected WebDriver driver;
 
@@ -53,7 +62,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     int attempt = 0;
     while (attempt < maxAttempts) {
       try {
-        URL url = new URL("http://localhost:8080");
+        URL url = new URL("http://localhost:" + port + "/actuator/health");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(1000);

@@ -5,7 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.test.BaseControllerTest;
+import com.github.javydreamercsw.base.config.TestSecurityConfiguration;
+import com.github.javydreamercsw.base.config.WithMockUser;
 import com.github.javydreamercsw.management.controller.title.TitleController.CreateTitleRequest;
 import com.github.javydreamercsw.management.controller.title.TitleController.UpdateTitleRequest;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -20,9 +21,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -37,9 +37,10 @@ import org.springframework.web.context.WebApplicationContext;
  */
 @WebMvcTest(
     controllers = TitleController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
-@DisplayName("TitleController Integration Tests")
-class TitleControllerIntegrationTest extends BaseControllerTest {
+    properties = {"spring.main.allow-bean-definition-overriding=true"})
+@Import(TestSecurityConfiguration.class)
+@WithMockUser
+class TitleControllerIntegrationTest {
 
   @Autowired private WebApplicationContext webApplicationContext;
   private MockMvc mockMvc;

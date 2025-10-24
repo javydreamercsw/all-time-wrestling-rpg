@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.config.TestSecurityConfiguration;
+import com.github.javydreamercsw.base.config.WithMockUser;
 import com.github.javydreamercsw.base.test.BaseControllerTest;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncHealthSummary;
@@ -18,6 +20,7 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,6 +29,8 @@ import org.springframework.test.web.servlet.MockMvc;
     controllers = SyncHealthController.class,
     excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 @TestPropertySource(properties = "notion.sync.enabled=true")
+@Import(TestSecurityConfiguration.class)
+@WithMockUser
 class SyncHealthControllerTest extends BaseControllerTest {
 
   @MockitoBean private CommandLineRunner commandLineRunner;

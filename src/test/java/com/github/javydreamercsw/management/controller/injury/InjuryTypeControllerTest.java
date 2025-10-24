@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.config.TestSecurityConfiguration;
+import com.github.javydreamercsw.base.config.WithMockUser;
 import com.github.javydreamercsw.base.test.BaseControllerTest;
 import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.CreateInjuryTypeRequest;
 import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.UpdateInjuryTypeRequest;
@@ -20,6 +22,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +35,8 @@ import org.springframework.test.web.servlet.MockMvc;
     controllers = InjuryTypeController.class,
     excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 @DisplayName("InjuryType Controller Tests")
+@Import(TestSecurityConfiguration.class)
+@WithMockUser
 class InjuryTypeControllerTest extends BaseControllerTest {
 
   @MockitoBean private CommandLineRunner commandLineRunner;
