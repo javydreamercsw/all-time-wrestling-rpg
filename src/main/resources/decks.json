@@ -809,13 +809,13 @@
     "set" : "JYD",
     "amount" : 2
   }, {
-    "number" : 1,
+    "number" : 4,
     "set" : "JYD",
-    "amount" : 4
+    "amount" : 1
   }, {
-    "number" : 1,
+    "number" : 5,
     "set" : "JYD",
-    "amount" : 5
+    "amount" : 1
   }, {
     "number" : 49,
     "set" : "ATW",
