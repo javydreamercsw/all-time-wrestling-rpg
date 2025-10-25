@@ -3,21 +3,21 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 @Slf4j
 @DisplayName("Injury Sync Integration Tests")
-@EnabledIf("isNotionTokenAvailable")
-class InjurySyncIntegrationTest extends AbstractIntegrationTest {
+@TestPropertySource(properties = "notion.sync.enabled=true")
+class InjurySyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private NotionSyncService notionSyncService;
 

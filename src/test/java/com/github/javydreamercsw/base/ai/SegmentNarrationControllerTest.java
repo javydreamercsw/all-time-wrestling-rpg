@@ -12,9 +12,9 @@ import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.base.test.BaseControllerTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -23,21 +23,17 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(
     controllers = SegmentNarrationController.class,
     excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
+@EnableConfigurationProperties(SegmentNarrationConfig.class)
 class SegmentNarrationControllerTest extends BaseControllerTest {
-
-  @MockitoBean private CommandLineRunner commandLineRunner;
-
   @Autowired private MockMvc mockMvc;
-
   @MockitoBean private SegmentNarrationServiceFactory serviceFactory;
-  @MockitoBean private SegmentNarrationConfig config;
   @MockitoBean private SegmentOutcomeProvider matchOutcomeService;
 
   @Test
   void testNarrateMatch() throws Exception {
     // Given
     SegmentNarrationService service = mock(SegmentNarrationService.class);
-    when(serviceFactory.getBestAvailableService()).thenReturn(service);
+    when(serviceFactory.getServiceByProvider("Mock AI")).thenReturn(service);
     when(service.narrateSegment(any(SegmentNarrationContext.class))).thenReturn("Test narration");
     when(matchOutcomeService.determineOutcomeIfNeeded(any(SegmentNarrationContext.class)))
         .thenAnswer(i -> i.getArguments()[0]);
@@ -48,7 +44,7 @@ class SegmentNarrationControllerTest extends BaseControllerTest {
     // When & Then
     mockMvc
         .perform(
-            post("/api/segment-narration/narrate")
+            post("/api/segment-narration/narrate/Mock AI")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(context)))
         .andExpect(status().isOk());

@@ -2,29 +2,20 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * Real integration test for show sync that uses actual Spring services and real Notion API calls.
- * This test requires the NOTION_TOKEN environment variable to be set.
- *
- * <p>Run with: mvn test -Dtest=ShowSyncRealIntegrationTest -DNOTION_TOKEN=your_token
+ * @author Javier Ortiz Bultron @date Oct 10, 2023
  */
 @Slf4j
-@DisplayName("Show Sync Integration Tests")
-@EnabledIf("isNotionTokenAvailable")
-class ShowSyncIntegrationTest extends AbstractIntegrationTest {
-
-  @Autowired
-  private NotionSyncService notionSyncService; // When - Perform real sync with real services
-
+class ShowSyncIntegrationTest extends ManagementIntegrationTest {
   @Autowired private ShowRepository showRepository;
 
   @Test
@@ -67,13 +58,8 @@ class ShowSyncIntegrationTest extends AbstractIntegrationTest {
 
     // When - Sync a random show from real Notion database
     List<String> showIds = notionSyncService.getAllShowIds();
-    NotionSyncService.SyncResult result;
-    if (showIds.isEmpty()) {
-      result = notionSyncService.syncShows("test-operation-123");
-    } else {
-      String randomId = showIds.get(new java.util.Random().nextInt(showIds.size()));
-      result = notionSyncService.syncShow(randomId);
-    }
+    String randomId = showIds.get(new java.util.Random().nextInt(showIds.size()));
+    NotionSyncService.SyncResult result = notionSyncService.syncShow(randomId);
 
     // Then - Verify sync completed successfully (regardless of show count)
     assertNotNull(result);
@@ -86,21 +72,19 @@ class ShowSyncIntegrationTest extends AbstractIntegrationTest {
     assertTrue(syncSuccessful);
 
     // Verify database state is consistent
-    List<com.github.javydreamercsw.management.domain.show.Show> finalShows =
-        showRepository.findAll();
-    if (!showIds.isEmpty()) {
-      assertTrue(finalShows.size() > initialShowCount);
-    } else {
-      assertEquals(initialShowCount, finalShows.size());
-    }
-
-    System.out.println(
+    List<Show> finalShows = showRepository.findAll();
+    final String message =
         "Integration test completed: "
             + (result.isSuccess() ? "SUCCESS" : "INFO")
             + " - Synced: "
             + result.getSyncedCount()
             + " shows, Final DB count: "
-            + finalShows.size());
+            + finalShows.size();
+    if (!showIds.isEmpty()) {
+      assertTrue(finalShows.size() > initialShowCount, message);
+    } else {
+      assertEquals(initialShowCount, finalShows.size(), message);
+    }
   }
 
   @Test
@@ -130,9 +114,8 @@ class ShowSyncIntegrationTest extends AbstractIntegrationTest {
         (firstResult.isSuccess() && secondResult.isSuccess())
             || (afterSecondSync == afterFirstSync); // No new shows added on second sync
 
-    assertTrue(duplicateHandlingWorks);
-
-    System.out.println(
+    assertTrue(
+        duplicateHandlingWorks,
         "Duplicate handling test: Initial="
             + initialShowCount
             + ", After 1st="
@@ -170,9 +153,8 @@ class ShowSyncIntegrationTest extends AbstractIntegrationTest {
     // Verify database remains consistent
     List<com.github.javydreamercsw.management.domain.show.Show> finalShows =
         showRepository.findAll();
-    assertTrue(finalShows.size() >= initialShowCount);
-
-    System.out.println(
+    assertTrue(
+        finalShows.size() >= initialShowCount,
         "Missing dependencies test: "
             + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
             + " - "
@@ -205,9 +187,9 @@ class ShowSyncIntegrationTest extends AbstractIntegrationTest {
     // Verify database remains consistent
     List<com.github.javydreamercsw.management.domain.show.Show> finalShows =
         showRepository.findAll();
-    assertEquals(initialShowCount, finalShows.size());
-
-    System.out.println(
+    assertEquals(
+        initialShowCount,
+        finalShows.size(),
         "Empty show list test: "
             + (result.isSuccess() ? "SUCCESS" : "HANDLED_GRACEFULLY")
             + " - Synced: "

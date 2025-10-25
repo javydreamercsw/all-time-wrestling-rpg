@@ -336,7 +336,7 @@ class RivalryServiceTest {
   }
 
   private Wrestler createWrestler(@NonNull String name, @NonNull Long id) {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(id);
     wrestler.setName(name);
     wrestler.setFans(50000L);

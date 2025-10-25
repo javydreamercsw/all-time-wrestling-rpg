@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,8 +27,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class FactionSyncService extends BaseSyncService {
 
-  @Autowired private FactionRepository factionRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired @Setter private FactionRepository factionRepository;
+  @Autowired @Setter private WrestlerRepository wrestlerRepository;
 
   public FactionSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -48,7 +49,7 @@ public class FactionSyncService extends BaseSyncService {
       // Check if entity is enabled
       if (!syncProperties.isEntityEnabled("factions")) {
         log.info("Factions sync is disabled in configuration");
-        return SyncResult.success("Factions", 0, 0);
+        return SyncResult.success("Factions", 0, 0, 0);
       }
 
       // Check if NOTION_TOKEN is available before starting sync
@@ -141,7 +142,7 @@ public class FactionSyncService extends BaseSyncService {
       if (savedCount < factionDTOs.size()) {
         return SyncResult.failure("Factions", "Some factions failed to sync");
       }
-      return SyncResult.success("Factions", savedCount, 0);
+      return SyncResult.success("Factions", savedCount, 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;

@@ -9,6 +9,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.event.FanAwardedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Clock;
 import java.util.List;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -32,21 +34,10 @@ public class WrestlerService {
   @Autowired private DramaEventRepository dramaEventRepository;
   @Autowired private Clock clock;
   @Autowired private InjuryService injuryService;
+  @Autowired private ApplicationEventPublisher eventPublisher;
 
-  public void createCard(@NonNull String name) {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName(name);
-    // Set default card game values
-    wrestler.setDeckSize(15);
-    wrestler.setStartingHealth(15);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingStamina(0);
-    wrestler.setLowStamina(0);
-    // Set default ATW RPG values
-    wrestler.setFans(0L);
-    wrestler.setIsPlayer(false);
-    wrestler.setBumps(0);
-    save(wrestler);
+  public void createWrestler(@NonNull String name) {
+    createWrestler(name, false, "");
   }
 
   public List<Wrestler> list(@NonNull Pageable pageable) {
@@ -116,7 +107,9 @@ public class WrestlerService {
         .map(
             wrestler -> {
               wrestler.addFans(fanGain);
-              return wrestlerRepository.saveAndFlush(wrestler);
+              Wrestler savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
+              eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, fanGain));
+              return savedWrestler;
             });
   }
 
@@ -134,17 +127,14 @@ public class WrestlerService {
               boolean injuryOccurred = wrestler.addBump();
               if (injuryOccurred) {
                 // Create injury using the injury service
-                Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestler.getId());
+                Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestlerId);
                 injury.ifPresent(
                     value ->
-                        System.out.println(
-                            "Wrestler "
-                                + wrestler.getName()
-                                + " suffered an injury: "
-                                + value.getName()
-                                + " ("
-                                + value.getSeverity().getDisplayName()
-                                + ")"));
+                        log.error(
+                            "Wrestler {} suffered an injury: {} ({})",
+                            wrestler.getName(),
+                            value.getName(),
+                            value.getSeverity().getDisplayName()));
               }
               return wrestlerRepository.saveAndFlush(wrestler);
             });
@@ -207,7 +197,8 @@ public class WrestlerService {
         .map(
             wrestler -> {
               if (wrestler.spendFans(cost)) {
-                wrestlerRepository.saveAndFlush(wrestler);
+                Wrestler savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
+                eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, -cost));
                 return true;
               }
               return false;
@@ -224,21 +215,19 @@ public class WrestlerService {
    * @return The created wrestler
    */
   public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName(name);
-
-    // Card game defaults
-    wrestler.setDeckSize(15);
-    wrestler.setStartingHealth(15);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingStamina(0);
-    wrestler.setLowStamina(0);
-
-    // ATW RPG defaults
-    wrestler.setFans(0L);
-    wrestler.setIsPlayer(isPlayer);
-    wrestler.setBumps(0);
-    wrestler.setDescription(description);
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name(name)
+            .description(description)
+            .deckSize(15)
+            .startingHealth(15)
+            .lowHealth(0)
+            .startingStamina(0)
+            .lowStamina(0)
+            .fans(0L)
+            .isPlayer(isPlayer)
+            .bumps(0)
+            .build();
 
     return save(wrestler);
   }

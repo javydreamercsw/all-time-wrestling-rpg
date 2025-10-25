@@ -2,33 +2,43 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.team.TeamService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Integration tests for Teams Sync functionality. These tests require NOTION_TOKEN to be available
  * and use the real database.
  */
-@EnabledIf("isNotionTokenAvailable")
-class NotionSyncServiceTeamsIntegrationTest extends AbstractIntegrationTest {
+@TestPropertySource(properties = "notion.sync.enabled=true")
+class NotionSyncServiceTeamsIntegrationTest extends ManagementIntegrationTest {
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private TeamRepository teamRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private TeamService teamService;
   private Wrestler wrestler1;
   private Wrestler wrestler2;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUp() {
+    clearAllRepositories();
+    wrestler1 = createTestWrestler("Wrestler 1");
+    wrestlerRepository.save(wrestler1);
+
+    wrestler2 = createTestWrestler("Wrestler 2");
+    wrestlerRepository.save(wrestler2);
+  }
 
   @Test
   void shouldSyncTeamsFromNotionSuccessfully() {

@@ -84,13 +84,12 @@ class ParallelSyncOrchestratorTest {
     lenient().when(entityConfig.isEntityEnabled(anyString())).thenReturn(false);
     lenient().when(entityConfig.isEntityEnabled("shows")).thenReturn(true);
     lenient().when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
-    lenient().when(entityConfig.isEntityEnabled("injuries")).thenReturn(true);
-
-    when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0));
+    lenient().when(entityConfig.isEntityEnabled("showtypes")).thenReturn(true);
+    when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0, 0));
     when(wrestlerSyncService.syncWrestlers(anyString()))
-        .thenReturn(SyncResult.success("Wrestlers", 10, 0));
-    when(injurySyncService.syncInjuryTypes(anyString()))
-        .thenReturn(SyncResult.success("Injuries", 3, 0));
+        .thenReturn(SyncResult.success("Wrestlers", 10, 0, 0));
+    when(showTypeSyncService.syncShowTypes(anyString()))
+        .thenReturn(SyncResult.success("ShowTypes", 4, 0, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
@@ -103,7 +102,7 @@ class ParallelSyncOrchestratorTest {
     // Verify only enabled services were called
     verify(showSyncService).syncShows(anyString());
     verify(wrestlerSyncService).syncWrestlers(anyString());
-    verify(injurySyncService).syncInjuryTypes(anyString());
+    verify(showTypeSyncService).syncShowTypes(anyString());
 
     // Verify disabled services were not called
     verify(factionSyncService, never()).syncFactions(anyString());
@@ -117,34 +116,34 @@ class ParallelSyncOrchestratorTest {
     // Given
     setupAllEntitiesEnabled();
 
-    // Setup mixed results - some success, some failure
-    when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0));
+    when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0, 0));
     when(wrestlerSyncService.syncWrestlers(anyString()))
         .thenReturn(SyncResult.failure("Wrestlers", "Database error"));
     when(factionSyncService.syncFactions(anyString()))
-        .thenReturn(SyncResult.success("Factions", 3, 0));
+        .thenReturn(SyncResult.success("Factions", 3, 0, 0));
     when(teamSyncService.syncTeams(anyString()))
         .thenReturn(SyncResult.failure("Teams", "Notion API error"));
     when(segmentSyncService.syncSegments(anyString()))
-        .thenReturn(SyncResult.success("Matches", 8, 0));
+        .thenReturn(SyncResult.success("Matches", 8, 0, 0));
     when(seasonSyncService.syncSeasons(anyString()))
-        .thenReturn(SyncResult.success("Seasons", 2, 0));
+        .thenReturn(SyncResult.success("Seasons", 2, 0, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
-        .thenReturn(SyncResult.success("ShowTypes", 4, 0));
+        .thenReturn(SyncResult.success("ShowTypes", 4, 0, 0));
     when(showTemplateSyncService.syncShowTemplates(anyString()))
-        .thenReturn(SyncResult.success("ShowTemplates", 6, 0));
+        .thenReturn(SyncResult.success("ShowTemplates", 6, 0, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
-        .thenReturn(SyncResult.success("Injuries", 1, 0));
-    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0));
-    when(titleSyncService.syncTitles(anyString())).thenReturn(SyncResult.success("Titles", 5, 0));
+        .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
+    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0, 0));
+    when(titleSyncService.syncTitles(anyString()))
+        .thenReturn(SyncResult.success("Titles", 5, 0, 0));
     when(titleReignSyncService.syncTitleReigns(anyString()))
-        .thenReturn(SyncResult.success("TitleReigns", 5, 0));
+        .thenReturn(SyncResult.success("TitleReigns", 5, 0, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
 
     // Then
-    assertTrue(result.isSuccess()); // Overall success despite some failures
+    assertFalse(result.isSuccess());
     assertEquals(12, result.getEntityResults().size());
     assertEquals(10, result.getSuccessfulSyncs());
     assertEquals(2, result.getFailedSyncs());
@@ -172,31 +171,32 @@ class ParallelSyncOrchestratorTest {
     when(showSyncService.syncShows(anyString())).thenThrow(new RuntimeException("Critical error"));
     // Stub other services to return success
     when(wrestlerSyncService.syncWrestlers(anyString()))
-        .thenReturn(SyncResult.success("Wrestlers", 1, 0));
+        .thenReturn(SyncResult.success("Wrestlers", 1, 0, 0));
     when(factionSyncService.syncFactions(anyString()))
-        .thenReturn(SyncResult.success("Factions", 1, 0));
-    when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 1, 0));
+        .thenReturn(SyncResult.success("Factions", 1, 0, 0));
+    when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 1, 0, 0));
     when(segmentSyncService.syncSegments(anyString()))
-        .thenReturn(SyncResult.success("Segments", 1, 0));
+        .thenReturn(SyncResult.success("Segments", 1, 0, 0));
     when(seasonSyncService.syncSeasons(anyString()))
-        .thenReturn(SyncResult.success("Seasons", 1, 0));
+        .thenReturn(SyncResult.success("Seasons", 1, 0, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
-        .thenReturn(SyncResult.success("ShowTypes", 1, 0));
+        .thenReturn(SyncResult.success("ShowTypes", 1, 0, 0));
     when(showTemplateSyncService.syncShowTemplates(anyString()))
-        .thenReturn(SyncResult.success("ShowTemplates", 1, 0));
+        .thenReturn(SyncResult.success("ShowTemplates", 1, 0, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
-        .thenReturn(SyncResult.success("Injuries", 1, 0));
-    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 1, 0));
-    when(titleSyncService.syncTitles(anyString())).thenReturn(SyncResult.success("Titles", 1, 0));
+        .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
+    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 1, 0, 0));
+    when(titleSyncService.syncTitles(anyString()))
+        .thenReturn(SyncResult.success("Titles", 1, 0, 0));
     when(titleReignSyncService.syncTitleReigns(anyString()))
-        .thenReturn(SyncResult.success("TitleReigns", 1, 0));
+        .thenReturn(SyncResult.success("TitleReigns", 1, 0, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
 
     // Then
     // The orchestrator should handle exceptions gracefully and continue with other entities
-    assertTrue(result.isSuccess()); // Overall operation fails
+    assertFalse(result.isSuccess());
     assertEquals(12, result.getEntityResults().size());
 
     // At least one entity should have failed
@@ -216,25 +216,26 @@ class ParallelSyncOrchestratorTest {
   }
 
   private void setupSuccessfulSyncResults() {
-    when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0));
+    when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0, 0));
     when(wrestlerSyncService.syncWrestlers(anyString()))
-        .thenReturn(SyncResult.success("Wrestlers", 10, 0));
+        .thenReturn(SyncResult.success("Wrestlers", 10, 0, 0));
     when(factionSyncService.syncFactions(anyString()))
-        .thenReturn(SyncResult.success("Factions", 3, 0));
-    when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 7, 0));
+        .thenReturn(SyncResult.success("Factions", 3, 0, 0));
+    when(teamSyncService.syncTeams(anyString())).thenReturn(SyncResult.success("Teams", 7, 0, 0));
     when(segmentSyncService.syncSegments(anyString()))
-        .thenReturn(SyncResult.success("Segments", 8, 0));
+        .thenReturn(SyncResult.success("Segments", 8, 0, 0));
     when(seasonSyncService.syncSeasons(anyString()))
-        .thenReturn(SyncResult.success("Seasons", 2, 0));
+        .thenReturn(SyncResult.success("Seasons", 2, 0, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
-        .thenReturn(SyncResult.success("ShowTypes", 4, 0));
+        .thenReturn(SyncResult.success("ShowTypes", 4, 0, 0));
     when(showTemplateSyncService.syncShowTemplates(anyString()))
-        .thenReturn(SyncResult.success("ShowTemplates", 6, 0));
+        .thenReturn(SyncResult.success("ShowTemplates", 6, 0, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
-        .thenReturn(SyncResult.success("Injuries", 1, 0));
-    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0));
-    when(titleSyncService.syncTitles(anyString())).thenReturn(SyncResult.success("Titles", 5, 0));
+        .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
+    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0, 0));
+    when(titleSyncService.syncTitles(anyString()))
+        .thenReturn(SyncResult.success("Titles", 5, 0, 0));
     when(titleReignSyncService.syncTitleReigns(anyString()))
-        .thenReturn(SyncResult.success("TitleReigns", 5, 0));
+        .thenReturn(SyncResult.success("TitleReigns", 5, 0, 0));
   }
 }

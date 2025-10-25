@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.domain.injury;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -10,6 +11,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 /** Unit tests for InjurySeverity enum. Tests the ATW RPG injury severity system functionality. */
 @DisplayName("InjurySeverity Tests")
 class InjurySeverityTest {
+
+  private final Random random = new Random();
 
   @Test
   @DisplayName("Should have correct severity count")
@@ -78,16 +81,16 @@ class InjurySeverityTest {
   void shouldGenerateRandomHealthPenaltyWithinRange() {
     // Test multiple times to ensure randomness works
     for (int i = 0; i < 100; i++) {
-      int penalty = InjurySeverity.MINOR.getRandomHealthPenalty();
+      int penalty = InjurySeverity.MINOR.getRandomHealthPenalty(random);
       assertThat(penalty).isBetween(1, 2);
 
-      penalty = InjurySeverity.MODERATE.getRandomHealthPenalty();
+      penalty = InjurySeverity.MODERATE.getRandomHealthPenalty(random);
       assertThat(penalty).isBetween(2, 3);
 
-      penalty = InjurySeverity.SEVERE.getRandomHealthPenalty();
+      penalty = InjurySeverity.SEVERE.getRandomHealthPenalty(random);
       assertThat(penalty).isBetween(3, 5);
 
-      penalty = InjurySeverity.CRITICAL.getRandomHealthPenalty();
+      penalty = InjurySeverity.CRITICAL.getRandomHealthPenalty(random);
       assertThat(penalty).isBetween(4, 7);
     }
   }
@@ -101,7 +104,7 @@ class InjurySeverityTest {
 
     // MINOR has range 1-2, so we can't test single value directly
     // But we can verify the method works correctly
-    int penalty = minor.getRandomHealthPenalty();
+    int penalty = minor.getRandomHealthPenalty(random);
     assertThat(penalty).isBetween(minor.getMinHealthPenalty(), minor.getMaxHealthPenalty());
   }
 

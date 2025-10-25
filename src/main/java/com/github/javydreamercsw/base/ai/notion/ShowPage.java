@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
@@ -39,7 +40,7 @@ public class ShowPage extends NotionPage {
 
     List<SegmentPage> matches = new ArrayList<>();
 
-    try (NotionClient client = NotionHandler.getInstance().createNotionClient()) {
+    try (NotionClient client = NotionHandler.getInstance().get().createNotionClient().get()) {
       try {
         Page pageData = client.retrievePage(this.getId(), Collections.emptyList());
 
@@ -91,14 +92,14 @@ public class ShowPage extends NotionPage {
   }
 
   /** Helper method to map a Notion Page to a MatchPage object. */
-  private SegmentPage mapPageToMatchPage(Page pageData) {
+  private SegmentPage mapPageToMatchPage(@NonNull Page pageData) {
     SegmentPage matchPage = new SegmentPage();
 
     // Set basic page information
     matchPage.setObject("page");
     matchPage.setId(pageData.getId());
-    matchPage.setCreated_time(pageData.getCreatedTime().toString());
-    matchPage.setLast_edited_time(pageData.getLastEditedTime().toString());
+    matchPage.setCreated_time(pageData.getCreatedTime());
+    matchPage.setLast_edited_time(pageData.getLastEditedTime());
     matchPage.setArchived(pageData.getArchived());
     matchPage.setIn_trash(false);
     matchPage.setUrl(pageData.getUrl());
@@ -114,7 +115,7 @@ public class ShowPage extends NotionPage {
   }
 
   /** Helper method to extract segment name from page data. */
-  private String getMatchName(Page segmentPageData) {
+  private String getMatchName(@NonNull Page segmentPageData) {
     try {
       PageProperty nameProperty = segmentPageData.getProperties().get("Name");
       if (nameProperty != null

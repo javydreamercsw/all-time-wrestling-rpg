@@ -71,7 +71,8 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
               "max_tokens",
               4000,
               "messages",
-              List.of(Map.of("role", "user", "content", prompt)));
+              List.of(
+                  Map.of("role", "user", "content", getSystemMessage(prompt) + "\n\n" + prompt)));
 
       String jsonBody = objectMapper.writeValueAsString(requestBody);
 

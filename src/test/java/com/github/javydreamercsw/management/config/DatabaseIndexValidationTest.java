@@ -2,7 +2,7 @@ package com.github.javydreamercsw.management.config;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -17,7 +17,6 @@ import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
@@ -30,8 +29,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * columns, which would otherwise only be discovered during application startup.
  */
 @Slf4j
-@EnabledIf("isNotionTokenAvailable")
-class DatabaseIndexValidationTest extends AbstractIntegrationTest {
+class DatabaseIndexValidationTest extends ManagementIntegrationTest {
 
   @Autowired private DataSource dataSource;
 
@@ -52,7 +50,6 @@ class DatabaseIndexValidationTest extends AbstractIntegrationTest {
     List<String> errors = new ArrayList<>();
 
     for (IndexDefinition index : indexDefinitions) {
-      log.debug("Validating index: {} on table: {}", index.indexName, index.tableName);
 
       // Check if table exists
       if (!tableColumns.containsKey(index.tableName.toLowerCase())) {

@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.controller.rivalry.RivalryController.AddHeatRequest;
 import com.github.javydreamercsw.management.controller.rivalry.RivalryController.CreateRivalryRequest;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
@@ -11,14 +12,13 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,9 +26,9 @@ import org.springframework.test.web.servlet.MockMvc;
  * Integration tests for RivalryController. Tests the complete REST API functionality for rivalry
  * management.
  */
+@SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("RivalryController Integration Tests")
-@EnabledIf("isNotionTokenAvailable")
 class RivalryControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
@@ -236,7 +236,7 @@ class RivalryControllerIntegrationTest extends AbstractIntegrationTest {
   }
 
   private Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
     wrestler.setFans(fans);
     wrestler.setStartingHealth(15);

@@ -11,6 +11,7 @@ import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,12 +39,12 @@ public class InjurySyncService extends BaseSyncService {
     // Check if already synced in current session
     if (isAlreadySyncedInSession("injury-types")) {
       log.info("⏭️ Injury types already synced in current session, skipping");
-      return SyncResult.success("Injuries", 0, 0);
+      return SyncResult.success("Injuries", 0, 0, 0);
     }
 
     if (!syncProperties.isEntityEnabled("injuries")) {
       log.debug("Injuries synchronization is disabled in configuration");
-      return SyncResult.success("Injuries", 0, 0);
+      return SyncResult.success("Injuries", 0, 0, 0);
     }
 
     try {
@@ -105,7 +106,7 @@ public class InjurySyncService extends BaseSyncService {
       if (injuryPages.isEmpty()) {
         log.info("No injuries found in Notion database");
         progressTracker.completeOperation(operationId, true, "No injuries to sync", 0);
-        return SyncResult.success("Injuries", 0, 0);
+        return SyncResult.success("Injuries", 0, 0, 0);
       }
 
       // Convert to DTOs with parallel processing
@@ -135,7 +136,7 @@ public class InjurySyncService extends BaseSyncService {
       // Record success in health monitor
       healthMonitor.recordSuccess("Injuries", totalTime, syncedCount);
 
-      return SyncResult.success("Injuries", syncedCount, 0);
+      return SyncResult.success("Injuries", syncedCount, 0, 0);
 
     } catch (Exception e) {
       log.error("Failed to perform injuries sync", e);
@@ -204,9 +205,11 @@ public class InjurySyncService extends BaseSyncService {
       return null;
     }
 
-    if (injuryTypeRepository.existsByInjuryName(dto.getInjuryName())) {
-      log.warn("Injury type already exists, skipping: {}", dto.getInjuryName());
-      return null;
+    Optional<InjuryType> existingInjuryType =
+        injuryTypeRepository.findByInjuryName(dto.getInjuryName());
+    if (existingInjuryType.isPresent()) {
+      log.info("Injury type already exists, retrieving: {}", dto.getInjuryName());
+      return existingInjuryType.get();
     }
 
     try {
@@ -226,6 +229,12 @@ public class InjurySyncService extends BaseSyncService {
               dto.getCardEffect(),
               dto.getSpecialEffects());
 
+      if (injuryType == null) {
+        log.error(
+            "Failed to create injury type ''{}'' as service returned null.", dto.getInjuryName());
+        return null;
+      }
+
       log.debug("Successfully created injury type with ID: {}", injuryType.getId());
 
       // Set external ID for tracking
@@ -236,21 +245,20 @@ public class InjurySyncService extends BaseSyncService {
       log.debug("Updated injury type with external ID: {}", dto.getExternalId());
 
       return updated;
-
-    } catch (IllegalArgumentException e) {
-      // Handle duplicate name exception gracefully
-      log.info("Injury type '{}' already exists: {}", dto.getInjuryName(), e.getMessage());
-      return null;
     } catch (Exception e) {
-      log.error("Failed to create injury type '{}': {}", dto.getInjuryName(), e.getMessage(), e);
+      log.error("Failed to create injury type ''{}' ': {}", dto.getInjuryName(), e.getMessage(), e);
       return null;
     }
   }
 
-  /** Validates injury sync results. */
   private boolean validateInjurySyncResults(List<InjuryDTO> injuryDTOs, int syncedCount) {
     if (injuryDTOs.isEmpty()) {
       return true; // No injuries to validate
+    }
+
+    if (syncedCount == 0) {
+      log.warn("Injury sync validation failed: 0 out of {} injuries synced.", injuryDTOs.size());
+      return false;
     }
 
     // Basic validation: check if at least some injuries were synced
@@ -261,7 +269,6 @@ public class InjurySyncService extends BaseSyncService {
           syncedCount, injuryDTOs.size(), Math.round(syncRate * 100));
       return false;
     }
-
     log.info(
         "Injury sync validation passed: {}/{} injuries synced ({}%)",
         syncedCount, injuryDTOs.size(), Math.round(syncRate * 100));
@@ -283,49 +290,6 @@ public class InjurySyncService extends BaseSyncService {
   }
 
   // Injury property extraction methods
-  private String extractSeverityFromInjuryPage(InjuryPage injuryPage) {
-    try {
-      if (injuryPage.getRawProperties() != null) {
-        Object severity = injuryPage.getRawProperties().get("Severity");
-        return severity != null ? severity.toString() : "MINOR";
-      }
-      return "MINOR";
-    } catch (Exception e) {
-      log.warn("Failed to extract severity from injury page: {}", injuryPage.getId(), e);
-      return "MINOR";
-    }
-  }
-
-  private Integer extractRecoveryTimeFromInjuryPage(InjuryPage injuryPage) {
-    try {
-      if (injuryPage.getRawProperties() != null) {
-        Object recoveryTime = injuryPage.getRawProperties().get("Recovery Time");
-        if (recoveryTime instanceof Number number) {
-          return number.intValue();
-        } else if (recoveryTime instanceof String str) {
-          return Integer.parseInt(str);
-        }
-      }
-      return 1;
-    } catch (Exception e) {
-      log.warn("Failed to extract recovery time from injury page: {}", injuryPage.getId(), e);
-      return 1;
-    }
-  }
-
-  private String extractBodyPartFromInjuryPage(InjuryPage injuryPage) {
-    try {
-      if (injuryPage.getRawProperties() != null) {
-        Object bodyPart = injuryPage.getRawProperties().get("Body Part");
-        return bodyPart != null ? bodyPart.toString() : "General";
-      }
-      return "General";
-    } catch (Exception e) {
-      log.warn("Failed to extract body part from injury page: {}", injuryPage.getId(), e);
-      return "General";
-    }
-  }
-
   private Integer extractHealthEffectFromInjuryPage(InjuryPage injuryPage) {
     try {
       if (injuryPage.getRawProperties() != null) {

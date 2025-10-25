@@ -13,15 +13,15 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
-import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -48,10 +48,10 @@ class ShowPlanningServiceTest {
   @Mock private ShowService showService;
   @Mock private SegmentService segmentService;
   @Mock private SegmentTypeRepository segmentTypeRepository;
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private SegmentRuleService segmentRuleService;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private FactionService factionService;
 
-  @Spy private ShowPlanningDtoMapper mapper;
+  @Spy private ShowPlanningDtoMapper mapper; // Shows as not used but it is needed.
   @Spy private Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
 
   @Mock private PromoBookingService promoBookingService;
@@ -65,9 +65,9 @@ class ShowPlanningServiceTest {
     when(show.getShowDate()).thenReturn(LocalDate.now());
     when(show.getId()).thenReturn(1L);
 
-    Wrestler wrestler1 = new Wrestler();
+    Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setName("Wrestler 1");
-    Wrestler wrestler2 = new Wrestler();
+    Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setName("Wrestler 2");
 
     SegmentType promoSegmentType = new SegmentType();
@@ -127,20 +127,22 @@ class ShowPlanningServiceTest {
     Title title = new Title();
     title.setId(1L);
     title.setName("Test Title");
-    Wrestler champion = new Wrestler();
+    Wrestler champion = Wrestler.builder().build();
     champion.setName("Champion");
     title.getCurrentChampions().add(champion);
     when(titleService.getActiveTitles()).thenReturn(Collections.singletonList(title));
-    Wrestler contender = new Wrestler();
+    Wrestler contender = Wrestler.builder().build();
     contender.setName("Contender");
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(contender));
 
-    ShowType pleShowType = new ShowType();
-    pleShowType.setName("Premium Live Event (PLE)");
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
+    when(factionService.findAll()).thenReturn(Collections.emptyList());
 
+    ShowType pleShowType = new ShowType();
     com.github.javydreamercsw.management.domain.show.template.ShowTemplate pleTemplate =
-        new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
+        mock(com.github.javydreamercsw.management.domain.show.template.ShowTemplate.class);
+    when(pleTemplate.isPremiumLiveEvent()).thenReturn(true);
     pleTemplate.setShowType(pleShowType);
 
     Show ple = new Show();
@@ -172,6 +174,134 @@ class ShowPlanningServiceTest {
   }
 
   @Test
+  void getShowPlanningContext_shouldCorrectlyHandleNextPle() {
+    // Given
+    LocalDate futureShowDate = LocalDate.now(clock).plusMonths(3);
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("Future Show");
+    when(show.getShowDate()).thenReturn(futureShowDate);
+    when(show.getId()).thenReturn(1L);
+
+    ShowType pleShowType = new ShowType();
+    pleShowType.setName("Premium Live Event (PLE)");
+    com.github.javydreamercsw.management.domain.show.template.ShowTemplate pleTemplate =
+        new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
+    pleTemplate.setShowType(pleShowType);
+
+    Show upcomingPle = new Show();
+    upcomingPle.setId(2L);
+    upcomingPle.setName("Upcoming PLE");
+    upcomingPle.setTemplate(pleTemplate);
+    upcomingPle.setType(pleShowType);
+    upcomingPle.setShowDate(futureShowDate.plusWeeks(2));
+    upcomingPle.setDescription("Test PLE Description");
+
+    when(showService.getUpcomingShows(eq(futureShowDate), anyInt()))
+        .thenReturn(Collections.singletonList(upcomingPle));
+
+    // Mock other dependencies to avoid NullPointerExceptions
+    when(segmentRepository.findBySegmentDateBetween(any(), any()))
+        .thenReturn(Collections.emptyList());
+    when(rivalryService.getActiveRivalriesBetween(any(), any()))
+        .thenReturn(Collections.emptyList());
+    when(promoBookingService.isPromoSegment(any())).thenReturn(false);
+    when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
+    when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
+    when(factionService.findAll()).thenReturn(Collections.emptyList());
+
+    // Act
+    ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
+
+    // Assert
+    assertNotNull(context);
+    assertNotNull(context.getNextPle());
+    assertEquals("Upcoming PLE", context.getNextPle().getPleName());
+    assertEquals(
+        upcomingPle.getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant(),
+        context.getNextPle().getPleDate());
+  }
+
+  @Test
+  void getShowPlanningContext_shouldUseShowDateForUpcomingShowsAndSegments() {
+    // Given
+    LocalDate futureShowDate = LocalDate.now(clock).plusMonths(3);
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("Future Show");
+    when(show.getShowDate()).thenReturn(futureShowDate);
+    when(show.getId()).thenReturn(1L);
+
+    // Mock an upcoming PLE relative to futureShowDate
+    ShowType pleShowType = new ShowType();
+    pleShowType.setName("Premium Live Event (PLE)");
+    com.github.javydreamercsw.management.domain.show.template.ShowTemplate pleTemplate =
+        new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
+    pleTemplate.setShowType(pleShowType);
+
+    Show upcomingPle = mock(Show.class);
+    when(upcomingPle.getId()).thenReturn(2L);
+    when(upcomingPle.getName()).thenReturn("Upcoming PLE");
+    when(upcomingPle.getTemplate()).thenReturn(pleTemplate);
+    when(upcomingPle.getType()).thenReturn(pleShowType);
+    when(upcomingPle.getShowDate()).thenReturn(futureShowDate.plusWeeks(2));
+    when(upcomingPle.getDescription()).thenReturn("Test PLE Description");
+    when(upcomingPle.isPremiumLiveEvent()).thenReturn(true);
+    when(showService.getUpcomingShows(eq(futureShowDate), anyInt()))
+        .thenReturn(Collections.singletonList(upcomingPle));
+
+    // Mock segments within 30 days before futureShowDate
+    Segment segment1 = new Segment();
+    segment1.setId(1L);
+    segment1.setSegmentDate(
+        futureShowDate.minusDays(10).atStartOfDay(ZoneId.systemDefault()).toInstant());
+    Segment segment2 = new Segment();
+    segment2.setId(2L);
+    segment2.setSegmentDate(
+        futureShowDate.minusDays(20).atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+    Show segmentShow = new Show();
+    segmentShow.setId(3L);
+    segmentShow.setName("Segment Show");
+    segmentShow.setShowDate(futureShowDate.minusDays(10));
+    segment1.setShow(segmentShow);
+    segment2.setShow(segmentShow);
+
+    when(segmentRepository.findBySegmentDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(Arrays.asList(segment1, segment2));
+
+    // Mock other dependencies to avoid NullPointerExceptions
+    when(rivalryService.getActiveRivalriesBetween(any(), any()))
+        .thenReturn(Collections.emptyList());
+    when(promoBookingService.isPromoSegment(any())).thenReturn(false);
+    when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
+    when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
+    when(factionService.findAll()).thenReturn(Collections.emptyList());
+
+    // Act
+    ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
+
+    // Assert
+    assertNotNull(context);
+
+    // Verify next PLE
+    assertNotNull(context.getNextPle());
+    assertEquals("Upcoming PLE", context.getNextPle().getPleName());
+    assertEquals(
+        upcomingPle.getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant(),
+        context.getNextPle().getPleDate());
+
+    // Verify last month segments
+    assertNotNull(context.getRecentSegments());
+    assertEquals(2, context.getRecentSegments().size());
+    assertTrue(context.getRecentSegments().stream().anyMatch(s -> s.getId().equals(1L)));
+    assertTrue(context.getRecentSegments().stream().anyMatch(s -> s.getId().equals(2L)));
+
+    // Verify that getUpcomingShows was called with the correct reference date
+    verify(showService, times(1)).getUpcomingShows(eq(futureShowDate), anyInt());
+  }
+
+  @Test
   void getShowPlanningContext_shouldIncludeOnlyNumberOneContenders() {
     // Given
     Show show = mock(Show.class);
@@ -182,12 +312,12 @@ class ShowPlanningServiceTest {
     Title title = new Title();
     title.setId(1L);
     title.setName("Test Title");
-    Wrestler champion = new Wrestler();
+    Wrestler champion = Wrestler.builder().build();
     champion.setName("Champion");
 
     title.getCurrentChampions().add(champion);
 
-    Wrestler numberOneContender = new Wrestler();
+    Wrestler numberOneContender = Wrestler.builder().build();
     numberOneContender.setName("Number One Contender");
     title.setContender(Collections.singletonList(numberOneContender));
 
@@ -195,6 +325,9 @@ class ShowPlanningServiceTest {
 
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(numberOneContender));
+
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
+    when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
     ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);

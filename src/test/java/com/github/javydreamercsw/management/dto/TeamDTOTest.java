@@ -27,12 +27,12 @@ class TeamDTOTest {
     formedDate = Instant.now();
 
     // Create test wrestlers
-    wrestler1 = new Wrestler();
+    wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("John Cena");
     wrestler1.setTier(WrestlerTier.MAIN_EVENTER);
 
-    wrestler2 = new Wrestler();
+    wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("The Rock");
     wrestler2.setTier(WrestlerTier.MAIN_EVENTER);

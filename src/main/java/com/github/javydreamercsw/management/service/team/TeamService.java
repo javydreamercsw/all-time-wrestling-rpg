@@ -57,6 +57,10 @@ public class TeamService {
   /** Create a new team. */
   public Optional<Team> createTeam(
       String name, String description, Long wrestler1Id, Long wrestler2Id, Long factionId) {
+    if (wrestler1Id == null || wrestler2Id == null) {
+      log.warn("Cannot create team: Wrestler IDs cannot be null");
+      return Optional.empty();
+    }
     // Validate wrestlers exist
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);

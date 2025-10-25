@@ -39,7 +39,7 @@ public class FactionRivalrySyncService extends BaseSyncService {
   public SyncResult syncFactionRivalries(@NonNull String operationId) {
     if (isAlreadySyncedInSession("faction-rivalries")) {
       log.info("⏭️ Faction Rivalries already synced in current session, skipping");
-      return SyncResult.success("Faction Rivalries", 0, 0);
+      return SyncResult.success("Faction Rivalries", 0, 0, 0);
     }
 
     log.info("🔥 Starting faction rivalries synchronization from Notion...");
@@ -96,7 +96,7 @@ public class FactionRivalrySyncService extends BaseSyncService {
         System.currentTimeMillis() - System.currentTimeMillis(),
         createdCount.get() + updatedCount.get());
 
-    return SyncResult.success("Faction Rivalries", createdCount.get(), updatedCount.get());
+    return SyncResult.success("Faction Rivalries", createdCount.get(), updatedCount.get(), 0);
   }
 
   private FactionRivalryDTO toDto(FactionRivalryPage page) {

@@ -35,6 +35,18 @@ public class ShowTypeService {
     return showTypeRepository.findAll();
   }
 
+  public void delete(@NonNull ShowType showType) {
+    showTypeRepository.delete(showType);
+  }
+
+  public ShowType createOrUpdateShowType(@NonNull String name, @NonNull String description) {
+    Optional<ShowType> existingShowType = findByName(name);
+    ShowType showType = existingShowType.orElseGet(ShowType::new);
+    showType.setName(name);
+    showType.setDescription(description);
+    return save(showType);
+  }
+
   /**
    * Find a show type by name.
    *

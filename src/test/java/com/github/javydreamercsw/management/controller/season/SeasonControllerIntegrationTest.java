@@ -4,14 +4,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.controller.season.SeasonController.CreateSeasonRequest;
 import com.github.javydreamercsw.management.controller.season.SeasonController.UpdateSeasonRequest;
 import com.github.javydreamercsw.management.domain.season.Season;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -19,12 +20,19 @@ import org.springframework.test.web.servlet.MockMvc;
  * Integration tests for SeasonController. Tests the complete REST API functionality for season
  * management.
  */
+@SpringBootTest
+@AutoConfigureMockMvc
 @DisplayName("SeasonController Integration Tests")
-@EnabledIf("isNotionTokenAvailable")
 class SeasonControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private com.github.javydreamercsw.management.DatabaseCleaner databaseCleaner;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUp() {
+    databaseCleaner.clearRepositories();
+  }
 
   @Test
   @DisplayName("Should create new season successfully")
@@ -192,25 +200,19 @@ class SeasonControllerIntegrationTest extends AbstractIntegrationTest {
         .andExpect(jsonPath("$.showsPerPpv").value(5));
   }
 
-  private Season createTestSeason(String name, Integer seasonNumber) {
-    // Create season via API instead of direct repository access
-    try {
-      CreateSeasonRequest request = new CreateSeasonRequest(name, "Test description", 5);
-      mockMvc.perform(
-          post("/api/seasons")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(objectMapper.writeValueAsString(request)));
+  private Season createTestSeason(String name, Integer seasonNumber) throws Exception {
+    CreateSeasonRequest request = new CreateSeasonRequest(name, "Test description", 5);
+    String responseContent =
+        mockMvc
+            .perform(
+                post("/api/seasons")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
 
-      // Return a mock season for test purposes
-      Season season = new Season();
-      season.setId((long) seasonNumber);
-      season.setName(name);
-      season.setDescription("Test description");
-      season.setShowsPerPpv(5);
-      season.setIsActive(false);
-      return season;
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to create test season", e);
-    }
+    return objectMapper.readValue(responseContent, Season.class);
   }
 }

@@ -38,7 +38,7 @@ public class RivalrySyncService extends BaseSyncService {
   public SyncResult syncRivalries(@NonNull String operationId) {
     if (isAlreadySyncedInSession("rivalries")) {
       log.info("⏭️ Rivalries already synced in current session, skipping");
-      return SyncResult.success("Rivalries", 0, 0);
+      return SyncResult.success("Rivalries", 0, 0, 0);
     }
 
     log.info("🔥 Starting rivalries synchronization from Notion...");
@@ -94,7 +94,7 @@ public class RivalrySyncService extends BaseSyncService {
         System.currentTimeMillis() - System.currentTimeMillis(),
         createdCount.get() + updatedCount.get());
 
-    return SyncResult.success("Rivalries", createdCount.get(), updatedCount.get());
+    return SyncResult.success("Rivalries", createdCount.get(), updatedCount.get(), 0);
   }
 
   private RivalryDTO toDto(RivalryPage page) {

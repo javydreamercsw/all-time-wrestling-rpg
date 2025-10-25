@@ -6,6 +6,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -35,6 +36,7 @@ import org.springframework.web.client.RestTemplate;
 public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private final ShowService showService;
+  private final WrestlerService wrestlerService;
   private final RestTemplate restTemplate = new RestTemplate();
   private final ObjectMapper objectMapper;
 
@@ -47,8 +49,12 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private Editor<ProposedSegment> editor;
   private List<ProposedSegment> segments = new ArrayList<>();
 
-  public ShowPlanningView(ShowService showService, ObjectMapper objectMapper) {
+  public ShowPlanningView(
+      ShowService showService, WrestlerService wrestlerService, ObjectMapper objectMapper) {
+
     this.showService = showService;
+
+    this.wrestlerService = wrestlerService;
     this.objectMapper = objectMapper;
 
     showComboBox = new ComboBox<>("Select Show");
@@ -97,17 +103,20 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           // Save logic will go here
         });
 
-    Grid.Column<ProposedSegment> editorColumn =
-        proposedSegmentsGrid.addComponentColumn(
-            segment -> {
-              Button editButton = new Button("Edit");
-              editButton.addClickListener(
-                  e -> {
-                    if (editor.isOpen()) editor.cancel();
-                    proposedSegmentsGrid.getEditor().editItem(segment);
-                  });
-              return editButton;
-            });
+    proposedSegmentsGrid.addComponentColumn(
+        segment -> {
+          Button editButton = new Button("Edit");
+          editButton.addClickListener(
+              e -> {
+                EditSegmentDialog dialog =
+                    new EditSegmentDialog(
+                        segment,
+                        wrestlerService,
+                        () -> proposedSegmentsGrid.getDataProvider().refreshAll());
+                dialog.open();
+              });
+          return editButton;
+        });
 
     Grid.Column<ProposedSegment> removeColumn =
         proposedSegmentsGrid.addComponentColumn(
@@ -191,7 +200,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     } catch (Exception ex) {
       Notification.show(
           "Error proposing segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
-      ex.printStackTrace();
     }
   }
 
@@ -211,7 +219,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     } catch (Exception ex) {
       Notification.show(
           "Error approving segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
-      ex.printStackTrace();
     }
   }
 

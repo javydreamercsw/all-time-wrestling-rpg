@@ -174,7 +174,7 @@ class AdvancedRivalryIntegrationServiceTest {
 
   // Helper methods for creating test objects
   private Wrestler createWrestler(String name, Long id) {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(id);
     wrestler.setName(name);
     wrestler.setFans(50000L);

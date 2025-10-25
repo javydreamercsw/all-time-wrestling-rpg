@@ -1,5 +1,7 @@
 package com.github.javydreamercsw.management.domain.injury;
 
+import java.util.Random;
+
 /**
  * Represents the severity levels of injuries in the ATW RPG system. Different severities have
  * different health penalties and healing costs.
@@ -37,11 +39,11 @@ public enum InjurySeverity {
   }
 
   /** Get a random health penalty within the severity range. */
-  public int getRandomHealthPenalty() {
+  public int getRandomHealthPenalty(Random random) {
     if (minHealthPenalty == maxHealthPenalty) {
       return minHealthPenalty;
     }
-    return minHealthPenalty + (int) (Math.random() * (maxHealthPenalty - minHealthPenalty + 1));
+    return minHealthPenalty + random.nextInt(maxHealthPenalty - minHealthPenalty + 1);
   }
 
   /** Get the healing success chance for this severity. Higher severity = lower success chance. */

@@ -13,6 +13,18 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
+  protected String getSystemMessage(@NonNull String prompt) {
+    if (prompt.contains("Summarize the following segment narration")) {
+      return "You are a wrestling expert. Your task is to provide a concise summary of a wrestling"
+          + " segment narration.";
+    } else {
+      return "You are a professional wrestling commentator and storyteller. You have deep knowledge"
+          + " of wrestling history, storytelling techniques, and segment psychology. Create"
+          + " vivid, engaging segment narrations that capture the drama and excitement of"
+          + " professional wrestling.";
+    }
+  }
+
   protected String buildSegmentNarrationPrompt(
       @NonNull SegmentNarrationService.SegmentNarrationContext context) {
 

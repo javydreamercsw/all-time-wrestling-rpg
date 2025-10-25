@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.domain.title;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
@@ -102,7 +103,7 @@ public class Title extends AbstractEntity<Long> {
     return getTitleReigns().stream().filter(TitleReign::isCurrentReign).findFirst();
   }
 
-  @JsonIgnore
+  @JsonProperty("currentChampions")
   public List<Wrestler> getCurrentChampions() {
     return champion;
   }
@@ -164,6 +165,7 @@ public class Title extends AbstractEntity<Long> {
     }
   }
 
+  @JsonProperty("isVacant")
   public boolean isVacant() {
     return getCurrentChampions().isEmpty();
   }

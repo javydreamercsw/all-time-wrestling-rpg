@@ -1,8 +1,6 @@
 package com.github.javydreamercsw.management.domain.wrestler;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -16,7 +14,10 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
@@ -24,7 +25,9 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "wrestler")
 @Getter
 @Setter
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Wrestler extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -58,7 +61,8 @@ public class Wrestler extends AbstractEntity<Long> {
   // ==================== ATW RPG FIELDS ====================
 
   @Column(name = "fans")
-  @Min(0) private Long fans = 0L;
+  @Min(0) @Builder.Default
+  private Long fans = 0L;
 
   @Column(name = "tier", nullable = false)
   @Enumerated(EnumType.STRING)
@@ -69,12 +73,14 @@ public class Wrestler extends AbstractEntity<Long> {
   private Gender gender;
 
   @Column(name = "bumps")
-  @Min(0) private Integer bumps = 0;
+  @Min(0) @Builder.Default
+  private Integer bumps = 0;
 
   @Column(name = "current_health")
   private Integer currentHealth;
 
   @Column(name = "is_player", nullable = false)
+  @Builder.Default
   private Boolean isPlayer = false;
 
   @Column(name = "description", length = 4000)
@@ -84,18 +90,22 @@ public class Wrestler extends AbstractEntity<Long> {
 
   @ManyToMany(mappedBy = "champions", fetch = FetchType.LAZY)
   @JsonIgnore
+  @Builder.Default
   private List<TitleReign> reigns = new ArrayList<>();
 
   @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
+  @Builder.Default
   private List<Injury> injuries = new ArrayList<>();
 
   @OneToMany(mappedBy = "wrestler1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
+  @Builder.Default
   private List<Rivalry> rivalriesAsWrestler1 = new ArrayList<>();
 
   @OneToMany(mappedBy = "wrestler2", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
+  @Builder.Default
   private List<Rivalry> rivalriesAsWrestler2 = new ArrayList<>();
 
   @OneToMany(
@@ -104,6 +114,7 @@ public class Wrestler extends AbstractEntity<Long> {
       orphanRemoval = true,
       fetch = FetchType.EAGER)
   @JsonIgnore
+  @Builder.Default
   private List<Deck> decks = new ArrayList<>();
 
   @ManyToOne(fetch = FetchType.LAZY)

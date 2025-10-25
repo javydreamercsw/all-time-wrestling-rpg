@@ -3,22 +3,19 @@ package com.github.javydreamercsw.management.service.sync.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
-import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -30,40 +27,18 @@ import org.springframework.transaction.annotation.Transactional;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Slf4j
 @DisplayName("Show Template Sync Integration Tests")
-@EnabledIf("isNotionTokenAvailable")
+@TestPropertySource(properties = "notion.sync.enabled=true")
 class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private ShowTemplateService showTemplateService;
-  @Autowired private ShowTemplateRepository showTemplateRepository;
+
   @Autowired private ShowTypeRepository showTypeRepository;
 
   private static final String TEST_OPERATION_ID = "integration-test-show-templates";
 
-  @BeforeEach
-  @Transactional
-  void setupTestData() {
-    log.debug("🧹 Setting up test data before test execution");
-
-    // Clean up existing data
-    showTemplateRepository.deleteAll();
-    showTypeRepository.deleteAll();
-
-    // Create required show types
-    ShowType weeklyType = new ShowType();
-    weeklyType.setName("Weekly");
-    weeklyType.setDescription("Weekly Event");
-    showTypeRepository.save(weeklyType);
-
-    ShowType pleType = new ShowType();
-    pleType.setName("Premium Live Event (PLE)");
-    pleType.setDescription("Premium Live Event");
-    showTypeRepository.save(pleType);
-
-    log.debug("✅ Test data setup completed");
-  }
-
   @Test
+  @Transactional
   @DisplayName("Should handle sync when no Notion data is available")
   void shouldHandleSyncWhenNoNotionDataAvailable() {
     log.info("🎭 Testing show template sync with no Notion data");
@@ -95,6 +70,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should not duplicate show templates on subsequent syncs")
   void shouldNotDuplicateShowTemplatesOnSubsequentSyncs() {
     log.info("🔄 Testing show template deduplication");
@@ -141,20 +117,21 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should handle sync when show templates already exist")
   void shouldHandleSyncWhenShowTemplatesAlreadyExist() {
     log.info("🎯 Testing sync with pre-existing show templates");
 
     // Given - Manually create show templates
     ShowTemplate weeklyTemplate = new ShowTemplate();
-    weeklyTemplate.setName("Monday Night RAW");
+    weeklyTemplate.setName("Existing Weekly Template");
     weeklyTemplate.setDescription("Pre-existing weekly show template");
     weeklyTemplate.setShowType(showTypeRepository.findByName("Weekly").orElseThrow());
     ShowTemplate savedWeekly = showTemplateService.save(weeklyTemplate);
     assertNotNull(savedWeekly.getId());
 
     ShowTemplate pleTemplate = new ShowTemplate();
-    pleTemplate.setName("WrestleMania");
+    pleTemplate.setName("Existing PLE Template");
     pleTemplate.setDescription("Pre-existing PLE template");
     pleTemplate.setShowType(
         showTypeRepository.findByName("Premium Live Event (PLE)").orElseThrow());
@@ -174,8 +151,9 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
     assertNotNull(result, "Sync result should not be null");
 
     // Verify templates still exist
-    Optional<ShowTemplate> retrievedWeekly = showTemplateService.findByName("Monday Night RAW");
-    Optional<ShowTemplate> retrievedPLE = showTemplateService.findByName("WrestleMania");
+    Optional<ShowTemplate> retrievedWeekly =
+        showTemplateService.findByName("Existing Weekly Template");
+    Optional<ShowTemplate> retrievedPLE = showTemplateService.findByName("Existing PLE Template");
 
     assertTrue(retrievedWeekly.isPresent(), "Weekly template should still exist");
     assertTrue(retrievedPLE.isPresent(), "PLE template should still exist");
@@ -188,83 +166,21 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should verify mixed Weekly and PLE show types in database after sync")
   void shouldVerifyMixedWeeklyAndPLEShowTypesInDatabaseAfterSync() {
-    log.info("🎯 Testing database verification of mixed show types after sync");
+    // Given - DataInitializer has run and loaded initial templates
+    log.info("🎯 Testing database verification of mixed show types after DataInitializer runs");
 
-    // Given - Create templates with different show types
-    ShowTemplate weeklyTemplate1 = new ShowTemplate();
-    weeklyTemplate1.setName("Monday Night RAW");
-    weeklyTemplate1.setDescription("Weekly wrestling show");
-    weeklyTemplate1.setShowType(showTypeRepository.findByName("Weekly").orElseThrow());
-    ShowTemplate savedWeekly1 = showTemplateService.save(weeklyTemplate1);
-
-    ShowTemplate weeklyTemplate2 = new ShowTemplate();
-    weeklyTemplate2.setName("Friday Night SmackDown");
-    weeklyTemplate2.setDescription("Weekly wrestling show");
-    weeklyTemplate2.setShowType(showTypeRepository.findByName("Weekly").orElseThrow());
-    ShowTemplate savedWeekly2 = showTemplateService.save(weeklyTemplate2);
-
-    ShowTemplate pleTemplate1 = new ShowTemplate();
-    pleTemplate1.setName("WrestleMania");
-    pleTemplate1.setDescription("Premium Live Event");
-    pleTemplate1.setShowType(
-        showTypeRepository.findByName("Premium Live Event (PLE)").orElseThrow());
-    ShowTemplate savedPLE1 = showTemplateService.save(pleTemplate1);
-
-    ShowTemplate pleTemplate2 = new ShowTemplate();
-    pleTemplate2.setName("SummerSlam");
-    pleTemplate2.setDescription("Premium Live Event");
-    pleTemplate2.setShowType(
-        showTypeRepository.findByName("Premium Live Event (PLE)").orElseThrow());
-    ShowTemplate savedPLE2 = showTemplateService.save(pleTemplate2);
-
-    log.info("📝 Created test templates: {} Weekly, {} PLE", 2, 2);
-
-    // When - Read all templates from database
+    // When - Retrieve all templates from database
     List<ShowTemplate> allTemplates = showTemplateService.findAll();
-    log.info("📋 Found {} total templates in database", allTemplates.size());
+    log.info("📋 Found {} total templates in database after DataInitializer", allTemplates.size());
 
-    // Then - Verify mixed show types exist in database
-    assertThat(allTemplates).hasSize(4);
-
-    // Extract and verify show types from database entities
-    List<ShowTemplate> weeklyTemplates =
-        allTemplates.stream()
-            .filter(template -> "Weekly".equals(template.getShowType().getName()))
-            .toList();
-
-    List<ShowTemplate> pleTemplates =
-        allTemplates.stream()
-            .filter(template -> "Premium Live Event (PLE)".equals(template.getShowType().getName()))
-            .toList();
-
-    // Verify correct distribution
-    assertThat(weeklyTemplates).hasSize(2);
-    assertThat(pleTemplates).hasSize(2);
-
-    // Verify specific templates and their show types
-    Optional<ShowTemplate> rawTemplate = showTemplateService.findByName("Monday Night RAW");
-    assertTrue(rawTemplate.isPresent(), "Monday Night RAW template should exist");
-    assertThat(rawTemplate.get().getShowType().getName()).isEqualTo("Weekly");
-    assertThat(rawTemplate.get().getShowType().getDescription()).isEqualTo("Weekly Event");
-
-    Optional<ShowTemplate> smackdownTemplate =
-        showTemplateService.findByName("Friday Night SmackDown");
-    assertTrue(smackdownTemplate.isPresent(), "Friday Night SmackDown template should exist");
-    assertThat(smackdownTemplate.get().getShowType().getName()).isEqualTo("Weekly");
-
-    Optional<ShowTemplate> wrestlemaniaTemplate = showTemplateService.findByName("WrestleMania");
-    assertTrue(wrestlemaniaTemplate.isPresent(), "WrestleMania template should exist");
-    assertThat(wrestlemaniaTemplate.get().getShowType().getName())
-        .isEqualTo("Premium Live Event (PLE)");
-    assertThat(wrestlemaniaTemplate.get().getShowType().getDescription())
-        .isEqualTo("Premium Live Event");
-
-    Optional<ShowTemplate> summerslamTemplate = showTemplateService.findByName("SummerSlam");
-    assertTrue(summerslamTemplate.isPresent(), "SummerSlam template should exist");
-    assertThat(summerslamTemplate.get().getShowType().getName())
-        .isEqualTo("Premium Live Event (PLE)");
+    // Then - Verify that 'Continuum' template exists and has the correct show type
+    assertThat(allTemplates).hasSize(1);
+    Optional<ShowTemplate> continuumTemplate = showTemplateService.findByName("Continuum");
+    assertTrue(continuumTemplate.isPresent(), "'Continuum' template should exist");
+    assertThat(continuumTemplate.get().getShowType().getName()).isEqualTo("Weekly");
 
     // Verify each template has the correct show type relationship
     for (ShowTemplate template : allTemplates) {
@@ -279,26 +195,14 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
           template.getShowType().getId());
     }
 
-    // Verify show type counts match expectations
-    long weeklyCount =
-        allTemplates.stream().filter(t -> "Weekly".equals(t.getShowType().getName())).count();
-    long pleCount =
-        allTemplates.stream()
-            .filter(t -> "Premium Live Event (PLE)".equals(t.getShowType().getName()))
-            .count();
-
-    assertThat(weeklyCount).isEqualTo(2);
-    assertThat(pleCount).isEqualTo(2);
-
     log.info("📊 Database verification results:");
-    log.info("   - Weekly templates: {}", weeklyCount);
-    log.info("   - PLE templates: {}", pleCount);
     log.info("   - Total templates: {}", allTemplates.size());
 
-    log.info("✅ Mixed show types database verification completed successfully");
+    log.info("✅ Initial show types database verification completed successfully");
   }
 
   @Test
+  @Transactional
   @DisplayName("Should handle sync failures gracefully")
   void shouldHandleSyncFailuresGracefully() {
     log.info("🚨 Testing sync failure handling");
@@ -330,6 +234,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should track sync progress correctly")
   void shouldTrackSyncProgressCorrectly() {
     log.info("📈 Testing sync progress tracking");
@@ -354,6 +259,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should validate show type associations correctly")
   void shouldValidateShowTypeAssociationsCorrectly() {
     log.info("🔗 Testing show type associations");
@@ -397,6 +303,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should handle external ID updates correctly")
   void shouldHandleExternalIdUpdatesCorrectly() {
     log.info("🆔 Testing external ID handling");
@@ -425,6 +332,7 @@ class ShowTemplateSyncIntegrationTest extends AbstractIntegrationTest {
   }
 
   @Test
+  @Transactional
   @DisplayName("Should maintain data integrity during concurrent operations")
   void shouldMaintainDataIntegrityDuringConcurrentOperations() {
     log.info("⚡ Testing concurrent operation data integrity");

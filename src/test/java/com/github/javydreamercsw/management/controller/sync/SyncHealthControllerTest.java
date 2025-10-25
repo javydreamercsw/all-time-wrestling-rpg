@@ -18,12 +18,14 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(
     controllers = SyncHealthController.class,
     excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
+@TestPropertySource(properties = "notion.sync.enabled=true")
 class SyncHealthControllerTest extends BaseControllerTest {
 
   @MockitoBean private CommandLineRunner commandLineRunner;

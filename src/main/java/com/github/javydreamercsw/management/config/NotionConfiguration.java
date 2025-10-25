@@ -2,12 +2,15 @@ package com.github.javydreamercsw.management.config;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /** Configuration class for Notion-related beans. Only active when Notion sync is enabled. */
 @Configuration
 @Slf4j
+@Profile("!test")
 public class NotionConfiguration {
 
   /**
@@ -20,7 +23,9 @@ public class NotionConfiguration {
    * @return NotionHandler singleton instance, or null if initialization fails
    */
   @Bean
+  @ConditionalOnExpression(
+      "T(com.github.javydreamercsw.base.util.EnvironmentVariableUtil).isNotionTokenAvailable()")
   public NotionHandler notionHandler() {
-    return NotionHandler.getInstance();
+    return NotionHandler.getInstance().orElse(null);
   }
 }

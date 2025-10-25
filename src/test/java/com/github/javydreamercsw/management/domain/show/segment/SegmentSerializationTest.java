@@ -34,7 +34,7 @@ class SegmentSerializationTest {
     reign.setTitle(title);
     reign.setStartDate(Instant.now());
 
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName("Test Wrestler");
     wrestler.setFaction(faction);
     wrestler.setStartingHealth(100);

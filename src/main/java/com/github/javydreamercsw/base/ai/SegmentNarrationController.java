@@ -117,6 +117,7 @@ public class SegmentNarrationController {
     }
     try {
       context = segmentOutcomeService.determineOutcomeIfNeeded(context);
+      log.info(context.toString());
       String narration = service.narrateSegment(context);
       double estimatedCost = serviceFactory.getEstimatedSegmentCost(service.getProviderName());
       Map<String, Object> response = new HashMap<>();

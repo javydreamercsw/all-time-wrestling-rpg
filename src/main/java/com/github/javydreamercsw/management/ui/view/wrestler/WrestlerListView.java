@@ -176,7 +176,7 @@ public class WrestlerListView extends Main {
   }
 
   private void createWrestler() {
-    wrestlerService.createCard(name.getValue());
+    wrestlerService.createWrestler(name.getValue());
     wrestlerGrid.getDataProvider().refreshAll();
     name.clear();
     Notification.show("Wrestler added", 3_000, Notification.Position.BOTTOM_END)

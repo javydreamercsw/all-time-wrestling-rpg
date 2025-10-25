@@ -53,8 +53,8 @@ public class ShowListView extends Main {
   private final ShowTemplateService showTemplateService;
   private final Clock clock; // Add this field
 
-  private ComboBox<Season> newSeason; // New field
-  private ComboBox<ShowTemplate> newTemplate; // New field
+  private final ComboBox<Season> newSeason; // New field
+  private final ComboBox<ShowTemplate> newTemplate; // New field
 
   private Dialog editDialog;
   private TextField editName;
@@ -66,8 +66,8 @@ public class ShowListView extends Main {
   private Show editingShow;
 
   final TextField name;
-  private ComboBox<ShowType> newShowType;
-  private DatePicker newShowDate;
+  private final ComboBox<ShowType> newShowType;
+  private final DatePicker newShowDate;
   final Button createBtn;
   final Grid<Show> showGrid;
 
@@ -233,6 +233,13 @@ public class ShowListView extends Main {
               editBtn.setTooltipText("Edit Show");
               editBtn.addClickListener(e -> openEditDialog(show));
 
+              // Delete button
+              Button deleteBtn = new Button(new Icon(VaadinIcon.TRASH));
+              deleteBtn.addThemeVariants(
+                  ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY_INLINE);
+              deleteBtn.setTooltipText("Delete Show");
+              deleteBtn.addClickListener(e -> openDeleteDialog(show));
+
               // Calendar button (if show has date)
               if (show.getShowDate() != null) {
                 Button calendarBtn = new Button(new Icon(VaadinIcon.CALENDAR));
@@ -242,18 +249,17 @@ public class ShowListView extends Main {
                     e -> {
                       // Navigate to calendar with date parameter
                       String dateParam =
-                          show.getShowDate()
-                              .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                          show.getShowDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
                       getUI().ifPresent(ui -> ui.navigate("show-calendar?date=" + dateParam));
                     });
                 actions.add(calendarBtn);
               }
 
-              actions.add(viewBtn, editBtn);
+              actions.add(viewBtn, editBtn, deleteBtn);
               return actions;
             })
         .setHeader("Actions")
-        .setFlexGrow(0);
+        .setFlexGrow(1);
 
     // Editor setup (optional, as in your previous code)
     Editor<Show> editor = showGrid.getEditor();
@@ -394,5 +400,31 @@ public class ShowListView extends Main {
     refreshGrid();
     Notification.show("Show updated successfully.", 3_000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+  }
+
+  // Add this method for delete confirmation and logic
+  private void openDeleteDialog(Show show) {
+    Dialog confirmDialog = new Dialog();
+    confirmDialog.setHeaderTitle("Delete Show");
+    confirmDialog.add(
+        new Span(
+            "Are you sure you want to delete the show '"
+                + show.getName()
+                + "'? This action cannot be undone."));
+    Button confirmBtn =
+        new Button(
+            "Delete",
+            e -> {
+              showService.deleteShow(show.getId());
+              confirmDialog.close();
+              refreshGrid();
+              Notification.show("Show deleted.", 3000, Notification.Position.BOTTOM_START)
+                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            });
+    confirmBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
+    Button cancelBtn = new Button("Cancel", e -> confirmDialog.close());
+    HorizontalLayout buttons = new HorizontalLayout(confirmBtn, cancelBtn);
+    confirmDialog.getFooter().add(buttons);
+    confirmDialog.open();
   }
 }

@@ -26,8 +26,8 @@ public class NpcSyncService extends BaseSyncService {
 
   public SyncResult syncNpcs(@NonNull String operationId) {
     if (isAlreadySyncedInSession("npcs")) {
-      log.info("NPCs already synced in current session, skipping");
-      return SyncResult.success("NPCs", 0, 0);
+      log.info("⏭️ NPCs already synced in current session, skipping");
+      return SyncResult.success("NPCs", 0, 0, 0);
     }
 
     log.info("Starting NPCs synchronization from Notion...");
@@ -36,7 +36,7 @@ public class NpcSyncService extends BaseSyncService {
     try {
       if (!syncProperties.isEntityEnabled("npcs")) {
         log.info("NPCs sync is disabled in configuration");
-        return SyncResult.success("NPCs", 0, 0);
+        return SyncResult.success("NPCs", 0, 0, 0);
       }
 
       if (!isNotionHandlerAvailable()) {
@@ -72,7 +72,8 @@ public class NpcSyncService extends BaseSyncService {
       log.info("Successfully synchronized {} NPCs in {}ms total", savedCount, totalTime);
 
       markAsSyncedInSession("npcs");
-      return SyncResult.success("NPCs", savedCount, 0);
+      return SyncResult.success("NPCs", savedCount, 0, 0);
+
     } catch (Exception e) {
       log.error("Failed to sync NPCs", e);
       return SyncResult.failure("NPCs", e.getMessage());

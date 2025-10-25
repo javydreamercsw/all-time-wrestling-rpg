@@ -2,59 +2,37 @@ package com.github.javydreamercsw.management.service.deck;
 
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
-import java.time.Clock;
 import java.util.List;
-import lombok.NonNull;
-import org.springframework.data.domain.Pageable;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional(propagation = Propagation.REQUIRES_NEW)
 public class DeckCardService {
-
   private final DeckCardRepository deckCardRepository;
-  private final Clock clock;
 
-  DeckCardService(DeckCardRepository deckCardRepository, Clock clock) {
+  public DeckCardService(DeckCardRepository deckCardRepository) {
     this.deckCardRepository = deckCardRepository;
-    this.clock = clock;
   }
 
-  public List<DeckCard> list(Pageable pageable) {
-    return deckCardRepository.findAllBy(pageable).toList();
-  }
-
-  public long count() {
-    return deckCardRepository.count();
-  }
-
-  public DeckCard save(@NonNull DeckCard deckCard) {
-    return deckCardRepository.saveAndFlush(deckCard);
-  }
-
-  public List<DeckCard> findAll() {
-    return deckCardRepository.findAll();
+  public DeckCard save(DeckCard dc) {
+    return deckCardRepository.save(dc);
   }
 
   public void delete(DeckCard dc) {
     deckCardRepository.delete(dc);
   }
 
-  public DeckCard saveOrUpdate(@NonNull DeckCard deckCard) {
-    var existing =
-        deckCardRepository.findByDeckIdAndCardIdAndSetId(
-            deckCard.getDeck().getId(), deckCard.getCard().getId(), deckCard.getSet().getId());
-    if (existing.isPresent()) {
-      DeckCard found = existing.get();
-      // Example: update amount, or update other fields as needed
-      found.setAmount(deckCard.getAmount());
-      found.setCreationDate(clock.instant());
-      return deckCardRepository.saveAndFlush(found);
-    } else {
-      deckCard.setCreationDate(clock.instant());
-      return deckCardRepository.saveAndFlush(deckCard);
-    }
+  public Optional<DeckCard> findByDeckIdAndCardIdAndSetId(Long deckId, Long cardId, Long setId) {
+
+    return deckCardRepository.findByDeckIdAndCardIdAndSetId(deckId, cardId, setId);
+  }
+
+  public Iterable<DeckCard> findAll() {
+
+    return deckCardRepository.findAll();
+  }
+
+  public List<DeckCard> findByDeck(com.github.javydreamercsw.management.domain.deck.Deck deck) {
+    return deckCardRepository.findByDeck(deck);
   }
 }

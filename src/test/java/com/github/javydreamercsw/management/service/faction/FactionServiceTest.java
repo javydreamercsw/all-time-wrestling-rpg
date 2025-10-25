@@ -46,7 +46,7 @@ class FactionServiceTest {
     testFaction.setFormedDate(Instant.now());
 
     // Create test wrestler
-    testWrestler = new Wrestler();
+    testWrestler = Wrestler.builder().build();
     testWrestler.setId(1L);
     testWrestler.setName("Test Wrestler");
 

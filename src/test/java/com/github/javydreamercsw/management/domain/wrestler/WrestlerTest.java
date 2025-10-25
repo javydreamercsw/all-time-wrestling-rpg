@@ -2,6 +2,8 @@ package com.github.javydreamercsw.management.domain.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,7 +21,7 @@ class WrestlerTest {
 
   @BeforeEach
   void setUp() {
-    wrestler = new Wrestler();
+    wrestler = Wrestler.builder().build();
     wrestler.setName("Test Wrestler");
     wrestler.setStartingHealth(15);
     wrestler.setFans(0L);
@@ -238,5 +240,62 @@ class WrestlerTest {
     assertThat(wrestler.getEffectiveStartingHealth()).isEqualTo(13); // 15 - 2 bumps
     assertThat(wrestler.isEligibleForTitle(WrestlerTier.RISER)).isTrue();
     assertThat(wrestler.isEligibleForTitle(WrestlerTier.MIDCARDER)).isFalse();
+  }
+
+  @Test
+  @DisplayName("Should get active rivalries correctly")
+  void shouldGetActiveRivalriesCorrectly() {
+    Wrestler rival = Wrestler.builder().build();
+    rival.setName("Rival");
+    Rivalry rivalry = new Rivalry();
+    rivalry.setIsActive(true);
+    rivalry.setWrestler1(wrestler);
+    rivalry.setWrestler2(rival);
+    wrestler.getRivalriesAsWrestler1().add(rivalry);
+    assertThat(wrestler.getActiveRivalries()).contains(rivalry);
+    assertThat(wrestler.hasActiveRivalryWith(rival)).isTrue();
+  }
+
+  @Test
+  @DisplayName("Should calculate total injury penalty with multiple injuries")
+  void shouldCalculateTotalInjuryPenaltyWithMultipleInjuries() {
+    Injury injury1 = new Injury();
+    injury1.setSeverity(com.github.javydreamercsw.management.domain.injury.InjurySeverity.MINOR);
+    injury1.setIsActive(true);
+    injury1.setHealthPenalty(2);
+    Injury injury2 = new Injury();
+    injury2.setSeverity(com.github.javydreamercsw.management.domain.injury.InjurySeverity.MODERATE);
+    injury2.setIsActive(true);
+    injury2.setHealthPenalty(3);
+    wrestler.getInjuries().add(injury1);
+    wrestler.getInjuries().add(injury2);
+    assertThat(wrestler.getTotalInjuryPenalty()).isEqualTo(5);
+  }
+
+  @Test
+  @DisplayName("Should calculate current health with penalties and bumps")
+  void shouldCalculateCurrentHealthWithPenaltiesAndBumps() {
+    wrestler.setCurrentHealth(15);
+    wrestler.setBumps(2);
+    Injury injury = new Injury();
+    injury.setSeverity(com.github.javydreamercsw.management.domain.injury.InjurySeverity.MINOR);
+    injury.setIsActive(true);
+    injury.setHealthPenalty(3);
+    wrestler.getInjuries().add(injury);
+    assertThat(wrestler.getCurrentHealthWithPenalties()).isEqualTo(10); // 15 - 2 - 3
+  }
+
+  @Test
+  @DisplayName("Should refresh current health correctly")
+  void shouldRefreshCurrentHealthCorrectly() {
+    wrestler.setStartingHealth(15);
+    wrestler.setBumps(2);
+    Injury injury = new Injury();
+    injury.setSeverity(com.github.javydreamercsw.management.domain.injury.InjurySeverity.MINOR);
+    injury.setIsActive(true);
+    injury.setHealthPenalty(3);
+    wrestler.getInjuries().add(injury);
+    wrestler.refreshCurrentHealth();
+    assertThat(wrestler.getCurrentHealth()).isEqualTo(10); // 15 - 2 - 3
   }
 }

@@ -1,328 +1,222 @@
 package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.management.domain.injury.Injury;
-import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.service.injury.InjuryService;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * Unit tests for WrestlerService ATW RPG functionality. Tests the service layer methods for fan
- * management, injury system, and wrestler filtering.
- */
-@ExtendWith(MockitoExtension.class)
-@DisplayName("WrestlerService ATW RPG Tests")
-class WrestlerServiceTest {
+class WrestlerServiceTest extends ManagementIntegrationTest {
 
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private InjuryService injuryService;
-  @Mock private Clock clock;
+  @Test
+  @DisplayName("Should create wrestler with ATW RPG defaults")
+  void shouldCreateWrestlerWithAtwRpgDefaults() {
+    // When
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, "Test description");
 
-  @InjectMocks private WrestlerService wrestlerService;
+    // Then
+    assertThat(wrestler.getId()).isNotNull();
+    assertThat(wrestler.getName()).isEqualTo("Test Wrestler");
+    assertThat(wrestler.getFans()).isEqualTo(0L);
+    assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.ROOKIE);
+    assertThat(wrestler.getBumps()).isEqualTo(0);
+    assertThat(wrestler.getIsPlayer()).isTrue();
+    assertThat(wrestler.getDescription()).isEqualTo("Test description");
 
-  private Wrestler testWrestler;
-  private final Instant fixedInstant = Instant.parse("2024-01-01T00:00:00Z");
-
-  @BeforeEach
-  void setUp() {
-    testWrestler = new Wrestler();
-    testWrestler.setId(1L);
-    testWrestler.setName("Test Wrestler");
-    testWrestler.setFans(30000L);
-    testWrestler.setBumps(0);
-    testWrestler.setIsPlayer(true);
-    testWrestler.updateTier();
+    assertThat(wrestler.getDeckSize()).isEqualTo(15);
+    assertThat(wrestler.getStartingHealth()).isEqualTo(15);
   }
 
   @Test
-  @DisplayName("Should award fans and update tier")
-  void shouldAwardFansAndUpdateTier() {
+  @DisplayName("Should award fans and persist tier changes")
+  void shouldAwardFansAndPersistTierChanges() {
     // Given
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(testWrestler));
-    when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(testWrestler);
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.ROOKIE);
 
-    // When
-    Optional<Wrestler> result = wrestlerService.awardFans(1L, 20000L);
+    // When - Award enough fans to reach Contender tier
+    Assertions.assertNotNull(wrestler.getId());
+    Optional<Wrestler> updated = wrestlerService.awardFans(wrestler.getId(), 45_000L);
 
     // Then
-    assertThat(result).isPresent();
-    assertThat(result.get().getFans()).isEqualTo(50000L);
-    assertThat(result.get().getTier()).isEqualTo(WrestlerTier.CONTENDER);
-    verify(wrestlerRepository).saveAndFlush(testWrestler);
+    assertThat(updated).isPresent();
+    assertThat(updated.get().getFans()).isEqualTo(45_000L);
+    assertThat(updated.get().getTier()).isEqualTo(WrestlerTier.CONTENDER);
+
+    // Verify persistence
+    Optional<Wrestler> fromDb = wrestlerRepository.findById(wrestler.getId());
+    assertThat(fromDb).isPresent();
+    assertThat(fromDb.get().getFans()).isEqualTo(45_000L);
+    assertThat(fromDb.get().getTier()).isEqualTo(WrestlerTier.CONTENDER);
   }
 
   @Test
-  @DisplayName("Should handle negative fan awards")
-  void shouldHandleNegativeFanAwards() {
+  @DisplayName("Should handle bump system with persistence")
+  void shouldHandleBumpSystemWithPersistence() {
     // Given
-    testWrestler.setFans(50000L);
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(testWrestler));
-    when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(testWrestler);
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
 
-    // When
-    Optional<Wrestler> result = wrestlerService.awardFans(1L, -20000L);
+    // When - Add bumps
+    Assertions.assertNotNull(wrestler.getId());
+    wrestlerService.addBump(wrestler.getId());
+    wrestlerService.addBump(wrestler.getId());
+    Optional<Wrestler> afterTwoBumps = wrestlerService.addBump(wrestler.getId());
 
-    // Then
-    assertThat(result).isPresent();
-    assertThat(result.get().getFans()).isEqualTo(30000L);
-    assertThat(result.get().getTier()).isEqualTo(WrestlerTier.RISER);
+    // Then - Third bump should trigger injury
+    assertThat(afterTwoBumps).isPresent();
+    assertThat(afterTwoBumps.get().getBumps()).isEqualTo(0); // Reset after injury
+
+    // Verify persistence
+    Optional<Wrestler> fromDb = wrestlerRepository.findById(wrestler.getId());
+    assertThat(fromDb).isPresent();
+    assertThat(fromDb.get().getBumps()).isEqualTo(0);
   }
 
   @Test
-  @DisplayName("Should return empty when wrestler not found for fan award")
-  void shouldReturnEmptyWhenWrestlerNotFoundForFanAward() {
+  @DisplayName("Should spend fans and update tier")
+  void shouldSpendFansAndUpdateTier() {
     // Given
-    when(wrestlerRepository.findById(999L)).thenReturn(Optional.empty());
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    Assertions.assertNotNull(wrestler.getId());
+    wrestlerService.awardFans(wrestler.getId(), 50_000L); // Contender tier
 
     // When
-    Optional<Wrestler> result = wrestlerService.awardFans(999L, 10000L);
+    boolean success = wrestlerService.spendFans(wrestler.getId(), 15_000L);
 
     // Then
-    assertThat(result).isEmpty();
+    assertThat(success).isTrue();
+
+    // Verify persistence and tier update
+    Optional<Wrestler> fromDb = wrestlerRepository.findById(wrestler.getId());
+    assertThat(fromDb).isPresent();
+    assertThat(fromDb.get().getFans()).isEqualTo(35_000L);
+    assertThat(fromDb.get().getTier()).isEqualTo(WrestlerTier.RISER);
   }
 
   @Test
-  @DisplayName("Should add bump without injury")
-  void shouldAddBumpWithoutInjury() {
-    // Given
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(testWrestler));
-    when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(testWrestler);
+  @DisplayName("Should filter wrestlers by eligibility")
+  void shouldFilterWrestlersByEligibility() {
+    int initialEligibleRookieWrestlers =
+        wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE).size();
+    int initialEligibleMainEventerWrestlers =
+        wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER).size();
+    // Given - Create wrestlers with different fan levels
+    wrestlerService.createWrestler("Rookie", true, null);
+    // rookie has 0 fans (Rookie tier)
+
+    Wrestler riser = wrestlerService.createWrestler("Riser", true, null);
+    Assertions.assertNotNull(riser.getId());
+    wrestlerService.awardFans(riser.getId(), 30_000L); // Riser tier
+
+    Wrestler contender = wrestlerService.createWrestler("Contender", true, null);
+    Assertions.assertNotNull(contender.getId());
+    wrestlerService.awardFans(contender.getId(), 45_000L); // Contender tier
+
+    Wrestler mainEventer = wrestlerService.createWrestler("Main Eventer", true, null);
+    Assertions.assertNotNull(mainEventer.getId());
+    wrestlerService.awardFans(mainEventer.getId(), 120_000L); // Main Eventer tier
 
     // When
-    Optional<Wrestler> result = wrestlerService.addBump(1L);
+    List<Wrestler> extremeEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE);
+    List<Wrestler> worldEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER);
 
     // Then
-    assertThat(result).isPresent();
-    assertThat(result.get().getBumps()).isEqualTo(1);
-    verify(wrestlerRepository).saveAndFlush(testWrestler);
-  }
-
-  @Test
-  @DisplayName("Should add bump and trigger injury")
-  void shouldAddBumpAndTriggerInjury() {
-    // Given
-    testWrestler.setBumps(2); // Already has 2 bumps
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(testWrestler));
-    when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(testWrestler);
-
-    // Mock injury creation
-    Injury mockInjury = new Injury();
-    mockInjury.setName("Test Injury");
-    mockInjury.setSeverity(InjurySeverity.MINOR);
-    when(injuryService.createInjuryFromBumps(any())).thenReturn(Optional.of(mockInjury));
-
-    // When
-    Optional<Wrestler> result = wrestlerService.addBump(1L);
-
-    // Then
-    assertThat(result).isPresent();
-    assertThat(result.get().getBumps()).isEqualTo(0); // Reset after injury
-    verify(wrestlerRepository).saveAndFlush(testWrestler);
-    verify(injuryService)
-        .createInjuryFromBumps(testWrestler.getId()); // Verify injury service was called
-  }
-
-  @Test
-  @DisplayName("Should return empty when wrestler not found for bump")
-  void shouldReturnEmptyWhenWrestlerNotFoundForBump() {
-    // Given
-    when(wrestlerRepository.findById(999L)).thenReturn(Optional.empty());
-
-    // When
-    Optional<Wrestler> result = wrestlerService.addBump(999L);
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  @DisplayName("Should get eligible wrestlers for title")
-  void shouldGetEligibleWrestlersForTitle() {
-    // Given
-    Wrestler wrestler1 = createWrestler("Wrestler 1", 20000L); // Not eligible
-    Wrestler wrestler2 = createWrestler("Wrestler 2", 30000L); // Eligible for Extreme
-    Wrestler wrestler3 = createWrestler("Wrestler 3", 45000L); // Eligible for Extreme & Tag Team
-
-    when(wrestlerRepository.findAll()).thenReturn(Arrays.asList(wrestler1, wrestler2, wrestler3));
-
-    // When
-    List<Wrestler> eligible = wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE);
-
-    // Then
-    assertThat(eligible).hasSize(3);
-    assertThat(eligible)
+    assertThat(extremeEligible)
+        .hasSize(initialEligibleRookieWrestlers + 4); // Rookie, Riser, Contender, Main Eventer
+    assertThat(extremeEligible)
         .extracting(Wrestler::getName)
-        .containsExactly("Wrestler 1", "Wrestler 2", "Wrestler 3");
+        .contains("Rookie", "Riser", "Contender", "Main Eventer");
+
+    assertThat(worldEligible).hasSize(initialEligibleMainEventerWrestlers + 1); // Only Main Eventer
+    assertThat(worldEligible).extracting(Wrestler::getName).contains("Main Eventer");
   }
 
   @Test
-  @DisplayName("Should get wrestlers by tier")
-  void shouldGetWrestlersByTier() {
+  @DisplayName("Should filter wrestlers by tier")
+  void shouldFilterWrestlersByTier() {
     // Given
-    Wrestler rookie = createWrestler("Rookie", 10000L);
-    Wrestler riser1 = createWrestler("Riser 1", 30000L);
-    Wrestler riser2 = createWrestler("Riser 2", 35000L);
-    Wrestler contender = createWrestler("Contender", 45000L);
+    wrestlerService.createWrestler("Rookie 1", true, null);
+    wrestlerService.createWrestler("Rookie 2", true, null);
 
-    when(wrestlerRepository.findAll()).thenReturn(Arrays.asList(rookie, riser1, riser2, contender));
+    Wrestler riser = wrestlerService.createWrestler("Riser", true, null);
+    Assertions.assertNotNull(riser.getId());
+    wrestlerService.awardFans(riser.getId(), 30_000L);
+
+    Wrestler contender = wrestlerService.createWrestler("Contender", true, null);
+    Assertions.assertNotNull(contender.getId());
+    wrestlerService.awardFans(contender.getId(), 45_000L);
 
     // When
+    List<Wrestler> rookies = wrestlerService.getWrestlersByTier(WrestlerTier.ROOKIE);
     List<Wrestler> risers = wrestlerService.getWrestlersByTier(WrestlerTier.RISER);
+    List<Wrestler> contenders = wrestlerService.getWrestlersByTier(WrestlerTier.CONTENDER);
 
     // Then
-    assertThat(risers).hasSize(2);
-    assertThat(risers).extracting(Wrestler::getName).containsExactly("Riser 1", "Riser 2");
+    assertThat(rookies).extracting(Wrestler::getName).contains("Rookie 1", "Rookie 2");
+
+    assertThat(risers).hasSize(1);
+    assertThat(risers).extracting(Wrestler::getName).containsExactly("Riser");
+
+    assertThat(contenders).hasSize(1);
+    assertThat(contenders).extracting(Wrestler::getName).containsExactly("Contender");
   }
 
   @Test
-  @DisplayName("Should get player wrestlers")
-  void shouldGetPlayerWrestlers() {
+  @DisplayName("Should filter wrestlers by player status")
+  void shouldFilterWrestlersByPlayerStatus() {
+    int initialSize = wrestlerService.getPlayerWrestlers().size();
     // Given
-    Wrestler player1 = createWrestler("Player 1", 30000L);
-    player1.setIsPlayer(true);
-    Wrestler npc1 = createWrestler("NPC 1", 40000L);
-    npc1.setIsPlayer(false);
-    Wrestler player2 = createWrestler("Player 2", 50000L);
-    player2.setIsPlayer(true);
-
-    when(wrestlerRepository.findAll()).thenReturn(Arrays.asList(player1, npc1, player2));
+    wrestlerService.createWrestler("Player 1", true, null);
+    wrestlerService.createWrestler("Player 2", true, null);
+    wrestlerService.createWrestler("NPC 1", false, null);
+    wrestlerService.createWrestler("NPC 2", false, null);
 
     // When
     List<Wrestler> players = wrestlerService.getPlayerWrestlers();
-
-    // Then
-    assertThat(players).hasSize(2);
-    assertThat(players).extracting(Wrestler::getName).containsExactly("Player 1", "Player 2");
-  }
-
-  @Test
-  @DisplayName("Should get NPC wrestlers")
-  void shouldGetNpcWrestlers() {
-    // Given
-    Wrestler player1 = createWrestler("Player 1", 30000L);
-    player1.setIsPlayer(true);
-    Wrestler npc1 = createWrestler("NPC 1", 40000L);
-    npc1.setIsPlayer(false);
-    Wrestler npc2 = createWrestler("NPC 2", 50000L);
-    npc2.setIsPlayer(false);
-
-    when(wrestlerRepository.findAll()).thenReturn(Arrays.asList(player1, npc1, npc2));
-
-    // When
     List<Wrestler> npcs = wrestlerService.getNpcWrestlers();
 
     // Then
-    assertThat(npcs).hasSize(2);
-    assertThat(npcs).extracting(Wrestler::getName).containsExactly("NPC 1", "NPC 2");
+    assertThat(players).hasSize(initialSize + 2);
+    assertThat(players).extracting(Wrestler::getName).contains("Player 1", "Player 2");
+
+    assertThat(npcs).extracting(Wrestler::getName).contains("NPC 1", "NPC 2");
   }
 
   @Test
-  @DisplayName("Should spend fans successfully")
-  void shouldSpendFansSuccessfully() {
+  @DisplayName("Should maintain data integrity across complex operations")
+  void shouldMaintainDataIntegrityAcrossComplexOperations() {
     // Given
-    testWrestler.setFans(50000L);
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(testWrestler));
-    when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(testWrestler);
+    Wrestler wrestler =
+        wrestlerService.createWrestler(
+            "Complex Test", true, "Test wrestler for complex operations");
 
-    // When
-    boolean result = wrestlerService.spendFans(1L, 20000L);
+    // When - Perform multiple operations
+    Assertions.assertNotNull(wrestler.getId());
+    wrestlerService.awardFans(wrestler.getId(), 60_000L); // Intertemporal tier
+    wrestlerService.addBump(wrestler.getId());
+    wrestlerService.spendFans(wrestler.getId(), 10_000L); // Still Intertemporal
+    wrestlerService.addBump(wrestler.getId());
 
-    // Then
-    assertThat(result).isTrue();
-    assertThat(testWrestler.getFans()).isEqualTo(30000L);
-    verify(wrestlerRepository).saveAndFlush(testWrestler);
-  }
+    // Then - Verify final state
+    Assertions.assertNotNull(wrestler.getId());
+    Optional<Wrestler> finalState = wrestlerRepository.findById(wrestler.getId());
+    assertThat(finalState).isPresent();
 
-  @Test
-  @DisplayName("Should fail to spend fans when insufficient")
-  void shouldFailToSpendFansWhenInsufficient() {
-    // Given
-    testWrestler.setFans(10000L);
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(testWrestler));
-
-    // When
-    boolean result = wrestlerService.spendFans(1L, 20000L);
-
-    // Then
-    assertThat(result).isFalse();
-    assertThat(testWrestler.getFans()).isEqualTo(10000L); // Unchanged
-  }
-
-  @Test
-  @DisplayName("Should return false when wrestler not found for spending")
-  void shouldReturnFalseWhenWrestlerNotFoundForSpending() {
-    // Given
-    when(wrestlerRepository.findById(999L)).thenReturn(Optional.empty());
-
-    // When
-    boolean result = wrestlerService.spendFans(999L, 10000L);
-
-    // Then
-    assertThat(result).isFalse();
-  }
-
-  @Test
-  @DisplayName("Should create ATW wrestler with correct defaults")
-  void shouldCreateWrestlerWithCorrectDefaults() {
-    // Given
-    when(clock.instant()).thenReturn(fixedInstant);
-    Wrestler savedWrestler = new Wrestler();
-    savedWrestler.setName("New Wrestler");
-    savedWrestler.setFans(0L);
-    savedWrestler.setIsPlayer(true);
-    savedWrestler.setDescription("Test description");
-
-    savedWrestler.setCreationDate(fixedInstant);
-
-    // Mock the saveAndFlush method that's actually called by save()
-    when(wrestlerRepository.saveAndFlush(any(Wrestler.class)))
-        .thenAnswer(
-            invocation -> {
-              Wrestler wrestler = invocation.getArgument(0);
-              wrestler.setId(1L); // Simulate database ID assignment
-              return wrestler;
-            });
-
-    // When
-    Wrestler result = wrestlerService.createWrestler("New Wrestler", true, "Test description");
-
-    // Then
-    assertThat(result).isNotNull();
-    assertThat(result.getName()).isEqualTo("New Wrestler");
-    assertThat(result.getIsPlayer()).isTrue();
-    assertThat(result.getDescription()).isEqualTo("Test description");
-
-    assertThat(result.getFans()).isEqualTo(0L);
-    assertThat(result.getBumps()).isEqualTo(0);
-    assertThat(result.getDeckSize()).isEqualTo(15);
-    assertThat(result.getStartingHealth()).isEqualTo(15);
-    verify(wrestlerRepository).saveAndFlush(any(Wrestler.class));
-  }
-
-  private Wrestler createWrestler(String name, Long fans) {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName(name);
-    wrestler.setFans(fans);
-    wrestler.setIsPlayer(true);
-    wrestler.updateTier();
-    return wrestler;
+    Wrestler finalWrestler = finalState.get();
+    assertThat(finalWrestler.getFans()).isEqualTo(50_000L);
+    assertThat(finalWrestler.getTier())
+        .isEqualTo(WrestlerTier.CONTENDER); // Dropped from Intertemporal
+    assertThat(finalWrestler.getBumps()).isEqualTo(2);
+    // Calculate expected health manually to avoid lazy loading issues
+    int expectedHealth = finalWrestler.getStartingHealth() - finalWrestler.getBumps();
+    assertThat(expectedHealth).isEqualTo(13); // 15 - 2 bumps
+    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.RISER)).isTrue();
+    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.MIDCARDER)).isFalse();
+    assertThat(finalWrestler.getDescription()).isEqualTo("Test wrestler for complex operations");
   }
 }

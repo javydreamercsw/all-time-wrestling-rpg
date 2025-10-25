@@ -6,6 +6,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
@@ -43,6 +44,7 @@ public class ShowPlanningService {
       segmentSummaryService;
   private final SegmentTypeService segmentTypeService;
   private final WrestlerService wrestlerService;
+  private final FactionService factionService;
 
   @Transactional
   public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
@@ -50,7 +52,7 @@ public class ShowPlanningService {
 
     // Get segments from the last 30 days
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
-    Instant lastMonth = showDate.minus(30, ChronoUnit.DAYS);
+    Instant lastMonth = showDate.minus(7, ChronoUnit.DAYS);
     log.debug("Getting segments between {} and {}", lastMonth, showDate);
     List<Segment> lastMonthSegments =
         segmentRepository.findBySegmentDateBetween(lastMonth, showDate);
@@ -76,7 +78,7 @@ public class ShowPlanningService {
           }
         });
 
-    context.setLastMonthSegments(lastMonthSegments);
+    context.setRecentSegments(lastMonthSegments);
 
     // Get current rivalries
     List<Rivalry> currentRivalries = rivalryService.getActiveRivalriesBetween(lastMonth, showDate);
@@ -89,7 +91,7 @@ public class ShowPlanningService {
             .filter(promoBookingService::isPromoSegment)
             .collect(Collectors.toList());
     log.debug("Found {} promos in the last month", lastMonthPromos.size());
-    context.setLastMonthPromos(lastMonthPromos);
+    context.setRecentPromos(lastMonthPromos);
 
     // Get show template (hardcoded for now)
     ShowTemplate template = new ShowTemplate();
@@ -118,9 +120,22 @@ public class ShowPlanningService {
     }
     context.setChampionships(championships);
 
+    // Get all wrestlers
+    List<Wrestler> allWrestlers = wrestlerService.findAll();
+    log.debug("Found {} wrestlers in the roster", allWrestlers.size());
+    context.setFullRoster(allWrestlers);
+
+    // Get all factions
+    List<com.github.javydreamercsw.management.domain.faction.Faction> allFactions =
+        factionService.findAll();
+    log.debug("Found {} factions", allFactions.size());
+    context.setFactions(allFactions);
+
     // Get next PLE
     Optional<Show> nextPle =
-        showService.getUpcomingShows(10).stream().filter(Show::isPremiumLiveEvent).findFirst();
+        showService.getUpcomingShows(show.getShowDate(), 10).stream()
+            .filter(Show::isPremiumLiveEvent)
+            .findFirst();
     if (nextPle.isPresent()) {
       ShowPlanningPle ple = new ShowPlanningPle();
       ple.setPle(nextPle.get());

@@ -38,7 +38,7 @@ public class DramaEventService {
   private final RivalryService rivalryService;
   private final InjuryService injuryService;
   private final Clock clock;
-  private final Random random = new Random();
+  private final Random random;
 
   /**
    * Create a new drama event.

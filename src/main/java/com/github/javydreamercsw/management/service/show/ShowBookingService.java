@@ -54,7 +54,7 @@ public class ShowBookingService {
   private final PromoBookingService promoBookingService;
   private final SegmentRuleService segmentRuleService;
   private final Clock clock;
-  private final Random random = new Random();
+  private final Random random;
 
   /**
    * Book a wrestling show with template and date support.
@@ -111,6 +111,13 @@ public class ShowBookingService {
         log.warn("Invalid segment count: {}. Must be between 3 and 10", segmentCount);
         return Optional.empty();
       }
+
+      log.info(
+          "Booking show '{}' with description '{}' of type '{}' with {} segments.",
+          showName,
+          showDescription,
+          showTypeName,
+          segmentCount);
 
       // Get show type
       Optional<ShowType> showTypeOpt = showTypeRepository.findByName(showTypeName);
@@ -215,6 +222,7 @@ public class ShowBookingService {
   private List<Segment> generateSegmentsForShow(@NonNull Show show, int segmentCount) {
     List<Segment> segments = new ArrayList<>();
     List<Wrestler> availableWrestlers = new ArrayList<>(wrestlerRepository.findAll());
+    log.info("Found {} available wrestlers for show booking.", availableWrestlers.size());
 
     if (availableWrestlers.size() < 4) {
       log.warn("Not enough wrestlers available for show booking");

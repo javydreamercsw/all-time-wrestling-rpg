@@ -59,11 +59,11 @@ class TitleSyncServiceTest {
   @Test
   void syncTitles_shouldUpdateChampionAndContender_whenRelationsExist() {
     // Arrange
-    Wrestler champion = new Wrestler();
+    Wrestler champion = Wrestler.builder().build();
     champion.setId(1L);
     champion.setName("Champion Wrestler");
 
-    Wrestler contender = new Wrestler();
+    Wrestler contender = Wrestler.builder().build();
     contender.setId(2L);
     contender.setName("Contender Wrestler");
 

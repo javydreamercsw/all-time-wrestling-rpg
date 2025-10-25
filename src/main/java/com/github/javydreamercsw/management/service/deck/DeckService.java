@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional(propagation = Propagation.REQUIRES_NEW)
+@Transactional(propagation = Propagation.REQUIRED)
 public class DeckService {
 
   private final DeckRepository deckRepository;
@@ -46,6 +46,10 @@ public class DeckService {
 
   public List<Deck> findAll() {
     return deckRepository.findAll();
+  }
+
+  public void delete(Deck deck) {
+    deckRepository.delete(deck);
   }
 
   public Deck findById(@NonNull Long id) {

@@ -105,10 +105,10 @@ public class ShowPlanningAiService {
           .append("\n");
     }
 
-    if (context.getLastMonthSegments() != null && !context.getLastMonthSegments().isEmpty()) {
-      prompt.append("Last Month's Segments:\n");
+    if (context.getRecentSegments() != null && !context.getRecentSegments().isEmpty()) {
+      prompt.append("Recent Segments:\n");
       context
-          .getLastMonthSegments()
+          .getRecentSegments()
           .forEach(
               segment ->
                   prompt
@@ -118,13 +118,17 @@ public class ShowPlanningAiService {
                       .append(segment.getSummary())
                       .append(", Participants: ")
                       .append(String.join(", ", segment.getParticipants()))
+                      .append(", Show: ")
+                      .append(segment.getShowName())
+                      .append(", Date: ")
+                      .append(segment.getShowDate())
                       .append("\n"));
     }
 
-    if (context.getLastMonthPromos() != null && !context.getLastMonthPromos().isEmpty()) {
-      prompt.append("Last Month's Promos:\n");
+    if (context.getRecentPromos() != null && !context.getRecentPromos().isEmpty()) {
+      prompt.append("Recent Promos:\n");
       context
-          .getLastMonthPromos()
+          .getRecentPromos()
           .forEach(
               promo ->
                   prompt
@@ -134,6 +138,10 @@ public class ShowPlanningAiService {
                       .append(promo.getSummary())
                       .append(", Participants: ")
                       .append(String.join(", ", promo.getParticipants()))
+                      .append(", Show: ")
+                      .append(promo.getShowName())
+                      .append(", Date: ")
+                      .append(promo.getShowDate())
                       .append("\n"));
     }
 
@@ -181,6 +189,45 @@ public class ShowPlanningAiService {
                       .append(", Contender: ")
                       .append(championship.getContenderName())
                       .append("\n"));
+    }
+
+    if (context.getFullRoster() != null && !context.getFullRoster().isEmpty()) {
+      prompt.append("\nFull Roster:\n");
+      context
+          .getFullRoster()
+          .forEach(
+              wrestler ->
+                  prompt
+                      .append("- Name: ")
+                      .append(wrestler.getName())
+                      .append(", Gender: ")
+                      .append(wrestler.getGender())
+                      .append(", Tier: ")
+                      .append(wrestler.getTier())
+                      .append(", Description: ")
+                      .append(wrestler.getDescription())
+                      .append("\n"));
+    }
+
+    if (context.getFactions() != null && !context.getFactions().isEmpty()) {
+      prompt.append("\nFactions:\n");
+      context
+          .getFactions()
+          .forEach(
+              faction -> {
+                prompt
+                    .append("- Name: ")
+                    .append(faction.getName())
+                    .append(", Description: ")
+                    .append(faction.getDescription());
+                if (faction.getLeader() != null) {
+                  prompt.append(", Leader: ").append(faction.getLeader());
+                }
+                if (faction.getMembers() != null && !faction.getMembers().isEmpty()) {
+                  prompt.append(", Members: ").append(String.join(", ", faction.getMembers()));
+                }
+                prompt.append("\n");
+              });
     }
 
     if (context.getNextPle() != null) {

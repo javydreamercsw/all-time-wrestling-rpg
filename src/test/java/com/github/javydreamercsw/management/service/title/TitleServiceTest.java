@@ -2,8 +2,10 @@ package com.github.javydreamercsw.management.service.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,6 +27,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 /** Unit tests for TitleService. Tests the ATW RPG championship management functionality. */
 @ExtendWith(MockitoExtension.class)
@@ -77,6 +82,103 @@ class TitleServiceTest {
     // Then
     assertThat(result).isPresent();
     assertThat(result.get()).isEqualTo(title);
+  }
+
+  @Test
+  void testGetTitleById_found() {
+    Title title = new Title();
+    title.setId(1L);
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    Optional<Title> result = titleService.getTitleById(1L);
+    assertThat(result).isPresent();
+    assertThat(result.get().getId()).isEqualTo(1L);
+  }
+
+  @Test
+  void testGetTitleById_notFound() {
+    when(titleRepository.findById(2L)).thenReturn(Optional.empty());
+    Optional<Title> result = titleService.getTitleById(2L);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void testFindByName_found() {
+    Title title = new Title();
+    title.setName("Championship");
+    when(titleRepository.findByName("Championship")).thenReturn(Optional.of(title));
+    Optional<Title> result = titleService.findByName("Championship");
+    assertThat(result).isPresent();
+    assertThat(result.get().getName()).isEqualTo("Championship");
+  }
+
+  @Test
+  void testFindByName_notFound() {
+    when(titleRepository.findByName("Missing")).thenReturn(Optional.empty());
+    Optional<Title> result = titleService.findByName("Missing");
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void testGetAllTitles() {
+    Title title = new Title();
+    Page<Title> page = new PageImpl<>(List.of(title));
+    when(titleRepository.findAllBy(any())).thenReturn(page);
+    Page<Title> result = titleService.getAllTitles(PageRequest.of(0, 10));
+    assertThat(result.getTotalElements()).isEqualTo(1);
+  }
+
+  @Test
+  void testGetActiveTitles() {
+    Title title = new Title();
+    when(titleRepository.findByIsActiveTrue()).thenReturn(List.of(title));
+    List<Title> result = titleService.getActiveTitles();
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void testGetVacantTitles() {
+    Title title = new Title();
+    when(titleRepository.findVacantActiveTitles()).thenReturn(List.of(title));
+    List<Title> result = titleService.getVacantTitles();
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void testGetTitlesByTier() {
+    Title title = new Title();
+    WrestlerTier tier = WrestlerTier.MAIN_EVENTER;
+    when(titleRepository.findActiveTitlesByTier(tier)).thenReturn(List.of(title));
+    List<Title> result = titleService.getTitlesByTier(tier);
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void testAwardTitleTo() {
+    Title title = mock(Title.class);
+    Wrestler wrestler = mock(Wrestler.class);
+    doNothing().when(title).awardTitleTo(anyList(), any());
+    when(titleRepository.saveAndFlush(title)).thenReturn(title);
+    titleService.awardTitleTo(title, List.of(wrestler));
+    verify(title, times(1)).awardTitleTo(anyList(), any());
+    verify(titleRepository, times(1)).saveAndFlush(title);
+  }
+
+  @Test
+  void testVacateTitle_found() {
+    Title title = mock(Title.class);
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    when(titleRepository.saveAndFlush(title)).thenReturn(title);
+    Optional<Title> result = titleService.vacateTitle(1L);
+    assertThat(result).isPresent();
+    verify(title, times(1)).vacateTitle();
+    verify(titleRepository, times(1)).saveAndFlush(title);
+  }
+
+  @Test
+  void testVacateTitle_notFound() {
+    when(titleRepository.findById(2L)).thenReturn(Optional.empty());
+    Optional<Title> result = titleService.vacateTitle(2L);
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -315,7 +417,7 @@ class TitleServiceTest {
   }
 
   private Wrestler createWrestler(String name, Long fans) {
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(1L);
     wrestler.setName(name);
     wrestler.setFans(fans);

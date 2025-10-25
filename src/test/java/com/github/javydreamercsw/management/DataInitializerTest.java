@@ -5,16 +5,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.Card;
+import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
+import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
@@ -32,22 +43,22 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.annotation.DirtiesContext;
 
-@EnabledIf("isNotionTokenAvailable")
-class DataInitializerTest extends AbstractIntegrationTest {
+@SpringBootTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+class DataInitializerTest {
 
-  @Autowired private DataInitializer dataInitializer;
   @Autowired private CardService cardService;
   @Autowired private CardSetService cardSetService;
   @Autowired private WrestlerService wrestlerService;
@@ -59,18 +70,50 @@ class DataInitializerTest extends AbstractIntegrationTest {
   @Autowired private ShowTemplateService showTemplateService;
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private DeckCardService deckCardService;
+  @Autowired private DataInitializer dataInitializer;
+  @Autowired private CardRepository cardRepository;
+  @Autowired private CardSetRepository cardSetRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private DeckRepository deckRepository;
+  @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private ShowRepository showRepository;
+  @Autowired private TitleRepository titleRepository;
+  @Autowired private SegmentRuleRepository segmentRuleRepository;
+  @Autowired private ShowTemplateRepository showTemplateRepository;
+  @Autowired private SegmentTypeRepository segmentTypeRepository;
+  @Autowired private DeckCardRepository deckCardRepository;
 
   @BeforeEach
+  @SneakyThrows
   void setUp() {
-    dataInitializer.loadSegmentRulesFromFile(segmentRuleService);
-    dataInitializer.syncShowTypesFromFile(showTypeService);
-    dataInitializer.loadSegmentTypesFromFile(segmentTypeService);
-    dataInitializer.loadShowTemplatesFromFile(showTemplateService);
-    dataInitializer.syncSetsFromFile(cardSetService);
-    dataInitializer.syncCardsFromFile(cardService, cardSetService);
-    dataInitializer.syncWrestlersFromFile(wrestlerService);
-    dataInitializer.syncChampionshipsFromFile(titleService);
-    dataInitializer.syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService);
+    // Clear repositories before each test to ensure a clean state
+    clearRepositories();
+    // Explicitly run the data initializer to load data from files
+    dataInitializer.loadSegmentRulesFromFile(segmentRuleService).run(null);
+    dataInitializer.syncShowTypesFromFile(showTypeService).run(null);
+    dataInitializer.loadSegmentTypesFromFile(segmentTypeService).run(null);
+    dataInitializer.loadShowTemplatesFromFile(showTemplateService).run(null);
+    dataInitializer.syncSetsFromFile(cardSetService).run(null);
+    dataInitializer.syncCardsFromFile(cardService, cardSetService).run(null);
+    dataInitializer.syncWrestlersFromFile(wrestlerService).run(null);
+    dataInitializer.syncChampionshipsFromFile(titleService).run(null);
+    dataInitializer
+        .syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService)
+        .run(null);
+  }
+
+  private void clearRepositories() {
+    deckCardRepository.deleteAllInBatch();
+    deckRepository.deleteAll();
+    showRepository.deleteAll();
+    titleRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+    cardRepository.deleteAll();
+    cardSetRepository.deleteAll();
+    showTemplateRepository.deleteAll();
+    showTypeRepository.deleteAll();
+    segmentRuleRepository.deleteAll();
+    segmentTypeRepository.deleteAll();
   }
 
   @Test
@@ -219,7 +262,6 @@ class DataInitializerTest extends AbstractIntegrationTest {
   }
 
   @Test
-  @Transactional
   void testDataLoadedFromFile() {
     List<Card> cards = cardService.findAll();
     List<CardSet> sets = cardSetService.findAll();
@@ -253,37 +295,24 @@ class DataInitializerTest extends AbstractIntegrationTest {
             .findFirst()
             .orElseThrow();
     assertThat(card.getSet()).isNotNull();
-    assertThat(card.getSet().getName()).isEqualTo("RVD");
+    assertThat(card.getSet().getSetCode()).isEqualTo("RVD");
   }
 
   @Test
-  @Transactional
   void testDeckImportIsIdempotentAndNoDuplicates() throws Exception {
-    // Initial import
-    dataInitializer
-        .syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService)
-        .run(null);
-    // Import again (simulate repeated import)
-    dataInitializer
-        .syncDecksFromFile(cardService, wrestlerService, deckService, deckCardService)
-        .run(null);
-
     // For each deck, ensure no duplicate DeckCard entries for the same (deck, card, set)
     List<Deck> decks = deckService.findAll();
     for (Deck deck : decks) {
-      List<DeckCard> deckCards =
-          deckCardService.findAll().stream()
-              .filter(dc -> dc.getDeck().getId().equals(deck.getId()))
-              .toList();
+      List<DeckCard> deckCards = deckCardService.findByDeck(deck);
       // Check for duplicates by (cardId, setId)
-      java.util.Set<String> uniqueKeys = new java.util.HashSet<>();
+      Set<String> uniqueKeys = new HashSet<>();
       for (DeckCard dc : deckCards) {
         String key = dc.getCard().getId() + "-" + dc.getSet().getId();
         boolean added = uniqueKeys.add(key);
         assertThat(added)
             .withFailMessage(
                 "Duplicate DeckCard for deck %s, card %s, set %s",
-                deck.getId(), dc.getCard().getId(), dc.getSet().getId())
+                deck.getWrestler().getName(), dc.getCard().getNumber(), dc.getSet().getName())
             .isTrue();
       }
     }

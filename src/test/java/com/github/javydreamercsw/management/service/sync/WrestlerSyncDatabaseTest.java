@@ -9,25 +9,20 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Test class specifically for testing wrestler database persistence logic. This test verifies that
  * wrestlers are properly saved to the database with correct data using the right save methods.
  */
 @ExtendWith(MockitoExtension.class)
-@EnabledIf("isNotionTokenAvailable")
+@Slf4j
 class WrestlerSyncDatabaseTest extends BaseTest {
-
-  private static final Logger log = LoggerFactory.getLogger(WrestlerSyncDatabaseTest.class);
-
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerRepository wrestlerRepository;
 
@@ -35,7 +30,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
   @DisplayName("Should use WrestlerService.save() for new wrestlers")
   void shouldUseWrestlerServiceSaveForNewWrestlers() {
     // Given - Mock wrestler service save
-    Wrestler savedWrestler = new Wrestler();
+    Wrestler savedWrestler = Wrestler.builder().build();
     savedWrestler.setId(1L);
     savedWrestler.setName("Test Wrestler");
     savedWrestler.setExternalId("notion-page-id-123");
@@ -43,7 +38,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
     when(wrestlerService.save(any(Wrestler.class))).thenReturn(savedWrestler);
 
     // When - Simulate the database persistence logic for a new wrestler
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName("Test Wrestler");
     wrestler.setExternalId("notion-page-id-123");
     wrestler.setDeckSize(15);
@@ -76,7 +71,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
   @DisplayName("Should use WrestlerRepository.saveAndFlush() for existing wrestlers")
   void shouldUseWrestlerRepositorySaveAndFlushForExistingWrestlers() {
     // Given - Existing wrestler
-    Wrestler existingWrestler = new Wrestler();
+    Wrestler existingWrestler = Wrestler.builder().build();
     existingWrestler.setId(2L);
     existingWrestler.setName("Existing Wrestler");
     existingWrestler.setDeckSize(20); // Different from default
@@ -84,7 +79,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
     existingWrestler.setCreationDate(Instant.now().minusSeconds(3600)); // Created 1 hour ago
 
     // Mock repository save for existing wrestler
-    Wrestler updatedWrestler = new Wrestler();
+    Wrestler updatedWrestler = Wrestler.builder().build();
     updatedWrestler.setId(2L);
     updatedWrestler.setName("Existing Wrestler");
     updatedWrestler.setExternalId("notion-page-id-456");
@@ -121,12 +116,12 @@ class WrestlerSyncDatabaseTest extends BaseTest {
   @DisplayName("Should verify WrestlerService.save() sets creation date automatically")
   void shouldVerifyWrestlerServiceSaveSetsCreationDateAutomatically() {
     // Given - This test verifies the behavior we discovered in WrestlerService
-    Wrestler wrestler = new Wrestler();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName("Test Wrestler");
     wrestler.setExternalId("notion-page-id-789");
 
     // Mock the WrestlerService behavior (it always sets creation date)
-    Wrestler savedWrestler = new Wrestler();
+    Wrestler savedWrestler = Wrestler.builder().build();
     savedWrestler.setId(3L);
     savedWrestler.setName("Test Wrestler");
     savedWrestler.setExternalId("notion-page-id-789");

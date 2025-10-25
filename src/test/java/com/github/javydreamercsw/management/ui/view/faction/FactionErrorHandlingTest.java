@@ -261,7 +261,7 @@ class FactionErrorHandlingTest {
       faction.setCreationDate(Instant.now());
       largeFactionList.add(faction);
 
-      Wrestler wrestler = new Wrestler();
+      Wrestler wrestler = Wrestler.builder().build();
       wrestler.setId((long) i);
       wrestler.setName("Wrestler " + i);
       wrestler.setFans((long) (50 + i));

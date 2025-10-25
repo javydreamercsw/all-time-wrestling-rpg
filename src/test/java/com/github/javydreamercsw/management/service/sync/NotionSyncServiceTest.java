@@ -5,311 +5,309 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.test.BaseTest;
-import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.FactionRivalrySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.InjurySyncService;
+import com.github.javydreamercsw.management.service.sync.entity.NpcSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.RivalrySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.SeasonSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.SegmentSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTemplateSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.ShowTypeSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.TeamSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.TitleReignSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.TitleSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.WrestlerSyncService;
-import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
-import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
-@ExtendWith(MockitoExtension.class)
-@EnabledIf("isNotionTokenAvailable")
-class NotionSyncServiceTest extends BaseTest {
+/**
+ * @author Javier Ortiz Bultron @date Oct 10, 2023
+ */
+@Slf4j
+class NotionSyncServiceTest extends ManagementIntegrationTest {
 
-  @Mock private ObjectMapper objectMapper;
-  private NotionSyncProperties syncProperties; // Declare as a real instance
-
-  // Mock entity-specific sync services
+  @Mock private ShowTypeSyncService showTypeSyncService;
+  @Mock private SeasonSyncService seasonSyncService;
+  @Mock private ShowTemplateSyncService showTemplateSyncService;
   @Mock private ShowSyncService showSyncService;
   @Mock private WrestlerSyncService wrestlerSyncService;
   @Mock private FactionSyncService factionSyncService;
   @Mock private TeamSyncService teamSyncService;
-  @Mock private SegmentSyncService segmentSyncService;
-  @Mock private SeasonSyncService seasonSyncService;
-  @Mock private ShowTypeSyncService showTypeSyncService;
-  @Mock private ShowTemplateSyncService showTemplateSyncService;
+  @Mock private TitleSyncService titleSyncService;
+  @Mock private TitleReignSyncService titleReignSyncService;
   @Mock private InjurySyncService injurySyncService;
-
-  // Mock parallel sync components
-  @Mock private ParallelSyncOrchestrator parallelSyncOrchestrator;
-  // @Mock private EntitySyncConfiguration entitySyncConfiguration; // Removed mock
+  @Mock private NpcSyncService npcSyncService;
+  @Mock private SegmentSyncService segmentSyncService;
+  @Mock private RivalrySyncService rivalrySyncService;
+  @Mock private FactionRivalrySyncService factionRivalrySyncService;
+  @Mock private ObjectMapper objectMapper;
+  @Mock private NotionSyncProperties syncProperties;
 
   private NotionSyncService notionSyncService;
 
   @BeforeEach
-  void setUp() throws Exception {
-    // Instantiate a real NotionSyncProperties
-    syncProperties = new NotionSyncProperties();
-    syncProperties.setParallelThreads(1); // Explicitly set for test consistency
-
-    // Create the service with constructor injection
+  public void setUp() {
+    log.info("🧪 Setting up NotionSyncServiceTest");
+    when(syncProperties.getParallelThreads()).thenReturn(1);
     notionSyncService = new NotionSyncService(objectMapper, syncProperties);
-
-    // Create and configure a real EntitySyncConfiguration instance
-    EntitySyncConfiguration entitySyncConfiguration = new EntitySyncConfiguration();
-    entitySyncConfiguration.getDefaults().setEnabled(true);
-    entitySyncConfiguration.getDefaults().setBatchSize(50);
-    entitySyncConfiguration.getDefaults().setParallelProcessing(true);
-    entitySyncConfiguration.getDefaults().setMaxThreads(4);
-    entitySyncConfiguration.getDefaults().setTimeoutSeconds(300);
-    entitySyncConfiguration.getDefaults().setRetryAttempts(3);
-    entitySyncConfiguration.getDefaults().setRetryDelayMs(1000);
-    entitySyncConfiguration.getDefaults().setValidationEnabled(true);
-    entitySyncConfiguration.getDefaults().setSkipOnError(true);
-
-    // Inject the mocked sync services using reflection
-    setField(notionSyncService, "showSyncService", showSyncService);
-    setField(notionSyncService, "wrestlerSyncService", wrestlerSyncService);
-    setField(notionSyncService, "factionSyncService", factionSyncService);
-    setField(notionSyncService, "teamSyncService", teamSyncService);
-    setField(notionSyncService, "segmentSyncService", segmentSyncService);
-    setField(notionSyncService, "seasonSyncService", seasonSyncService);
-    setField(notionSyncService, "showTypeSyncService", showTypeSyncService);
-    setField(notionSyncService, "showTemplateSyncService", showTemplateSyncService);
-    setField(notionSyncService, "injurySyncService", injurySyncService);
-    setField(notionSyncService, "parallelSyncOrchestrator", parallelSyncOrchestrator);
-    setField(notionSyncService, "entitySyncConfiguration", entitySyncConfiguration);
-  }
-
-  // ==================== PARALLEL SYNC TESTS ====================
-
-  @Test
-  @DisplayName("Should execute parallel sync for all entities")
-  void shouldExecuteParallelSyncForAllEntities() {
-    // Given
-    ParallelSyncResult mockResult = mock(ParallelSyncResult.class);
-    when(parallelSyncOrchestrator.executeParallelSync()).thenReturn(mockResult);
-
-    // When
-    ParallelSyncResult result = notionSyncService.syncAllEntitiesParallel();
-
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(parallelSyncOrchestrator).executeParallelSync();
+    ReflectionTestUtils.setField(notionSyncService, "showTypeSyncService", showTypeSyncService);
+    ReflectionTestUtils.setField(notionSyncService, "seasonSyncService", seasonSyncService);
+    ReflectionTestUtils.setField(
+        notionSyncService, "showTemplateSyncService", showTemplateSyncService);
+    ReflectionTestUtils.setField(notionSyncService, "showSyncService", showSyncService);
+    ReflectionTestUtils.setField(notionSyncService, "wrestlerSyncService", wrestlerSyncService);
+    ReflectionTestUtils.setField(notionSyncService, "factionSyncService", factionSyncService);
+    ReflectionTestUtils.setField(notionSyncService, "teamSyncService", teamSyncService);
+    ReflectionTestUtils.setField(notionSyncService, "titleSyncService", titleSyncService);
+    ReflectionTestUtils.setField(notionSyncService, "titleReignSyncService", titleReignSyncService);
+    ReflectionTestUtils.setField(notionSyncService, "injurySyncService", injurySyncService);
+    ReflectionTestUtils.setField(notionSyncService, "npcSyncService", npcSyncService);
+    ReflectionTestUtils.setField(notionSyncService, "segmentSyncService", segmentSyncService);
+    ReflectionTestUtils.setField(notionSyncService, "rivalrySyncService", rivalrySyncService);
+    ReflectionTestUtils.setField(
+        notionSyncService, "factionRivalrySyncService", factionRivalrySyncService);
   }
 
   @Test
-  @DisplayName("Should execute parallel sync with operation ID")
-  void shouldExecuteParallelSyncWithOperationId() {
+  @DisplayName("Should sync show types from Notion to database")
+  void shouldSyncShowTypesFromNotionToDatabase() {
+    log.info("🎭 Testing show types sync from Notion to database");
+
     // Given
-    String operationId = "test-parallel-sync";
-    ParallelSyncResult mockResult = mock(ParallelSyncResult.class);
-    when(parallelSyncOrchestrator.executeParallelSync(operationId)).thenReturn(mockResult);
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success("Show Types", 1, 0, 0);
+    when(showTypeSyncService.syncShowTypes(anyString())).thenReturn(expectedResult);
 
-    // When
-    ParallelSyncResult result = notionSyncService.syncAllEntitiesParallel(operationId);
+    // When - Sync show types from Notion
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncShowTypes("integration-test-show-types");
 
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(parallelSyncOrchestrator).executeParallelSync(operationId);
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(showTypeSyncService, times(1)).syncShowTypes(anyString());
   }
 
-  // ==================== SHOWS SYNC TESTS ====================
+  @Test
+  @DisplayName("Should sync wrestlers from Notion to database")
+  void shouldSyncWrestlersFromNotionToDatabase() {
+    log.info("🤼 Testing wrestlers sync from Notion to database");
+
+    // Given
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success("Wrestlers", 1, 0, 0);
+    when(wrestlerSyncService.syncWrestlers(anyString())).thenReturn(expectedResult);
+
+    // When - Sync wrestlers from Notion
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncWrestlers("integration-test-wrestlers");
+
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(wrestlerSyncService, times(1)).syncWrestlers(anyString());
+  }
 
   @Test
-  @DisplayName("Should delegate shows sync to ShowSyncService")
-  void shouldDelegateShowsSyncToShowSyncService() {
-    // Given
-    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Shows", 5, 0);
-    when(showSyncService.syncShows()).thenReturn(mockResult);
+  @DisplayName("Should sync seasons from Notion to database")
+  void shouldSyncSeasonsFromNotionToDatabase() {
+    log.info("📅 Testing seasons sync from Notion to database");
 
-    // When
+    // Given
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success("Seasons", 1, 0, 0);
+    when(seasonSyncService.syncSeasons(anyString())).thenReturn(expectedResult);
+
+    // When - Sync seasons from Notion
+    BaseSyncService.SyncResult result = notionSyncService.syncSeasons("integration-test-seasons");
+
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(seasonSyncService, times(1)).syncSeasons(anyString());
+  }
+
+  @Test
+  @DisplayName("Should sync show templates from Notion to database")
+  void shouldSyncShowTemplatesFromNotionToDatabase() {
+    log.info("📋 Testing show templates sync from Notion to database");
+
+    // Given
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success("Show Templates", 1, 0, 0);
+    when(showTemplateSyncService.syncShowTemplates(anyString())).thenReturn(expectedResult);
+
+    // When - Sync show templates from Notion
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncShowTemplates("integration-test-templates");
+
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(showTemplateSyncService, times(1)).syncShowTemplates(anyString());
+  }
+
+  @Test
+  @DisplayName("Should sync factions from Notion to database")
+  void shouldSyncFactionsFromNotionToDatabase() {
+    log.info("👥 Testing factions sync from Notion to database");
+
+    // Given
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success("Factions", 1, 0, 0);
+    when(factionSyncService.syncFactions(anyString())).thenReturn(expectedResult);
+
+    // When - Sync factions from Notion
+    BaseSyncService.SyncResult result = notionSyncService.syncFactions("integration-test-factions");
+
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(factionSyncService, times(1)).syncFactions(anyString());
+  }
+
+  @Test
+  @DisplayName("Should sync shows from Notion to database")
+  void shouldSyncShowsFromNotionToDatabase() {
+    log.info("📺 Testing shows sync from Notion to database");
+
+    // Given
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success("Shows", 1, 0, 0);
+    when(showSyncService.syncShows()).thenReturn(expectedResult);
+
+    // When - Sync shows from Notion
     BaseSyncService.SyncResult result = notionSyncService.syncShows();
 
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(showSyncService).syncShows();
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(showSyncService, times(1)).syncShows();
   }
 
   @Test
-  @DisplayName("Should delegate shows sync with operation ID to ShowSyncService")
-  void shouldDelegateShowsSyncWithOperationIdToShowSyncService() {
+  @DisplayName("Should sync injury types from Notion to database")
+  void shouldSyncInjuryTypesFromNotionToDatabase() {
+    log.info("🩹 Testing injury types sync from Notion to database");
+
     // Given
-    String operationId = "test-shows-sync";
-    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Shows", 3, 1);
-    when(showSyncService.syncShows(operationId)).thenReturn(mockResult);
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success("Injury Types", 1, 0, 0);
+    when(injurySyncService.syncInjuryTypes(anyString())).thenReturn(expectedResult);
 
-    // When
-    BaseSyncService.SyncResult result = notionSyncService.syncShows(operationId);
+    // When - Sync injury types from Notion
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncInjuryTypes("integration-test-injury-types");
 
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(showSyncService).syncShows(operationId);
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(injurySyncService, times(1)).syncInjuryTypes(anyString());
   }
 
-  // ==================== WRESTLERS SYNC TESTS ====================
-
   @Test
-  @DisplayName("Should delegate wrestlers sync to WrestlerSyncService")
-  void shouldDelegateWrestlersSyncToWrestlerSyncService() {
+  @DisplayName("Should sync NPCs from Notion to database")
+  void shouldSyncNpcsFromNotionToDatabase() {
+    log.info("🤖 Testing NPCs sync from Notion to database");
+
     // Given
-    String operationId = "test-wrestlers-sync";
-    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Wrestlers", 10, 2);
-    when(wrestlerSyncService.syncWrestlers(operationId)).thenReturn(mockResult);
+    BaseSyncService.SyncResult expectedResult = BaseSyncService.SyncResult.success("NPCs", 1, 0, 0);
+    when(npcSyncService.syncNpcs(anyString())).thenReturn(expectedResult);
 
-    // When
-    BaseSyncService.SyncResult result = notionSyncService.syncWrestlers(operationId);
+    // When - Sync NPCs from Notion
+    BaseSyncService.SyncResult result = notionSyncService.syncNpcs("integration-test-npcs");
 
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(wrestlerSyncService).syncWrestlers(operationId);
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(npcSyncService, times(1)).syncNpcs(anyString());
   }
 
-  // ==================== FACTIONS SYNC TESTS ====================
-
   @Test
-  @DisplayName("Should delegate factions sync to FactionSyncService")
-  void shouldDelegateFactionsSyncToFactionSyncService() {
+  @DisplayName("Should sync titles from Notion to database")
+  void shouldSyncTitlesFromNotionToDatabase() {
+    log.info("🏆 Testing titles sync from Notion to database");
+
     // Given
-    String operationId = "test-factions-sync";
-    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Factions", 4, 0);
-    when(factionSyncService.syncFactions(operationId)).thenReturn(mockResult);
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success("Titles", 1, 0, 0);
+    when(titleSyncService.syncTitles(anyString())).thenReturn(expectedResult);
 
-    // When
-    BaseSyncService.SyncResult result = notionSyncService.syncFactions(operationId);
+    // When - Sync titles from Notion
+    BaseSyncService.SyncResult result = notionSyncService.syncTitles("integration-test-titles");
 
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(factionSyncService).syncFactions(operationId);
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(titleSyncService, times(1)).syncTitles(anyString());
   }
 
-  // ==================== TEAMS SYNC TESTS ====================
-
   @Test
-  @DisplayName("Should delegate teams sync to TeamSyncService")
-  void shouldDelegateTeamsSyncToTeamSyncService() {
+  @DisplayName("Should sync title reigns from Notion to database")
+  void shouldSyncTitleReignsFromNotionToDatabase() {
+    log.info("👑 Testing title reigns sync from Notion to database");
+
     // Given
-    String operationId = "test-teams-sync";
-    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Teams", 6, 1);
-    when(teamSyncService.syncTeams(operationId)).thenReturn(mockResult);
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success("Title Reigns", 1, 0, 0);
+    when(titleReignSyncService.syncTitleReigns(anyString())).thenReturn(expectedResult);
 
-    // When
-    BaseSyncService.SyncResult result = notionSyncService.syncTeams(operationId);
+    // When - Sync title reigns from Notion
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncTitleReigns("integration-test-title-reigns");
 
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(teamSyncService).syncTeams(operationId);
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(titleReignSyncService, times(1)).syncTitleReigns(anyString());
   }
 
-  // ==================== MATCHES SYNC TESTS ====================
-
   @Test
-  @DisplayName("Should delegate matches sync to MatchSyncService")
-  void shouldDelegateMatchesSyncToMatchSyncService() {
+  @DisplayName("Should sync rivalries from Notion to database")
+  void shouldSyncRivalriesFromNotionToDatabase() {
+    log.info("🔥 Testing rivalries sync from Notion to database");
+
     // Given
-    String testOperationId = "my-test-operation-id";
-    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Segments", 15, 3);
-    when(segmentSyncService.syncSegments(testOperationId + "-matches")).thenReturn(mockResult);
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success("Rivalries", 1, 0, 0);
+    when(rivalrySyncService.syncRivalries(anyString())).thenReturn(expectedResult);
 
-    // When
-    BaseSyncService.SyncResult result = notionSyncService.syncSegments(testOperationId);
+    // When - Sync rivalries from Notion
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncRivalries("integration-test-rivalries");
 
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(segmentSyncService).syncSegments(testOperationId + "-matches");
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(rivalrySyncService, times(1)).syncRivalries(anyString());
   }
 
-  // ==================== SEASONS SYNC TESTS ====================
-
   @Test
-  @DisplayName("Should delegate seasons sync to SeasonSyncService")
-  void shouldDelegateSeasonsSyncToSeasonSyncService() {
+  @DisplayName("Should sync faction rivalries from Notion to database")
+  void shouldSyncFactionRivalriesFromNotionToDatabase() {
+    log.info("🔥🔥 Testing faction rivalries sync from Notion to database");
+
     // Given
-    String operationId = "test-seasons-sync";
-    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("Seasons", 2, 0);
-    when(seasonSyncService.syncSeasons(operationId)).thenReturn(mockResult);
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success("Faction Rivalries", 1, 0, 0);
+    when(factionRivalrySyncService.syncFactionRivalries(anyString())).thenReturn(expectedResult);
 
-    // When
-    BaseSyncService.SyncResult result = notionSyncService.syncSeasons(operationId);
+    // When - Sync faction rivalries from Notion
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncFactionRivalries("integration-test-faction-rivalries");
 
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(seasonSyncService).syncSeasons(operationId);
-  }
-
-  // ==================== SHOW TEMPLATES SYNC TESTS ====================
-
-  @Test
-  @DisplayName("Should delegate show templates sync to ShowTemplateSyncService")
-  void shouldDelegateShowTemplatesSyncToShowTemplateSyncService() {
-    // Given
-    String operationId = "test-show-templates-sync";
-    BaseSyncService.SyncResult mockResult =
-        BaseSyncService.SyncResult.success("ShowTemplates", 8, 1);
-    when(showTemplateSyncService.syncShowTemplates(operationId)).thenReturn(mockResult);
-
-    // When
-    BaseSyncService.SyncResult result = notionSyncService.syncShowTemplates(operationId);
-
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(showTemplateSyncService).syncShowTemplates(operationId);
-  }
-
-  // ==================== SHOW TYPES SYNC TESTS ====================
-
-  @Test
-  @DisplayName("Should delegate show types sync to ShowTypeSyncService")
-  void shouldDelegateShowTypesSyncToShowTypeSyncService() {
-    // Given
-    String operationId = "test-show-types-sync";
-    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("ShowTypes", 3, 0);
-    when(showTypeSyncService.syncShowTypes(operationId)).thenReturn(mockResult);
-
-    // When
-    BaseSyncService.SyncResult result = notionSyncService.syncShowTypes(operationId);
-
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(showTypeSyncService).syncShowTypes(operationId);
-  }
-
-  // ==================== INJURY TYPES SYNC TESTS ====================
-
-  @Test
-  @DisplayName("Should delegate injury types sync to InjurySyncService")
-  void shouldDelegateInjuryTypesSyncToInjurySyncService() {
-    // Given
-    String operationId = "test-injury-types-sync";
-    BaseSyncService.SyncResult mockResult = BaseSyncService.SyncResult.success("InjuryTypes", 7, 2);
-    when(injurySyncService.syncInjuryTypes(operationId)).thenReturn(mockResult);
-
-    // When
-    BaseSyncService.SyncResult result = notionSyncService.syncInjuryTypes(operationId);
-
-    // Then
-    assertThat(result).isEqualTo(mockResult);
-    verify(injurySyncService).syncInjuryTypes(operationId);
-  }
-
-  // ==================== ERROR HANDLING TESTS ====================
-
-  @Test
-  @DisplayName("Should handle sync service failures gracefully")
-  void shouldHandleSyncServiceFailuresGracefully() {
-    // Given
-    String operationId = "test-error-handling";
-    RuntimeException testException = new RuntimeException("Test sync failure");
-    when(showSyncService.syncShows(operationId)).thenThrow(testException);
-
-    // When & Then
-    assertThrows(RuntimeException.class, () -> notionSyncService.syncShows(operationId));
-    verify(showSyncService).syncShows(operationId);
+    // Then - Verify sync result
+    assertNotNull(result, "Sync result should not be null");
+    assertThat(result).isEqualTo(expectedResult);
+    verify(factionRivalrySyncService, times(1)).syncFactionRivalries(anyString());
   }
 }

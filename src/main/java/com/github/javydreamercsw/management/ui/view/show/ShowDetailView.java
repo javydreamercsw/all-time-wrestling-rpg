@@ -9,6 +9,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -51,6 +52,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * Detail view for displaying comprehensive information about a specific show. Accessible via URL
@@ -71,8 +73,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
   private final TitleService titleService;
   private final com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository
       segmentRuleRepository;
-  private final com.github.javydreamercsw.management.service.match.MatchAdjudicationService
-      matchAdjudicationService;
+  private final SegmentAdjudicationService segmentAdjudicationService;
   private final com.github.javydreamercsw.management.service.show.type.ShowTypeService
       showTypeService;
   private final com.github.javydreamercsw.management.service.season.SeasonService seasonService;
@@ -95,8 +96,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       TitleService titleService,
       com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository
           segmentRuleRepository,
-      com.github.javydreamercsw.management.service.match.MatchAdjudicationService
-          matchAdjudicationService,
+      SegmentAdjudicationService segmentAdjudicationService,
       com.github.javydreamercsw.management.service.show.type.ShowTypeService showTypeService,
       com.github.javydreamercsw.management.service.season.SeasonService seasonService,
       com.github.javydreamercsw.management.service.show.template.ShowTemplateService
@@ -110,7 +110,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     this.wrestlerService = wrestlerService;
     this.titleService = titleService;
     this.segmentRuleRepository = segmentRuleRepository;
-    this.matchAdjudicationService = matchAdjudicationService;
+    this.segmentAdjudicationService = segmentAdjudicationService;
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
@@ -623,12 +623,10 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   private void generateSummary(@NonNull Segment segment) {
     String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
-    Segment updatedSegment =
-        new org.springframework.web.client.RestTemplate()
-            .postForObject(
-                baseUrl + "/api/segments/" + segment.getId() + "/summarize",
-                null,
-                com.github.javydreamercsw.management.domain.show.segment.Segment.class);
+
+    new RestTemplate()
+        .postForObject(
+            baseUrl + "/api/segments/" + segment.getId() + "/summarize", null, Segment.class);
     Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     loadShow(this.currentShowId);
@@ -924,7 +922,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
         Notification.show("Segment added successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       }
-      matchAdjudicationService.adjudicateMatch(savedSegment);
+      segmentAdjudicationService.adjudicateMatch(savedSegment);
       return true;
     } catch (Exception e) {
       Notification.show(

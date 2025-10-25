@@ -180,7 +180,7 @@
     "amount" : 1
   }, {
     "number" : 48,
-    "set" : "ATW",
+    "set" : "SGT",
     "amount" : 1
   }, {
     "number" : 4,
@@ -196,6 +196,754 @@
     "amount" : 1
   }, {
     "number" : 3,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Eddie Guerrero",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "EDDIE",
+    "amount" : 1
+  }, {
+    "number" : 18,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 30,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 59,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 32,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 31,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Randy Savage",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 16,
+    "set" : "RS",
+    "amount" : 1
+  }, {
+    "number" : 17,
+    "set" : "RS",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "The British Bulldog",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 16,
+    "set" : "BB",
+    "amount" : 1
+  }, {
+    "number" : 17,
+    "set" : "BB",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Daemon",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "DMN",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "DMN",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "DMN",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "DMN",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 19,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 23,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 21,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 20,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 24,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 22,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Rey Jaguar",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "RJ",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "RJ",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Raven",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "RVN",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "RVN",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "RVN",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "RVN",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "RVN",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "RVN",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "RVN",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 1,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Dynamite Kid",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "DYN",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "DYN",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "DYN",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "DYN",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "DYN",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 31,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 32,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 36,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 30,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 33,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 34,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 35,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Jax Felix",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "JF",
+    "amount" : 1
+  }, {
+    "number" : 16,
+    "set" : "JF",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Sabu",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "SBU",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 18,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 16,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 1,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Junkyard Dog",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "JYD",
+    "amount" : 3
+  }, {
+    "number" : 2,
+    "set" : "JYD",
+    "amount" : 2
+  }, {
+    "number" : 3,
+    "set" : "JYD",
+    "amount" : 2
+  }, {
+    "number" : 4,
+    "set" : "JYD",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "JYD",
+    "amount" : 1
+  }, {
+    "number" : 49,
+    "set" : "ATW",
+    "amount" : 2
+  }, {
+    "number" : 47,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 1,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Nick Aldis",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "NAD",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "NAD",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "NAD",
+    "amount" : 1
+  }, {
+    "number" : 27,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 42,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 40,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 38,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 39,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 37,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 1,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "OMZ",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "OMZ",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "OMZ",
+    "amount" : 2
+  }, {
+    "number" : 3,
+    "set" : "OMZ",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "OMZ",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "OMZ",
+    "amount" : 1
+  }, {
+    "number" : 31,
+    "set" : "ATW",
+    "amount" : 2
+  }, {
+    "number" : 50,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 43,
+    "set" : "ATW",
+    "amount" : 2
+  }, {
+    "number" : 20,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 36,
     "set" : "ATW",
     "amount" : 1
   } ]

@@ -36,7 +36,7 @@ public class ShowTypeSyncService extends BaseSyncService {
     // Check if already synced in current session
     if (isAlreadySyncedInSession("show-types")) {
       log.info("⏭️ Show types already synced in current session, skipping");
-      return SyncResult.success("Show Types", 0, 0);
+      return SyncResult.success("Show Types", 0, 0, 0);
     }
 
     log.info("🎭 Starting show types synchronization with operation ID: {}", operationId);
@@ -54,38 +54,40 @@ public class ShowTypeSyncService extends BaseSyncService {
     }
   }
 
-  private SyncResult performShowTypesSync(@NonNull String operationId, long startTime) {
+  private SyncResult performShowTypesSync(@NonNull String operationId, long startTime)
+      throws InterruptedException {
+    int createdCount = 0;
+    int updatedCount = 0;
+
     try {
       // Initialize progress tracking for show types sync
       progressTracker.startOperation(operationId, "Sync Show Types", 4);
-      progressTracker.updateProgress(operationId, 1, "Extracting show types from Notion...");
+      progressTracker.updateProgress(operationId, 2, "Extracting show types from Notion...");
 
       // Extract show types from the Shows database in Notion
       Set<String> notionShowTypes = extractShowTypesFromNotionShows();
 
-      progressTracker.updateProgress(operationId, 2, "Processing show types...");
-
       if (notionShowTypes.isEmpty()) {
         log.info(
-            "No show types found in Notion Shows database. Creating default show types if needed.");
-        progressTracker.updateProgress(operationId, 3, "Creating default show types...");
-        SyncResult result = createDefaultShowTypesIfNeeded();
+            "No show types found in Notion Shows database. Ensuring default show types exist...");
+        // If no Notion types, create default show types
+        SyncResult defaultResult = createDefaultShowTypesIfNeeded();
+        createdCount += defaultResult.getCreatedCount();
+        updatedCount += defaultResult.getUpdatedCount();
 
         progressTracker.completeOperation(
             operationId,
-            result.isSuccess(),
-            result.isSuccess()
-                ? "Default show types created successfully"
-                : result.getErrorMessage(),
-            result.getSyncedCount());
-
-        return result;
+            defaultResult.isSuccess(),
+            defaultResult.isSuccess()
+                ? "Default show types ensured successfully"
+                : defaultResult.getErrorMessage(),
+            createdCount + updatedCount);
+        return SyncResult.success("Show Types", createdCount, updatedCount, 0);
       }
 
-      // Sync show types from Notion
-      int createdCount = 0;
-      int updatedCount = 0;
+      progressTracker.updateProgress(operationId, 3, "Processing Notion show types...");
 
+      // Sync show types from Notion
       for (String showTypeName : notionShowTypes) {
         if (showTypeName == null || showTypeName.trim().isEmpty() || "N/A".equals(showTypeName)) {
           continue; // Skip invalid show types
@@ -103,18 +105,13 @@ public class ShowTypeSyncService extends BaseSyncService {
           createdCount++;
           log.info("Created show type from Notion: {}", showTypeName);
         } else {
-          // Show type already exists
+          // Show type already exists, update it
+          // Only update if necessary (e.g., description changed)
+          // For now, just increment updatedCount if it exists
+          showTypeService.save(existingShowType.get()); // Persist changes to existing entity
           updatedCount++;
           log.debug("Show type already exists: {}", showTypeName);
         }
-      }
-
-      progressTracker.updateProgress(operationId, 3, "Creating default show types if needed...");
-
-      // Also ensure default show types exist for backward compatibility
-      SyncResult defaultResult = createDefaultShowTypesIfNeeded();
-      if (defaultResult.isSuccess()) {
-        createdCount += defaultResult.getSyncedCount();
       }
 
       long duration = System.currentTimeMillis() - startTime;
@@ -132,46 +129,41 @@ public class ShowTypeSyncService extends BaseSyncService {
               createdCount + updatedCount, createdCount, updatedCount),
           createdCount + updatedCount);
 
-      return SyncResult.success("Show Types", createdCount, updatedCount);
+      return SyncResult.success("Show Types", createdCount, updatedCount, 0);
 
     } catch (Exception e) {
       log.error("Failed to sync show types: {}", e.getMessage(), e);
 
       progressTracker.completeOperation(
           operationId, false, "Failed to sync show types: " + e.getMessage(), 0);
+      healthMonitor.recordFailure("Show Types", e.getMessage());
 
       return SyncResult.failure("Show Types", "Failed to sync show types: " + e.getMessage());
     }
   }
 
   /** Extracts all unique show types from the Shows database in Notion. */
-  private Set<String> extractShowTypesFromNotionShows() {
+  private Set<String> extractShowTypesFromNotionShows() throws InterruptedException {
     Set<String> showTypes = new HashSet<>();
 
-    try {
-      // Check if NotionHandler is available
-      if (!isNotionHandlerAvailable()) {
-        log.warn("NotionHandler not available. Cannot extract show types from Notion.");
-        return showTypes; // Return empty set
-      }
-
-      log.info("Extracting show types from Notion Shows database...");
-      List<ShowPage> allShows = executeWithRateLimit(notionHandler::loadAllShowsForSync);
-
-      for (ShowPage showPage : allShows) {
-        String showType = extractShowType(showPage);
-        if (showType != null && !showType.trim().isEmpty() && !"N/A".equals(showType)) {
-          showTypes.add(showType.trim());
-        }
-      }
-
-      log.info("Found {} unique show types in Notion: {}", showTypes.size(), showTypes);
-      return showTypes;
-
-    } catch (Exception e) {
-      log.error("Failed to extract show types from Notion: {}", e.getMessage(), e);
-      return new HashSet<>(); // Return empty set on error
+    // Check if NotionHandler is available
+    if (!isNotionHandlerAvailable()) {
+      log.warn("NotionHandler not available. Cannot extract show types from Notion.");
+      return showTypes; // Return empty set
     }
+
+    log.info("Extracting show types from Notion Shows database...");
+    List<ShowPage> allShows = executeWithRateLimit(notionHandler::loadAllShowsForSync);
+
+    for (ShowPage showPage : allShows) {
+      String showType = extractShowType(showPage);
+      if (showType != null && !showType.trim().isEmpty() && !"N/A".equals(showType)) {
+        showTypes.add(showType.trim());
+      }
+    }
+
+    log.info("Found {} unique show types in Notion: {}", showTypes.size(), showTypes);
+    return showTypes;
   }
 
   /** Extracts show type from a ShowPage. */
@@ -211,37 +203,47 @@ public class ShowTypeSyncService extends BaseSyncService {
   /** Creates default show types if none exist in the database. */
   private SyncResult createDefaultShowTypesIfNeeded() {
     try {
+      log.info("createDefaultShowTypesIfNeeded called");
       // Check if any show types exist
       List<ShowType> existingShowTypes = showTypeService.findAll();
+      log.info("existingShowTypes: {}", existingShowTypes);
       if (existingShowTypes.isEmpty()) {
         log.info("No show types found in database. Creating default show types...");
 
         int createdCount = 0;
 
         // Create Weekly show type
-        ShowType weeklyType = new ShowType();
-        weeklyType.setName("Weekly");
-        weeklyType.setDescription("Weekly television show format");
-        showTypeService.save(weeklyType);
-        createdCount++;
-        log.info("Created show type: Weekly");
+        log.info("Checking for Weekly show type");
+        if (showTypeService.findByName("Weekly").isEmpty()) {
+          log.info("Creating Weekly show type");
+          ShowType weeklyType = new ShowType();
+          weeklyType.setName("Weekly");
+          weeklyType.setDescription("Weekly television show format");
+          showTypeService.save(weeklyType);
+          createdCount++;
+          log.info("Created show type: Weekly");
+        }
 
         // Create Premium Live Event (PLE) show type
-        ShowType pleType = new ShowType();
-        pleType.setName("Premium Live Event (PLE)");
-        pleType.setDescription("Premium live event or pay-per-view format");
-        showTypeService.save(pleType);
-        createdCount++;
-        log.info("Created show type: Premium Live Event (PLE)");
+        log.info("Checking for Premium Live Event (PLE) show type");
+        if (showTypeService.findByName("Premium Live Event (PLE)").isEmpty()) {
+          log.info("Creating Premium Live Event (PLE) show type");
+          ShowType pleType = new ShowType();
+          pleType.setName("Premium Live Event (PLE)");
+          pleType.setDescription("Premium live event or pay-per-view format");
+          showTypeService.save(pleType);
+          createdCount++;
+          log.info("Created show type: Premium Live Event (PLE)");
+        }
 
         log.info("✅ Created {} default show types", createdCount);
-        return SyncResult.success("Show Types", createdCount, 0);
+        return SyncResult.success("Show Types", createdCount, 0, 0);
 
       } else {
         log.info(
             "Show types already exist in database: {}",
             existingShowTypes.stream().map(ShowType::getName).toList());
-        return SyncResult.success("Show Types", 0, 0);
+        return SyncResult.success("Show Types", 0, 0, 0);
       }
 
     } catch (Exception e) {

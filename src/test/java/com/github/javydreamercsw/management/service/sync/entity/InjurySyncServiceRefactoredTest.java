@@ -7,7 +7,6 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.InjuryPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
@@ -24,23 +23,22 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Injury Sync Unit Tests")
-@EnabledIf("isNotionTokenAvailable")
-class InjurySyncServiceRefactoredTest extends BaseTest {
+class InjurySyncServiceRefactoredTest {
 
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionHandler notionHandler;
-  private NotionSyncProperties syncProperties; // Declare without @Mock
+  @Mock private NotionSyncProperties syncProperties;
   @Mock private InjuryTypeService injuryTypeService;
   @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private SyncProgressTracker progressTracker;
@@ -50,21 +48,16 @@ class InjurySyncServiceRefactoredTest extends BaseTest {
   private InjurySyncService injurySyncService;
   private ObjectMapper realObjectMapper;
 
-  // Constructor to configure the mock before setUp()
-  public InjurySyncServiceRefactoredTest() {
-    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-  }
-
   @BeforeEach
   void setUp() {
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     injurySyncService = new InjurySyncService(objectMapper, syncProperties);
-    setField(injurySyncService, "notionHandler", notionHandler);
-    setField(injurySyncService, "progressTracker", progressTracker);
-    setField(injurySyncService, "healthMonitor", healthMonitor);
-    setField(injurySyncService, "injuryTypeService", injuryTypeService);
-    setField(injurySyncService, "injuryTypeRepository", injuryTypeRepository);
-    setField(injurySyncService, "rateLimitService", rateLimitService);
+    ReflectionTestUtils.setField(injurySyncService, "notionHandler", notionHandler);
+    ReflectionTestUtils.setField(injurySyncService, "progressTracker", progressTracker);
+    ReflectionTestUtils.setField(injurySyncService, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(injurySyncService, "injuryTypeService", injuryTypeService);
+    ReflectionTestUtils.setField(injurySyncService, "injuryTypeRepository", injuryTypeRepository);
+    ReflectionTestUtils.setField(injurySyncService, "rateLimitService", rateLimitService);
 
     realObjectMapper = new ObjectMapper();
   }

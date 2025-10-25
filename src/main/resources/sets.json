@@ -1,9 +1,49 @@
 [ {
-  "name" : "ATW"
+  "name" : "All Time Wrestling",
+  "set_code" : "ATW"
 }, {
-  "name" : "RVD"
+  "name" : "Rob Van Dam",
+  "set_code" : "RVD"
 }, {
-  "name" : "OT"
+  "name" : "Oda Tsurugi",
+  "set_code" : "OT"
 }, {
-  "name" : "SGT"
+  "name" : "Sgt. Slaughter",
+  "set_code" : "SGT"
+}, {
+  "name" : "Eddie Guerrero",
+  "set_code" : "EDDIE"
+}, {
+  "name" : "Randy Savage",
+  "set_code" : "RS"
+}, {
+  "name" : "The British Bulldog",
+  "set_code" : "BB"
+}, {
+  "name" : "Daemon",
+  "set_code" : "DMN"
+}, {
+  "name" : "Rey Jaguar",
+  "set_code" : "RJ"
+}, {
+  "name" : "Raven",
+  "set_code" : "RVN"
+}, {
+  "name" : "Dynamite Kid",
+  "set_code" : "DYN"
+}, {
+  "name" : "Jax Felix",
+  "set_code" : "JF"
+}, {
+  "name" : "Sabu",
+  "set_code" : "SBU"
+}, {
+  "name" : "Junkyard Dog",
+  "set_code" : "JYD"
+}, {
+  "name" : "Nick Aldis",
+  "set_code" : "NAD"
+}, {
+  "name" : "OMZ",
+  "set_code" : "OMZ"
 } ]

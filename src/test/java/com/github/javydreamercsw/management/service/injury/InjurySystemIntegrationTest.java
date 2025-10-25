@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.injury;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
@@ -12,22 +13,20 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for the complete injury system including bump conversion, segment integration,
  * and health calculations.
  */
 @DisplayName("Injury System Integration Tests")
-@EnabledIf("isNotionTokenAvailable")
 class InjurySystemIntegrationTest extends AbstractIntegrationTest {
   @Autowired private InjuryService injuryService;
   @Autowired private WrestlerService wrestlerService;
@@ -43,7 +42,19 @@ class InjurySystemIntegrationTest extends AbstractIntegrationTest {
   private Show testShow;
   private SegmentType singlesSegmentType;
 
+  @org.junit.jupiter.api.BeforeEach
+  void setUp() {
+    wrestler1 = new Wrestler();
+    wrestler1.setName("Test Wrestler 1");
+    wrestler1.setFans(10000L);
+    wrestler1.setStartingHealth(100);
+    wrestler1.setStartingStamina(100);
+    wrestler1.setDeckSize(30);
+    wrestler1 = wrestlerRepository.save(wrestler1);
+  }
+
   @Test
+  @Transactional
   @DisplayName("Should convert 3 bumps to injury and reset bumps")
   void shouldConvert3BumpsToInjuryAndResetBumps() {
     // Given - Add 2 bumps first

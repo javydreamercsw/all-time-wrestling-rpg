@@ -34,8 +34,7 @@ public class TitleReignSyncService extends BaseSyncService {
 
   public SyncResult syncTitleReigns(@NonNull String operationId) {
     if (isAlreadySyncedInSession("titlereigns")) {
-      log.info("⏭️ Title reigns already synced in current session, skipping");
-      return SyncResult.success("TitleReigns", 0, 0);
+      return SyncResult.success("TitleReigns", 0, 0, 0);
     }
 
     log.info("👑 Starting title reigns synchronization from Notion...");
@@ -55,8 +54,8 @@ public class TitleReignSyncService extends BaseSyncService {
 
   private SyncResult performTitleReignsSync(@NonNull String operationId, long startTime) {
     if (!syncProperties.isEntityEnabled("titlereigns")) {
-      log.info("Title reigns sync is disabled in configuration");
-      return SyncResult.success("TitleReigns", 0, 0);
+      log.info("Title Reigns sync is disabled in configuration");
+      return SyncResult.success("TitleReigns", 0, 0, 0);
     }
 
     if (!isNotionHandlerAvailable()) {
@@ -146,7 +145,7 @@ public class TitleReignSyncService extends BaseSyncService {
           titleReignPages.size(),
           totalTime);
       healthMonitor.recordSuccess("TitleReigns", totalTime, titleReignPages.size());
-      return SyncResult.success("TitleReigns", titleReignPages.size(), 0);
+      return SyncResult.success("TitleReigns", titleReignPages.size(), 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;

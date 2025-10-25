@@ -38,9 +38,9 @@ public class Deck extends AbstractEntity<Long> {
   private Wrestler wrestler;
 
   @OneToMany(
-      fetch = FetchType.EAGER,
       mappedBy = "deck",
       cascade = CascadeType.ALL,
+      fetch = FetchType.EAGER,
       orphanRemoval = true)
   private Set<DeckCard> cards = new HashSet<>();
 

@@ -2,14 +2,12 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 
-@EnabledIf("isNotionTokenAvailable")
-public class WrestlerDTOIntegrationTest extends AbstractIntegrationTest {
+public class WrestlerDTOIntegrationTest extends ManagementIntegrationTest {
 
   @Test
   void robVanDamMoveSetShouldBePopulatedCorrectly() {

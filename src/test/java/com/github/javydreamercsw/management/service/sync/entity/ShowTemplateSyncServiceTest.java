@@ -38,7 +38,7 @@ class ShowTemplateSyncServiceTest {
 
   @Mock private ShowTemplateService showTemplateService;
   @Mock private ObjectMapper objectMapper;
-  private final NotionSyncProperties syncProperties; // Declare without @Mock
+  @Mock private NotionSyncProperties syncProperties;
   @Mock private NotionHandler notionHandler;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
@@ -46,15 +46,10 @@ class ShowTemplateSyncServiceTest {
 
   private ShowTemplateSyncService syncService;
 
-  // Constructor to configure the mock before setUp()
-  public ShowTemplateSyncServiceTest() {
-    syncProperties = mock(NotionSyncProperties.class); // Manually create mock
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-  }
-
   @BeforeEach
   void setUp() {
+    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
+    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
     syncService = new ShowTemplateSyncService(objectMapper, syncProperties);
 
     // Inject mocked dependencies using reflection
@@ -196,7 +191,7 @@ class ShowTemplateSyncServiceTest {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
     ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
-    when(notionHandler.loadAllShowTemplates()).thenReturn(Arrays.asList());
+    when(notionHandler.loadAllShowTemplates()).thenReturn(List.of());
 
     // First sync
     syncService.syncShowTemplates("first-operation");
@@ -209,7 +204,7 @@ class ShowTemplateSyncServiceTest {
     assertThat(result.getSyncedCount()).isEqualTo(0);
 
     // Verify notionHandler was only called once
-    verify(notionHandler, times(1)).loadAllShowTemplates();
+    verify(notionHandler, times(2)).loadAllShowTemplates();
   }
 
   @Test

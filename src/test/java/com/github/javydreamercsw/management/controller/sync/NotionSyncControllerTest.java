@@ -64,7 +64,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
   void shouldTriggerManualSyncSuccessfully() throws Exception {
     // Given
     List<NotionSyncService.SyncResult> results =
-        List.of(NotionSyncService.SyncResult.success("Shows", 5, 0));
+        List.of(NotionSyncService.SyncResult.success("Shows", 5, 0, 0));
     when(notionSyncScheduler.triggerManualSync()).thenReturn(results);
 
     // When & Then
@@ -85,7 +85,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
     // Given
     List<NotionSyncService.SyncResult> results =
         List.of(
-            NotionSyncService.SyncResult.success("Shows", 3, 0),
+            NotionSyncService.SyncResult.success("Shows", 3, 0, 0),
             NotionSyncService.SyncResult.failure("Wrestlers", "Connection error"));
     when(notionSyncScheduler.triggerManualSync()).thenReturn(results);
 
@@ -107,7 +107,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
     // Given
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
     when(notionSyncScheduler.triggerEntitySync("shows"))
-        .thenReturn(NotionSyncService.SyncResult.success("Shows", 8, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 8, 0, 0));
 
     // When & Then
     mockMvc
@@ -141,7 +141,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
   void shouldSyncShowsSuccessfully() throws Exception {
     // Given
     when(notionSyncService.syncShows())
-        .thenReturn(NotionSyncService.SyncResult.success("Shows", 12, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 12, 0, 0));
 
     // When & Then
     mockMvc

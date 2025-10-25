@@ -1,16 +1,22 @@
 package com.github.javydreamercsw.management.domain.deck;
 
+import com.github.javydreamercsw.management.domain.card.Card;
+import java.util.List;
 import java.util.Optional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
-public interface DeckCardRepository
-    extends JpaRepository<DeckCard, Long>, JpaSpecificationExecutor<DeckCard> {
-
-  // If you don't need a total row count, Slice is better than Page.
-  Page<DeckCard> findAllBy(Pageable pageable);
+public interface DeckCardRepository extends JpaRepository<DeckCard, Long> {
+  Optional<DeckCard> findByDeckAndCard(Deck deck, Card card);
 
   Optional<DeckCard> findByDeckIdAndCardIdAndSetId(Long deckId, Long cardId, Long setId);
+
+  @Modifying
+  @Transactional
+  @Query("DELETE FROM DeckCard dc WHERE dc.deck = :deck")
+  void deleteAllByDeck(Deck deck);
+
+  List<DeckCard> findByDeck(Deck deck);
 }

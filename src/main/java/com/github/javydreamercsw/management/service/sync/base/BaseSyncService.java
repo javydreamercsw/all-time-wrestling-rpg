@@ -54,7 +54,6 @@ public abstract class BaseSyncService {
   private final ExecutorService syncExecutorService;
 
   // Optional NotionHandler for integration tests
-  @Autowired(required = false)
   public NotionHandler notionHandler;
 
   // Enhanced sync infrastructure services - autowired
@@ -72,6 +71,7 @@ public abstract class BaseSyncService {
     this.objectMapper = objectMapper;
     this.syncProperties = syncProperties;
     this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
+    this.notionHandler = NotionHandler.getInstance().orElse(null);
   }
 
   /**
@@ -303,7 +303,7 @@ public abstract class BaseSyncService {
    * @param entityType The entity type being synced (for error messages)
    * @return true if token is available, false otherwise
    */
-  protected boolean validateNotionToken(@NonNull String entityType) {
+  public boolean validateNotionToken(@NonNull String entityType) {
     if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
       log.warn("NOTION_TOKEN not available. Cannot sync {} from Notion.", entityType);
       return false;
@@ -443,6 +443,8 @@ public abstract class BaseSyncService {
     private final boolean success;
     private final String entityType;
     private final int syncedCount;
+    private final int createdCount;
+    private final int updatedCount;
     private final int errorCount;
     private final String errorMessage;
     private final List<String> messages = new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -450,27 +452,33 @@ public abstract class BaseSyncService {
     private SyncResult(
         boolean success,
         @NonNull String entityType,
-        int syncedCount,
+        int createdCount,
+        int updatedCount,
         int errorCount,
         String errorMessage) {
       this.success = success;
       this.entityType = entityType;
-      this.syncedCount = syncedCount;
+      this.syncedCount = createdCount + updatedCount;
+      this.createdCount = createdCount;
+      this.updatedCount = updatedCount;
       this.errorCount = errorCount;
       this.errorMessage = errorMessage;
     }
 
-    public static SyncResult success(@NonNull String entityType, int syncedCount, int errorCount) {
-      return new SyncResult(true, entityType, syncedCount, errorCount, null);
+    public static SyncResult success(
+        @NonNull String entityType, int createdCount, int updatedCount, int errorCount) {
+      return new SyncResult(true, entityType, createdCount, updatedCount, errorCount, null);
     }
 
     public static SyncResult failure(@NonNull String entityType, String errorMessage) {
-      return new SyncResult(false, entityType, 0, 0, errorMessage);
+      return new SyncResult(false, entityType, 0, 0, 0, errorMessage);
     }
 
     public String getSummary() {
       if (success) {
-        return String.format("%s: %d synced, %d errors", entityType, syncedCount, errorCount);
+        return String.format(
+            "%s: %d synced (%d created, %d updated), %d errors",
+            entityType, syncedCount, createdCount, updatedCount, errorCount);
       } else {
         return String.format("%s: failed - %s", entityType, errorMessage);
       }
@@ -480,8 +488,9 @@ public abstract class BaseSyncService {
     public String toString() {
       if (success) {
         return String.format(
-            "SyncResult{success=true, entityType='%s', syncedCount=%d, errorCount=%d}",
-            entityType, syncedCount, errorCount);
+            "SyncResult{success=true, entityType='%s', syncedCount=%d, createdCount=%d,"
+                + " updatedCount=%d, errorCount=%d}",
+            entityType, syncedCount, createdCount, updatedCount, errorCount);
       } else {
         return String.format(
             "SyncResult{success=false, entityType='%s', errorMessage='%s'}",

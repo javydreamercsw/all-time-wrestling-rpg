@@ -30,14 +30,8 @@ public class RetryService {
   }
 
   public <T> T executeWithRetry(String entityType, AttemptCallable<T> callable) throws Exception {
-    int maxAttempts = config.getMaxAttempts();
-    // Support entity-specific config
-    if ("shows".equals(entityType)
-        && config.getEntities() != null
-        && config.getEntities().getShows() != null) {
-      maxAttempts = config.getEntities().getShows().getMaxAttempts();
-    }
-    long delay = config.getInitialDelayMs();
+    int maxAttempts = config.getMaxAttempts(entityType);
+    long delay = config.getInitialDelayMs(entityType);
     double backoff = config.getBackoffMultiplier();
     Exception lastException = null;
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -129,22 +123,21 @@ public class RetryService {
     if (matcher.find()) {
       try {
         int seconds = Integer.parseInt(matcher.group(1));
-        return seconds * 1000L; // Convert to milliseconds
+        return seconds * 1_000L; // Convert to milliseconds
       } catch (NumberFormatException e) {
         log.warn("Failed to parse Retry-After value: {}", matcher.group(1));
       }
     }
-
-    return 0;
+    log.warn(
+        "Could not extract numeric Retry-After value from rate limit error. "
+            + "This might indicate an unsupported format (e.g., HTTP-date). "
+            + "Error message: {}",
+        message);
+    return 10_000L;
   }
 
   public RetryContext createContext(@NonNull String entityType, @NonNull String operationName) {
-    int maxAttempts = config.getMaxAttempts();
-    if ("shows".equals(entityType)
-        && config.getEntities() != null
-        && config.getEntities().getShows() != null) {
-      maxAttempts = config.getEntities().getShows().getMaxAttempts();
-    }
+    int maxAttempts = config.getMaxAttempts(entityType);
     return new RetryContext(entityType, operationName, maxAttempts);
   }
 

@@ -23,7 +23,7 @@ class TitleReignTest {
     title.setName("Test Championship");
     title.setTier(WrestlerTier.MAIN_EVENTER);
 
-    wrestler = new Wrestler();
+    wrestler = Wrestler.builder().build();
     wrestler.setName("Test Champion");
     wrestler.setFans(120000L);
     wrestler.setStartingHealth(15);

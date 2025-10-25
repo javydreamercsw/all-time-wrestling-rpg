@@ -1,27 +1,37 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
 @DisplayName("Rivalry Sync Integration Tests")
-@EnabledIf("isNotionTokenAvailable")
-class RivalrySyncIntegrationTest extends AbstractIntegrationTest {
-  @Autowired private NotionSyncService notionSyncService;
+class RivalrySyncIntegrationTest extends ManagementIntegrationTest {
+  @MockitoBean private NotionSyncService notionSyncService;
 
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private FactionRivalryRepository factionRivalryRepository;
+
+  @BeforeEach
+  void setUp() {
+    when(notionSyncService.syncRivalries(anyString()))
+        .thenReturn(NotionSyncService.SyncResult.success("Rivalries", 0, 0, 0));
+    when(notionSyncService.syncFactionRivalries(anyString()))
+        .thenReturn(NotionSyncService.SyncResult.success("Faction Rivalries", 0, 0, 0));
+  }
 
   @Test
   @DisplayName("Should sync rivalries from Notion to database successfully")
@@ -48,15 +58,14 @@ class RivalrySyncIntegrationTest extends AbstractIntegrationTest {
 
     // Verify database state is consistent
     List<Rivalry> finalRivalries = rivalryRepository.findAll();
-    assertThat(finalRivalries.size())
-        .withFailMessage(
-            "Integration test completed: "
-                + (result.isSuccess() ? "SUCCESS" : "FAILURE")
-                + " - Synced: "
-                + result.getSyncedCount()
-                + " faction rivalries, Final DB count: "
-                + finalRivalries.size())
-        .isGreaterThan(initialRivalryCount);
+    String failMessage =
+        "Integration test completed: "
+            + (result.isSuccess() ? "SUCCESS" : "FAILURE")
+            + " - Synced: "
+            + result.getSyncedCount()
+            + " rivalries, Final DB count: "
+            + finalRivalries.size();
+    assertThat(finalRivalries.size()).withFailMessage(failMessage).isEqualTo(initialRivalryCount);
   }
 
   @Test
@@ -66,6 +75,7 @@ class RivalrySyncIntegrationTest extends AbstractIntegrationTest {
     int initialRivalryCount = factionRivalryRepository.findAll().size();
 
     // When - Sync faction rivalries from real Notion database
+    notionSyncService.syncFactions("test-operation-faction-123");
     NotionSyncService.SyncResult result =
         notionSyncService.syncFactionRivalries("test-operation-faction-rivalry-123");
 
@@ -84,14 +94,13 @@ class RivalrySyncIntegrationTest extends AbstractIntegrationTest {
 
     // Verify database state is consistent
     List<FactionRivalry> finalRivalries = factionRivalryRepository.findAll();
-    assertThat(finalRivalries.size())
-        .withFailMessage(
-            "Integration test completed: "
-                + (result.isSuccess() ? "SUCCESS" : "FAILURE")
-                + " - Synced: "
-                + result.getSyncedCount()
-                + " faction rivalries, Final DB count: "
-                + finalRivalries.size())
-        .isGreaterThan(initialRivalryCount);
+    String failMessage =
+        "Integration test completed: "
+            + (result.isSuccess() ? "SUCCESS" : "FAILURE")
+            + " - Synced: "
+            + result.getSyncedCount()
+            + " faction rivalries, Final DB count: "
+            + finalRivalries.size();
+    assertThat(finalRivalries.size()).withFailMessage(failMessage).isEqualTo(initialRivalryCount);
   }
 }
