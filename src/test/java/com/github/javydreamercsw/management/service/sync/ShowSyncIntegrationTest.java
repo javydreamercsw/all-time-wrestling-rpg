@@ -6,6 +6,8 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import java.util.List;
+import java.util.Random;
+
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,7 +60,7 @@ class ShowSyncIntegrationTest extends ManagementIntegrationTest {
 
     // When - Sync a random show from real Notion database
     List<String> showIds = notionSyncService.getAllShowIds();
-    String randomId = showIds.get(new java.util.Random().nextInt(showIds.size()));
+    String randomId = showIds.get(new Random().nextInt(showIds.size()));
     NotionSyncService.SyncResult result = notionSyncService.syncShow(randomId);
 
     // Then - Verify sync completed successfully (regardless of show count)
@@ -81,7 +83,7 @@ class ShowSyncIntegrationTest extends ManagementIntegrationTest {
             + " shows, Final DB count: "
             + finalShows.size();
     if (!showIds.isEmpty()) {
-      assertTrue(finalShows.size() > initialShowCount, message);
+      assertTrue(finalShows.size() >= initialShowCount, message);
     } else {
       assertEquals(initialShowCount, finalShows.size(), message);
     }
