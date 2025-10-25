@@ -1,6 +1,5 @@
-package com.github.javydreamercsw.management.event;
+package com.github.javydreamercsw.base.event;
 
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import lombok.Getter;
 import lombok.NonNull;
 import org.springframework.context.ApplicationEvent;

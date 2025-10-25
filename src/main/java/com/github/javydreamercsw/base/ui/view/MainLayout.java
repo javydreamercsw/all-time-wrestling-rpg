@@ -2,7 +2,7 @@ package com.github.javydreamercsw.base.ui.view;
 
 import static com.vaadin.flow.theme.lumo.LumoUtility.*;
 
-import com.github.javydreamercsw.management.event.FanChangeBroadcaster;
+import com.github.javydreamercsw.base.event.FanChangeBroadcaster;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
@@ -27,7 +27,7 @@ public final class MainLayout extends AppLayout {
   private Registration broadcasterRegistration;
 
   @Autowired
-  MainLayout(MenuService menuService) {
+  public MainLayout(MenuService menuService) {
     this.menuService = menuService;
     setPrimarySection(Section.DRAWER);
     addToDrawer(createHeader(), new Scroller(createSideNav()));
@@ -70,16 +70,18 @@ public final class MainLayout extends AppLayout {
     broadcasterRegistration =
         FanChangeBroadcaster.register(
             event -> {
-              ui.access(
-                  () -> {
-                    String message =
-                        String.format(
-                            "%s %s %d fans!",
-                            event.getWrestler().getName(),
-                            event.getFanChange() > 0 ? "gained" : "lost",
-                            Math.abs(event.getFanChange()));
-                    Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-                  });
+              if (ui.isAttached()) {
+                ui.access(
+                    () -> {
+                      String message =
+                          String.format(
+                              "%s %s %d fans!",
+                              event.getWrestler().getName(),
+                              event.getFanChange() > 0 ? "gained" : "lost",
+                              Math.abs(event.getFanChange()));
+                      Notification.show(message, 3000, Notification.Position.TOP_CENTER);
+                    });
+              }
             });
   }
 

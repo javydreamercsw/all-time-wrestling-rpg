@@ -28,7 +28,8 @@ import org.jspecify.annotations.Nullable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Wrestler extends AbstractEntity<Long> {
+public class Wrestler extends AbstractEntity<Long>
+    implements com.github.javydreamercsw.base.event.Wrestler {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "wrestler_id")
