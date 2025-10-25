@@ -1,4 +1,3 @@
-FROM eclipse-temurin:21-jre
-COPY target/*.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app.jar", "--spring.config.location=file:/config/application.properties"]
+FROM tomcat:11-jdk17
+COPY target/all-time-wrestling-rpg-1.0.0-SNAPSHOT.war /usr/local/tomcat/webapps/all-time-wrestling-rpg.war
+EXPOSE 9090
