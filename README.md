@@ -1,6 +1,4 @@
-# All Time Wrestling Rpg README
-
-- [ ] TODO Replace or update this README with instructions relevant to your application
+# All Time Wrestling RPG README
 
 To start the application in development mode, import it into your IDE and run the `Application` class.
 You can also start the application from the command line by running:
@@ -14,6 +12,42 @@ To build the application in production mode, run:
 ```bash
 ./mvnw -Pproduction package
 ```
+
+## Docker
+
+This project can be built and run using Docker.
+
+### Prerequisites
+
+*   [Docker](https://docs.docker.com/get-docker/) installed on your machine.
+
+### Building the Docker Image
+
+1.  Build the project using Maven:
+
+	```bash
+	./mvnw clean install -DskipTests
+	```
+
+2.  Build the Docker image:
+
+	```bash
+	docker build -t all-time-wrestling-rpg .
+	```
+
+### Running the Application with Docker
+
+To run the application using Docker, you need to provide a path to the H2 database file.
+
+1.  Run the Docker container with a volume mounted for the database:
+
+	```bash
+	docker run -p 8888:8080 -v /path/to/your/database:/database -e SPRING_DATASOURCE_URL=jdbc:h2:file:/database/management-db all-time-wrestling-rpg
+	```
+
+	Replace `/path/to/your/database` with the absolute path to the directory where your `management-db.mv.db` file is located.
+
+	The application will be accessible at `http://localhost:8888/atw-rpg`.
 
 ## Security
 
@@ -102,28 +136,6 @@ Run the label setup script to create all necessary labels:
 ```bash
 ./scripts/setup-labels.sh
 ```
-
-## Building Native Installers (Windows, macOS, Linux)
-
-You can create platform-specific installers using Maven profiles. This uses the JDK's jpackage tool to generate MSI (Windows), DMG (macOS), or DEB (Linux) installers.
-
-### Prerequisites
-- JDK 14 or newer (with jpackage)
-- Build the JAR: `./mvnw -Pproduction package`
-
-### Usage
-1. Open a terminal in the project root.
-2. Build the JAR:
-```bash
-./mvnw -Pproduction package
-```
-3. Create an installer for your platform using Maven profiles:
-- **Windows:** `./mvnw package -Pwindows-installer`
-- **macOS:** `./mvnw package -Pmac-installer`
-- **Linux:** `./mvnw package -Plinux-installer`
-4. The installer will be created in the `installers/` directory.
-
-You can customize icons and metadata by editing the relevant Maven profile in `pom.xml`.
 
 ## Getting Started
 
