@@ -157,7 +157,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push Docker image (no release profile)
-        run: mvn compile jib:build
+        run: mvn clean package jib:build
 
   # Build and push Docker image with release profile on main after merge from release/*
   docker-image-main-release:
@@ -181,4 +181,4 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push Docker image (release profile)
-        run: mvn compile jib:build -Prelease
+        run: mvn clean package jib:build -Prelease
