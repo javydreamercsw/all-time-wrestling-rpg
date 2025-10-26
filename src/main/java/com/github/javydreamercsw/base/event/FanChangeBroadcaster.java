@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.management.event;
+package com.github.javydreamercsw.base.event;
 
 import com.vaadin.flow.shared.Registration;
 import java.util.LinkedList;

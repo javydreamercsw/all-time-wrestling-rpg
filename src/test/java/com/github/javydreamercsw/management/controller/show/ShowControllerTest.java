@@ -1,6 +1,8 @@
 package com.github.javydreamercsw.management.controller.show;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -21,9 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class ShowControllerTest {
 
   @Autowired private MockMvc mockMvc;
-
   @MockitoBean private ShowService showService;
-
   @Autowired private ObjectMapper objectMapper;
 
   @Test
@@ -46,5 +46,12 @@ class ShowControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.name").value("Test Show"));
+  }
+
+  @Test
+  void testAdjudicateShow() throws Exception {
+    mockMvc.perform(post("/api/shows/1/adjudicate")).andExpect(status().isOk());
+
+    verify(showService, times(1)).adjudicateShow(1L);
   }
 }

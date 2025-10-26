@@ -5,14 +5,18 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
@@ -52,6 +56,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -61,59 +67,28 @@ import org.springframework.web.client.RestTemplate;
 @Route("show-detail")
 @PageTitle("Show Details")
 @PermitAll
-public class ShowDetailView extends Main implements HasUrlParameter<Long> {
+public class ShowDetailView extends Main
+    implements HasUrlParameter<Long>, ApplicationListener<AdjudicationCompletedEvent> {
 
-  private final ShowService showService;
-  private final SegmentService segmentService;
-  private final SegmentRepository segmentRepository;
-  private final SegmentTypeRepository segmentTypeRepository;
-  private final WrestlerRepository wrestlerRepository;
-  private final NpcService npcService;
-  private final WrestlerService wrestlerService;
-  private final TitleService titleService;
-  private final com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository
-      segmentRuleRepository;
-  private final SegmentAdjudicationService segmentAdjudicationService;
-  private final com.github.javydreamercsw.management.service.show.type.ShowTypeService
-      showTypeService;
-  private final com.github.javydreamercsw.management.service.season.SeasonService seasonService;
-  private final com.github.javydreamercsw.management.service.show.template.ShowTemplateService
-      showTemplateService;
+  @Autowired private ShowService showService;
+  @Autowired private SegmentService segmentService;
+  @Autowired private SegmentRepository segmentRepository;
+  @Autowired private SegmentTypeRepository segmentTypeRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private NpcService npcService;
+  @Autowired private WrestlerService wrestlerService;
+  @Autowired private TitleService titleService;
+  @Autowired private SegmentRuleRepository segmentRuleRepository;
+  @Autowired private ShowTypeService showTypeService;
+  @Autowired private SeasonService seasonService;
+  @Autowired private ShowTemplateService showTemplateService;
   private String referrer = "shows"; // Default referrer
 
   private H2 showTitle;
   private VerticalLayout contentLayout;
   private Long currentShowId;
 
-  public ShowDetailView(
-      ShowService showService,
-      SegmentService segmentService,
-      SegmentRepository segmentRepository,
-      SegmentTypeRepository segmentTypeRepository,
-      WrestlerRepository wrestlerRepository,
-      NpcService npcService,
-      WrestlerService wrestlerService,
-      TitleService titleService,
-      com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository
-          segmentRuleRepository,
-      SegmentAdjudicationService segmentAdjudicationService,
-      com.github.javydreamercsw.management.service.show.type.ShowTypeService showTypeService,
-      com.github.javydreamercsw.management.service.season.SeasonService seasonService,
-      com.github.javydreamercsw.management.service.show.template.ShowTemplateService
-          showTemplateService) {
-    this.showService = showService;
-    this.segmentService = segmentService;
-    this.segmentRepository = segmentRepository;
-    this.segmentTypeRepository = segmentTypeRepository;
-    this.wrestlerRepository = wrestlerRepository;
-    this.npcService = npcService;
-    this.wrestlerService = wrestlerService;
-    this.titleService = titleService;
-    this.segmentRuleRepository = segmentRuleRepository;
-    this.segmentAdjudicationService = segmentAdjudicationService;
-    this.showTypeService = showTypeService;
-    this.seasonService = seasonService;
-    this.showTemplateService = showTemplateService;
+  public ShowDetailView() {
     initializeComponents();
   }
 
@@ -168,19 +143,17 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
 
   private Button createBackButton() {
     String buttonText;
-    String navigationTarget;
-
-    switch (referrer) {
-      case "calendar":
-        buttonText = "Back to Calendar";
-        navigationTarget = "show-calendar";
-        break;
-      case "shows":
-      default:
-        buttonText = "Back to Shows";
-        navigationTarget = "show-list";
-        break;
-    }
+    String navigationTarget =
+        switch (referrer) {
+          case "calendar" -> {
+            buttonText = "Back to Calendar";
+            yield "show-calendar";
+          }
+          default -> {
+            buttonText = "Back to Shows";
+            yield "show-list";
+          }
+        };
 
     Button backButton = new Button(buttonText, new Icon(VaadinIcon.ARROW_LEFT));
     backButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(navigationTarget)));
@@ -481,11 +454,24 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     H3 segmentsTitle = new H3("Segments");
     segmentsTitle.addClassNames(LumoUtility.Margin.NONE);
 
+    Button adjudicateButton = new Button("Adjudicate Fans", new Icon(VaadinIcon.GROUP));
+    adjudicateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    adjudicateButton.addClickListener(e -> adjudicateShow(show));
+
+    // Check if there are any pending segments
+    boolean hasPendingSegments =
+        segmentRepository.findByShow(show).stream()
+            .anyMatch(
+                segment ->
+                    segment.getAdjudicationStatus()
+                        == com.github.javydreamercsw.management.domain.AdjudicationStatus.PENDING);
+    adjudicateButton.setEnabled(hasPendingSegments);
+
     Button addSegmentBtn = new Button("Add Segment", new Icon(VaadinIcon.PLUS));
     addSegmentBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     addSegmentBtn.addClickListener(e -> openAddSegmentDialog(show));
 
-    header.add(segmentsTitle, addSegmentBtn);
+    header.add(segmentsTitle, adjudicateButton, addSegmentBtn);
 
     // Get segments for this show
     List<Segment> segments = segmentRepository.findByShow(show);
@@ -602,9 +588,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
                   npcService,
                   wrestlerService,
                   titleService,
-                  updatedSegment -> {
-                    displayShow(updatedSegment.getShow());
-                  });
+                  updatedSegment -> displayShow(updatedSegment.getShow()));
           dialog.open();
         });
 
@@ -825,6 +809,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
             "Delete",
             event -> {
               try {
+                assert segment.getId() != null;
                 segmentService.deleteSegment(segment.getId());
                 Notification.show(
                         "Segment deleted successfully!", 3000, Notification.Position.BOTTOM_START)
@@ -897,6 +882,8 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
         segment = segmentToUpdate;
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
+        segment.setAdjudicationStatus(
+            com.github.javydreamercsw.management.domain.AdjudicationStatus.PENDING);
       } else {
         segment = new Segment();
         segment.setShow(show);
@@ -914,7 +901,7 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
       }
 
       // Save or update the segment
-      Segment savedSegment = segmentRepository.save(segment);
+      segmentRepository.save(segment);
       if (segmentToUpdate != null) {
         Notification.show("Segment updated successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -922,13 +909,30 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
         Notification.show("Segment added successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       }
-      segmentAdjudicationService.adjudicateMatch(savedSegment);
       return true;
     } catch (Exception e) {
       Notification.show(
               "Error saving segment: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return false;
+    }
+  }
+
+  private void adjudicateShow(Show show) {
+    String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
+    new RestTemplate()
+        .postForObject(baseUrl + "/api/shows/" + show.getId() + "/adjudicate", null, Void.class);
+    Notification.show("Fan adjudication completed!", 3000, Notification.Position.BOTTOM_START)
+        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    loadShow(this.currentShowId);
+  }
+
+  @Override
+  public void onApplicationEvent(AdjudicationCompletedEvent event) {
+    // Check if the completed show is the one currently being viewed
+    assert event.getShow().getId() != null;
+    if (event.getShow().getId().equals(currentShowId)) {
+      getUI().ifPresent(ui -> ui.access(() -> loadShow(currentShowId)));
     }
   }
 }

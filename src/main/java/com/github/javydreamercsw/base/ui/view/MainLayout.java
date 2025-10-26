@@ -2,14 +2,20 @@ package com.github.javydreamercsw.base.ui.view;
 
 import static com.vaadin.flow.theme.lumo.LumoUtility.*;
 
+import com.github.javydreamercsw.base.event.FanChangeBroadcaster;
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
+import com.vaadin.flow.shared.Registration;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -18,9 +24,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 public final class MainLayout extends AppLayout {
 
   private final MenuService menuService;
+  private Registration broadcasterRegistration;
 
   @Autowired
-  MainLayout(MenuService menuService) {
+  public MainLayout(MenuService menuService) {
     this.menuService = menuService;
     setPrimarySection(Section.DRAWER);
     addToDrawer(createHeader(), new Scroller(createSideNav()));
@@ -54,5 +61,33 @@ public final class MainLayout extends AppLayout {
       menuItem.getChildren().forEach(child -> item.addItem(createSideNavItem(child)));
     }
     return item;
+  }
+
+  @Override
+  protected void onAttach(AttachEvent attachEvent) {
+    super.onAttach(attachEvent);
+    UI ui = attachEvent.getUI();
+    broadcasterRegistration =
+        FanChangeBroadcaster.register(
+            event -> {
+              if (ui.isAttached()) {
+                ui.access(
+                    () -> {
+                      String message =
+                          String.format(
+                              "%s %s %d fans!",
+                              event.getWrestler().getName(),
+                              event.getFanChange() > 0 ? "gained" : "lost",
+                              Math.abs(event.getFanChange()));
+                      Notification.show(message, 3000, Notification.Position.TOP_CENTER);
+                    });
+              }
+            });
+  }
+
+  @Override
+  protected void onDetach(DetachEvent detachEvent) {
+    super.onDetach(detachEvent);
+    broadcasterRegistration.remove();
   }
 }

@@ -190,6 +190,21 @@ public class ShowController {
     return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
   }
 
+  @Operation(
+      summary = "Adjudicate a show",
+      description = "Adjudicates all pending segments in a show.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Show adjudicated successfully"),
+        @ApiResponse(responseCode = "404", description = "Show not found")
+      })
+  @PostMapping("/{id}/adjudicate")
+  public ResponseEntity<Void> adjudicateShow(
+      @Parameter(description = "Show ID") @PathVariable Long id) {
+    showService.adjudicateShow(id);
+    return ResponseEntity.ok().build();
+  }
+
   // ==================== REQUEST/RESPONSE DTOs ====================
 
   /** Request DTO for creating shows. */
