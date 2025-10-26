@@ -92,62 +92,74 @@ public class CardListView extends Main {
         .addColumn(Card::getName)
         .setHeader("Name")
         .setEditorComponent(nameField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("name");
     cardGrid
         .addColumn(card -> card.getSet() != null ? card.getSet().getName() : "")
         .setHeader("Set")
         .setEditorComponent(setField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("set.name");
     cardGrid
         .addColumn(Card::getType)
         .setHeader("Type")
         .setEditorComponent(typeField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("type");
     cardGrid
         .addColumn(Card::getDamage)
         .setHeader("Damage")
         .setEditorComponent(damageField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("damage");
     cardGrid
         .addColumn(Card::getTarget)
         .setHeader("Target")
         .setEditorComponent(targetField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("target");
     cardGrid
         .addColumn(Card::getMomentum)
         .setHeader("Momentum")
         .setEditorComponent(momentumField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("momentum");
     cardGrid
         .addColumn(Card::getStamina)
         .setHeader("Stamina")
         .setEditorComponent(staminaField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("stamina");
     cardGrid
         .addColumn(Card::getSignature)
         .setHeader("Is Signature?")
         .setEditorComponent(signatureField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("signature");
     cardGrid
         .addColumn(Card::getFinisher)
         .setHeader("Is Finisher?")
         .setEditorComponent(finisherField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("finisher");
     cardGrid
         .addColumn(Card::getTaunt)
         .setHeader("Is Taunt?")
         .setEditorComponent(tauntField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("taunt");
     cardGrid
         .addColumn(Card::getRecover)
         .setHeader("Is Recover?")
         .setEditorComponent(recoverField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("recover");
     cardGrid
         .addColumn(Card::getPin)
         .setHeader("Is Pin?")
         .setEditorComponent(pinField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("pin");
     cardGrid.addColumn(Card::getCreationDate).setHeader("Creation Date");
     cardGrid
         .addComponentColumn(

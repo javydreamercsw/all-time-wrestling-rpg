@@ -69,8 +69,8 @@ public class WrestlerRankingsView extends Main {
 
               // Add a star icon for champions
               if (titleService.isChampion(wrestler)) {
-                Icon starIcon = VaadinIcon.STAR.create();
-                starIcon.addClickListener(
+                Icon trophyIcon = VaadinIcon.TROPHY.create();
+                trophyIcon.addClickListener(
                     event -> {
                       // Show title details in a notification or dialog
                       Notification.show(
@@ -80,7 +80,7 @@ public class WrestlerRankingsView extends Main {
                               + titleService.findTitlesByChampion(wrestler).size()
                               + " titles.");
                     });
-                layout.add(starIcon);
+                layout.add(trophyIcon);
               }
               return layout;
             })

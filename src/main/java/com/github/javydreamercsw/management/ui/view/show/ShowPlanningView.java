@@ -33,7 +33,7 @@ import org.springframework.web.client.RestTemplate;
 @PageTitle("Show Planning")
 @Menu(order = 6, icon = "vaadin:calendar", title = "Show Planning")
 @PermitAll
-public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
+public class ShowPlanningView extends Main {
 
   private final ShowService showService;
   private final WrestlerService wrestlerService;
@@ -222,16 +222,5 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     }
   }
 
-  @Override
-  public void setParameter(BeforeEvent event, Long parameter) {
-    if (parameter != null) {
-      showService
-          .getShowById(parameter)
-          .ifPresent(
-              show -> {
-                showComboBox.setValue(show);
-                loadContext();
-              });
-    }
-  }
+
 }

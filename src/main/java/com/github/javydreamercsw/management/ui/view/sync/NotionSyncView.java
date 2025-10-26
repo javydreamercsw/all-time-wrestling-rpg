@@ -22,6 +22,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
@@ -151,7 +152,9 @@ public class NotionSyncView extends Main {
     syncAllButton.addClickListener(e -> triggerFullSync());
 
     entitySelectionCombo = new ComboBox<>("Select Entity to Sync");
-    entitySelectionCombo.setItems(dependencyAnalyzer.getAutomaticSyncOrder());
+    List<String> entities = dependencyAnalyzer.getAutomaticSyncOrder();
+    java.util.Collections.sort(entities);
+    entitySelectionCombo.setItems(entities);
 
     syncSelectedButton = new Button("Sync Selected", VaadinIcon.PLAY.create());
     syncSelectedButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
@@ -169,6 +172,7 @@ public class NotionSyncView extends Main {
     statusButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     statusButton.addClickListener(e -> updateSyncStatus());
 
+    controlSection.setAlignItems(Alignment.BASELINE);
     controlSection.add(syncAllButton, entitySelectionCombo, syncSelectedButton, statusButton);
     return controlSection;
   }

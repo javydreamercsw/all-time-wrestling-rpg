@@ -83,12 +83,29 @@ public class RivalryListView extends Main {
     rivalryGrid
         .addColumn(rivalry -> rivalry.getWrestler1().getName())
         .setHeader("Wrestler 1")
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("wrestler1.name");
     rivalryGrid
         .addColumn(rivalry -> rivalry.getWrestler2().getName())
         .setHeader("Wrestler 2")
-        .setSortable(true);
-    rivalryGrid.addColumn(Rivalry::getHeat).setHeader("Heat").setSortable(true);
+        .setSortable(true)
+        .setSortProperty("wrestler2.name");
+    rivalryGrid.addColumn(Rivalry::getHeat).setHeader("Heat").setSortable(true).setSortProperty("heat");
+    rivalryGrid
+        .addColumn(Rivalry::getStorylineNotes)
+        .setHeader("Notes")
+        .setSortable(true)
+        .setSortProperty("storylineNotes");
+    rivalryGrid
+        .addColumn(Rivalry::getStartedDate)
+        .setHeader("Start Date")
+        .setSortable(true)
+        .setSortProperty("startedDate");
+    rivalryGrid
+        .addColumn(Rivalry::getEndedDate)
+        .setHeader("End Date")
+        .setSortable(true)
+        .setSortProperty("endedDate");
     rivalryGrid
         .addComponentColumn(
             rivalry -> {
