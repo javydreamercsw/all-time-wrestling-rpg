@@ -1152,4 +1152,35 @@
     "set" : "ATW",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Kamala",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "KML",
+    "amount" : 3
+  }, {
+    "number" : 2,
+    "set" : "KML",
+    "amount" : 3
+  }, {
+    "number" : 3,
+    "set" : "KML",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "KML",
+    "amount" : 1
+  }, {
+    "number" : 47,
+    "set" : "ATW",
+    "amount" : 3
+  }, {
+    "number" : 48,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 46,
+    "set" : "ATW",
+    "amount" : 2
+  } ]
 } ]
