@@ -40,6 +40,7 @@ public class ShowPlanningDtoMapper {
       dto.setFullRoster(
           context.getFullRoster().stream()
               .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO::new)
+              .peek(wrestlerDto -> wrestlerDto.setMoveSet(null))
               .collect(Collectors.toList()));
     }
     if (context.getFactions() != null) {

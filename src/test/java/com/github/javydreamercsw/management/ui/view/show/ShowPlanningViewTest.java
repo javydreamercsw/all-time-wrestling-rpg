@@ -12,6 +12,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
@@ -45,6 +46,45 @@ class ShowPlanningViewTest {
     UI.setCurrent(ui);
     when(ui.getUI()).thenReturn(Optional.of(ui));
     ReflectionTestUtils.setField(showPlanningView, "restTemplate", restTemplate);
+  }
+
+  @Test
+  void testLoadContextWithRivalries() throws Exception {
+    // Create a mock Show
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+
+    // Mock the ComboBox to return the mock Show
+    @SuppressWarnings("unchecked")
+    ComboBox<Show> showComboBox = mock(ComboBox.class);
+    when(showComboBox.getValue()).thenReturn(show);
+    ReflectionTestUtils.setField(showPlanningView, "showComboBox", showComboBox);
+
+    // Create a mock ShowPlanningContext
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setName("Test Rivalry");
+    context.setCurrentRivalries(List.of(rivalry));
+    context.setRecentPromos(new ArrayList<>());
+    context.setRecentSegments(new ArrayList<>());
+
+    // Mock the RestTemplate
+    when(restTemplate.getForObject(any(String.class), eq(ShowPlanningContextDTO.class)))
+        .thenReturn(context);
+
+    // Mock the ObjectMapper
+    ObjectMapper objectMapper = new ObjectMapper();
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
+
+    // Call the method to be tested
+    ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
+
+    // Verify the results
+    TextArea contextArea = (TextArea) ReflectionTestUtils.getField(showPlanningView, "contextArea");
+    assertEquals(
+        objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context),
+        contextArea.getValue());
   }
 
   @Test

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,11 +18,13 @@ class ShowPlanningAiServiceTest {
   private ShowPlanningAiService showPlanningAiService;
   private SegmentNarrationServiceFactory narrationServiceFactory;
   private SegmentNarrationService segmentNarrationService;
+  private SegmentRuleService segmentRuleService;
 
   @BeforeEach
   void setUp() {
     narrationServiceFactory = mock(SegmentNarrationServiceFactory.class);
     segmentNarrationService = mock(SegmentNarrationService.class);
+    segmentRuleService = mock(SegmentRuleService.class);
     ObjectMapper objectMapper = new ObjectMapper(); // Use real ObjectMapper for JSON parsing
     SegmentTypeService segmentTypeService = mock(SegmentTypeService.class);
 
@@ -32,7 +35,8 @@ class ShowPlanningAiServiceTest {
     when(segmentTypeService.findAll()).thenReturn(java.util.List.of(segmentType));
 
     showPlanningAiService =
-        new ShowPlanningAiService(narrationServiceFactory, objectMapper, segmentTypeService);
+        new ShowPlanningAiService(
+            narrationServiceFactory, objectMapper, segmentTypeService, segmentRuleService);
   }
 
   @Test

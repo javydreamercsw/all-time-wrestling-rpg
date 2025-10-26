@@ -50,12 +50,12 @@ public class ShowPlanningService {
   public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
     ShowPlanningContext context = new ShowPlanningContext();
 
-    // Get segments from the last 30 days
+    // Get segments from the last 7 days
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
-    Instant lastMonth = showDate.minus(7, ChronoUnit.DAYS);
-    log.debug("Getting segments between {} and {}", lastMonth, showDate);
+    Instant lastWeek = showDate.minus(7, ChronoUnit.DAYS);
+    log.debug("Getting segments between {} and {}", lastWeek, showDate);
     List<Segment> lastMonthSegments =
-        segmentRepository.findBySegmentDateBetween(lastMonth, showDate);
+        segmentRepository.findBySegmentDateBetween(lastWeek, showDate);
     log.debug("Found {} segments", lastMonthSegments.size());
 
     // New logic to generate summaries
@@ -81,7 +81,7 @@ public class ShowPlanningService {
     context.setRecentSegments(lastMonthSegments);
 
     // Get current rivalries
-    List<Rivalry> currentRivalries = rivalryService.getActiveRivalriesBetween(lastMonth, showDate);
+    List<Rivalry> currentRivalries = rivalryService.getActiveRivalries();
     log.debug("Found {} active rivalries", currentRivalries.size());
     context.setCurrentRivalries(currentRivalries);
 

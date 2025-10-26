@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.AiGeneratedSegmentDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -21,6 +23,7 @@ public class ShowPlanningAiService {
   private final SegmentNarrationServiceFactory narrationServiceFactory;
   private final ObjectMapper objectMapper;
   private final SegmentTypeService segmentTypeService;
+  private final SegmentRuleService segmentRuleService;
 
   public ProposedShow planShow(@NonNull ShowPlanningContextDTO context) {
     SegmentNarrationService aiService = narrationServiceFactory.getBestAvailableService();
@@ -159,6 +162,26 @@ public class ShowPlanningAiService {
                       .append(", Heat: ")
                       .append(rivalry.getHeat())
                       .append("\n"));
+      prompt.append("\n**Rivalry Resolution Rules:**\n");
+      prompt.append("- At 10 Heat: They must wrestle at the next PLE show\n");
+      prompt.append("- After match, both roll d20 → total >30 = rivalry ends\n");
+      prompt.append("- If not, continue to 20 Heat → repeat roll\n");
+      prompt.append("- At 30 Heat → forced into Stipulation Match (steel cage, hardcore, etc.)\n");
+      List<String> highHeatRules =
+          segmentRuleService.getHighHeatRules().stream().map(SegmentRule::getName).toList();
+      prompt
+          .append("Available Stipulation Matches: ")
+          .append(String.join(", ", highHeatRules))
+          .append("\n\n");
+      prompt.append("\n**Other considerations:**\n");
+      prompt.append(
+          "- Within the same calendar day, avoid having a wrestler in more than one match. They can"
+              + " participate in promos and any other capacity as long as it doesn't involve"
+              + " officially participating in the match.\n");
+      prompt.append(
+          "- Within the same calendar week, avoid having a wrestler in more than one match. Instead"
+              + " focus on giving all wrestlers a change to perform in a match every week. The"
+              + " exception is for Premium Live Event (PLE) where this is not avoidable.\n");
     }
 
     if (context.getWrestlerHeats() != null && !context.getWrestlerHeats().isEmpty()) {
