@@ -46,4 +46,28 @@
 }, {
   "name" : "OMZ",
   "set_code" : "OMZ"
+}, {
+  "name" : "Brian Pillman",
+  "set_code" : "BRP"
+}, {
+  "name" : "Matt Cardona",
+  "set_code" : "MTC"
+}, {
+  "name" : "Gilgamesh",
+  "set_code" : "GIL"
+}, {
+  "name" : "Kamala",
+  "set_code" : "KML"
+}, {
+  "name" : "Johnny All Time",
+  "set_code" : "JAT"
+}, {
+  "name" : "André the Giant",
+  "set_code" : "ATG"
+}, {
+  "name" : "Mukundi Shumba",
+  "set_code" : "MS"
+}, {
+  "name" : "Kurt Angle",
+  "set_code" : "KA"
 } ]

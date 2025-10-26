@@ -947,4 +947,512 @@
     "set" : "ATW",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Brian Pillman",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "BRP",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "BRP",
+    "amount" : 2
+  }, {
+    "number" : 3,
+    "set" : "BRP",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "BRP",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "BRP",
+    "amount" : 1
+  }, {
+    "number" : 44,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 36,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 31,
+    "set" : "ATW",
+    "amount" : 2
+  }, {
+    "number" : 30,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 43,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 42,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 18,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 41,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Matt Cardona",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "MTC",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "MTC",
+    "amount" : 2
+  }, {
+    "number" : 3,
+    "set" : "MTC",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "MTC",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "MTC",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 25,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 27,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 1,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 26,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 16,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Gilgamesh",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "GIL",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "GIL",
+    "amount" : 2
+  }, {
+    "number" : 3,
+    "set" : "GIL",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "GIL",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "GIL",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "GIL",
+    "amount" : 1
+  }, {
+    "number" : 1,
+    "set" : "ATW",
+    "amount" : 2
+  }, {
+    "number" : 6,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 38,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 27,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 35,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 42,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Kamala",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "KML",
+    "amount" : 3
+  }, {
+    "number" : 2,
+    "set" : "KML",
+    "amount" : 3
+  }, {
+    "number" : 3,
+    "set" : "KML",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "KML",
+    "amount" : 1
+  }, {
+    "number" : 47,
+    "set" : "ATW",
+    "amount" : 3
+  }, {
+    "number" : 48,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 46,
+    "set" : "ATW",
+    "amount" : 2
+  } ]
+}, {
+  "wrestler" : "Johnny All Time",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "JAT",
+    "amount" : 2
+  }, {
+    "number" : 3,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 57,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 45,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 43,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 31,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 18,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "André the Giant",
+  "cards" : [ {
+    "number" : 16,
+    "set" : "ATG",
+    "amount" : 1
+  }, {
+    "number" : 17,
+    "set" : "ATG",
+    "amount" : 1
+  }, {
+    "number" : 18,
+    "set" : "ATG",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 1,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Mukundi Shumba",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "MS",
+    "amount" : 1
+  } ]
+}, {
+  "wrestler" : "Kurt Angle",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 16,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 17,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 18,
+    "set" : "KA",
+    "amount" : 1
+  } ]
 } ]
