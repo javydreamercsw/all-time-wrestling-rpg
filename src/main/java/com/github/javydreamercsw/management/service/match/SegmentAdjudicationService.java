@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.match;
 
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
@@ -13,15 +14,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 public class SegmentAdjudicationService {
 
+  private final RivalryService rivalryService;
   private final WrestlerService wrestlerService;
   private final Random random;
 
   @Autowired
-  public SegmentAdjudicationService(WrestlerService wrestlerService) {
-    this(wrestlerService, new Random());
+  public SegmentAdjudicationService(WrestlerService wrestlerService, RivalryService rivalryService) {
+    this(rivalryService, wrestlerService, new Random());
+  }
+
+  public SegmentAdjudicationService(RivalryService rivalryService, WrestlerService wrestlerService, Random random) {
+    this.rivalryService = rivalryService;
+    this.wrestlerService = wrestlerService;
+    this.random = random;
   }
 
   public void adjudicateMatch(@NonNull Segment segment) {
@@ -86,6 +93,40 @@ public class SegmentAdjudicationService {
         Long id = participant.getId();
         if (id != null) {
           wrestlerService.awardFans(id, promoQualityBonus * 1_000L);
+        }
+      }
+    }
+
+    // Add heat to rivalries
+    int heat = 0;
+    String segmentTypeName = segment.getSegmentType().getName();
+    switch (segmentTypeName) {
+      case "Match":
+        heat = 1;
+        break;
+      case "Run-in":
+      case "Distraction":
+      case "Attack":
+        heat = 2;
+        break;
+      case "Post-match attack":
+      case "Pre-match attack":
+        heat = 3;
+        break;
+      case "Promo interruption":
+        heat = 4;
+        break;
+    }
+
+    if (heat > 0) {
+      List<Wrestler> participants = segment.getWrestlers();
+      for (int i = 0; i < participants.size(); i++) {
+        for (int j = i + 1; j < participants.size(); j++) {
+          rivalryService.addHeatBetweenWrestlers(
+              participants.get(i).getId(),
+              participants.get(j).getId(),
+              heat,
+              "From segment: " + segment.getSegmentType().getName());
         }
       }
     }
