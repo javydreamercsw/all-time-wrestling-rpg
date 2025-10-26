@@ -23,9 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class ShowControllerTest {
 
   @Autowired private MockMvc mockMvc;
-
   @MockitoBean private ShowService showService;
-
   @Autowired private ObjectMapper objectMapper;
 
   @Test

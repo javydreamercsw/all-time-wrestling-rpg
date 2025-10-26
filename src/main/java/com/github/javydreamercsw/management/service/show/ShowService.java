@@ -275,7 +275,7 @@ public class ShowService {
                         .orElseThrow(
                             () -> new IllegalArgumentException("Season not found: " + seasonId));
                 show.setSeason(season);
-              } else if (seasonId == null) {
+              } else {
                 show.setSeason(null);
               }
 
@@ -287,7 +287,7 @@ public class ShowService {
                             () ->
                                 new IllegalArgumentException("Template not found: " + templateId));
                 show.setTemplate(template);
-              } else if (templateId == null) {
+              } else {
                 show.setTemplate(null);
               }
 

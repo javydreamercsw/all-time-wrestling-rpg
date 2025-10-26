@@ -11,7 +11,6 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
-import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -80,7 +79,6 @@ public class ShowDetailView extends Main
   @Autowired private WrestlerService wrestlerService;
   @Autowired private TitleService titleService;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
-  @Autowired private SegmentAdjudicationService segmentAdjudicationService;
   @Autowired private ShowTypeService showTypeService;
   @Autowired private SeasonService seasonService;
   @Autowired private ShowTemplateService showTemplateService;
@@ -145,19 +143,17 @@ public class ShowDetailView extends Main
 
   private Button createBackButton() {
     String buttonText;
-    String navigationTarget;
-
-    switch (referrer) {
-      case "calendar":
-        buttonText = "Back to Calendar";
-        navigationTarget = "show-calendar";
-        break;
-      case "shows":
-      default:
-        buttonText = "Back to Shows";
-        navigationTarget = "show-list";
-        break;
-    }
+    String navigationTarget =
+        switch (referrer) {
+          case "calendar" -> {
+            buttonText = "Back to Calendar";
+            yield "show-calendar";
+          }
+          default -> {
+            buttonText = "Back to Shows";
+            yield "show-list";
+          }
+        };
 
     Button backButton = new Button(buttonText, new Icon(VaadinIcon.ARROW_LEFT));
     backButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(navigationTarget)));
@@ -592,9 +588,7 @@ public class ShowDetailView extends Main
                   npcService,
                   wrestlerService,
                   titleService,
-                  updatedSegment -> {
-                    displayShow(updatedSegment.getShow());
-                  });
+                  updatedSegment -> displayShow(updatedSegment.getShow()));
           dialog.open();
         });
 
@@ -815,6 +809,7 @@ public class ShowDetailView extends Main
             "Delete",
             event -> {
               try {
+                assert segment.getId() != null;
                 segmentService.deleteSegment(segment.getId());
                 Notification.show(
                         "Segment deleted successfully!", 3000, Notification.Position.BOTTOM_START)
@@ -906,7 +901,7 @@ public class ShowDetailView extends Main
       }
 
       // Save or update the segment
-      Segment savedSegment = segmentRepository.save(segment);
+      segmentRepository.save(segment);
       if (segmentToUpdate != null) {
         Notification.show("Segment updated successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -935,12 +930,9 @@ public class ShowDetailView extends Main
   @Override
   public void onApplicationEvent(AdjudicationCompletedEvent event) {
     // Check if the completed show is the one currently being viewed
+    assert event.getShow().getId() != null;
     if (event.getShow().getId().equals(currentShowId)) {
-      getUI()
-          .ifPresent(
-              ui -> {
-                ui.access(() -> loadShow(currentShowId));
-              });
+      getUI().ifPresent(ui -> ui.access(() -> loadShow(currentShowId)));
     }
   }
 }

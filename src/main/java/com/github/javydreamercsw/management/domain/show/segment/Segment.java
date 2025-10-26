@@ -196,26 +196,11 @@ public class Segment extends AbstractEntity<Long> {
     }
   }
 
-  /** Check if this was a singles segment (2 participants). */
-  public boolean isSinglesSegment() {
-    return participants.size() == 2;
-  }
-
-  /** Check if this was a multi-person segment (3+ participants). */
-  public boolean isMultiPersonSegment() {
-    return participants.size() > 2;
-  }
-
   /** Add a segment rule to this segment. */
   public void addSegmentRule(SegmentRule segmentRule) {
     if (segmentRule != null && !segmentRules.contains(segmentRule)) {
       segmentRules.add(segmentRule);
     }
-  }
-
-  /** Remove a segment rule from this segment. */
-  public void removeSegmentRule(SegmentRule segmentRule) {
-    segmentRules.remove(segmentRule);
   }
 
   public void syncSegmentRules(List<SegmentRule> newSegmentRules) {
@@ -228,11 +213,6 @@ public class Segment extends AbstractEntity<Long> {
         addSegmentRule(newRule);
       }
     }
-  }
-
-  /** Check if this segment has a specific rule. */
-  public boolean hasSegmentRule(SegmentRule segmentRule) {
-    return segmentRules.contains(segmentRule);
   }
 
   /** Check if this segment has any rules. */
