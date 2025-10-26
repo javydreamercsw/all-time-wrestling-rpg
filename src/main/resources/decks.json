@@ -992,7 +992,7 @@
   }, {
     "number" : 31,
     "set" : "ATW",
-    "amount" : 1
+    "amount" : 2
   }, {
     "number" : 30,
     "set" : "ATW",
@@ -1003,10 +1003,6 @@
     "amount" : 1
   }, {
     "number" : 7,
-    "set" : "ATW",
-    "amount" : 1
-  }, {
-    "number" : 31,
     "set" : "ATW",
     "amount" : 1
   }, {
