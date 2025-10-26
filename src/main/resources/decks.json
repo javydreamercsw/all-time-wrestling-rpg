@@ -1317,4 +1317,67 @@
     "set" : "ATW",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Mukundi Shumba",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "MS",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "MS",
+    "amount" : 1
+  } ]
 } ]
