@@ -3037,4 +3037,46 @@
   "pin" : true,
   "number" : 45,
   "set" : "ATW"
+}, {
+  "name" : "Original Facebuster",
+  "type" : "Grapple",
+  "damage" : 6,
+  "stamina" : 1,
+  "target" : 6,
+  "momentum" : 4,
+  "signature" : true,
+  "finisher" : false,
+  "taunt" : false,
+  "recover" : false,
+  "pin" : true,
+  "number" : 16,
+  "set" : "ATG"
+}, {
+  "name" : "Giant Elbow",
+  "type" : "Strike",
+  "damage" : 3,
+  "stamina" : 2,
+  "target" : 5,
+  "momentum" : 2,
+  "signature" : true,
+  "finisher" : false,
+  "taunt" : false,
+  "recover" : true,
+  "pin" : true,
+  "number" : 17,
+  "set" : "ATG"
+}, {
+  "name" : "Step On",
+  "type" : "Strike",
+  "damage" : 1,
+  "stamina" : 1,
+  "target" : 3,
+  "momentum" : 1,
+  "signature" : false,
+  "finisher" : false,
+  "taunt" : false,
+  "recover" : true,
+  "pin" : false,
+  "number" : 18,
+  "set" : "ATG"
 } ]
