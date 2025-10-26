@@ -1380,4 +1380,79 @@
     "set" : "MS",
     "amount" : 1
   } ]
+}, {
+  "wrestler" : "Kurt Angle",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 3,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 9,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 10,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 11,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 13,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 14,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 15,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 16,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 17,
+    "set" : "KA",
+    "amount" : 1
+  }, {
+    "number" : 18,
+    "set" : "KA",
+    "amount" : 1
+  } ]
 } ]
