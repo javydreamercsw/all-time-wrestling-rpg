@@ -10,6 +10,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
@@ -57,6 +58,7 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -66,7 +68,8 @@ import org.springframework.web.client.RestTemplate;
 @Route("show-detail")
 @PageTitle("Show Details")
 @PermitAll
-public class ShowDetailView extends Main implements HasUrlParameter<Long> {
+public class ShowDetailView extends Main
+    implements HasUrlParameter<Long>, ApplicationListener<AdjudicationCompletedEvent> {
 
   @Autowired private ShowService showService;
   @Autowired private SegmentService segmentService;
@@ -455,11 +458,24 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
     H3 segmentsTitle = new H3("Segments");
     segmentsTitle.addClassNames(LumoUtility.Margin.NONE);
 
+    Button adjudicateButton = new Button("Adjudicate Fans", new Icon(VaadinIcon.GROUP));
+    adjudicateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    adjudicateButton.addClickListener(e -> adjudicateShow(show));
+
+    // Check if there are any pending segments
+    boolean hasPendingSegments =
+        segmentRepository.findByShow(show).stream()
+            .anyMatch(
+                segment ->
+                    segment.getAdjudicationStatus()
+                        == com.github.javydreamercsw.management.domain.AdjudicationStatus.PENDING);
+    adjudicateButton.setEnabled(hasPendingSegments);
+
     Button addSegmentBtn = new Button("Add Segment", new Icon(VaadinIcon.PLUS));
     addSegmentBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     addSegmentBtn.addClickListener(e -> openAddSegmentDialog(show));
 
-    header.add(segmentsTitle, addSegmentBtn);
+    header.add(segmentsTitle, adjudicateButton, addSegmentBtn);
 
     // Get segments for this show
     List<Segment> segments = segmentRepository.findByShow(show);
@@ -871,6 +887,8 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
         segment = segmentToUpdate;
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
+        segment.setAdjudicationStatus(
+            com.github.javydreamercsw.management.domain.AdjudicationStatus.PENDING);
       } else {
         segment = new Segment();
         segment.setShow(show);
@@ -896,13 +914,33 @@ public class ShowDetailView extends Main implements HasUrlParameter<Long> {
         Notification.show("Segment added successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       }
-      segmentAdjudicationService.adjudicateMatch(savedSegment);
       return true;
     } catch (Exception e) {
       Notification.show(
               "Error saving segment: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return false;
+    }
+  }
+
+  private void adjudicateShow(Show show) {
+    String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
+    new RestTemplate()
+        .postForObject(baseUrl + "/api/shows/" + show.getId() + "/adjudicate", null, Void.class);
+    Notification.show("Fan adjudication completed!", 3000, Notification.Position.BOTTOM_START)
+        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    loadShow(this.currentShowId);
+  }
+
+  @Override
+  public void onApplicationEvent(AdjudicationCompletedEvent event) {
+    // Check if the completed show is the one currently being viewed
+    if (event.getShow().getId().equals(currentShowId)) {
+      getUI()
+          .ifPresent(
+              ui -> {
+                ui.access(() -> loadShow(currentShowId));
+              });
     }
   }
 }

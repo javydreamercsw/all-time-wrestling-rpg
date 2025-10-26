@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -69,6 +70,10 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "status", nullable = false)
   private SegmentStatus status;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "adjudication_status", nullable = false)
+  private AdjudicationStatus adjudicationStatus;
+
   // Segment rules (many-to-many relationship)
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
@@ -131,6 +136,9 @@ public class Segment extends AbstractEntity<Long> {
     }
     if (status == null) {
       status = SegmentStatus.BOOKED;
+    }
+    if (adjudicationStatus == null) {
+      adjudicationStatus = AdjudicationStatus.PENDING;
     }
   }
 
