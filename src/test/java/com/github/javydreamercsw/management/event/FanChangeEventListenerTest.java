@@ -4,6 +4,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import com.github.javydreamercsw.base.event.FanAwardedEvent;
+import com.github.javydreamercsw.base.event.FanChangeBroadcaster;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;

@@ -205,12 +205,22 @@
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.github.mvysny.kaributesting</groupId>
+      <artifactId>karibu-testing-v24</artifactId>
+      <version>2.5.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <repositories>
     <repository>
       <id>vaadin-addons</id>
       <url>https://maven.vaadin.com/vaadin-addons</url>
+    </repository>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
     </repository>
   </repositories>
 
@@ -512,24 +522,6 @@
           </dependency>
         </dependencies>
       </plugin>
-      <plugin>
-        <groupId>org.owasp</groupId>
-        <artifactId>dependency-check-maven</artifactId>
-        <version>10.0.3</version>
-        <configuration>
-          <failBuildOnCVSS>7</failBuildOnCVSS>
-          <suppressionFiles>
-            <suppressionFile>${project.basedir}/owasp-dependency-check-suppressions.xml</suppressionFile>
-          </suppressionFiles>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 
@@ -827,6 +819,28 @@
       <properties>
         <jib.image.tags>${project.version},latest</jib.image.tags>
       </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.owasp</groupId>
+            <artifactId>dependency-check-maven</artifactId>
+            <version>10.0.3</version>
+            <configuration>
+              <failBuildOnCVSS>7</failBuildOnCVSS>
+              <suppressionFiles>
+                <suppressionFile>${project.basedir}/owasp-dependency-check-suppressions.xml</suppressionFile>
+              </suppressionFiles>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <profile>
       <id>e2e</id>

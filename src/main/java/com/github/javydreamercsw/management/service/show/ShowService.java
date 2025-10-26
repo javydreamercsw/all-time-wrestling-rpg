@@ -1,19 +1,24 @@
 package com.github.javydreamercsw.management.service.show;
 
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,18 +34,27 @@ public class ShowService {
   private final SeasonRepository seasonRepository;
   private final ShowTemplateRepository showTemplateRepository;
   private final Clock clock;
+  private final SegmentAdjudicationService segmentAdjudicationService;
+  private final SegmentRepository segmentRepository;
+  private final ApplicationEventPublisher eventPublisher;
 
   ShowService(
       ShowRepository showRepository,
       ShowTypeRepository showTypeRepository,
       SeasonRepository seasonRepository,
       ShowTemplateRepository showTemplateRepository,
-      Clock clock) {
+      Clock clock,
+      SegmentAdjudicationService segmentAdjudicationService,
+      SegmentRepository segmentRepository,
+      ApplicationEventPublisher eventPublisher) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
     this.showTemplateRepository = showTemplateRepository;
     this.clock = clock;
+    this.segmentAdjudicationService = segmentAdjudicationService;
+    this.segmentRepository = segmentRepository;
+    this.eventPublisher = eventPublisher;
   }
 
   public List<Show> list(Pageable pageable) {
@@ -261,7 +275,7 @@ public class ShowService {
                         .orElseThrow(
                             () -> new IllegalArgumentException("Season not found: " + seasonId));
                 show.setSeason(season);
-              } else if (seasonId == null) {
+              } else {
                 show.setSeason(null);
               }
 
@@ -273,7 +287,7 @@ public class ShowService {
                             () ->
                                 new IllegalArgumentException("Template not found: " + templateId));
                 show.setTemplate(template);
-              } else if (templateId == null) {
+              } else {
                 show.setTemplate(null);
               }
 
@@ -293,5 +307,23 @@ public class ShowService {
       return true;
     }
     return false;
+  }
+
+  public void adjudicateShow(Long showId) {
+    Show show =
+        showRepository
+            .findById(showId)
+            .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
+
+    segmentRepository.findByShow(show).stream()
+        .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
+        .forEach(
+            segment -> {
+              segmentAdjudicationService.adjudicateMatch(segment);
+              segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
+              segmentRepository.save(segment);
+            });
+
+    eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }
 }

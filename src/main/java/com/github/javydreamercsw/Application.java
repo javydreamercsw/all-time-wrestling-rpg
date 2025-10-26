@@ -1,7 +1,5 @@
 package com.github.javydreamercsw;
 
-import com.vaadin.flow.component.page.AppShellConfigurator;
-import com.vaadin.flow.theme.Theme;
 import java.time.Clock;
 import java.util.Random;
 import org.springframework.boot.SpringApplication;
@@ -11,8 +9,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
-@Theme("default")
-public class Application extends SpringBootServletInitializer implements AppShellConfigurator {
+public class Application extends SpringBootServletInitializer {
 
   @Override
   protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {

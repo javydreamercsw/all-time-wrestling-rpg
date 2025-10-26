@@ -2,12 +2,8 @@ package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.event.FanChangeBroadcaster;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.DetachEvent;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Main;
@@ -21,7 +17,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 
@@ -34,7 +29,6 @@ public class WrestlerRankingsView extends Main {
   private final WrestlerService wrestlerService;
   private final TitleService titleService;
   private final Grid<Wrestler> grid = new Grid<>(Wrestler.class, false);
-  private Registration broadcasterRegistration;
 
   public WrestlerRankingsView(WrestlerService wrestlerService, TitleService titleService) {
     this.wrestlerService = wrestlerService;
@@ -102,32 +96,5 @@ public class WrestlerRankingsView extends Main {
 
   private void updateList() {
     grid.setItems(wrestlerService.findAll());
-  }
-
-  @Override
-  protected void onAttach(AttachEvent attachEvent) {
-    super.onAttach(attachEvent);
-    UI ui = attachEvent.getUI();
-    broadcasterRegistration =
-        FanChangeBroadcaster.register(
-            event -> {
-              ui.access(
-                  () -> {
-                    String message =
-                        String.format(
-                            "%s %s %d fans!",
-                            event.getWrestler().getName(),
-                            event.getFanChange() > 0 ? "gained" : "lost",
-                            Math.abs(event.getFanChange()));
-                    Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-                    updateList();
-                  });
-            });
-  }
-
-  @Override
-  protected void onDetach(DetachEvent detachEvent) {
-    super.onDetach(detachEvent);
-    broadcasterRegistration.remove();
   }
 }
