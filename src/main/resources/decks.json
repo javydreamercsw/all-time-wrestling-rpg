@@ -1179,4 +1179,67 @@
     "set" : "ATW",
     "amount" : 2
   } ]
+}, {
+  "wrestler" : "Johnny All Time",
+  "cards" : [ {
+    "number" : 1,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 2,
+    "set" : "JAT",
+    "amount" : 2
+  }, {
+    "number" : 3,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 4,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 5,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 7,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 8,
+    "set" : "JAT",
+    "amount" : 1
+  }, {
+    "number" : 57,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 45,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 43,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 12,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 31,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 18,
+    "set" : "ATW",
+    "amount" : 1
+  }, {
+    "number" : 6,
+    "set" : "ATW",
+    "amount" : 1
+  } ]
 } ]
