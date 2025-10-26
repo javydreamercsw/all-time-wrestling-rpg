@@ -947,7 +947,7 @@
               <execution>
                 <id>cargo-deploy</id>
                 <goals>
-                  <goal>deploy</goal>
+                  <goal>redeploy</goal>
                 </goals>
                 <phase>package</phase>
               </execution>

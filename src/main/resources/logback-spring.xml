@@ -2,16 +2,31 @@
 <configuration>
     <!-- Include Spring Boot's default configuration -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
-    
+
+    <property name="LOG_DIR" value="${catalina.base:-${user.home}}"/>
+    <property name="LOG_FILE" value="${LOG_DIR}/logs/atwrpg.log"/>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.gz</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <!-- Disable Notion SDK logging completely -->
     <logger name="notion.api.v1.logging.StdoutLogger" level="OFF" />
-    
+
     <!-- Set atmosphere logging to warn as configured in application.properties -->
     <logger name="org.atmosphere" level="WARN"/>
-    
+
     <!-- Root logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
     </root>
 </configuration>
