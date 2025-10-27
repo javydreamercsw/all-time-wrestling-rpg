@@ -21,8 +21,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @SpringBootTest(classes = {Application.class})
 @ActiveProfiles("postgresql")
-@TestPropertySource(
-    properties = {"notion.sync.enabled=false", "spring.flyway.repair-on-validate=true"})
+@TestPropertySource(properties = {"notion.sync.enabled=false"})
 public class PostgresqlDatabaseMigrationTest {
 
   @Container

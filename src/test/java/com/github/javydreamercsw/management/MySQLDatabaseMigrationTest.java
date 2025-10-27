@@ -3,8 +3,6 @@ package com.github.javydreamercsw.management;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.javydreamercsw.Application;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService;
-import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -12,7 +10,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -26,9 +23,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ActiveProfiles("mysql")
 @TestPropertySource(properties = "notion.sync.enabled=false")
 public class MySQLDatabaseMigrationTest {
-
-  @MockBean NotionSyncService notionSyncService;
-  @MockBean ParallelSyncOrchestrator parallelSyncOrchestrator;
 
   @Container public static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0.33");
 
