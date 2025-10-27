@@ -1,0 +1,1 @@
+-- SQLite schema is not yet supported. This is a placeholder file.

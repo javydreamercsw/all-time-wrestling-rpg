@@ -19,17 +19,19 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ActiveProfiles("postgresql")
 public class PostgresqlDatabaseMigrationTest {
 
-    @Container
-    public static PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>("postgres:13.3");
+  @Container
+  public static PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>("postgres:13.3");
 
-    @Test
-    public void testPostgresqlMigration() throws SQLException {
-        try (Connection conn = DriverManager.getConnection(postgresql.getJdbcUrl(), postgresql.getUsername(), postgresql.getPassword());
-             Statement stmt = conn.createStatement()) {
+  @Test
+  public void testPostgresqlMigration() throws SQLException {
+    try (Connection conn =
+            DriverManager.getConnection(
+                postgresql.getJdbcUrl(), postgresql.getUsername(), postgresql.getPassword());
+        Statement stmt = conn.createStatement()) {
 
-            ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM faction");
-            rs.next();
-            assertEquals(0, rs.getInt(1));
-        }
+      ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM faction");
+      rs.next();
+      assertEquals(0, rs.getInt(1));
     }
+  }
 }

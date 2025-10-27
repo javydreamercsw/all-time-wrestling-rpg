@@ -34,12 +34,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
  * Enhanced base class for all sync services providing common functionality including rate limiting,
  * parallel processing, circuit breaking, and retry mechanisms.
  */
 @Slf4j
+@ConditionalOnProperty("notion.sync.enabled=true")
 public abstract class BaseSyncService {
 
   protected final ObjectMapper objectMapper;

@@ -19,76 +19,83 @@ import org.springframework.stereotype.Service;
 @Service
 public class DataMigrationService {
 
-    private final ApplicationContext context;
-    private final ObjectMapper objectMapper;
-    private final EntityDependencyAnalyzer dependencyAnalyzer;
+  private final ApplicationContext context;
+  private final ObjectMapper objectMapper;
+  private final EntityDependencyAnalyzer dependencyAnalyzer;
 
-    public DataMigrationService(ApplicationContext context, ObjectMapper objectMapper, EntityDependencyAnalyzer dependencyAnalyzer) {
-        this.context = context;
-        this.objectMapper = objectMapper;
-        this.dependencyAnalyzer = dependencyAnalyzer;
+  public DataMigrationService(
+      ApplicationContext context,
+      ObjectMapper objectMapper,
+      EntityDependencyAnalyzer dependencyAnalyzer) {
+    this.context = context;
+    this.objectMapper = objectMapper;
+    this.dependencyAnalyzer = dependencyAnalyzer;
+  }
+
+  public byte[] exportData(String format) throws IOException {
+    if ("JSON".equals(format)) {
+      return exportDataAsJson();
+    } else {
+      throw new IllegalArgumentException("Unsupported format: " + format);
     }
+  }
 
-    public byte[] exportData(String format) throws IOException {
-        if ("JSON".equals(format)) {
-            return exportDataAsJson();
-        } else {
-            throw new IllegalArgumentException("Unsupported format: " + format);
+  private byte[] exportDataAsJson() throws IOException {
+    Map<String, JpaRepository> repositories = context.getBeansOfType(JpaRepository.class);
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+      for (Map.Entry<String, JpaRepository> entry : repositories.entrySet()) {
+        String repositoryName = entry.getKey();
+        JpaRepository repository = entry.getValue();
+        List<?> entities = repository.findAll();
+
+        if (!entities.isEmpty()) {
+          String fileName = repositoryName + ".json";
+          ZipEntry zipEntry = new ZipEntry(fileName);
+          zos.putNextEntry(zipEntry);
+          zos.write(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(entities));
+          zos.closeEntry();
         }
+      }
     }
+    return baos.toByteArray();
+  }
 
-    private byte[] exportDataAsJson() throws IOException {
-        Map<String, JpaRepository> repositories = context.getBeansOfType(JpaRepository.class);
+  public void importData(String format, byte[] file) throws IOException {
+    if ("JSON".equals(format)) {
+      importDataAsJson(file);
+    } else {
+      throw new IllegalArgumentException("Unsupported format: " + format);
+    }
+  }
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-            for (Map.Entry<String, JpaRepository> entry : repositories.entrySet()) {
-                String repositoryName = entry.getKey();
-                JpaRepository repository = entry.getValue();
-                List<?> entities = repository.findAll();
+  private void importDataAsJson(byte[] file) throws IOException {
+    List<String> entityNames = dependencyAnalyzer.getAutomaticSyncOrder();
 
-                if (!entities.isEmpty()) {
-                    String fileName = repositoryName + ".json";
-                    ZipEntry zipEntry = new ZipEntry(fileName);
-                    zos.putNextEntry(zipEntry);
-                    zos.write(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(entities));
-                    zos.closeEntry();
-                }
-            }
+    try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(file))) {
+      ZipEntry zipEntry = zis.getNextEntry();
+      while (zipEntry != null) {
+        String fileName = zipEntry.getName();
+        String repositoryName = fileName.substring(0, fileName.lastIndexOf('.'));
+
+        if (entityNames.contains(repositoryName)) {
+          JpaRepository repository = context.getBean(repositoryName, JpaRepository.class);
+          Class<?> entityClass =
+              ResolvableType.forClass(repository.getClass())
+                  .as(JpaRepository.class)
+                  .getGeneric(0)
+                  .resolve();
+
+          JavaType type =
+              objectMapper.getTypeFactory().constructCollectionType(List.class, entityClass);
+          List<?> entities = objectMapper.readValue(zis, type);
+
+          repository.saveAll(entities);
         }
-        return baos.toByteArray();
+
+        zipEntry = zis.getNextEntry();
+      }
     }
-
-    public void importData(String format, byte[] file) throws IOException {
-        if ("JSON".equals(format)) {
-            importDataAsJson(file);
-        } else {
-            throw new IllegalArgumentException("Unsupported format: " + format);
-        }
-    }
-
-    private void importDataAsJson(byte[] file) throws IOException {
-        List<String> entityNames = dependencyAnalyzer.getAutomaticSyncOrder();
-
-        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(file))) {
-            ZipEntry zipEntry = zis.getNextEntry();
-            while (zipEntry != null) {
-                String fileName = zipEntry.getName();
-                String repositoryName = fileName.substring(0, fileName.lastIndexOf('.'));
-
-                if (entityNames.contains(repositoryName)) {
-                    JpaRepository repository = context.getBean(repositoryName, JpaRepository.class);
-                    Class<?> entityClass = ResolvableType.forClass(repository.getClass())
-                        .as(JpaRepository.class).getGeneric(0).resolve();
-
-                    JavaType type = objectMapper.getTypeFactory().constructCollectionType(List.class, entityClass);
-                    List<?> entities = objectMapper.readValue(zis, type);
-
-                    repository.saveAll(entities);
-                }
-
-                zipEntry = zis.getNextEntry();
-            }
-        }
-    }
+  }
 }

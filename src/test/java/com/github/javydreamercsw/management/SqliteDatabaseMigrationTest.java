@@ -17,14 +17,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ActiveProfiles("sqlite")
 public class SqliteDatabaseMigrationTest {
 
-    @Test
-    public void testSqliteMigration() throws SQLException {
-        try (Connection conn = DriverManager.getConnection("jdbc:tc:sqlite:3.36.0:///test.db");
-             Statement stmt = conn.createStatement()) {
+  @Test
+  public void testSqliteMigration() throws SQLException {
+    try (Connection conn = DriverManager.getConnection("jdbc:tc:sqlite:3.36.0:///test.db");
+        Statement stmt = conn.createStatement()) {
 
-            ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM faction");
-            rs.next();
-            assertEquals(0, rs.getInt(1));
-        }
+      ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM faction");
+      rs.next();
+      assertEquals(0, rs.getInt(1));
     }
+  }
 }
