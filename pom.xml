@@ -105,7 +105,7 @@
       <!-- Replace with the database you will be using in production -->
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-      <scope>runtime</scope>
+      <version>2.4.240</version>
     </dependency>
     <dependency>
       <groupId>com.mysql</groupId>
