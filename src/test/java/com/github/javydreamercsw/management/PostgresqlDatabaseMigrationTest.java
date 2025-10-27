@@ -3,8 +3,6 @@ package com.github.javydreamercsw.management;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.javydreamercsw.Application;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService;
-import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -16,7 +14,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -27,9 +24,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @TestPropertySource(
     properties = {"notion.sync.enabled=false", "spring.flyway.repair-on-validate=true"})
 public class PostgresqlDatabaseMigrationTest {
-
-  @MockitoBean NotionSyncService notionSyncService;
-  @MockitoBean ParallelSyncOrchestrator parallelSyncOrchestrator;
 
   @Container
   public static PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>("postgres:13.3");
