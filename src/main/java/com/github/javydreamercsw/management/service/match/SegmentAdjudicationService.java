@@ -101,23 +101,14 @@ public class SegmentAdjudicationService {
     // Add heat to rivalries
     int heat = 0;
     String segmentTypeName = segment.getSegmentType().getName();
-    switch (segmentTypeName) {
-      case "Match":
-        heat = 1;
-        break;
-      case "Run-in":
-      case "Distraction":
-      case "Attack":
-        heat = 2;
-        break;
-      case "Post-match attack":
-      case "Pre-match attack":
-        heat = 3;
-        break;
-      case "Promo interruption":
-        heat = 4;
-        break;
-    }
+    heat =
+        switch (segmentTypeName) {
+          case "Match" -> 1;
+          case "Run-in", "Distraction", "Attack" -> 2;
+          case "Post-match attack", "Pre-match attack" -> 3;
+          case "Promo interruption" -> 4;
+          default -> heat;
+        };
 
     if (heat > 0) {
       List<Wrestler> participants = segment.getWrestlers();
