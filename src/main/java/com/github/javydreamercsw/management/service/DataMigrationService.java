@@ -1,13 +1,18 @@
 package com.github.javydreamercsw.management.service;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.ResolvableType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +21,12 @@ public class DataMigrationService {
 
     private final ApplicationContext context;
     private final ObjectMapper objectMapper;
+    private final EntityDependencyAnalyzer dependencyAnalyzer;
 
-    public DataMigrationService(ApplicationContext context, ObjectMapper objectMapper) {
+    public DataMigrationService(ApplicationContext context, ObjectMapper objectMapper, EntityDependencyAnalyzer dependencyAnalyzer) {
         this.context = context;
         this.objectMapper = objectMapper;
+        this.dependencyAnalyzer = dependencyAnalyzer;
     }
 
     public byte[] exportData(String format) throws IOException {
@@ -52,7 +59,36 @@ public class DataMigrationService {
         return baos.toByteArray();
     }
 
-    public void importData(String format, byte[] file) {
-        // TODO: Implement data import
+    public void importData(String format, byte[] file) throws IOException {
+        if ("JSON".equals(format)) {
+            importDataAsJson(file);
+        } else {
+            throw new IllegalArgumentException("Unsupported format: " + format);
+        }
+    }
+
+    private void importDataAsJson(byte[] file) throws IOException {
+        List<String> entityNames = dependencyAnalyzer.getAutomaticSyncOrder();
+
+        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(file))) {
+            ZipEntry zipEntry = zis.getNextEntry();
+            while (zipEntry != null) {
+                String fileName = zipEntry.getName();
+                String repositoryName = fileName.substring(0, fileName.lastIndexOf('.'));
+
+                if (entityNames.contains(repositoryName)) {
+                    JpaRepository repository = context.getBean(repositoryName, JpaRepository.class);
+                    Class<?> entityClass = ResolvableType.forClass(repository.getClass())
+                        .as(JpaRepository.class).getGeneric(0).resolve();
+
+                    JavaType type = objectMapper.getTypeFactory().constructCollectionType(List.class, entityClass);
+                    List<?> entities = objectMapper.readValue(zis, type);
+
+                    repository.saveAll(entities);
+                }
+
+                zipEntry = zis.getNextEntry();
+            }
+        }
     }
 }
