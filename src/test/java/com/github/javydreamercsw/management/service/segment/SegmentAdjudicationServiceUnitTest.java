@@ -11,6 +11,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.util.Objects;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -171,6 +172,8 @@ class SegmentAdjudicationServiceUnitTest {
 
     adjudicationService.adjudicateMatch(promoSegment);
 
+    // promoQualityBonus should be 1 + 2 + 3 = 6
+    long expectedFans = 6 * 1_000L;
     verify(wrestlerService, times(1)).awardFans(eq(1L), eq(expectedFans));
     verify(wrestlerService, times(1)).awardFans(eq(2L), eq(expectedFans));
   }
@@ -186,6 +189,9 @@ class SegmentAdjudicationServiceUnitTest {
     // Then
     verify(rivalryService, times(1))
         .addHeatBetweenWrestlers(
-            eq(wrestler1.getId()), eq(wrestler2.getId()), eq(1), eq("From segment: Match"));
+            Objects.requireNonNull(eq(wrestler1.getId())),
+            Objects.requireNonNull(eq(wrestler2.getId())),
+            eq(1),
+            eq("From segment: Match"));
   }
 }
