@@ -90,7 +90,11 @@ public class RivalryListView extends Main {
         .setHeader("Wrestler 2")
         .setSortable(true)
         .setSortProperty("wrestler2.name");
-    rivalryGrid.addColumn(Rivalry::getHeat).setHeader("Heat").setSortable(true).setSortProperty("heat");
+    rivalryGrid
+        .addColumn(Rivalry::getHeat)
+        .setHeader("Heat")
+        .setSortable(true)
+        .setSortProperty("heat");
     rivalryGrid
         .addColumn(Rivalry::getStorylineNotes)
         .setHeader("Notes")

@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.ui.view.card;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -8,6 +9,10 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -184,5 +189,47 @@ public class CardListViewE2ETest extends AbstractE2ETest {
                   "Card should have been deleted but was found: " + refreshedGrid.getText());
               return refreshedGrid;
             });
+  }
+
+  @Test
+  public void testSortByName() {
+    driver.get("http://localhost:8080/card-list");
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+
+    // Wait for the grid to be present and populated
+    WebElement grid =
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
+    wait.until(d -> !grid.findElements(By.tagName("vaadin-grid-cell-content")).isEmpty());
+
+    // Get the header cell for the "Name" column
+    WebElement nameHeader = grid.findElement(By.xpath("//vaadin-grid-sorter[contains(., 'Name')]"));
+
+    // Get the initial order of names
+    List<String> initialOrder = getColumnData(grid, 0);
+
+    // Click to sort ascending
+    nameHeader.click();
+    wait.until(ExpectedConditions.attributeContains(nameHeader, "direction", "asc"));
+    List<String> ascOrder = getColumnData(grid, 0);
+    List<String> sortedInitial = new ArrayList<>(initialOrder);
+    Collections.sort(sortedInitial);
+    assertEquals(sortedInitial, ascOrder);
+
+    // Click to sort descending
+    nameHeader.click();
+    wait.until(ExpectedConditions.attributeContains(nameHeader, "direction", "desc"));
+    List<String> descOrder = getColumnData(grid, 0);
+    Collections.reverse(sortedInitial);
+    assertEquals(sortedInitial, descOrder);
+  }
+
+  private List<String> getColumnData(WebElement grid, int columnIndex) {
+    List<WebElement> cells =
+        grid.findElements(
+            By.xpath(
+                "//vaadin-grid-cell-content[count(ancestor::vaadin-grid-column) = "
+                    + (columnIndex + 1)
+                    + "]"));
+    return cells.stream().map(WebElement::getText).collect(Collectors.toList());
   }
 }

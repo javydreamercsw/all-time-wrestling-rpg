@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,11 +20,13 @@ public class SegmentAdjudicationService {
   private final Random random;
 
   @Autowired
-  public SegmentAdjudicationService(WrestlerService wrestlerService, RivalryService rivalryService) {
+  public SegmentAdjudicationService(
+      WrestlerService wrestlerService, RivalryService rivalryService) {
     this(rivalryService, wrestlerService, new Random());
   }
 
-  public SegmentAdjudicationService(RivalryService rivalryService, WrestlerService wrestlerService, Random random) {
+  public SegmentAdjudicationService(
+      RivalryService rivalryService, WrestlerService wrestlerService, Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.random = random;
