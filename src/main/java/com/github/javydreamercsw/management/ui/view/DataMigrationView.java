@@ -3,13 +3,17 @@ package com.github.javydreamercsw.management.ui.view;
 import com.github.javydreamercsw.management.service.DataMigrationService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.StreamResource;
 import jakarta.annotation.security.PermitAll;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 @Route("data-migration")
 @PageTitle("Data Migration")
@@ -26,8 +30,20 @@ public class DataMigrationView extends Main {
         formatComboBox.setItems("JSON", "CSV");
 
         Button exportButton = new Button("Export");
+        Anchor downloadLink = new Anchor();
+        downloadLink.setVisible(false);
+
         exportButton.addClickListener(e -> {
-            dataMigrationService.exportData(formatComboBox.getValue());
+            try {
+                byte[] data = dataMigrationService.exportData(formatComboBox.getValue());
+                StreamResource resource = new StreamResource("export.zip", () -> new ByteArrayInputStream(data));
+                downloadLink.setHref(resource);
+                downloadLink.getElement().setAttribute("download", true);
+                downloadLink.setText("Download Export");
+                downloadLink.setVisible(true);
+            } catch (IOException ex) {
+                // Handle exception
+            }
         });
 
         Upload upload = new Upload();
@@ -37,6 +53,6 @@ public class DataMigrationView extends Main {
             // dataMigrationService.importData(formatComboBox.getValue(), file);
         });
 
-        add(new VerticalLayout(formatComboBox, exportButton, upload, importButton));
+        add(new VerticalLayout(formatComboBox, exportButton, downloadLink, upload, importButton));
     }
 }
