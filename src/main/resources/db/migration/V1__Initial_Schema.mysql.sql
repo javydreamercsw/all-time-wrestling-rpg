@@ -1,23 +1,15 @@
--- ========== Initial Schema for All-Time Wrestling RPG ==========
--- This single script defines the complete database schema for the first release,
--- consolidating and correcting all previous migration scripts to match the
--- current JPA entity definitions.
-
--- =================================================================
--- CORE WRESTLER & FACTION SYSTEM
--- =================================================================
+-- ========== Initial Schema for All-Time Wrestling RPG (MySQL) ==========
 
 CREATE TABLE faction (
     faction_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    description LONGTEXT,
+    description TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     leader_id BIGINT,
     formed_date TIMESTAMP,
     disbanded_date TIMESTAMP,
     creation_date TIMESTAMP NOT NULL,
     external_id VARCHAR(255) UNIQUE
-    -- Note: leader_id cannot have a foreign key constraint yet as wrestler table does not exist.
 );
 
 CREATE TABLE wrestler (
@@ -41,7 +33,6 @@ CREATE TABLE wrestler (
     FOREIGN KEY (faction_id) REFERENCES faction(faction_id) ON DELETE SET NULL
 );
 
--- Add the foreign key constraint for faction's leader
 ALTER TABLE faction ADD CONSTRAINT fk_faction_leader FOREIGN KEY (leader_id) REFERENCES wrestler(wrestler_id) ON DELETE SET NULL;
 
 CREATE TABLE injury_type (
@@ -50,7 +41,7 @@ CREATE TABLE injury_type (
     health_effect INT,
     stamina_effect INT,
     card_effect INT,
-    special_effects LONGTEXT,
+    special_effects TEXT,
     external_id VARCHAR(255) UNIQUE
 );
 
@@ -58,14 +49,14 @@ CREATE TABLE injury (
     injury_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     wrestler_id BIGINT NOT NULL,
     name VARCHAR(255) NOT NULL,
-    description LONGTEXT,
+    description TEXT,
     severity VARCHAR(255) NOT NULL,
     health_penalty INT NOT NULL,
     is_active BOOLEAN NOT NULL,
     injury_date TIMESTAMP NOT NULL,
     healed_date TIMESTAMP,
     healing_cost BIGINT NOT NULL,
-    injury_notes LONGTEXT,
+    injury_notes TEXT,
     creation_date TIMESTAMP NOT NULL,
     external_id VARCHAR(255) UNIQUE,
     FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE
@@ -78,14 +69,10 @@ CREATE TABLE npc (
     external_id VARCHAR(255)
 );
 
--- =================================================================
--- TEAM SYSTEM
--- =================================================================
-
 CREATE TABLE team (
     team_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    description LONGTEXT,
+    description TEXT,
     wrestler1_id BIGINT NOT NULL,
     wrestler2_id BIGINT NOT NULL,
     faction_id BIGINT,
@@ -98,14 +85,10 @@ CREATE TABLE team (
     FOREIGN KEY (faction_id) REFERENCES faction(faction_id) ON DELETE SET NULL
 );
 
--- =================================================================
--- CARD & DECK SYSTEM
--- =================================================================
-
 CREATE TABLE card_set (
     set_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     set_code VARCHAR(255) NOT NULL UNIQUE,
-    description LONGTEXT,
+    description TEXT,
     release_date DATE,
     creation_date TIMESTAMP NOT NULL
 );
@@ -148,14 +131,10 @@ CREATE TABLE deck_card (
     UNIQUE (deck_id, card_id)
 );
 
--- =================================================================
--- SHOW & SEASON SYSTEM
--- =================================================================
-
 CREATE TABLE season (
     season_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    description LONGTEXT,
+    description TEXT,
     start_date DATE NOT NULL,
     end_date DATE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -167,7 +146,7 @@ CREATE TABLE season (
 CREATE TABLE show_type (
     show_type_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    description LONGTEXT,
+    description TEXT,
     is_ppv BOOLEAN NOT NULL DEFAULT FALSE,
     creation_date TIMESTAMP NOT NULL
 );
@@ -175,7 +154,7 @@ CREATE TABLE show_type (
 CREATE TABLE show_template (
     template_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    description LONGTEXT,
+    description TEXT,
     show_type_id BIGINT NOT NULL,
     notion_url VARCHAR(500),
     external_id VARCHAR(255) UNIQUE,
@@ -183,10 +162,10 @@ CREATE TABLE show_template (
     FOREIGN KEY (show_type_id) REFERENCES show_type(show_type_id) ON DELETE RESTRICT
 );
 
-CREATE TABLE show (
+CREATE TABLE `show` (
     show_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    description LONGTEXT,
+    description TEXT,
     show_date TIMESTAMP,
     show_type_id BIGINT NOT NULL,
     season_id BIGINT,
@@ -198,21 +177,17 @@ CREATE TABLE show (
     FOREIGN KEY (template_id) REFERENCES show_template(template_id) ON DELETE SET NULL
 );
 
--- =================================================================
--- SEGMENT SYSTEM
--- =================================================================
-
 CREATE TABLE segment_type (
     segment_type_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    description LONGTEXT,
+    description TEXT,
     creation_date TIMESTAMP NOT NULL
 );
 
 CREATE TABLE segment_rule (
     segment_rule_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    description LONGTEXT,
+    description TEXT,
     requires_high_heat BOOLEAN NOT NULL DEFAULT FALSE,
     creation_date TIMESTAMP NOT NULL
 );
@@ -226,12 +201,12 @@ CREATE TABLE segment (
     duration_minutes INT,
     segment_rating INT,
     status VARCHAR(255) NOT NULL,
-    narration LONGTEXT,
-    summary LONGTEXT,
+    narration TEXT,
+    summary TEXT,
     is_title_segment BOOLEAN NOT NULL DEFAULT FALSE,
     is_npc_generated BOOLEAN NOT NULL DEFAULT FALSE,
     external_id VARCHAR(255) UNIQUE,
-    FOREIGN KEY (show_id) REFERENCES show(show_id) ON DELETE CASCADE,
+    FOREIGN KEY (show_id) REFERENCES `show`(show_id) ON DELETE CASCADE,
     FOREIGN KEY (segment_type_id) REFERENCES segment_type(segment_type_id) ON DELETE RESTRICT,
     FOREIGN KEY (winner_id) REFERENCES wrestler(wrestler_id) ON DELETE SET NULL
 );
@@ -257,7 +232,7 @@ CREATE TABLE segment_segment_rule (
 CREATE TABLE title (
     title_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    description LONGTEXT,
+    description TEXT,
     tier VARCHAR(255),
     gender VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -272,10 +247,6 @@ CREATE TABLE segment_title (
     FOREIGN KEY (segment_id) REFERENCES segment(segment_id) ON DELETE CASCADE,
     FOREIGN KEY (title_id) REFERENCES title(title_id) ON DELETE CASCADE
 );
-
--- =================================================================
--- TITLE SYSTEM
--- =================================================================
 
 CREATE TABLE title_champion (
     title_id BIGINT NOT NULL,
@@ -300,7 +271,7 @@ CREATE TABLE title_reign (
     start_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP,
     reign_number INT NOT NULL DEFAULT 1,
-    notes LONGTEXT,
+    notes TEXT,
     creation_date TIMESTAMP NOT NULL,
     FOREIGN KEY (title_id) REFERENCES title(title_id) ON DELETE CASCADE
 );
@@ -313,10 +284,6 @@ CREATE TABLE title_reign_champion (
     FOREIGN KEY (wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE
 );
 
--- =================================================================
--- RIVALRY & STORYLINE SYSTEM
--- =================================================================
-
 CREATE TABLE rivalry (
     rivalry_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     wrestler1_id BIGINT NOT NULL,
@@ -325,7 +292,7 @@ CREATE TABLE rivalry (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     started_date TIMESTAMP NOT NULL,
     ended_date TIMESTAMP,
-    storyline_notes LONGTEXT,
+    storyline_notes TEXT,
     creation_date TIMESTAMP NOT NULL,
     FOREIGN KEY (wrestler1_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE,
     FOREIGN KEY (wrestler2_id) REFERENCES wrestler(wrestler_id) ON DELETE CASCADE,
@@ -352,7 +319,7 @@ CREATE TABLE faction_rivalry (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     started_date TIMESTAMP NOT NULL,
     ended_date TIMESTAMP,
-    storyline_notes LONGTEXT,
+    storyline_notes TEXT,
     creation_date TIMESTAMP NOT NULL,
     FOREIGN KEY (faction1_id) REFERENCES faction(faction_id) ON DELETE CASCADE,
     FOREIGN KEY (faction2_id) REFERENCES faction(faction_id) ON DELETE CASCADE,
@@ -374,7 +341,7 @@ CREATE TABLE faction_heat_event (
 CREATE TABLE drama_event (
     drama_event_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
-    description LONGTEXT NOT NULL,
+    description TEXT NOT NULL,
     event_type VARCHAR(255) NOT NULL,
     severity VARCHAR(255) NOT NULL,
     event_date TIMESTAMP NOT NULL,
@@ -386,26 +353,22 @@ CREATE TABLE drama_event (
     rivalry_ended BOOLEAN NOT NULL,
     is_processed BOOLEAN NOT NULL,
     processed_date TIMESTAMP,
-    processing_notes LONGTEXT,
+    processing_notes TEXT,
     primary_wrestler_id BIGINT,
     secondary_wrestler_id BIGINT,
     FOREIGN KEY (primary_wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE SET NULL,
     FOREIGN KEY (secondary_wrestler_id) REFERENCES wrestler(wrestler_id) ON DELETE SET NULL
 );
 
--- =================================================================
--- MULTI-WRESTLER FEUD SYSTEM (ADDED)
--- =================================================================
-
 CREATE TABLE multi_wrestler_feud (
     multi_wrestler_feud_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    description LONGTEXT,
+    description TEXT,
     heat INT NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     started_date TIMESTAMP NOT NULL,
     ended_date TIMESTAMP,
-    storyline_notes LONGTEXT,
+    storyline_notes TEXT,
     creation_date TIMESTAMP NOT NULL
 );
 

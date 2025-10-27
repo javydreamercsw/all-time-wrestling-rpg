@@ -1,0 +1,1 @@
+-- SQLite does not support dropping constraints. This migration needs to be handled manually.
