@@ -28,8 +28,8 @@ public class DataMigrationView extends Main {
   public DataMigrationView(DataMigrationService dataMigrationService) {
     this.dataMigrationService = dataMigrationService;
 
-    ComboBox<String> formatComboBox = new ComboBox<>("Select Format");
-    formatComboBox.setItems("JSON", "CSV");
+    ComboBox<DataMigrationService.DataFormat> formatComboBox = new ComboBox<>("Select Format");
+    formatComboBox.setItems(DataMigrationService.DataFormat.values());
 
     Button exportButton = new Button("Export");
     VerticalLayout downloadContainer = new VerticalLayout();
@@ -37,7 +37,7 @@ public class DataMigrationView extends Main {
     exportButton.addClickListener(
         e -> {
           try {
-            String format = formatComboBox.getValue();
+            DataMigrationService.DataFormat format = formatComboBox.getValue();
             if (format == null) {
               Notification.show("Please select a format.");
               return;
@@ -60,7 +60,7 @@ public class DataMigrationView extends Main {
         UploadHandler.inMemory(
             (uploadMetadata, bytes) -> {
               try {
-                String format = formatComboBox.getValue();
+                DataMigrationService.DataFormat format = formatComboBox.getValue();
                 if (format == null) {
                   Notification.show("Please select a format.");
                   return;

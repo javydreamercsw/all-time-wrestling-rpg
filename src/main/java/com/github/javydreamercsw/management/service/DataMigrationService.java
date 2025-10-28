@@ -32,8 +32,13 @@ public class DataMigrationService {
     this.dependencyAnalyzer = dependencyAnalyzer;
   }
 
-  public byte[] exportData(String format) throws IOException {
-    if ("JSON".equals(format)) {
+  public enum DataFormat {
+    JSON,
+    CSV
+  }
+
+  public byte[] exportData(DataFormat format) throws IOException {
+    if (DataFormat.JSON.equals(format)) {
       return exportDataAsJson();
     } else {
       throw new IllegalArgumentException("Unsupported format: " + format);
@@ -62,8 +67,8 @@ public class DataMigrationService {
     return baos.toByteArray();
   }
 
-  public void importData(String format, byte[] file) throws IOException {
-    if ("JSON".equals(format)) {
+  public void importData(DataFormat format, byte[] file) throws IOException {
+    if (DataFormat.JSON.equals(format)) {
       importDataAsJson(file);
     } else {
       throw new IllegalArgumentException("Unsupported format: " + format);
