@@ -3,9 +3,12 @@ package com.github.javydreamercsw.management.service;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
+import jakarta.persistence.EntityManager;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -79,12 +82,25 @@ public class DataMigrationService {
     List<String> entityNames = dependencyAnalyzer.getAutomaticSyncOrder();
 
     try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(file))) {
+      Map<String, byte[]> zipEntryContents = new HashMap<>();
       ZipEntry zipEntry = zis.getNextEntry();
       while (zipEntry != null) {
         String fileName = zipEntry.getName();
-        String repositoryName = fileName.substring(0, fileName.lastIndexOf('.'));
+        ByteArrayOutputStream entryBaos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int len;
+        while ((len = zis.read(buffer)) > 0) {
+          entryBaos.write(buffer, 0, len);
+        }
+        zipEntryContents.put(
+            fileName.substring(0, fileName.lastIndexOf('.')), entryBaos.toByteArray());
+        zipEntry = zis.getNextEntry();
+      }
 
-        if (entityNames.contains(repositoryName)) {
+      // Now process the entries in the correct dependency order
+      for (String repositoryName : entityNames) {
+        if (zipEntryContents.containsKey(repositoryName)) {
+          byte[] jsonBytes = zipEntryContents.get(repositoryName);
           JpaRepository repository = context.getBean(repositoryName, JpaRepository.class);
           Class<?> entityClass =
               ResolvableType.forClass(repository.getClass())
@@ -94,12 +110,14 @@ public class DataMigrationService {
 
           JavaType type =
               objectMapper.getTypeFactory().constructCollectionType(List.class, entityClass);
-          List<?> entities = objectMapper.readValue(zis, type);
+          List<?> entities =
+              objectMapper.readValue(new String(jsonBytes, StandardCharsets.UTF_8), type);
 
           repository.saveAll(entities);
+          // Flush and clear the entity manager to ensure changes are persisted and visible
+          context.getBean(EntityManager.class).flush();
+          context.getBean(EntityManager.class).clear();
         }
-
-        zipEntry = zis.getNextEntry();
       }
     }
   }
