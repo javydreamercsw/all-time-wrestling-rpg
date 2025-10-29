@@ -18,6 +18,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.ResolvableType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DataMigrationService {
@@ -78,6 +79,7 @@ public class DataMigrationService {
     }
   }
 
+  @Transactional
   private void importDataAsJson(byte[] file) throws IOException {
     List<String> entityNames = dependencyAnalyzer.getAutomaticSyncOrder();
 
@@ -112,6 +114,24 @@ public class DataMigrationService {
               objectMapper.getTypeFactory().constructCollectionType(List.class, entityClass);
           List<?> entities =
               objectMapper.readValue(new String(jsonBytes, StandardCharsets.UTF_8), type);
+
+          // Clear IDs to ensure entities are treated as new and new IDs are generated
+          for (Object entity : entities) {
+            try {
+              java.lang.reflect.Field idField = entityClass.getDeclaredField("id");
+              idField.setAccessible(true);
+              idField.set(entity, null);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+              // Handle cases where 'id' field might not exist or is not accessible
+              // For now, we'll just log and continue, as not all entities might have an 'id' field
+              // or it might be handled differently.
+              System.err.println(
+                  "Could not set ID to null for entity "
+                      + entity.getClass().getName()
+                      + ": "
+                      + e.getMessage());
+            }
+          }
 
           repository.saveAll(entities);
           // Flush and clear the entity manager to ensure changes are persisted and visible

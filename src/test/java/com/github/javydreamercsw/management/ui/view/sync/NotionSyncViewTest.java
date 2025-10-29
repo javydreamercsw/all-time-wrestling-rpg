@@ -87,7 +87,7 @@ class NotionSyncViewTest {
     when(syncProperties.isEnabled()).thenReturn(false);
     when(syncProperties.isSchedulerEnabled()).thenReturn(false);
     when(syncProperties.isBackupEnabled()).thenReturn(false);
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of());
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(new ArrayList<>());
 
     NotionSyncView disabledView =
         new NotionSyncView(
@@ -99,7 +99,7 @@ class NotionSyncViewTest {
   @Test
   @DisplayName("Should handle empty entities list")
   void shouldHandleEmptyEntitiesList() {
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of());
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(new ArrayList<>());
     // Remove deprecated getEntities() call - entities are now automatically determined
 
     NotionSyncView emptyEntitiesView =
