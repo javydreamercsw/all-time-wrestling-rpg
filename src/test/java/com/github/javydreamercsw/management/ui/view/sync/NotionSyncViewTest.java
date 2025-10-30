@@ -8,6 +8,11 @@ import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyze
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.data.provider.Query;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -82,7 +87,7 @@ class NotionSyncViewTest {
     when(syncProperties.isEnabled()).thenReturn(false);
     when(syncProperties.isSchedulerEnabled()).thenReturn(false);
     when(syncProperties.isBackupEnabled()).thenReturn(false);
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of());
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(new ArrayList<>());
 
     NotionSyncView disabledView =
         new NotionSyncView(
@@ -94,7 +99,7 @@ class NotionSyncViewTest {
   @Test
   @DisplayName("Should handle empty entities list")
   void shouldHandleEmptyEntitiesList() {
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of());
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(new ArrayList<>());
     // Remove deprecated getEntities() call - entities are now automatically determined
 
     NotionSyncView emptyEntitiesView =
@@ -122,5 +127,39 @@ class NotionSyncViewTest {
           new NotionSyncView(
               notionSyncScheduler, syncProperties, progressTracker, dependencyAnalyzer);
         });
+  }
+
+  @Test
+  @DisplayName("Should sort entities alphabetically in the dropdown")
+  void shouldSortEntitiesAlphabetically() {
+    // Given
+    List<String> unsortedEntities = List.of("wrestlers", "shows", "factions");
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(new ArrayList<>(unsortedEntities));
+
+    // When
+    notionSyncView =
+        new NotionSyncView(
+            notionSyncScheduler, syncProperties, progressTracker, dependencyAnalyzer);
+
+    // Then
+    ComboBox<String> entitySelectionCombo =
+        (ComboBox<String>)
+            notionSyncView
+                .getChildren()
+                .filter(c -> c instanceof HorizontalLayout)
+                .findFirst()
+                .get()
+                .getChildren()
+                .filter(c -> c instanceof ComboBox)
+                .findFirst()
+                .get();
+
+    List<String> dropdownItems = new ArrayList<>();
+    entitySelectionCombo.getDataProvider().fetch(new Query<>()).forEach(dropdownItems::add);
+
+    List<String> sortedEntities = new ArrayList<>(unsortedEntities);
+    Collections.sort(sortedEntities);
+
+    assertEquals(sortedEntities, dropdownItems);
   }
 }

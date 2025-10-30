@@ -22,6 +22,7 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Menu;
+import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
@@ -223,7 +224,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   }
 
   @Override
-  public void setParameter(BeforeEvent event, Long parameter) {
+  public void setParameter(BeforeEvent event, @OptionalParameter Long parameter) {
     if (parameter != null) {
       showService
           .getShowById(parameter)

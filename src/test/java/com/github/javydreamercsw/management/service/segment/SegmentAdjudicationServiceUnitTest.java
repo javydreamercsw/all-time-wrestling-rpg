@@ -9,7 +9,9 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.util.Objects;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SegmentAdjudicationServiceUnitTest {
 
+  @Mock private RivalryService rivalryService;
   @Mock private WrestlerService wrestlerService;
 
   @Mock private Random random;
@@ -28,6 +31,7 @@ class SegmentAdjudicationServiceUnitTest {
   @InjectMocks private SegmentAdjudicationService adjudicationService;
 
   private Segment promoSegment;
+  private Segment matchSegment;
   private Wrestler wrestler1;
   private Wrestler wrestler2;
 
@@ -48,6 +52,13 @@ class SegmentAdjudicationServiceUnitTest {
     promoSegment.setSegmentType(promoType);
     promoSegment.addParticipant(wrestler1);
     promoSegment.addParticipant(wrestler2);
+
+    SegmentType matchType = new SegmentType();
+    matchType.setName("Match");
+    matchSegment = new Segment();
+    matchSegment.setSegmentType(matchType);
+    matchSegment.addParticipant(wrestler1);
+    matchSegment.addParticipant(wrestler2);
   }
 
   @Test
@@ -165,5 +176,22 @@ class SegmentAdjudicationServiceUnitTest {
     long expectedFans = 6 * 1_000L;
     verify(wrestlerService, times(1)).awardFans(eq(1L), eq(expectedFans));
     verify(wrestlerService, times(1)).awardFans(eq(2L), eq(expectedFans));
+  }
+
+  @Test
+  void testAdjudicateMatch_HeatUpdate() {
+    // Given a match segment
+    when(random.nextInt(20)).thenReturn(10); // Roll 11
+
+    // When
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    // Then
+    verify(rivalryService, times(1))
+        .addHeatBetweenWrestlers(
+            Objects.requireNonNull(eq(wrestler1.getId())),
+            Objects.requireNonNull(eq(wrestler2.getId())),
+            eq(1),
+            eq("From segment: Match"));
   }
 }
