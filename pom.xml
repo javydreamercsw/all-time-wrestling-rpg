@@ -802,87 +802,32 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <argLine>@{failsafeArgLine} -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+              <trimStackTrace>false</trimStackTrace>
+              <enableAssertions>true</enableAssertions>
+              <!-- Sequential execution for integration tests -->
+              <parallel>none</parallel>
+              <threadCount>1</threadCount>
+              <includes>
+                <include>**/*IT.java</include>
+                <include>**/*IntegrationTest.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/*E2ETest.java</exclude>
+                <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
+              </excludes>
+              <systemPropertyVariables>
+                <spring.profiles.active>test</spring.profiles.active>
+                <server.port>9090</server.port>
+              </systemPropertyVariables>
+            </configuration>
             <executions>
               <execution>
-                <id>integration-test-h2</id>
                 <goals>
                   <goal>integration-test</goal>
                   <goal>verify</goal>
                 </goals>
-                <configuration>
-                  <argLine>@{failsafeArgLine} -Dspring.profiles.active=test,h2 -Dflyway.cleanDisabled=false</argLine>
-                  <trimStackTrace>false</trimStackTrace>
-                  <enableAssertions>true</enableAssertions>
-                  <parallel>none</parallel>
-                  <threadCount>1</threadCount>
-                  <includes>
-                    <include>**/*IT.java</include>
-                    <include>**/*IntegrationTest.java</include>
-                  </includes>
-                  <excludes>
-                    <exclude>**/*E2ETest.java</exclude>
-                    <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
-                  </excludes>
-                  <systemPropertyVariables>
-                    <spring.profiles.active>test,h2</spring.profiles.active>
-                    <spring.flyway.locations>classpath:/db/migration/h2</spring.flyway.locations>
-                    <server.port>9090</server.port>
-                  </systemPropertyVariables>
-                </configuration>
-              </execution>
-              <execution>
-                <id>integration-test-mysql</id>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-                <configuration>
-                  <argLine>@{failsafeArgLine} -Dspring.profiles.active=test,mysql -Dflyway.cleanDisabled=false</argLine>
-                  <trimStackTrace>false</trimStackTrace>
-                  <enableAssertions>true</enableAssertions>
-                  <parallel>none</parallel>
-                  <threadCount>1</threadCount>
-                  <includes>
-                    <include>**/*IT.java</include>
-                    <include>**/*IntegrationTest.java</include>
-                  </includes>
-                  <excludes>
-                    <exclude>**/*E2ETest.java</exclude>
-                    <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
-                  </excludes>
-                  <systemPropertyVariables>
-                    <spring.profiles.active>test,mysql</spring.profiles.active>
-                    <spring.flyway.locations>classpath:/db/migration/mysql</spring.flyway.locations>
-                    <server.port>9090</server.port>
-                  </systemPropertyVariables>
-                </configuration>
-              </execution>
-              <execution>
-                <id>integration-test-postgresql</id>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-                <configuration>
-                  <argLine>@{failsafeArgLine} -Dspring.profiles.active=test,postgresql -Dflyway.cleanDisabled=false</argLine>
-                  <trimStackTrace>false</trimStackTrace>
-                  <enableAssertions>true</enableAssertions>
-                  <parallel>none</parallel>
-                  <threadCount>1</threadCount>
-                  <includes>
-                    <include>**/*IT.java</include>
-                    <include>**/*IntegrationTest.java</include>
-                  </includes>
-                  <excludes>
-                    <exclude>**/*E2ETest.java</exclude>
-                    <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
-                  </excludes>
-                  <systemPropertyVariables>
-                    <spring.profiles.active>test,postgresql</spring.profiles.active>
-                    <spring.flyway.locations>classpath:/db/migration/postgresql</spring.flyway.locations>
-                    <server.port>9090</server.port>
-                  </systemPropertyVariables>
-                </configuration>
               </execution>
             </executions>
           </plugin>
