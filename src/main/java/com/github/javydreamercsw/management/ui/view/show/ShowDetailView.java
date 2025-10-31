@@ -682,13 +682,25 @@ public class ShowDetailView extends Main
           }
         });
 
+    // Narration
+    TextArea summaryArea = new TextArea("Summary");
+    summaryArea.setWidthFull();
+    formLayout.setColspan(summaryArea, 2);
+
+    // Narration
+    TextArea narrationArea = new TextArea("Narration");
+    narrationArea.setWidthFull();
+    formLayout.setColspan(narrationArea, 2);
+
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
         wrestlersCombo,
         winnerCombo,
         isTitleSegmentCheckbox,
-        titleMultiSelectComboBox); // Add title combo box and checkbox
+        titleMultiSelectComboBox,
+        summaryArea,
+        narrationArea);
 
     // Buttons
     Button saveButton =
@@ -832,10 +844,10 @@ public class ShowDetailView extends Main
         rulesCombo,
         wrestlersCombo,
         winnersCombo,
-        summaryArea,
-        narrationArea,
         isTitleSegmentCheckbox,
-        titleMultiSelectComboBox);
+        titleMultiSelectComboBox,
+        summaryArea,
+        narrationArea);
 
     // Buttons
     Button saveButton =

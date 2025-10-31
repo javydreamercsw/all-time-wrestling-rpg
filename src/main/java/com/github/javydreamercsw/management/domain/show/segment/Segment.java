@@ -111,7 +111,7 @@ public class Segment extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"segment"})
   private List<SegmentParticipant> participants = new ArrayList<>();
 
-  @ManyToMany
+  @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
       name = "segment_title",
       joinColumns = @JoinColumn(name = "segment_id"),
