@@ -8,6 +8,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
@@ -23,6 +24,7 @@ import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -661,7 +663,32 @@ public class ShowDetailView extends Main
           winnerCombo.clear();
         });
 
-    formLayout.add(segmentTypeCombo, rulesCombo, wrestlersCombo, winnerCombo);
+    // ... other fields ...
+
+    // Add title selection for new segments
+    MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
+    titleMultiSelectComboBox.setItems(titleService.findAll());
+    titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
+    titleMultiSelectComboBox.setWidthFull();
+    titleMultiSelectComboBox.setVisible(false); // Initially hidden
+
+    // Add checkbox to indicate if it's a title segment
+    Checkbox isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
+    isTitleSegmentCheckbox.addValueChangeListener(
+        event -> {
+          titleMultiSelectComboBox.setVisible(event.getValue());
+          if (!event.getValue()) {
+            titleMultiSelectComboBox.clear(); // Clear selection if not a title segment
+          }
+        });
+
+    formLayout.add(
+        segmentTypeCombo,
+        rulesCombo,
+        wrestlersCombo,
+        winnerCombo,
+        isTitleSegmentCheckbox,
+        titleMultiSelectComboBox); // Add title combo box and checkbox
 
     // Buttons
     Button saveButton =
@@ -672,13 +699,31 @@ public class ShowDetailView extends Main
               if (winnerCombo.getValue() != null) {
                 winners.add(winnerCombo.getValue());
               }
+              // Create a new segment object to pass to validation
+              Segment newSegment = new Segment();
+              newSegment.setShow(show);
+              newSegment.setSegmentDate(java.time.Instant.now());
+              // Set isTitleSegment based on checkbox
+              boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
+              newSegment.setIsTitleSegment(isTitleSegment);
+              newSegment.setIsNpcGenerated(false);
+              newSegment.syncParticipants(new ArrayList<>(wrestlersCombo.getValue()));
+              newSegment.syncSegmentRules(new ArrayList<>(rulesCombo.getValue()));
+              newSegment.setSegmentType(segmentTypeCombo.getValue());
+              newSegment.setWinners(new ArrayList<>(winners));
+
+              // If it's a title segment, set the selected titles
+              if (isTitleSegment) {
+                newSegment.setTitles(titleMultiSelectComboBox.getValue());
+              }
+
               if (validateAndSaveSegment(
                   show,
                   segmentTypeCombo.getValue(),
                   wrestlersCombo.getValue(),
                   winners,
                   rulesCombo.getValue(),
-                  null)) {
+                  newSegment)) { // Pass the new segment object
                 dialog.close();
                 // Refresh the segments display
                 displayShow(show);
@@ -761,8 +806,36 @@ public class ShowDetailView extends Main
     narrationArea.setValue(segment.getNarration() != null ? segment.getNarration() : "");
     formLayout.setColspan(narrationArea, 2);
 
+    // ... other fields ...
+
+    // Title selection (multi-select) - only visible if segment is a title segment
+    MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
+    titleMultiSelectComboBox.setItems(titleService.findAll());
+    titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
+    titleMultiSelectComboBox.setWidthFull();
+    titleMultiSelectComboBox.setVisible(segment.getIsTitleSegment()); // Control visibility
+    titleMultiSelectComboBox.setValue(segment.getTitles()); // Set initial value
+
+    // Add checkbox to indicate if it's a title segment
+    Checkbox isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
+    isTitleSegmentCheckbox.setValue(segment.getIsTitleSegment());
+    isTitleSegmentCheckbox.addValueChangeListener(
+        event -> {
+          titleMultiSelectComboBox.setVisible(event.getValue());
+          if (!event.getValue()) {
+            titleMultiSelectComboBox.clear(); // Clear selection if not a title segment
+          }
+        });
+
     formLayout.add(
-        segmentTypeCombo, rulesCombo, wrestlersCombo, winnersCombo, summaryArea, narrationArea);
+        segmentTypeCombo,
+        rulesCombo,
+        wrestlersCombo,
+        winnersCombo,
+        summaryArea,
+        narrationArea,
+        isTitleSegmentCheckbox,
+        titleMultiSelectComboBox);
 
     // Buttons
     Button saveButton =
@@ -771,13 +844,20 @@ public class ShowDetailView extends Main
             e -> {
               segment.setNarration(narrationArea.getValue());
               segment.setSummary(summaryArea.getValue());
+              // Set isTitleSegment based on checkbox
+              boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
+              segment.setIsTitleSegment(isTitleSegment);
+              // If it's a title segment, set the selected titles
+              if (isTitleSegment) {
+                segment.setTitles(titleMultiSelectComboBox.getValue());
+              }
               if (validateAndSaveSegment(
                   segment.getShow(),
                   segmentTypeCombo.getValue(),
                   wrestlersCombo.getValue(),
                   winnersCombo.getValue(),
                   rulesCombo.getValue(),
-                  segment)) {
+                  segment)) { // Pass the segment to update
                 dialog.close();
                 // Refresh the segments display
                 displayShow(segment.getShow());

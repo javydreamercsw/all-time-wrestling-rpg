@@ -80,17 +80,7 @@ public class TitleService {
   }
 
   public void awardTitleTo(@NonNull Title title, @NonNull List<Wrestler> newChampions) {
-    // End the current reign if one exists.
-    getCurrentReign(title).ifPresent(reign -> reign.endReign(Instant.now(clock)));
-
-    // Create a new title reign for the new champions.
-    TitleReign newReign = new TitleReign();
-    newReign.setTitle(title);
-    newReign.getChampions().addAll(newChampions);
-    newReign.setStartDate(Instant.now(clock));
-    title.getTitleReigns().add(newReign);
-
-    title.setChampion(newChampions); // Ensure champion field is updated
+    title.awardTitleTo(newChampions, Instant.now(clock));
     titleRepository.saveAndFlush(title);
   }
 

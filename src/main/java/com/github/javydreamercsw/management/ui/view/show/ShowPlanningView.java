@@ -2,8 +2,6 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
@@ -12,9 +10,7 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
@@ -118,12 +114,10 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                 // Conditionally set isTitleSegment to true if the segment is a title segment
                 // This is determined by checking if titleIds is not null and not empty,
                 // or if titles set is not null and not empty.
-                if ((segment.getTitleIds() != null && !segment.getTitleIds().isEmpty()) ||
-                    (segment.getTitles() != null && !segment.getTitles().isEmpty())) {
-                  segment.setIsTitleSegment(true);
-                } else {
-                  segment.setIsTitleSegment(false); // Ensure it's false if not a title segment
-                }
+                // Ensure it's false if not a title segment
+                segment.setIsTitleSegment(
+                    (segment.getTitleIds() != null && !segment.getTitleIds().isEmpty())
+                        || (segment.getTitles() != null && !segment.getTitles().isEmpty()));
                 EditSegmentDialog dialog =
                     new EditSegmentDialog(
                         segment,

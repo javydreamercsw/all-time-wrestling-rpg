@@ -183,6 +183,8 @@ class TitleListViewTest extends ManagementIntegrationTest {
     // We'll verify the service method was called.
     titleService.deleteTitle(deletableTitle.getId()); // Simulate deletion call
 
+    when(titleService.findByName("Deletable Title")).thenReturn(Optional.empty()); // Update mock
+
     titleListView.refreshGrid(); // Simulate refresh after deletion
 
     // Verify the deletable title is no longer present (simulated by mock)
