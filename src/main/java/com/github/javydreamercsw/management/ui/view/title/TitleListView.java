@@ -2,10 +2,12 @@ package com.github.javydreamercsw.management.ui.view.title;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -19,6 +21,8 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import com.vaadin.flow.theme.lumo.LumoUtility.Height;
+import com.vaadin.flow.theme.lumo.LumoUtility.Width;
 import jakarta.annotation.security.PermitAll;
 import java.util.List;
 import lombok.NonNull;
@@ -45,7 +49,9 @@ public class TitleListView extends Main {
         LumoUtility.Display.FLEX,
         LumoUtility.FlexDirection.COLUMN,
         LumoUtility.Padding.MEDIUM,
-        LumoUtility.Gap.SMALL);
+        LumoUtility.Gap.SMALL,
+        Height.FULL, // Use Height.FULL
+        Width.FULL); // Use Width.FULL
 
     Button createButton = new Button("Create Title", new Icon(VaadinIcon.PLUS));
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -54,6 +60,7 @@ public class TitleListView extends Main {
     add(new ViewToolbar("Title List", ViewToolbar.group(createButton)));
 
     setupGrid();
+    grid.addClassNames(LumoUtility.Flex.GROW); // Add this to make the grid grow
     add(grid);
     refreshGrid();
   }
@@ -64,6 +71,44 @@ public class TitleListView extends Main {
     grid.addColumn(Title::getTier).setHeader("Tier").setSortable(true);
     grid.addColumn(Title::getChampionNames).setHeader("Champion(s)").setSortable(true);
     grid.addColumn(Title::getIsActive).setHeader("Active").setSortable(true);
+
+    // Add ComboBox for #1 Contender
+    grid.addComponentColumn(
+            title -> {
+              ComboBox<Wrestler> contenderComboBox = new ComboBox<>("Contender");
+              assert title.getId() != null;
+              contenderComboBox.setItems(titleService.getEligibleChallengers(title.getId()));
+              contenderComboBox.setItemLabelGenerator(Wrestler::getName);
+              contenderComboBox.setWidthFull();
+
+              // Set initial value if a contender exists
+              title.getContender().stream().findFirst().ifPresent(contenderComboBox::setValue);
+
+              contenderComboBox.addValueChangeListener(
+                  event -> {
+                    if (event.getValue() != null) {
+                      assert event.getValue().getId() != null;
+                      titleService
+                          .updateNumberOneContender(title.getId(), event.getValue().getId())
+                          .ifPresentOrElse(
+                              updatedTitle -> {
+                                Notification.show(
+                                        "Contender updated for " + title.getName(),
+                                        3000,
+                                        Notification.Position.BOTTOM_END)
+                                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                                refreshGrid(); // Refresh grid to reflect changes
+                              },
+                              () ->
+                                  Notification.show(
+                                      "Failed to update contender",
+                                      5000,
+                                      Notification.Position.BOTTOM_END));
+                    }
+                  });
+              return contenderComboBox;
+            })
+        .setHeader("Contender");
 
     grid.addComponentColumn(
             title -> {

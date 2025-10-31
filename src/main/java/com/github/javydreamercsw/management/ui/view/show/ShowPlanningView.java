@@ -2,14 +2,19 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
@@ -37,25 +42,26 @@ import org.springframework.web.client.RestTemplate;
 public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private final ShowService showService;
-  private final WrestlerService wrestlerService;
   private final RestTemplate restTemplate = new RestTemplate();
   private final ObjectMapper objectMapper;
 
-  private ComboBox<Show> showComboBox;
-  private Button loadContextButton;
-  private TextArea contextArea;
-  private Grid<ProposedSegment> proposedSegmentsGrid;
-  private Button approveButton;
-  private Button proposeSegmentsButton;
-  private Editor<ProposedSegment> editor;
+  private final ComboBox<Show> showComboBox;
+  private final Button loadContextButton;
+  private final TextArea contextArea;
+  private final Grid<ProposedSegment> proposedSegmentsGrid;
+  private final Button approveButton;
+  private final Button proposeSegmentsButton;
+  private final Editor<ProposedSegment> editor;
   private List<ProposedSegment> segments = new ArrayList<>();
 
   public ShowPlanningView(
-      ShowService showService, WrestlerService wrestlerService, ObjectMapper objectMapper) {
+      ShowService showService,
+      WrestlerService wrestlerService,
+      TitleService titleService, // Added TitleService to constructor
+      ObjectMapper objectMapper) {
 
     this.showService = showService;
-
-    this.wrestlerService = wrestlerService;
+    // Injected TitleService
     this.objectMapper = objectMapper;
 
     showComboBox = new ComboBox<>("Select Show");
@@ -109,10 +115,20 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           Button editButton = new Button("Edit");
           editButton.addClickListener(
               e -> {
+                // Conditionally set isTitleSegment to true if the segment is a title segment
+                // This is determined by checking if titleIds is not null and not empty,
+                // or if titles set is not null and not empty.
+                if ((segment.getTitleIds() != null && !segment.getTitleIds().isEmpty()) ||
+                    (segment.getTitles() != null && !segment.getTitles().isEmpty())) {
+                  segment.setIsTitleSegment(true);
+                } else {
+                  segment.setIsTitleSegment(false); // Ensure it's false if not a title segment
+                }
                 EditSegmentDialog dialog =
                     new EditSegmentDialog(
                         segment,
                         wrestlerService,
+                        titleService, // Pass titleService
                         () -> proposedSegmentsGrid.getDataProvider().refreshAll());
                 dialog.open();
               });

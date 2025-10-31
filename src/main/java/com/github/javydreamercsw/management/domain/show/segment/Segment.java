@@ -30,7 +30,9 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -115,7 +117,7 @@ public class Segment extends AbstractEntity<Long> {
       joinColumns = @JoinColumn(name = "segment_id"),
       inverseJoinColumns = @JoinColumn(name = "title_id"))
   @JsonIgnore
-  private List<Title> titles = new ArrayList<>();
+  private Set<Title> titles = new HashSet<>();
 
   @Override
   public @Nullable Long getId() {

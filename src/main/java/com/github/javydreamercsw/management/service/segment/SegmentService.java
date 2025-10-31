@@ -4,12 +4,15 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SegmentService {
 
   @Autowired private final SegmentRepository segmentRepository;
+  @Autowired private final TitleRepository titleRepository;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -43,12 +47,32 @@ public class SegmentService {
       @NonNull SegmentType matchType,
       @NonNull Instant matchDate,
       @NonNull Boolean isTitleSegment) {
+    return createSegment(show, matchType, matchDate, isTitleSegment, Set.of());
+  }
+
+  /**
+   * Creates a new match.
+   *
+   * @param show The show where the match took place
+   * @param matchType The type of match
+   * @param matchDate The date/time of the match
+   * @param isTitleSegment Whether this was a title match
+   * @param titles The titles contested in this segment
+   * @return The created Segment
+   */
+  public Segment createSegment(
+      @NonNull Show show,
+      @NonNull SegmentType matchType,
+      @NonNull Instant matchDate,
+      @NonNull Boolean isTitleSegment,
+      @NonNull Set<Title> titles) {
 
     Segment match = new Segment();
     match.setShow(show);
     match.setSegmentType(matchType);
     match.setSegmentDate(matchDate);
     match.setIsTitleSegment(isTitleSegment);
+    match.setTitles(titles);
 
     Segment saved = segmentRepository.save(match);
     log.info("Created match with ID: {} for show: {}", saved.getId(), show.getName());

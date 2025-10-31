@@ -24,4 +24,5 @@ public class SegmentDTO {
   private Instant createdTime;
   private Instant lastEditedTime;
   private String narration;
+  private List<Integer> titleIds; // Added for title association
 }
