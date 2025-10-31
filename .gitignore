@@ -14,8 +14,7 @@
 node_modules/
 src/main/frontend/generated/
 vite.generated.ts
-/data/management-db.mv.db
-/data/management-db.trace.db
+/data/
 
 # Compiled class file
 *.class

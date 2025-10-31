@@ -146,4 +146,16 @@ public enum WrestlerTier {
     }
     return String.format("%,d - %,d", minFans, maxFans);
   }
+
+  /**
+   * Get the next tier up.
+   *
+   * @return The next tier up, or null if this is the highest tier.
+   */
+  public WrestlerTier getNextTier() {
+    if (this.ordinal() < WrestlerTier.values().length - 1) {
+      return WrestlerTier.values()[this.ordinal() + 1];
+    }
+    return null;
+  }
 }
