@@ -517,18 +517,33 @@ public class ShowDetailView extends Main
         .setSortable(true)
         .setFlexGrow(1);
 
-    // Segment type column
+    // Segment rules column
     grid.addColumn(
             segment -> {
-              List<String> wrestlerNames =
+              List<String> ruleNames =
                   segment.getSegmentRules().stream().map(SegmentRule::getName).toList();
-              return String.join(", ", wrestlerNames);
+              return String.join(", ", ruleNames);
             })
         .setHeader("Segment Rule(s)")
         .setSortable(true)
         .setFlexGrow(1);
 
-    // Segment type column
+    // Titles column
+    grid.addColumn(
+            segment -> {
+              if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
+                return segment.getTitles().stream()
+                    .map(Title::getName)
+                    .collect(java.util.stream.Collectors.joining(", "));
+              } else {
+                return "N/A";
+              }
+            })
+        .setHeader("Titles")
+        .setSortable(false)
+        .setFlexGrow(1);
+
+    // Summary column
     grid.addColumn(Segment::getSummary).setHeader("Summary").setSortable(true).setFlexGrow(3);
 
     // Segment type column
