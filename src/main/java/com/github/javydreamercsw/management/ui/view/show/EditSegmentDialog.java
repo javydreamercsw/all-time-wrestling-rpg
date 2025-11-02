@@ -73,7 +73,7 @@ public class EditSegmentDialog extends Dialog {
     add(new VerticalLayout(descriptionArea, participantsCheckboxGroup, titleMultiSelectComboBox));
   }
 
-  private void save() {
+  public void save() {
     segment.setParticipants(
         participantsCheckboxGroup.getValue().stream()
             .map(Wrestler::getName)
@@ -95,6 +95,10 @@ public class EditSegmentDialog extends Dialog {
 
   public MultiSelectComboBox<Title> getTitleMultiSelectComboBox() {
     return titleMultiSelectComboBox;
+  }
+
+  public ProposedSegment getSegment() {
+    return segment;
   }
 
   public Button getSaveButton() {

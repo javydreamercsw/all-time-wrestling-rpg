@@ -111,13 +111,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           Button editButton = new Button("Edit");
           editButton.addClickListener(
               e -> {
-                // Conditionally set isTitleSegment to true if the segment is a title segment
-                // This is determined by checking if titleIds is not null and not empty,
-                // or if titles set is not null and not empty.
-                // Ensure it's false if not a title segment
-                segment.setIsTitleSegment(
-                    (segment.getTitleIds() != null && !segment.getTitleIds().isEmpty())
-                        || (segment.getTitles() != null && !segment.getTitles().isEmpty()));
                 EditSegmentDialog dialog =
                     new EditSegmentDialog(
                         segment,

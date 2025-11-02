@@ -236,8 +236,8 @@ public class NarrationDialog extends Dialog {
 
     // Populate titles
     List<SegmentNarrationService.TitleContext> titleContexts = new ArrayList<>();
-    titleService
-        .findAll()
+    segment
+        .getTitles()
         .forEach(
             title -> {
               SegmentNarrationService.TitleContext tc = new SegmentNarrationService.TitleContext();
@@ -347,7 +347,12 @@ public class NarrationDialog extends Dialog {
             + " wrestlers are physically present. The segment should only feature the characters"
             + " from the 'npcs' list.\n"
             + "4.  **No New Characters:** Do not invent or introduce any characters not listed in"
-            + " the provided context. This is a strict rule.");
+            + " the provided context. This is a strict rule.\n"
+            + "5.  **Title Matches:** If the segment is a title match, the narration should"
+            + " prominently feature the championship at stake. Emphasize the prestige of the"
+            + " title, the champion's reign, and the challenger's quest to win it. The narration"
+            + " should build drama around the championship, making it the central focus of the"
+            + " segment.");
 
     StringBuilder outcomeBuilder = new StringBuilder();
 

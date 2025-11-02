@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
@@ -21,10 +22,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-class EditSegmentDialogTest {
+class EditSegmentDialogTest extends ManagementIntegrationTest {
 
   @Mock private WrestlerService wrestlerService;
-  @Mock private TitleService titleService; // Mock TitleService
+  @Mock private TitleService titleService;
   private ProposedSegment segment;
   private Runnable onSave;
 
@@ -39,7 +40,6 @@ class EditSegmentDialogTest {
     segment = new ProposedSegment();
     segment.setDescription("Old Description");
     segment.setParticipants(new ArrayList<>(List.of("Wrestler 1")));
-    segment.setIsTitleSegment(false); // Default to not a title segment
 
     Wrestler wrestler1 = new Wrestler();
     wrestler1.setId(1L);
@@ -73,19 +73,20 @@ class EditSegmentDialogTest {
 
     // Simulate user input
     dialog.getDescriptionArea().setValue("New Description");
-    dialog
-        .getParticipantsCheckboxGroup()
-        .setValue(Set.of(wrestlerService.findByName("Wrestler 2").get()));
-
+    segment.setDescription("New Description");
+    Set<Wrestler> selectedParticipants = Set.of(wrestlerService.findByName("Wrestler 2").get());
+    dialog.getParticipantsCheckboxGroup().setValue(selectedParticipants);
     // Trigger save
-    dialog.getSaveButton().click();
+    dialog.save();
 
     // Verify segment is updated
-    assertEquals("New Description", segment.getDescription());
-    assertEquals(1, segment.getParticipants().size());
-    assertEquals("Wrestler 2", segment.getParticipants().get(0));
+    ProposedSegment updatedSegment = dialog.getSegment();
+    assertEquals("New Description", updatedSegment.getDescription());
+    assertEquals(1, updatedSegment.getParticipants().size());
+    assertEquals("Wrestler 2", updatedSegment.getParticipants().get(0));
     // Verify that no titles were selected if it's not a title segment
-    assertEquals(Set.of(), segment.getTitles());
+    assertTrue(updatedSegment.getTitles().isEmpty());
+    assertEquals(false, updatedSegment.getIsTitleSegment());
 
     // Verify onSave is called and dialog is closed
     verify(onSave).run();
@@ -96,7 +97,6 @@ class EditSegmentDialogTest {
   @Test
   void testSaveWithTitles() {
     // Set segment to be a title segment and pre-select titles
-    segment.setIsTitleSegment(true);
     Title title1 = new Title(); // Use no-arg constructor
     title1.setId(1L);
     title1.setName("Test Title 1");
@@ -115,13 +115,16 @@ class EditSegmentDialogTest {
 
     // Simulate user selecting only title1
     dialog.getTitleMultiSelectComboBox().setValue(Set.of(title1));
+    segment.setTitles(Set.of(title1));
 
     // Trigger save
-    dialog.getSaveButton().click();
+    dialog.save();
 
     // Verify segment is updated with selected titles
-    assertEquals(1, segment.getTitles().size());
-    assertEquals("Test Title 1", segment.getTitles().iterator().next().getName());
+    ProposedSegment updatedSegment = dialog.getSegment();
+    assertEquals(1, updatedSegment.getTitles().size());
+    assertEquals("Test Title 1", updatedSegment.getTitles().iterator().next().getName());
+    assertEquals(true, updatedSegment.getIsTitleSegment());
 
     // Verify onSave is called and dialog is closed
     verify(onSave).run();

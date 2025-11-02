@@ -165,8 +165,6 @@ public class SegmentSyncService extends BaseSyncService {
       SegmentDTO segmentDTO = new SegmentDTO();
       segmentDTO.setExternalId(segmentPage.getId());
       segmentDTO.setName(segmentPage.getRawProperties().get("Name").toString());
-      segmentDTO.setCreatedTime(java.time.Instant.parse(segmentPage.getCreated_time()));
-      segmentDTO.setLastEditedTime(java.time.Instant.parse(segmentPage.getLast_edited_time()));
 
       if (segmentPage.getProperties().getShows() != null
           && !segmentPage.getProperties().getShows().getRelation().isEmpty()) {

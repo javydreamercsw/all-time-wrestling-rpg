@@ -35,8 +35,6 @@ class MatchDTOTest {
     segmentDTO.setSegmentTypeName("Singles");
     segmentDTO.setShowName("Test Show");
     segmentDTO.setSegmentDate(now);
-    segmentDTO.setCreatedTime(now);
-    segmentDTO.setLastEditedTime(now);
 
     // Then
     assertThat(segmentDTO.getExternalId()).isEqualTo("notion-123");
@@ -46,7 +44,5 @@ class MatchDTOTest {
     assertThat(segmentDTO.getSegmentTypeName()).isEqualTo("Singles");
     assertThat(segmentDTO.getShowName()).isEqualTo("Test Show");
     assertThat(segmentDTO.getSegmentDate()).isEqualTo(now);
-    assertThat(segmentDTO.getCreatedTime()).isEqualTo(now);
-    assertThat(segmentDTO.getLastEditedTime()).isEqualTo(now);
   }
 }

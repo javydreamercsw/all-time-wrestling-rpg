@@ -21,8 +21,6 @@ public class SegmentDTO {
   private List<String> winnerNames;
   private String segmentTypeName;
   private Instant segmentDate;
-  private Instant createdTime;
-  private Instant lastEditedTime;
   private String narration;
-  private List<Integer> titleIds; // Added for title association
+  private List<Long> titleIds; // Added for title association
 }

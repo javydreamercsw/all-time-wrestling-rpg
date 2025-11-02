@@ -17,9 +17,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.StreamResource;
 import jakarta.annotation.security.PermitAll;
-import java.io.InputStream;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -45,6 +43,11 @@ public class RankingView extends Main {
     championshipComboBox.setItemLabelGenerator(ChampionshipDTO::getName);
     championshipComboBox.addValueChangeListener(event -> updateView(event.getValue()));
 
+    // Select the first championship by default
+    rankingService.getChampionships().stream()
+        .findFirst()
+        .ifPresent(championshipComboBox::setValue);
+
     contendersGrid
         .addColumn(
             new ComponentRenderer<>(
@@ -59,7 +62,7 @@ public class RankingView extends Main {
     contendersGrid.addColumn(RankedWrestlerDTO::getName).setHeader("Name");
     contendersGrid.addColumn(RankedWrestlerDTO::getFans).setHeader("Fans");
 
-    championshipImage.setMaxWidth("300px");
+    championshipImage.setId("championship-image");
     championshipImage.setMaxHeight("300px");
 
     HorizontalLayout topLayout = new HorizontalLayout(championshipComboBox);
@@ -81,13 +84,8 @@ public class RankingView extends Main {
     contendersGrid.setVisible(true);
 
     // Update championship image
-    String imageName = "images/championships/" + championship.getImageName();
-    InputStream imageStream = getClass().getClassLoader().getResourceAsStream(imageName);
-    if (imageStream != null) {
-      championshipImage.setSrc(new StreamResource(championship.getImageName(), () -> imageStream));
-    } else {
-      championshipImage.setSrc("");
-    }
+    String imagePath = "images/championships/" + championship.getImageName();
+    championshipImage.setSrc(imagePath);
 
     // Update champion
     championLayout.removeAll();

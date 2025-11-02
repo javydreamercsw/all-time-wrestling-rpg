@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.ui.view.ranking;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,9 +35,14 @@ class RankingViewTest extends ManagementIntegrationTest {
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
-
-    championshipDTO = new ChampionshipDTO(1L, "Test Title", "test-title.png");
+    championshipDTO = new ChampionshipDTO(1L, "Test Title", "test.png");
     when(rankingService.getChampionships()).thenReturn(List.of(championshipDTO));
+    when(rankingService.getCurrentChampions(championshipDTO.getId()))
+        .thenReturn(List.of(new ChampionDTO(1L, "Champion", 1000L, 1L)));
+    List<RankedWrestlerDTO> contenders = new ArrayList<>();
+    contenders.add(new RankedWrestlerDTO(2L, "Contender 2", 700L, 1));
+    contenders.add(new RankedWrestlerDTO(3L, "Contender 1", 500L, 2));
+    when(rankingService.getRankedContenders(championshipDTO.getId())).thenReturn(contenders);
 
     // Mock Vaadin session
     VaadinSession session = mock(VaadinSession.class);
@@ -54,21 +60,13 @@ class RankingViewTest extends ManagementIntegrationTest {
     ComboBox<ChampionshipDTO> comboBox = _get(view, ComboBox.class);
     assertEquals(1, comboBox.getDataProvider().size(new Query<>()));
 
-    // Select the championship
-    when(rankingService.getCurrentChampions(championshipDTO.getId()))
-        .thenReturn(List.of(new ChampionDTO(1L, "Champion", 1000L, 1L)));
-    List<RankedWrestlerDTO> contenders = new ArrayList<>();
-    contenders.add(new RankedWrestlerDTO(2L, "Contender 2", 700L, 1));
-    contenders.add(new RankedWrestlerDTO(3L, "Contender 1", 500L, 2));
-    when(rankingService.getRankedContenders(championshipDTO.getId())).thenReturn(contenders);
+    Image image = _get(view, Image.class);
+    assertEquals("championship-image", image.getId().get());
+    assertNotNull(image);
+    assertFalse(image.getSrc().isEmpty());
 
     comboBox.setValue(championshipDTO);
 
-    // Verify champion is displayed
-    Image image = _get(view, Image.class);
-    assertNotNull(image.getSrc());
-
-    // Verify contenders are in the grid and sorted
     Grid<RankedWrestlerDTO> grid = _get(view, Grid.class);
     List<RankedWrestlerDTO> items = grid.getGenericDataView().getItems().toList();
     assertEquals(2, items.size());

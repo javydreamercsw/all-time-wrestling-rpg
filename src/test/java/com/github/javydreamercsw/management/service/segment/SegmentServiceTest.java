@@ -76,7 +76,8 @@ class SegmentServiceTest {
     when(matchRepository.save(any(Segment.class))).thenReturn(testSegment);
 
     // When
-    Segment result = segmentService.createSegment(testShow, testSegmentType, testDate, false);
+    Segment result =
+        segmentService.createSegment(testShow, testSegmentType, testDate, Collections.emptySet());
 
     // Then
     assertThat(result).isNotNull();

@@ -7,6 +7,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.dto.SegmentDTO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
@@ -28,6 +29,60 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class SegmentService {
 
+  /**
+   * Converts a SegmentDTO to a Segment entity.
+   *
+   * @param dto The SegmentDTO to convert.
+   * @return The corresponding Segment entity.
+   */
+  public Segment toEntity(@NonNull SegmentDTO dto) {
+    Segment segment = new Segment();
+    segment.setExternalId(dto.getExternalId());
+    segment.setNarration(dto.getNarration());
+    // Assuming show, segmentType, participants, and winners are handled elsewhere or are not
+    // directly mapped from DTO
+    segment.setSegmentDate(dto.getSegmentDate());
+    // Titles
+    if (dto.getTitleIds() != null && !dto.getTitleIds().isEmpty()) {
+      Set<Title> titles = new java.util.HashSet<>();
+      for (Long titleId : dto.getTitleIds()) {
+        titleRepository.findById(titleId).ifPresent(titles::add);
+      }
+      segment.setTitles(titles);
+    }
+    return segment;
+  }
+
+  /**
+   * Converts a Segment entity to a SegmentDTO.
+   *
+   * @param segment The Segment entity to convert.
+   * @return The corresponding SegmentDTO.
+   */
+  public SegmentDTO toDto(@NonNull Segment segment) {
+    SegmentDTO dto = new SegmentDTO();
+    dto.setExternalId(segment.getExternalId());
+    dto.setName(segment.getNarration()); // Assuming narration is used as name for DTO
+    dto.setShowName(segment.getShow().getName());
+    dto.setShowExternalId(segment.getShow().getExternalId());
+    dto.setParticipantNames(
+        segment.getParticipants().stream()
+            .map(p -> p.getWrestler().getName())
+            .collect(java.util.stream.Collectors.toList()));
+    dto.setWinnerNames(
+        segment.getWinners().stream()
+            .map(Wrestler::getName)
+            .collect(java.util.stream.Collectors.toList()));
+    dto.setSegmentTypeName(segment.getSegmentType().getName());
+    dto.setSegmentDate(segment.getSegmentDate());
+    dto.setNarration(segment.getNarration());
+    dto.setTitleIds(
+        segment.getTitles().stream()
+            .map(Title::getId)
+            .collect(java.util.stream.Collectors.toList()));
+    return dto;
+  }
+
   @Autowired private final SegmentRepository segmentRepository;
   @Autowired private final TitleRepository titleRepository;
 
@@ -43,11 +98,8 @@ public class SegmentService {
    * @return The created Segment
    */
   public Segment createSegment(
-      @NonNull Show show,
-      @NonNull SegmentType matchType,
-      @NonNull Instant matchDate,
-      @NonNull Boolean isTitleSegment) {
-    return createSegment(show, matchType, matchDate, isTitleSegment, Set.of());
+      @NonNull Show show, @NonNull SegmentType matchType, @NonNull Instant matchDate) {
+    return createSegment(show, matchType, matchDate, Set.of());
   }
 
   /**
@@ -56,7 +108,6 @@ public class SegmentService {
    * @param show The show where the match took place
    * @param matchType The type of match
    * @param matchDate The date/time of the match
-   * @param isTitleSegment Whether this was a title match
    * @param titles The titles contested in this segment
    * @return The created Segment
    */
@@ -64,19 +115,51 @@ public class SegmentService {
       @NonNull Show show,
       @NonNull SegmentType matchType,
       @NonNull Instant matchDate,
-      @NonNull Boolean isTitleSegment,
       @NonNull Set<Title> titles) {
 
     Segment match = new Segment();
     match.setShow(show);
     match.setSegmentType(matchType);
     match.setSegmentDate(matchDate);
-    match.setIsTitleSegment(isTitleSegment);
+    match.setIsTitleSegment(!titles.isEmpty());
     match.setTitles(titles);
 
     Segment saved = segmentRepository.save(match);
     log.info("Created match with ID: {} for show: {}", saved.getId(), show.getName());
     return saved;
+  }
+
+  /**
+   * Updates an existing segment based on DTO information.
+   *
+   * @param id The ID of the segment to update.
+   * @param dto The SegmentDTO containing updated information.
+   * @return The updated Segment.
+   * @throws IllegalArgumentException if the segment with the given ID is not found.
+   */
+  public Segment updateSegment(@NonNull Long id, @NonNull SegmentDTO dto) {
+    return segmentRepository
+        .findById(id)
+        .map(
+            existingSegment -> {
+              existingSegment.setNarration(dto.getNarration());
+              existingSegment.setSegmentDate(dto.getSegmentDate());
+              existingSegment.setIsTitleSegment(!dto.getTitleIds().isEmpty());
+
+              // Update titles
+              Set<Title> newTitles = new java.util.HashSet<>();
+              if (dto.getTitleIds() != null) {
+                for (Long titleId : dto.getTitleIds()) {
+                  titleRepository.findById(titleId).ifPresent(newTitles::add);
+                }
+              }
+              existingSegment.setTitles(newTitles);
+
+              // TODO: Handle participants and segment type updates if needed from DTO
+
+              return segmentRepository.save(existingSegment);
+            })
+        .orElseThrow(() -> new IllegalArgumentException("Segment not found with ID: " + id));
   }
 
   /**
