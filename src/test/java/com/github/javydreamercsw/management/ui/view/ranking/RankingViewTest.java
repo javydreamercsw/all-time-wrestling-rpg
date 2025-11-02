@@ -2,9 +2,7 @@ package com.github.javydreamercsw.management.ui.view.ranking;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -16,11 +14,8 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.data.provider.Query;
-import com.vaadin.flow.server.VaadinService;
-import com.vaadin.flow.server.VaadinSession;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -43,13 +38,6 @@ class RankingViewTest extends ManagementIntegrationTest {
     contenders.add(new RankedWrestlerDTO(2L, "Contender 2", 700L, 1));
     contenders.add(new RankedWrestlerDTO(3L, "Contender 1", 500L, 2));
     when(rankingService.getRankedContenders(championshipDTO.getId())).thenReturn(contenders);
-
-    // Mock Vaadin session
-    VaadinSession session = mock(VaadinSession.class);
-    VaadinService service = mock(VaadinService.class);
-    when(session.getService()).thenReturn(service);
-    when(session.getLocale()).thenReturn(Locale.US);
-    VaadinSession.setCurrent(session);
   }
 
   @Test
@@ -63,7 +51,7 @@ class RankingViewTest extends ManagementIntegrationTest {
     Image image = _get(view, Image.class);
     assertEquals("championship-image", image.getId().get());
     assertNotNull(image);
-    assertFalse(image.getSrc().isEmpty());
+    assertEquals("images/championships/test.png", image.getSrc());
 
     comboBox.setValue(championshipDTO);
 
