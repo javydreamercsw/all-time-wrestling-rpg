@@ -107,10 +107,7 @@ public class WrestlerListView extends Main {
         .setHeader("Low Stamina")
         .setEditorComponent(lowStaminaField)
         .setSortable(true);
-    wrestlerGrid
-        .addColumn(Wrestler::getFans)
-        .setHeader("Fans")
-        .setSortable(true);
+    wrestlerGrid.addColumn(Wrestler::getFans).setHeader("Fans").setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getCreationDate).setHeader("Creation Date");
     wrestlerGrid
         .addComponentColumn(
@@ -143,7 +140,8 @@ public class WrestlerListView extends Main {
                         });
                     Button cancelButton = new Button("Cancel", event -> dialog.close());
                     dialog.add(
-                        new VerticalLayout(fanAmount, new HorizontalLayout(confirmButton, cancelButton)));
+                        new VerticalLayout(
+                            fanAmount, new HorizontalLayout(confirmButton, cancelButton)));
                     dialog.open();
                   });
               Button removeFansButton = new Button("Remove Fans");
@@ -155,7 +153,8 @@ public class WrestlerListView extends Main {
                     fanAmount.setPlaceholder("Enter amount");
                     fanAmount.setMin(1);
                     Button confirmButton = new Button("Confirm");
-                    confirmButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+                    confirmButton.addThemeVariants(
+                        ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
                     confirmButton.addClickListener(
                         event -> {
                           if (fanAmount.getValue() != null) {
@@ -175,7 +174,8 @@ public class WrestlerListView extends Main {
                         });
                     Button cancelButton = new Button("Cancel", event -> dialog.close());
                     dialog.add(
-                        new VerticalLayout(fanAmount, new HorizontalLayout(confirmButton, cancelButton)));
+                        new VerticalLayout(
+                            fanAmount, new HorizontalLayout(confirmButton, cancelButton)));
                     dialog.open();
                   });
               return new HorizontalLayout(addFansButton, removeFansButton);
