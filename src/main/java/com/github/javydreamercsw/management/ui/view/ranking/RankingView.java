@@ -34,11 +34,12 @@ public class RankingView extends Main {
   private final Image championshipImage = new Image();
   private final VerticalLayout championLayout = new VerticalLayout();
   private final Grid<RankedWrestlerDTO> contendersGrid = new Grid<>();
+  private final ComboBox<ChampionshipDTO> championshipComboBox;
 
   public RankingView(@NonNull RankingService rankingService) {
     this.rankingService = rankingService;
 
-    ComboBox<ChampionshipDTO> championshipComboBox = new ComboBox<>("Championship");
+    championshipComboBox = new ComboBox<>("Championship");
     championshipComboBox.setItems(rankingService.getChampionships());
     championshipComboBox.setItemLabelGenerator(ChampionshipDTO::getName);
     championshipComboBox.addValueChangeListener(event -> updateView(event.getValue()));

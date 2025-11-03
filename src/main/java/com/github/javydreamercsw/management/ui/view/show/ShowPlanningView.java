@@ -61,6 +61,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     this.objectMapper = objectMapper;
 
     showComboBox = new ComboBox<>("Select Show");
+    showComboBox.setId("select-show-combo-box");
     showComboBox.setItems(showService.findAll());
     showComboBox.setItemLabelGenerator(Show::getName);
 

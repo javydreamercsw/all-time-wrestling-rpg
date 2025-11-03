@@ -5,7 +5,7 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import lombok.NonNull;
-import org.junit.jupiter.api.AfterEach;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.JavascriptExecutor;
@@ -15,12 +15,16 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 @ExtendWith(UITestWatcher.class)
+@Slf4j
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
+  protected int serverPort;
 
   @BeforeEach
-  public void setup() {
+  public void setup() throws java.io.IOException {
+    serverPort = Integer.parseInt(System.getProperty("server.port", "9090"));
+
     WebDriverManager.chromedriver().setup();
     waitForAppToBeReady();
     ChromeOptions options = new ChromeOptions();
@@ -53,7 +57,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     int attempt = 0;
     while (attempt < maxAttempts) {
       try {
-        URL url = new URL("http://localhost:8080");
+        URL url = new URL("http://localhost:" + serverPort);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(1000);
@@ -71,17 +75,33 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       }
       attempt++;
     }
-    throw new RuntimeException("Application did not start within timeout");
+    throw new RuntimeException(
+        "Application did not start within timeout. "
+            + "Please check if the server is running on port "
+            + serverPort);
   }
 
-  @AfterEach
-  public void tearDown() {
-    if (driver != null) {
-      driver.quit();
+  protected void clickVaadinButton(@NonNull String vaadinSelector) {
+    WebElement button = getVaadinElementInShadowRoot(vaadinSelector, "button");
+    if (button != null) {
+      button.click();
+    } else {
+      throw new RuntimeException("Vaadin button not found: " + vaadinSelector);
     }
   }
 
   protected void scrollIntoView(@NonNull WebElement element) {
     ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
+  }
+
+  protected WebElement getVaadinElementInShadowRoot(
+      @NonNull String vaadinSelector, @NonNull String shadowRootSelector) {
+    return (WebElement)
+        ((JavascriptExecutor) driver)
+            .executeScript(
+                "return"
+                    + " document.querySelector(arguments[0]).shadowRoot.querySelector(arguments[1]);",
+                vaadinSelector,
+                shadowRootSelector);
   }
 }

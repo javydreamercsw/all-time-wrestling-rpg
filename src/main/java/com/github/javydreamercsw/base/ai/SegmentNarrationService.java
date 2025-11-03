@@ -69,6 +69,7 @@ public interface SegmentNarrationService {
         titles; // List of titles relevant to the segment, e.g., for championship matches or title
     // defenses.
     private String instructions; // Add instructions field
+    private String segmentChampionship; // Add championship field
   }
 
   /** Context for wrestling titles. */
