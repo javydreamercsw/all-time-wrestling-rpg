@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -236,7 +237,7 @@ public class NarrationDialog extends Dialog {
     }
   }
 
-  private SegmentNarrationService.SegmentNarrationContext buildSegmentContext() {
+  SegmentNarrationService.SegmentNarrationContext buildSegmentContext() {
     SegmentNarrationService.SegmentNarrationContext context =
         new SegmentNarrationService.SegmentNarrationContext();
 
@@ -253,23 +254,7 @@ public class NarrationDialog extends Dialog {
       context.setSegmentChampionship(championshipNames);
     }
 
-    List<SegmentNarrationService.WrestlerContext> wrestlerContexts = new ArrayList<>();
-    for (int i = 0; i < teamsLayout.getComponentCount(); i++) {
-      HorizontalLayout teamSelector = (HorizontalLayout) teamsLayout.getComponentAt(i);
-      MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
-          (MultiSelectComboBox<WrestlerDTO>) teamSelector.getComponentAt(0);
-      for (WrestlerDTO wrestler : wrestlersCombo.getValue()) {
-        SegmentNarrationService.WrestlerContext wc = new SegmentNarrationService.WrestlerContext();
-        wc.setName(wrestler.getName());
-        wc.setDescription(wrestler.getDescription());
-        wc.setTeam("Team " + (i + 1));
-        wc.setGender(wrestler.getGender()); // Set gender
-        wc.setTier(wrestler.getTier()); // Set tier
-        wc.setMoveSet(wrestler.getMoveSet()); // Add this line
-        wrestlerContexts.add(wc);
-      }
-    }
-    context.setWrestlers(wrestlerContexts);
+    context.setWrestlers(buildWrestlerContexts());
 
     SegmentNarrationService.SegmentTypeContext mtc =
         new SegmentNarrationService.SegmentTypeContext();
@@ -283,53 +268,7 @@ public class NarrationDialog extends Dialog {
       context.setReferee(referee);
     }
 
-    List<SegmentNarrationService.NPCContext> npcs = new ArrayList<>();
-    if (commissionerField.getValue() != null) {
-      SegmentNarrationService.NPCContext commissioner = new SegmentNarrationService.NPCContext();
-      commissioner.setName(commissionerField.getValue().getName());
-      commissioner.setRole("Commissioner");
-      commissioner.setDescription("Wrestling commissioner");
-      npcs.add(commissioner);
-    }
-
-    if (!commentatorsField.getValue().isEmpty()) {
-      npcs.addAll(
-          commentatorsField.getValue().stream()
-              .map(
-                  commentator -> {
-                    SegmentNarrationService.NPCContext npc =
-                        new SegmentNarrationService.NPCContext();
-                    npc.setName(commentator.getName());
-                    npc.setRole("Commentator");
-                    npc.setDescription("Wrestling commentator");
-                    return npc;
-                  })
-              .toList());
-    }
-
-    if (ringAnnouncerField.getValue() != null) {
-      SegmentNarrationService.NPCContext npc = new SegmentNarrationService.NPCContext();
-      npc.setName(ringAnnouncerField.getValue().getName());
-      npc.setRole("Ring Announcer");
-      npc.setDescription("Wrestling ring announcer");
-      npcs.add(npc);
-    }
-
-    if (!otherNpcsField.getValue().isEmpty()) {
-      npcs.addAll(
-          otherNpcsField.getValue().stream()
-              .map(
-                  otherNpc -> {
-                    SegmentNarrationService.NPCContext npc =
-                        new SegmentNarrationService.NPCContext();
-                    npc.setName(otherNpc.getName());
-                    npc.setRole(otherNpc.getNpcType()); // Use the NPC's defined type as role
-                    return npc;
-                  })
-              .toList());
-    }
-    context.setNpcs(npcs);
-
+    context.setNpcs(buildNpcContexts());
     // Add explicit instructions for the AI
     context.setInstructions(
         "You will be provided with a context object in JSON format.\n"
@@ -393,14 +332,83 @@ public class NarrationDialog extends Dialog {
     List<SegmentNarrationService.SegmentNarrationContext> previousSegmentContexts =
         new ArrayList<>();
     for (Segment prevSegment : previousSegments) {
-      previousSegmentContexts.add(buildSegmentContext(prevSegment));
+      previousSegmentContexts.add(buildPreviousSegmentContext(prevSegment));
     }
     context.setPreviousSegments(previousSegmentContexts);
 
     return context;
   }
 
-  private SegmentNarrationService.SegmentNarrationContext buildSegmentContext(
+  private List<SegmentNarrationService.WrestlerContext> buildWrestlerContexts() {
+    List<SegmentNarrationService.WrestlerContext> wrestlerContexts = new ArrayList<>();
+    for (int i = 0; i < teamsLayout.getComponentCount(); i++) {
+      HorizontalLayout teamSelector = (HorizontalLayout) teamsLayout.getComponentAt(i);
+      MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
+          (MultiSelectComboBox<WrestlerDTO>) teamSelector.getComponentAt(0);
+      for (WrestlerDTO wrestler : wrestlersCombo.getValue()) {
+        SegmentNarrationService.WrestlerContext wc = new SegmentNarrationService.WrestlerContext();
+        wc.setName(wrestler.getName());
+        wc.setDescription(wrestler.getDescription());
+        wc.setTeam("Team " + (i + 1));
+        wc.setGender(wrestler.getGender()); // Set gender
+        wc.setTier(wrestler.getTier()); // Set tier
+        wc.setMoveSet(wrestler.getMoveSet()); // Add this line
+        wrestlerContexts.add(wc);
+      }
+    }
+    return wrestlerContexts;
+  }
+
+  private List<SegmentNarrationService.NPCContext> buildNpcContexts() {
+    List<SegmentNarrationService.NPCContext> npcs = new ArrayList<>();
+    if (commissionerField.getValue() != null) {
+      SegmentNarrationService.NPCContext commissioner = new SegmentNarrationService.NPCContext();
+      commissioner.setName(commissionerField.getValue().getName());
+      commissioner.setRole("Commissioner");
+      commissioner.setDescription("Wrestling commissioner");
+      npcs.add(commissioner);
+    }
+
+    if (!commentatorsField.getValue().isEmpty()) {
+      npcs.addAll(
+          commentatorsField.getValue().stream()
+              .map(
+                  commentator -> {
+                    SegmentNarrationService.NPCContext npc =
+                        new SegmentNarrationService.NPCContext();
+                    npc.setName(commentator.getName());
+                    npc.setRole("Commentator");
+                    npc.setDescription("Wrestling commentator");
+                    return npc;
+                  })
+              .toList());
+    }
+
+    if (ringAnnouncerField.getValue() != null) {
+      SegmentNarrationService.NPCContext npc = new SegmentNarrationService.NPCContext();
+      npc.setName(ringAnnouncerField.getValue().getName());
+      npc.setRole("Ring Announcer");
+      npc.setDescription("Wrestling ring announcer");
+      npcs.add(npc);
+    }
+
+    if (!otherNpcsField.getValue().isEmpty()) {
+      npcs.addAll(
+          otherNpcsField.getValue().stream()
+              .map(
+                  otherNpc -> {
+                    SegmentNarrationService.NPCContext npc =
+                        new SegmentNarrationService.NPCContext();
+                    npc.setName(otherNpc.getName());
+                    npc.setRole(otherNpc.getNpcType()); // Use the NPC's defined type as role
+                    return npc;
+                  })
+              .toList());
+    }
+    return npcs;
+  }
+
+  private SegmentNarrationService.SegmentNarrationContext buildPreviousSegmentContext(
       @NonNull Segment segment) {
     SegmentNarrationService.SegmentNarrationContext context =
         new SegmentNarrationService.SegmentNarrationContext();
@@ -419,8 +427,7 @@ public class NarrationDialog extends Dialog {
     }
 
     List<SegmentNarrationService.WrestlerContext> wrestlerContexts = new ArrayList<>();
-    for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant participant :
-        segment.getParticipants()) {
+    for (SegmentParticipant participant : segment.getParticipants()) {
       WrestlerDTO wrestler = new WrestlerDTO(participant.getWrestler());
       SegmentNarrationService.WrestlerContext wc = new SegmentNarrationService.WrestlerContext();
       wc.setName(wrestler.getName());
@@ -441,6 +448,8 @@ public class NarrationDialog extends Dialog {
 
     // Not populating referee, npcs, instructions, determinedOutcome for previous segments to keep
     // it simple.
+    context.setNarration(segment.getNarration());
+    context.setDeterminedOutcome(segment.getSummary());
 
     return context;
   }
@@ -534,7 +543,7 @@ public class NarrationDialog extends Dialog {
         showError("Failed to generate narration: " + e.getMessage());
       }
     } catch (Exception e) {
-      log.error("Error retrying with provider: " + provider, e);
+      log.error("Error retrying with provider: {}", provider, e);
       showError("Failed to generate narration: " + e.getMessage());
     } finally {
       showProgress(false);

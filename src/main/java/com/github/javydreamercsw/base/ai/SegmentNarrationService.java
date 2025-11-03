@@ -73,6 +73,7 @@ public interface SegmentNarrationService {
     private int segmentOrder; // The order of the segment in the show
     private boolean isMainEvent; // Whether the segment is the main event
     private List<SegmentNarrationContext> previousSegments; // List of previous segments in the show
+    private String narration; // The narration of the segment
   }
 
   /** Context for wrestling titles. */
