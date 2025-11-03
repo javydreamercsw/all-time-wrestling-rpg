@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 /** Unit tests for RivalryService. Tests the ATW RPG rivalry and heat management functionality. */
 @ExtendWith(MockitoExtension.class)
@@ -36,6 +37,7 @@ class RivalryServiceTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private Clock clock;
   @Mock private Random random;
+  @Mock private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private RivalryService rivalryService;
 

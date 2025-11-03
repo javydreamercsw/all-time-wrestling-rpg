@@ -4,6 +4,7 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
+import com.github.javydreamercsw.management.event.FactionHeatChangeEvent;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.Random;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class FactionRivalryService {
   private final FactionRivalryRepository factionRivalryRepository;
   private final FactionRepository factionRepository;
   private final Clock clock;
+  private final ApplicationEventPublisher eventPublisher;
   private final Random random = new Random();
 
   /** Get all faction rivalries with pagination. */
@@ -126,6 +129,7 @@ public class FactionRivalryService {
               double multiplier = rivalry.getIntensityHeatMultiplier();
               int adjustedHeatGain = (int) Math.round(heatGain * multiplier);
 
+              int oldHeat = rivalry.getHeat();
               rivalry.addHeat(adjustedHeatGain, reason);
 
               FactionRivalry savedRivalry = factionRivalryRepository.saveAndFlush(rivalry);
@@ -136,6 +140,9 @@ public class FactionRivalryService {
                   rivalry.getDisplayName(),
                   rivalry.getHeat(),
                   reason);
+
+              eventPublisher.publishEvent(
+                  new FactionHeatChangeEvent(this, savedRivalry, oldHeat, reason));
 
               return savedRivalry;
             });

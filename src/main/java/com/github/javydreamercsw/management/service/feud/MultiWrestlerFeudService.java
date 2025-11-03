@@ -5,6 +5,7 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.FeudHeatChangeEvent;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -13,6 +14,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class MultiWrestlerFeudService {
   @Autowired private MultiWrestlerFeudRepository multiWrestlerFeudRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private Clock clock;
+  @Autowired private ApplicationEventPublisher eventPublisher;
 
   /** Get all multi-wrestler feuds with pagination. */
   @Transactional(readOnly = true)
@@ -169,6 +172,7 @@ public class MultiWrestlerFeudService {
         .filter(MultiWrestlerFeud::getIsActive)
         .map(
             feud -> {
+              int oldHeat = feud.getHeat();
               feud.addHeat(heatGain, reason);
 
               MultiWrestlerFeud savedFeud = multiWrestlerFeudRepository.saveAndFlush(feud);
@@ -179,6 +183,9 @@ public class MultiWrestlerFeudService {
                   feud.getName(),
                   feud.getHeat(),
                   reason);
+
+              eventPublisher.publishEvent(
+                  new FeudHeatChangeEvent(this, savedFeud, oldHeat, reason));
 
               return savedFeud;
             });
