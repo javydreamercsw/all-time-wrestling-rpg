@@ -8,6 +8,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.SegmentDTO;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
@@ -87,6 +88,7 @@ public class SegmentService {
 
   @Autowired private final SegmentRepository segmentRepository;
   @Autowired private final TitleRepository titleRepository;
+  @Autowired private WrestlerService wrestlerService;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -96,7 +98,6 @@ public class SegmentService {
    * @param show The show where the match took place
    * @param matchType The type of match
    * @param matchDate The date/time of the match
-   * @param isTitleSegment Whether this was a title match
    * @return The created Segment
    */
   public Segment createSegment(

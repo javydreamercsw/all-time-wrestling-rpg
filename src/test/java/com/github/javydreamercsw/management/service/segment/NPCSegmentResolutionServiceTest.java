@@ -2,12 +2,17 @@ package com.github.javydreamercsw.management.service.segment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -16,11 +21,13 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRep
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -41,6 +48,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
   @Autowired WrestlerRepository wrestlerRepository;
   @Autowired SegmentRepository matchRepository;
   @MockitoBean private OpenAISegmentNarrationService openAIService;
+  @MockitoBean private InjuryService injuryService;
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private ShowTypeService showTypeService;
 
@@ -232,6 +240,11 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
       staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
       staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
       // Given - Add bumps to rookie1
+      Injury injury = mock(Injury.class);
+      InjurySeverity severity = mock(InjurySeverity.class);
+      when(injury.getSeverity()).thenReturn(severity);
+      when(severity.getDisplayName()).thenReturn("Minor");
+      when(injuryService.createInjuryFromBumps(anyLong())).thenReturn(Optional.of(injury));
       Assertions.assertNotNull(rookie1.getId());
       wrestlerService.addBump(rookie1.getId());
       wrestlerService.addBump(rookie1.getId());
