@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -58,6 +59,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.web.client.RestTemplate;
@@ -69,6 +71,7 @@ import org.springframework.web.client.RestTemplate;
 @Route("show-detail")
 @PageTitle("Show Details")
 @PermitAll
+@Slf4j
 public class ShowDetailView extends Main
     implements HasUrlParameter<Long>, ApplicationListener<AdjudicationCompletedEvent> {
 
@@ -584,7 +587,66 @@ public class ShowDetailView extends Main
 
     grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setFlexGrow(1);
 
+    grid.addComponentColumn(this::createOrderButtons)
+        .setHeader("Order")
+        .setFlexGrow(1)
+        .setKey("order");
+
+    grid.addComponentColumn(this::createMainEventCheckbox).setHeader("Main Event").setFlexGrow(1);
+
     return grid;
+  }
+
+  Grid<Segment> getSegmentsGrid(List<Segment> segments) {
+    return createSegmentsGrid(segments);
+  }
+
+  private Component createOrderButtons(@NonNull Segment segment) {
+    List<Segment> segments = segmentRepository.findByShow(segment.getShow());
+    int currentIndex = segments.indexOf(segment);
+
+    Button upButton = new Button(new Icon(VaadinIcon.ARROW_UP));
+    upButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    upButton.setTooltipText("Move Up");
+    upButton.addClickListener(e -> moveSegment(segment, -1));
+    upButton.setEnabled(currentIndex > 0);
+
+    Button downButton = new Button(new Icon(VaadinIcon.ARROW_DOWN));
+    downButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    downButton.setTooltipText("Move Down");
+    downButton.addClickListener(e -> moveSegment(segment, 1));
+    downButton.setEnabled(currentIndex < segments.size() - 1);
+
+    return new HorizontalLayout(upButton, downButton);
+  }
+
+  protected void moveSegment(@NonNull Segment segment, int direction) {
+    Show show = segment.getShow();
+    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(show);
+    int currentIndex = segments.indexOf(segment);
+    int newIndex = currentIndex + direction;
+
+    if (newIndex >= 0 && newIndex < segments.size()) {
+      Segment otherSegment = segments.get(newIndex);
+      int currentOrder = segment.getSegmentOrder();
+      segment.setSegmentOrder(otherSegment.getSegmentOrder());
+      otherSegment.setSegmentOrder(currentOrder);
+      segmentRepository.save(segment);
+      segmentRepository.save(otherSegment);
+      loadShow(show.getId());
+    }
+  }
+
+  private Component createMainEventCheckbox(@NonNull Segment segment) {
+    Checkbox checkbox = new Checkbox();
+    checkbox.setValue(segment.isMainEvent());
+    checkbox.addValueChangeListener(
+        e -> {
+          segment.setMainEvent(e.getValue());
+          segmentRepository.save(segment);
+          loadShow(segment.getShow().getId());
+        });
+    return checkbox;
   }
 
   private Component createActionButtons(@NonNull Segment segment) {
@@ -605,6 +667,7 @@ public class ShowDetailView extends Main
                   npcService,
                   wrestlerService,
                   titleService,
+                  showService,
                   updatedSegment -> displayShow(updatedSegment.getShow()));
           dialog.open();
         });
@@ -728,6 +791,7 @@ public class ShowDetailView extends Main
               }
               // Create a new segment object to pass to validation
               Segment newSegment = new Segment();
+              newSegment.setSegmentOrder(segmentRepository.findByShow(show).size() + 1);
               newSegment.setShow(show);
               newSegment.setSegmentDate(java.time.Instant.now());
               // Set isTitleSegment based on checkbox
@@ -990,7 +1054,7 @@ public class ShowDetailView extends Main
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
         segment.setAdjudicationStatus(
-            com.github.javydreamercsw.management.domain.AdjudicationStatus.PENDING);
+            AdjudicationStatus.PENDING);
       } else {
         segment = new Segment();
         segment.setShow(show);
