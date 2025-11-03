@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -234,22 +235,14 @@ public class NarrationDialog extends Dialog {
     SegmentNarrationService.SegmentNarrationContext context =
         new SegmentNarrationService.SegmentNarrationContext();
 
-    // Populate titles
-    List<SegmentNarrationService.TitleContext> titleContexts = new ArrayList<>();
-    segment
-        .getTitles()
-        .forEach(
-            title -> {
-              SegmentNarrationService.TitleContext tc = new SegmentNarrationService.TitleContext();
-              tc.setName(title.getName());
-              tc.setCurrentHolderName(title.isVacant() ? "Vacant" : title.getChampionNames());
-              tc.setTier(
-                  title
-                      .getTier()
-                      .name()); // Assuming Title has a getTier() method returning an enum
-              titleContexts.add(tc);
-            });
-    context.setTitles(titleContexts);
+    // Populate segmentChampionship
+    if (!segment.getTitles().isEmpty()) {
+      String championshipNames =
+          segment.getTitles().stream()
+              .map(Title::getName)
+              .collect(java.util.stream.Collectors.joining(" and "));
+      context.setSegmentChampionship(championshipNames);
+    }
 
     List<SegmentNarrationService.WrestlerContext> wrestlerContexts = new ArrayList<>();
     for (int i = 0; i < teamsLayout.getComponentCount(); i++) {

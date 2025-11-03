@@ -15,7 +15,7 @@ public class DeckListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNavigateToDeckListView() {
-    driver.get("http://localhost:8080/deck-list");
+    driver.get("http://localhost:" + serverPort + "/deck-list");
 
     // Check that the grid is present
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -25,7 +25,7 @@ public class DeckListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testGridSize() {
-    driver.get("http://localhost:8080/deck-list");
+    driver.get("http://localhost:" + serverPort + "/deck-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Check that the grid is present
