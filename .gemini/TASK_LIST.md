@@ -3,9 +3,9 @@
 - [ ] UI enhancements
     - [x] In the UI, Title view, there no way to set no challenger once a value is selected. Add an option to clear the challenger selection.
     - [x] Fan Management
-        - [ ] Add functionality to manage fan interactions and engagement within the application. We need ways of adding/removing fans to a wrestler.
-        - [ ] When a match for a championship takes place, challenger(s) should pay the appropriate fan fee triggering a fan adjudication event.
-           [ ] Implement fan fee payment processing. See table below:
+        - [x] Add functionality to manage fan interactions and engagement within the application. We need ways of adding/removing fans to a wrestler.
+        - [x] When a match for a championship takes place, challenger(s) should pay the appropriate fan fee triggering a fan adjudication event.
+           [x] Implement fan fee payment processing. See table below:
             
             | Name | #1 Contender Match fee | Title Match fee |
             |---|---|---|
@@ -14,8 +14,8 @@
             |  ATW Tag Team | 20,000  | 40,000  |
              |ATW Extreme | 15,000  |  25,000 |
 
-          - [ ] Create fan adjudication event logic.
-          - [ ] Update UI to reflect fan interactions and adjudications.
+          - [x] Create fan adjudication event logic.
+          - [x] Update UI to reflect fan interactions and adjudications.
     - [ ] Event Enhancements
         - [ ] Add events for the following actions:
             - [ ] Heat changes (increase, resolution, etc.)
