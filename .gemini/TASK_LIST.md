@@ -5,7 +5,7 @@
     - [x] Fan Management
         - [x] Add functionality to manage fan interactions and engagement within the application. We need ways of adding/removing fans to a wrestler.
         - [x] When a match for a championship takes place, challenger(s) should pay the appropriate fan fee triggering a fan adjudication event.
-           [x] Implement fan fee payment processing. See table below:
+        - [x] Implement fan fee payment processing. See table below:
             
             | Name | #1 Contender Match fee | Title Match fee |
             |---|---|---|

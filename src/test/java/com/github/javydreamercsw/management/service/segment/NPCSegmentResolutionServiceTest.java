@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mockStatic;
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -16,6 +17,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRep
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -41,6 +43,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
   @Autowired WrestlerRepository wrestlerRepository;
   @Autowired SegmentRepository matchRepository;
   @MockitoBean private OpenAISegmentNarrationService openAIService;
+  @MockitoBean private InjuryService injuryService;
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private ShowTypeService showTypeService;
 
@@ -232,6 +235,7 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
       staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
       staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
       // Given - Add bumps to rookie1
+      when(injuryService.createInjuryFromBumps(anyLong())).thenReturn(Optional.of(new Injury()));
       Assertions.assertNotNull(rookie1.getId());
       wrestlerService.addBump(rookie1.getId());
       wrestlerService.addBump(rookie1.getId());
