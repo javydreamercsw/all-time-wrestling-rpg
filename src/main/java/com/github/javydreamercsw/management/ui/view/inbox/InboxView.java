@@ -4,16 +4,23 @@ import com.github.javydreamercsw.base.ui.view.MainLayout;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridMultiSelectionModel;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Route(value = "inbox", layout = MainLayout.class)
 @PageTitle("Inbox")
@@ -25,6 +32,10 @@ public class InboxView extends VerticalLayout {
   private final ComboBox<String> readStatusFilter = new ComboBox<>("Read Status");
   private final ComboBox<String> eventTypeFilter = new ComboBox<>("Event Type");
   private final Div detailsView = new Div();
+  private final Checkbox selectAllCheckbox = new Checkbox("Select All");
+  private final Button markSelectedReadButton = new Button("Mark Selected as Read");
+  private final Button markSelectedUnreadButton = new Button("Mark Selected as Unread");
+  private final Set<InboxItem> selectedItems = new HashSet<>();
 
   public InboxView(InboxService inboxService) {
     this.inboxService = inboxService;
@@ -53,13 +64,70 @@ public class InboxView extends VerticalLayout {
     readStatusFilter.addValueChangeListener(e -> updateList());
 
     eventTypeFilter.setItems(
-        "All", "Rivalry Heat Change", "Faction Rivalry Heat Change", "Feud Heat Change");
+        "All",
+        "Rivalry Heat Change",
+        "Faction Rivalry Heat Change",
+        "Feud Heat Change",
+        "Adjudication Completed");
     eventTypeFilter.setValue("All");
     eventTypeFilter.addValueChangeListener(e -> updateList());
 
-    HorizontalLayout toolbar = new HorizontalLayout(filterText, readStatusFilter, eventTypeFilter);
+    selectAllCheckbox.addValueChangeListener(
+        event -> {
+          if (event.getValue()) {
+            ((GridMultiSelectionModel<InboxItem>) grid.getSelectionModel()).selectAll();
+            selectedItems.addAll(
+                grid.getDataProvider().fetch(new Query<>()).collect(Collectors.toList()));
+          } else {
+            grid.getSelectionModel().deselectAll();
+            selectedItems.clear();
+          }
+          updateSelectedButtonsState();
+        });
+
+    markSelectedReadButton.addClickListener(
+        event -> {
+          inboxService.markSelectedAsRead(selectedItems);
+          updateList();
+          Notification.show(selectedItems.size() + " items marked as read.");
+          selectedItems.clear();
+          grid.deselectAll();
+          selectAllCheckbox.setValue(false);
+          updateSelectedButtonsState();
+        });
+
+    markSelectedUnreadButton.addClickListener(
+        event -> {
+          inboxService.markSelectedAsUnread(selectedItems);
+          updateList();
+          Notification.show(selectedItems.size() + " items marked as unread.");
+          selectedItems.clear();
+          grid.deselectAll();
+          selectAllCheckbox.setValue(false);
+          updateSelectedButtonsState();
+        });
+
+    updateSelectedButtonsState();
+
+    HorizontalLayout toolbar =
+        new HorizontalLayout(
+            filterText,
+            readStatusFilter,
+            eventTypeFilter,
+            selectAllCheckbox,
+            markSelectedReadButton,
+            markSelectedUnreadButton);
     toolbar.addClassName("toolbar");
     return toolbar;
+  }
+
+  private void updateSelectedButtonsState() {
+    boolean hasSelection = !selectedItems.isEmpty();
+    markSelectedReadButton.setEnabled(hasSelection);
+    markSelectedUnreadButton.setEnabled(hasSelection);
+    selectAllCheckbox.setValue(
+        selectedItems.size() == grid.getDataProvider().size(new Query<>())
+            && grid.getDataProvider().size(new Query<>()) > 0);
   }
 
   private void configureGrid() {
@@ -68,6 +136,15 @@ public class InboxView extends VerticalLayout {
     grid.setColumns("eventType", "description", "eventTimestamp", "read");
     grid.addComponentColumn(item -> createReadToggleButton(item)).setHeader("Mark as Read/Unread");
     grid.getColumns().forEach(col -> col.setAutoWidth(true));
+    grid.setSelectionMode(Grid.SelectionMode.MULTI);
+
+    grid.asMultiSelect()
+        .addValueChangeListener(
+            event -> {
+              selectedItems.clear();
+              selectedItems.addAll(event.getValue());
+              updateSelectedButtonsState();
+            });
 
     grid.asSingleSelect()
         .addValueChangeListener(

@@ -5,6 +5,7 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItemRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.event.FactionHeatChangeEvent;
@@ -13,6 +14,7 @@ import com.github.javydreamercsw.management.event.HeatChangeEvent;
 import jakarta.persistence.criteria.Predicate;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -34,8 +36,13 @@ public class InboxService {
     item.setEventType("Rivalry Heat Change");
     item.setDescription(
         String.format(
-            "Heat in rivalry %d changed from %d to %d. Reason: %s",
-            event.getRivalryId(), event.getOldHeat(), event.getNewHeat(), event.getReason()));
+            "Heat in rivalry involving %s changed from %d to %d. Reason: %s",
+            event.getWrestlers().stream()
+                .map(Wrestler::getName)
+                .collect(Collectors.joining(" and ")),
+            event.getOldHeat(),
+            event.getNewHeat(),
+            event.getReason()));
     item.setEventTimestamp(Instant.now());
     inboxItemRepository.save(item);
   }
@@ -46,8 +53,10 @@ public class InboxService {
     item.setEventType("Faction Rivalry Heat Change");
     item.setDescription(
         String.format(
-            "Heat in faction rivalry %d changed from %d to %d. Reason: %s",
-            event.getFactionRivalryId(),
+            "Heat in faction rivalry involving %s changed from %d to %d. Reason: %s",
+            event.getWrestlers().stream()
+                .map(Wrestler::getName)
+                .collect(Collectors.joining(" and ")),
             event.getOldHeat(),
             event.getNewHeat(),
             event.getReason()));
@@ -57,13 +66,36 @@ public class InboxService {
 
   @EventListener
   public void handleFeudHeatChangeEvent(FeudHeatChangeEvent event) {
+
     InboxItem item = new InboxItem();
+
     item.setEventType("Feud Heat Change");
+
     item.setDescription(
         String.format(
-            "Heat in feud %d changed from %d to %d. Reason: %s",
-            event.getFeudId(), event.getOldHeat(), event.getNewHeat(), event.getReason()));
+            "Heat in feud involving %s changed from %d to %d. Reason: %s",
+            event.getWrestlers().stream().map(Wrestler::getName).collect(Collectors.joining(", ")),
+            event.getOldHeat(),
+            event.getNewHeat(),
+            event.getReason()));
+
     item.setEventTimestamp(Instant.now());
+
+    inboxItemRepository.save(item);
+  }
+
+  @EventListener
+  public void handleAdjudicationCompletedEvent(AdjudicationCompletedEvent event) {
+
+    InboxItem item = new InboxItem();
+
+    item.setEventType("Adjudication Completed");
+
+    item.setDescription(
+        String.format("Adjudication completed for show: %s", event.getShow().getName()));
+
+    item.setEventTimestamp(Instant.now());
+
     inboxItemRepository.save(item);
   }
 
@@ -132,6 +164,16 @@ public class InboxService {
   public void toggleReadStatus(InboxItem item) {
     item.setRead(!item.isRead());
     inboxItemRepository.save(item);
+  }
+
+  public void markSelectedAsRead(Collection<InboxItem> items) {
+    items.forEach(item -> item.setRead(true));
+    inboxItemRepository.saveAll(items);
+  }
+
+  public void markSelectedAsUnread(Collection<InboxItem> items) {
+    items.forEach(item -> item.setRead(false));
+    inboxItemRepository.saveAll(items);
   }
 
   public List<InboxItem> search(String filterText, String readStatus, String eventType) {
