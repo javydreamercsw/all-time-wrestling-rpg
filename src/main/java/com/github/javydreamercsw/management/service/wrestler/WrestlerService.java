@@ -102,13 +102,20 @@ public class WrestlerService {
    * @return The updated wrestler
    */
   public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fanGain) {
+    return updateFans(wrestlerId, fanGain);
+  }
+
+  private Optional<Wrestler> updateFans(@NonNull Long wrestlerId, @NonNull Long fanChange) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
             wrestler -> {
-              wrestler.addFans(fanGain);
+              if (fanChange < 0 && !wrestler.canAfford(-fanChange)) {
+                return null; // Not enough fans
+              }
+              wrestler.addFans(fanChange);
               Wrestler savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
-              eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, fanGain));
+              eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, fanChange));
               return savedWrestler;
             });
   }
@@ -192,18 +199,7 @@ public class WrestlerService {
    * @return true if successful, false if wrestler not found or insufficient fans
    */
   public boolean spendFans(Long wrestlerId, Long cost) {
-    return wrestlerRepository
-        .findById(wrestlerId)
-        .map(
-            wrestler -> {
-              if (wrestler.spendFans(cost)) {
-                Wrestler savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
-                eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, -cost));
-                return true;
-              }
-              return false;
-            })
-        .orElse(false);
+    return updateFans(wrestlerId, -cost).isPresent();
   }
 
   /**

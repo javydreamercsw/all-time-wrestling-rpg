@@ -6,10 +6,9 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,9 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SegmentAdjudicationServiceTest {
 
-  @Mock private RivalryService rivalryService;
   @Mock private WrestlerService wrestlerService;
-  @Mock private Random random;
 
   @InjectMocks private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -46,7 +43,7 @@ class SegmentAdjudicationServiceTest {
 
     title.setId(1L);
     title.setName("ATW World Championship");
-    title.setContenderEntryFee(10000L);
+    title.setTier(WrestlerTier.MAIN_EVENTER);
     title.setChampion(List.of(champion));
 
     SegmentType segmentType = new SegmentType();
@@ -61,14 +58,13 @@ class SegmentAdjudicationServiceTest {
   @Test
   void testAdjudicateMatch_ChallengerPaysFee() {
     // Given
-    when(wrestlerService.spendFans(challenger.getId(), title.getContenderEntryFee()))
-        .thenReturn(true);
+    when(wrestlerService.awardFans(challenger.getId(), -title.getContenderEntryFee()));
 
     // When
     segmentAdjudicationService.adjudicateMatch(segment);
 
     // Then
-    verify(wrestlerService, times(1)).spendFans(challenger.getId(), title.getContenderEntryFee());
-    verify(wrestlerService, never()).spendFans(champion.getId(), title.getContenderEntryFee());
+    verify(wrestlerService, times(1)).awardFans(challenger.getId(), title.getContenderEntryFee());
+    verify(wrestlerService, never()).awardFans(champion.getId(), title.getContenderEntryFee());
   }
 }

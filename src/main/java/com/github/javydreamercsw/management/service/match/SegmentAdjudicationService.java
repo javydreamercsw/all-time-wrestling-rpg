@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.match;
 
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -9,10 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class SegmentAdjudicationService {
 
   private final RivalryService rivalryService;
@@ -49,6 +52,33 @@ public class SegmentAdjudicationService {
         matchQualityBonus += 5_000;
       } else if (roll == 20) {
         matchQualityBonus += 10_000;
+      }
+
+      // Deduct fan fees for challengers in title segments
+      if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
+        for (Title title : segment.getTitles()) {
+          List<Wrestler> currentChampions = title.getCurrentChampions();
+          Long contenderEntryFee = title.getContenderEntryFee();
+
+          for (Wrestler participant : segment.getWrestlers()) {
+            // If a participant is not a current champion for this title, they are a challenger
+            if (!currentChampions.contains(participant)) {
+              if (wrestlerService.awardFans(participant.getId(), -contenderEntryFee).isPresent()) {
+                log.info(
+                    "Wrestler {} paid {} fans for contending in title segment {}",
+                    participant.getName(),
+                    contenderEntryFee,
+                    segment.getId());
+              } else {
+                log.warn(
+                    "Wrestler {} could not afford {} fans for contending in title segment {}",
+                    participant.getName(),
+                    contenderEntryFee,
+                    segment.getId());
+              }
+            }
+          }
+        }
       }
 
       // Award fans to winners
@@ -99,24 +129,10 @@ public class SegmentAdjudicationService {
     }
 
     // Add heat to rivalries
-    int heat = 0;
+    int heat = 1;
     String segmentTypeName = segment.getSegmentType().getName();
-    switch (segmentTypeName) {
-      case "Match":
-        heat = 1;
-        break;
-      case "Run-in":
-      case "Distraction":
-      case "Attack":
-        heat = 2;
-        break;
-      case "Post-match attack":
-      case "Pre-match attack":
-        heat = 3;
-        break;
-      case "Promo interruption":
-        heat = 4;
-        break;
+    if (segmentTypeName.equals("Promo")) {
+      heat = 4;
     }
 
     if (heat > 0) {
