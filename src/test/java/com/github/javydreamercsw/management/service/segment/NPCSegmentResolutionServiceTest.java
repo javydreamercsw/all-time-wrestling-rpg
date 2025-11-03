@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.segment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
 
@@ -23,6 +24,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
