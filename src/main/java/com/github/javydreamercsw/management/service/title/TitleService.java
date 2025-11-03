@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.title;
 
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -266,4 +267,33 @@ public class TitleService {
       long currentReignDays,
       int totalReigns,
       boolean isActive) {}
+
+  /** Get current reign days for a title. */
+  @Transactional(readOnly = true)
+  public long getCurrentReignDays(@NonNull Title title) {
+    return getCurrentReign(title).map(TitleReign::getReignLengthDays).orElse(0L);
+  }
+
+  /** Get current reign for a title. */
+  @Transactional(readOnly = true)
+  public Optional<TitleReign> getCurrentReign(@NonNull Title title) {
+    return title.getTitleReigns().stream().filter(TitleReign::isCurrentReign).findFirst();
+  }
+
+  /** Update the #1 contender for a title. */
+  public Optional<Title> updateNumberOneContender(@NonNull Long titleId, @NonNull Long wrestlerId) {
+    Optional<Title> titleOpt = titleRepository.findById(titleId);
+    Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
+
+    if (titleOpt.isPresent() && wrestlerOpt.isPresent()) {
+      Title title = titleOpt.get();
+      Wrestler wrestler = wrestlerOpt.get();
+
+      // Use the new setter method to update the contender
+      title.setNumberOneContender(wrestler);
+
+      return Optional.of(titleRepository.saveAndFlush(title));
+    }
+    return Optional.empty();
+  }
 }

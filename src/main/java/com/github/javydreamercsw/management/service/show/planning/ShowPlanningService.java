@@ -148,12 +148,15 @@ public class ShowPlanningService {
   @Transactional
   public void approveSegments(@NonNull Show show, @NonNull List<ProposedSegment> proposedSegments) {
     List<Segment> segmentsToSave = new ArrayList<>();
-    for (ProposedSegment proposedSegment : proposedSegments) {
+    int currentSegmentCount = segmentRepository.findByShow(show).size();
+    for (int i = 0; i < proposedSegments.size(); i++) {
+      ProposedSegment proposedSegment = proposedSegments.get(i);
       log.info("Processing segment: {}", proposedSegment);
       Segment segment = new Segment();
       segment.setShow(show);
       segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
       segment.setNarration(proposedSegment.getDescription());
+      segment.setSegmentOrder(currentSegmentCount + i + 1);
 
       segmentTypeService.findByName(proposedSegment.getType()).ifPresent(segment::setSegmentType);
 

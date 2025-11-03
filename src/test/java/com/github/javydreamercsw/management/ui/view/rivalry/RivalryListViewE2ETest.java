@@ -19,7 +19,7 @@ public class RivalryListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNavigateToRivalryListView() {
-    driver.get("http://localhost:8080/rivalry-list");
+    driver.get("http://localhost:" + serverPort + "/rivalry-list");
 
     // Check that the grid is present
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -29,7 +29,7 @@ public class RivalryListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testSortByHeat() {
-    driver.get("http://localhost:8080/rivalry-list");
+    driver.get("http://localhost:" + serverPort + "/rivalry-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Wait for the grid to be present and populated
@@ -64,7 +64,7 @@ public class RivalryListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNewColumns() {
-    driver.get("http://localhost:8080/rivalry-list");
+    driver.get("http://localhost:" + serverPort + "/rivalry-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Wait for the grid to be present and populated

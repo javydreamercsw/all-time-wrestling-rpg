@@ -68,7 +68,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   @Test
   public void testFullShowLifecycle() {
     // Navigate to the Show List view
-    driver.get("http://localhost:8080/show-list");
+    driver.get("http://localhost:" + serverPort + "/show-list");
 
     final String showName = "My E2E Show";
 

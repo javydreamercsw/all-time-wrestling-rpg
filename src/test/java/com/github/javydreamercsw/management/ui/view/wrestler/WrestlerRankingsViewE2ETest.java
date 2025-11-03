@@ -15,7 +15,7 @@ public class WrestlerRankingsViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testChampionIcon() {
-    driver.get("http://localhost:8080/wrestler-rankings");
+    driver.get("http://localhost:" + serverPort + "/wrestler-rankings");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the grid to be present

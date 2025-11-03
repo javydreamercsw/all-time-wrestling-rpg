@@ -26,7 +26,7 @@ public interface SegmentRepository
       LEFT JOIN FETCH s.participants p
       LEFT JOIN FETCH p.wrestler
       WHERE s.show = :show
-      ORDER BY s.segmentDate DESC
+      ORDER BY s.segmentOrder ASC
       """)
   List<Segment> findByShow(@Param("show") Show show);
 
@@ -102,4 +102,6 @@ public interface SegmentRepository
   /** Find all external IDs. */
   @Query("SELECT s.externalId FROM Segment s WHERE s.externalId IS NOT NULL")
   List<String> findAllExternalIds();
+
+  List<Segment> findByShowOrderBySegmentOrderAsc(Show show);
 }

@@ -207,6 +207,12 @@
     </dependency>
     <dependency>
       <groupId>com.github.mvysny.kaributesting</groupId>
+      <artifactId>karibu-testing-v10</artifactId>
+      <version>2.5.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.mvysny.kaributesting</groupId>
       <artifactId>karibu-testing-v24</artifactId>
       <version>2.5.0</version>
       <scope>test</scope>
@@ -880,7 +886,7 @@
                 <configuration>
                   <wait>30000</wait>
                   <maxAttempts>60</maxAttempts>
-                  <jvmArguments>-Dserver.port=9090</jvmArguments>
+                  <jvmArguments>-Dserver.port=9090 -Dspring.profiles.active=test</jvmArguments>
                 </configuration>
               </execution>
             </executions>
@@ -896,14 +902,13 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
-              <systemPropertyVariables>
-                <spring.profiles.active>test</spring.profiles.active>
-                <server.port>8081</server.port>
-              </systemPropertyVariables>
               <argLine>@{failsafeArgLine}</argLine>
               <!-- Sequential execution for e2e tests -->
               <parallel>none</parallel>
               <threadCount>1</threadCount>
+              <systemPropertyVariables>
+                <server.port>9090</server.port>
+              </systemPropertyVariables>
             </configuration>
             <executions>
               <execution>
@@ -965,7 +970,7 @@
             <artifactId>spring-boot-maven-plugin</artifactId>
             <configuration>
               <mainClass>com.github.javydreamercsw.Application</mainClass>
-              <jvmArguments>-Dserver.port=9090</jvmArguments>
+              <jvmArguments>-Dserver.port=9090 -Dspring.profiles.active=test -Dspring.datasource.url=jdbc:h2:mem:e2edb</jvmArguments>
             </configuration>
             <executions>
               <execution>

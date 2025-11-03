@@ -169,4 +169,15 @@ public class Title extends AbstractEntity<Long> {
   public boolean isVacant() {
     return getCurrentChampions().isEmpty();
   }
+
+  /** Sets the #1 contender for the title. Clears any existing contenders. */
+  public void setNumberOneContender(@NonNull Wrestler wrestler) {
+    this.contender.clear();
+    this.contender.add(wrestler);
+  }
+
+  /** Gets the #1 contender for the title, or null if none is set. */
+  @Nullable public Wrestler getNumberOneContender() {
+    return this.contender.isEmpty() ? null : this.contender.get(0);
+  }
 }

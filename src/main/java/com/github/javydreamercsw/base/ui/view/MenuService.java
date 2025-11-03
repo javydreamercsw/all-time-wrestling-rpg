@@ -16,6 +16,8 @@ public class MenuService {
     MenuItem dashboards = new MenuItem("Dashboards", VaadinIcon.DASHBOARD, null);
     dashboards.addChild(new MenuItem("Show Calendar", VaadinIcon.CALENDAR, "show-calendar"));
     dashboards.addChild(new MenuItem("Wrestler Rankings", VaadinIcon.STAR, "wrestler-rankings"));
+    dashboards.addChild(
+        new MenuItem("Championship Rankings", VaadinIcon.TROPHY, "championship-rankings"));
 
     MenuItem entities = new MenuItem("Entities", VaadinIcon.DATABASE, null);
     entities.addChild(new MenuItem("Faction Rivalries", VaadinIcon.GROUP, "faction-rivalry-list"));

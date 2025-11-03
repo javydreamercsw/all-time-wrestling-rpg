@@ -30,7 +30,9 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -100,6 +102,12 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "external_id", unique = true)
   private String externalId;
 
+  @Column(name = "segment_order", nullable = false)
+  private int segmentOrder;
+
+  @Column(name = "is_main_event", nullable = false)
+  private boolean isMainEvent;
+
   // Segment participants
   @OneToMany(
       mappedBy = "segment",
@@ -109,13 +117,13 @@ public class Segment extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"segment"})
   private List<SegmentParticipant> participants = new ArrayList<>();
 
-  @ManyToMany
+  @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
       name = "segment_title",
       joinColumns = @JoinColumn(name = "segment_id"),
       inverseJoinColumns = @JoinColumn(name = "title_id"))
   @JsonIgnore
-  private List<Title> titles = new ArrayList<>();
+  private Set<Title> titles = new HashSet<>();
 
   @Override
   public @Nullable Long getId() {
@@ -139,6 +147,12 @@ public class Segment extends AbstractEntity<Long> {
     }
     if (adjudicationStatus == null) {
       adjudicationStatus = AdjudicationStatus.PENDING;
+    }
+    if (segmentOrder == 0) {
+      segmentOrder = 0;
+    }
+    if (!isMainEvent) {
+      isMainEvent = false;
     }
   }
 

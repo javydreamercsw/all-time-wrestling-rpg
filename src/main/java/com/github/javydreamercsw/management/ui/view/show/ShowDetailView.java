@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -8,6 +9,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
@@ -23,6 +25,7 @@ import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -56,6 +59,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.web.client.RestTemplate;
@@ -67,6 +71,7 @@ import org.springframework.web.client.RestTemplate;
 @Route("show-detail")
 @PageTitle("Show Details")
 @PermitAll
+@Slf4j
 public class ShowDetailView extends Main
     implements HasUrlParameter<Long>, ApplicationListener<AdjudicationCompletedEvent> {
 
@@ -515,18 +520,33 @@ public class ShowDetailView extends Main
         .setSortable(true)
         .setFlexGrow(1);
 
-    // Segment type column
+    // Segment rules column
     grid.addColumn(
             segment -> {
-              List<String> wrestlerNames =
+              List<String> ruleNames =
                   segment.getSegmentRules().stream().map(SegmentRule::getName).toList();
-              return String.join(", ", wrestlerNames);
+              return String.join(", ", ruleNames);
             })
         .setHeader("Segment Rule(s)")
         .setSortable(true)
         .setFlexGrow(1);
 
-    // Segment type column
+    // Titles column
+    grid.addColumn(
+            segment -> {
+              if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
+                return segment.getTitles().stream()
+                    .map(Title::getName)
+                    .collect(java.util.stream.Collectors.joining(", "));
+              } else {
+                return "N/A";
+              }
+            })
+        .setHeader("Titles")
+        .setSortable(false)
+        .setFlexGrow(1);
+
+    // Summary column
     grid.addColumn(Segment::getSummary).setHeader("Summary").setSortable(true).setFlexGrow(3);
 
     // Segment type column
@@ -567,7 +587,66 @@ public class ShowDetailView extends Main
 
     grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setFlexGrow(1);
 
+    grid.addComponentColumn(this::createOrderButtons)
+        .setHeader("Order")
+        .setFlexGrow(1)
+        .setKey("order");
+
+    grid.addComponentColumn(this::createMainEventCheckbox).setHeader("Main Event").setFlexGrow(1);
+
     return grid;
+  }
+
+  Grid<Segment> getSegmentsGrid(List<Segment> segments) {
+    return createSegmentsGrid(segments);
+  }
+
+  private Component createOrderButtons(@NonNull Segment segment) {
+    List<Segment> segments = segmentRepository.findByShow(segment.getShow());
+    int currentIndex = segments.indexOf(segment);
+
+    Button upButton = new Button(new Icon(VaadinIcon.ARROW_UP));
+    upButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    upButton.setTooltipText("Move Up");
+    upButton.addClickListener(e -> moveSegment(segment, -1));
+    upButton.setEnabled(currentIndex > 0);
+
+    Button downButton = new Button(new Icon(VaadinIcon.ARROW_DOWN));
+    downButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    downButton.setTooltipText("Move Down");
+    downButton.addClickListener(e -> moveSegment(segment, 1));
+    downButton.setEnabled(currentIndex < segments.size() - 1);
+
+    return new HorizontalLayout(upButton, downButton);
+  }
+
+  protected void moveSegment(@NonNull Segment segment, int direction) {
+    Show show = segment.getShow();
+    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(show);
+    int currentIndex = segments.indexOf(segment);
+    int newIndex = currentIndex + direction;
+
+    if (newIndex >= 0 && newIndex < segments.size()) {
+      Segment otherSegment = segments.get(newIndex);
+      int currentOrder = segment.getSegmentOrder();
+      segment.setSegmentOrder(otherSegment.getSegmentOrder());
+      otherSegment.setSegmentOrder(currentOrder);
+      segmentRepository.save(segment);
+      segmentRepository.save(otherSegment);
+      loadShow(show.getId());
+    }
+  }
+
+  private Component createMainEventCheckbox(@NonNull Segment segment) {
+    Checkbox checkbox = new Checkbox();
+    checkbox.setValue(segment.isMainEvent());
+    checkbox.addValueChangeListener(
+        e -> {
+          segment.setMainEvent(e.getValue());
+          segmentRepository.save(segment);
+          loadShow(segment.getShow().getId());
+        });
+    return checkbox;
   }
 
   private Component createActionButtons(@NonNull Segment segment) {
@@ -588,6 +667,7 @@ public class ShowDetailView extends Main
                   npcService,
                   wrestlerService,
                   titleService,
+                  showService,
                   updatedSegment -> displayShow(updatedSegment.getShow()));
           dialog.open();
         });
@@ -661,7 +741,44 @@ public class ShowDetailView extends Main
           winnerCombo.clear();
         });
 
-    formLayout.add(segmentTypeCombo, rulesCombo, wrestlersCombo, winnerCombo);
+    // ... other fields ...
+
+    // Add title selection for new segments
+    MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
+    titleMultiSelectComboBox.setItems(titleService.findAll());
+    titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
+    titleMultiSelectComboBox.setWidthFull();
+    titleMultiSelectComboBox.setVisible(false); // Initially hidden
+
+    // Add checkbox to indicate if it's a title segment
+    Checkbox isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
+    isTitleSegmentCheckbox.addValueChangeListener(
+        event -> {
+          titleMultiSelectComboBox.setVisible(event.getValue());
+          if (!event.getValue()) {
+            titleMultiSelectComboBox.clear(); // Clear selection if not a title segment
+          }
+        });
+
+    // Narration
+    TextArea summaryArea = new TextArea("Summary");
+    summaryArea.setWidthFull();
+    formLayout.setColspan(summaryArea, 2);
+
+    // Narration
+    TextArea narrationArea = new TextArea("Narration");
+    narrationArea.setWidthFull();
+    formLayout.setColspan(narrationArea, 2);
+
+    formLayout.add(
+        segmentTypeCombo,
+        rulesCombo,
+        wrestlersCombo,
+        winnerCombo,
+        isTitleSegmentCheckbox,
+        titleMultiSelectComboBox,
+        summaryArea,
+        narrationArea);
 
     // Buttons
     Button saveButton =
@@ -672,13 +789,32 @@ public class ShowDetailView extends Main
               if (winnerCombo.getValue() != null) {
                 winners.add(winnerCombo.getValue());
               }
+              // Create a new segment object to pass to validation
+              Segment newSegment = new Segment();
+              newSegment.setSegmentOrder(segmentRepository.findByShow(show).size() + 1);
+              newSegment.setShow(show);
+              newSegment.setSegmentDate(java.time.Instant.now());
+              // Set isTitleSegment based on checkbox
+              boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
+              newSegment.setIsTitleSegment(isTitleSegment);
+              newSegment.setIsNpcGenerated(false);
+              newSegment.syncParticipants(new ArrayList<>(wrestlersCombo.getValue()));
+              newSegment.syncSegmentRules(new ArrayList<>(rulesCombo.getValue()));
+              newSegment.setSegmentType(segmentTypeCombo.getValue());
+              newSegment.setWinners(new ArrayList<>(winners));
+
+              // If it's a title segment, set the selected titles
+              if (isTitleSegment) {
+                newSegment.setTitles(titleMultiSelectComboBox.getValue());
+              }
+
               if (validateAndSaveSegment(
                   show,
                   segmentTypeCombo.getValue(),
                   wrestlersCombo.getValue(),
                   winners,
                   rulesCombo.getValue(),
-                  null)) {
+                  newSegment)) { // Pass the new segment object
                 dialog.close();
                 // Refresh the segments display
                 displayShow(show);
@@ -761,8 +897,36 @@ public class ShowDetailView extends Main
     narrationArea.setValue(segment.getNarration() != null ? segment.getNarration() : "");
     formLayout.setColspan(narrationArea, 2);
 
+    // ... other fields ...
+
+    // Title selection (multi-select) - only visible if segment is a title segment
+    MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
+    titleMultiSelectComboBox.setItems(titleService.findAll());
+    titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
+    titleMultiSelectComboBox.setWidthFull();
+    titleMultiSelectComboBox.setVisible(segment.getIsTitleSegment()); // Control visibility
+    titleMultiSelectComboBox.setValue(segment.getTitles()); // Set initial value
+
+    // Add checkbox to indicate if it's a title segment
+    Checkbox isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
+    isTitleSegmentCheckbox.setValue(segment.getIsTitleSegment());
+    isTitleSegmentCheckbox.addValueChangeListener(
+        event -> {
+          titleMultiSelectComboBox.setVisible(event.getValue());
+          if (!event.getValue()) {
+            titleMultiSelectComboBox.clear(); // Clear selection if not a title segment
+          }
+        });
+
     formLayout.add(
-        segmentTypeCombo, rulesCombo, wrestlersCombo, winnersCombo, summaryArea, narrationArea);
+        segmentTypeCombo,
+        rulesCombo,
+        wrestlersCombo,
+        winnersCombo,
+        isTitleSegmentCheckbox,
+        titleMultiSelectComboBox,
+        summaryArea,
+        narrationArea);
 
     // Buttons
     Button saveButton =
@@ -771,13 +935,20 @@ public class ShowDetailView extends Main
             e -> {
               segment.setNarration(narrationArea.getValue());
               segment.setSummary(summaryArea.getValue());
+              // Set isTitleSegment based on checkbox
+              boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
+              segment.setIsTitleSegment(isTitleSegment);
+              // If it's a title segment, set the selected titles
+              if (isTitleSegment) {
+                segment.setTitles(titleMultiSelectComboBox.getValue());
+              }
               if (validateAndSaveSegment(
                   segment.getShow(),
                   segmentTypeCombo.getValue(),
                   wrestlersCombo.getValue(),
                   winnersCombo.getValue(),
                   rulesCombo.getValue(),
-                  segment)) {
+                  segment)) { // Pass the segment to update
                 dialog.close();
                 // Refresh the segments display
                 displayShow(segment.getShow());
@@ -882,8 +1053,7 @@ public class ShowDetailView extends Main
         segment = segmentToUpdate;
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
-        segment.setAdjudicationStatus(
-            com.github.javydreamercsw.management.domain.AdjudicationStatus.PENDING);
+        segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
       } else {
         segment = new Segment();
         segment.setShow(show);

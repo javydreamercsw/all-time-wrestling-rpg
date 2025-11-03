@@ -41,7 +41,9 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     prompt.append("You will be provided with a context object in JSON format.\n");
     prompt.append(
         "Generate a compelling wrestling narration based on the data in the JSON object.\n");
-    prompt.append("The JSON object contains instructions that you must follow.\n\n");
+    prompt.append("The JSON object contains instructions that you must follow.\n");
+    prompt.append(
+        "If a segmentChampionship is provided, use it as the title of the segment narration.\n\n");
     prompt.append("Here is the JSON context:\n\n");
     prompt.append(jsonContext);
 

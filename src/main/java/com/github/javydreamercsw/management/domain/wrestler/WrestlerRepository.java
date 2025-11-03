@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.domain.wrestler;
 
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,4 +19,6 @@ public interface WrestlerRepository
   Optional<Wrestler> findByName(@Param("name") String name);
 
   Optional<Wrestler> findByExternalId(String externalId);
+
+  List<Wrestler> findByFansBetween(long minFans, long maxFans);
 }

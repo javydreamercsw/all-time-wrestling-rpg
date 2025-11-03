@@ -24,7 +24,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testCreateCard() {
-    driver.get("http://localhost:8080/card-list");
+    driver.get("http://localhost:" + serverPort + "/card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Wait for the grid to be present and populated
@@ -61,7 +61,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
   @Test
   public void testUpdateCard() {
     String cardName = "Card to Update";
-    driver.get("http://localhost:8080/card-list");
+    driver.get("http://localhost:" + serverPort + "/card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Find the grid and wait for it to be populated
@@ -128,7 +128,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
   public void testDeleteCard() {
     String cardName = "Card to Delete";
 
-    driver.get("http://localhost:8080/card-list");
+    driver.get("http://localhost:" + serverPort + "/card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Find the grid and wait for it to be populated
@@ -193,7 +193,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testSortByName() {
-    driver.get("http://localhost:8080/card-list");
+    driver.get("http://localhost:" + serverPort + "/card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Wait for the grid to be present and populated

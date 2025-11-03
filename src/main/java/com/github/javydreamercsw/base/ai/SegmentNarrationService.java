@@ -65,8 +65,14 @@ public interface SegmentNarrationService {
     private VenueContext venue;
     private String audience;
     private List<String> recentSegmentNarrations;
-    private List<TitleContext> titles; // Add titles
+    private List<TitleContext>
+        titles; // List of titles relevant to the segment, e.g., for championship matches or title
+    // defenses.
     private String instructions; // Add instructions field
+    private String segmentChampionship; // Add championship field
+    private int segmentOrder; // The order of the segment in the show
+    private boolean isMainEvent; // Whether the segment is the main event
+    private List<SegmentNarrationContext> previousSegments; // List of previous segments in the show
   }
 
   /** Context for wrestling titles. */

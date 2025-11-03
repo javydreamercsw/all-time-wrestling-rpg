@@ -38,14 +38,12 @@ import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Slf4j
 public abstract class ManagementIntegrationTest extends AbstractIntegrationTest {
   @Autowired protected DeckCardRepository deckCardRepository;
   @Autowired protected DramaEventRepository dramaEventRepository;
@@ -84,56 +82,31 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   @Autowired protected DramaEventService dramaEventService;
 
   protected void clearAllRepositories() {
-    log.info("Clearing DeckCard repository");
     deckCardRepository.deleteAllInBatch();
-    log.info("Clearing Deck repository");
     deckRepository.deleteAll();
     deckRepository.deleteAll();
-    log.info("Clearing DramaEvent repository");
     dramaEventRepository.deleteAll();
-    log.info("Clearing FactionRivalry repository");
     factionRivalryRepository.deleteAll();
-    log.info("Clearing MultiWrestlerFeud repository");
     multiWrestlerFeudRepository.deleteAll();
-    log.info("Clearing Rivalry repository");
     rivalryRepository.deleteAll();
-    log.info("Clearing Injury repository");
     injuryRepository.deleteAll();
-    log.info("Clearing InjuryType repository");
     injuryTypeRepository.deleteAll();
-    log.info("Clearing Segment repository");
     segmentRepository.deleteAll();
-    log.info("Clearing SegmentRule repository");
     segmentRuleRepository.deleteAll();
-    log.info("Clearing StorylineBranch repository");
     storylineBranchRepository.deleteAll();
-    log.info("Clearing Team repository");
     teamRepository.deleteAll();
-    log.info("Clearing TitleReign repository");
     titleReignRepository.deleteAll();
-    log.info("Clearing Title repository");
     titleRepository.deleteAll();
-    log.info("Clearing Faction repository");
     factionRepository.deleteAll();
-    log.info("Clearing Npc repository");
     npcRepository.deleteAll();
-    log.info("Clearing Wrestler repository");
     wrestlerRepository.deleteAll();
-    log.info("Clearing Card repository");
     cardRepository.deleteAll();
-    log.info("Clearing CardSet repository");
     cardSetRepository.deleteAll();
-    log.info("Clearing Season repository");
     seasonRepository.deleteAll();
-    log.info("Clearing Show repository");
     showRepository.deleteAll();
-    log.info("Clearing ShowTemplate repository");
     showTemplateRepository.deleteAll();
-    log.info("Clearing ShowType repository");
     showTypeRepository.deleteAll();
-    log.info("Clearing SegmentType repository");
     segmentTypeRepository.deleteAll();
-    log.info("Finished clearing repositories");
   }
 
   protected Wrestler createTestWrestler(@NonNull String name) {

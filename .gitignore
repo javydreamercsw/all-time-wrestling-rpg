@@ -14,8 +14,7 @@
 node_modules/
 src/main/frontend/generated/
 vite.generated.ts
-/data/management-db.mv.db
-/data/management-db.trace.db
+/data/
 
 # Compiled class file
 *.class
@@ -41,5 +40,5 @@ vite.generated.ts
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
-.gemini/
+/.gemini/
 /data-backup/
