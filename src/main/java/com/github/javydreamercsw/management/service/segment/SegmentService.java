@@ -80,6 +80,8 @@ public class SegmentService {
         segment.getTitles().stream()
             .map(Title::getId)
             .collect(java.util.stream.Collectors.toList()));
+    dto.setSegmentOrder(segment.getSegmentOrder());
+    dto.setMainEvent(segment.isMainEvent());
     return dto;
   }
 

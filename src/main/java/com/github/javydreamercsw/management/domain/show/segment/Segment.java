@@ -102,6 +102,12 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "external_id", unique = true)
   private String externalId;
 
+  @Column(name = "segment_order", nullable = false)
+  private int segmentOrder;
+
+  @Column(name = "is_main_event", nullable = false)
+  private boolean isMainEvent;
+
   // Segment participants
   @OneToMany(
       mappedBy = "segment",
@@ -141,6 +147,12 @@ public class Segment extends AbstractEntity<Long> {
     }
     if (adjudicationStatus == null) {
       adjudicationStatus = AdjudicationStatus.PENDING;
+    }
+    if (segmentOrder == 0) {
+      segmentOrder = 0;
+    }
+    if (!isMainEvent) {
+      isMainEvent = false;
     }
   }
 

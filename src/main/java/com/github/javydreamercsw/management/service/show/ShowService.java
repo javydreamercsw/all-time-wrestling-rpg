@@ -5,6 +5,7 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -325,5 +326,9 @@ public class ShowService {
             });
 
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
+  }
+
+  public List<Segment> getSegments(Show show) {
+    return segmentRepository.findByShow(show);
   }
 }

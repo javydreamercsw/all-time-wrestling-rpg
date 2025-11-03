@@ -1053,8 +1053,7 @@ public class ShowDetailView extends Main
         segment = segmentToUpdate;
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
-        segment.setAdjudicationStatus(
-            AdjudicationStatus.PENDING);
+        segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
       } else {
         segment = new Segment();
         segment.setShow(show);

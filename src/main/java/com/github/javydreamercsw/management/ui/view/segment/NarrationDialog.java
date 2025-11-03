@@ -8,6 +8,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.util.UrlUtil;
@@ -30,6 +31,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -42,6 +44,7 @@ public class NarrationDialog extends Dialog {
   private final ObjectMapper objectMapper;
   private final WrestlerService wrestlerService;
   private final TitleService titleService;
+  private final ShowService showService;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -62,12 +65,14 @@ public class NarrationDialog extends Dialog {
       NpcService npcService,
       WrestlerService wrestlerService,
       TitleService titleService,
+      ShowService showService,
       Consumer<Segment> onSaveCallback) { // Modified constructor
     this.segment = segment;
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
     this.titleService = titleService;
+    this.showService = showService;
     this.onSaveCallback = onSaveCallback; // Assign callback
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
@@ -161,7 +166,7 @@ public class NarrationDialog extends Dialog {
     getFooter().add(generateButton, saveButton, new Button("Close", e -> close()));
   }
 
-  private void addTeamSelector(WrestlerDTO wrestler) {
+  private void addTeamSelector(@NonNull WrestlerDTO wrestler) {
     int teamNumber = teamsLayout.getComponentCount() + 1;
     MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
         new MultiSelectComboBox<>("Team " + teamNumber);
@@ -234,6 +239,10 @@ public class NarrationDialog extends Dialog {
   private SegmentNarrationService.SegmentNarrationContext buildSegmentContext() {
     SegmentNarrationService.SegmentNarrationContext context =
         new SegmentNarrationService.SegmentNarrationContext();
+
+    // Populate segmentOrder and isMainEvent
+    context.setSegmentOrder(segment.getSegmentOrder());
+    context.setMainEvent(segment.isMainEvent());
 
     // Populate segmentChampionship
     if (!segment.getTitles().isEmpty()) {
@@ -375,10 +384,68 @@ public class NarrationDialog extends Dialog {
       context.setDeterminedOutcome(outcomeBuilder.toString());
     }
 
+    // Populate previousSegments
+    List<Segment> previousSegments =
+        showService.getSegments(segment.getShow()).stream()
+            .filter(s -> s.getSegmentOrder() < segment.getSegmentOrder())
+            .toList();
+
+    List<SegmentNarrationService.SegmentNarrationContext> previousSegmentContexts =
+        new ArrayList<>();
+    for (Segment prevSegment : previousSegments) {
+      previousSegmentContexts.add(buildSegmentContext(prevSegment));
+    }
+    context.setPreviousSegments(previousSegmentContexts);
+
     return context;
   }
 
-  private void handleNarrationResponse(String response) {
+  private SegmentNarrationService.SegmentNarrationContext buildSegmentContext(
+      @NonNull Segment segment) {
+    SegmentNarrationService.SegmentNarrationContext context =
+        new SegmentNarrationService.SegmentNarrationContext();
+
+    // Populate segmentOrder and isMainEvent
+    context.setSegmentOrder(segment.getSegmentOrder());
+    context.setMainEvent(segment.isMainEvent());
+
+    // Populate segmentChampionship
+    if (!segment.getTitles().isEmpty()) {
+      String championshipNames =
+          segment.getTitles().stream()
+              .map(Title::getName)
+              .collect(java.util.stream.Collectors.joining(" and "));
+      context.setSegmentChampionship(championshipNames);
+    }
+
+    List<SegmentNarrationService.WrestlerContext> wrestlerContexts = new ArrayList<>();
+    for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant participant :
+        segment.getParticipants()) {
+      WrestlerDTO wrestler = new WrestlerDTO(participant.getWrestler());
+      SegmentNarrationService.WrestlerContext wc = new SegmentNarrationService.WrestlerContext();
+      wc.setName(wrestler.getName());
+      wc.setDescription(wrestler.getDescription());
+      // For previous segments, assume each participant is in their own team.
+      wc.setTeam("Team " + (wrestlerContexts.size() + 1));
+      wc.setGender(wrestler.getGender()); // Set gender
+      wc.setTier(wrestler.getTier()); // Set tier
+      wc.setMoveSet(wrestler.getMoveSet()); // Add this line
+      wrestlerContexts.add(wc);
+    }
+    context.setWrestlers(wrestlerContexts);
+
+    SegmentNarrationService.SegmentTypeContext mtc =
+        new SegmentNarrationService.SegmentTypeContext();
+    mtc.setSegmentType(segment.getSegmentType().getName());
+    context.setSegmentType(mtc);
+
+    // Not populating referee, npcs, instructions, determinedOutcome for previous segments to keep
+    // it simple.
+
+    return context;
+  }
+
+  private void handleNarrationResponse(@NonNull String response) {
     try {
       JsonNode jsonResponse = objectMapper.readTree(response);
       String narration =
@@ -398,12 +465,12 @@ public class NarrationDialog extends Dialog {
     regenerateButton.setEnabled(!show);
   }
 
-  private void showError(String message) {
+  private void showError(@NonNull String message) {
     Notification.show(message, 5000, Notification.Position.BOTTOM_END)
         .addThemeVariants(NotificationVariant.LUMO_ERROR);
   }
 
-  private void showRetryDialog(JsonNode errorResponse) {
+  private void showRetryDialog(@NonNull JsonNode errorResponse) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Narration Failed");
 
@@ -434,7 +501,7 @@ public class NarrationDialog extends Dialog {
     dialog.open();
   }
 
-  private void retryWithProvider(String provider) {
+  private void retryWithProvider(@NonNull String provider) {
     showProgress(true);
 
     try {
