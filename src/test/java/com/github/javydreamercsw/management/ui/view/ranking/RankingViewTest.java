@@ -17,6 +17,8 @@ import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.data.provider.Query;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -41,6 +43,11 @@ class RankingViewTest extends ManagementIntegrationTest {
     contenders.add(new RankedWrestlerDTO(3L, "Contender 1", 500L, 2));
     when(rankingService.getRankedContenders(championshipDTO.getId())).thenReturn(contenders);
   }
+
+    @AfterEach
+    void tearDown() {
+        MockVaadin.tearDown();
+    }
 
   @Test
   void testViewLoadsAndPopulates() {
