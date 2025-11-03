@@ -121,7 +121,6 @@ public class WrestlerListView extends Main {
                     Dialog dialog = new Dialog();
                     NumberField fanAmount = new NumberField("Fan Amount");
                     fanAmount.setPlaceholder("Enter amount");
-                    fanAmount.setHasControls(true);
                     fanAmount.setMin(1);
                     Button confirmButton = new Button("Confirm");
                     confirmButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -154,7 +153,6 @@ public class WrestlerListView extends Main {
                     Dialog dialog = new Dialog();
                     NumberField fanAmount = new NumberField("Fan Amount");
                     fanAmount.setPlaceholder("Enter amount");
-                    fanAmount.setHasControls(true);
                     fanAmount.setMin(1);
                     Button confirmButton = new Button("Confirm");
                     confirmButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
