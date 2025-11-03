@@ -10,12 +10,15 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.converter.StringToIntegerConverter;
@@ -104,7 +107,82 @@ public class WrestlerListView extends Main {
         .setHeader("Low Stamina")
         .setEditorComponent(lowStaminaField)
         .setSortable(true);
+    wrestlerGrid
+        .addColumn(Wrestler::getFans)
+        .setHeader("Fans")
+        .setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getCreationDate).setHeader("Creation Date");
+    wrestlerGrid
+        .addComponentColumn(
+            wrestler -> {
+              Button addFansButton = new Button("Add Fans");
+              addFansButton.addClickListener(
+                  e -> {
+                    Dialog dialog = new Dialog();
+                    NumberField fanAmount = new NumberField("Fan Amount");
+                    fanAmount.setPlaceholder("Enter amount");
+                    fanAmount.setHasControls(true);
+                    fanAmount.setMin(1);
+                    Button confirmButton = new Button("Confirm");
+                    confirmButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+                    confirmButton.addClickListener(
+                        event -> {
+                          if (fanAmount.getValue() != null) {
+                            wrestlerService.awardFans(
+                                wrestler.getId(), fanAmount.getValue().longValue());
+                            wrestlerGrid.getDataProvider().refreshAll();
+                            Notification.show(
+                                    "Added "
+                                        + fanAmount.getValue().longValue()
+                                        + " fans to "
+                                        + wrestler.getName(),
+                                    3000,
+                                    Notification.Position.BOTTOM_END)
+                                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                            dialog.close();
+                          }
+                        });
+                    Button cancelButton = new Button("Cancel", event -> dialog.close());
+                    dialog.add(
+                        new VerticalLayout(fanAmount, new HorizontalLayout(confirmButton, cancelButton)));
+                    dialog.open();
+                  });
+              Button removeFansButton = new Button("Remove Fans");
+              removeFansButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+              removeFansButton.addClickListener(
+                  e -> {
+                    Dialog dialog = new Dialog();
+                    NumberField fanAmount = new NumberField("Fan Amount");
+                    fanAmount.setPlaceholder("Enter amount");
+                    fanAmount.setHasControls(true);
+                    fanAmount.setMin(1);
+                    Button confirmButton = new Button("Confirm");
+                    confirmButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+                    confirmButton.addClickListener(
+                        event -> {
+                          if (fanAmount.getValue() != null) {
+                            wrestlerService.awardFans(
+                                wrestler.getId(), -fanAmount.getValue().longValue());
+                            wrestlerGrid.getDataProvider().refreshAll();
+                            Notification.show(
+                                    "Removed "
+                                        + fanAmount.getValue().longValue()
+                                        + " fans from "
+                                        + wrestler.getName(),
+                                    3000,
+                                    Notification.Position.BOTTOM_END)
+                                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                            dialog.close();
+                          }
+                        });
+                    Button cancelButton = new Button("Cancel", event -> dialog.close());
+                    dialog.add(
+                        new VerticalLayout(fanAmount, new HorizontalLayout(confirmButton, cancelButton)));
+                    dialog.open();
+                  });
+              return new HorizontalLayout(addFansButton, removeFansButton);
+            })
+        .setHeader("Fan Actions");
     wrestlerGrid
         .addComponentColumn(
             wrestler -> {
