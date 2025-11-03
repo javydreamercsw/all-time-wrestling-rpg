@@ -16,7 +16,7 @@
 
           - [x] Create fan adjudication event logic.
           - [x] Update UI to reflect fan interactions and adjudications.
-    - [ ] Event Enhancements
+    - [x] Event Enhancements
         - [ ] Add events for the following actions:
             - [ ] Heat changes (increase, resolution, etc.)
             - [ ] Championship defenses
