@@ -10,6 +10,7 @@ import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
+import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Image;
@@ -30,6 +31,7 @@ class RankingViewTest extends ManagementIntegrationTest {
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
+    MockVaadin.setup();
     championshipDTO = new ChampionshipDTO(1L, "Test Title", "test.png");
     when(rankingService.getChampionships()).thenReturn(List.of(championshipDTO));
     when(rankingService.getCurrentChampions(championshipDTO.getId()))
