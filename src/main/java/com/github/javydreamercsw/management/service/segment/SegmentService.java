@@ -8,6 +8,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.SegmentDTO;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
@@ -87,6 +88,7 @@ public class SegmentService {
 
   @Autowired private final SegmentRepository segmentRepository;
   @Autowired private final TitleRepository titleRepository;
+  @Autowired private WrestlerService wrestlerService;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -128,6 +130,36 @@ public class SegmentService {
 
     Segment saved = segmentRepository.save(match);
     log.info("Created match with ID: {} for show: {}", saved.getId(), show.getName());
+
+    // Deduct fan fees for challengers in title segments
+    if (saved.getIsTitleSegment() && !saved.getTitles().isEmpty()) {
+      for (Title title : saved.getTitles()) {
+        List<Wrestler> currentChampions = title.getCurrentChampions();
+        Long contenderEntryFee = title.getContenderEntryFee();
+
+        for (Wrestler participant : saved.getWrestlers()) {
+          // If a participant is not a current champion for this title, they are a challenger
+          if (!currentChampions.contains(participant)) {
+            if (wrestlerService.spendFans(participant.getId(), contenderEntryFee)) {
+              log.info(
+                  "Wrestler {} paid {} fans for contending in title segment {}",
+                  participant.getName(),
+                  contenderEntryFee,
+                  saved.getId());
+            } else {
+              log.warn(
+                  "Wrestler {} could not afford {} fans for contending in title segment {}",
+                  participant.getName(),
+                  contenderEntryFee,
+                  saved.getId());
+              // TODO: Handle cases where a wrestler cannot afford the fee (e.g., prevent match,
+              // penalize)
+            }
+          }
+        }
+      }
+    }
+
     return saved;
   }
 
