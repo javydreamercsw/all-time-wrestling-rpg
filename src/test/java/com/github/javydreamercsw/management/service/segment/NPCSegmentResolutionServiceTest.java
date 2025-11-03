@@ -4,12 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -237,7 +240,11 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
       staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
       staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
       // Given - Add bumps to rookie1
-      when(injuryService.createInjuryFromBumps(anyLong())).thenReturn(Optional.of(new Injury()));
+      Injury injury = mock(Injury.class);
+      InjurySeverity severity = mock(InjurySeverity.class);
+      when(injury.getSeverity()).thenReturn(severity);
+      when(severity.getDisplayName()).thenReturn("Minor");
+      when(injuryService.createInjuryFromBumps(anyLong())).thenReturn(Optional.of(injury));
       Assertions.assertNotNull(rookie1.getId());
       wrestlerService.addBump(rookie1.getId());
       wrestlerService.addBump(rookie1.getId());

@@ -10,6 +10,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,14 +64,14 @@ class SegmentAdjudicationServiceTest {
   void testAdjudicateMatch_ChallengerPaysFee() {
     // Given
     when(random.nextInt(anyInt())).thenReturn(10); // Mock the dice roll
-    when(wrestlerService.spendFans(challenger.getId(), title.getContenderEntryFee()))
-        .thenReturn(true);
+    when(wrestlerService.awardFans(challenger.getId(), -title.getContenderEntryFee()))
+        .thenReturn(Optional.of(challenger));
 
     // When
     segmentAdjudicationService.adjudicateMatch(segment);
 
     // Then
-    verify(wrestlerService, times(1)).spendFans(challenger.getId(), title.getContenderEntryFee());
-    verify(wrestlerService, never()).spendFans(champion.getId(), title.getContenderEntryFee());
+    verify(wrestlerService, times(1)).awardFans(challenger.getId(), -title.getContenderEntryFee());
+    verify(wrestlerService, never()).awardFans(champion.getId(), -title.getContenderEntryFee());
   }
 }
