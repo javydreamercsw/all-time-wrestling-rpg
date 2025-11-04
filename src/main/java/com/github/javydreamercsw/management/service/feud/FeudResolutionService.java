@@ -39,11 +39,13 @@ public class FeudResolutionService {
     if (numberOfParticipants <= 0) {
       return;
     }
-    DiceBag diceBag = new DiceBag(random, new int[numberOfParticipants]);
-    int roll = diceBag.roll(20);
+    DiceBag d20 = new DiceBag(random, new int[] {20});
+    int roll = 0;
+    for (int i = 0; i < numberOfParticipants; i++) {
+      roll += d20.roll();
+    }
 
     int threshold = 10 * numberOfParticipants;
-
     if (roll > threshold) {
       log.info(
           "Feud {} resolved with a roll of {} (threshold: {})", feud.getName(), roll, threshold);
