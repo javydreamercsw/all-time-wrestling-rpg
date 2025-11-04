@@ -170,7 +170,7 @@ class FactionListViewTest {
     List<Faction> factions = new ArrayList<>();
 
     // Create Evolution faction with members
-    Faction evolution = new Faction();
+    Faction evolution = Faction.builder().build();
     evolution.setId(1L);
     evolution.setName("Evolution");
     evolution.setDescription("A dominant faction in WWE");
@@ -186,7 +186,7 @@ class FactionListViewTest {
     evolution.setMembers(evolutionMembers);
 
     // Create DX faction with members
-    Faction dx = new Faction();
+    Faction dx = Faction.builder().build();
     dx.setId(2L);
     dx.setName("D-Generation X");
     dx.setDescription("Rebellious faction");

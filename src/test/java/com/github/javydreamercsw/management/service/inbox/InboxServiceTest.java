@@ -71,8 +71,22 @@ class InboxServiceTest {
 
     // When
     inboxService.handleChampionshipChangeEvent(event);
+    verify(inboxItemRepository, times(1)).save(any(InboxItem.class));
+  }
+
+  @Test
+  void testDeleteSelected() {
+    // Given
+    InboxItem item1 = new InboxItem();
+    item1.setId(1L);
+    InboxItem item2 = new InboxItem();
+    item2.setId(2L);
+    List<InboxItem> items = List.of(item1, item2);
+
+    // When
+    inboxService.deleteSelected(items);
 
     // Then
-    verify(inboxItemRepository, times(1)).save(any(InboxItem.class));
+    verify(inboxItemRepository, times(1)).deleteAll(items);
   }
 }

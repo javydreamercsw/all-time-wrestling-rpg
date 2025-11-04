@@ -121,7 +121,7 @@ public class FactionService {
       return Optional.empty();
     }
 
-    Faction faction = new Faction();
+    Faction faction = Faction.builder().build();
     faction.setName(name);
     faction.setDescription(description);
     faction.setIsActive(true);

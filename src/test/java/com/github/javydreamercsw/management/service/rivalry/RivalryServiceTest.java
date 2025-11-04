@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.rivalry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,6 +12,7 @@ import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.HeatChangeEvent;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
@@ -335,6 +337,37 @@ class RivalryServiceTest {
 
     // Then
     assertThat(result).isTrue();
+  }
+
+  @Test
+  @DisplayName("Should publish HeatChangeEvent with wrestlers")
+  void shouldPublishHeatChangeEventWithWrestlers() {
+    // Given
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 5);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class))).thenReturn(rivalry);
+
+    // When
+    rivalryService.addHeat(1L, 3, "Backstage confrontation");
+
+    // Then
+    verify(eventPublisher)
+        .publishEvent(
+            argThat(
+                event ->
+                    event instanceof HeatChangeEvent
+                        && ((HeatChangeEvent) event).getSource() == rivalryService
+                        && ((HeatChangeEvent) event).getRivalryId() == rivalry.getId()
+                        && ((HeatChangeEvent) event).getOldHeat() == 5
+                        && ((HeatChangeEvent) event).getReason().equals("Backstage confrontation")
+                        && ((HeatChangeEvent) event)
+                            .getWrestlers()
+                            .containsAll(List.of(wrestler1, wrestler2))
+                        && List.of(wrestler1, wrestler2)
+                            .containsAll(((HeatChangeEvent) event).getWrestlers())));
   }
 
   private Wrestler createWrestler(@NonNull String name, @NonNull Long id) {

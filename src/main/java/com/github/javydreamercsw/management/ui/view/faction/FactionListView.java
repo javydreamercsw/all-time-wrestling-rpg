@@ -261,7 +261,7 @@ public class FactionListView extends Main {
   }
 
   private void openCreateDialog() {
-    editingFaction = new Faction();
+    editingFaction = Faction.builder().build();
     editingFaction.setIsActive(true); // Default to active
     editDialog.setHeaderTitle("Create Faction");
     binder.readBean(editingFaction);

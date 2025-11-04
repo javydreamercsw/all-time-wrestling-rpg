@@ -176,7 +176,12 @@ public class InboxService {
     inboxItemRepository.saveAll(items);
   }
 
-  public List<InboxItem> search(String filterText, String readStatus, String eventType) {
+  public void deleteSelected(Collection<InboxItem> items) {
+    inboxItemRepository.deleteAll(items);
+  }
+
+  public List<InboxItem> search(
+      String filterText, String readStatus, String eventType, boolean hideRead) {
     Specification<InboxItem> spec =
         (root, query, cb) -> {
           List<Predicate> predicates = new ArrayList<>();
@@ -186,7 +191,9 @@ public class InboxService {
                 cb.like(cb.lower(root.get("description")), "%" + filterText.toLowerCase() + "%"));
           }
 
-          if (readStatus != null && !readStatus.equals("All")) {
+          if (hideRead) {
+            predicates.add(cb.isFalse(root.get("isRead")));
+          } else if (readStatus != null && !readStatus.equals("All")) {
             boolean isRead = readStatus.equals("Read");
             predicates.add(cb.equal(root.get("isRead"), isRead));
           }

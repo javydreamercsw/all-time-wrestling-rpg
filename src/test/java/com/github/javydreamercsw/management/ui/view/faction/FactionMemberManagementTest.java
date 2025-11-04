@@ -131,7 +131,7 @@ class FactionMemberManagementTest {
   @DisplayName("Should handle empty member list")
   void shouldHandleEmptyMemberList() {
     // Given - Faction with no members
-    Faction emptyFaction = new Faction();
+    Faction emptyFaction = Faction.builder().build();
     emptyFaction.setId(99L);
     emptyFaction.setName("Empty Faction");
     emptyFaction.setIsActive(true);
@@ -235,7 +235,7 @@ class FactionMemberManagementTest {
 
   /** Helper method to create test faction with members. */
   private Faction createTestFactionWithMembers() {
-    Faction faction = new Faction();
+    Faction faction = Faction.builder().build();
     faction.setId(1L);
     faction.setName("Test Faction");
     faction.setDescription("A faction for testing member management");

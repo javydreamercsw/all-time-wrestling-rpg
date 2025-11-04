@@ -35,6 +35,8 @@ public class InboxView extends VerticalLayout {
   private final Checkbox selectAllCheckbox = new Checkbox("Select All");
   private final Button markSelectedReadButton = new Button("Mark Selected as Read");
   private final Button markSelectedUnreadButton = new Button("Mark Selected as Unread");
+  private final Checkbox hideReadCheckbox = new Checkbox("Hide Read");
+  private final Button deleteSelectedButton = new Button("Delete Selected");
   private final Set<InboxItem> selectedItems = new HashSet<>();
 
   public InboxView(InboxService inboxService) {
@@ -63,6 +65,8 @@ public class InboxView extends VerticalLayout {
     readStatusFilter.setValue("All");
     readStatusFilter.addValueChangeListener(e -> updateList());
 
+    hideReadCheckbox.addValueChangeListener(e -> updateList());
+
     eventTypeFilter.setItems(
         "All",
         "Rivalry Heat Change",
@@ -87,9 +91,10 @@ public class InboxView extends VerticalLayout {
 
     markSelectedReadButton.addClickListener(
         event -> {
+          int selectedCount = selectedItems.size();
           inboxService.markSelectedAsRead(selectedItems);
           updateList();
-          Notification.show(selectedItems.size() + " items marked as read.");
+          Notification.show(selectedCount + " items marked as read.");
           selectedItems.clear();
           grid.deselectAll();
           selectAllCheckbox.setValue(false);
@@ -98,9 +103,22 @@ public class InboxView extends VerticalLayout {
 
     markSelectedUnreadButton.addClickListener(
         event -> {
+          int selectedCount = selectedItems.size();
           inboxService.markSelectedAsUnread(selectedItems);
           updateList();
-          Notification.show(selectedItems.size() + " items marked as unread.");
+          Notification.show(selectedCount + " items marked as unread.");
+          selectedItems.clear();
+          grid.deselectAll();
+          selectAllCheckbox.setValue(false);
+          updateSelectedButtonsState();
+        });
+
+    deleteSelectedButton.addClickListener(
+        event -> {
+          int selectedCount = selectedItems.size();
+          inboxService.deleteSelected(selectedItems);
+          updateList();
+          Notification.show(selectedCount + " items deleted.");
           selectedItems.clear();
           grid.deselectAll();
           selectAllCheckbox.setValue(false);
@@ -114,9 +132,11 @@ public class InboxView extends VerticalLayout {
             filterText,
             readStatusFilter,
             eventTypeFilter,
+            hideReadCheckbox,
             selectAllCheckbox,
             markSelectedReadButton,
-            markSelectedUnreadButton);
+            markSelectedUnreadButton,
+            deleteSelectedButton);
     toolbar.addClassName("toolbar");
     return toolbar;
   }
@@ -125,6 +145,7 @@ public class InboxView extends VerticalLayout {
     boolean hasSelection = !selectedItems.isEmpty();
     markSelectedReadButton.setEnabled(hasSelection);
     markSelectedUnreadButton.setEnabled(hasSelection);
+    deleteSelectedButton.setEnabled(hasSelection);
     selectAllCheckbox.setValue(
         selectedItems.size() == grid.getDataProvider().size(new Query<>())
             && grid.getDataProvider().size(new Query<>()) > 0);
@@ -133,7 +154,7 @@ public class InboxView extends VerticalLayout {
   private void configureGrid() {
     grid.addClassName("inbox-grid");
     grid.setSizeFull();
-    grid.setColumns("eventType", "description", "eventTimestamp", "read");
+    grid.setColumns("eventType", "description", "eventTimestamp");
     grid.addComponentColumn(item -> createReadToggleButton(item)).setHeader("Mark as Read/Unread");
     grid.getColumns().forEach(col -> col.setAutoWidth(true));
     grid.setSelectionMode(Grid.SelectionMode.MULTI);
@@ -146,11 +167,7 @@ public class InboxView extends VerticalLayout {
               updateSelectedButtonsState();
             });
 
-    grid.asSingleSelect()
-        .addValueChangeListener(
-            event -> {
-              showDetails(event.getValue());
-            });
+    grid.addItemClickListener(event -> showDetails(event.getItem()));
   }
 
   private void showDetails(InboxItem item) {
@@ -174,6 +191,9 @@ public class InboxView extends VerticalLayout {
   private void updateList() {
     grid.setItems(
         inboxService.search(
-            filterText.getValue(), readStatusFilter.getValue(), eventTypeFilter.getValue()));
+            filterText.getValue(),
+            readStatusFilter.getValue(),
+            eventTypeFilter.getValue(),
+            hideReadCheckbox.getValue()));
   }
 }

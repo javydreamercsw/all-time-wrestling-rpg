@@ -78,7 +78,13 @@ public class RivalryService {
               rivalry.addHeat(heatGain, reason);
               Rivalry savedRivalry = rivalryRepository.saveAndFlush(rivalry);
               // Publish event
-              eventPublisher.publishEvent(new HeatChangeEvent(this, savedRivalry, oldHeat, reason));
+              eventPublisher.publishEvent(
+                  new HeatChangeEvent(
+                      this,
+                      savedRivalry,
+                      oldHeat,
+                      reason,
+                      List.of(rivalry.getWrestler1(), rivalry.getWrestler2())));
               return savedRivalry;
             });
   }

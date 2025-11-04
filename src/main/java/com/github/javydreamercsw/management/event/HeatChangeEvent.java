@@ -1,6 +1,8 @@
 package com.github.javydreamercsw.management.event;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.util.List;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
@@ -11,12 +13,15 @@ public class HeatChangeEvent extends ApplicationEvent {
   private final int oldHeat;
   private final int newHeat;
   private final String reason;
+  private final List<Wrestler> wrestlers;
 
-  public HeatChangeEvent(Object source, Rivalry rivalry, int oldHeat, String reason) {
+  public HeatChangeEvent(
+      Object source, Rivalry rivalry, int oldHeat, String reason, List<Wrestler> wrestlers) {
     super(source);
     this.rivalryId = rivalry.getId();
     this.oldHeat = oldHeat;
     this.newHeat = rivalry.getHeat();
     this.reason = reason;
+    this.wrestlers = wrestlers;
   }
 }

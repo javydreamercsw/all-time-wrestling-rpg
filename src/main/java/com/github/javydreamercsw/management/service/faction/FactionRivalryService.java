@@ -10,6 +10,8 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -122,7 +124,7 @@ public class FactionRivalryService {
   public Optional<FactionRivalry> addHeat(Long rivalryId, int heatGain, String reason) {
     return factionRivalryRepository
         .findById(rivalryId)
-        .filter(rivalry -> rivalry.getIsActive())
+        .filter(FactionRivalry::getIsActive)
         .map(
             rivalry -> {
               // Apply alignment heat multiplier
@@ -142,7 +144,15 @@ public class FactionRivalryService {
                   reason);
 
               eventPublisher.publishEvent(
-                  new FactionHeatChangeEvent(this, savedRivalry, oldHeat, reason));
+                  new FactionHeatChangeEvent(
+                      this,
+                      savedRivalry,
+                      oldHeat,
+                      reason,
+                      Stream.concat(
+                              rivalry.getFaction1().getMembers().stream(),
+                              rivalry.getFaction2().getMembers().stream())
+                          .collect(Collectors.toList())));
 
               return savedRivalry;
             });
@@ -318,11 +328,7 @@ public class FactionRivalryService {
     }
 
     // Both factions must have at least one member
-    if (faction1.getMemberCount() == 0 || faction2.getMemberCount() == 0) {
-      return false;
-    }
-
-    return true;
+    return faction1.getMemberCount() != 0 && faction2.getMemberCount() != 0;
   }
 
   /** Get total wrestlers involved in faction rivalries. */

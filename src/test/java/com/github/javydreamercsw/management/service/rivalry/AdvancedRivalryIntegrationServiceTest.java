@@ -184,7 +184,7 @@ class AdvancedRivalryIntegrationServiceTest {
   }
 
   private Faction createFaction(String name, Long id) {
-    Faction faction = new Faction();
+    Faction faction = Faction.builder().build();
     faction.setId(id);
     faction.setName(name);
     faction.setIsActive(true);

@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.service.feud;
 
+import com.github.javydreamercsw.management.domain.feud.FeudParticipant;
 import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
@@ -10,6 +11,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -185,7 +187,14 @@ public class MultiWrestlerFeudService {
                   reason);
 
               eventPublisher.publishEvent(
-                  new FeudHeatChangeEvent(this, savedFeud, oldHeat, reason));
+                  new FeudHeatChangeEvent(
+                      this,
+                      savedFeud,
+                      oldHeat,
+                      reason,
+                      savedFeud.getParticipants().stream()
+                          .map(FeudParticipant::getWrestler)
+                          .collect(Collectors.toList())));
 
               return savedFeud;
             });

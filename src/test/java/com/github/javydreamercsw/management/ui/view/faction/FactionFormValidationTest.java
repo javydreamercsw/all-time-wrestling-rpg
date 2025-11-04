@@ -49,7 +49,7 @@ class FactionFormValidationTest {
   @DisplayName("Should validate required name field")
   void shouldValidateRequiredNameField() {
     // Given - Create a faction with empty name
-    Faction testFaction = new Faction();
+    Faction testFaction = Faction.builder().build();
     testFaction.setName(""); // Empty name should fail validation
 
     // When/Then - This would be tested in a real UI test environment
@@ -64,7 +64,7 @@ class FactionFormValidationTest {
   @DisplayName("Should accept valid faction data")
   void shouldAcceptValidFactionData() {
     // Given - Create a valid faction
-    Faction validFaction = new Faction();
+    Faction validFaction = Faction.builder().build();
     validFaction.setName("Valid Faction");
     validFaction.setDescription("A valid test faction");
     validFaction.setIsActive(true);
@@ -79,7 +79,7 @@ class FactionFormValidationTest {
   @DisplayName("Should handle date field validation")
   void shouldHandleDateFieldValidation() {
     // Given - Create faction with dates
-    Faction factionWithDates = new Faction();
+    Faction factionWithDates = Faction.builder().build();
     factionWithDates.setName("Date Test Faction");
     factionWithDates.setFormedDate(
         LocalDate.of(2020, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC));
@@ -96,7 +96,7 @@ class FactionFormValidationTest {
   @DisplayName("Should handle leader selection validation")
   void shouldHandleLeaderSelectionValidation() {
     // Given - Create faction with leader
-    Faction factionWithLeader = new Faction();
+    Faction factionWithLeader = Faction.builder().build();
     factionWithLeader.setName("Leader Test Faction");
     factionWithLeader.setLeader(testWrestlers.get(0));
 
@@ -109,7 +109,7 @@ class FactionFormValidationTest {
   @DisplayName("Should validate description length limits")
   void shouldValidateDescriptionLengthLimits() {
     // Given - Create faction with long description
-    Faction factionWithLongDesc = new Faction();
+    Faction factionWithLongDesc = Faction.builder().build();
     factionWithLongDesc.setName("Description Test");
 
     // Create a description that's exactly at the limit (1000 characters)
@@ -129,7 +129,7 @@ class FactionFormValidationTest {
   @DisplayName("Should validate name length limits")
   void shouldValidateNameLengthLimits() {
     // Given - Create faction with long name
-    Faction factionWithLongName = new Faction();
+    Faction factionWithLongName = Faction.builder().build();
 
     // Create a name that's exactly at the limit (255 characters)
     String maxName = "A".repeat(255);
@@ -148,7 +148,7 @@ class FactionFormValidationTest {
   @DisplayName("Should handle faction status logic")
   void shouldHandleFactionStatusLogic() {
     // Given - Active faction (no disbanded date)
-    Faction activeFaction = new Faction();
+    Faction activeFaction = Faction.builder().build();
     activeFaction.setName("Active Faction");
     activeFaction.setIsActive(true);
     activeFaction.setFormedDate(Instant.now().minusSeconds(365 * 24 * 60 * 60)); // 1 year ago
@@ -158,7 +158,7 @@ class FactionFormValidationTest {
     assertNull(activeFaction.getDisbandedDate());
 
     // Given - Disbanded faction (has disbanded date)
-    Faction disbandedFaction = new Faction();
+    Faction disbandedFaction = Faction.builder().build();
     disbandedFaction.setName("Disbanded Faction");
     disbandedFaction.setIsActive(false);
     disbandedFaction.setFormedDate(Instant.now().minusSeconds(365 * 24 * 60 * 60)); // 1 year ago

@@ -26,7 +26,7 @@ class FactionRepositoryTest {
 
   @BeforeEach
   void setUp() {
-    testFaction = new Faction();
+    testFaction = Faction.builder().build();
     testFaction.setName("Test Faction");
     testFaction.setDescription("A test faction for unit tests");
     testFaction.setIsActive(true);
@@ -103,13 +103,13 @@ class FactionRepositoryTest {
   @DisplayName("Should handle faction with external ID but no name conflicts")
   void shouldHandleFactionWithExternalIdButNoNameConflicts() {
     // Given
-    Faction faction1 = new Faction();
+    Faction faction1 = Faction.builder().build();
     faction1.setName("Faction One");
     faction1.setIsActive(true);
     faction1.setCreationDate(Instant.now());
     faction1.setExternalId("external-id-1");
 
-    Faction faction2 = new Faction();
+    Faction faction2 = Faction.builder().build();
     faction2.setName("Faction Two");
     faction2.setIsActive(true);
     faction2.setCreationDate(Instant.now());
