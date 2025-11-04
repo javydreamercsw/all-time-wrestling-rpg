@@ -1,8 +1,11 @@
 package com.github.javydreamercsw.management.service.match;
 
+import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
+import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
@@ -20,18 +23,29 @@ public class SegmentAdjudicationService {
 
   private final RivalryService rivalryService;
   private final WrestlerService wrestlerService;
+  private final FeudResolutionService feudResolutionService;
+  private final MultiWrestlerFeudService feudService;
   private final Random random;
 
   @Autowired
   public SegmentAdjudicationService(
-      WrestlerService wrestlerService, RivalryService rivalryService) {
-    this(rivalryService, wrestlerService, new Random());
+      WrestlerService wrestlerService,
+      RivalryService rivalryService,
+      FeudResolutionService feudResolutionService,
+      MultiWrestlerFeudService feudService) {
+    this(rivalryService, wrestlerService, feudResolutionService, feudService, new Random());
   }
 
   public SegmentAdjudicationService(
-      RivalryService rivalryService, WrestlerService wrestlerService, Random random) {
+      RivalryService rivalryService,
+      WrestlerService wrestlerService,
+      FeudResolutionService feudResolutionService,
+      MultiWrestlerFeudService feudService,
+      Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
+    this.feudResolutionService = feudResolutionService;
+    this.feudService = feudService;
     this.random = random;
   }
 
@@ -144,6 +158,17 @@ public class SegmentAdjudicationService {
               participants.get(j).getId(),
               heat,
               "From segment: " + segment.getSegmentType().getName());
+        }
+      }
+    }
+
+    // Attempt to resolve feuds after PLE matches
+    if (segment.getShow().getType().getName().equals("Premium Live Event (PLE)")) {
+      log.info("Attempting to resolve feuds after PLE match: {}", segment.getShow().getName());
+      for (Wrestler wrestler : segment.getWrestlers()) {
+        List<MultiWrestlerFeud> feuds = feudService.getActiveFeudsForWrestler(wrestler.getId());
+        for (MultiWrestlerFeud feud : feuds) {
+          feudResolutionService.attemptFeudResolution(feud);
         }
       }
     }

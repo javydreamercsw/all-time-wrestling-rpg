@@ -5,9 +5,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
+import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -25,6 +29,8 @@ class SegmentAdjudicationServiceUnitTest {
 
   @Mock private RivalryService rivalryService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private FeudResolutionService feudResolutionService;
+  @Mock private MultiWrestlerFeudService feudService;
 
   @Mock private Random random;
 
@@ -37,6 +43,10 @@ class SegmentAdjudicationServiceUnitTest {
 
   @BeforeEach
   void setUp() {
+    adjudicationService =
+        new SegmentAdjudicationService(
+            rivalryService, wrestlerService, feudResolutionService, feudService, random);
+
     wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Wrestler 1");
@@ -59,6 +69,13 @@ class SegmentAdjudicationServiceUnitTest {
     matchSegment.setSegmentType(matchType);
     matchSegment.addParticipant(wrestler1);
     matchSegment.addParticipant(wrestler2);
+
+    Show show = new Show();
+    ShowType showType = new ShowType();
+    showType.setName("Weekly Show");
+    show.setType(showType);
+    promoSegment.setShow(show);
+    matchSegment.setShow(show);
   }
 
   @Test
