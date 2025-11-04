@@ -21,27 +21,41 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 /** Unit tests for TitleService. Tests the ATW RPG championship management functionality. */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("TitleService Tests")
 class TitleServiceTest {
   @Mock private TitleRepository titleRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private Clock clock;
+  @Mock private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private TitleService titleService;
 
   private final Instant fixedInstant = Instant.parse("2024-01-01T00:00:00Z");
+
+  @BeforeEach
+  void setUp() {
+    MockitoAnnotations.openMocks(this);
+    Mockito.lenient().doNothing().when(eventPublisher).publishEvent(any());
+  }
 
   @Test
   @DisplayName("Should create new title")
@@ -154,13 +168,22 @@ class TitleServiceTest {
 
   @Test
   void testAwardTitleTo() {
+
     Title title = mock(Title.class);
+
     Wrestler wrestler = mock(Wrestler.class);
+
     doNothing().when(title).awardTitleTo(anyList(), any());
+
     when(titleRepository.saveAndFlush(title)).thenReturn(title);
+
     titleService.awardTitleTo(title, List.of(wrestler));
+
     verify(title, times(1)).awardTitleTo(anyList(), any());
+
     verify(titleRepository, times(1)).saveAndFlush(title);
+
+    verify(eventPublisher, times(1)).publishEvent(any());
   }
 
   @Test
@@ -195,6 +218,7 @@ class TitleServiceTest {
     assertThat(title.getCurrentChampions()).containsExactly(wrestler);
     assertThat(title.isVacant()).isFalse();
     verify(titleRepository).saveAndFlush(title);
+    verify(eventPublisher, times(1)).publishEvent(any());
   }
 
   @Test

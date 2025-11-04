@@ -35,7 +35,7 @@ class TeamServiceTest extends ManagementIntegrationTest {
     wrestler2 = wrestlerRepository.save(createTestWrestler("Wrestler 2"));
     wrestler3 = wrestlerRepository.save(createTestWrestler("Wrestler 3"));
 
-    faction = new Faction();
+    faction = Faction.builder().build();
     faction.setName("Test Faction");
     faction = factionRepository.save(faction);
   }

@@ -6,6 +6,8 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
+import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -13,6 +15,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class TitleService {
+  @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired private TitleRepository titleRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
@@ -80,8 +84,17 @@ public class TitleService {
   }
 
   public void awardTitleTo(@NonNull Title title, @NonNull List<Wrestler> newChampions) {
-    title.awardTitleTo(newChampions, Instant.now(clock));
-    titleRepository.saveAndFlush(title);
+    List<Wrestler> oldChampions = title.getCurrentChampions();
+    if (oldChampions.equals(newChampions)) {
+      // Champions defended the title
+      eventPublisher.publishEvent(new ChampionshipDefendedEvent(this, title, newChampions));
+    } else {
+      // New champion(s)
+      title.awardTitleTo(newChampions, Instant.now(clock));
+      titleRepository.saveAndFlush(title);
+      eventPublisher.publishEvent(
+          new ChampionshipChangeEvent(this, title, newChampions, oldChampions));
+    }
   }
 
   /** Vacate a title. */

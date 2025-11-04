@@ -24,7 +24,7 @@ class SegmentSerializationTest {
   @Test
   void testSegmentSerialization() throws Exception {
     // Given
-    Faction faction = new Faction();
+    Faction faction = Faction.builder().build();
     faction.setName("Test Faction");
 
     Title title = new Title();

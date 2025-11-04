@@ -79,7 +79,7 @@ class FactionErrorHandlingTest {
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 
-    Faction factionToSave = new Faction();
+    Faction factionToSave = Faction.builder().build();
     factionToSave.setName("Test Faction");
 
     when(factionService.save(any(Faction.class)))
@@ -103,7 +103,7 @@ class FactionErrorHandlingTest {
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 
-    Faction factionToDelete = new Faction();
+    Faction factionToDelete = Faction.builder().build();
     factionToDelete.setId(1L);
     factionToDelete.setName("Faction to Delete");
 
@@ -154,11 +154,11 @@ class FactionErrorHandlingTest {
     factionListView = new FactionListView(factionService, wrestlerService);
 
     // Test various invalid faction scenarios
-    Faction invalidFaction1 = new Faction(); // No name, no alignment
-    Faction invalidFaction2 = new Faction();
+    Faction invalidFaction1 = Faction.builder().build(); // No name, no alignment
+    Faction invalidFaction2 = Faction.builder().build(); // No name
     invalidFaction2.setName(""); // Empty name
 
-    Faction invalidFaction3 = new Faction();
+    Faction invalidFaction3 = Faction.builder().build(); // No alignment
     invalidFaction3.setName("Valid Name");
 
     // When/Then - These should be caught by validation
@@ -179,9 +179,7 @@ class FactionErrorHandlingTest {
     // Given
     when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
-    factionListView = new FactionListView(factionService, wrestlerService);
-
-    Faction faction = new Faction();
+    Faction faction = Faction.builder().build();
     faction.setId(1L);
     faction.setName("Concurrent Test Faction");
 
@@ -254,7 +252,7 @@ class FactionErrorHandlingTest {
 
     // Create 1000 factions and wrestlers
     for (int i = 0; i < 1000; i++) {
-      Faction faction = new Faction();
+      Faction faction = Faction.builder().build();
       faction.setId((long) i);
       faction.setName("Faction " + i);
       faction.setIsActive(i % 2 == 0);
@@ -305,7 +303,7 @@ class FactionErrorHandlingTest {
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
     factionListView = new FactionListView(factionService, wrestlerService);
 
-    Faction restrictedFaction = new Faction();
+    Faction restrictedFaction = Faction.builder().build();
     restrictedFaction.setId(1L);
     restrictedFaction.setName("Restricted Faction");
 
@@ -331,7 +329,7 @@ class FactionErrorHandlingTest {
     factionListView = new FactionListView(factionService, wrestlerService);
 
     // Test faction with name too long
-    Faction factionWithLongName = new Faction();
+    Faction factionWithLongName = Faction.builder().build();
     factionWithLongName.setName("A".repeat(300)); // Exceeds 255 character limit
 
     when(factionService.save(factionWithLongName))

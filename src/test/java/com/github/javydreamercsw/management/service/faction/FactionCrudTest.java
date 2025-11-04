@@ -41,13 +41,13 @@ class FactionCrudTest {
   @DisplayName("Should create new faction through service")
   void shouldCreateNewFactionThroughService() {
     // Given
-    Faction newFaction = new Faction();
+    Faction newFaction = Faction.builder().build();
     newFaction.setName("New Test Faction");
     newFaction.setDescription("A newly created faction");
     newFaction.setIsActive(true);
     newFaction.setCreationDate(Instant.now());
 
-    Faction savedFaction = new Faction();
+    Faction savedFaction = Faction.builder().build();
     savedFaction.setId(99L);
     savedFaction.setName(newFaction.getName());
     savedFaction.setDescription(newFaction.getDescription());
@@ -148,7 +148,7 @@ class FactionCrudTest {
   @DisplayName("Should handle service errors gracefully")
   void shouldHandleServiceErrorsGracefully() {
     // Given
-    Faction factionWithError = new Faction();
+    Faction factionWithError = Faction.builder().build();
     factionWithError.setName("Error Faction");
 
     when(factionService.save(any(Faction.class)))
@@ -172,7 +172,7 @@ class FactionCrudTest {
 
     // When - Simulate data refresh after operation
     List<Faction> updatedFactions = new ArrayList<>(testFactions);
-    Faction newFaction = new Faction();
+    Faction newFaction = Faction.builder().build();
     newFaction.setId(99L);
     newFaction.setName("Newly Added Faction");
     updatedFactions.add(newFaction);
@@ -192,7 +192,7 @@ class FactionCrudTest {
   @DisplayName("Should validate faction data before save operations")
   void shouldValidateFactionDataBeforeSaveOperations() {
     // Given - Invalid faction (no name)
-    Faction invalidFaction = new Faction();
+    Faction invalidFaction = Faction.builder().build();
     // Name is null/empty - should be invalid
 
     // When/Then - In a real scenario, validation would prevent this from reaching the service
@@ -238,12 +238,12 @@ class FactionCrudTest {
 
   private List<Faction> createTestFactions() {
     List<Faction> factions = new ArrayList<>();
-    Faction faction1 = new Faction();
+    Faction faction1 = Faction.builder().build();
     faction1.setId(1L);
     faction1.setName("Faction 1");
     factions.add(faction1);
 
-    Faction faction2 = new Faction();
+    Faction faction2 = Faction.builder().build();
     faction2.setId(2L);
     faction2.setName("Faction 2");
     factions.add(faction2);

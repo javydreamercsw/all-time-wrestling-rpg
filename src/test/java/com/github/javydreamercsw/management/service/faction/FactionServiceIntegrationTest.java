@@ -34,7 +34,7 @@ class FactionServiceIntegrationTest extends AbstractIntegrationTest {
     testWrestler2 = wrestlerService.createWrestler("The Rock", true, null);
 
     // Create test faction
-    testFaction = new Faction();
+    testFaction = Faction.builder().build();
     testFaction.setName("Test Faction");
     testFaction.setDescription("Test faction description");
     testFaction.setLeader(testWrestler1);

@@ -5,6 +5,7 @@ import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.HeatChangeEvent;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
@@ -13,6 +14,7 @@ import java.util.Optional;
 import java.util.Random;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class RivalryService {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private Clock clock;
   @Autowired private Random random;
+  @Autowired private ApplicationEventPublisher eventPublisher;
 
   /** Create a new rivalry between two wrestlers. */
   public Optional<Rivalry> createRivalry(
@@ -71,8 +74,18 @@ public class RivalryService {
         .filter(Rivalry::getIsActive)
         .map(
             rivalry -> {
+              int oldHeat = rivalry.getHeat();
               rivalry.addHeat(heatGain, reason);
-              return rivalryRepository.saveAndFlush(rivalry);
+              Rivalry savedRivalry = rivalryRepository.saveAndFlush(rivalry);
+              // Publish event
+              eventPublisher.publishEvent(
+                  new HeatChangeEvent(
+                      this,
+                      savedRivalry,
+                      oldHeat,
+                      reason,
+                      List.of(rivalry.getWrestler1(), rivalry.getWrestler2())));
+              return savedRivalry;
             });
   }
 

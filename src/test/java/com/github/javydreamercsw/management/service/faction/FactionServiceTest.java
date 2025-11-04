@@ -38,7 +38,7 @@ class FactionServiceTest {
   @BeforeEach
   void setUp() {
     // Create test faction
-    testFaction = new Faction();
+    testFaction = Faction.builder().build();
     testFaction.setId(1L);
     testFaction.setName("Test Faction");
     testFaction.setDescription("A test faction");

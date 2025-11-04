@@ -34,7 +34,7 @@ class TeamTest {
     wrestler2.setTier(WrestlerTier.MAIN_EVENTER);
 
     // Create test faction
-    faction = new Faction();
+    faction = Faction.builder().build();
     faction.setId(1L);
     faction.setName("Test Faction");
     faction.setLeader(wrestler1);

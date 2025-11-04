@@ -239,7 +239,10 @@ public class FactionSyncService extends BaseSyncService {
           faction = factionRepository.findByExternalId(dto.getExternalId()).orElse(null);
         }
         if (faction == null) {
-          faction = factionRepository.findByName(dto.getName()).orElseGet(Faction::new);
+          faction =
+              factionRepository
+                  .findByName(dto.getName())
+                  .orElseGet(() -> Faction.builder().build());
         }
 
         // Update faction properties

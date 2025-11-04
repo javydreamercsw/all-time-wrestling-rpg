@@ -62,7 +62,7 @@ class FactionSyncTest {
     testFactionDTO.setExternalId("notion-evolution-id");
 
     // Create test faction entity
-    testFaction = new Faction();
+    testFaction = Faction.builder().build();
     testFaction.setId(1L);
     testFaction.setName("Evolution");
     testFaction.setDescription("A dominant faction in WWE");

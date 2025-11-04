@@ -4,14 +4,18 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
+import com.github.javydreamercsw.management.event.FactionHeatChangeEvent;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,6 +34,7 @@ public class FactionRivalryService {
   private final FactionRivalryRepository factionRivalryRepository;
   private final FactionRepository factionRepository;
   private final Clock clock;
+  private final ApplicationEventPublisher eventPublisher;
   private final Random random = new Random();
 
   /** Get all faction rivalries with pagination. */
@@ -119,13 +124,14 @@ public class FactionRivalryService {
   public Optional<FactionRivalry> addHeat(Long rivalryId, int heatGain, String reason) {
     return factionRivalryRepository
         .findById(rivalryId)
-        .filter(rivalry -> rivalry.getIsActive())
+        .filter(FactionRivalry::getIsActive)
         .map(
             rivalry -> {
               // Apply alignment heat multiplier
               double multiplier = rivalry.getIntensityHeatMultiplier();
               int adjustedHeatGain = (int) Math.round(heatGain * multiplier);
 
+              int oldHeat = rivalry.getHeat();
               rivalry.addHeat(adjustedHeatGain, reason);
 
               FactionRivalry savedRivalry = factionRivalryRepository.saveAndFlush(rivalry);
@@ -136,6 +142,17 @@ public class FactionRivalryService {
                   rivalry.getDisplayName(),
                   rivalry.getHeat(),
                   reason);
+
+              eventPublisher.publishEvent(
+                  new FactionHeatChangeEvent(
+                      this,
+                      savedRivalry,
+                      oldHeat,
+                      reason,
+                      Stream.concat(
+                              rivalry.getFaction1().getMembers().stream(),
+                              rivalry.getFaction2().getMembers().stream())
+                          .collect(Collectors.toList())));
 
               return savedRivalry;
             });
@@ -311,11 +328,7 @@ public class FactionRivalryService {
     }
 
     // Both factions must have at least one member
-    if (faction1.getMemberCount() == 0 || faction2.getMemberCount() == 0) {
-      return false;
-    }
-
-    return true;
+    return faction1.getMemberCount() != 0 && faction2.getMemberCount() != 0;
   }
 
   /** Get total wrestlers involved in faction rivalries. */

@@ -11,18 +11,22 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a faction (stable) of wrestlers in the ATW RPG system. Factions can have rivalries
  * with other factions and participate in multi-wrestler feuds.
  */
+@Data
 @Entity
-@Table(name = "faction", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
-@Getter
-@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "faction")
 public class Faction extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,6 +46,7 @@ public class Faction extends AbstractEntity<Long> {
   private Wrestler leader;
 
   @Column(name = "is_active", nullable = false)
+  @Builder.Default
   private Boolean isActive = true;
 
   @Column(name = "formed_date", nullable = false)
@@ -51,7 +56,7 @@ public class Faction extends AbstractEntity<Long> {
   private Instant disbandedDate;
 
   @Column(name = "creation_date", nullable = false)
-  private Instant creationDate;
+  private Instant creationDate = Instant.now();
 
   @Column(name = "external_id")
   private String externalId; // External system ID (e.g., Notion page ID)
@@ -59,21 +64,25 @@ public class Faction extends AbstractEntity<Long> {
   // Faction members
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction", "rivalries", "injuries", "deck", "titleReigns"})
+  @Builder.Default
   private List<Wrestler> members = new ArrayList<>();
 
   // Teams associated with this faction
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction", "wrestler1", "wrestler2"})
+  @Builder.Default
   private List<Team> teams = new ArrayList<>();
 
   // Faction rivalries where this faction is faction1
   @OneToMany(mappedBy = "faction1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction1", "faction2"})
+  @Builder.Default
   private List<FactionRivalry> rivalriesAsFaction1 = new ArrayList<>();
 
   // Faction rivalries where this faction is faction2
   @OneToMany(mappedBy = "faction2", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction1", "faction2"})
+  @Builder.Default
   private List<FactionRivalry> rivalriesAsFaction2 = new ArrayList<>();
 
   @Override

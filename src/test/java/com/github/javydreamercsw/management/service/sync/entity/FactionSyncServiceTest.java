@@ -119,7 +119,7 @@ class FactionSyncServiceTest {
   void syncFactions_WhenDuplicateFactionsExist_ShouldUpdateExisting() {
     // Given
     List<FactionPage> mockPages = createMockFactionPages();
-    Faction existingFaction = new Faction();
+    Faction existingFaction = Faction.builder().build();
     existingFaction.setId(1L);
     existingFaction.setName("The Shield");
 

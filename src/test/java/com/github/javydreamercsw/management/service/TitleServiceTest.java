@@ -17,12 +17,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class TitleServiceTest {
 
   @Mock private TitleRepository titleRepository;
   @Mock private Clock clock;
+  @Mock private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private TitleService titleService;
 
