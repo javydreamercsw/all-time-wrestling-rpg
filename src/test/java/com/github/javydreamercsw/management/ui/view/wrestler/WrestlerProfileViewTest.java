@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
-import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -18,8 +18,8 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
-import com.github.javydreamercsw.management.service.segment.rule.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -89,17 +90,17 @@ class WrestlerProfileViewTest extends AbstractE2ETest {
     wrestler2.setFans(1000L);
     wrestler2 = wrestlerService.save(wrestler2);
 
-    Rivalry rivalry = new Rivalry();
-    rivalry.setWrestler1(wrestler1);
-    rivalry.setWrestler2(wrestler2);
-    rivalry.setHeat(100);
-    rivalryService.save(rivalry);
+    Assertions.assertNotNull(wrestler1.getId());
+    Assertions.assertNotNull(wrestler2.getId());
+    rivalryService.createRivalry(wrestler1.getId(), wrestler2.getId(), "Test Rivalry");
 
-    MultiWrestlerFeud feud = new MultiWrestlerFeud();
-    feud.setName("Test Feud");
-    feud.setHeat(200);
-    feud.getWrestlers().add(wrestler1);
-    multiWrestlerFeudService.save(feud);
+    MultiWrestlerFeud feud =
+        multiWrestlerFeudService
+            .createFeud("Test Feud", "Test Feud Description", "Test Feud Storyline")
+            .get();
+    Assertions.assertNotNull(feud.getId());
+    multiWrestlerFeudService.addHeat(feud.getId(), 200, "Initial Heat");
+    multiWrestlerFeudService.addParticipant(feud.getId(), wrestler1.getId(), FeudRole.PROTAGONIST);
 
     // When
     driver.get("http://localhost:" + serverPort + "/wrestler-profile/" + wrestler1.getId());
