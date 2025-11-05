@@ -200,6 +200,9 @@ public class WrestlerListView extends Main {
               Button editButton = new Button("Edit");
               editButton.addClickListener(
                   e -> {
+                    if (wrestlerGrid.getEditor().isOpen()) {
+                      wrestlerGrid.getEditor().cancel();
+                    }
                     wrestlerGrid.getEditor().editItem(wrestler);
                   });
               return editButton;

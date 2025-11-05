@@ -7,6 +7,9 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -27,6 +30,8 @@ class NarrationDialogTest {
 
   private NarrationDialog narrationDialog;
 
+  private Segment segment;
+
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
@@ -46,21 +51,21 @@ class NarrationDialogTest {
     segment1.setShow(show);
     segment1.setSegmentType(segmentType);
 
-    Segment segment2 = new Segment();
-    segment2.setId(2L);
-    segment2.setSegmentOrder(2);
-    segment2.setShow(show);
-    segment2.setSegmentType(segmentType);
+    segment = new Segment();
+    segment.setId(2L);
+    segment.setSegmentOrder(2);
+    segment.setShow(show);
+    segment.setSegmentType(segmentType);
 
     List<Segment> segments = new ArrayList<>();
     segments.add(segment1);
-    segments.add(segment2);
+    segments.add(segment);
 
     when(showService.getSegments(show)).thenReturn(segments);
 
     narrationDialog =
         new NarrationDialog(
-            segment2, npcService, wrestlerService, titleService, showService, segment -> {});
+            segment, npcService, wrestlerService, titleService, showService, s -> {});
   }
 
   @Test
@@ -76,5 +81,28 @@ class NarrationDialogTest {
         context.getPreviousSegments().get(0);
     assertEquals("Segment 1 Narration", previousSegmentContext.getNarration());
     assertEquals("Segment 1 Summary", previousSegmentContext.getDeterminedOutcome());
+  }
+
+  @Test
+  void testBuildSegmentContext_withChampionshipTitle() {
+    // Given
+    Title title = new Title();
+    title.setName("World Championship");
+    title.setTier(WrestlerTier.MAIN_EVENTER);
+    Wrestler champion = new Wrestler();
+    champion.setName("John Cena");
+    title.getChampion().add(champion);
+    segment.getTitles().add(title);
+
+    // When
+    SegmentNarrationService.SegmentNarrationContext context = narrationDialog.buildSegmentContext();
+
+    // Then
+    assertNotNull(context.getTitles());
+    assertEquals(1, context.getTitles().size());
+    SegmentNarrationService.TitleContext titleContext = context.getTitles().get(0);
+    assertEquals("World Championship", titleContext.getName());
+    assertEquals("John Cena", titleContext.getCurrentHolderName());
+    assertEquals("MAIN_EVENTER", titleContext.getTier());
   }
 }

@@ -252,6 +252,19 @@ public class NarrationDialog extends Dialog {
               .map(Title::getName)
               .collect(java.util.stream.Collectors.joining(" and "));
       context.setSegmentChampionship(championshipNames);
+
+      List<SegmentNarrationService.TitleContext> titleContexts = new ArrayList<>();
+      for (Title title : segment.getTitles()) {
+        SegmentNarrationService.TitleContext titleContext =
+            new SegmentNarrationService.TitleContext();
+        titleContext.setName(title.getName());
+        if (!title.getCurrentChampions().isEmpty()) {
+          titleContext.setCurrentHolderName(title.getCurrentChampions().get(0).getName());
+        }
+        titleContext.setTier(title.getTier().name());
+        titleContexts.add(titleContext);
+      }
+      context.setTitles(titleContexts);
     }
 
     context.setWrestlers(buildWrestlerContexts());
