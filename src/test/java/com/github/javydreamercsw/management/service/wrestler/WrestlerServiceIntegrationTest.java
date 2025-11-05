@@ -7,6 +7,7 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
@@ -15,6 +16,7 @@ import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.time.Instant;
 import java.util.List;
@@ -25,13 +27,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-class WrestlerServiceTest extends ManagementIntegrationTest {
+class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private SegmentService segmentService;
   @Autowired private TitleService titleService;
   @Autowired private ShowService showService;
   @Autowired private SeasonService seasonService;
   @Autowired private SegmentTypeService segmentTypeService;
+  @Autowired private ShowTypeService showTypeService;
 
   @Test
   @DisplayName("Should get wrestler stats")
@@ -45,7 +48,10 @@ class WrestlerServiceTest extends ManagementIntegrationTest {
 
     // Create a season and show for context
     Season season = seasonService.createSeason("Test Season", "Test Season", 5);
-    Show show = showService.createShow("Test Show", "Test Show", season.getId(), null, null, null);
+    ShowType showType = showTypeService.createOrUpdateShowType("Weekly", "Weekly Show");
+    Show show =
+        showService.createShow(
+            "Test Show", "Test Show", showType.getId(), null, season.getId(), null);
 
     // Create some segments
     SegmentType matchType = segmentTypeService.findByName("One on One").get();
@@ -78,6 +84,7 @@ class WrestlerServiceTest extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should create wrestler with ATW RPG defaults")
+  @Transactional
   void shouldCreateWrestlerWithAtwRpgDefaults() {
     // When
     Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, "Test description");
@@ -97,6 +104,7 @@ class WrestlerServiceTest extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should award fans and persist tier changes")
+  @Transactional
   void shouldAwardFansAndPersistTierChanges() {
     // Given
     Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
@@ -120,6 +128,7 @@ class WrestlerServiceTest extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should handle bump system with persistence")
+  @Transactional
   void shouldHandleBumpSystemWithPersistence() {
     // Given
     Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
@@ -142,6 +151,7 @@ class WrestlerServiceTest extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should spend fans and update tier")
+  @Transactional
   void shouldSpendFansAndUpdateTier() {
     // Given
     Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
@@ -163,6 +173,7 @@ class WrestlerServiceTest extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should filter wrestlers by eligibility")
+  @Transactional
   void shouldFilterWrestlersByEligibility() {
     int initialEligibleRookieWrestlers =
         wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE).size();
@@ -201,6 +212,7 @@ class WrestlerServiceTest extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should filter wrestlers by tier")
+  @Transactional
   void shouldFilterWrestlersByTier() {
     // Given
     wrestlerService.createWrestler("Rookie 1", true, null);
@@ -231,6 +243,7 @@ class WrestlerServiceTest extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should filter wrestlers by player status")
+  @Transactional
   void shouldFilterWrestlersByPlayerStatus() {
     int initialSize = wrestlerService.getPlayerWrestlers().size();
     // Given
@@ -252,6 +265,7 @@ class WrestlerServiceTest extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should maintain data integrity across complex operations")
+  @Transactional
   void shouldMaintainDataIntegrityAcrossComplexOperations() {
     // Given
     Wrestler wrestler =

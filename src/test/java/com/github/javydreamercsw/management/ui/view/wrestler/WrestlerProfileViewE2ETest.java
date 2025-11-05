@@ -36,7 +36,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
-class WrestlerProfileViewTest extends AbstractE2ETest {
+class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
   @Autowired private WrestlerService wrestlerService;
   @Autowired private RivalryService rivalryService;
