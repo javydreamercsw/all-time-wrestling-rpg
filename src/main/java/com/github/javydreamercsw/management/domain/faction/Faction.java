@@ -14,6 +14,7 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
@@ -26,6 +27,7 @@ import org.jspecify.annotations.Nullable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @Table(name = "faction")
 public class Faction extends AbstractEntity<Long> {
   @Id
@@ -64,6 +66,7 @@ public class Faction extends AbstractEntity<Long> {
   // Faction members
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction", "rivalries", "injuries", "deck", "titleReigns"})
+  @Builder.Default
   @Builder.Default
   private List<Wrestler> members = new ArrayList<>();
 

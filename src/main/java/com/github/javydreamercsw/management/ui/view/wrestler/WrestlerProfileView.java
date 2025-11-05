@@ -5,6 +5,7 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
@@ -33,6 +34,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -60,9 +62,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout statsLayout = new VerticalLayout();
   private final VerticalLayout biographyLayout = new VerticalLayout();
   private final VerticalLayout careerHighlightsLayout = new VerticalLayout();
-  private final VerticalLayout upcomingMatchesLayout = new VerticalLayout();
+  private final VerticalLayout recentMatchesLayout = new VerticalLayout();
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
-  private final Grid<Segment> upcomingMatchesGrid = new Grid<>(Segment.class);
+  private final Grid<Segment> recentMatchesGrid = new Grid<>(Segment.class);
 
   @Autowired
   public WrestlerProfileView(
@@ -105,9 +107,36 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     seasonFilter.setValue(
         seasons.isEmpty() ? null : seasons.get(seasons.size() - 1)); // Default to latest season
 
-    upcomingMatchesGrid.addColumn(Segment::getSegmentDate).setHeader("Date");
-    upcomingMatchesGrid.addColumn(segment -> segment.getSegmentType().getName()).setHeader("Type");
-    upcomingMatchesGrid.addColumn(segment -> segment.getShow().getName()).setHeader("Show");
+    recentMatchesGrid.removeAllColumns();
+    recentMatchesGrid.addColumn(segment -> segment.getShow().getName()).setHeader("Show");
+    recentMatchesGrid.addColumn(segment -> segment.getSegmentType().getName()).setHeader("Type");
+    recentMatchesGrid
+        .addColumn(
+            segment ->
+                segment.getSegmentRules().stream()
+                    .map(SegmentRule::getName)
+                    .collect(Collectors.joining(", ")))
+        .setHeader("Rules");
+    recentMatchesGrid
+        .addColumn(
+            segment ->
+                segment.getWrestlers().stream()
+                    .map(Wrestler::getName)
+                    .collect(Collectors.joining(", ")))
+        .setHeader("Participants");
+    recentMatchesGrid.addColumn(Segment::getSummary).setHeader("Summary");
+    recentMatchesGrid
+        .addColumn(
+            segment ->
+                segment.getWinners().stream()
+                    .map(Wrestler::getName)
+                    .collect(Collectors.joining(", ")))
+        .setHeader("Winners");
+    recentMatchesGrid
+        .addColumn(
+            segment ->
+                segment.getTitles().stream().map(Title::getName).collect(Collectors.joining(", ")))
+        .setHeader("Championships");
 
     add(
         wrestlerName,
@@ -116,7 +145,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         biographyLayout,
         careerHighlightsLayout,
         seasonFilter,
-        upcomingMatchesLayout,
+        recentMatchesLayout,
         feudHistoryLayout);
   }
 
@@ -189,14 +218,14 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     }
 
     // Clear existing content
-    upcomingMatchesLayout.removeAll();
+    recentMatchesLayout.removeAll();
     feudHistoryLayout.removeAll();
 
     // Recent Matches
-    upcomingMatchesLayout.add(new H3("Recent Matches"));
-    upcomingMatchesLayout.add(upcomingMatchesGrid);
+    recentMatchesLayout.add(new H3("Recent Matches"));
+    recentMatchesLayout.add(recentMatchesGrid);
 
-    upcomingMatchesGrid.setDataProvider(
+    recentMatchesGrid.setDataProvider(
         DataProvider.fromCallbacks(
             query -> {
               Page<Segment> page =
