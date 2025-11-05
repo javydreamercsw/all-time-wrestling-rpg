@@ -11,11 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 /**
  * @author Javier Ortiz Bultron @date Oct 10, 2023
  */
 @Slf4j
+@ConditionalOnExpression(
+    "T(com.github.javydreamercsw.base.util.EnvironmentVariableUtil).isNotionTokenAvailable()")
 class ShowSyncIntegrationTest extends ManagementIntegrationTest {
   @Autowired private ShowRepository showRepository;
 

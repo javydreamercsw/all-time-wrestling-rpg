@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.domain.show.segment;
 
+import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
@@ -104,4 +105,16 @@ public interface SegmentRepository
   List<String> findAllExternalIds();
 
   List<Segment> findByShowOrderBySegmentOrderAsc(Show show);
+
+  @Query(
+      """
+      SELECT s FROM Segment s
+      JOIN s.participants p
+      JOIN s.show sh
+      JOIN sh.season se
+      WHERE p.wrestler = :wrestler AND se = :season
+      ORDER BY s.segmentDate DESC
+      """)
+  List<Segment> findByWrestlerParticipationAndSeason(
+      @Param("wrestler") Wrestler wrestler, @Param("season") Season season);
 }

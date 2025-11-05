@@ -9,8 +9,11 @@ import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +38,8 @@ public class WrestlerService {
   @Autowired private Clock clock;
   @Autowired private InjuryService injuryService;
   @Autowired private ApplicationEventPublisher eventPublisher;
+  @Autowired private SegmentService segmentService; // Autowire SegmentService
+  @Autowired private TitleService titleService; // Autowire TitleService
 
   public void createWrestler(@NonNull String name) {
     createWrestler(name, false, "");
@@ -230,5 +235,26 @@ public class WrestlerService {
 
   public List<WrestlerDTO> findAllAsDTO() {
     return findAll().stream().map(WrestlerDTO::new).toList();
+  }
+
+  /**
+   * Get statistics for a wrestler, including wins, losses, and titles held.
+   *
+   * @param wrestlerId The ID of the wrestler
+   * @return An Optional containing WrestlerStats if the wrestler is found, otherwise empty.
+   */
+  @Cacheable(value = WRESTLER_STATS_CACHE, key = "#wrestlerId")
+  public Optional<WrestlerStats> getWrestlerStats(@NonNull Long wrestlerId) {
+    return wrestlerRepository
+        .findById(wrestlerId)
+        .map(
+            wrestler -> {
+              long wins = segmentService.countWinsByWrestler(wrestler);
+              long totalSegments = segmentService.countSegmentsByWrestler(wrestler);
+              long losses = totalSegments - wins;
+              long titlesHeld = titleService.findTitlesByChampion(wrestler).size();
+
+              return new WrestlerStats(wins, losses, titlesHeld);
+            });
   }
 }

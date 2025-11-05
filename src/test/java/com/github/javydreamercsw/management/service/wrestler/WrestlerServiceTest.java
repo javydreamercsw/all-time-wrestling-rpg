@@ -3,15 +3,78 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleService;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 class WrestlerServiceTest extends ManagementIntegrationTest {
+
+  @Autowired private SegmentService segmentService;
+  @Autowired private TitleService titleService;
+  @Autowired private ShowService showService;
+  @Autowired private SeasonService seasonService;
+  @Autowired private SegmentTypeService segmentTypeService;
+
+  @Test
+  @DisplayName("Should get wrestler stats")
+  @Transactional
+  void shouldGetWrestlerStats() {
+    // Given
+    Wrestler wrestler = wrestlerService.createWrestler("Stat Test", true, null);
+    Assertions.assertNotNull(wrestler.getId());
+    // Retrieve the wrestler again to ensure it's a managed entity
+    wrestler = wrestlerService.findById(wrestler.getId()).orElseThrow();
+
+    // Create a season and show for context
+    Season season = seasonService.createSeason("Test Season", "Test Season", 5);
+    Show show = showService.createShow("Test Show", "Test Show", season.getId(), null, null, null);
+
+    // Create some segments
+    SegmentType matchType = segmentTypeService.findByName("One on One").get();
+    Segment winSegment = segmentService.createSegment(show, matchType, Instant.now());
+    winSegment.addParticipant(wrestler);
+    winSegment.setWinners(List.of(wrestler));
+    segmentService.updateSegment(winSegment);
+
+    Segment lossSegment = segmentService.createSegment(show, matchType, Instant.now());
+    lossSegment.addParticipant(wrestler);
+    Wrestler opponent = wrestlerService.createWrestler("Opponent", false, null);
+    lossSegment.addParticipant(opponent);
+    lossSegment.setWinners(List.of(opponent));
+    segmentService.updateSegment(lossSegment);
+
+    // Create a title and have the wrestler win it
+    Title title = titleService.createTitle("Test Title", "Test Title", WrestlerTier.ROOKIE);
+    titleService.awardTitleTo(title, List.of(wrestler));
+    wrestlerRepository.flush();
+
+    // When
+    Optional<WrestlerStats> stats = wrestlerService.getWrestlerStats(wrestler.getId());
+
+    // Then
+    assertThat(stats).isPresent();
+    assertThat(stats.get().getWins()).isEqualTo(1);
+    assertThat(stats.get().getLosses()).isEqualTo(1);
+    assertThat(stats.get().getTitlesHeld()).isEqualTo(1);
+  }
 
   @Test
   @DisplayName("Should create wrestler with ATW RPG defaults")
