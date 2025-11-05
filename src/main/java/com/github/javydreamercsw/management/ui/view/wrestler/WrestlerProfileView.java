@@ -32,6 +32,8 @@ import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -45,6 +47,24 @@ import org.springframework.data.domain.Sort;
 @PageTitle("Wrestler Profile")
 @PermitAll
 public class WrestlerProfileView extends Main implements BeforeEnterObserver {
+
+  private static class FeudHistoryItem {
+    private final String name;
+    private final int heat;
+
+    public FeudHistoryItem(String name, int heat) {
+      this.name = name;
+      this.heat = heat;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public int getHeat() {
+      return heat;
+    }
+  }
 
   private final WrestlerService wrestlerService;
   private final TitleService titleService;
@@ -245,26 +265,28 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         multiWrestlerFeudService.getActiveFeudsForWrestler(wrestler.getId());
     List<Rivalry> rivalries = rivalryService.getRivalriesForWrestler(wrestler.getId());
 
-    if (multiWrestlerFeuds.isEmpty() && rivalries.isEmpty()) {
-      feudHistoryLayout.add(new Paragraph("No active feuds or rivalries found."));
-    } else {
-      multiWrestlerFeuds.forEach(
-          feud -> {
-            feudHistoryLayout.add(
-                new Paragraph(
-                    String.format("Feud: %s (Heat: %d)", feud.getName(), feud.getHeat())));
-          });
-      rivalries.forEach(
-          rivalry -> {
-            feudHistoryLayout.add(
-                new Paragraph(
-                    String.format(
-                        "Rivalry with %s (Heat: %d)",
-                        (rivalry.getWrestler1().equals(wrestler)
+    List<FeudHistoryItem> feudHistoryItems = new ArrayList<>();
+    multiWrestlerFeuds.forEach(
+        feud ->
+            feudHistoryItems.add(new FeudHistoryItem("Feud: " + feud.getName(), feud.getHeat())));
+    rivalries.forEach(
+        rivalry ->
+            feudHistoryItems.add(
+                new FeudHistoryItem(
+                    "Rivalry with "
+                        + (rivalry.getWrestler1().equals(wrestler)
                             ? rivalry.getWrestler2().getName()
                             : rivalry.getWrestler1().getName()),
-                        rivalry.getHeat())));
-          });
+                    rivalry.getHeat())));
+
+    if (feudHistoryItems.isEmpty()) {
+      feudHistoryLayout.add(new Paragraph("No active feuds or rivalries found."));
+    } else {
+      feudHistoryItems.sort(Comparator.comparingInt(FeudHistoryItem::getHeat).reversed());
+      feudHistoryItems.forEach(
+          item ->
+              feudHistoryLayout.add(
+                  new Paragraph(String.format("%s (Heat: %d)", item.getName(), item.getHeat()))));
     }
   }
 }

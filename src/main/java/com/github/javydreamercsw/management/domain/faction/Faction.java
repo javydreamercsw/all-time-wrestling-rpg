@@ -58,6 +58,7 @@ public class Faction extends AbstractEntity<Long> {
   private Instant disbandedDate;
 
   @Column(name = "creation_date", nullable = false)
+  @Builder.Default
   private Instant creationDate = Instant.now();
 
   @Column(name = "external_id")
@@ -66,7 +67,6 @@ public class Faction extends AbstractEntity<Long> {
   // Faction members
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction", "rivalries", "injuries", "deck", "titleReigns"})
-  @Builder.Default
   @Builder.Default
   private List<Wrestler> members = new ArrayList<>();
 
