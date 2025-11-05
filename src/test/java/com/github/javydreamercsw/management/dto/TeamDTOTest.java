@@ -17,9 +17,6 @@ import org.junit.jupiter.api.Test;
 class TeamDTOTest {
 
   private Team team;
-  private Wrestler wrestler1;
-  private Wrestler wrestler2;
-  private Faction faction;
   private Instant formedDate;
 
   @BeforeEach
@@ -27,18 +24,18 @@ class TeamDTOTest {
     formedDate = Instant.now();
 
     // Create test wrestlers
-    wrestler1 = Wrestler.builder().build();
+    Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("John Cena");
     wrestler1.setTier(WrestlerTier.MAIN_EVENTER);
 
-    wrestler2 = Wrestler.builder().build();
+    Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("The Rock");
     wrestler2.setTier(WrestlerTier.MAIN_EVENTER);
 
     // Create test faction
-    faction = Faction.builder().build();
+    Faction faction = Faction.builder().build();
     faction.setId(1L);
     faction.setName("Test Faction");
     faction.setLeader(wrestler1);

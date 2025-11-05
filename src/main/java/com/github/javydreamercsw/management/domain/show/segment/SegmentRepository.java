@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.domain.show.segment;
 
+import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
@@ -22,9 +23,7 @@ public interface SegmentRepository
   @Query(
       """
       SELECT s FROM Segment s
-      LEFT JOIN FETCH s.show
-      LEFT JOIN FETCH s.participants p
-      LEFT JOIN FETCH p.wrestler
+      JOIN FETCH s.show
       WHERE s.show = :show
       ORDER BY s.segmentOrder ASC
       """)
@@ -32,13 +31,22 @@ public interface SegmentRepository
 
   /** Find all segments where a wrestler participated. */
   @Query(
-      """
-      SELECT s FROM Segment s
-      JOIN s.participants p
-      WHERE p.wrestler = :wrestler
-      ORDER BY s.segmentDate DESC
-      """)
-  List<Segment> findByWrestlerParticipation(@Param("wrestler") Wrestler wrestler);
+      value =
+          """
+          SELECT s FROM Segment s
+          JOIN FETCH s.show
+          JOIN s.participants p
+          WHERE p.wrestler = :wrestler
+          ORDER BY s.segmentDate DESC
+          """,
+      countQuery =
+          """
+          SELECT COUNT(s) FROM Segment s
+          JOIN s.participants p
+          WHERE p.wrestler = :wrestler
+          """)
+  Page<Segment> findByWrestlerParticipation(
+      @Param("wrestler") Wrestler wrestler, Pageable pageable);
 
   /** Find all segments won by a specific wrestler. */
   @Query(
@@ -93,6 +101,16 @@ public interface SegmentRepository
       """)
   long countSegmentsByWrestler(@Param("wrestler") Wrestler wrestler);
 
+  /** Count total match segments for a wrestler, excluding 'Promo' segments. */
+  @Query(
+      """
+      SELECT COUNT(s) FROM Segment s
+      JOIN s.participants p
+      WHERE p.wrestler = :wrestler
+      AND s.segmentType.name <> 'Promo'
+      """)
+  long countMatchSegmentsByWrestler(@Param("wrestler") Wrestler wrestler);
+
   /** Check if a segment result exists by external ID. */
   boolean existsByExternalId(String externalId);
 
@@ -104,4 +122,26 @@ public interface SegmentRepository
   List<String> findAllExternalIds();
 
   List<Segment> findByShowOrderBySegmentOrderAsc(Show show);
+
+  @Query(
+      """
+      SELECT s FROM Segment s
+      JOIN s.participants p
+      JOIN s.show sh
+      JOIN sh.season se
+      WHERE p.wrestler = :wrestler AND se = :season
+      ORDER BY s.segmentDate DESC
+      """)
+  List<Segment> findByWrestlerParticipationAndSeason(
+      @Param("wrestler") Wrestler wrestler, @Param("season") Season season);
+
+  @Query(
+      """
+      SELECT s FROM Segment s
+      JOIN FETCH s.show
+      JOIN s.participants p
+      WHERE p.wrestler = :wrestler
+      ORDER BY s.segmentDate DESC
+      """)
+  List<Segment> findByWrestlerParticipationWithShow(@Param("wrestler") Wrestler wrestler);
 }

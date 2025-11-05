@@ -41,6 +41,8 @@ public interface RivalryRepository
   @Query(
       """
       SELECT r FROM Rivalry r
+      JOIN FETCH r.wrestler1
+      JOIN FETCH r.wrestler2
       WHERE (r.wrestler1 = :wrestler OR r.wrestler2 = :wrestler)
       AND r.isActive = true
       """)

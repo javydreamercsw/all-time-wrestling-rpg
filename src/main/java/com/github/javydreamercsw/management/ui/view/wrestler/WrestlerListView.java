@@ -25,6 +25,8 @@ import com.vaadin.flow.data.converter.StringToIntegerConverter;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteParameters;
+import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.Clock;
@@ -181,6 +183,17 @@ public class WrestlerListView extends Main {
               return new HorizontalLayout(addFansButton, removeFansButton);
             })
         .setHeader("Fan Actions");
+    wrestlerGrid
+        .addComponentColumn(
+            wrestler -> {
+              RouterLink profileLink =
+                  new RouterLink(
+                      "View Profile",
+                      WrestlerProfileView.class,
+                      new RouteParameters("wrestlerId", String.valueOf(wrestler.getId())));
+              return profileLink;
+            })
+        .setHeader("Profile");
     wrestlerGrid
         .addComponentColumn(
             wrestler -> {

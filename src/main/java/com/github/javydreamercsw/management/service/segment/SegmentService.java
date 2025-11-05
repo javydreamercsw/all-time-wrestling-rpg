@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.service.segment;
 
+import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -16,19 +17,34 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class SegmentService {
+
+  private final SegmentRepository segmentRepository;
+  private final TitleRepository titleRepository;
+  private final WrestlerService wrestlerService;
+
+  @PersistenceContext private EntityManager entityManager;
+
+  @Autowired
+  public SegmentService(
+      SegmentRepository segmentRepository,
+      TitleRepository titleRepository,
+      @Lazy WrestlerService wrestlerService) {
+    this.segmentRepository = segmentRepository;
+    this.titleRepository = titleRepository;
+    this.wrestlerService = wrestlerService;
+  }
 
   /**
    * Converts a SegmentDTO to a Segment entity.
@@ -85,12 +101,6 @@ public class SegmentService {
     dto.setMainEvent(segment.isMainEvent());
     return dto;
   }
-
-  @Autowired private final SegmentRepository segmentRepository;
-  @Autowired private final TitleRepository titleRepository;
-  @Autowired private WrestlerService wrestlerService;
-
-  @PersistenceContext private EntityManager entityManager;
 
   /**
    * Creates a new match.
@@ -215,8 +225,9 @@ public class SegmentService {
    * @return List of Segment objects where the wrestler participated
    */
   @Transactional(readOnly = true)
-  public List<Segment> getSegmentsByWrestlerParticipation(@NonNull Wrestler wrestler) {
-    return segmentRepository.findByWrestlerParticipation(wrestler);
+  public Page<Segment> getSegmentsByWrestlerParticipation(
+      @NonNull Wrestler wrestler, @NonNull Pageable pageable) {
+    return segmentRepository.findByWrestlerParticipation(wrestler, pageable);
   }
 
   /**
@@ -264,6 +275,19 @@ public class SegmentService {
   }
 
   /**
+   * Gets all matches where a wrestler participated within a specific season.
+   *
+   * @param wrestler The wrestler to search for
+   * @param season The season to filter by
+   * @return List of Segment objects where the wrestler participated in the given season
+   */
+  @Transactional(readOnly = true)
+  public List<Segment> getSegmentsByWrestlerAndSeason(
+      @NonNull Wrestler wrestler, @NonNull Season season) {
+    return segmentRepository.findByWrestlerParticipationAndSeason(wrestler, season);
+  }
+
+  /**
    * Counts wins for a wrestler.
    *
    * @param wrestler The wrestler to count wins for
@@ -274,15 +298,12 @@ public class SegmentService {
     return segmentRepository.countWinsByWrestler(wrestler);
   }
 
-  /**
-   * Counts total matches for a wrestler.
-   *
-   * @param wrestler The wrestler to count matches for
-   * @return Total number of matches
-   */
-  @Transactional(readOnly = true)
-  public long countSegmentsByWrestler(@NonNull Wrestler wrestler) {
+  public long countSegmentsByWrestler(Wrestler wrestler) {
     return segmentRepository.countSegmentsByWrestler(wrestler);
+  }
+
+  public long countMatchSegmentsByWrestler(Wrestler wrestler) {
+    return segmentRepository.countMatchSegmentsByWrestler(wrestler);
   }
 
   /**
@@ -325,5 +346,16 @@ public class SegmentService {
   @Transactional(readOnly = true)
   public List<String> getAllExternalIds() {
     return segmentRepository.findAllExternalIds();
+  }
+
+  /**
+   * Gets all matches where a wrestler participated with the show eagerly fetched.
+   *
+   * @param wrestler The wrestler to search for
+   * @return List of Segment objects where the wrestler participated
+   */
+  @Transactional(readOnly = true)
+  public List<Segment> getSegmentsByWrestlerParticipationWithShow(@NonNull Wrestler wrestler) {
+    return segmentRepository.findByWrestlerParticipationWithShow(wrestler);
   }
 }

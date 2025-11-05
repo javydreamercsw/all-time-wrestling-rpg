@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -158,8 +159,9 @@ public class NPCSegmentController {
       }
 
       List<Segment> segments =
-          segmentRepository.findByWrestlerParticipation(wrestlerOpt.get()).stream()
-              .limit(limit)
+          segmentRepository
+              .findByWrestlerParticipation(wrestlerOpt.get(), PageRequest.of(0, limit))
+              .stream()
               .toList();
 
       long totalSegments = segmentRepository.countSegmentsByWrestler(wrestlerOpt.get());
