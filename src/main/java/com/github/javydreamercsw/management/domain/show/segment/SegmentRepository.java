@@ -23,6 +23,7 @@ public interface SegmentRepository
   @Query(
       """
       SELECT s FROM Segment s
+      JOIN FETCH s.show
       WHERE s.show = :show
       ORDER BY s.segmentOrder ASC
       """)

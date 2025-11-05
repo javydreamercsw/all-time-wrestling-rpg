@@ -480,6 +480,7 @@ public class ShowDetailView extends Main
 
     // Get segments for this show
     List<Segment> segments = segmentRepository.findByShow(show);
+    log.info("Found {} segments for show: {}", segments.size(), show.getName());
 
     VerticalLayout segmentsLayout = new VerticalLayout();
     segmentsLayout.setSpacing(false);
