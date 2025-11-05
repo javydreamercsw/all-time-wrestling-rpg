@@ -36,6 +36,7 @@ public interface SegmentRepository
       value =
           """
           SELECT s FROM Segment s
+          JOIN FETCH s.show
           JOIN s.participants p
           WHERE p.wrestler = :wrestler
           ORDER BY s.segmentDate DESC
