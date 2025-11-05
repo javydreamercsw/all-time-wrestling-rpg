@@ -225,8 +225,9 @@ public class SegmentService {
    * @return List of Segment objects where the wrestler participated
    */
   @Transactional(readOnly = true)
-  public List<Segment> getSegmentsByWrestlerParticipation(@NonNull Wrestler wrestler) {
-    return segmentRepository.findByWrestlerParticipation(wrestler);
+  public Page<Segment> getSegmentsByWrestlerParticipation(
+      @NonNull Wrestler wrestler, @NonNull Pageable pageable) {
+    return segmentRepository.findByWrestlerParticipation(wrestler, pageable);
   }
 
   /**
@@ -348,5 +349,16 @@ public class SegmentService {
   @Transactional(readOnly = true)
   public List<String> getAllExternalIds() {
     return segmentRepository.findAllExternalIds();
+  }
+
+  /**
+   * Gets all matches where a wrestler participated with the show eagerly fetched.
+   *
+   * @param wrestler The wrestler to search for
+   * @return List of Segment objects where the wrestler participated
+   */
+  @Transactional(readOnly = true)
+  public List<Segment> getSegmentsByWrestlerParticipationWithShow(@NonNull Wrestler wrestler) {
+    return segmentRepository.findByWrestlerParticipationWithShow(wrestler);
   }
 }

@@ -33,13 +33,21 @@ public interface SegmentRepository
 
   /** Find all segments where a wrestler participated. */
   @Query(
-      """
-      SELECT s FROM Segment s
-      JOIN s.participants p
-      WHERE p.wrestler = :wrestler
-      ORDER BY s.segmentDate DESC
-      """)
-  List<Segment> findByWrestlerParticipation(@Param("wrestler") Wrestler wrestler);
+      value =
+          """
+          SELECT s FROM Segment s
+          JOIN s.participants p
+          WHERE p.wrestler = :wrestler
+          ORDER BY s.segmentDate DESC
+          """,
+      countQuery =
+          """
+          SELECT COUNT(s) FROM Segment s
+          JOIN s.participants p
+          WHERE p.wrestler = :wrestler
+          """)
+  Page<Segment> findByWrestlerParticipation(
+      @Param("wrestler") Wrestler wrestler, Pageable pageable);
 
   /** Find all segments won by a specific wrestler. */
   @Query(
@@ -117,4 +125,14 @@ public interface SegmentRepository
       """)
   List<Segment> findByWrestlerParticipationAndSeason(
       @Param("wrestler") Wrestler wrestler, @Param("season") Season season);
+
+  @Query(
+      """
+      SELECT s FROM Segment s
+      JOIN FETCH s.show
+      JOIN s.participants p
+      WHERE p.wrestler = :wrestler
+      ORDER BY s.segmentDate DESC
+      """)
+  List<Segment> findByWrestlerParticipationWithShow(@Param("wrestler") Wrestler wrestler);
 }

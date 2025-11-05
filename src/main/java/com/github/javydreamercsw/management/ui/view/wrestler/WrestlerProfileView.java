@@ -16,11 +16,13 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
@@ -32,20 +34,23 @@ import jakarta.annotation.security.PermitAll;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Route("wrestler-profile/:wrestlerId?")
 @PageTitle("Wrestler Profile")
 @PermitAll
 public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
-  @Autowired private WrestlerService wrestlerService;
-  @Autowired private TitleService titleService;
-  @Autowired private SegmentService segmentService;
-  @Autowired private MultiWrestlerFeudService multiWrestlerFeudService;
-  @Autowired private RivalryService rivalryService;
-  @Autowired private ShowService showService;
-  @Autowired private SeasonService seasonService;
+  private final WrestlerService wrestlerService;
+  private final TitleService titleService;
+  private final SegmentService segmentService;
+  private final MultiWrestlerFeudService multiWrestlerFeudService;
+  private final RivalryService rivalryService;
+  private final ShowService showService;
+  private final SeasonService seasonService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -57,8 +62,25 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout careerHighlightsLayout = new VerticalLayout();
   private final VerticalLayout upcomingMatchesLayout = new VerticalLayout();
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
+  private final Grid<Segment> upcomingMatchesGrid = new Grid<>(Segment.class);
 
-  public WrestlerProfileView() {
+  @Autowired
+  public WrestlerProfileView(
+      WrestlerService wrestlerService,
+      TitleService titleService,
+      SegmentService segmentService,
+      MultiWrestlerFeudService multiWrestlerFeudService,
+      RivalryService rivalryService,
+      ShowService showService,
+      SeasonService seasonService) {
+    this.wrestlerService = wrestlerService;
+    this.titleService = titleService;
+    this.segmentService = segmentService;
+    this.multiWrestlerFeudService = multiWrestlerFeudService;
+    this.rivalryService = rivalryService;
+    this.showService = showService;
+    this.seasonService = seasonService;
+
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
@@ -82,6 +104,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         });
     seasonFilter.setValue(
         seasons.isEmpty() ? null : seasons.get(seasons.size() - 1)); // Default to latest season
+
+    upcomingMatchesGrid.addColumn(Segment::getSegmentDate).setHeader("Date");
+    upcomingMatchesGrid.addColumn(segment -> segment.getSegmentType().getName()).setHeader("Type");
+    upcomingMatchesGrid.addColumn(segment -> segment.getShow().getName()).setHeader("Show");
 
     add(
         wrestlerName,
@@ -168,29 +194,21 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
     // Recent Matches
     upcomingMatchesLayout.add(new H3("Recent Matches"));
-    List<Segment> recentMatches;
-    if (selectedSeason != null) {
-      recentMatches = segmentService.getSegmentsByWrestlerAndSeason(wrestler, selectedSeason);
-    } else {
-      recentMatches = segmentService.getSegmentsByWrestlerParticipation(wrestler);
-    }
+    upcomingMatchesLayout.add(upcomingMatchesGrid);
 
-    if (recentMatches.isEmpty()) {
-      upcomingMatchesLayout.add(new Paragraph("No recent matches found."));
-    } else {
-      recentMatches.stream()
-          .limit(10)
-          .forEach(
-              segment -> {
-                upcomingMatchesLayout.add(
-                    new Paragraph(
-                        String.format(
-                            "%s - %s (%s)",
-                            segment.getSegmentDate(),
-                            segment.getSegmentType().getName(),
-                            segment.getShow().getName())));
-              });
-    }
+    upcomingMatchesGrid.setDataProvider(
+        DataProvider.fromCallbacks(
+            query -> {
+              Page<Segment> page =
+                  segmentService.getSegmentsByWrestlerParticipation(
+                      wrestler,
+                      PageRequest.of(
+                          query.getPage(),
+                          query.getPageSize(),
+                          Sort.by("segmentDate").descending()));
+              return page.stream();
+            },
+            query -> (int) segmentService.countSegmentsByWrestler(wrestler)));
 
     // Feud History
     feudHistoryLayout.add(new H3("Feud History"));
