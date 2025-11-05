@@ -250,8 +250,8 @@ public class WrestlerService {
         .map(
             wrestler -> {
               long wins = segmentService.countWinsByWrestler(wrestler);
-              long totalSegments = segmentService.countSegmentsByWrestler(wrestler);
-              long losses = totalSegments - wins;
+              long totalMatchSegments = segmentService.countMatchSegmentsByWrestler(wrestler);
+              long losses = totalMatchSegments - wins;
               long titlesHeld = titleService.findTitlesByChampion(wrestler).size();
 
               return new WrestlerStats(wins, losses, titlesHeld);

@@ -298,15 +298,12 @@ public class SegmentService {
     return segmentRepository.countWinsByWrestler(wrestler);
   }
 
-  /**
-   * Counts total matches for a wrestler.
-   *
-   * @param wrestler The wrestler to count matches for
-   * @return Total number of matches
-   */
-  @Transactional(readOnly = true)
-  public long countSegmentsByWrestler(@NonNull Wrestler wrestler) {
+  public long countSegmentsByWrestler(Wrestler wrestler) {
     return segmentRepository.countSegmentsByWrestler(wrestler);
+  }
+
+  public long countMatchSegmentsByWrestler(Wrestler wrestler) {
+    return segmentRepository.countMatchSegmentsByWrestler(wrestler);
   }
 
   /**

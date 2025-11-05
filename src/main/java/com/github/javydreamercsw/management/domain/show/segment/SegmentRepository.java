@@ -103,6 +103,16 @@ public interface SegmentRepository
       """)
   long countSegmentsByWrestler(@Param("wrestler") Wrestler wrestler);
 
+  /** Count total match segments for a wrestler, excluding 'Promo' segments. */
+  @Query(
+      """
+      SELECT COUNT(s) FROM Segment s
+      JOIN s.participants p
+      WHERE p.wrestler = :wrestler
+      AND s.segmentType.name <> 'Promo'
+      """)
+  long countMatchSegmentsByWrestler(@Param("wrestler") Wrestler wrestler);
+
   /** Check if a segment result exists by external ID. */
   boolean existsByExternalId(String externalId);
 
