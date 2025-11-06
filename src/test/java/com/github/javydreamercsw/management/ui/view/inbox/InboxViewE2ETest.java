@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemRepository;
+import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -24,12 +24,12 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class InboxViewE2ETest extends AbstractE2ETest {
 
-  @Autowired private InboxItemRepository inboxItemRepository;
+  @Autowired private InboxRepository inboxRepository;
 
   @BeforeEach
   public void setUp() throws IOException {
     super.setup();
-    inboxItemRepository.deleteAll();
+    inboxRepository.deleteAll();
   }
 
   @Test
@@ -59,12 +59,12 @@ class InboxViewE2ETest extends AbstractE2ETest {
     InboxItem readItem = new InboxItem();
     readItem.setRead(true);
     readItem.setDescription("read");
-    inboxItemRepository.save(readItem);
+    inboxRepository.save(readItem);
 
     InboxItem unreadItem = new InboxItem();
     unreadItem.setRead(false);
     unreadItem.setDescription("unread");
-    inboxItemRepository.save(unreadItem);
+    inboxRepository.save(unreadItem);
 
     driver.get("http://localhost:" + serverPort + "/inbox");
 
@@ -89,11 +89,11 @@ class InboxViewE2ETest extends AbstractE2ETest {
     // Given
     InboxItem item1 = new InboxItem();
     item1.setDescription("item1");
-    inboxItemRepository.save(item1);
+    inboxRepository.save(item1);
 
     InboxItem item2 = new InboxItem();
     item2.setDescription("item2");
-    inboxItemRepository.save(item2);
+    inboxRepository.save(item2);
 
     driver.get("http://localhost:" + serverPort + "/inbox");
 
@@ -109,6 +109,6 @@ class InboxViewE2ETest extends AbstractE2ETest {
     deleteButton.click();
 
     // Then
-    assertEquals(1, inboxItemRepository.count());
+    assertEquals(1, inboxRepository.count());
   }
 }

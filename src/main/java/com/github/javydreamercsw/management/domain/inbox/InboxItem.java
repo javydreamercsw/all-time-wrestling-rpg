@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.domain.inbox;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,8 +21,8 @@ public class InboxItem extends AbstractEntity<Long> {
   @Column(name = "event_type", nullable = false)
   private String eventType;
 
-  @Column(name = "description", nullable = false, length = 1024)
-  private String description;
+  @Column(name = "description", nullable = false)
+  @Size(max = 1024) private String description;
 
   @Column(name = "event_timestamp", nullable = false)
   private Instant eventTimestamp;
@@ -29,8 +30,18 @@ public class InboxItem extends AbstractEntity<Long> {
   @Column(name = "is_read", nullable = false)
   private boolean isRead = false;
 
+  @Column(name = "reference_id")
+  private String referenceId;
+
   @Override
   public Long getId() {
     return id;
+  }
+
+  @PrePersist
+  protected void onCreate() {
+    if (eventTimestamp == null) {
+      eventTimestamp = Instant.now();
+    }
   }
 }
