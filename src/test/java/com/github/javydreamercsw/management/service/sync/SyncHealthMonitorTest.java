@@ -39,22 +39,23 @@ class SyncHealthMonitorTest {
 
     // Set up environment for valid configuration
     System.setProperty("NOTION_TOKEN", "test-token");
+    try {
+      healthMonitor.recordSuccess("Shows", 1000L, 5);
+      healthMonitor.recordSuccess("Wrestlers", 2000L, 10);
 
-    healthMonitor.recordSuccess("Shows", 1000L, 5);
-    healthMonitor.recordSuccess("Wrestlers", 2000L, 10);
+      // When
+      Health health = healthMonitor.health();
 
-    // When
-    Health health = healthMonitor.health();
-
-    // Then - The status might be DOWN due to missing NOTION_TOKEN in test environment
-    // Let's check that the health details are populated correctly regardless
-    assertThat(health.getDetails()).containsKey("successfulSyncs");
-    assertThat(health.getDetails()).containsKey("failedSyncs");
-    assertThat(health.getDetails()).containsKey("successRate");
-    assertThat(health.getDetails()).containsKey("averageSyncTime");
-
-    // Clean up
-    System.clearProperty("NOTION_TOKEN");
+      // Then - The status might be DOWN due to missing NOTION_TOKEN in test environment
+      // Let's check that the health details are populated correctly regardless
+      assertThat(health.getDetails()).containsKey("successfulSyncs");
+      assertThat(health.getDetails()).containsKey("failedSyncs");
+      assertThat(health.getDetails()).containsKey("successRate");
+      assertThat(health.getDetails()).containsKey("averageSyncTime");
+    } finally {
+      // Clean up
+      System.clearProperty("NOTION_TOKEN");
+    }
   }
 
   @Test

@@ -58,7 +58,10 @@ public abstract class BaseSyncService {
 
   // Enhanced sync infrastructure services - autowired
   @Autowired public SyncProgressTracker progressTracker;
-  @Autowired public SyncHealthMonitor healthMonitor;
+
+  @Autowired(required = false)
+  public SyncHealthMonitor healthMonitor; // Made optional in field injection
+
   @Autowired public RetryService retryService;
   @Autowired public CircuitBreakerService circuitBreakerService;
   @Autowired public SyncValidationService validationService;
@@ -70,6 +73,35 @@ public abstract class BaseSyncService {
       @NonNull ObjectMapper objectMapper, @NonNull NotionSyncProperties syncProperties) {
     this.objectMapper = objectMapper;
     this.syncProperties = syncProperties;
+    this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
+    this.notionHandler = NotionHandler.getInstance().orElse(null);
+  }
+
+  // Constructor injection for SyncHealthMonitor, made optional
+  @Autowired(required = false)
+  public BaseSyncService(
+      @NonNull ObjectMapper objectMapper,
+      @NonNull NotionSyncProperties syncProperties,
+      SyncHealthMonitor healthMonitor, // Made optional
+      SyncProgressTracker progressTracker,
+      RetryService retryService,
+      CircuitBreakerService circuitBreakerService,
+      SyncValidationService validationService,
+      SyncTransactionManager syncTransactionManager,
+      DataIntegrityChecker integrityChecker,
+      NotionRateLimitService rateLimitService,
+      EntitySyncConfiguration entitySyncConfig) {
+    this.objectMapper = objectMapper;
+    this.syncProperties = syncProperties;
+    this.healthMonitor = healthMonitor; // Assign optional healthMonitor
+    this.progressTracker = progressTracker;
+    this.retryService = retryService;
+    this.circuitBreakerService = circuitBreakerService;
+    this.validationService = validationService;
+    this.syncTransactionManager = syncTransactionManager;
+    this.integrityChecker = integrityChecker;
+    this.rateLimitService = rateLimitService;
+    this.entitySyncConfig = entitySyncConfig;
     this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
     this.notionHandler = NotionHandler.getInstance().orElse(null);
   }
