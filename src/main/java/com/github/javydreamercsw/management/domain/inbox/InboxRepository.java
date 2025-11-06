@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface InboxItemRepository
+public interface InboxRepository
     extends JpaRepository<InboxItem, Long>, JpaSpecificationExecutor<InboxItem> {}

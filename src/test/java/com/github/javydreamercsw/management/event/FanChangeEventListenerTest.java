@@ -30,6 +30,7 @@ class FanChangeEventListenerTest {
 
     // Create a mock event
     Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
     FanAwardedEvent event = new FanAwardedEvent(this, wrestler, 100L);
 

@@ -3,6 +3,8 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -12,6 +14,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -35,6 +38,8 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private SeasonService seasonService;
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private ShowTypeService showTypeService;
+  @Autowired private InboxService inboxService;
+  @Autowired private InboxRepository inboxRepository;
 
   @Test
   @DisplayName("Should get wrestler stats")
@@ -295,5 +300,24 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.RISER)).isTrue();
     assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.MIDCARDER)).isFalse();
     assertThat(finalWrestler.getDescription()).isEqualTo("Test wrestler for complex operations");
+  }
+
+  @Test
+  @DisplayName("Should create InboxItem on FanAwardedEvent")
+  @Transactional
+  void shouldCreateInboxItemOnFanAwardedEvent() {
+    // Given
+    Wrestler wrestler = wrestlerService.createWrestler("Inbox Test Wrestler", true, null);
+    Assertions.assertNotNull(wrestler.getId());
+    long initialInboxItemCount = inboxRepository.count();
+
+    // When
+    wrestlerService.awardFans(wrestler.getId(), 1000L);
+
+    // Then
+    assertThat(inboxRepository.count()).isEqualTo(initialInboxItemCount + 1);
+    InboxItem inboxItem = inboxRepository.findAll().get(0);
+    assertThat(inboxItem.getDescription()).contains("Inbox Test Wrestler gained 1000 fans");
+    assertThat(inboxItem.getReferenceId()).isEqualTo(wrestler.getId().toString());
   }
 }
