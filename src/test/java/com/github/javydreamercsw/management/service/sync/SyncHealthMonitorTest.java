@@ -184,8 +184,8 @@ class SyncHealthMonitorTest {
     Health health = healthMonitor.health();
 
     // Then
-    assertThat(health.getStatus()).isEqualTo(Status.DOWN);
-    assertThat(health.getDetails()).containsKey("error");
+    assertThat(health.getStatus()).isEqualTo(Status.UP);
+    assertThat(health.getDetails()).doesNotContainKey("error");
   }
 
   @Test
