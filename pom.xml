@@ -908,6 +908,9 @@
               <!-- Sequential execution for e2e tests -->
               <parallel>none</parallel>
               <threadCount>1</threadCount>
+              <includes>
+                <include>**/*E2ETest.java</include>
+              </includes>
               <systemPropertyVariables>
                 <server.port>9090</server.port>
               </systemPropertyVariables>
