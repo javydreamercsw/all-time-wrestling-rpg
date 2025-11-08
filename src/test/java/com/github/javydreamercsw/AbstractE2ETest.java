@@ -13,18 +13,28 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 
 @ExtendWith(UITestWatcher.class)
 @Slf4j
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
-  protected int serverPort;
+  protected static int serverPort;
+  private static final ConfigurableApplicationContext context;
+
+  static {
+    serverPort = Integer.parseInt(System.getProperty("server.port", "9090"));
+    String[] args = {
+      "--server.port=" + serverPort, "--spring.profiles.active=test",
+    };
+    context = SpringApplication.run(Application.class, args);
+    Runtime.getRuntime().addShutdownHook(new Thread(context::close));
+  }
 
   @BeforeEach
   public void setup() throws java.io.IOException {
-    serverPort = Integer.parseInt(System.getProperty("server.port", "9090"));
-
     WebDriverManager.chromedriver().setup();
     waitForAppToBeReady();
     ChromeOptions options = new ChromeOptions();

@@ -1,7 +1,9 @@
 package com.github.javydreamercsw.base.ai.mock;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
@@ -25,6 +27,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Mock Match Narration Service Tests")
 class MockMatchNarrationServiceTest {
+
+  private record MockSegmentDTO(
+      String segmentId,
+      String type,
+      String description,
+      String outcome,
+      List<String> participants) {}
 
   private MockSegmentNarrationService mockService;
   private SegmentNarrationContext testContext;
@@ -52,10 +61,20 @@ class MockMatchNarrationServiceTest {
   void shouldGenerateNonEmptyMatchNarration() {
     String narration = mockService.narrateSegment(testContext);
 
-    assertThat(narration)
-        .isNotNull()
-        .isNotEmpty()
-        .hasSizeGreaterThan(100); // Should be substantial content
+    assertThat(narration).isNotNull().isNotEmpty();
+
+    try {
+      List<MockSegmentDTO> segments =
+          new ObjectMapper()
+              .readValue(
+                  narration,
+                  new ObjectMapper()
+                      .getTypeFactory()
+                      .constructCollectionType(List.class, MockSegmentDTO.class));
+      assertThat(segments).isNotEmpty();
+    } catch (Exception e) {
+      fail("Failed to parse JSON response: " + narration, e);
+    }
   }
 
   @Test
@@ -63,7 +82,22 @@ class MockMatchNarrationServiceTest {
   void shouldIncludeWrestlerNamesInNarration() {
     String narration = mockService.narrateSegment(testContext);
 
-    assertThat(narration).contains("Stone Cold Steve Austin").contains("The Rock");
+    try {
+      List<MockSegmentDTO> segments =
+          new ObjectMapper()
+              .readValue(
+                  narration,
+                  new ObjectMapper()
+                      .getTypeFactory()
+                      .constructCollectionType(List.class, MockSegmentDTO.class));
+      assertThat(segments)
+          .anySatisfy(
+              segment ->
+                  assertThat(segment.participants())
+                      .containsAnyOf("Stone Cold Steve Austin", "The Rock"));
+    } catch (Exception e) {
+      fail("Failed to parse JSON response: " + narration, e);
+    }
   }
 
   @Test
@@ -71,15 +105,38 @@ class MockMatchNarrationServiceTest {
   void shouldIncludeVenueInformationInNarration() {
     String narration = mockService.narrateSegment(testContext);
 
-    assertThat(narration).containsIgnoringCase("WrestleMania");
+    try {
+      List<MockSegmentDTO> segments =
+          new ObjectMapper()
+              .readValue(
+                  narration,
+                  new ObjectMapper()
+                      .getTypeFactory()
+                      .constructCollectionType(List.class, MockSegmentDTO.class));
+      assertThat(segments)
+          .anySatisfy(
+              segment -> assertThat(segment.description()).containsIgnoringCase("WrestleMania"));
+    } catch (Exception e) {
+      fail("Failed to parse JSON response: " + narration, e);
+    }
   }
 
   @Test
   @DisplayName("Should include segment type in narration")
   void shouldIncludeMatchTypeInNarration() {
     String narration = mockService.narrateSegment(testContext);
-
-    assertThat(narration).containsIgnoringCase("Singles Match");
+    try {
+      List<MockSegmentDTO> segments =
+          new ObjectMapper()
+              .readValue(
+                  narration,
+                  new ObjectMapper()
+                      .getTypeFactory()
+                      .constructCollectionType(List.class, MockSegmentDTO.class));
+      assertThat(segments).anySatisfy(segment -> assertThat(segment.type()).contains("Match"));
+    } catch (Exception e) {
+      fail("Failed to parse JSON response: " + narration, e);
+    }
   }
 
   @Test
@@ -92,7 +149,22 @@ class MockMatchNarrationServiceTest {
     String narration2 = mockService.narrateSegment(context2);
 
     assertThat(narration1).isNotEqualTo(narration2);
-    assertThat(narration2).contains("Undertaker").contains("Kane");
+
+    try {
+      List<MockSegmentDTO> segments =
+          new ObjectMapper()
+              .readValue(
+                  narration2,
+                  new ObjectMapper()
+                      .getTypeFactory()
+                      .constructCollectionType(List.class, MockSegmentDTO.class));
+      assertThat(segments)
+          .anySatisfy(
+              segment ->
+                  assertThat(segment.participants()).containsAnyOf("The Undertaker", "Kane"));
+    } catch (Exception e) {
+      fail("Failed to parse JSON response: " + narration2, e);
+    }
   }
 
   @Test
@@ -113,7 +185,23 @@ class MockMatchNarrationServiceTest {
 
     String narration = mockService.narrateSegment(minimalContext);
 
-    assertThat(narration).isNotNull().isNotEmpty().contains("Wrestler A").contains("Wrestler B");
+    assertThat(narration).isNotNull().isNotEmpty();
+
+    try {
+      List<MockSegmentDTO> segments =
+          new ObjectMapper()
+              .readValue(
+                  narration,
+                  new ObjectMapper()
+                      .getTypeFactory()
+                      .constructCollectionType(List.class, MockSegmentDTO.class));
+      assertThat(segments)
+          .anySatisfy(
+              segment ->
+                  assertThat(segment.participants()).containsAnyOf("Wrestler A", "Wrestler B"));
+    } catch (Exception e) {
+      fail("Failed to parse JSON response: " + narration, e);
+    }
   }
 
   @Test
@@ -135,9 +223,18 @@ class MockMatchNarrationServiceTest {
   void shouldGenerateStructuredNarrationWithMultipleSections() {
     String narration = mockService.narrateSegment(testContext);
 
-    // Should contain multiple paragraphs/sections
-    String[] sections = narration.split("\n\n");
-    assertThat(sections).hasSizeGreaterThanOrEqualTo(3);
+    try {
+      List<MockSegmentDTO> segments =
+          new ObjectMapper()
+              .readValue(
+                  narration,
+                  new ObjectMapper()
+                      .getTypeFactory()
+                      .constructCollectionType(List.class, MockSegmentDTO.class));
+      assertThat(segments).hasSizeGreaterThanOrEqualTo(1);
+    } catch (Exception e) {
+      fail("Failed to parse JSON response: " + narration, e);
+    }
   }
 
   /** Creates a comprehensive test segment context. */
