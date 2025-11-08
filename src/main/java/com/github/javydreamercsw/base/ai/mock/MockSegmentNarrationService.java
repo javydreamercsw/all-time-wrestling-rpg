@@ -6,6 +6,8 @@ import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -112,27 +114,14 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
   private List<String> extractParticipants(String prompt) {
     List<String> participants = new ArrayList<>();
-    String wrestlersBlockSearchString = "\"wrestlers\" : [";
-    int wrestlersBlockStartIndex = prompt.indexOf(wrestlersBlockSearchString);
-    if (wrestlersBlockStartIndex != -1) {
-      int wrestlersBlockEndIndex = prompt.indexOf(']', wrestlersBlockStartIndex);
-      if (wrestlersBlockEndIndex != -1) {
-        String wrestlersBlock = prompt.substring(wrestlersBlockStartIndex, wrestlersBlockEndIndex);
-        String searchString = "\"name\" : \"";
-        int lastIndex = 0;
-        while (lastIndex != -1) {
-          lastIndex = wrestlersBlock.indexOf(searchString, lastIndex);
-          if (lastIndex != -1) {
-            int endIndex = wrestlersBlock.indexOf("\"", lastIndex + searchString.length());
-            if (endIndex != -1) {
-              participants.add(
-                  wrestlersBlock.substring(lastIndex + searchString.length(), endIndex));
-              lastIndex = endIndex;
-            } else {
-              break;
-            }
-          }
-        }
+    Pattern p = Pattern.compile("\"wrestlers\"\\s*:\\s*\\[(.*?)\\]", Pattern.DOTALL);
+    Matcher m = p.matcher(prompt);
+    if (m.find()) {
+      String wrestlersBlock = m.group(1);
+      p = Pattern.compile("\"name\"\\s*:\\s*\"(.*?)\"");
+      m = p.matcher(wrestlersBlock);
+      while (m.find()) {
+        participants.add(m.group(1));
       }
     }
 

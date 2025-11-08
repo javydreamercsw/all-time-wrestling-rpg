@@ -1,7 +1,6 @@
 package com.github.javydreamercsw.base.ai.mock;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
@@ -14,6 +13,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import java.util.Arrays;
 import java.util.List;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,89 +58,78 @@ class MockMatchNarrationServiceTest {
 
   @Test
   @DisplayName("Should generate non-empty segment narration")
+  @SneakyThrows
   void shouldGenerateNonEmptyMatchNarration() {
     String narration = mockService.narrateSegment(testContext);
 
     assertThat(narration).isNotNull().isNotEmpty();
 
-    try {
-      List<MockSegmentDTO> segments =
-          new ObjectMapper()
-              .readValue(
-                  narration,
-                  new ObjectMapper()
-                      .getTypeFactory()
-                      .constructCollectionType(List.class, MockSegmentDTO.class));
-      assertThat(segments).isNotEmpty();
-    } catch (Exception e) {
-      fail("Failed to parse JSON response: " + narration, e);
-    }
+    List<MockSegmentDTO> segments =
+        new ObjectMapper()
+            .readValue(
+                narration,
+                new ObjectMapper()
+                    .getTypeFactory()
+                    .constructCollectionType(List.class, MockSegmentDTO.class));
+    assertThat(segments).isNotEmpty();
   }
 
   @Test
   @DisplayName("Should include wrestler names in narration")
+  @SneakyThrows
   void shouldIncludeWrestlerNamesInNarration() {
     String narration = mockService.narrateSegment(testContext);
 
-    try {
-      List<MockSegmentDTO> segments =
-          new ObjectMapper()
-              .readValue(
-                  narration,
-                  new ObjectMapper()
-                      .getTypeFactory()
-                      .constructCollectionType(List.class, MockSegmentDTO.class));
-      assertThat(segments)
-          .anySatisfy(
-              segment ->
-                  assertThat(segment.participants())
-                      .containsAnyOf("Stone Cold Steve Austin", "The Rock"));
-    } catch (Exception e) {
-      fail("Failed to parse JSON response: " + narration, e);
-    }
+    List<MockSegmentDTO> segments =
+        new ObjectMapper()
+            .readValue(
+                narration,
+                new ObjectMapper()
+                    .getTypeFactory()
+                    .constructCollectionType(List.class, MockSegmentDTO.class));
+    assertThat(segments)
+        .anySatisfy(
+            segment ->
+                assertThat(segment.participants())
+                    .containsAnyOf("Stone Cold Steve Austin", "The Rock"));
   }
 
   @Test
   @DisplayName("Should include venue information in narration")
+  @SneakyThrows
   void shouldIncludeVenueInformationInNarration() {
     String narration = mockService.narrateSegment(testContext);
 
-    try {
-      List<MockSegmentDTO> segments =
-          new ObjectMapper()
-              .readValue(
-                  narration,
-                  new ObjectMapper()
-                      .getTypeFactory()
-                      .constructCollectionType(List.class, MockSegmentDTO.class));
-      assertThat(segments)
-          .anySatisfy(
-              segment -> assertThat(segment.description()).containsIgnoringCase("WrestleMania"));
-    } catch (Exception e) {
-      fail("Failed to parse JSON response: " + narration, e);
-    }
+    List<MockSegmentDTO> segments =
+        new ObjectMapper()
+            .readValue(
+                narration,
+                new ObjectMapper()
+                    .getTypeFactory()
+                    .constructCollectionType(List.class, MockSegmentDTO.class));
+    assertThat(segments)
+        .anySatisfy(
+            segment -> assertThat(segment.description()).containsIgnoringCase("WrestleMania"));
   }
 
   @Test
   @DisplayName("Should include segment type in narration")
+  @SneakyThrows
   void shouldIncludeMatchTypeInNarration() {
     String narration = mockService.narrateSegment(testContext);
-    try {
-      List<MockSegmentDTO> segments =
-          new ObjectMapper()
-              .readValue(
-                  narration,
-                  new ObjectMapper()
-                      .getTypeFactory()
-                      .constructCollectionType(List.class, MockSegmentDTO.class));
-      assertThat(segments).anySatisfy(segment -> assertThat(segment.type()).contains("Match"));
-    } catch (Exception e) {
-      fail("Failed to parse JSON response: " + narration, e);
-    }
+    List<MockSegmentDTO> segments =
+        new ObjectMapper()
+            .readValue(
+                narration,
+                new ObjectMapper()
+                    .getTypeFactory()
+                    .constructCollectionType(List.class, MockSegmentDTO.class));
+    assertThat(segments).anySatisfy(segment -> assertThat(segment.type()).contains("Match"));
   }
 
   @Test
   @DisplayName("Should generate different narrations for different contexts")
+  @SneakyThrows
   void shouldGenerateDifferentNarrationsForDifferentContexts() {
     SegmentNarrationContext context1 = createTestMatchContext();
     SegmentNarrationContext context2 = createAlternativeMatchContext();
@@ -150,25 +139,21 @@ class MockMatchNarrationServiceTest {
 
     assertThat(narration1).isNotEqualTo(narration2);
 
-    try {
-      List<MockSegmentDTO> segments =
-          new ObjectMapper()
-              .readValue(
-                  narration2,
-                  new ObjectMapper()
-                      .getTypeFactory()
-                      .constructCollectionType(List.class, MockSegmentDTO.class));
-      assertThat(segments)
-          .anySatisfy(
-              segment ->
-                  assertThat(segment.participants()).containsAnyOf("The Undertaker", "Kane"));
-    } catch (Exception e) {
-      fail("Failed to parse JSON response: " + narration2, e);
-    }
+    List<MockSegmentDTO> segments =
+        new ObjectMapper()
+            .readValue(
+                narration2,
+                new ObjectMapper()
+                    .getTypeFactory()
+                    .constructCollectionType(List.class, MockSegmentDTO.class));
+    assertThat(segments)
+        .anySatisfy(
+            segment -> assertThat(segment.participants()).containsAnyOf("The Undertaker", "Kane"));
   }
 
   @Test
   @DisplayName("Should handle minimal context gracefully")
+  @SneakyThrows
   void shouldHandleMinimalContextGracefully() {
     SegmentNarrationContext minimalContext = new SegmentNarrationContext();
 
@@ -187,21 +172,17 @@ class MockMatchNarrationServiceTest {
 
     assertThat(narration).isNotNull().isNotEmpty();
 
-    try {
-      List<MockSegmentDTO> segments =
-          new ObjectMapper()
-              .readValue(
-                  narration,
-                  new ObjectMapper()
-                      .getTypeFactory()
-                      .constructCollectionType(List.class, MockSegmentDTO.class));
-      assertThat(segments)
-          .anySatisfy(
-              segment ->
-                  assertThat(segment.participants()).containsAnyOf("Wrestler A", "Wrestler B"));
-    } catch (Exception e) {
-      fail("Failed to parse JSON response: " + narration, e);
-    }
+    List<MockSegmentDTO> segments =
+        new ObjectMapper()
+            .readValue(
+                narration,
+                new ObjectMapper()
+                    .getTypeFactory()
+                    .constructCollectionType(List.class, MockSegmentDTO.class));
+    assertThat(segments)
+        .anySatisfy(
+            segment ->
+                assertThat(segment.participants()).containsAnyOf("Wrestler A", "Wrestler B"));
   }
 
   @Test
@@ -220,21 +201,18 @@ class MockMatchNarrationServiceTest {
 
   @Test
   @DisplayName("Should generate structured narration with multiple sections")
+  @SneakyThrows
   void shouldGenerateStructuredNarrationWithMultipleSections() {
     String narration = mockService.narrateSegment(testContext);
 
-    try {
-      List<MockSegmentDTO> segments =
-          new ObjectMapper()
-              .readValue(
-                  narration,
-                  new ObjectMapper()
-                      .getTypeFactory()
-                      .constructCollectionType(List.class, MockSegmentDTO.class));
-      assertThat(segments).hasSizeGreaterThanOrEqualTo(1);
-    } catch (Exception e) {
-      fail("Failed to parse JSON response: " + narration, e);
-    }
+    List<MockSegmentDTO> segments =
+        new ObjectMapper()
+            .readValue(
+                narration,
+                new ObjectMapper()
+                    .getTypeFactory()
+                    .constructCollectionType(List.class, MockSegmentDTO.class));
+    assertThat(segments).hasSizeGreaterThanOrEqualTo(1);
   }
 
   /** Creates a comprehensive test segment context. */
