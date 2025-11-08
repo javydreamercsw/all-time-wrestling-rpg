@@ -114,7 +114,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
   private List<String> extractParticipants(String prompt) {
     List<String> participants = new ArrayList<>();
-    Pattern p = Pattern.compile("\"wrestlers\"\\s*:\\s*\\[(.*?)\\]", Pattern.DOTALL);
+    Pattern p = Pattern.compile("\"wrestlers\"\\s*:\\s*\\[([^]]*)]", Pattern.DOTALL);
     Matcher m = p.matcher(prompt);
     if (m.find()) {
       String wrestlersBlock = m.group(1);
