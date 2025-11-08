@@ -7,6 +7,7 @@ import java.net.URL;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.JavascriptExecutor;
@@ -62,6 +63,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       options.addArguments("--disable-dev-shm-usage");
     }
     driver = new ChromeDriver(options);
+  }
+
+  @AfterEach
+  public void teardown() {
+    if (driver != null) {
+      driver.quit();
+    }
   }
 
   private boolean isHeadless() {

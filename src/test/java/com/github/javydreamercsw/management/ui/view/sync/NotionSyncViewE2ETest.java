@@ -3,14 +3,21 @@ package com.github.javydreamercsw.management.ui.view.sync;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@ConditionalOnExpression(
+    "T(com.github.javydreamercsw.base.util.EnvironmentVariableUtil).isNotionTokenAvailable()")
 public class NotionSyncViewE2ETest extends AbstractE2ETest {
+
+  @MockitoBean private NotionSyncScheduler notionSyncScheduler;
 
   @Test
   public void testControlAlignment() {

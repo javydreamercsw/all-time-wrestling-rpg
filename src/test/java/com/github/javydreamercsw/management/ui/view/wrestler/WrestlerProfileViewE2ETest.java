@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -14,6 +15,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -47,16 +49,13 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @Autowired private SegmentService segmentService;
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private SegmentRuleService segmentRuleService;
+  @Autowired private WrestlerRepository wrestlerRepository;
 
   private Wrestler testWrestler;
 
   @BeforeEach
   void setUp() {
-    testWrestler = new Wrestler();
-    testWrestler.setName("Test Wrestler");
-    testWrestler.setGender(Gender.MALE);
-    testWrestler.setFans(1000L);
-    testWrestler = wrestlerService.save(testWrestler);
+    testWrestler = TestUtils.createWrestler(wrestlerRepository, "Test Wrestler");
   }
 
   @Test
@@ -70,9 +69,9 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
     // Wait for the view to load
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("h2")));
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-name")));
 
-    WebElement wrestlerName = driver.findElement(By.tagName("h2"));
+    WebElement wrestlerName = driver.findElement(By.id("wrestler-name"));
     assertEquals(testWrestler.getName(), wrestlerName.getText());
 
     WebElement wrestlerDetails = driver.findElement(By.tagName("p"));
@@ -83,14 +82,12 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @Test
   void testFeudHistorySorting() {
     // Given
-    Wrestler wrestler1 = new Wrestler();
-    wrestler1.setName("Wrestler 1");
+    Wrestler wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
     wrestler1.setGender(Gender.MALE);
     wrestler1.setFans(1000L);
     wrestler1 = wrestlerService.save(wrestler1);
 
-    Wrestler wrestler2 = new Wrestler();
-    wrestler2.setName("Wrestler 2");
+    Wrestler wrestler2 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 2");
     wrestler2.setGender(Gender.MALE);
     wrestler2.setFans(1000L);
     wrestler2 = wrestlerService.save(wrestler2);
@@ -130,8 +127,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @Test
   void testRecentMatchesGrid() {
     // Given
-    Wrestler wrestler1 = new Wrestler();
-    wrestler1.setName("Wrestler 1");
+    Wrestler wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
     wrestler1.setGender(Gender.MALE);
     wrestler1.setFans(1000L);
     wrestler1 = wrestlerService.save(wrestler1);

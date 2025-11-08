@@ -103,6 +103,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.showService = showService;
     this.seasonService = seasonService;
 
+    wrestlerName.setId("wrestler-name");
+
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,

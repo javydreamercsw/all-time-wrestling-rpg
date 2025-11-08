@@ -2,9 +2,9 @@ package com.github.javydreamercsw.management.domain.rivalry;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -16,28 +16,15 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 class RivalryRepositoryTest {
 
   @Autowired private RivalryRepository rivalryRepository;
-
   @Autowired private WrestlerRepository wrestlerRepository;
-
-  private Wrestler createWrestler(String name) {
-    Wrestler wrestler = Wrestler.builder().build();
-    wrestler.setName(name);
-    wrestler.setDeckSize(30);
-    wrestler.setStartingHealth(100);
-    wrestler.setStartingStamina(100);
-    wrestler.setLowHealth(20);
-    wrestler.setLowStamina(20);
-    wrestler.setTier(WrestlerTier.MAIN_EVENTER);
-    return wrestlerRepository.save(wrestler);
-  }
 
   @Test
   void findActiveRivalriesBetween() {
     // Given
-    Wrestler wrestler1 = createWrestler("Wrestler 1");
-    Wrestler wrestler2 = createWrestler("Wrestler 2");
-    Wrestler wrestler3 = createWrestler("Wrestler 3");
-    Wrestler wrestler4 = createWrestler("Wrestler 4");
+    Wrestler wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
+    Wrestler wrestler2 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 2");
+    Wrestler wrestler3 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 3");
+    Wrestler wrestler4 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 4");
 
     Instant now = Instant.now();
     Instant lastMonth = now.minus(30, ChronoUnit.DAYS);
