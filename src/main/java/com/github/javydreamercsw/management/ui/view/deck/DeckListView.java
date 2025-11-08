@@ -61,7 +61,7 @@ public class DeckListView extends VerticalLayout {
         .setHeader("Actions");
 
     deckGrid.setItems(deckService.findAll());
-    deckGrid.setSizeFull();
+    deckGrid.getStyle().set("height", "100vh");
     add(deckGrid);
     setSizeFull();
   }

@@ -34,13 +34,13 @@ class InboxViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testOpenInboxView() {
-    driver.get("http://localhost:" + serverPort + "/inbox");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
     assertEquals("Inbox", driver.getTitle());
   }
 
   @Test
   void testReadColumnNotPresent() {
-    driver.get("http://localhost:" + serverPort + "/inbox");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
     WebElement grid = driver.findElement(By.tagName("vaadin-grid"));
     List<WebElement> headers = grid.findElements(By.tagName("vaadin-grid-column"));
     for (WebElement header : headers) {
@@ -66,7 +66,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
     unreadItem.setDescription("unread");
     inboxRepository.save(unreadItem);
 
-    driver.get("http://localhost:" + serverPort + "/inbox");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
 
     // When
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -95,7 +95,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
     item2.setDescription("item2");
     inboxRepository.save(item2);
 
-    driver.get("http://localhost:" + serverPort + "/inbox");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
 
     // When
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));

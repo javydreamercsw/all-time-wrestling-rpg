@@ -61,7 +61,12 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testWrestlerProfileLoads() {
-    driver.get("http://localhost:" + serverPort + "/wrestler-profile/" + testWrestler.getId());
+    driver.get(
+        "http://localhost:"
+            + serverPort
+            + getContextPath()
+            + "/wrestler-profile/"
+            + testWrestler.getId());
 
     // Wait for the view to load
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -103,7 +108,12 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     multiWrestlerFeudService.addParticipant(feud.getId(), wrestler1.getId(), FeudRole.PROTAGONIST);
 
     // When
-    driver.get("http://localhost:" + serverPort + "/wrestler-profile/" + wrestler1.getId());
+    driver.get(
+        "http://localhost:"
+            + serverPort
+            + getContextPath()
+            + "/wrestler-profile/"
+            + wrestler1.getId());
 
     // Then
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -142,7 +152,12 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     segmentService.updateSegment(segment);
 
     // When
-    driver.get("http://localhost:" + serverPort + "/wrestler-profile/" + wrestler1.getId());
+    driver.get(
+        "http://localhost:"
+            + serverPort
+            + getContextPath()
+            + "/wrestler-profile/"
+            + wrestler1.getId());
 
     // Then
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));

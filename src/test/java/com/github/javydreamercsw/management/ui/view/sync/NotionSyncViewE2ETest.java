@@ -14,7 +14,7 @@ public class NotionSyncViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testControlAlignment() {
-    driver.get("http://localhost:" + serverPort + "/notion-sync");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/notion-sync");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     WebElement controlSection =

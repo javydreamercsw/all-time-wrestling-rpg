@@ -112,20 +112,25 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
   private List<String> extractParticipants(String prompt) {
     List<String> participants = new ArrayList<>();
-    String wrestlersBlockSearchString = "\"wrestlers\" : [ {";
+    String wrestlersBlockSearchString = "\"wrestlers\" : [";
     int wrestlersBlockStartIndex = prompt.indexOf(wrestlersBlockSearchString);
     if (wrestlersBlockStartIndex != -1) {
-      String searchString = "\"name\" : \"";
-      int lastIndex = wrestlersBlockStartIndex;
-      while (lastIndex != -1) {
-        lastIndex = prompt.indexOf(searchString, lastIndex);
-        if (lastIndex != -1) {
-          int endIndex = prompt.indexOf("\"", lastIndex + searchString.length());
-          if (endIndex != -1) {
-            participants.add(prompt.substring(lastIndex + searchString.length(), endIndex));
-            lastIndex = endIndex;
-          } else {
-            break;
+      int wrestlersBlockEndIndex = prompt.indexOf(']', wrestlersBlockStartIndex);
+      if (wrestlersBlockEndIndex != -1) {
+        String wrestlersBlock = prompt.substring(wrestlersBlockStartIndex, wrestlersBlockEndIndex);
+        String searchString = "\"name\" : \"";
+        int lastIndex = 0;
+        while (lastIndex != -1) {
+          lastIndex = wrestlersBlock.indexOf(searchString, lastIndex);
+          if (lastIndex != -1) {
+            int endIndex = wrestlersBlock.indexOf("\"", lastIndex + searchString.length());
+            if (endIndex != -1) {
+              participants.add(
+                  wrestlersBlock.substring(lastIndex + searchString.length(), endIndex));
+              lastIndex = endIndex;
+            } else {
+              break;
+            }
           }
         }
       }
@@ -146,9 +151,16 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
             .orElse(segmentTypes.get(random.nextInt(segmentTypes.size())));
 
     List<String> segmentParticipants = new ArrayList<>();
-    int participantCount = random.nextInt(2) + 1; // 1 or 2 participants
-    for (int i = 0; i < participantCount; i++) {
+    if (!participants.isEmpty()) {
+      // Ensure at least one actual participant is included
       segmentParticipants.add(participants.get(random.nextInt(participants.size())));
+      int additionalParticipants = random.nextInt(2); // 0 or 1 additional participant
+      for (int i = 0; i < additionalParticipants; i++) {
+        segmentParticipants.add(participants.get(random.nextInt(participants.size())));
+      }
+    } else {
+      // Fallback if no participants are extracted
+      segmentParticipants.add("Wrestler X");
     }
 
     return new MockSegmentDTO(

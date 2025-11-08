@@ -4,6 +4,7 @@ import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -24,19 +26,33 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected static int serverPort;
   private static final ConfigurableApplicationContext context;
 
+  @Value("${server.servlet.context-path}")
+  @Getter
+  private String contextPath;
+
   static {
     serverPort = Integer.parseInt(System.getProperty("server.port", "9090"));
     String[] args = {
       "--server.port=" + serverPort, "--spring.profiles.active=test",
     };
+    log.info("Attempting to start Spring Boot application for E2E tests on port {}", serverPort);
     context = SpringApplication.run(Application.class, args);
-    Runtime.getRuntime().addShutdownHook(new Thread(context::close));
+    log.info("Spring Boot application started for E2E tests.");
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  log.info("Shutting down Spring Boot application for E2E tests.");
+                  context.close();
+                }));
   }
 
   @BeforeEach
   public void setup() throws java.io.IOException {
     WebDriverManager.chromedriver().setup();
+    log.info("Waiting for application to be ready on port {}", serverPort);
     waitForAppToBeReady();
+    log.info("Application is ready on port {}", serverPort);
     ChromeOptions options = new ChromeOptions();
     if (isHeadless()) {
       options.addArguments("--headless=new");
@@ -67,7 +83,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     int attempt = 0;
     while (attempt < maxAttempts) {
       try {
-        URL url = new URL("http://localhost:" + serverPort);
+        URL url = new URL("http://localhost:" + serverPort + getContextPath());
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(1000);

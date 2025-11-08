@@ -621,6 +621,8 @@
 
                 <!-- Exclude JaCoCo runtime -->
                 <exclude>**/org/jacoco/agent/rt/**</exclude>
+                <!-- Exclude Mock AI service -->
+                <exclude>**/mock/MockSegmentNarrationService.class</exclude>
               </excludes>
             </configuration>
             <executions>
