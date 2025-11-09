@@ -20,7 +20,6 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Route(value = "inbox", layout = MainLayout.class)
 @PageTitle("Inbox")
@@ -80,8 +79,7 @@ public class InboxView extends VerticalLayout {
         event -> {
           if (event.getValue()) {
             ((GridMultiSelectionModel<InboxItem>) grid.getSelectionModel()).selectAll();
-            selectedItems.addAll(
-                grid.getDataProvider().fetch(new Query<>()).collect(Collectors.toList()));
+            selectedItems.addAll(grid.getDataProvider().fetch(new Query<>()).toList());
           } else {
             grid.getSelectionModel().deselectAll();
             selectedItems.clear();
@@ -155,7 +153,7 @@ public class InboxView extends VerticalLayout {
     grid.addClassName("inbox-grid");
     grid.setSizeFull();
     grid.setColumns("eventType", "description", "eventTimestamp");
-    grid.addComponentColumn(item -> createReadToggleButton(item)).setHeader("Mark as Read/Unread");
+    grid.addComponentColumn(this::createReadToggleButton).setHeader("Mark as Read/Unread");
     grid.getColumns().forEach(col -> col.setAutoWidth(true));
     grid.setSelectionMode(Grid.SelectionMode.MULTI);
 

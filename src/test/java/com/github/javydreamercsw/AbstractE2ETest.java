@@ -1,20 +1,25 @@
 package com.github.javydreamercsw;
 
 import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.time.Duration;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -26,6 +31,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected WebDriver driver;
   protected static int serverPort;
   private static final ConfigurableApplicationContext context;
+  protected static InboxRepository inboxRepository; // Added static InboxRepository
 
   @Value("${server.servlet.context-path}")
   @Getter
@@ -38,6 +44,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     };
     log.info("Attempting to start Spring Boot application for E2E tests on port {}", serverPort);
     context = SpringApplication.run(Application.class, args);
+    inboxRepository = context.getBean(InboxRepository.class); // Get InboxRepository from context
     log.info("Spring Boot application started for E2E tests.");
     Runtime.getRuntime()
         .addShutdownHook(
@@ -62,7 +69,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       options.addArguments("--no-sandbox");
       options.addArguments("--disable-dev-shm-usage");
     }
-    driver = new ChromeDriver(options);
+    if (driver == null) {
+      driver = new ChromeDriver(options);
+    }
   }
 
   @AfterEach
@@ -113,6 +122,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         "Application did not start within timeout. "
             + "Please check if the server is running on port "
             + serverPort);
+  }
+
+  protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
   }
 
   protected void clickVaadinButton(@NonNull String vaadinSelector) {

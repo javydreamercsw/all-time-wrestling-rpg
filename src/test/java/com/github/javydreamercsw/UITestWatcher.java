@@ -5,12 +5,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 
+@Slf4j
 public class UITestWatcher implements AfterTestExecutionCallback {
 
   @Override
@@ -24,10 +26,10 @@ public class UITestWatcher implements AfterTestExecutionCallback {
                   WebDriver driver = ((AbstractE2ETest) testInstance).driver;
                   if (driver != null) {
                     // Print the page source to the console
-                    System.out.println("--- Page Source on Failure ---");
+                    log.debug("--- Page Source on Failure ---");
                     String pageSource = driver.getPageSource();
-                    System.out.println(pageSource);
-                    System.out.println("--- End Page Source ---");
+                    log.debug(pageSource);
+                    log.debug("--- End Page Source ---");
 
                     try {
                       // Create a directory for the test output
@@ -40,16 +42,15 @@ public class UITestWatcher implements AfterTestExecutionCallback {
                       File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
                       Path screenshotPath = outputDir.resolve("failure.png");
                       Files.copy(screenshot.toPath(), screenshotPath);
-                      System.out.println("Screenshot saved to: " + screenshotPath);
+                      log.debug("Screenshot saved to: {}", screenshotPath);
 
                       // Save page source to file
                       Path pageSourcePath = outputDir.resolve("failure.html");
                       Files.writeString(pageSourcePath, pageSource);
-                      System.out.println("Page source saved to: " + pageSourcePath);
+                      log.debug("Page source saved to: {}", pageSourcePath);
 
                     } catch (IOException e) {
-                      System.err.println(
-                          "Failed to capture screenshot or page source: " + e.getMessage());
+                      log.error("Failed to capture screenshot or page source: {}", e.getMessage());
                     }
                   }
                 }
