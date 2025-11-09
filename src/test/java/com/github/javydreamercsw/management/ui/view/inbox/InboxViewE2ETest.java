@@ -186,16 +186,18 @@ class InboxViewE2ETest extends AbstractE2ETest {
     selectAllCheckbox.click();
 
     // Delete selected
+
     WebElement deleteSelectedButton =
         driver.findElement(By.xpath("//vaadin-button[text()='Delete Selected']"));
+
     deleteSelectedButton.click();
 
     // Verify grid is empty
     wait.until(
         ExpectedConditions.numberOfElementsToBe(
             By.xpath(
-                "//vaadin-grid-cell-content//vaadin-button[contains(text(), 'Mark Selected as Read') or"
-                    + " contains(text(), 'Mark Selected as Unread')]"),
+                "//vaadin-grid-cell-content//vaadin-button[contains(text(), 'Mark Selected as"
+                    + " Read') or contains(text(), 'Mark Selected as Unread')]"),
             0));
   }
 
