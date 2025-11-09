@@ -9,7 +9,8 @@ public class DiceBagTest {
   @RepeatedTest(10)
   public void testRoll() {
     Random r = new Random();
-    DiceBag diceBag = new DiceBag(r.nextInt(100) + 1, r.nextInt(100) + 1, r.nextInt(100) + 1);
+    DiceBag diceBag =
+        new DiceBag(r, new int[] {r.nextInt(100) + 1, r.nextInt(100) + 1, r.nextInt(100) + 1});
     int result = diceBag.roll();
     int[] individualRolls = diceBag.getLastRoll();
 
