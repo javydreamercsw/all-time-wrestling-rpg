@@ -7,6 +7,7 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -15,17 +16,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
-import com.github.javydreamercsw.management.service.rivalry.RivalryService;
-import com.github.javydreamercsw.management.service.season.SeasonService;
-import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
-import com.github.javydreamercsw.management.service.segment.SegmentService;
-import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
-import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -36,26 +27,24 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.beans.factory.annotation.Autowired;
 
 class WrestlerProfileViewE2ETest extends AbstractE2ETest {
-
-  @Autowired private WrestlerService wrestlerService;
-  @Autowired private RivalryService rivalryService;
-  @Autowired private MultiWrestlerFeudService multiWrestlerFeudService;
-  @Autowired private TitleService titleService;
-  @Autowired private ShowService showService;
-  @Autowired private SeasonService seasonService;
-  @Autowired private SegmentService segmentService;
-  @Autowired private SegmentTypeService segmentTypeService;
-  @Autowired private SegmentRuleService segmentRuleService;
-  @Autowired private WrestlerRepository wrestlerRepository;
 
   private Wrestler testWrestler;
 
   @BeforeEach
   void setUp() {
+    // Clear all relevant repositories to ensure a clean state for each test
+    multiWrestlerFeudRepository.deleteAll();
+    segmentRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+    seasonRepository.deleteAll();
+
     testWrestler = TestUtils.createWrestler(wrestlerRepository, "Test Wrestler");
+    // Ensure a default season exists for tests
+    if (seasonService.findByName("Default Season") == null) {
+      seasonService.createSeason("Default Season", "Default Season", 4);
+    }
   }
 
   @Test
@@ -67,9 +56,13 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             + "/wrestler-profile/"
             + testWrestler.getId());
 
-    // Wait for the view to load
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-name")));
+
+    wait.until(
+        ExpectedConditions.textToBePresentInElementLocated(
+            By.id("wrestler-name"), testWrestler.getName()));
 
     WebElement wrestlerName = driver.findElement(By.id("wrestler-name"));
     assertEquals(testWrestler.getName(), wrestlerName.getText());
@@ -85,16 +78,18 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     Wrestler wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
     wrestler1.setGender(Gender.MALE);
     wrestler1.setFans(1000L);
-    wrestler1 = wrestlerService.save(wrestler1);
+    wrestler1 = wrestlerRepository.save(wrestler1);
 
     Wrestler wrestler2 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 2");
     wrestler2.setGender(Gender.MALE);
     wrestler2.setFans(1000L);
-    wrestler2 = wrestlerService.save(wrestler2);
+    wrestler2 = wrestlerRepository.save(wrestler2);
 
     Assertions.assertNotNull(wrestler1.getId());
     Assertions.assertNotNull(wrestler2.getId());
-    rivalryService.createRivalry(wrestler1.getId(), wrestler2.getId(), "Test Rivalry");
+    Rivalry testRivalry =
+        rivalryService.createRivalry(wrestler1.getId(), wrestler2.getId(), "Test Rivalry").get();
+    rivalryService.addHeat(testRivalry.getId(), 100, "Initial Rivalry Heat");
 
     MultiWrestlerFeud feud =
         multiWrestlerFeudService
@@ -114,10 +109,13 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
     // Then
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("h3")));
+    wait.until(
+        ExpectedConditions.visibilityOfElementLocated(By.xpath("//h3[text()='Feud History']")));
 
     WebElement feudHistory = driver.findElement(By.xpath("//h3[text()='Feud History']"));
     WebElement feudParagraph = feudHistory.findElement(By.xpath("following-sibling::p[1]"));
+    wait.until(
+        ExpectedConditions.textToBePresentInElement(feudParagraph, "Feud: Test Feud (Heat: 200)"));
     WebElement rivalryParagraph = feudHistory.findElement(By.xpath("following-sibling::p[2]"));
 
     assertTrue(feudParagraph.getText().contains("Feud: Test Feud (Heat: 200)"));
@@ -130,7 +128,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     Wrestler wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
     wrestler1.setGender(Gender.MALE);
     wrestler1.setFans(1000L);
-    wrestler1 = wrestlerService.save(wrestler1);
+    wrestler1 = wrestlerRepository.save(wrestler1);
 
     Title title = titleService.createTitle("Test Title", "Test Title", WrestlerTier.ROOKIE);
 
@@ -159,16 +157,14 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
 
-    WebElement grid = driver.findElement(By.tagName("vaadin-grid"));
-    WebElement participants =
-        grid.findElement(By.xpath("//vaadin-grid-cell-content[text()='Wrestler 1']"));
-    WebElement winners =
-        grid.findElement(By.xpath("//vaadin-grid-cell-content[text()='Wrestler 1']"));
-    WebElement championships =
-        grid.findElement(By.xpath("//vaadin-grid-cell-content[text()='Test Title']"));
-
-    assertTrue(participants.isDisplayed());
-    assertTrue(winners.isDisplayed());
-    assertTrue(championships.isDisplayed());
+    wait.until(
+        ExpectedConditions.textToBePresentInElementLocated(
+            By.xpath("//vaadin-grid-cell-content[text()='Wrestler 1']"), "Wrestler 1"));
+    wait.until(
+        ExpectedConditions.textToBePresentInElementLocated(
+            By.xpath("//vaadin-grid-cell-content[text()='Wrestler 1']"), "Wrestler 1"));
+    wait.until(
+        ExpectedConditions.textToBePresentInElementLocated(
+            By.xpath("//vaadin-grid-cell-content[text()='Test Title']"), "Test Title"));
   }
 }

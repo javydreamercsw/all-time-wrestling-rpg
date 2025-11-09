@@ -11,7 +11,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,7 +30,6 @@ public class RivalryService {
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private Clock clock;
-  @Autowired private Random random;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   /** Create a new rivalry between two wrestlers. */

@@ -1,7 +1,19 @@
 package com.github.javydreamercsw;
 
 import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -32,6 +44,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected static int serverPort;
   private static final ConfigurableApplicationContext context;
   protected static InboxRepository inboxRepository; // Added static InboxRepository
+  protected static WrestlerRepository wrestlerRepository;
+  protected static MultiWrestlerFeudService multiWrestlerFeudService;
+  protected static SeasonRepository seasonRepository;
+  protected static SegmentService segmentService;
+  protected static SeasonService seasonService;
+  protected static RivalryService rivalryService;
+  protected static TitleService titleService;
+  protected static ShowService showService;
+  protected static SegmentTypeService segmentTypeService;
+  protected static SegmentRuleService segmentRuleService;
+  protected static SegmentRepository segmentRepository;
+  protected static MultiWrestlerFeudRepository multiWrestlerFeudRepository;
 
   @Value("${server.servlet.context-path}")
   @Getter
@@ -45,6 +69,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     log.info("Attempting to start Spring Boot application for E2E tests on port {}", serverPort);
     context = SpringApplication.run(Application.class, args);
     inboxRepository = context.getBean(InboxRepository.class); // Get InboxRepository from context
+    wrestlerRepository = context.getBean(WrestlerRepository.class);
+    multiWrestlerFeudService = context.getBean(MultiWrestlerFeudService.class);
+    seasonRepository = context.getBean(SeasonRepository.class);
+    segmentService = context.getBean(SegmentService.class);
+    seasonService = context.getBean(SeasonService.class);
+    rivalryService = context.getBean(RivalryService.class);
+    titleService = context.getBean(TitleService.class);
+    showService = context.getBean(ShowService.class);
+    segmentTypeService = context.getBean(SegmentTypeService.class);
+    segmentRuleService = context.getBean(SegmentRuleService.class);
+    segmentRepository = context.getBean(SegmentRepository.class);
+    multiWrestlerFeudRepository = context.getBean(MultiWrestlerFeudRepository.class);
     log.info("Spring Boot application started for E2E tests.");
     Runtime.getRuntime()
         .addShutdownHook(
