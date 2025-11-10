@@ -83,7 +83,7 @@ class FactionListViewTest {
     assertNotNull(grid);
 
     // Verify grid is configured (columns are added during construction)
-    assertTrue(grid.getColumns().size() > 0);
+    assertFalse(grid.getColumns().isEmpty());
   }
 
   @Test
