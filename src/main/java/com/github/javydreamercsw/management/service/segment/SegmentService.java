@@ -13,6 +13,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -112,7 +113,7 @@ public class SegmentService {
    */
   public Segment createSegment(
       @NonNull Show show, @NonNull SegmentType matchType, @NonNull Instant matchDate) {
-    return createSegment(show, matchType, matchDate, Set.of());
+    return createSegment(show, matchType, matchDate, new HashSet<>());
   }
 
   /**

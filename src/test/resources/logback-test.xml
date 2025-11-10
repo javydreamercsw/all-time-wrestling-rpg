@@ -3,8 +3,7 @@
     <!-- Include Spring Boot's default configuration -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <property name="LOG_DIR" value="${catalina.base:-${user.home}}"/>
-    <property name="LOG_FILE" value="${LOG_DIR}/logs/atwrpg.log"/>
+    <property name="LOG_FILE" value="target/atwrpg-test.log"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>

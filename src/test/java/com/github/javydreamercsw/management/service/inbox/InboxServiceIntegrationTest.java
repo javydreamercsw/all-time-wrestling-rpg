@@ -46,7 +46,7 @@ class InboxServiceIntegrationTest {
     inboxRepository.save(unreadItem);
 
     // When
-    List<InboxItem> result = inboxService.search("", "eventTimestamp", "asc", true);
+    List<InboxItem> result = inboxService.search("", "All", "All", true);
 
     // Then
     assertEquals(1, result.size());
@@ -71,11 +71,8 @@ class InboxServiceIntegrationTest {
     inboxRepository.save(unreadItem);
 
     // When
-    List<InboxItem> readResult =
-        inboxService.search("", "eventTimestamp", "asc", false).stream()
-            .filter(InboxItem::isRead)
-            .toList();
-    List<InboxItem> unreadResult = inboxService.search("", "eventTimestamp", "asc", true);
+    List<InboxItem> readResult = inboxService.search("", "Read", "All", false);
+    List<InboxItem> unreadResult = inboxService.search("", "Unread", "All", false);
 
     // Then
     assertEquals(1, readResult.size());

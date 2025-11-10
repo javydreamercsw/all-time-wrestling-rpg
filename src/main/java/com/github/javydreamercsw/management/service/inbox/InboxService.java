@@ -51,13 +51,18 @@ public class InboxService {
   }
 
   public List<InboxItem> search(
-      String filter, String sortBy, String sortDirection, Boolean unreadOnly) {
+      String filter, String readStatus, String eventType, Boolean hideRead) {
     Specification<InboxItem> spec =
         (root, query, cb) -> {
           Predicate predicate = cb.conjunction();
 
-          if (unreadOnly != null && unreadOnly) {
+          if (hideRead != null && hideRead) {
             predicate = cb.and(predicate, cb.isFalse(root.get("isRead")));
+          }
+
+          if (readStatus != null && !readStatus.equalsIgnoreCase("All")) {
+            boolean isRead = readStatus.equalsIgnoreCase("Read");
+            predicate = cb.and(predicate, cb.equal(root.get("isRead"), isRead));
           }
 
           if (filter != null && !filter.isEmpty()) {
@@ -67,17 +72,14 @@ public class InboxService {
                     cb.like(cb.lower(root.get("description")), "%" + filter.toLowerCase() + "%"));
           }
 
+          if (eventType != null && !eventType.equalsIgnoreCase("All")) {
+            predicate = cb.and(predicate, cb.equal(root.get("eventType"), eventType));
+          }
+
           return predicate;
         };
 
-    Sort sort = Sort.unsorted();
-    if (sortBy != null && !sortBy.isEmpty()) {
-      Sort.Direction direction = Sort.Direction.ASC;
-      if (sortDirection != null && sortDirection.equalsIgnoreCase("desc")) {
-        direction = Sort.Direction.DESC;
-      }
-      sort = Sort.by(direction, sortBy);
-    }
+    Sort sort = Sort.by(Sort.Direction.DESC, "eventTimestamp");
 
     return inboxRepository.findAll(spec, sort);
   }

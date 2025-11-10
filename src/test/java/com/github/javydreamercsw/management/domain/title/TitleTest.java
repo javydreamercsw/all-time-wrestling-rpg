@@ -2,7 +2,9 @@ package com.github.javydreamercsw.management.domain.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -10,15 +12,18 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 /** Unit tests for Title entity. Tests the ATW RPG championship system functionality. */
 @DisplayName("Title Tests")
+@DataJpaTest
 class TitleTest {
+  @Autowired private WrestlerRepository wrestlerRepository;
 
   private Title title;
   private Wrestler wrestler1;
   private Wrestler wrestler2;
-  private static long wrestlerIdCounter = 1L;
 
   @BeforeEach
   void setUp() {
@@ -27,8 +32,8 @@ class TitleTest {
     title.setTier(WrestlerTier.MAIN_EVENTER);
     title.setDescription("Test title for unit tests");
 
-    wrestler1 = createWrestler("Wrestler 1", 120000L);
-    wrestler2 = createWrestler("Wrestler 2", 150000L);
+    wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
+    wrestler2 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 2");
   }
 
   @Test
@@ -142,8 +147,12 @@ class TitleTest {
   void shouldCheckWrestlerEligibility() {
     title.setTier(WrestlerTier.MAIN_EVENTER); // Requires 100k fans
 
-    Wrestler eligibleWrestler = createWrestler("Eligible", 120000L);
-    Wrestler ineligibleWrestler = createWrestler("Ineligible", 50000L);
+    Wrestler eligibleWrestler = TestUtils.createWrestler(wrestlerRepository, "Eligible");
+    eligibleWrestler.setFans(120000L);
+    wrestlerRepository.save(eligibleWrestler);
+    Wrestler ineligibleWrestler = TestUtils.createWrestler(wrestlerRepository, "Ineligible");
+    ineligibleWrestler.setFans(50000L);
+    wrestlerRepository.save(ineligibleWrestler);
 
     assertThat(title.isWrestlerEligible(eligibleWrestler)).isTrue();
     assertThat(title.isWrestlerEligible(ineligibleWrestler)).isFalse();
@@ -234,16 +243,5 @@ class TitleTest {
 
     // The getCurrentChampions method should now return the champion
     assertThat(title.getCurrentChampions()).containsExactly(wrestler1);
-  }
-
-  private Wrestler createWrestler(String name, Long fans) {
-    Wrestler wrestler = Wrestler.builder().build();
-    wrestler.setId(wrestlerIdCounter++);
-    wrestler.setName(name);
-    wrestler.setFans(fans);
-    wrestler.setStartingHealth(15);
-    wrestler.setIsPlayer(true);
-    wrestler.updateTier();
-    return wrestler;
   }
 }

@@ -1,3 +1,4 @@
 FROM tomcat:11-jdk17
-COPY target/all-time-wrestling-rpg-1.0.0-SNAPSHOT.war /usr/local/tomcat/webapps/all-time-wrestling-rpg.war
+COPY src/main/resources/docker/tomcat/server.xml /usr/local/tomcat/conf/server.xml
+COPY target/all-time-wrestling-rpg-*.war /usr/local/tomcat/webapps/atw-rpg.war
 EXPOSE 9090

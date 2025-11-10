@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -28,6 +29,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  */
 @Slf4j
 @TestPropertySource(properties = "notion.sync.load-from-json=false")
+@EnabledIfEnvironmentVariable(named = "NOTION_TOKEN", matches = ".*")
 class WrestlerSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private WrestlerRepository wrestlerRepository;

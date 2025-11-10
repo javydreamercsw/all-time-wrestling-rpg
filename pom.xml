@@ -621,6 +621,8 @@
 
                 <!-- Exclude JaCoCo runtime -->
                 <exclude>**/org/jacoco/agent/rt/**</exclude>
+                <!-- Exclude Mock AI service -->
+                <exclude>**/mock/MockSegmentNarrationService.class</exclude>
               </excludes>
             </configuration>
             <executions>
@@ -775,6 +777,7 @@
                   <goal>start</goal>
                 </goals>
                 <configuration>
+                  <skip>${skip.springboot.start}</skip>
                   <wait>30000</wait>
                   <maxAttempts>60</maxAttempts>
                   <jvmArguments>-Dspring.profiles.active=test -Dserver.port=9090</jvmArguments>
@@ -799,6 +802,7 @@
               <excludes>
                 <exclude>**/*E2ETest.java</exclude>
                 <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
+                <exclude>**/DockerPackageIT.java</exclude>
               </excludes>
               <systemPropertyVariables>
                 <spring.profiles.active>test</spring.profiles.active>
@@ -869,29 +873,6 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>post-integration-test</id>
-                <goals>
-                  <goal>stop</goal>
-                </goals>
-              </execution>
-              <execution>
-                <id>pre-integration-test</id>
-                <goals>
-                  <goal>start</goal>
-                </goals>
-                <configuration>
-                  <wait>30000</wait>
-                  <maxAttempts>60</maxAttempts>
-                  <jvmArguments>-Dserver.port=9090 -Dspring.profiles.active=test</jvmArguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
@@ -906,6 +887,10 @@
               <!-- Sequential execution for e2e tests -->
               <parallel>none</parallel>
               <threadCount>1</threadCount>
+              <reuseForks>true</reuseForks>
+              <includes>
+                <include>**/*E2ETest.java</include>
+              </includes>
               <systemPropertyVariables>
                 <server.port>9090</server.port>
               </systemPropertyVariables>
@@ -984,5 +969,64 @@
         </plugins>
       </build>
     </profile>
+
+    <profile>
+      <id>docker-it</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-invoker-plugin</artifactId>
+            <version>3.6.1</version>
+            <configuration>
+              <projectsDirectory>./</projectsDirectory>
+              <pomIncludes>
+                <pomInclude>pom.xml</pomInclude>
+              </pomIncludes>
+              <goals>
+                <goal>package</goal>
+              </goals>
+              <profiles>
+                <profile>production</profile>
+              </profiles>
+            </configuration>
+            <executions>
+              <execution>
+                <id>build-prod</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/DockerPackageIT.java</include>
+              </includes>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
   </profiles>
 </project>

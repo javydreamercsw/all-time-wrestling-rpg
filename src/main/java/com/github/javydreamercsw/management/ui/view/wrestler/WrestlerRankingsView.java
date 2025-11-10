@@ -19,6 +19,9 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Route("wrestler-rankings")
 @PageTitle("Wrestler Rankings")
@@ -29,6 +32,7 @@ public class WrestlerRankingsView extends Main {
   private final WrestlerService wrestlerService;
   private final TitleService titleService;
   private final Grid<Wrestler> grid = new Grid<>(Wrestler.class, false);
+  private Set<Long> championIds = new HashSet<>();
 
   public WrestlerRankingsView(WrestlerService wrestlerService, TitleService titleService) {
     this.wrestlerService = wrestlerService;
@@ -68,7 +72,7 @@ public class WrestlerRankingsView extends Main {
               layout.add(nameSpan);
 
               // Add a star icon for champions
-              if (titleService.isChampion(wrestler)) {
+              if (this.championIds.contains(wrestler.getId())) {
                 Icon trophyIcon = VaadinIcon.TROPHY.create();
                 trophyIcon.addClickListener(
                     event -> {
@@ -95,6 +99,12 @@ public class WrestlerRankingsView extends Main {
   }
 
   private void updateList() {
+    this.championIds =
+        titleService.findAll().stream()
+            .filter(title -> title.getChampion() != null && !title.getChampion().isEmpty())
+            .flatMap(title -> title.getChampion().stream())
+            .map(Wrestler::getId)
+            .collect(Collectors.toSet());
     grid.setItems(wrestlerService.findAll());
   }
 }

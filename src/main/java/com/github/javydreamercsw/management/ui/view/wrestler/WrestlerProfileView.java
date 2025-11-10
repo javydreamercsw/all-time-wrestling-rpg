@@ -13,7 +13,6 @@ import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudServic
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
-import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -37,6 +36,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -48,6 +48,7 @@ import org.springframework.data.domain.Sort;
 @PermitAll
 public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
+  @Getter
   private static class FeudHistoryItem {
     private final String name;
     private final int heat;
@@ -56,14 +57,6 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       this.name = name;
       this.heat = heat;
     }
-
-    public String getName() {
-      return name;
-    }
-
-    public int getHeat() {
-      return heat;
-    }
   }
 
   private final WrestlerService wrestlerService;
@@ -71,8 +64,6 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final SegmentService segmentService;
   private final MultiWrestlerFeudService multiWrestlerFeudService;
   private final RivalryService rivalryService;
-  private final ShowService showService;
-  private final SeasonService seasonService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -93,15 +84,14 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       SegmentService segmentService,
       MultiWrestlerFeudService multiWrestlerFeudService,
       RivalryService rivalryService,
-      ShowService showService,
       SeasonService seasonService) {
     this.wrestlerService = wrestlerService;
     this.titleService = titleService;
     this.segmentService = segmentService;
     this.multiWrestlerFeudService = multiWrestlerFeudService;
     this.rivalryService = rivalryService;
-    this.showService = showService;
-    this.seasonService = seasonService;
+
+    wrestlerName.setId("wrestler-name");
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,

@@ -14,7 +14,7 @@ public class ShowPlanningViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNavigateToShowPlanningView() {
-    driver.get("http://localhost:" + serverPort + "/show-planning");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-planning");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Check that the "Select Show" ComboBox is present

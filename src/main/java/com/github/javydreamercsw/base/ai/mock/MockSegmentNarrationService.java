@@ -1,12 +1,13 @@
 package com.github.javydreamercsw.base.ai.mock;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -54,39 +55,117 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   /** Generates a realistic mock wrestling segment narration. */
   private String generateMockNarration(@NonNull String prompt) {
     try {
-      JsonNode rootNode = objectMapper.readTree(prompt.substring(prompt.indexOf('{')));
-      // Extract wrestler names from the prompt for personalization
-      List<String> wrestlerNames = extractWrestlerNames(rootNode);
-      String wrestler1 = !wrestlerNames.isEmpty() ? wrestlerNames.get(0) : "Wrestler A";
-      String wrestler2 = wrestlerNames.size() > 1 ? wrestlerNames.get(1) : "Wrestler B";
+      // The prompt is not a simple JSON, but a text with a JSON schema in it.
+      // We need to extract the expected number of matches and promos from the prompt.
+      int matches = extractCount(prompt, "matches");
+      int promos = extractCount(prompt, "promos");
 
-      // Extract venue information
-      String venue = extractVenue(rootNode);
-      String segmentType = extractSegmentType(rootNode);
+      List<String> segmentTypes = extractSegmentTypes(prompt);
+      List<String> participants = extractParticipants(prompt);
+      String venue = extractVenue(prompt);
 
-      StringBuilder narration = new StringBuilder();
+      List<Object> segments = new ArrayList<>();
 
-      // Opening
-      narration.append(generateOpening(wrestler1, wrestler2, venue, segmentType));
-      narration.append("\n\n");
+      for (int i = 0; i < matches; i++) {
+        segments.add(createMockSegment(segmentTypes, participants, "Match", venue));
+      }
+      for (int i = 0; i < promos; i++) {
+        segments.add(createMockSegment(segmentTypes, participants, "Promo", venue));
+      }
 
-      // Early action
-      narration.append(generateEarlyAction(wrestler1, wrestler2));
-      narration.append("\n\n");
-
-      // Mid-segment drama
-      narration.append(generateMidSegmentDrama(wrestler1, wrestler2));
-      narration.append("\n\n");
-
-      // Climax and finish
-      narration.append(generateClimaxAndFinish(wrestler1, wrestler2));
-
-      return narration.toString();
-    } catch (JsonProcessingException e) {
-      log.error("Error parsing JSON from prompt", e);
-      return "Error generating mock narration.";
+      return objectMapper.writeValueAsString(segments);
+    } catch (Exception e) {
+      log.error("Error generating mock narration.", e);
+      return "[]";
     }
   }
+
+  private int extractCount(String prompt, String type) {
+    String searchString = "Generate a JSON array of exactly ";
+    int startIndex = prompt.indexOf(searchString);
+    if (startIndex != -1) {
+      String substring = prompt.substring(startIndex + searchString.length());
+      String[] parts = substring.split(" ");
+      if (parts.length > 1) {
+        if (type.equals("matches")) {
+          return Integer.parseInt(parts[0]);
+        } else if (type.equals("promos") && parts.length > 3) {
+          return Integer.parseInt(parts[2]);
+        }
+      }
+    }
+    // Default to a random number between 1 and 3 if parsing fails
+    return random.nextInt(3) + 1;
+  }
+
+  private List<String> extractSegmentTypes(String prompt) {
+    String searchString = "Available Segment Types: ";
+    int startIndex = prompt.indexOf(searchString);
+    if (startIndex != -1) {
+      String substring = prompt.substring(startIndex + searchString.length());
+      int endIndex = substring.indexOf('\n');
+      if (endIndex != -1) {
+        String typesString = substring.substring(0, endIndex);
+        return List.of(typesString.split(", "));
+      }
+    }
+    return List.of("Match", "Promo");
+  }
+
+  private List<String> extractParticipants(String prompt) {
+    List<String> participants = new ArrayList<>();
+    Pattern p = Pattern.compile("\"wrestlers\"\\s*:\\s*\\[([^]]*)]", Pattern.DOTALL);
+    Matcher m = p.matcher(prompt);
+    if (m.find()) {
+      String wrestlersBlock = m.group(1);
+      p = Pattern.compile("\"name\"\\s*:\\s*\"(.*?)\"");
+      m = p.matcher(wrestlersBlock);
+      while (m.find()) {
+        participants.add(m.group(1));
+      }
+    }
+
+    if (participants.isEmpty()) {
+      return List.of("Wrestler A", "Wrestler B", "Wrestler C", "Wrestler D");
+    }
+    return participants;
+  }
+
+  private Object createMockSegment(
+      List<String> segmentTypes, List<String> participants, String typeHint, String venue) {
+    String type =
+        segmentTypes.stream()
+            .filter(t -> t.toLowerCase().contains(typeHint.toLowerCase()))
+            .findAny()
+            .orElse(segmentTypes.get(random.nextInt(segmentTypes.size())));
+
+    List<String> segmentParticipants = new ArrayList<>();
+    if (!participants.isEmpty()) {
+      // Ensure at least one actual participant is included
+      segmentParticipants.add(participants.get(random.nextInt(participants.size())));
+      int additionalParticipants = random.nextInt(2); // 0 or 1 additional participant
+      for (int i = 0; i < additionalParticipants; i++) {
+        segmentParticipants.add(participants.get(random.nextInt(participants.size())));
+      }
+    } else {
+      // Fallback if no participants are extracted
+      segmentParticipants.add("Wrestler X");
+    }
+
+    return new MockSegmentDTO(
+        java.util.UUID.randomUUID().toString(),
+        type,
+        "Mock description for " + type + " at " + venue,
+        "Mock outcome for " + type,
+        segmentParticipants);
+  }
+
+  private record MockSegmentDTO(
+      String segmentId,
+      String type,
+      String description,
+      String outcome,
+      List<String> participants) {}
 
   private String generateOpening(
       String wrestler1, String wrestler2, String venue, String segmentType) {
@@ -164,10 +243,19 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     return names;
   }
 
-  /** Extracts venue information from the JSON node. */
-  private String extractVenue(JsonNode rootNode) {
-    if (rootNode.has("venue") && rootNode.get("venue").has("name")) {
-      return rootNode.get("venue").get("name").asText("the arena");
+  /** Extracts venue information from the JSON-like text in the prompt. */
+  private String extractVenue(String prompt) {
+    String searchString = "\"name\" : \"";
+    int venueBlockStart = prompt.indexOf("\"venue\" :");
+    if (venueBlockStart != -1) {
+      int nameIndex = prompt.indexOf(searchString, venueBlockStart);
+      if (nameIndex != -1) {
+        int startIndex = nameIndex + searchString.length();
+        int endIndex = prompt.indexOf("\"", startIndex);
+        if (endIndex != -1) {
+          return prompt.substring(startIndex, endIndex);
+        }
+      }
     }
     return "the arena";
   }
