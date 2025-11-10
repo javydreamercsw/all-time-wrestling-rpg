@@ -46,6 +46,10 @@ public class UITestWatcher implements AfterTestExecutionCallback {
 
                       // Save page source to file
                       Path pageSourcePath = outputDir.resolve("failure.html");
+                      if (pageSource == null) {
+                        pageSource = "";
+                        log.debug("Page source was null!");
+                      }
                       Files.writeString(pageSourcePath, pageSource);
                       log.debug("Page source saved to: {}", pageSourcePath);
 

@@ -10,8 +10,10 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -158,6 +160,26 @@ public class SegmentAdjudicationService {
               participants.get(j).getId(),
               heat,
               "From segment: " + segment.getSegmentType().getName());
+        }
+      }
+    }
+
+    // Add heat to feuds
+    if (heat > 0) {
+      List<Wrestler> participants = segment.getWrestlers();
+      Set<MultiWrestlerFeud> feudsToUpdate = new HashSet<>();
+      for (Wrestler participant : participants) {
+        feudsToUpdate.addAll(feudService.getActiveFeudsForWrestler(participant.getId()));
+      }
+
+      for (MultiWrestlerFeud feud : feudsToUpdate) {
+        List<Wrestler> feudParticipants = feud.getActiveWrestlers();
+        long segmentParticipantsInFeud =
+            participants.stream().filter(feudParticipants::contains).count();
+
+        if (segmentParticipantsInFeud > 1) {
+          feudService.addHeat(
+              feud.getId(), heat, "From segment: " + segment.getSegmentType().getName());
         }
       }
     }

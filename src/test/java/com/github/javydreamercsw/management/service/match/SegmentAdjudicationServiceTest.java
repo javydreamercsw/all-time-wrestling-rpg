@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.match;
 
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -104,11 +105,11 @@ class SegmentAdjudicationServiceTest {
 
     MultiWrestlerFeud feud1 = new MultiWrestlerFeud();
     feud1.setId(1L);
-    feud1.setHeat(25);
+    feud1.setName("Feud 1");
     feud1.setIsActive(true);
     MultiWrestlerFeud feud2 = new MultiWrestlerFeud();
     feud2.setId(2L);
-    feud2.setHeat(30);
+    feud2.setName("Feud 2");
     feud2.setIsActive(true);
 
     Assertions.assertNotNull(champion.getId());
@@ -122,5 +123,67 @@ class SegmentAdjudicationServiceTest {
     // Then
     verify(feudResolutionService, times(1)).attemptFeudResolution(feud1);
     verify(feudResolutionService, times(1)).attemptFeudResolution(feud2);
+  }
+
+  @Test
+  void testAdjudicateMatch_AddsHeatToFeuds() {
+    // Given
+    // Create a new segment for this test to avoid interference from setUp
+    Segment testSegment = new Segment();
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Test Match"); // Not a promo
+    testSegment.setSegmentType(segmentType);
+    testSegment.setIsTitleSegment(false); // Not a title segment
+    testSegment.setTitles(Set.of()); // No titles
+    testSegment.setShow(
+        segment.getShow()); // Use the show from setUp, or create a new one if needed
+
+    // Mock dice roll to ensure heat is added (e.g., not a promo, so heat = 1)
+    when(random.nextInt(anyInt())).thenReturn(10); // This will make the roll 11, so not a promo.
+
+    // Create wrestlers
+    Wrestler wrestler1 = new Wrestler();
+    wrestler1.setId(3L);
+    wrestler1.setName("Wrestler 1");
+    Wrestler wrestler2 = new Wrestler();
+    wrestler2.setId(4L);
+    wrestler2.setName("Wrestler 2");
+    Wrestler wrestler3 = new Wrestler();
+    wrestler3.setId(5L);
+    wrestler3.setName("Wrestler 3");
+
+    // Add wrestlers to testSegment
+    testSegment.addParticipant(wrestler1);
+    testSegment.addParticipant(wrestler2);
+    testSegment.addParticipant(wrestler3);
+
+    // Create a feud
+    MultiWrestlerFeud feud = new MultiWrestlerFeud();
+    feud.setId(10L);
+    feud.setName("Test Feud");
+    feud.setIsActive(true);
+    feud.addParticipant(wrestler1, FeudRole.PROTAGONIST);
+    feud.addParticipant(wrestler2, FeudRole.ANTAGONIST);
+    feud.addParticipant(wrestler3, FeudRole.NEUTRAL);
+
+    // Mock feudService to return the feud for each participant
+    Assertions.assertNotNull(wrestler1.getId());
+    when(feudService.getActiveFeudsForWrestler(wrestler1.getId())).thenReturn(List.of(feud));
+    Assertions.assertNotNull(wrestler2.getId());
+    when(feudService.getActiveFeudsForWrestler(wrestler2.getId())).thenReturn(List.of(feud));
+    Assertions.assertNotNull(wrestler3.getId());
+    when(feudService.getActiveFeudsForWrestler(wrestler3.getId())).thenReturn(List.of(feud));
+
+    // Mock addHeat to do nothing, we just want to verify it's called
+    when(feudService.addHeat(anyLong(), anyInt(), anyString())).thenReturn(Optional.of(feud));
+
+    // When
+    segmentAdjudicationService.adjudicateMatch(testSegment); // Use testSegment here
+
+    // Then
+    // Verify that addHeat is called exactly once for the feud with the correct heat (1 for
+    // non-promo)
+    Assertions.assertNotNull(feud.getId());
+    verify(feudService, times(1)).addHeat(feud.getId(), 1, "From segment: Test Match");
   }
 }

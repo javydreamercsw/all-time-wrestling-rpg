@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
+import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -1090,7 +1091,7 @@ public class ShowDetailView extends Main
   }
 
   private void adjudicateShow(Show show) {
-    String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
+    String baseUrl = UrlUtil.getBaseUrl();
     new RestTemplate()
         .postForObject(baseUrl + "/api/shows/" + show.getId() + "/adjudicate", null, Void.class);
     Notification.show("Fan adjudication completed!", 3000, Notification.Position.BOTTOM_START)
