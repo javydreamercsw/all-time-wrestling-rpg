@@ -25,14 +25,17 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SHOW_TYPE_NAME = "Weekly";
   private static final String SEASON_NAME = "Test Season";
   private static final String TEMPLATE_NAME = "Continuum";
+
+  @LocalServerPort private int port;
 
   @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private SeasonRepository seasonRepository;
@@ -68,7 +71,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   @Test
   public void testFullShowLifecycle() {
     // Navigate to the Show List view
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
+    driver.get("http://localhost:" + port + getContextPath() + "/show-list");
 
     final String showName = "My E2E Show";
 
