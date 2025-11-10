@@ -62,7 +62,7 @@ public class InboxService {
 
           if (readStatus != null && !readStatus.equalsIgnoreCase("All")) {
             boolean isRead = readStatus.equalsIgnoreCase("Read");
-            predicate = cb.and(predicate, cb.isFalse(root.get("isRead")));
+            predicate = cb.and(predicate, cb.equal(root.get("isRead"), isRead));
           }
 
           if (filter != null && !filter.isEmpty()) {
