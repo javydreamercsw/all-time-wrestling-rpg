@@ -64,6 +64,17 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
+    // Find the input field and create button
+    WebElement nameField =
+        wait.until(
+            ExpectedConditions.visibilityOfElementLocated(
+                By.cssSelector(
+                    "vaadin-text-field[placeholder='What do you want the card name to be?']")));
+    nameField.sendKeys(cardName);
+
+    WebElement createButton = driver.findElement(By.xpath("//vaadin-button[text()='Create']"));
+    createButton.click();
+
     // Find the grid and wait for it to be populated
     WebElement grid =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
@@ -130,6 +141,17 @@ public class CardListViewE2ETest extends AbstractE2ETest {
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+
+    // Find the input field and create button
+    WebElement nameField =
+        wait.until(
+            ExpectedConditions.visibilityOfElementLocated(
+                By.cssSelector(
+                    "vaadin-text-field[placeholder='What do you want the card name to be?']")));
+    nameField.sendKeys(cardName);
+
+    WebElement createButton = driver.findElement(By.xpath("//vaadin-button[text()='Create']"));
+    createButton.click();
 
     // Find the grid and wait for it to be populated
     WebElement grid =
