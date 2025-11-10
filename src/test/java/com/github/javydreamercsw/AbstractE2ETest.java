@@ -4,7 +4,10 @@ import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -56,6 +59,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected static SegmentRuleService segmentRuleService;
   protected static SegmentRepository segmentRepository;
   protected static MultiWrestlerFeudRepository multiWrestlerFeudRepository;
+  protected static ShowRepository showRepository;
+  protected static ShowTypeRepository showTypeRepository;
+  protected static SegmentTypeRepository segmentTypeRepository;
 
   @Value("${server.servlet.context-path}")
   @Getter
@@ -68,7 +74,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     };
     log.info("Attempting to start Spring Boot application for E2E tests on port {}", serverPort);
     context = SpringApplication.run(Application.class, args);
-    inboxRepository = context.getBean(InboxRepository.class); // Get InboxRepository from context
+    inboxRepository = context.getBean(InboxRepository.class);
     wrestlerRepository = context.getBean(WrestlerRepository.class);
     multiWrestlerFeudService = context.getBean(MultiWrestlerFeudService.class);
     seasonRepository = context.getBean(SeasonRepository.class);
@@ -81,6 +87,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     segmentRuleService = context.getBean(SegmentRuleService.class);
     segmentRepository = context.getBean(SegmentRepository.class);
     multiWrestlerFeudRepository = context.getBean(MultiWrestlerFeudRepository.class);
+    showRepository = context.getBean(ShowRepository.class);
+    showTypeRepository = context.getBean(ShowTypeRepository.class);
+    segmentTypeRepository = context.getBean(SegmentTypeRepository.class);
     log.info("Spring Boot application started for E2E tests.");
     Runtime.getRuntime()
         .addShutdownHook(
@@ -165,27 +174,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
   }
 
-  protected void clickVaadinButton(@NonNull String vaadinSelector) {
-    WebElement button = getVaadinElementInShadowRoot(vaadinSelector, "button");
-    if (button != null) {
-      button.click();
-    } else {
-      throw new RuntimeException("Vaadin button not found: " + vaadinSelector);
-    }
+  protected void clickAndScrollIntoView(@NonNull WebElement element) {
+    scrollIntoView(element);
+    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
   }
 
   protected void scrollIntoView(@NonNull WebElement element) {
     ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
-  }
-
-  protected WebElement getVaadinElementInShadowRoot(
-      @NonNull String vaadinSelector, @NonNull String shadowRootSelector) {
-    return (WebElement)
-        ((JavascriptExecutor) driver)
-            .executeScript(
-                "return"
-                    + " document.querySelector(arguments[0]).shadowRoot.querySelector(arguments[1]);",
-                vaadinSelector,
-                shadowRootSelector);
   }
 }

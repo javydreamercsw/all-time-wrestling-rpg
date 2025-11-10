@@ -497,11 +497,13 @@ public class ShowDetailView extends Main
       // Create segments grid
       Grid<Segment> segmentsGrid = createSegmentsGrid(segments);
       segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
+      segmentsGrid.setId("segments-grid");
 
       // Wrap the grid in a Div to enable horizontal scrolling
       Div gridWrapper = new Div(segmentsGrid);
       gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
       gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
+      gridWrapper.setId("segments-grid-wrapper");
 
       segmentsLayout.add(gridWrapper);
       segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
@@ -715,12 +717,14 @@ public class ShowDetailView extends Main
     segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
     segmentTypeCombo.setWidthFull();
     segmentTypeCombo.setRequired(true);
+    segmentTypeCombo.setId("segment-type-combo-box");
 
     // Segment rules selection (multi-select)
     MultiSelectComboBox<SegmentRule> rulesCombo = new MultiSelectComboBox<>("Segment Rules");
     rulesCombo.setItems(segmentRuleRepository.findAll());
     rulesCombo.setItemLabelGenerator(SegmentRule::getName);
     rulesCombo.setWidthFull();
+    rulesCombo.setId("segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
 
     // Wrestlers selection (multi-select)
@@ -729,12 +733,14 @@ public class ShowDetailView extends Main
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setRequired(true);
+    wrestlersCombo.setId("wrestlers-combo-box");
 
     // Winner selection (will be populated based on selected wrestlers)
     ComboBox<Wrestler> winnerCombo = new ComboBox<>("Winner (Optional)");
     winnerCombo.setItemLabelGenerator(Wrestler::getName);
     winnerCombo.setWidthFull();
     winnerCombo.setClearButtonVisible(true);
+    winnerCombo.setId("winner-combo-box");
 
     // Update winner options when wrestlers change
     wrestlersCombo.addValueChangeListener(
@@ -743,17 +749,17 @@ public class ShowDetailView extends Main
           winnerCombo.clear();
         });
 
-    // ... other fields ...
-
     // Add title selection for new segments
     MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
     titleMultiSelectComboBox.setItems(titleService.findAll());
     titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
     titleMultiSelectComboBox.setWidthFull();
     titleMultiSelectComboBox.setVisible(false); // Initially hidden
+    titleMultiSelectComboBox.setId("title-multi-select-combo-box");
 
     // Add checkbox to indicate if it's a title segment
     Checkbox isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
+    isTitleSegmentCheckbox.setId("is-title-segment-checkbox");
     isTitleSegmentCheckbox.addValueChangeListener(
         event -> {
           titleMultiSelectComboBox.setVisible(event.getValue());
@@ -765,11 +771,13 @@ public class ShowDetailView extends Main
     // Narration
     TextArea summaryArea = new TextArea("Summary");
     summaryArea.setWidthFull();
+    summaryArea.setId("summary-text-area");
     formLayout.setColspan(summaryArea, 2);
 
     // Narration
     TextArea narrationArea = new TextArea("Narration");
     narrationArea.setWidthFull();
+    narrationArea.setId("narration-text-area");
     formLayout.setColspan(narrationArea, 2);
 
     formLayout.add(
@@ -793,6 +801,8 @@ public class ShowDetailView extends Main
               }
               // Create a new segment object to pass to validation
               Segment newSegment = new Segment();
+              newSegment.setNarration(narrationArea.getValue());
+              newSegment.setSummary(summaryArea.getValue());
               newSegment.setSegmentOrder(segmentRepository.findByShow(show).size() + 1);
               newSegment.setShow(show);
               newSegment.setSegmentDate(java.time.Instant.now());
@@ -823,8 +833,10 @@ public class ShowDetailView extends Main
               }
             });
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveButton.setId("add-segment-save-button");
 
     Button cancelButton = new Button("Cancel", e -> dialog.close());
+    cancelButton.setId("add-segment-cancel-button");
 
     HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, cancelButton);
     buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
@@ -856,6 +868,7 @@ public class ShowDetailView extends Main
     segmentTypeCombo.setWidthFull();
     segmentTypeCombo.setRequired(true);
     segmentTypeCombo.setValue(segment.getSegmentType());
+    segmentTypeCombo.setId("edit-segment-type-combo-box");
 
     // Segment rules selection (multi-select)
     MultiSelectComboBox<SegmentRule> rulesCombo = new MultiSelectComboBox<>("Segment Rules");
@@ -863,6 +876,7 @@ public class ShowDetailView extends Main
     rulesCombo.setItemLabelGenerator(SegmentRule::getName);
     rulesCombo.setWidthFull();
     rulesCombo.setValue(segment.getSegmentRules());
+    rulesCombo.setId("edit-segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
 
     // Wrestlers selection (multi-select)
@@ -872,6 +886,7 @@ public class ShowDetailView extends Main
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setRequired(true);
     wrestlersCombo.setValue(segment.getWrestlers());
+    wrestlersCombo.setId("edit-wrestlers-combo-box");
 
     // Winner selection (multi-select)
     MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
@@ -879,6 +894,7 @@ public class ShowDetailView extends Main
     winnersCombo.setWidthFull();
     winnersCombo.setItems(segment.getWrestlers());
     winnersCombo.setValue(segment.getWinners());
+    winnersCombo.setId("edit-winners-combo-box");
 
     // Update winner options when wrestlers change
     wrestlersCombo.addValueChangeListener(
@@ -891,12 +907,14 @@ public class ShowDetailView extends Main
     TextArea summaryArea = new TextArea("Summary");
     summaryArea.setWidthFull();
     summaryArea.setValue(segment.getSummary() != null ? segment.getSummary() : "");
+    summaryArea.setId("edit-summary-text-area");
     formLayout.setColspan(summaryArea, 2);
 
     // Narration
     TextArea narrationArea = new TextArea("Narration");
     narrationArea.setWidthFull();
     narrationArea.setValue(segment.getNarration() != null ? segment.getNarration() : "");
+    narrationArea.setId("edit-narration-text-area");
     formLayout.setColspan(narrationArea, 2);
 
     // ... other fields ...
@@ -908,10 +926,12 @@ public class ShowDetailView extends Main
     titleMultiSelectComboBox.setWidthFull();
     titleMultiSelectComboBox.setVisible(segment.getIsTitleSegment()); // Control visibility
     titleMultiSelectComboBox.setValue(segment.getTitles()); // Set initial value
+    titleMultiSelectComboBox.setId("edit-title-multi-select-combo-box");
 
     // Add checkbox to indicate if it's a title segment
     Checkbox isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
     isTitleSegmentCheckbox.setValue(segment.getIsTitleSegment());
+    isTitleSegmentCheckbox.setId("edit-is-title-segment-checkbox");
     isTitleSegmentCheckbox.addValueChangeListener(
         event -> {
           titleMultiSelectComboBox.setVisible(event.getValue());
@@ -957,8 +977,10 @@ public class ShowDetailView extends Main
               }
             });
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveButton.setId("edit-segment-save-button");
 
     Button cancelButton = new Button("Cancel", e -> dialog.close());
+    cancelButton.setId("edit-segment-cancel-button");
 
     HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, cancelButton);
     buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
