@@ -2,17 +2,18 @@ package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author Javier Ortiz Bultron @date Oct 10, 2023
  */
 @Slf4j
+@EnabledIfEnvironmentVariable(named = "NOTION_TOKEN", matches = ".*")
 class NpcSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private NotionSyncService notionSyncService;
@@ -20,13 +21,6 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
   @Test
   @DisplayName("Should sync NPCs from Notion with real services")
   void shouldSyncNpcsFromNotionWithRealServices() {
-    // Skip test if no NOTION_TOKEN available
-    String notionToken = EnvironmentVariableUtil.getValue("NOTION_TOKEN");
-    if (notionToken == null || notionToken.trim().isEmpty()) {
-      log.warn("⏭️ Skipping real integration test - no NOTION_TOKEN provided");
-      return;
-    }
-
     log.info("🚀 Starting real NPC sync integration test...");
 
     // When - Perform real sync with real services
