@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -11,8 +12,11 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.utils.DiceBag;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -38,6 +42,7 @@ public class ShowService {
   private final SegmentAdjudicationService segmentAdjudicationService;
   private final SegmentRepository segmentRepository;
   private final ApplicationEventPublisher eventPublisher;
+  private final RivalryService rivalryService;
 
   ShowService(
       ShowRepository showRepository,
@@ -47,7 +52,8 @@ public class ShowService {
       Clock clock,
       SegmentAdjudicationService segmentAdjudicationService,
       SegmentRepository segmentRepository,
-      ApplicationEventPublisher eventPublisher) {
+      ApplicationEventPublisher eventPublisher,
+      RivalryService rivalryService) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -56,6 +62,7 @@ public class ShowService {
     this.segmentAdjudicationService = segmentAdjudicationService;
     this.segmentRepository = segmentRepository;
     this.eventPublisher = eventPublisher;
+    this.rivalryService = rivalryService;
   }
 
   public List<Show> list(Pageable pageable) {
@@ -321,6 +328,30 @@ public class ShowService {
         .forEach(
             segment -> {
               segmentAdjudicationService.adjudicateMatch(segment);
+              if (show.isPremiumLiveEvent()) {
+                // Check if feuds should be resolved.
+                switch (segment.getSegmentType().getName()) {
+                  case "Tag Team":
+                    attemptRivalryResolution(
+                        segment.getWrestlers().get(0), segment.getWrestlers().get(2));
+                    attemptRivalryResolution(
+                        segment.getWrestlers().get(0), segment.getWrestlers().get(3));
+                    attemptRivalryResolution(
+                        segment.getWrestlers().get(1), segment.getWrestlers().get(2));
+                    attemptRivalryResolution(
+                        segment.getWrestlers().get(1), segment.getWrestlers().get(3));
+                    break;
+                  case "Abu Dhabi Rumble":
+                  case "One on One":
+                  case "Free-for-All":
+                    int size = segment.getParticipants().size();
+                    for (int i = 1; i < size; i++) {
+                      attemptRivalryResolution(
+                          segment.getWrestlers().get(0), segment.getWrestlers().get(i));
+                    }
+                    break;
+                }
+              }
               segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
               segmentRepository.save(segment);
             });
@@ -328,7 +359,16 @@ public class ShowService {
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }
 
-  public List<Segment> getSegments(Show show) {
+  public List<Segment> getSegments(@NonNull Show show) {
     return segmentRepository.findByShow(show);
+  }
+
+  private void attemptRivalryResolution(@NonNull Wrestler w1, @NonNull Wrestler w2) {
+    DiceBag diceBag = new DiceBag(20);
+    Optional<Rivalry> rivalryBetweenWrestlers =
+        rivalryService.getRivalryBetweenWrestlers(w1.getId(), w2.getId());
+    rivalryBetweenWrestlers.ifPresent(
+        rivalry ->
+            rivalryService.attemptResolution(rivalry.getId(), diceBag.roll(), diceBag.roll()));
   }
 }

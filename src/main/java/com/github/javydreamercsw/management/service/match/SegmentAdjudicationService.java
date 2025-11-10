@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.match;
 
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -12,6 +13,7 @@ import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import lombok.NonNull;
@@ -117,8 +119,8 @@ public class SegmentAdjudicationService {
         }
       }
 
-      // Assign bumps to all participants
-      for (Wrestler participant : segment.getWrestlers()) {
+      // Assign bumps to all losers
+      for (Wrestler participant : segment.getLosers()) {
         Long id = participant.getId();
         if (id != null) {
           wrestlerService.addBump(id);
@@ -151,41 +153,36 @@ public class SegmentAdjudicationService {
       heat = 4;
     }
 
-    if (heat > 0) {
-      List<Wrestler> participants = segment.getWrestlers();
-      for (int i = 0; i < participants.size(); i++) {
-        for (int j = i + 1; j < participants.size(); j++) {
-          rivalryService.addHeatBetweenWrestlers(
-              participants.get(i).getId(),
-              participants.get(j).getId(),
-              heat,
-              "From segment: " + segment.getSegmentType().getName());
-        }
+    List<Wrestler> participants = segment.getWrestlers();
+    for (int i = 0; i < participants.size(); i++) {
+      for (int j = i + 1; j < participants.size(); j++) {
+        rivalryService.addHeatBetweenWrestlers(
+            participants.get(i).getId(),
+            participants.get(j).getId(),
+            heat,
+            "From segment: " + segment.getSegmentType().getName());
       }
     }
 
     // Add heat to feuds
-    if (heat > 0) {
-      List<Wrestler> participants = segment.getWrestlers();
-      Set<MultiWrestlerFeud> feudsToUpdate = new HashSet<>();
-      for (Wrestler participant : participants) {
-        feudsToUpdate.addAll(feudService.getActiveFeudsForWrestler(participant.getId()));
-      }
+    Set<MultiWrestlerFeud> feudsToUpdate = new HashSet<>();
+    for (Wrestler participant : participants) {
+      feudsToUpdate.addAll(feudService.getActiveFeudsForWrestler(participant.getId()));
+    }
 
-      for (MultiWrestlerFeud feud : feudsToUpdate) {
-        List<Wrestler> feudParticipants = feud.getActiveWrestlers();
-        long segmentParticipantsInFeud =
-            participants.stream().filter(feudParticipants::contains).count();
+    for (MultiWrestlerFeud feud : feudsToUpdate) {
+      List<Wrestler> feudParticipants = feud.getActiveWrestlers();
+      long segmentParticipantsInFeud =
+          participants.stream().filter(feudParticipants::contains).count();
 
-        if (segmentParticipantsInFeud > 1) {
-          feudService.addHeat(
-              feud.getId(), heat, "From segment: " + segment.getSegmentType().getName());
-        }
+      if (segmentParticipantsInFeud > 1) {
+        feudService.addHeat(
+            feud.getId(), heat, "From segment: " + segment.getSegmentType().getName());
       }
     }
 
     // Attempt to resolve feuds after PLE matches
-    if (segment.getShow().getType().getName().equals("Premium Live Event (PLE)")) {
+    if (segment.getShow().isPremiumLiveEvent()) {
       log.info("Attempting to resolve feuds after PLE match: {}", segment.getShow().getName());
       for (Wrestler wrestler : segment.getWrestlers()) {
         List<MultiWrestlerFeud> feuds = feudService.getActiveFeudsForWrestler(wrestler.getId());
@@ -193,6 +190,32 @@ public class SegmentAdjudicationService {
           feudResolutionService.attemptFeudResolution(feud);
         }
       }
+      // Check if feuds should be resolved.
+      switch (segment.getSegmentType().getName()) {
+        case "Tag Team":
+          attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(2));
+          attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(3));
+          attemptRivalryResolution(segment.getWrestlers().get(1), segment.getWrestlers().get(2));
+          attemptRivalryResolution(segment.getWrestlers().get(1), segment.getWrestlers().get(3));
+          break;
+        case "Abu Dhabi Rumble":
+        case "One on One":
+        case "Free-for-All":
+          int size = segment.getParticipants().size();
+          for (int i = 1; i < size; i++) {
+            attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(i));
+          }
+          break;
+      }
     }
+  }
+
+  private void attemptRivalryResolution(@NonNull Wrestler w1, @NonNull Wrestler w2) {
+    DiceBag diceBag = new DiceBag(20);
+    Optional<Rivalry> rivalryBetweenWrestlers =
+        rivalryService.getRivalryBetweenWrestlers(w1.getId(), w2.getId());
+    rivalryBetweenWrestlers.ifPresent(
+        rivalry ->
+            rivalryService.attemptResolution(rivalry.getId(), diceBag.roll(), diceBag.roll()));
   }
 }

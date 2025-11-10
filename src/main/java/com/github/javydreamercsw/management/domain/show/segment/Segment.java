@@ -179,6 +179,13 @@ public class Segment extends AbstractEntity<Long> {
         .toList();
   }
 
+  public List<Wrestler> getLosers() {
+    return participants.stream()
+        .filter(participant -> !participant.getIsWinner())
+        .map(SegmentParticipant::getWrestler)
+        .toList();
+  }
+
   public void setWinners(List<Wrestler> winners) {
     if (winners == null || winners.isEmpty()) {
       for (SegmentParticipant participant : participants) {

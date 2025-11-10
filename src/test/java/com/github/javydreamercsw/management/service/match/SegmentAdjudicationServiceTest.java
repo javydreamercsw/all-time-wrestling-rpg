@@ -4,9 +4,11 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -97,11 +99,17 @@ class SegmentAdjudicationServiceTest {
   void testAdjudicateMatch_PLEFeudResolution() {
     // Given
     Show show = new Show();
+    ShowTemplate showTemplate = new ShowTemplate();
     ShowType showType = new ShowType();
     showType.setName("Premium Live Event (PLE)");
+    show.setTemplate(showTemplate);
     show.setType(showType);
+    showTemplate.setShowType(showType);
     show.setName("Biggest Event of the Year");
     segment.setShow(show);
+    SegmentType st = new SegmentType();
+    st.setName("One on One");
+    segment.setSegmentType(st);
 
     MultiWrestlerFeud feud1 = new MultiWrestlerFeud();
     feud1.setId(1L);
@@ -117,12 +125,16 @@ class SegmentAdjudicationServiceTest {
     Assertions.assertNotNull(challenger.getId());
     when(feudService.getActiveFeudsForWrestler(challenger.getId())).thenReturn(List.of(feud2));
 
+    when(rivalryService.getRivalryBetweenWrestlers(champion.getId(), challenger.getId()))
+        .thenReturn(Optional.of(new Rivalry()));
+
     // When
     segmentAdjudicationService.adjudicateMatch(segment);
 
     // Then
     verify(feudResolutionService, times(1)).attemptFeudResolution(feud1);
     verify(feudResolutionService, times(1)).attemptFeudResolution(feud2);
+    verify(rivalryService, times(1)).attemptResolution(any(), anyInt(), anyInt());
   }
 
   @Test
