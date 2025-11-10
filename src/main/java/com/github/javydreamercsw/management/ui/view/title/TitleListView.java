@@ -80,6 +80,7 @@ public class TitleListView extends Main {
               contenderComboBox.setItems(titleService.getEligibleChallengers(title.getId()));
               contenderComboBox.setItemLabelGenerator(Wrestler::getName);
               contenderComboBox.setWidthFull();
+              contenderComboBox.setClearButtonVisible(true); // Allow clearing the field
 
               // Set initial value if a contender exists
               title.getContender().stream().findFirst().ifPresent(contenderComboBox::setValue);
@@ -102,6 +103,24 @@ public class TitleListView extends Main {
                               () ->
                                   Notification.show(
                                       "Failed to update contender",
+                                      5000,
+                                      Notification.Position.BOTTOM_END));
+                    } else {
+                      // Handle clearing the contender
+                      titleService
+                          .clearNumberOneContender(title.getId())
+                          .ifPresentOrElse(
+                              updatedTitle -> {
+                                Notification.show(
+                                        "Contender cleared for " + title.getName(),
+                                        3000,
+                                        Notification.Position.BOTTOM_END)
+                                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                                refreshGrid(); // Refresh grid to reflect changes
+                              },
+                              () ->
+                                  Notification.show(
+                                      "Failed to clear contender",
                                       5000,
                                       Notification.Position.BOTTOM_END));
                     }

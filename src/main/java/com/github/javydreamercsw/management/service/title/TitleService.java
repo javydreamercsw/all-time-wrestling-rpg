@@ -309,4 +309,15 @@ public class TitleService {
     }
     return Optional.empty();
   }
+
+  /** Clear the #1 contender for a title. */
+  public Optional<Title> clearNumberOneContender(@NonNull Long titleId) {
+    return titleRepository
+        .findById(titleId)
+        .map(
+            title -> {
+              title.setNumberOneContender(null);
+              return titleRepository.saveAndFlush(title);
+            });
+  }
 }

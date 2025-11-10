@@ -171,9 +171,11 @@ public class Title extends AbstractEntity<Long> {
   }
 
   /** Sets the #1 contender for the title. Clears any existing contenders. */
-  public void setNumberOneContender(@NonNull Wrestler wrestler) {
+  public void setNumberOneContender(@Nullable Wrestler wrestler) {
     this.contender.clear();
-    this.contender.add(wrestler);
+    if (wrestler != null) {
+      this.contender.add(wrestler);
+    }
   }
 
   /** Gets the #1 contender for the title, or null if none is set. */
