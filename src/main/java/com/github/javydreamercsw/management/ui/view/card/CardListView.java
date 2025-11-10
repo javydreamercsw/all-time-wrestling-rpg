@@ -62,6 +62,15 @@ public class CardListView extends Main {
     // Enable grid editor
     Editor<Card> editor = cardGrid.getEditor();
     editor.setBuffered(true);
+
+    editor.addSaveListener(
+        event -> {
+          cardService.save(event.getItem());
+          cardGrid.getDataProvider().refreshAll();
+          Notification.show("Card updated", 3_000, Notification.Position.BOTTOM_END)
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
     // Create and set the binder
     Binder<Card> binder = new Binder<>(Card.class);
     editor.setBinder(binder);

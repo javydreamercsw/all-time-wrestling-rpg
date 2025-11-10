@@ -13,7 +13,7 @@ public class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNavigateToWrestlerListView() {
-    driver.get("http://localhost:" + serverPort + "/wrestler-list");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
     // Check that the grid is present
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));

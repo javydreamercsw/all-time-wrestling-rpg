@@ -1,7 +1,6 @@
 package com.github.javydreamercsw.base.test;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -51,9 +50,5 @@ public abstract class AbstractIntegrationTest {
         "The Undertaker wins after Mankind is thrown off the Hell in a Cell");
 
     return context;
-  }
-
-  protected static boolean isNotionTokenAvailable() {
-    return EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 }

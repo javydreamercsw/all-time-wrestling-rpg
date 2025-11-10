@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management;
 
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
@@ -110,16 +111,6 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   }
 
   protected Wrestler createTestWrestler(@NonNull String name) {
-    Wrestler wrestler = Wrestler.builder().build();
-    wrestler.setName(name);
-    wrestler.setFans(10_000L);
-    wrestler.setStartingHealth(15);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingStamina(0);
-    wrestler.setLowStamina(0);
-    wrestler.setDeckSize(15);
-    wrestler.setIsPlayer(false);
-    wrestler.setGender(com.github.javydreamercsw.management.domain.wrestler.Gender.MALE);
-    return wrestler;
+    return TestUtils.createWrestler(wrestlerRepository, name);
   }
 }

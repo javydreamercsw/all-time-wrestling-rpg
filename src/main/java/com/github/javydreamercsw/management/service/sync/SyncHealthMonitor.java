@@ -42,6 +42,12 @@ public class SyncHealthMonitor implements HealthIndicator {
 
   @Override
   public Health health() {
+    if (!syncProperties.isEnabled()) {
+      // If sync is explicitly disabled, report UP with a specific detail
+      log.info("Notion sync is disabled, reporting health as UP.");
+      return Health.up().withDetail("message", "Notion Sync is disabled").build();
+    }
+
     Health.Builder builder = new Health.Builder();
 
     try {
@@ -59,30 +65,35 @@ public class SyncHealthMonitor implements HealthIndicator {
 
       // Check recent sync performance
       if (hasRecentFailures()) {
-        builder
-            .down()
-            .withDetail("consecutiveFailures", consecutiveFailures.get())
-            .withDetail("lastError", lastErrorMessage)
-            .withDetail("lastFailedSync", lastFailedSync);
+        builder.down().withDetail("consecutiveFailures", consecutiveFailures.get());
+        if (lastErrorMessage != null) {
+          builder.withDetail("lastError", lastErrorMessage);
+        }
+        if (lastFailedSync != null) {
+          builder.withDetail("lastFailedSync", lastFailedSync);
+        }
       } else if (hasStaleSync()) {
-        builder
-            .down()
-            .withDetail("warning", "No recent successful sync")
-            .withDetail("lastSuccessfulSync", lastSuccessfulSync);
+        builder.down().withDetail("warning", "No recent successful sync");
+        if (lastSuccessfulSync != null) {
+          builder.withDetail("lastSuccessfulSync", lastSuccessfulSync);
+        }
       } else {
         builder.up();
       }
 
       // Add performance metrics
-      return builder
+      builder
           .withDetail("successfulSyncs", successfulSyncs.get())
           .withDetail("failedSyncs", failedSyncs.get())
           .withDetail("successRate", calculateSuccessRate())
           .withDetail("averageSyncTime", calculateAverageSyncTime())
-          .withDetail("lastSuccessfulSync", lastSuccessfulSync)
-          .withDetail("activeOperations", progressTracker.getActiveOperations().size())
-          .build();
+          .withDetail("activeOperations", progressTracker.getActiveOperations().size());
 
+      if (lastSuccessfulSync != null) {
+        builder.withDetail("lastSuccessfulSync", lastSuccessfulSync);
+      }
+
+      return builder.build();
     } catch (Exception e) {
       log.error("Error checking sync health", e);
       return builder.down().withDetail("error", "Health check failed: " + e.getMessage()).build();
@@ -140,13 +151,16 @@ public class SyncHealthMonitor implements HealthIndicator {
   @Scheduled(fixedRate = 300000) // Every 5 minutes
   public void performHealthCheck() {
     try {
-      // Log health status
-      if (hasRecentFailures()) {
-        log.warn("Sync health degraded: {} consecutive failures", consecutiveFailures.get());
-      } else if (hasStaleSync()) {
-        log.warn("Sync health warning: No recent successful sync (last: {})", lastSuccessfulSync);
-      } else {
-        log.debug("Sync health: OK (Success rate: {}%)", calculateSuccessRate());
+      // Log health status only if sync is enabled, otherwise the UP status with disabled message is
+      // sufficient
+      if (syncProperties.isEnabled()) {
+        if (hasRecentFailures()) {
+          log.warn("Sync health degraded: {} consecutive failures", consecutiveFailures.get());
+        } else if (hasStaleSync()) {
+          log.warn("Sync health warning: No recent successful sync (last: {})", lastSuccessfulSync);
+        } else {
+          log.debug("Sync health: OK (Success rate: {}%)", calculateSuccessRate());
+        }
       }
 
       // Clean up old metrics
@@ -158,8 +172,9 @@ public class SyncHealthMonitor implements HealthIndicator {
   }
 
   private boolean isConfigurationValid() {
-    return syncProperties.isEnabled() && EnvironmentVariableUtil.isNotionTokenAvailable();
-    // Entities are automatically determined, no need to check configuration
+    // This check now only matters if sync is enabled.
+    // If disabled, the health check returns UP, not down for config.
+    return !syncProperties.isEnabled() || EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 
   private boolean hasRecentFailures() {

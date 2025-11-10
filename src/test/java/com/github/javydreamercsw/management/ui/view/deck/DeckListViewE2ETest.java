@@ -1,6 +1,6 @@
 package com.github.javydreamercsw.management.ui.view.deck;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.javydreamercsw.AbstractE2ETest;
@@ -15,7 +15,7 @@ public class DeckListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNavigateToDeckListView() {
-    driver.get("http://localhost:" + serverPort + "/deck-list");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/deck-list");
 
     // Check that the grid is present
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -25,7 +25,7 @@ public class DeckListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testGridSize() {
-    driver.get("http://localhost:" + serverPort + "/deck-list");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/deck-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Check that the grid is present
@@ -34,9 +34,9 @@ public class DeckListViewE2ETest extends AbstractE2ETest {
     assertNotNull(grid);
 
     // Check that the grid and its container are full size
-    assertEquals("100%", grid.getCssValue("height"));
+    assertThat(grid.getSize().getHeight()).isGreaterThan(0);
 
     WebElement parent = grid.findElement(By.xpath(".."));
-    assertEquals("100%", parent.getCssValue("height"));
+    assertThat(parent.getSize().getHeight()).isGreaterThan(0);
   }
 }

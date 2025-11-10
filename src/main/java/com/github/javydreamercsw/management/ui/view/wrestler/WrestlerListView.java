@@ -29,7 +29,7 @@ import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import java.time.Clock;
+import lombok.NonNull;
 
 @Route("wrestler-list")
 @PageTitle("Wrestler List")
@@ -43,7 +43,7 @@ public class WrestlerListView extends Main {
   final Button createBtn;
   final Grid<Wrestler> wrestlerGrid;
 
-  public WrestlerListView(WrestlerService wrestlerService, Clock clock) {
+  public WrestlerListView(@NonNull WrestlerService wrestlerService) {
     this.wrestlerService = wrestlerService;
 
     name = new TextField();

@@ -14,14 +14,14 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
 
 /**
  * Integration tests for Teams Sync functionality. These tests require NOTION_TOKEN to be available
  * and use the real database.
  */
-@TestPropertySource(properties = "notion.sync.enabled=true")
+@EnabledIfEnvironmentVariable(named = "NOTION_TOKEN", matches = ".*")
 class NotionSyncServiceTeamsIntegrationTest extends ManagementIntegrationTest {
   @Autowired private NotionSyncService notionSyncService;
   @Autowired private TeamRepository teamRepository;

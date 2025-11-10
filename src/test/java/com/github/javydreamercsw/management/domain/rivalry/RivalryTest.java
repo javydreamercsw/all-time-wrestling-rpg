@@ -3,15 +3,21 @@ package com.github.javydreamercsw.management.domain.rivalry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 /** Unit tests for Rivalry entity. Tests the ATW RPG rivalry and heat system functionality. */
 @DisplayName("Rivalry Tests")
+@DataJpaTest
 class RivalryTest {
+  @Autowired private WrestlerRepository wrestlerRepository;
 
   private Rivalry rivalry;
   private Wrestler wrestler1;
@@ -20,9 +26,9 @@ class RivalryTest {
 
   @BeforeEach
   void setUp() {
-    wrestler1 = createWrestler("Wrestler 1");
-    wrestler2 = createWrestler("Wrestler 2");
-    wrestler3 = createWrestler("Wrestler 3");
+    wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
+    wrestler2 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 2");
+    wrestler3 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 3");
 
     rivalry = new Rivalry();
     rivalry.setWrestler1(wrestler1);
@@ -283,15 +289,5 @@ class RivalryTest {
     HeatEvent event = rivalry.getHeatEvents().get(0);
     assertThat(event.getHeatChange()).isEqualTo(-3);
     assertThat(event.getHeatAfterEvent()).isEqualTo(7);
-  }
-
-  private Wrestler createWrestler(String name) {
-    Wrestler wrestler = Wrestler.builder().build();
-    wrestler.setId(System.nanoTime()); // Unique ID for testing
-    wrestler.setName(name);
-    wrestler.setFans(50000L);
-    wrestler.setStartingHealth(15);
-    wrestler.setIsPlayer(true);
-    return wrestler;
   }
 }

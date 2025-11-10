@@ -1,13 +1,8 @@
 package com.github.javydreamercsw.base.test;
 
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import java.lang.reflect.Field;
 
 public abstract class BaseTest {
-  /** Helper method to check if NOTION_TOKEN is available for conditional tests. */
-  public static boolean isNotionTokenAvailable() {
-    return EnvironmentVariableUtil.getNotionToken() != null;
-  }
 
   /**
    * Helper method to set private fields via reflection for testing. This is needed because we
