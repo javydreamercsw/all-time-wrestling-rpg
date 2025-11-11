@@ -1,7 +1,6 @@
 package com.github.javydreamercsw.management.event;
 
-import com.github.javydreamercsw.base.event.FanAwardedEvent;
-import com.github.javydreamercsw.base.event.FanChangeBroadcaster;
+import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 

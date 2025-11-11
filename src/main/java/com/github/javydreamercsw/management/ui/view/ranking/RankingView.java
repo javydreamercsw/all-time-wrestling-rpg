@@ -1,10 +1,10 @@
 package com.github.javydreamercsw.management.ui.view.ranking;
 
-import com.github.javydreamercsw.base.ui.view.MainLayout;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
+import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;

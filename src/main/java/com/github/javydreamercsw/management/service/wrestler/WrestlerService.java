@@ -3,16 +3,15 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
-import com.github.javydreamercsw.base.event.FanAwardedEvent;
-import com.github.javydreamercsw.base.event.WrestlerBumpEvent;
-import com.github.javydreamercsw.base.event.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
-import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
+import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
+import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -140,11 +139,11 @@ public class WrestlerService {
         .map(
             wrestler -> {
               boolean injuryOccurred = wrestler.addBump();
+              // Always publish WrestlerBumpEvent when a bump is added
+              eventPublisher.publishEvent(new WrestlerBumpEvent(this, wrestler));
               if (injuryOccurred) {
-                // Create injury using the injury service
-                Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestlerId);
-                injury.ifPresent(
-                    value -> eventPublisher.publishEvent(new WrestlerBumpEvent(this, wrestler)));
+                // Create injury using the injury service only if a new injury occurred
+                injuryService.createInjuryFromBumps(wrestlerId);
               }
               return wrestlerRepository.saveAndFlush(wrestler);
             });

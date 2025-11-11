@@ -1,8 +1,8 @@
 package com.github.javydreamercsw.management.ui.view.injury;
 
-import com.github.javydreamercsw.base.ui.view.MainLayout;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
+import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;

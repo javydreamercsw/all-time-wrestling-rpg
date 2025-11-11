@@ -1,12 +1,12 @@
 package com.github.javydreamercsw.management.service.injury;
 
-import com.github.javydreamercsw.base.event.WrestlerInjuryEvent;
-import com.github.javydreamercsw.base.event.WrestlerInjuryHealedEvent;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.dto.WrestlerInjuryEvent;
+import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;

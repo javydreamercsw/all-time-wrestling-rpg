@@ -2,10 +2,10 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.mockito.Mockito.*;
 
-import com.github.javydreamercsw.base.event.WrestlerBumpEvent;
-import com.github.javydreamercsw.base.event.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
+import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.Optional;
