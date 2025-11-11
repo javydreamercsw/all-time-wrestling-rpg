@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,6 +125,24 @@ public class SegmentAdjudicationService {
         Long id = participant.getId();
         if (id != null) {
           wrestlerService.addBump(id);
+        }
+      }
+      if (segment.getSegmentRules().stream()
+          .anyMatch(
+              rule ->
+                  Stream.of(
+                          "Ladder Match",
+                          "Extreme",
+                          "Barbwire Exploding Deathmatch",
+                          "🪖 War Games",
+                          "Tables, Ladders and Chairs (TLC)",
+                          "Casket Match")
+                      .anyMatch(value -> rule.getName().equals(value)))) {
+        for (Wrestler participant : segment.getWrestlers()) {
+          Long id = participant.getId();
+          if (id != null) {
+            wrestlerService.addBump(id);
+          }
         }
       }
     } else {

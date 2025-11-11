@@ -109,7 +109,7 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
     org.assertj.core.api.Assertions.assertThat(updatedLoser.get().getFans())
         .isBetween(initialFans + 4_000, initialFans + 19_000);
 
-    assertEquals(1, updatedWinner.get().getBumps());
+    assertEquals(0, updatedWinner.get().getBumps());
     assertEquals(1, updatedLoser.get().getBumps());
   }
 

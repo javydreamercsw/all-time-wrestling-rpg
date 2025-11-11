@@ -138,6 +138,22 @@ class SegmentAdjudicationServiceTest {
   }
 
   @Test
+  void testAdjudicateMatch_AssignsBumpsToLosers() {
+    // Given
+    when(random.nextInt(anyInt())).thenReturn(10); // Mock the dice roll for non-promo
+    segment.setWinners(List.of(champion)); // Champion is winner
+
+    // When
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Then
+    Assertions.assertNotNull(challenger.getId());
+    verify(wrestlerService, times(1)).addBump(challenger.getId());
+    Assertions.assertNotNull(champion.getId());
+    verify(wrestlerService, never()).addBump(champion.getId());
+  }
+
+  @Test
   void testAdjudicateMatch_AddsHeatToFeuds() {
     // Given
     // Create a new segment for this test to avoid interference from setUp
