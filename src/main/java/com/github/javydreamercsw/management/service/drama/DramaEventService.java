@@ -413,10 +413,10 @@ public class DramaEventService {
       @NonNull DramaEventType type,
       @NonNull DramaEventSeverity severity,
       @NonNull Wrestler primary,
-      Wrestler secondary) { // Removed @NonNull
+      Wrestler secondary) {
 
     String primaryName = primary.getName();
-    String secondaryName = secondary != null ? secondary.getName() : null; // Handle null secondary
+    String secondaryName = secondary != null ? secondary.getName() : ""; // Handle null secondary
 
     return switch (type) {
       case BACKSTAGE_INCIDENT -> generateBackstageIncident(severity, primaryName, secondaryName);

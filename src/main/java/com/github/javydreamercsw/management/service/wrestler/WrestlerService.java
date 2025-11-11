@@ -213,7 +213,7 @@ public class WrestlerService {
    * @param tier The wrestler tier
    * @return List of wrestlers in that tier
    */
-  public List<Wrestler> getWrestlersByTier(WrestlerTier tier) {
+  public List<Wrestler> getWrestlersByTier(@NonNull WrestlerTier tier) {
     return wrestlerRepository.findAll().stream()
         .filter(wrestler -> wrestler.getTier() == tier)
         .toList();
@@ -246,7 +246,7 @@ public class WrestlerService {
    * @param cost The fan cost
    * @return true if successful, false if wrestler not found or insufficient fans
    */
-  public boolean spendFans(Long wrestlerId, Long cost) {
+  public boolean spendFans(@NonNull Long wrestlerId, @NonNull Long cost) {
     return updateFans(wrestlerId, -cost).isPresent();
   }
 
@@ -262,7 +262,7 @@ public class WrestlerService {
     Wrestler wrestler =
         Wrestler.builder()
             .name(name)
-            .description(description)
+            .description(description == null ? "Default Description" : description)
             .deckSize(15)
             .startingHealth(15)
             .lowHealth(0)

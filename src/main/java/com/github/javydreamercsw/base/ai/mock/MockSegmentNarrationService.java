@@ -6,8 +6,6 @@ import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -114,15 +112,18 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
   private List<String> extractParticipants(String prompt) {
     List<String> participants = new ArrayList<>();
-    Pattern p = Pattern.compile("\"wrestlers\"\\s*:\\s*\\[([^]]*)]", Pattern.DOTALL);
-    Matcher m = p.matcher(prompt);
-    if (m.find()) {
-      String wrestlersBlock = m.group(1);
-      p = Pattern.compile("\"name\"\\s*:\\s*\"(.*?)\"");
-      m = p.matcher(wrestlersBlock);
-      while (m.find()) {
-        participants.add(m.group(1));
+    try {
+      String jsonString = prompt.substring(prompt.indexOf('{'), prompt.lastIndexOf('}') + 1);
+      JsonNode rootNode = objectMapper.readTree(jsonString);
+      if (rootNode.has("wrestlers")) {
+        for (JsonNode wrestlerNode : rootNode.get("wrestlers")) {
+          if (wrestlerNode.has("name")) {
+            participants.add(wrestlerNode.get("name").asText());
+          }
+        }
       }
+    } catch (Exception e) {
+      log.error("Error parsing participants from prompt.", e);
     }
 
     if (participants.isEmpty()) {

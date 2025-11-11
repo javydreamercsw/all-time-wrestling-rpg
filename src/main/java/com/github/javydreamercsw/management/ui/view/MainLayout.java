@@ -25,12 +25,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 public final class MainLayout extends AppLayout {
 
   private final MenuService menuService;
+  private final WrestlerInjuryHealedBroadcaster injuryBroadcaster;
   private Registration broadcasterRegistration;
   private Registration injuryBroadcasterRegistration;
 
   @Autowired
-  public MainLayout(MenuService menuService) {
+  public MainLayout(MenuService menuService, WrestlerInjuryHealedBroadcaster injuryBroadcaster) {
     this.menuService = menuService;
+    this.injuryBroadcaster = injuryBroadcaster;
     setPrimarySection(Section.DRAWER);
     addToDrawer(createHeader(), new Scroller(createSideNav()));
   }
@@ -81,12 +83,12 @@ public final class MainLayout extends AppLayout {
                               event.getWrestler().getName(),
                               event.getFanChange() > 0 ? "gained" : "lost",
                               Math.abs(event.getFanChange()));
-                      Notification.show(message, 3000, Notification.Position.TOP_CENTER);
+                      Notification.show(message, 3000, Notification.Position.BOTTOM_END);
                     });
               }
             });
     injuryBroadcasterRegistration =
-        WrestlerInjuryHealedBroadcaster.register(
+        injuryBroadcaster.register(
             event -> {
               if (ui.isAttached()) {
                 ui.access(
@@ -95,7 +97,7 @@ public final class MainLayout extends AppLayout {
                           String.format(
                               "%s's injury (%s) has been healed!",
                               event.getWrestler().getName(), event.getInjury().getName());
-                      Notification.show(message, 3000, Notification.Position.TOP_CENTER);
+                      Notification.show(message, 3000, Notification.Position.BOTTOM_END);
                     });
               }
             });
