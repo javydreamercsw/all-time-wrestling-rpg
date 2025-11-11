@@ -4,6 +4,8 @@ import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
 import com.github.javydreamercsw.base.event.FanAwardedEvent;
+import com.github.javydreamercsw.base.event.WrestlerBumpEvent;
+import com.github.javydreamercsw.base.event.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -142,12 +144,7 @@ public class WrestlerService {
                 // Create injury using the injury service
                 Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestlerId);
                 injury.ifPresent(
-                    value ->
-                        log.error(
-                            "Wrestler {} suffered an injury: {} ({})",
-                            wrestler.getName(),
-                            value.getName(),
-                            value.getSeverity().getDisplayName()));
+                    value -> eventPublisher.publishEvent(new WrestlerBumpEvent(this, wrestler)));
               }
               return wrestlerRepository.saveAndFlush(wrestler);
             });
@@ -159,7 +156,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
-  public Optional<Wrestler> healChance(@NonNull Long wrestlerId) {
+  public Optional<Wrestler> healChance(@NonNull Long wrestlerId, @NonNull DiceBag diceBag) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
@@ -168,9 +165,8 @@ public class WrestlerService {
                   .getActiveInjuries()
                   .forEach(
                       injury -> {
-                        DiceBag diceBag = new DiceBag(20);
                         if (injuryService
-                            .attemptHealing(injury.getId(), diceBag.roll())
+                            .attemptHealing(injury.getId(), new DiceBag(20).roll())
                             .success()) {
                           log.info(
                               "Wrestler {} healed an injury: {} ({})",
@@ -181,7 +177,6 @@ public class WrestlerService {
                       });
 
               if (wrestler.getBumps() > 0) {
-                DiceBag diceBag = new DiceBag(6);
                 if (diceBag.roll() > 3) {
                   wrestler.setBumps(wrestler.getBumps() - 1);
                   log.info(
@@ -189,11 +184,16 @@ public class WrestlerService {
                       wrestler.getName(),
                       wrestler.getBumps(),
                       wrestler.getBumps() + 1);
+                  eventPublisher.publishEvent(new WrestlerBumpHealedEvent(this, wrestler));
                 }
               }
 
               return wrestlerRepository.saveAndFlush(wrestler);
             });
+  }
+
+  public Optional<Wrestler> healChance(@NonNull Long wrestlerId) {
+    return healChance(wrestlerId, new DiceBag(6));
   }
 
   /**

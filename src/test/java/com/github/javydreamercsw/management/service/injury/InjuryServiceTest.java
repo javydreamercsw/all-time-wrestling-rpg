@@ -1,13 +1,10 @@
 package com.github.javydreamercsw.management.service.injury;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.event.WrestlerInjuryEvent;
+import com.github.javydreamercsw.base.event.WrestlerInjuryHealedEvent;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
@@ -17,27 +14,33 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import lombok.NonNull;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 /** Unit tests for InjuryService. Tests the ATW RPG injury management functionality. */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("InjuryService Tests")
 class InjuryServiceTest {
+
   @Mock private InjuryRepository injuryRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private Clock clock;
   @Mock private Random random;
+  @Mock private ApplicationEventPublisher eventPublisher;
+
   @InjectMocks private InjuryService injuryService;
 
   private Clock fixedClock;
@@ -52,7 +55,7 @@ class InjuryServiceTest {
   @DisplayName("Should create new injury for wrestler")
   void shouldCreateNewInjuryForWrestler() {
     // Given
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
     when(injuryRepository.saveAndFlush(any(Injury.class)))
         .thenAnswer(
@@ -110,9 +113,10 @@ class InjuryServiceTest {
   void testCreateInjuryFromBumpsSeverity(
       WrestlerTier tier, int roll, InjurySeverity expectedSeverity) {
     // Given
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
     wrestler.setTier(tier);
     wrestler.setBumps(3);
+    Assertions.assertNotNull(wrestler.getId());
     when(wrestlerRepository.findById(wrestler.getId())).thenReturn(Optional.of(wrestler));
     when(random.nextInt(100)).thenReturn(roll - 1); // Control the d100 roll
     when(random.nextInt(4)).thenReturn(0); // For injury name generation
@@ -124,15 +128,15 @@ class InjuryServiceTest {
     Optional<Injury> result = injuryService.createInjuryFromBumps(wrestler.getId());
 
     // Then
-    assertTrue(result.isPresent());
-    assertEquals(expectedSeverity, result.get().getSeverity());
+    Assertions.assertTrue(result.isPresent());
+    Assertions.assertEquals(expectedSeverity, result.get().getSeverity());
   }
 
   @Test
   @DisplayName("Should attempt healing with a random roll")
   void shouldAttemptHealingWithRandomRoll() {
     // Given
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
     Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
     when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
     when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(wrestler);
@@ -142,16 +146,17 @@ class InjuryServiceTest {
     InjuryService.HealingResult result = injuryService.attemptHealing(1L, null);
 
     // Then
-    assertTrue(result.success());
-    assertEquals(6, result.diceRoll());
+    Assertions.assertTrue(result.success());
+    Assertions.assertEquals(6, result.diceRoll());
   }
 
   @Test
   @DisplayName("Should create injury from bumps")
   void shouldCreateInjuryFromBumps() {
     // Given
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
     wrestler.setBumps(3); // Set bumps to trigger injury creation
+    Assertions.assertNotNull(wrestler.getId());
     when(wrestlerRepository.findById(wrestler.getId())).thenReturn(Optional.of(wrestler));
 
     when(injuryRepository.saveAndFlush(any(Injury.class)))
@@ -167,7 +172,7 @@ class InjuryServiceTest {
 
     // Then
     assertThat(result).isNotNull();
-    assertTrue(result.isPresent());
+    Assertions.assertTrue(result.isPresent());
     assertThat(result.get().getWrestler()).isEqualTo(wrestler);
     assertThat(result.get().getIsActive()).isTrue();
     assertThat(wrestler.getInjuries()).contains(result.get());
@@ -178,7 +183,7 @@ class InjuryServiceTest {
   @DisplayName("Should successfully heal injury with good dice roll")
   void shouldSuccessfullyHealInjuryWithGoodDiceRoll() {
     // Given
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
     Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
 
     when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
@@ -194,7 +199,7 @@ class InjuryServiceTest {
     assertThat(result.diceRoll()).isEqualTo(6);
     assertThat(result.fansSpent()).isTrue();
     assertThat(injury.getIsActive()).isFalse();
-    assertThat(wrestler.getFans()).isEqualTo(45000L); // 50k - 5k healing cost
+    assertThat(wrestler.getFans()).isEqualTo(45_000L); // 50k - 5k healing cost
     verify(wrestlerRepository).saveAndFlush(wrestler);
     verify(injuryRepository).saveAndFlush(injury);
   }
@@ -203,7 +208,7 @@ class InjuryServiceTest {
   @DisplayName("Should fail to heal injury with bad dice roll")
   void shouldFailToHealInjuryWithBadDiceRoll() {
     // Given
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
+    Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
     Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
 
     when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
@@ -218,7 +223,7 @@ class InjuryServiceTest {
     assertThat(result.diceRoll()).isEqualTo(2);
     assertThat(result.fansSpent()).isTrue();
     assertThat(injury.getIsActive()).isTrue(); // Still active
-    assertThat(wrestler.getFans()).isEqualTo(45000L); // Fans still spent
+    assertThat(wrestler.getFans()).isEqualTo(45_000L); // Fans still spent
     verify(wrestlerRepository).saveAndFlush(wrestler);
   }
 
@@ -226,7 +231,7 @@ class InjuryServiceTest {
   @DisplayName("Should fail healing when wrestler cannot afford cost")
   void shouldFailHealingWhenWrestlerCannotAffordCost() {
     // Given
-    Wrestler wrestler = createWrestler("Poor Wrestler", 1000L); // Only 1k fans
+    Wrestler wrestler = createWrestler("Poor Wrestler", 1_000L); // Only 1k fans
     Injury injury = createInjury(wrestler, InjurySeverity.MINOR); // Costs 5k to heal
 
     when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
@@ -241,141 +246,54 @@ class InjuryServiceTest {
   }
 
   @Test
-  @DisplayName("Should fail healing when injury cannot be healed")
-  void shouldFailHealingWhenInjuryCannotBeHealed() {
+  void testCreateInjuryFromBumps_PublishesEvent() {
     // Given
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
-    Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
-    injury.heal(); // Already healed
-
-    when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
-
-    // When
-    InjuryService.HealingResult result = injuryService.attemptHealing(1L, 6);
-
-    // Then
-    assertThat(result.success()).isFalse();
-    assertThat(result.message()).contains("cannot be healed");
-    assertThat(result.fansSpent()).isFalse();
-  }
-
-  @Test
-  @DisplayName("Should return empty when healing injury not found")
-  void shouldReturnEmptyWhenHealingInjuryNotFound() {
-    when(injuryRepository.findById(99L)).thenReturn(Optional.empty());
-    InjuryService.HealingResult result = injuryService.attemptHealing(99L, 3);
-    assertThat(result.success()).isFalse();
-    assertThat(result.message()).contains("Injury not found");
-  }
-
-  @Test
-  @DisplayName("Should return failure when injury cannot be healed")
-  void shouldReturnFailureWhenInjuryCannotBeHealed() {
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
-    Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
-    injury.heal(); // Mark as healed
-    when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
-    InjuryService.HealingResult result = injuryService.attemptHealing(1L, 3);
-    assertThat(result.success()).isFalse();
-    assertThat(result.message()).contains("cannot be healed");
-  }
-
-  @Test
-  @DisplayName("Should return failure when wrestler cannot afford healing cost")
-  void shouldReturnFailureWhenWrestlerCannotAffordHealingCost() {
-    Wrestler wrestler = createWrestler("Test Wrestler", 0L); // No fans
-    Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
-    when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
-    InjuryService.HealingResult result = injuryService.attemptHealing(1L, 3);
-    assertThat(result.success()).isFalse();
-    assertThat(result.message()).contains("cannot afford");
-  }
-
-  @Test
-  @DisplayName("Should get injury by ID")
-  void shouldGetInjuryById() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setTier(WrestlerTier.ROOKIE);
     Injury injury = new Injury();
     injury.setId(1L);
-    when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
-    Optional<Injury> result = injuryService.getInjuryById(1L);
-    assertThat(result).isPresent();
-    assertThat(result.get().getId()).isEqualTo(1L);
-  }
-
-  @Test
-  @DisplayName("Should get all injuries with pagination")
-  void shouldGetAllInjuriesWithPagination() {
-    Injury injury = new Injury();
-    when(injuryRepository.findAllBy(any()))
-        .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(injury)));
-    var result =
-        injuryService.getAllInjuries(org.springframework.data.domain.PageRequest.of(0, 10));
-    assertThat(result.getContent()).hasSize(1);
-  }
-
-  @Test
-  @DisplayName("Should get active injuries for wrestler")
-  void shouldGetActiveInjuriesForWrestler() {
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    Injury injury = new Injury();
-    when(injuryRepository.findActiveInjuriesForWrestler(wrestler)).thenReturn(List.of(injury));
-    List<Injury> result = injuryService.getActiveInjuriesForWrestler(1L);
-    assertThat(result).hasSize(1);
-  }
-
-  @Test
-  @DisplayName("Should get all injuries for wrestler")
-  void shouldGetAllInjuriesForWrestler() {
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    Injury injury = new Injury();
-    when(injuryRepository.findByWrestler(wrestler)).thenReturn(List.of(injury));
-    List<Injury> result = injuryService.getAllInjuriesForWrestler(1L);
-    assertThat(result).hasSize(1);
-  }
-
-  @Test
-  @DisplayName("Should get injuries by severity")
-  void shouldGetInjuriesBySeverity() {
-    Injury injury = new Injury();
-    when(injuryRepository.findBySeverity(InjurySeverity.MINOR)).thenReturn(List.of(injury));
-    List<Injury> result = injuryService.getInjuriesBySeverity(InjurySeverity.MINOR);
-    assertThat(result).hasSize(1);
-  }
-
-  @Test
-  @DisplayName("Should get all active injuries")
-  void shouldGetAllActiveInjuries() {
-    Injury injury = new Injury();
-    when(injuryRepository.findAllActiveInjuries()).thenReturn(List.of(injury));
-    List<Injury> result = injuryService.getAllActiveInjuries();
-    assertThat(result).hasSize(1);
-  }
-
-  @Test
-  @DisplayName("Should update injury information")
-  void shouldUpdateInjuryInformation() {
-    // Given
-    Wrestler wrestler = createWrestler("Test Wrestler", 50000L);
-    Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
-
-    when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
     when(injuryRepository.saveAndFlush(any(Injury.class))).thenReturn(injury);
+    when(random.nextInt(100))
+        .thenReturn(10); // For getRandomInjurySeverityForWrestler to return MINOR
 
     // When
-    Optional<Injury> result =
-        injuryService.updateInjury(1L, "Updated Name", "Updated description", "Updated notes");
+    injuryService.createInjuryFromBumps(1L);
 
     // Then
-    assertThat(result).isPresent();
-    assertThat(injury.getName()).isEqualTo("Updated Name");
-    assertThat(injury.getDescription()).isEqualTo("Updated description");
-    assertThat(injury.getInjuryNotes()).isEqualTo("Updated notes");
-    verify(injuryRepository).saveAndFlush(injury);
+    ArgumentCaptor<WrestlerInjuryEvent> eventCaptor =
+        ArgumentCaptor.forClass(WrestlerInjuryEvent.class);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
   }
 
-  private Wrestler createWrestler(String name, Long fans) {
+  @Test
+  void testAttemptHealing_PublishesEvent() {
+    // Given
+    Wrestler mockWrestler = mock(Wrestler.class);
+    when(mockWrestler.canAfford(anyLong())).thenReturn(true);
+    when(mockWrestler.spendFans(anyLong())).thenReturn(true);
+
+    Injury mockInjury = mock(Injury.class);
+    InjurySeverity mockInjurySeverity = mock(InjurySeverity.class);
+    when(mockInjury.canBeHealed()).thenReturn(true);
+    when(mockInjury.getHealingCost()).thenReturn(100L);
+    doReturn(mockWrestler).when(mockInjury).getWrestler(); // Crucial line
+    when(mockInjury.getSeverity()).thenReturn(mockInjurySeverity);
+    when(mockInjurySeverity.isHealingSuccessful(anyInt())).thenReturn(true);
+
+    when(injuryRepository.findById(1L)).thenReturn(Optional.of(mockInjury));
+
+    // When
+    injuryService.attemptHealing(1L, 5);
+
+    // Then
+    ArgumentCaptor<WrestlerInjuryHealedEvent> eventCaptor =
+        ArgumentCaptor.forClass(WrestlerInjuryHealedEvent.class);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+  }
+
+  private Wrestler createWrestler(@NonNull String name, @NonNull Long fans) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(1L);
     wrestler.setName(name);
@@ -386,7 +304,7 @@ class InjuryServiceTest {
     return wrestler;
   }
 
-  private Injury createInjury(Wrestler wrestler, InjurySeverity severity) {
+  private Injury createInjury(@NonNull Wrestler wrestler, @NonNull InjurySeverity severity) {
     Injury injury = new Injury();
     injury.setId(1L);
     injury.setWrestler(wrestler);

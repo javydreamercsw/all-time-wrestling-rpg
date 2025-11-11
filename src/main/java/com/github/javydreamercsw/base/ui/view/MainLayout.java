@@ -3,6 +3,7 @@ package com.github.javydreamercsw.base.ui.view;
 import static com.vaadin.flow.theme.lumo.LumoUtility.*;
 
 import com.github.javydreamercsw.base.event.FanChangeBroadcaster;
+import com.github.javydreamercsw.base.event.WrestlerInjuryHealedBroadcaster;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
@@ -25,6 +26,7 @@ public final class MainLayout extends AppLayout {
 
   private final MenuService menuService;
   private Registration broadcasterRegistration;
+  private Registration injuryBroadcasterRegistration;
 
   @Autowired
   public MainLayout(MenuService menuService) {
@@ -83,11 +85,26 @@ public final class MainLayout extends AppLayout {
                     });
               }
             });
+    injuryBroadcasterRegistration =
+        WrestlerInjuryHealedBroadcaster.register(
+            event -> {
+              if (ui.isAttached()) {
+                ui.access(
+                    () -> {
+                      String message =
+                          String.format(
+                              "%s's injury (%s) has been healed!",
+                              event.getWrestler().getName(), event.getInjury().getName());
+                      Notification.show(message, 3000, Notification.Position.TOP_CENTER);
+                    });
+              }
+            });
   }
 
   @Override
   protected void onDetach(DetachEvent detachEvent) {
     super.onDetach(detachEvent);
     broadcasterRegistration.remove();
+    injuryBroadcasterRegistration.remove();
   }
 }

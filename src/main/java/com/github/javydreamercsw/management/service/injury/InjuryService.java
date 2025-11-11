@@ -1,5 +1,7 @@
 package com.github.javydreamercsw.management.service.injury;
 
+import com.github.javydreamercsw.base.event.WrestlerInjuryEvent;
+import com.github.javydreamercsw.base.event.WrestlerInjuryHealedEvent;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
@@ -12,6 +14,7 @@ import java.util.Optional;
 import java.util.Random;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +32,7 @@ public class InjuryService {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private Clock clock;
   @Autowired private Random random;
+  @Autowired private ApplicationEventPublisher eventPublisher;
 
   /** Create a new injury for a wrestler. */
   public Optional<Injury> createInjury(
@@ -53,7 +57,9 @@ public class InjuryService {
               injury.setInjuryNotes(injuryNotes);
               injury.setCreationDate(Instant.now(clock));
 
-              return injuryRepository.saveAndFlush(injury);
+              Injury savedInjury = injuryRepository.saveAndFlush(injury);
+              eventPublisher.publishEvent(new WrestlerInjuryEvent(this, wrestler, savedInjury));
+              return savedInjury;
             });
   }
 
@@ -85,7 +91,9 @@ public class InjuryService {
 
               wrestler.getInjuries().add(injury);
 
-              return injuryRepository.saveAndFlush(injury);
+              Injury savedInjury = injuryRepository.saveAndFlush(injury);
+              eventPublisher.publishEvent(new WrestlerInjuryEvent(this, wrestler, savedInjury));
+              return savedInjury;
             });
   }
 
@@ -126,6 +134,8 @@ public class InjuryService {
     if (success) {
       injury.heal();
       injuryRepository.saveAndFlush(injury);
+      eventPublisher.publishEvent(
+          new WrestlerInjuryHealedEvent(this, injury.getWrestler(), injury));
     }
 
     return new HealingResult(
