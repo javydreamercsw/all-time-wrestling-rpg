@@ -11,6 +11,7 @@ public class TestUtils {
       @NonNull WrestlerRepository wrestlerRepository, @NonNull String name) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
+    wrestler.setDescription("Test Wrestler");
     wrestler.setDeckSize(15);
     wrestler.setStartingHealth(15);
     wrestler.setStartingStamina(15);

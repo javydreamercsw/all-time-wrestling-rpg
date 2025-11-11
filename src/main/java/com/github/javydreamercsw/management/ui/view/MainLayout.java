@@ -1,8 +1,9 @@
-package com.github.javydreamercsw.base.ui.view;
+package com.github.javydreamercsw.management.ui.view;
 
 import static com.vaadin.flow.theme.lumo.LumoUtility.*;
 
-import com.github.javydreamercsw.base.event.FanChangeBroadcaster;
+import com.github.javydreamercsw.management.event.FanChangeBroadcaster;
+import com.github.javydreamercsw.management.event.WrestlerInjuryHealedBroadcaster;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
@@ -24,11 +25,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 public final class MainLayout extends AppLayout {
 
   private final MenuService menuService;
+  private final WrestlerInjuryHealedBroadcaster injuryBroadcaster;
   private Registration broadcasterRegistration;
+  private Registration injuryBroadcasterRegistration;
 
   @Autowired
-  public MainLayout(MenuService menuService) {
+  public MainLayout(MenuService menuService, WrestlerInjuryHealedBroadcaster injuryBroadcaster) {
     this.menuService = menuService;
+    this.injuryBroadcaster = injuryBroadcaster;
     setPrimarySection(Section.DRAWER);
     addToDrawer(createHeader(), new Scroller(createSideNav()));
   }
@@ -79,7 +83,21 @@ public final class MainLayout extends AppLayout {
                               event.getWrestler().getName(),
                               event.getFanChange() > 0 ? "gained" : "lost",
                               Math.abs(event.getFanChange()));
-                      Notification.show(message, 3000, Notification.Position.TOP_CENTER);
+                      Notification.show(message, 3000, Notification.Position.BOTTOM_END);
+                    });
+              }
+            });
+    injuryBroadcasterRegistration =
+        injuryBroadcaster.register(
+            event -> {
+              if (ui.isAttached()) {
+                ui.access(
+                    () -> {
+                      String message =
+                          String.format(
+                              "%s's injury (%s) has been healed!",
+                              event.getWrestler().getName(), event.getInjury().getName());
+                      Notification.show(message, 3000, Notification.Position.BOTTOM_END);
                     });
               }
             });
@@ -89,5 +107,6 @@ public final class MainLayout extends AppLayout {
   protected void onDetach(DetachEvent detachEvent) {
     super.onDetach(detachEvent);
     broadcasterRegistration.remove();
+    injuryBroadcasterRegistration.remove();
   }
 }

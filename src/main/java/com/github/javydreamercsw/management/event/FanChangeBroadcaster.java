@@ -1,5 +1,6 @@
-package com.github.javydreamercsw.base.event;
+package com.github.javydreamercsw.management.event;
 
+import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.vaadin.flow.shared.Registration;
 import java.util.LinkedList;
 import java.util.concurrent.Executor;

@@ -1,6 +1,6 @@
 package com.github.javydreamercsw.management.event;
 
-import com.github.javydreamercsw.base.event.FanAwardedEvent;
+import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
 import org.springframework.context.ApplicationListener;

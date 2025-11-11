@@ -148,12 +148,6 @@ public class Segment extends AbstractEntity<Long> {
     if (adjudicationStatus == null) {
       adjudicationStatus = AdjudicationStatus.PENDING;
     }
-    if (segmentOrder == 0) {
-      segmentOrder = 0;
-    }
-    if (!isMainEvent) {
-      isMainEvent = false;
-    }
   }
 
   /** Add a participant to the segment. */
@@ -176,14 +170,14 @@ public class Segment extends AbstractEntity<Long> {
     return participants.stream()
         .filter(SegmentParticipant::getIsWinner)
         .map(SegmentParticipant::getWrestler)
-        .toList();
+        .collect(java.util.stream.Collectors.toList());
   }
 
   public List<Wrestler> getLosers() {
     return participants.stream()
         .filter(participant -> !participant.getIsWinner())
         .map(SegmentParticipant::getWrestler)
-        .toList();
+        .collect(java.util.stream.Collectors.toList());
   }
 
   public void setWinners(List<Wrestler> winners) {
@@ -241,7 +235,7 @@ public class Segment extends AbstractEntity<Long> {
     return !segmentRules.isEmpty();
   }
 
-  /** Get segment rules as a formatted string. */
+  @JsonIgnore
   public String getSegmentRulesAsString() {
     if (segmentRules.isEmpty()) {
       return "Standard Match";

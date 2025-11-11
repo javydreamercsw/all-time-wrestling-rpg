@@ -1,8 +1,8 @@
 package com.github.javydreamercsw.management.ui.view.inbox;
 
-import com.github.javydreamercsw.base.ui.view.MainLayout;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;

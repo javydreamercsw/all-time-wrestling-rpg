@@ -1,6 +1,5 @@
 package com.github.javydreamercsw.management.ui.view;
 
-import com.github.javydreamercsw.base.ui.view.MainLayout;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.dto.TeamDTO;
 import com.github.javydreamercsw.management.service.team.TeamService;

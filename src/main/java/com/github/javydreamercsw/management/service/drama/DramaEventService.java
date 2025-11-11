@@ -15,6 +15,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -172,7 +173,7 @@ public class DramaEventService {
    * @param event The event to process
    */
   @Transactional
-  public void processEvent(DramaEvent event) {
+  public void processEvent(@NonNull DramaEvent event) {
     if (event.getIsProcessed()) {
       log.warn("Event {} is already processed", event.getId());
       return;
@@ -322,7 +323,7 @@ public class DramaEventService {
   }
 
   /** Apply heat impact between wrestlers. */
-  private void applyHeatImpact(DramaEvent event, StringBuilder notes) {
+  private void applyHeatImpact(@NonNull DramaEvent event, @NonNull StringBuilder notes) {
     rivalryService.addHeatBetweenWrestlers(
         event.getPrimaryWrestler().getId(),
         event.getSecondaryWrestler().getId(),
@@ -338,7 +339,7 @@ public class DramaEventService {
   }
 
   /** Apply injury impact to the primary wrestler. */
-  private void applyInjuryImpact(DramaEvent event, StringBuilder notes) {
+  private void applyInjuryImpact(@NonNull DramaEvent event, @NonNull StringBuilder notes) {
     // Add bumps that might lead to injury
     Wrestler wrestler = event.getPrimaryWrestler();
     boolean injuryOccurred = wrestler.addBump();
@@ -354,7 +355,7 @@ public class DramaEventService {
   }
 
   /** Create a new rivalry between wrestlers. */
-  private void applyRivalryCreation(DramaEvent event, StringBuilder notes) {
+  private void applyRivalryCreation(@NonNull DramaEvent event, @NonNull StringBuilder notes) {
     rivalryService.createRivalry(
         event.getPrimaryWrestler().getId(),
         event.getSecondaryWrestler().getId(),
@@ -367,7 +368,7 @@ public class DramaEventService {
   }
 
   /** End existing rivalry between wrestlers. */
-  private void applyRivalryEnding(DramaEvent event, StringBuilder notes) {
+  private void applyRivalryEnding(@NonNull DramaEvent event, @NonNull StringBuilder notes) {
     // This would require a method in RivalryService to end rivalries
     // For now, just add negative heat to cool down the rivalry
     rivalryService.addHeatBetweenWrestlers(
@@ -396,7 +397,7 @@ public class DramaEventService {
   }
 
   /** Get a random opponent for multi-wrestler events. */
-  private Wrestler getRandomOpponent(Wrestler wrestler) {
+  private Wrestler getRandomOpponent(@NonNull Wrestler wrestler) {
     List<Wrestler> allWrestlers = wrestlerRepository.findAll();
     allWrestlers.removeIf(w -> w.getId().equals(wrestler.getId()));
 
@@ -409,10 +410,13 @@ public class DramaEventService {
 
   /** Generate event template with title and description. */
   private DramaEventTemplate generateEventTemplate(
-      DramaEventType type, DramaEventSeverity severity, Wrestler primary, Wrestler secondary) {
+      @NonNull DramaEventType type,
+      @NonNull DramaEventSeverity severity,
+      @NonNull Wrestler primary,
+      Wrestler secondary) {
 
     String primaryName = primary.getName();
-    String secondaryName = secondary != null ? secondary.getName() : "";
+    String secondaryName = secondary != null ? secondary.getName() : ""; // Handle null secondary
 
     return switch (type) {
       case BACKSTAGE_INCIDENT -> generateBackstageIncident(severity, primaryName, secondaryName);
@@ -469,7 +473,7 @@ public class DramaEventService {
   }
 
   private DramaEventTemplate generateSocialMediaDrama(
-      DramaEventSeverity severity, String primary, String secondary) {
+      @NonNull DramaEventSeverity severity, @NonNull String primary, @NonNull String secondary) {
     return switch (severity) {
       case POSITIVE ->
           new DramaEventTemplate(
@@ -502,7 +506,8 @@ public class DramaEventService {
     };
   }
 
-  private DramaEventTemplate generateInjuryIncident(DramaEventSeverity severity, String primary) {
+  private DramaEventTemplate generateInjuryIncident(
+      @NonNull DramaEventSeverity severity, @NonNull String primary) {
     return switch (severity) {
       case POSITIVE ->
           new DramaEventTemplate(
@@ -532,7 +537,8 @@ public class DramaEventService {
     };
   }
 
-  private DramaEventTemplate generateFanInteraction(DramaEventSeverity severity, String primary) {
+  private DramaEventTemplate generateFanInteraction(
+      @NonNull DramaEventSeverity severity, @NonNull String primary) {
     return switch (severity) {
       case POSITIVE ->
           new DramaEventTemplate(
@@ -561,7 +567,8 @@ public class DramaEventService {
     };
   }
 
-  private DramaEventTemplate generateContractDispute(DramaEventSeverity severity, String primary) {
+  private DramaEventTemplate generateContractDispute(
+      @NonNull DramaEventSeverity severity, @NonNull String primary) {
     return switch (severity) {
       case POSITIVE ->
           new DramaEventTemplate(
@@ -591,7 +598,7 @@ public class DramaEventService {
   }
 
   private DramaEventTemplate generateBetrayal(
-      DramaEventSeverity severity, String primary, String secondary) {
+      @NonNull DramaEventSeverity severity, @NonNull String primary, @NonNull String secondary) {
     return switch (severity) {
       case POSITIVE ->
           new DramaEventTemplate(
@@ -627,7 +634,7 @@ public class DramaEventService {
   }
 
   private DramaEventTemplate generateAllianceFormed(
-      DramaEventSeverity severity, String primary, String secondary) {
+      @NonNull DramaEventSeverity severity, @NonNull String primary, @NonNull String secondary) {
     return switch (severity) {
       case POSITIVE ->
           new DramaEventTemplate(
@@ -662,7 +669,8 @@ public class DramaEventService {
     };
   }
 
-  private DramaEventTemplate generateSurpriseReturn(DramaEventSeverity severity, String primary) {
+  private DramaEventTemplate generateSurpriseReturn(
+      @NonNull DramaEventSeverity severity, @NonNull String primary) {
     return switch (severity) {
       case POSITIVE ->
           new DramaEventTemplate(
@@ -691,7 +699,8 @@ public class DramaEventService {
     };
   }
 
-  private DramaEventTemplate generateRetirementTease(DramaEventSeverity severity, String primary) {
+  private DramaEventTemplate generateRetirementTease(
+      @NonNull DramaEventSeverity severity, @NonNull String primary) {
     return switch (severity) {
       case POSITIVE ->
           new DramaEventTemplate(
@@ -721,7 +730,7 @@ public class DramaEventService {
   }
 
   private DramaEventTemplate generateChampionshipChallenge(
-      DramaEventSeverity severity, String primary, String secondary) {
+      @NonNull DramaEventSeverity severity, @NonNull String primary, @NonNull String secondary) {
     return switch (severity) {
       case POSITIVE ->
           new DramaEventTemplate(
@@ -783,7 +792,8 @@ public class DramaEventService {
     };
   }
 
-  private DramaEventTemplate generateMediaControversy(DramaEventSeverity severity, String primary) {
+  private DramaEventTemplate generateMediaControversy(
+      @NonNull DramaEventSeverity severity, @NonNull String primary) {
     return switch (severity) {
       case POSITIVE ->
           new DramaEventTemplate(

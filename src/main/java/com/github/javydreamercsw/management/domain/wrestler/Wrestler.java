@@ -28,8 +28,7 @@ import org.jspecify.annotations.Nullable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Wrestler extends AbstractEntity<Long>
-    implements com.github.javydreamercsw.base.event.Wrestler {
+public class Wrestler extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "wrestler_id")
@@ -125,6 +124,7 @@ public class Wrestler extends AbstractEntity<Long>
 
   // ==================== ATW RPG METHODS ====================
 
+  @JsonIgnore
   public Integer getFanWeight() {
     return Math.toIntExact(fans / 5);
   }
@@ -157,6 +157,7 @@ public class Wrestler extends AbstractEntity<Long>
     return false;
   }
 
+  @JsonIgnore
   public String getDisplayNameWithTier() {
     return tier.getEmoji() + " " + name;
   }

@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.base.ui.view;
+package com.github.javydreamercsw.management.ui.view;
 
 import com.vaadin.flow.component.icon.VaadinIcon;
 import java.util.ArrayList;

@@ -3,14 +3,15 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
-import com.github.javydreamercsw.base.event.FanAwardedEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
-import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
+import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
+import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -138,16 +139,11 @@ public class WrestlerService {
         .map(
             wrestler -> {
               boolean injuryOccurred = wrestler.addBump();
+              // Always publish WrestlerBumpEvent when a bump is added
+              eventPublisher.publishEvent(new WrestlerBumpEvent(this, wrestler));
               if (injuryOccurred) {
-                // Create injury using the injury service
-                Optional<Injury> injury = injuryService.createInjuryFromBumps(wrestlerId);
-                injury.ifPresent(
-                    value ->
-                        log.error(
-                            "Wrestler {} suffered an injury: {} ({})",
-                            wrestler.getName(),
-                            value.getName(),
-                            value.getSeverity().getDisplayName()));
+                // Create injury using the injury service only if a new injury occurred
+                injuryService.createInjuryFromBumps(wrestlerId);
               }
               return wrestlerRepository.saveAndFlush(wrestler);
             });
@@ -159,7 +155,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
-  public Optional<Wrestler> healChance(@NonNull Long wrestlerId) {
+  public Optional<Wrestler> healChance(@NonNull Long wrestlerId, @NonNull DiceBag diceBag) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
@@ -168,9 +164,8 @@ public class WrestlerService {
                   .getActiveInjuries()
                   .forEach(
                       injury -> {
-                        DiceBag diceBag = new DiceBag(20);
                         if (injuryService
-                            .attemptHealing(injury.getId(), diceBag.roll())
+                            .attemptHealing(injury.getId(), new DiceBag(20).roll())
                             .success()) {
                           log.info(
                               "Wrestler {} healed an injury: {} ({})",
@@ -181,7 +176,6 @@ public class WrestlerService {
                       });
 
               if (wrestler.getBumps() > 0) {
-                DiceBag diceBag = new DiceBag(6);
                 if (diceBag.roll() > 3) {
                   wrestler.setBumps(wrestler.getBumps() - 1);
                   log.info(
@@ -189,11 +183,16 @@ public class WrestlerService {
                       wrestler.getName(),
                       wrestler.getBumps(),
                       wrestler.getBumps() + 1);
+                  eventPublisher.publishEvent(new WrestlerBumpHealedEvent(this, wrestler));
                 }
               }
 
               return wrestlerRepository.saveAndFlush(wrestler);
             });
+  }
+
+  public Optional<Wrestler> healChance(@NonNull Long wrestlerId) {
+    return healChance(wrestlerId, new DiceBag(6));
   }
 
   /**
@@ -214,7 +213,7 @@ public class WrestlerService {
    * @param tier The wrestler tier
    * @return List of wrestlers in that tier
    */
-  public List<Wrestler> getWrestlersByTier(WrestlerTier tier) {
+  public List<Wrestler> getWrestlersByTier(@NonNull WrestlerTier tier) {
     return wrestlerRepository.findAll().stream()
         .filter(wrestler -> wrestler.getTier() == tier)
         .toList();
@@ -247,7 +246,7 @@ public class WrestlerService {
    * @param cost The fan cost
    * @return true if successful, false if wrestler not found or insufficient fans
    */
-  public boolean spendFans(Long wrestlerId, Long cost) {
+  public boolean spendFans(@NonNull Long wrestlerId, @NonNull Long cost) {
     return updateFans(wrestlerId, -cost).isPresent();
   }
 
@@ -263,7 +262,7 @@ public class WrestlerService {
     Wrestler wrestler =
         Wrestler.builder()
             .name(name)
-            .description(description)
+            .description(description == null ? "Default Description" : description)
             .deckSize(15)
             .startingHealth(15)
             .lowHealth(0)
