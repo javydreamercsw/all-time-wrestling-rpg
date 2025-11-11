@@ -124,6 +124,7 @@ public class Wrestler extends AbstractEntity<Long> {
 
   // ==================== ATW RPG METHODS ====================
 
+  @JsonIgnore
   public Integer getFanWeight() {
     return Math.toIntExact(fans / 5);
   }
@@ -156,6 +157,7 @@ public class Wrestler extends AbstractEntity<Long> {
     return false;
   }
 
+  @JsonIgnore
   public String getDisplayNameWithTier() {
     return tier.getEmoji() + " " + name;
   }
