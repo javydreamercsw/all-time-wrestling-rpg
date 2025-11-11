@@ -16,10 +16,12 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -43,6 +45,7 @@ public class ShowService {
   private final SegmentRepository segmentRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final RivalryService rivalryService;
+  private final WrestlerService wrestlerService;
 
   ShowService(
       ShowRepository showRepository,
@@ -53,7 +56,8 @@ public class ShowService {
       SegmentAdjudicationService segmentAdjudicationService,
       SegmentRepository segmentRepository,
       ApplicationEventPublisher eventPublisher,
-      RivalryService rivalryService) {
+      RivalryService rivalryService,
+      WrestlerService wrestlerService) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -63,6 +67,7 @@ public class ShowService {
     this.segmentRepository = segmentRepository;
     this.eventPublisher = eventPublisher;
     this.rivalryService = rivalryService;
+    this.wrestlerService = wrestlerService;
   }
 
   public List<Show> list(Pageable pageable) {
@@ -323,11 +328,16 @@ public class ShowService {
             .findById(showId)
             .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
 
+    List<Wrestler> participatingWrestlers = new ArrayList<>();
+
     segmentRepository.findByShow(show).stream()
         .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
         .forEach(
             segment -> {
               segmentAdjudicationService.adjudicateMatch(segment);
+              if (segment.getSegmentType().getName().equals("Promo")) {
+                participatingWrestlers.addAll(segment.getWrestlers());
+              }
               if (show.isPremiumLiveEvent()) {
                 // Check if feuds should be resolved.
                 switch (segment.getSegmentType().getName()) {
@@ -356,6 +366,9 @@ public class ShowService {
               segmentRepository.save(segment);
             });
 
+    getNonParticipatingWrestlers(participatingWrestlers)
+        .forEach(resting -> wrestlerService.healChance(resting.getId()));
+
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }
 
@@ -370,5 +383,18 @@ public class ShowService {
     rivalryBetweenWrestlers.ifPresent(
         rivalry ->
             rivalryService.attemptResolution(rivalry.getId(), diceBag.roll(), diceBag.roll()));
+  }
+
+  /**
+   * Returns a list of Wrestlers not in the provided participatingWrestlers list.
+   *
+   * @param participatingWrestlers List of currently participating wrestlers
+   * @return List of Wrestlers not participating
+   */
+  public List<Wrestler> getNonParticipatingWrestlers(
+      @NonNull List<Wrestler> participatingWrestlers) {
+    List<Wrestler> allWrestlers = new ArrayList<>(wrestlerService.findAll());
+    allWrestlers.removeAll(participatingWrestlers);
+    return allWrestlers;
   }
 }

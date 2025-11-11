@@ -14,6 +14,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.utils.DiceBag;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
@@ -126,7 +127,7 @@ public class WrestlerService {
   }
 
   /**
-   * Add a bump to a wrestler (injury system).
+   * Attempt to heal a bump to a wrestler (injury system).
    *
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
@@ -148,6 +149,49 @@ public class WrestlerService {
                             value.getName(),
                             value.getSeverity().getDisplayName()));
               }
+              return wrestlerRepository.saveAndFlush(wrestler);
+            });
+  }
+
+  /**
+   * Add a bump to a wrestler (injury system).
+   *
+   * @param wrestlerId The wrestler's ID
+   * @return The updated wrestler, or empty if not found
+   */
+  public Optional<Wrestler> healChance(@NonNull Long wrestlerId) {
+    return wrestlerRepository
+        .findById(wrestlerId)
+        .map(
+            wrestler -> {
+              wrestler
+                  .getActiveInjuries()
+                  .forEach(
+                      injury -> {
+                        DiceBag diceBag = new DiceBag(20);
+                        if (injuryService
+                            .attemptHealing(injury.getId(), diceBag.roll())
+                            .success()) {
+                          log.info(
+                              "Wrestler {} healed an injury: {} ({})",
+                              wrestler.getName(),
+                              injury.getName(),
+                              injury.getSeverity().getDisplayName());
+                        }
+                      });
+
+              if (wrestler.getBumps() > 0) {
+                DiceBag diceBag = new DiceBag(6);
+                if (diceBag.roll() > 3) {
+                  wrestler.setBumps(wrestler.getBumps() - 1);
+                  log.info(
+                      "Wrestler {} healed a bump: {} (was {})",
+                      wrestler.getName(),
+                      wrestler.getBumps(),
+                      wrestler.getBumps() + 1);
+                }
+              }
+
               return wrestlerRepository.saveAndFlush(wrestler);
             });
   }
