@@ -1,9 +1,12 @@
 package com.github.javydreamercsw.management.domain.drama;
 
+import lombok.Getter;
+
 /**
  * Severity levels for drama events in the ATW RPG system. Determines the impact magnitude and
  * consequences of the event.
  */
+@Getter
 public enum DramaEventSeverity {
   /** Positive events that benefit wrestlers (fan gains, good publicity, etc.) */
   POSITIVE("Positive", "Beneficial events that improve wrestler standing", "✨"),
@@ -27,18 +30,6 @@ public enum DramaEventSeverity {
     this.displayName = displayName;
     this.description = description;
     this.emoji = emoji;
-  }
-
-  public String getDisplayName() {
-    return displayName;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public String getEmoji() {
-    return emoji;
   }
 
   /** Get the typical fan impact range for this severity level. */

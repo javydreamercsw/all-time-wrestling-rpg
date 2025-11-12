@@ -1,9 +1,12 @@
 package com.github.javydreamercsw.management.domain.drama;
 
+import lombok.Getter;
+
 /**
  * Types of drama events that can occur in the ATW RPG system. Each type represents a different
  * category of storyline event that can affect wrestlers, rivalries, and the overall narrative.
  */
+@Getter
 public enum DramaEventType {
   /** Backstage altercations, locker room incidents, confrontations */
   BACKSTAGE_INCIDENT("Backstage Incident", "Physical or verbal confrontations behind the scenes"),
@@ -47,14 +50,6 @@ public enum DramaEventType {
   DramaEventType(String displayName, String description) {
     this.displayName = displayName;
     this.description = description;
-  }
-
-  public String getDisplayName() {
-    return displayName;
-  }
-
-  public String getDescription() {
-    return description;
   }
 
   /** Check if this event type typically involves multiple wrestlers. */

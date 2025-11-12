@@ -59,11 +59,12 @@ public class DramaEventController {
             request.title(),
             request.description());
 
-    if (event.isPresent()) {
-      return ResponseEntity.status(201).body(event.get());
-    } else {
-      return ResponseEntity.badRequest().body("Failed to create drama event - wrestler not found");
-    }
+    return event
+        .<ResponseEntity<Object>>map(dramaEvent -> ResponseEntity.status(201).body(dramaEvent))
+        .orElseGet(
+            () ->
+                ResponseEntity.badRequest()
+                    .body("Failed to create drama event - wrestler not found"));
   }
 
   @Operation(
@@ -78,11 +79,9 @@ public class DramaEventController {
   public ResponseEntity<Object> generateRandomDramaEvent(@PathVariable Long wrestlerId) {
     Optional<DramaEvent> event = dramaEventService.generateRandomDramaEvent(wrestlerId);
 
-    if (event.isPresent()) {
-      return ResponseEntity.status(201).body(event.get());
-    } else {
-      return ResponseEntity.notFound().build();
-    }
+    return event
+        .<ResponseEntity<Object>>map(dramaEvent -> ResponseEntity.status(201).body(dramaEvent))
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
   @Operation(
