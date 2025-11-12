@@ -22,17 +22,26 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Get the initial size of the grid
     long initialSize = wrestlerRepository.count();
 
+    // Click the "Create Wrestler" button
+    WebElement createButton =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("create-wrestler-button")));
+    clickAndScrollIntoView(createButton);
+
+    // Wait for the dialog to appear
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+
     // Find the components
     WebElement nameField =
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-name-field")));
+        wait.until(
+            ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-dialog-name-field")));
 
     // Enter a new wrestler name
     nameField.sendKeys("Test Wrestler");
 
-    // Click the create button
-    WebElement createButton =
-        wait.until(ExpectedConditions.elementToBeClickable(By.id("create-wrestler-button")));
-    clickAndScrollIntoView(createButton);
+    // Click the save button
+    WebElement saveButton =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("wrestler-dialog-save-button")));
+    clickAndScrollIntoView(saveButton);
 
     // Verify that the new wrestler appears in the grid
     wait.until(

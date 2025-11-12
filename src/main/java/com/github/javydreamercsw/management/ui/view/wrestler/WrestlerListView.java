@@ -3,7 +3,6 @@ package com.github.javydreamercsw.management.ui.view.wrestler;
 import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
-import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -16,7 +15,6 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -33,27 +31,11 @@ import lombok.NonNull;
 public class WrestlerListView extends Main {
 
   private final WrestlerService wrestlerService;
-
-  final TextField name;
-  final Button createBtn;
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(@NonNull WrestlerService wrestlerService) {
     this.wrestlerService = wrestlerService;
-
-    name = new TextField();
-    name.setPlaceholder("What do you want the wrestler name to be?");
-    name.setAriaLabel("Wrestler Name");
-    name.setId("wrestler-name-field");
-    name.setMaxLength(Card.DESCRIPTION_MAX_LENGTH);
-    name.setMinWidth("20em");
-
-    createBtn = new Button("Create", event -> createWrestler());
-    createBtn.setId("create-wrestler-button");
-    createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
     wrestlerGrid = new Grid<>();
-
     wrestlerGrid.setItems(query -> wrestlerService.list(toSpringPageRequest(query)).stream());
     wrestlerGrid.addColumn(Wrestler::getName).setHeader("Name").setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getGender).setHeader("Gender").setSortable(true);
@@ -192,15 +174,21 @@ public class WrestlerListView extends Main {
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Gap.SMALL);
 
-    add(new ViewToolbar("Wrestler List", ViewToolbar.group(name, createBtn)));
+    add(new ViewToolbar("Wrestler List", createWrestlerButton()));
     add(wrestlerGrid);
   }
 
-  private void createWrestler() {
-    wrestlerService.createWrestler(name.getValue());
-    wrestlerGrid.getDataProvider().refreshAll();
-    name.clear();
-    Notification.show("Wrestler added", 3_000, Notification.Position.BOTTOM_END)
-        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+  private Button createWrestlerButton() {
+    Button button =
+        new Button(
+            "Create Wrestler",
+            e -> {
+              WrestlerDialog dialog =
+                  new WrestlerDialog(wrestlerService, wrestlerGrid.getDataProvider()::refreshAll);
+              dialog.open();
+            });
+    button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    button.setId("create-wrestler-button");
+    return button;
   }
 }

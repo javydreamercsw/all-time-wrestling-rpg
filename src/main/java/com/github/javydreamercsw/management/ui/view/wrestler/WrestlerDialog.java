@@ -20,6 +20,11 @@ public class WrestlerDialog extends Dialog {
   private final Wrestler wrestler;
   private final Binder<Wrestler> binder = new Binder<>(Wrestler.class);
 
+  public WrestlerDialog(@NonNull WrestlerService wrestlerService, @NonNull Runnable onSave) {
+    this(wrestlerService, new Wrestler(), onSave);
+    setHeaderTitle("Create Wrestler");
+  }
+
   public WrestlerDialog(
       @NonNull WrestlerService wrestlerService,
       @NonNull Wrestler wrestler,
