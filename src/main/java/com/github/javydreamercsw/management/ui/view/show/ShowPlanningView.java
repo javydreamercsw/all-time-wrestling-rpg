@@ -16,6 +16,7 @@ import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -200,11 +201,13 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
         proposedSegmentsGrid.setItems(segments);
         approveButton.setEnabled(true); // Enable approve button
       } else {
-        Notification.show("AI did not propose any segments.", 5000, Notification.Position.MIDDLE);
+        Notification.show("AI did not propose any segments.", 5000, Notification.Position.MIDDLE)
+            .addThemeVariants(NotificationVariant.LUMO_ERROR);
       }
     } catch (Exception ex) {
       Notification.show(
-          "Error proposing segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+              "Error proposing segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
   }
 
@@ -219,11 +222,13 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       String baseUrl = UrlUtil.getBaseUrl();
       restTemplate.postForEntity(
           baseUrl + "/api/show-planning/approve/" + selectedShow.getId(), segments, Void.class);
-      Notification.show("Segments approved successfully!", 5000, Notification.Position.MIDDLE);
+      Notification.show("Segments approved successfully!", 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       proposedSegmentsGrid.setItems(new ArrayList<>());
     } catch (Exception ex) {
       Notification.show(
-          "Error approving segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+              "Error approving segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
   }
 

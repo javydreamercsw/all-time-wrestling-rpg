@@ -12,6 +12,7 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
@@ -104,7 +105,8 @@ public final class MainLayout extends AppLayout {
                               event.getWrestler().getName(),
                               event.getFanChange() > 0 ? "gained" : "lost",
                               Math.abs(event.getFanChange()));
-                      Notification.show(message, 3000, Notification.Position.BOTTOM_END);
+                      Notification.show(message, 3000, Notification.Position.BOTTOM_END)
+                          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                     });
               }
             });
@@ -118,7 +120,8 @@ public final class MainLayout extends AppLayout {
                           String.format(
                               "%s's injury (%s) has been healed!",
                               event.getWrestler().getName(), event.getInjury().getName());
-                      Notification.show(message, 3000, Notification.Position.BOTTOM_END);
+                      Notification.show(message, 3000, Notification.Position.BOTTOM_END)
+                          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                     });
               }
             });

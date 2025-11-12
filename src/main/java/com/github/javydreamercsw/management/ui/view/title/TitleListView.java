@@ -102,9 +102,10 @@ public class TitleListView extends Main {
                               },
                               () ->
                                   Notification.show(
-                                      "Failed to update contender",
-                                      5000,
-                                      Notification.Position.BOTTOM_END));
+                                          "Failed to update contender",
+                                          5000,
+                                          Notification.Position.BOTTOM_END)
+                                      .addThemeVariants(NotificationVariant.LUMO_ERROR));
                     } else {
                       // Handle clearing the contender
                       titleService
@@ -120,9 +121,10 @@ public class TitleListView extends Main {
                               },
                               () ->
                                   Notification.show(
-                                      "Failed to clear contender",
-                                      5000,
-                                      Notification.Position.BOTTOM_END));
+                                          "Failed to clear contender",
+                                          5000,
+                                          Notification.Position.BOTTOM_END)
+                                      .addThemeVariants(NotificationVariant.LUMO_ERROR));
                     }
                   });
               return contenderComboBox;
