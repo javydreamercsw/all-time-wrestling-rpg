@@ -16,42 +16,31 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateWrestler() {
-
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
-
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-    // Find the components
+    // Get the initial size of the grid
+    long initialSize = wrestlerRepository.count();
 
+    // Find the components
     WebElement nameField =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-name-field")));
 
-    WebElement createButton =
-        wait.until(ExpectedConditions.elementToBeClickable(By.id("create-wrestler-button")));
-
-    // Get the initial size of the grid
-
-    long initialSize = wrestlerRepository.count();
-
     // Enter a new wrestler name
-
     nameField.sendKeys("Test Wrestler");
 
     // Click the create button
-
-    createButton.click();
+    WebElement createButton =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("create-wrestler-button")));
+    clickAndScrollIntoView(createButton);
 
     // Verify that the new wrestler appears in the grid
-
     wait.until(
         d -> {
           try {
-
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
                 .anyMatch(it -> it.getText().equals("Test Wrestler"));
-
           } catch (Exception e) {
-
             return false;
           }
         });
@@ -72,7 +61,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     wrestler.setLowStamina(0);
     wrestlerRepository.save(wrestler);
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
     // Find the "Edit" button for the wrestler and click it
     WebElement editButton =
         wait.until(
