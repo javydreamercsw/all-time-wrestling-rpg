@@ -19,6 +19,7 @@ import com.vaadin.flow.router.Layout;
 import com.vaadin.flow.shared.Registration;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.info.BuildProperties;
 
 @Layout
 @PermitAll // When security is enabled, allow all authenticated users
@@ -26,15 +27,26 @@ public final class MainLayout extends AppLayout {
 
   private final MenuService menuService;
   private final WrestlerInjuryHealedBroadcaster injuryBroadcaster;
+  private final BuildProperties buildProperties;
   private Registration broadcasterRegistration;
   private Registration injuryBroadcasterRegistration;
 
   @Autowired
-  public MainLayout(MenuService menuService, WrestlerInjuryHealedBroadcaster injuryBroadcaster) {
+  public MainLayout(
+      MenuService menuService,
+      WrestlerInjuryHealedBroadcaster injuryBroadcaster,
+      BuildProperties buildProperties) {
     this.menuService = menuService;
     this.injuryBroadcaster = injuryBroadcaster;
+    this.buildProperties = buildProperties;
     setPrimarySection(Section.DRAWER);
-    addToDrawer(createHeader(), new Scroller(createSideNav()));
+
+    var sideNav = createSideNav();
+    var footer = createFooter();
+    var content = new Div(sideNav, footer);
+    content.setSizeFull(); // Ensure content takes full size for proper scrolling
+
+    addToDrawer(createHeader(), new Scroller(content));
   }
 
   private Div createHeader() {
@@ -48,6 +60,15 @@ public final class MainLayout extends AppLayout {
     var header = new Div(appLogo, appName);
     header.addClassNames(Display.FLEX, Padding.MEDIUM, Gap.MEDIUM, AlignItems.CENTER);
     return header;
+  }
+
+  private Div createFooter() {
+    var versionSpan = new Span("Version: " + buildProperties.getVersion());
+    versionSpan.addClassNames(
+        FontSize.XSMALL, TextColor.SECONDARY, Padding.Top.SMALL, Padding.Bottom.SMALL);
+    var footer = new Div(versionSpan);
+    footer.addClassNames(Display.FLEX, JustifyContent.CENTER, Width.FULL);
+    return footer;
   }
 
   private SideNav createSideNav() {
