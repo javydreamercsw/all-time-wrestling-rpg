@@ -21,8 +21,24 @@ public class WrestlerDialog extends Dialog {
   private final Binder<Wrestler> binder = new Binder<>(Wrestler.class);
 
   public WrestlerDialog(@NonNull WrestlerService wrestlerService, @NonNull Runnable onSave) {
-    this(wrestlerService, new Wrestler(), onSave);
+    this(wrestlerService, createDefaultWrestler(), onSave);
     setHeaderTitle("Create Wrestler");
+  }
+
+  private static Wrestler createDefaultWrestler() {
+    return Wrestler.builder()
+        .name("")
+        .description("")
+        .deckSize(15)
+        .startingHealth(15)
+        .lowHealth(0)
+        .startingStamina(0)
+        .lowStamina(0)
+        .fans(0L)
+        .isPlayer(false)
+        .bumps(0)
+        .gender(Gender.MALE)
+        .build();
   }
 
   public WrestlerDialog(
@@ -64,23 +80,23 @@ public class WrestlerDialog extends Dialog {
     binder.forField(genderField).bind(Wrestler::getGender, Wrestler::setGender);
     binder
         .forField(deckSizeField)
-        .withConverter(new StringToIntegerConverter("Must be a number"))
+        .withConverter(new StringToIntegerConverter(0, "Must be a number"))
         .bind(Wrestler::getDeckSize, Wrestler::setDeckSize);
     binder
         .forField(startingHealthField)
-        .withConverter(new StringToIntegerConverter("Must be a number"))
+        .withConverter(new StringToIntegerConverter(0, "Must be a number"))
         .bind(Wrestler::getStartingHealth, Wrestler::setStartingHealth);
     binder
         .forField(lowHealthField)
-        .withConverter(new StringToIntegerConverter("Must be a number"))
+        .withConverter(new StringToIntegerConverter(0, "Must be a number"))
         .bind(Wrestler::getLowHealth, Wrestler::setLowHealth);
     binder
         .forField(startingStaminaField)
-        .withConverter(new StringToIntegerConverter("Must be a number"))
+        .withConverter(new StringToIntegerConverter(0, "Must be a number"))
         .bind(Wrestler::getStartingStamina, Wrestler::setStartingStamina);
     binder
         .forField(lowStaminaField)
-        .withConverter(new StringToIntegerConverter("Must be a number"))
+        .withConverter(new StringToIntegerConverter(0, "Must be a number"))
         .bind(Wrestler::getLowStamina, Wrestler::setLowStamina);
 
     binder.readBean(this.wrestler);

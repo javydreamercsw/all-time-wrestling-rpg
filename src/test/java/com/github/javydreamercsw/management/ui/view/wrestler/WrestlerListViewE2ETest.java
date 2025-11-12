@@ -8,6 +8,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -36,12 +37,14 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-dialog-name-field")));
 
     // Enter a new wrestler name
-    nameField.sendKeys("Test Wrestler");
+    nameField.sendKeys("Test Wrestler", Keys.TAB);
 
     // Click the save button
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("wrestler-dialog-save-button")));
     clickAndScrollIntoView(saveButton);
+
+      wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
     // Verify that the new wrestler appears in the grid
     wait.until(
@@ -87,12 +90,14 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-dialog-name-field")));
 
-    nameEditor.sendKeys(" Updated");
+    nameEditor.sendKeys(" Updated", Keys.TAB);
 
     // Find the "Save" button and click it
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("wrestler-dialog-save-button")));
     clickAndScrollIntoView(saveButton);
+
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
     // Verify that the grid is updated
     wait.until(
