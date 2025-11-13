@@ -36,6 +36,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,17 +53,9 @@ public class FactionListView extends Main {
 
   private final FactionService factionService;
   private final WrestlerService wrestlerService;
-
   private Dialog editDialog;
-  private TextField editName;
-  private TextArea editDescription;
-
-  private ComboBox<Wrestler> editLeader;
-  private DatePicker editFormedDate;
-  private DatePicker editDisbandedDate;
   private Faction editingFaction;
   private Binder<Faction> binder;
-
   final TextField name;
   final Button createBtn;
   final Grid<Faction> factionGrid;
@@ -75,16 +68,19 @@ public class FactionListView extends Main {
     name = new TextField();
     name.setPlaceholder("Enter faction name...");
     name.setAriaLabel("Faction Name");
+    name.setId("name");
     name.setMaxLength(255);
     name.setMinWidth("20em");
 
     createBtn = new Button("Create Faction", new Icon(VaadinIcon.PLUS));
     createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    createBtn.setId("create-faction-button");
     createBtn.addClickListener(e -> openCreateDialog());
 
     // Initialize grid
     factionGrid = new Grid<>(Faction.class, false);
     factionGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+    factionGrid.setId("faction-grid");
 
     setupGrid();
     setupEditDialog();
@@ -159,25 +155,29 @@ public class FactionListView extends Main {
 
               Button viewBtn = new Button("View", new Icon(VaadinIcon.EYE));
               viewBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              viewBtn.setId("view-" + faction.getId());
               viewBtn.addClickListener(e -> openViewDialog(faction));
 
               Button editBtn = new Button("Edit", new Icon(VaadinIcon.EDIT));
               editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              editBtn.setId("edit-" + faction.getId());
               editBtn.addClickListener(e -> openEditDialog(faction));
 
               Button membersBtn = new Button("Members", new Icon(VaadinIcon.GROUP));
               membersBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              membersBtn.setId("members-" + faction.getId());
               membersBtn.addClickListener(e -> openMembersDialog(faction));
 
               Button deleteBtn = new Button("Delete", new Icon(VaadinIcon.TRASH));
               deleteBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
+              deleteBtn.setId("delete-" + faction.getId());
               deleteBtn.addClickListener(e -> deleteFaction(faction));
 
               actions.add(viewBtn, editBtn, membersBtn, deleteBtn);
               return actions;
             })
         .setHeader("Actions")
-        .setFlexGrow(0);
+        .setFlexGrow(1);
 
     factionGrid.setSizeFull();
   }
@@ -195,20 +195,25 @@ public class FactionListView extends Main {
     editDialog.setCloseOnOutsideClick(false);
 
     // Form fields
-    editName = new TextField("Name");
+    TextField editName = new TextField("Name");
     editName.setRequired(true);
+    editName.setId("edit-name");
     editName.setMaxLength(255);
 
-    editDescription = new TextArea("Description");
+    TextArea editDescription = new TextArea("Description");
     editDescription.setMaxLength(1000);
+    editDescription.setId("edit-description");
     editDescription.setHeight("100px");
 
-    editLeader = new ComboBox<>("Leader");
+    ComboBox<Wrestler> editLeader = new ComboBox<>("Leader");
     editLeader.setItems(wrestlerService.findAll());
+    editLeader.setId("edit-leader");
     editLeader.setItemLabelGenerator(Wrestler::getName);
 
-    editFormedDate = new DatePicker("Formed Date");
-    editDisbandedDate = new DatePicker("Disbanded Date");
+    DatePicker editFormedDate = new DatePicker("Formed Date");
+    editFormedDate.setId("edit-formed-date");
+    DatePicker editDisbandedDate = new DatePicker("Disbanded Date");
+    editDisbandedDate.setId("edit-disbanded-date");
 
     // Form layout
     FormLayout formLayout = new FormLayout();
@@ -220,6 +225,7 @@ public class FactionListView extends Main {
     // Buttons
     Button saveBtn = new Button("Save", e -> saveFaction());
     saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveBtn.setId("save-button");
 
     Button cancelBtn = new Button("Cancel", e -> editDialog.close());
 
@@ -268,7 +274,7 @@ public class FactionListView extends Main {
     editDialog.open();
   }
 
-  private void openEditDialog(Faction faction) {
+  private void openEditDialog(@NonNull Faction faction) {
     editingFaction = faction;
     editDialog.setHeaderTitle("Edit Faction: " + faction.getName());
     binder.readBean(editingFaction);
@@ -280,11 +286,7 @@ public class FactionListView extends Main {
       binder.writeBean(editingFaction);
 
       // Update status based on disbanded date
-      if (editingFaction.getDisbandedDate() != null) {
-        editingFaction.setIsActive(false);
-      } else {
-        editingFaction.setIsActive(true);
-      }
+      editingFaction.setIsActive(editingFaction.getDisbandedDate() == null);
 
       factionService.save(editingFaction);
       refreshGrid();
@@ -304,7 +306,7 @@ public class FactionListView extends Main {
     }
   }
 
-  private void deleteFaction(Faction faction) {
+  private void deleteFaction(@NonNull Faction faction) {
     ConfirmDialog confirmDialog = new ConfirmDialog();
     confirmDialog.setHeader("Delete Faction");
     confirmDialog.setText(
@@ -315,6 +317,7 @@ public class FactionListView extends Main {
     confirmDialog.setCancelable(true);
     confirmDialog.setConfirmText("Delete");
     confirmDialog.setConfirmButtonTheme("error primary");
+    confirmDialog.setId("delete-confirm-dialog");
 
     confirmDialog.addConfirmListener(
         e -> {
@@ -337,7 +340,7 @@ public class FactionListView extends Main {
     confirmDialog.open();
   }
 
-  private void openViewDialog(Faction faction) {
+  private void openViewDialog(@NonNull Faction faction) {
     // Reload faction with members to avoid lazy initialization issues
     Optional<Faction> factionWithMembers =
         factionService.getFactionByIdWithMembers(faction.getId());
@@ -420,7 +423,7 @@ public class FactionListView extends Main {
     viewDialog.open();
   }
 
-  private void openMembersDialog(Faction faction) {
+  private void openMembersDialog(@NonNull Faction faction) {
     // Reload faction with members to avoid lazy initialization issues
     Optional<Faction> factionWithMembers =
         factionService.getFactionByIdWithMembers(faction.getId());
@@ -447,13 +450,15 @@ public class FactionListView extends Main {
     currentMembersGrid
         .addColumn(wrestler -> wrestler.getTier() != null ? wrestler.getTier().name() : "")
         .setHeader("Tier");
-    currentMembersGrid.addColumn(wrestler -> wrestler.getFans()).setHeader("Fans");
+    currentMembersGrid.addColumn(Wrestler::getFans).setHeader("Fans");
+    currentMembersGrid.setId("members-grid");
 
     // Remove member button
     currentMembersGrid
         .addComponentColumn(
             wrestler -> {
               Button removeBtn = new Button("Remove", new Icon(VaadinIcon.MINUS));
+              removeBtn.setId("remove-member-" + wrestler.getId());
               removeBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
               removeBtn.addClickListener(
                   e -> {
@@ -486,12 +491,14 @@ public class FactionListView extends Main {
     // Add member section
     H3 addMemberTitle = new H3("Add Member");
     ComboBox<Wrestler> wrestlerCombo = new ComboBox<>("Select Wrestler");
+    wrestlerCombo.setId("add-member-wrestler-combo");
     wrestlerCombo.setItems(
         wrestlerService.findAll().stream().filter(w -> !loadedFaction.hasMember(w)).toList());
     wrestlerCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlerCombo.setWidth("300px");
 
     Button addBtn = new Button("Add Member", new Icon(VaadinIcon.PLUS));
+    addBtn.setId("add-member-button");
     addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     addBtn.addClickListener(
         e -> {
@@ -534,7 +541,8 @@ public class FactionListView extends Main {
     membersDialog.open();
   }
 
-  private void refreshMembersDialog(Faction faction, Grid<Wrestler> membersGrid, Dialog dialog) {
+  private void refreshMembersDialog(
+      @NonNull Faction faction, @NonNull Grid<Wrestler> membersGrid, @NonNull Dialog dialog) {
     // Refresh faction data from database with members eagerly loaded
     Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
     if (updatedFaction.isPresent()) {

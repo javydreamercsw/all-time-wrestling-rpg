@@ -44,7 +44,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.elementToBeClickable(By.id("wrestler-dialog-save-button")));
     clickAndScrollIntoView(saveButton);
 
-      wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(
+        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
     // Verify that the new wrestler appears in the grid
     wait.until(
@@ -97,7 +98,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.elementToBeClickable(By.id("wrestler-dialog-save-button")));
     clickAndScrollIntoView(saveButton);
 
-    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(
+        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
     // Verify that the grid is updated
     wait.until(

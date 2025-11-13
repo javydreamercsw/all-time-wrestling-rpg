@@ -9,6 +9,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
@@ -17,6 +18,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -62,6 +64,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected static ShowRepository showRepository;
   protected static ShowTypeRepository showTypeRepository;
   protected static SegmentTypeRepository segmentTypeRepository;
+  protected static FactionService factionService;
+  protected static WrestlerService wrestlerService;
 
   @Value("${server.servlet.context-path}")
   @Getter
@@ -90,6 +94,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     showRepository = context.getBean(ShowRepository.class);
     showTypeRepository = context.getBean(ShowTypeRepository.class);
     segmentTypeRepository = context.getBean(SegmentTypeRepository.class);
+    factionService = context.getBean(FactionService.class);
+    wrestlerService = context.getBean(WrestlerService.class);
     log.info("Spring Boot application started for E2E tests.");
     Runtime.getRuntime()
         .addShutdownHook(
@@ -172,6 +178,21 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
+  }
+
+  protected void waitForVaadinClientToLoad() {
+    WebDriverWait wait =
+        new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout for Vaadin client
+
+    // Wait for document.readyState to be 'complete'
+    wait.until(
+        webDriver ->
+            ((JavascriptExecutor) webDriver)
+                .executeScript("return document.readyState")
+                .equals("complete"));
+
+    // Wait for the main Vaadin app layout element to be present
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-app-layout")));
   }
 
   protected void clickAndScrollIntoView(@NonNull WebElement element) {
