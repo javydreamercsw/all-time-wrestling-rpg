@@ -4,11 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.season.Season;
-import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 import java.time.Duration;
@@ -23,23 +20,11 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SHOW_TYPE_NAME = "Weekly";
   private static final String SEASON_NAME = "Test Season";
   private static final String TEMPLATE_NAME = "Continuum";
-
-  @LocalServerPort private int port;
-
-  @Autowired private ShowTemplateRepository showTemplateRepository;
-  @Autowired private SeasonRepository seasonRepository;
-  @Autowired private ShowTypeRepository showTypeRepository;
 
   @BeforeEach
   public void setupTestData() {
@@ -71,7 +56,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   @Test
   public void testFullShowLifecycle() {
     // Navigate to the Show List view
-    driver.get("http://localhost:" + port + getContextPath() + "/show-list");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
 
     final String showName = "My E2E Show";
 

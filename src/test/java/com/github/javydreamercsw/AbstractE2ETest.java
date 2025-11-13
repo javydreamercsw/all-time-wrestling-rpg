@@ -7,6 +7,7 @@ import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -66,6 +67,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected static SegmentTypeRepository segmentTypeRepository;
   protected static FactionService factionService;
   protected static WrestlerService wrestlerService;
+  protected static ShowTemplateRepository showTemplateRepository;
 
   @Value("${server.servlet.context-path}")
   @Getter
@@ -96,6 +98,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     segmentTypeRepository = context.getBean(SegmentTypeRepository.class);
     factionService = context.getBean(FactionService.class);
     wrestlerService = context.getBean(WrestlerService.class);
+    showTemplateRepository = context.getBean(ShowTemplateRepository.class);
     log.info("Spring Boot application started for E2E tests.");
     Runtime.getRuntime()
         .addShutdownHook(

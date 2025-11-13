@@ -89,12 +89,14 @@ public class ShowListView extends Main {
     name.setAriaLabel("Show Name");
     name.setMaxLength(255);
     name.setMinWidth("20em");
+    name.setId("show-name");
 
     newShowType = new ComboBox<>("Show Type");
     newShowType.setItems(showTypeService.findAll());
     newShowType.setItemLabelGenerator(ShowType::getName);
     newShowType.setRequired(true);
     newShowType.setPlaceholder("Select a type");
+    newShowType.setId("show-type");
 
     newSeason = new ComboBox<>("Season");
     Page<Season> seasonsPage = seasonService.getAllSeasons(Pageable.unpaged());
@@ -104,19 +106,23 @@ public class ShowListView extends Main {
     newSeason.setItemLabelGenerator(Season::getName);
     newSeason.setClearButtonVisible(true);
     newSeason.setPlaceholder("Select a season (optional)");
+    newSeason.setId("season");
 
     newTemplate = new ComboBox<>("Template");
     newTemplate.setItems(showTemplateService.findAll());
     newTemplate.setItemLabelGenerator(ShowTemplate::getName);
     newTemplate.setClearButtonVisible(true);
     newTemplate.setPlaceholder("Select a template (optional)");
+    newTemplate.setId("show-template");
 
     newShowDate = new DatePicker("Show Date");
     newShowDate.setPlaceholder("Select date (optional)");
     newShowDate.setClearButtonVisible(true);
+    newShowDate.setId("show-date");
 
     createBtn = new Button("Create", event -> createShow());
     createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    createBtn.setId("create-show-button");
 
     HorizontalLayout formLayout =
         new HorizontalLayout(name, newShowType, newSeason, newTemplate, newShowDate, createBtn);
@@ -333,35 +339,43 @@ public class ShowListView extends Main {
 
     editName = new TextField("Name");
     editName.setWidthFull();
+    editName.setId("edit-show-name");
 
     editDescription = new TextArea("Description");
     editDescription.setWidthFull();
     editDescription.setHeight("100px");
+    editDescription.setId("edit-show-description");
 
     editType = new ComboBox<>("Type");
     editType.setItems(showTypeService.findAll());
     editType.setItemLabelGenerator(ShowType::getName);
     editType.setWidthFull();
+    editType.setId("edit-show-type");
 
     editSeason = new ComboBox<>("Season");
     editSeason.setItems(seasonService.getAllSeasons(Pageable.unpaged()).getContent());
     editSeason.setItemLabelGenerator(Season::getName);
     editSeason.setWidthFull();
     editSeason.setClearButtonVisible(true);
+    editSeason.setId("edit-season");
 
     editTemplate = new ComboBox<>("Template");
     editTemplate.setItems(showTemplateService.findAll());
     editTemplate.setItemLabelGenerator(ShowTemplate::getName);
     editTemplate.setWidthFull();
     editTemplate.setClearButtonVisible(true);
+    editTemplate.setId("edit-show-template");
 
     editShowDate = new DatePicker("Show Date");
     editShowDate.setWidthFull();
     editShowDate.setClearButtonVisible(true);
+    editShowDate.setId("edit-show-date");
 
     Button saveBtn = new Button("Save", e -> saveEdit());
     saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveBtn.setId("save-changes-button");
     Button cancelBtn = new Button("Cancel", e -> editDialog.close());
+    cancelBtn.setId("cancel-button");
 
     VerticalLayout formLayout =
         new VerticalLayout(
