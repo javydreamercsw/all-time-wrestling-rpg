@@ -1,7 +1,7 @@
 [ {
-  "name" : "Premium Live Event (PLE)",
-  "description" : "Premium Live Event"
+  "name": "Premium Live Event (PLE)",
+  "description": "Premium Live Event"
 }, {
-  "name" : "Weekly",
-  "description" : "Weekly Event"
+  "name": "Weekly",
+  "description": "Weekly Event"
 } ]

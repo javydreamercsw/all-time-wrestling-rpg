@@ -1,69 +1,69 @@
 [ {
-  "name" : "No DQ",
-  "description" : "No disqualification match - anything goes",
-  "requiresHighHeat" : false
+  "name": "No DQ",
+  "description": "No disqualification match - anything goes",
+  "requiresHighHeat": false
 }, {
-  "name" : "Extreme",
-  "description" : "Extreme rules match with weapons and hardcore elements",
-  "requiresHighHeat" : true
+  "name": "Extreme",
+  "description": "Extreme rules match with weapons and hardcore elements",
+  "requiresHighHeat": true
 }, {
-  "name" : "Normal",
-  "description" : "Standard wrestling match with traditional rules",
-  "requiresHighHeat" : false
+  "name": "Normal",
+  "description": "Standard wrestling match with traditional rules",
+  "requiresHighHeat": false
 }, {
-  "name" : "Elimination",
-  "description" : "Multi-person elimination match",
-  "requiresHighHeat" : false
+  "name": "Elimination",
+  "description": "Multi-person elimination match",
+  "requiresHighHeat": false
 }, {
-  "name" : "Over the Top Rope Elimination",
-  "description" : "Battle royal style elimination over the top rope",
-  "requiresHighHeat" : false
+  "name": "Over the Top Rope Elimination",
+  "description": "Battle royal style elimination over the top rope",
+  "requiresHighHeat": false
 }, {
-  "name" : "Submission",
-  "description" : "Match can only be won by submission",
-  "requiresHighHeat" : false
+  "name": "Submission",
+  "description": "Match can only be won by submission",
+  "requiresHighHeat": false
 }, {
-  "name" : "Promo",
-  "description" : "Non-wrestling promo segment for storyline development",
-  "requiresHighHeat" : false
+  "name": "Promo",
+  "description": "Non-wrestling promo segment for storyline development",
+  "requiresHighHeat": false
 }, {
-  "name" : "Cage",
-  "description" : "Steel cage match with escape or pinfall victory",
-  "requiresHighHeat" : true
+  "name": "Cage",
+  "description": "Steel cage match with escape or pinfall victory",
+  "requiresHighHeat": true
 }, {
-  "name" : "Last Man Standing",
-  "description" : "Match won by incapacitating opponent for 10-count",
-  "requiresHighHeat" : true
+  "name": "Last Man Standing",
+  "description": "Match won by incapacitating opponent for 10-count",
+  "requiresHighHeat": true
 }, {
-  "name" : "Free-For-All",
-  "description" : "Multi-person match with no teams or alliances",
-  "requiresHighHeat" : false
+  "name": "Free-For-All",
+  "description": "Multi-person match with no teams or alliances",
+  "requiresHighHeat": false
 }, {
-  "name" : "I Quit Match",
-  "description" : "Match won only when opponent says 'I Quit'",
-  "requiresHighHeat" : true
+  "name": "I Quit Match",
+  "description": "Match won only when opponent says 'I Quit'",
+  "requiresHighHeat": true
 }, {
-  "name" : "Ladder Match",
-  "description" : "Match with ladders to retrieve suspended object",
-  "requiresHighHeat" : true
+  "name": "Ladder Match",
+  "description": "Match with ladders to retrieve suspended object",
+  "requiresHighHeat": true
 }, {
-  "name" : "Casket Match",
-  "description" : "Match won by placing opponent in a casket",
-  "requiresHighHeat" : true
+  "name": "Casket Match",
+  "description": "Match won by placing opponent in a casket",
+  "requiresHighHeat": true
 }, {
-  "name" : "Tables, Ladders and Chairs (TLC)",
-  "description" : "Extreme match featuring tables, ladders, and chairs",
-  "requiresHighHeat" : true
+  "name": "Tables, Ladders and Chairs (TLC)",
+  "description": "Extreme match featuring tables, ladders, and chairs",
+  "requiresHighHeat": true
 }, {
-  "name" : "🪖 War Games",
-  "description" : "Multi-team cage match with timed entries",
-  "requiresHighHeat" : true
+  "name": "🪖 War Games",
+  "description": "Multi-team cage match with timed entries",
+  "requiresHighHeat": true
 }, {
-  "name" : "Barbwire Exploding Deathmatch",
-  "description" : "Extreme deathmatch with barbwire and explosives",
-  "requiresHighHeat" : true
+  "name": "Barbwire Exploding Deathmatch",
+  "description": "Extreme deathmatch with barbwire and explosives",
+  "requiresHighHeat": true
 }, {
-  "name" : "Gauntlet",
-  "description" : "One wrestler faces multiple opponents in succession",
-  "requiresHighHeat" : false
+  "name": "Gauntlet",
+  "description": "One wrestler faces multiple opponents in succession",
+  "requiresHighHeat": false
 } ]
