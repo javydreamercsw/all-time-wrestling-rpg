@@ -21,6 +21,8 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import io.github.bonigarcia.wdm.WebDriverManager;
+import java.io.File;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.Duration;
@@ -30,11 +32,14 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -251,6 +256,29 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    * @return List of WebElements, each representing a row
    */
   protected List<WebElement> getGridRows(@NonNull WebElement grid) {
-    return grid.findElements(By.cssSelector("vaadin-grid-row"));
+    return (List<WebElement>)
+        ((JavascriptExecutor) driver)
+            .executeScript(
+                "return arguments[0].shadowRoot.querySelectorAll('[part~=\"row\"]')", grid);
+  }
+
+  protected void takeScreenshot(@NonNull String filePath) {
+    File scrFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+    try {
+      FileUtils.copyFile(scrFile, new File(filePath));
+      log.info("Screenshot saved to: {}", filePath);
+    } catch (IOException e) {
+      log.error("Failed to save screenshot to: {}", filePath, e);
+    }
+  }
+
+  protected void takeElementScreenshot(@NonNull WebElement element, @NonNull String filePath) {
+    File scrFile = element.getScreenshotAs(OutputType.FILE);
+    try {
+      FileUtils.copyFile(scrFile, new File(filePath));
+      log.info("Screenshot saved to: {}", filePath);
+    } catch (IOException e) {
+      log.error("Failed to save screenshot to: {}", filePath, e);
+    }
   }
 }

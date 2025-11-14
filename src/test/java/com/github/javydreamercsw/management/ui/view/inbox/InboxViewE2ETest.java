@@ -19,9 +19,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 @Slf4j
 class InboxViewE2ETest extends AbstractE2ETest {
 
-  // Removed @Autowired private InboxRepository inboxRepository;
-  // Access inboxRepository via AbstractE2ETest.inboxRepository
-
   @BeforeEach
   public void setUp() throws IOException {
     super.setup();
