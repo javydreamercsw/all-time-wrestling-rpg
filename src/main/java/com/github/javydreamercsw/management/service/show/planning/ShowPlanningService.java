@@ -6,6 +6,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,7 @@ public class ShowPlanningService {
   private final SegmentTypeService segmentTypeService;
   private final WrestlerService wrestlerService;
   private final FactionService factionService;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
   public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
@@ -168,5 +171,6 @@ public class ShowPlanningService {
     }
     segmentRepository.saveAll(segmentsToSave);
     log.info("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
+    eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
   }
 }

@@ -6,8 +6,12 @@ import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 /**
@@ -16,6 +20,8 @@ import org.springframework.stereotype.Service;
  * when no AI providers are available.
  */
 @Service
+@Profile("test")
+@Primary
 @Slf4j
 public class MockSegmentNarrationService extends AbstractSegmentNarrationService {
 
@@ -79,18 +85,10 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   }
 
   private int extractCount(String prompt, String type) {
-    String searchString = "Generate a JSON array of exactly ";
-    int startIndex = prompt.indexOf(searchString);
-    if (startIndex != -1) {
-      String substring = prompt.substring(startIndex + searchString.length());
-      String[] parts = substring.split(" ");
-      if (parts.length > 1) {
-        if (type.equals("matches")) {
-          return Integer.parseInt(parts[0]);
-        } else if (type.equals("promos") && parts.length > 3) {
-          return Integer.parseInt(parts[2]);
-        }
-      }
+    Pattern pattern = Pattern.compile("(\\d+)\\s+" + type);
+    Matcher matcher = pattern.matcher(prompt);
+    if (matcher.find()) {
+      return Integer.parseInt(matcher.group(1));
     }
     // Default to a random number between 1 and 3 if parsing fails
     return random.nextInt(3) + 1;
@@ -112,18 +110,17 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
   private List<String> extractParticipants(String prompt) {
     List<String> participants = new ArrayList<>();
-    try {
-      String jsonString = prompt.substring(prompt.indexOf('{'), prompt.lastIndexOf('}') + 1);
-      JsonNode rootNode = objectMapper.readTree(jsonString);
-      if (rootNode.has("wrestlers")) {
-        for (JsonNode wrestlerNode : rootNode.get("wrestlers")) {
-          if (wrestlerNode.has("name")) {
-            participants.add(wrestlerNode.get("name").asText());
-          }
+    String rosterMarker = "Full Roster:";
+    int rosterStart = prompt.indexOf(rosterMarker);
+    if (rosterStart != -1) {
+      String rosterSection = prompt.substring(rosterStart + rosterMarker.length());
+      String[] lines = rosterSection.split("\\r?\\n");
+      for (String line : lines) {
+        if (line.trim().startsWith("- Name:")) {
+          String name = line.substring(line.indexOf(':') + 1, line.indexOf(',')).trim();
+          participants.add(name);
         }
       }
-    } catch (Exception e) {
-      log.error("Error parsing participants from prompt.", e);
     }
 
     if (participants.isEmpty()) {

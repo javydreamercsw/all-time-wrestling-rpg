@@ -24,6 +24,9 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.Duration;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -149,6 +152,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return "true".equalsIgnoreCase(githubActions);
   }
 
+  /** Waits for the application to be ready by polling the root URL. */
   private void waitForAppToBeReady() {
     int maxAttempts = 60;
     int attempt = 0;
@@ -178,11 +182,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             + serverPort);
   }
 
+  /**
+   * Waits for the Vaadin components to load by checking for the presence of a vaadin-grid element.
+   *
+   * @param driver the WebDriver instance
+   */
   protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
   }
 
+  /** Waits for the Vaadin client-side application to fully load. */
   protected void waitForVaadinClientToLoad() {
     WebDriverWait wait =
         new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout for Vaadin client
@@ -190,20 +200,57 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     // Wait for document.readyState to be 'complete'
     wait.until(
         webDriver ->
-            ((JavascriptExecutor) webDriver)
-                .executeScript("return document.readyState")
-                .equals("complete"));
+            Objects.equals(
+                ((JavascriptExecutor) webDriver).executeScript("return document.readyState"),
+                "complete"));
 
     // Wait for the main Vaadin app layout element to be present
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-app-layout")));
   }
 
+  /**
+   * Scrolls the given WebElement into view and clicks it using JavaScript.
+   *
+   * @param element the WebElement to scroll into view and click
+   */
   protected void clickAndScrollIntoView(@NonNull WebElement element) {
     scrollIntoView(element);
     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
   }
 
+  /**
+   * Scrolls the given WebElement into view using JavaScript.
+   *
+   * @param element the WebElement to scroll into view
+   */
   protected void scrollIntoView(@NonNull WebElement element) {
     ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
+  }
+
+  /**
+   * Returns all the data from a specific column in a Vaadin grid.
+   *
+   * @param grid the Vaadin grid WebElement
+   * @param columnIndex the index of the column (0-based)
+   * @return List of Strings representing the data in the specified column
+   */
+  protected List<String> getColumnData(@NonNull WebElement grid, int columnIndex) {
+    List<WebElement> cells =
+        grid.findElements(
+            By.xpath(
+                "//vaadin-grid-cell-content[count(ancestor::vaadin-grid-column) = "
+                    + (columnIndex + 1)
+                    + "]"));
+    return cells.stream().map(WebElement::getText).collect(Collectors.toList());
+  }
+
+  /**
+   * Returns all the row elements of a Vaadin grid.
+   *
+   * @param grid the Vaadin grid WebElement
+   * @return List of WebElements, each representing a row
+   */
+  protected List<WebElement> getGridRows(@NonNull WebElement grid) {
+    return grid.findElements(By.cssSelector("vaadin-grid-row"));
   }
 }

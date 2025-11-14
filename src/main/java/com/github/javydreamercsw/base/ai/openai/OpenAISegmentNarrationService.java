@@ -7,12 +7,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 /**
@@ -36,12 +38,15 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   private final String apiKey;
   @Getter private final String model;
   private final OpenAIConfigProperties openAIConfigProperties;
+  private final Environment environment;
 
   @Autowired
-  public OpenAISegmentNarrationService(OpenAIConfigProperties openAIConfigProperties) {
+  public OpenAISegmentNarrationService(
+      OpenAIConfigProperties openAIConfigProperties, Environment environment) {
     this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
     this.objectMapper = new ObjectMapper();
     this.apiKey = System.getenv("OPENAI_API_KEY");
+    this.environment = environment;
 
     // Allow model configuration via environment variable
     String configuredModel = System.getenv("OPENAI_MODEL");
@@ -67,6 +72,9 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
 
   @Override
   public boolean isAvailable() {
+    if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
+      return false;
+    }
     return apiKey != null && !apiKey.trim().isEmpty();
   }
 

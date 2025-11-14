@@ -13,6 +13,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -61,7 +62,9 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.web.client.RestTemplate;
 
@@ -74,7 +77,7 @@ import org.springframework.web.client.RestTemplate;
 @PermitAll
 @Slf4j
 public class ShowDetailView extends Main
-    implements HasUrlParameter<Long>, ApplicationListener<AdjudicationCompletedEvent> {
+    implements HasUrlParameter<Long>, ApplicationListener<ApplicationEvent> {
 
   @Autowired private ShowService showService;
   @Autowired private SegmentService segmentService;
@@ -175,7 +178,7 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void displayShow(Show show) {
+  private void displayShow(@NonNull Show show) {
     contentLayout.removeAll();
     showTitle.setText(show.getName());
 
@@ -338,6 +341,7 @@ public class ShowDetailView extends Main
     Button planShowButton = new Button("Plan Show", new Icon(VaadinIcon.CALENDAR_CLOCK));
     planShowButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     planShowButton.setTooltipText("Plan this show");
+    planShowButton.setId("plan-show-button");
     planShowButton.addClickListener(
         e -> getUI().ifPresent(ui -> ui.navigate(ShowPlanningView.class, show.getId())));
 
@@ -597,7 +601,6 @@ public class ShowDetailView extends Main
         .setKey("order");
 
     grid.addComponentColumn(this::createMainEventCheckbox).setHeader("Main Event").setFlexGrow(1);
-
     return grid;
   }
 
@@ -1122,11 +1125,19 @@ public class ShowDetailView extends Main
   }
 
   @Override
-  public void onApplicationEvent(AdjudicationCompletedEvent event) {
-    // Check if the completed show is the one currently being viewed
-    assert event.getShow().getId() != null;
-    if (event.getShow().getId().equals(currentShowId)) {
-      getUI().ifPresent(ui -> ui.access(() -> loadShow(currentShowId)));
+  public void onApplicationEvent(@NotNull ApplicationEvent event) {
+    if (event instanceof AdjudicationCompletedEvent adjudicationCompletedEvent) {
+      // Check if the completed show is the one currently being viewed
+      assert adjudicationCompletedEvent.getShow().getId() != null;
+      if (adjudicationCompletedEvent.getShow().getId().equals(currentShowId)) {
+        getUI().ifPresent(ui -> ui.access(() -> loadShow(currentShowId)));
+      }
+    } else if (event instanceof SegmentsApprovedEvent segmentsApprovedEvent) {
+      // Check if the completed show is the one currently being viewed
+      assert segmentsApprovedEvent.getShow().getId() != null;
+      if (segmentsApprovedEvent.getShow().getId().equals(currentShowId)) {
+        getUI().ifPresent(ui -> ui.access(() -> loadShow(currentShowId)));
+      }
     }
   }
 }

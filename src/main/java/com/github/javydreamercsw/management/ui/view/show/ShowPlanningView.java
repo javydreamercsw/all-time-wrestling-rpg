@@ -75,6 +75,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     contextArea = new TextArea("Show Planning Context");
     contextArea.setWidthFull();
+    contextArea.setId("show-planning-context-area");
     contextArea.setHeight("300px");
 
     proposeSegmentsButton = new Button("Propose Segments");
@@ -88,6 +89,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     proposedSegmentsGrid
         .addColumn(segment -> String.join(", ", segment.getParticipants()))
         .setHeader("Participants");
+    proposedSegmentsGrid.setId("proposed-segments-grid");
 
     editor = proposedSegmentsGrid.getEditor();
     Binder<ProposedSegment> binder = new Binder<>(ProposedSegment.class);
@@ -136,6 +138,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
               return removeButton;
             });
     approveButton = new Button("Approve Segments");
+    approveButton.setId("approve-segments-button");
     approveButton.addClickListener(e -> approveSegments());
 
     VerticalLayout layout =

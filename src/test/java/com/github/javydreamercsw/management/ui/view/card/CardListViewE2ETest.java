@@ -8,7 +8,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -181,15 +180,5 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     List<String> descOrder = getColumnData(grid, 0);
     Collections.reverse(sortedInitial);
     assertEquals(sortedInitial, descOrder);
-  }
-
-  private List<String> getColumnData(WebElement grid, int columnIndex) {
-    List<WebElement> cells =
-        grid.findElements(
-            By.xpath(
-                "//vaadin-grid-cell-content[count(ancestor::vaadin-grid-column) = "
-                    + (columnIndex + 1)
-                    + "]"));
-    return cells.stream().map(WebElement::getText).collect(Collectors.toList());
   }
 }

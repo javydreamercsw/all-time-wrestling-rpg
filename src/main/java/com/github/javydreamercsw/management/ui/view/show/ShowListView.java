@@ -31,6 +31,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
@@ -38,6 +39,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -151,7 +153,10 @@ public class ShowListView extends Main {
                   e ->
                       getUI()
                           .ifPresent(
-                              ui -> ui.navigate("show-detail/" + show.getId() + "?ref=shows")));
+                              ui ->
+                                  ui.navigate(
+                                      "show-detail/" + show.getId(),
+                                      new QueryParameters(Map.of("ref", List.of("shows"))))));
               return nameButton;
             })
         .setHeader("Name")
@@ -227,16 +232,21 @@ public class ShowListView extends Main {
               Button viewBtn = new Button(new Icon(VaadinIcon.EYE));
               viewBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               viewBtn.setTooltipText("View Details");
+              viewBtn.setId("view-details-button-" + show.getId());
               viewBtn.addClickListener(
                   e ->
                       getUI()
                           .ifPresent(
-                              ui -> ui.navigate("show-detail/" + show.getId() + "?ref=shows")));
+                              ui ->
+                                  ui.navigate(
+                                      "show-detail/" + show.getId(),
+                                      new QueryParameters(Map.of("ref", List.of("shows"))))));
 
               // Edit button
               Button editBtn = new Button(new Icon(VaadinIcon.EDIT));
               editBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               editBtn.setTooltipText("Edit Show");
+              editBtn.setId("edit-show-button-" + show.getId());
               editBtn.addClickListener(e -> openEditDialog(show));
 
               // Delete button
@@ -244,6 +254,7 @@ public class ShowListView extends Main {
               deleteBtn.addThemeVariants(
                   ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY_INLINE);
               deleteBtn.setTooltipText("Delete Show");
+              deleteBtn.setId("delete-show-button-" + show.getId());
               deleteBtn.addClickListener(e -> openDeleteDialog(show));
 
               // Calendar button (if show has date)
@@ -251,12 +262,18 @@ public class ShowListView extends Main {
                 Button calendarBtn = new Button(new Icon(VaadinIcon.CALENDAR));
                 calendarBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
                 calendarBtn.setTooltipText("View in Calendar");
+                calendarBtn.setId("view-in-calendar-button-" + show.getId());
                 calendarBtn.addClickListener(
                     e -> {
                       // Navigate to calendar with date parameter
                       String dateParam =
                           show.getShowDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                      getUI().ifPresent(ui -> ui.navigate("show-calendar?date=" + dateParam));
+                      getUI()
+                          .ifPresent(
+                              ui ->
+                                  ui.navigate(
+                                      "show-calendar",
+                                      new QueryParameters(Map.of("date", List.of(dateParam)))));
                     });
                 actions.add(calendarBtn);
               }

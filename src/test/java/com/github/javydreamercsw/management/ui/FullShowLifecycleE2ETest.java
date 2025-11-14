@@ -1,22 +1,19 @@
 package com.github.javydreamercsw.management.ui;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import dev.failsafe.Failsafe;
-import dev.failsafe.RetryPolicy;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -71,26 +68,62 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     comboBoxes.get(1).sendKeys(SEASON_NAME);
     comboBoxes.get(2).sendKeys(TEMPLATE_NAME);
     driver
-        .findElement(By.cssSelector("vaadin-date-picker"))
+        .findElement(By.id("show-date"))
         .sendKeys(LocalDate.now().format(DateTimeFormatter.ofPattern("M/d/yyyy")));
-    // Click the "Create" button
-    WebElement createButton = driver.findElement(By.xpath("//vaadin-button[text()='Create']"));
-    scrollIntoView(createButton);
-    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", createButton);
 
-    RetryPolicy<Object> retryPolicy =
-        RetryPolicy.builder()
-            .withDelay(Duration.ofMillis(500))
-            .withMaxDuration(Duration.ofSeconds(10))
-            .handleResultIf(result -> !((WebElement) result).getText().contains(showName))
-            .build();
-    Failsafe.with(retryPolicy)
-        .get(
-            () -> {
-              // Re-fetch the grid to ensure it's up-to-date
-              WebElement refreshedGrid = driver.findElement(By.tagName("vaadin-grid"));
-              assertTrue(refreshedGrid.getText().contains(showName), refreshedGrid.getText());
-              return refreshedGrid;
-            });
+    // Click the "Create" button
+    WebElement createButton = driver.findElement(By.id("create-show-button"));
+    clickAndScrollIntoView(createButton);
+
+    wait.until(
+        ExpectedConditions.textToBePresentInElementLocated(By.tagName("vaadin-grid"), showName));
+
+    List<Show> matchingShows = showService.findByName(showName);
+    Assertions.assertEquals(1, matchingShows.size());
+    Show show = matchingShows.get(0);
+
+    // Click on the newly created show in the grid to navigate to its detail page
+    WebElement viewShowDetails =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
+    clickAndScrollIntoView(viewShowDetails);
+
+    // Verify navigation to the show detail view (or planning view)
+    wait.until(ExpectedConditions.urlContains("/show-detail"));
+
+    // Click the "Planning Show" button
+    WebElement planningShowButton =
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("plan-show-button")));
+    clickAndScrollIntoView(planningShowButton);
+
+    // Verify navigation to the show planning view
+    wait.until(ExpectedConditions.urlContains("/show-planning"));
+
+    WebElement showPlanningContextArea =
+        wait.until(
+            ExpectedConditions.visibilityOfElementLocated(By.id("show-planning-context-area")));
+    Assertions.assertFalse(showPlanningContextArea.getText().isEmpty());
+
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("proposed-segments-grid")));
+
+    // Approve segments
+    WebElement approveButton =
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("approve-segments-button")));
+    clickAndScrollIntoView(approveButton);
+
+    // Navigate back to the list.
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
+
+    // Go to the show detailed view again to verify approved segments.
+    viewShowDetails =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
+    clickAndScrollIntoView(viewShowDetails);
+
+      // Verify navigation to the show detail view (or planning view)
+      wait.until(ExpectedConditions.urlContains("/show-detail"));
+
+    WebElement segmentGrid =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("segments-grid")));
   }
 }
