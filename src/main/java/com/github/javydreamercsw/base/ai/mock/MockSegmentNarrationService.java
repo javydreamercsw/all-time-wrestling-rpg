@@ -37,6 +37,10 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       Thread.currentThread().interrupt();
     }
 
+    if (prompt.contains("Summarize the following segment narration")) {
+      return "This is a mock summary.";
+    }
+
     log.info("Mock AI generating segment narration (simulated processing time)");
     return generateMockNarration(prompt);
   }
