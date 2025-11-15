@@ -38,7 +38,13 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.mvysny.kaributesting.v10.MockVaadin;
+import com.github.mvysny.kaributesting.v10.Routes;
 import lombok.NonNull;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -79,6 +85,24 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   @Autowired protected CardSetRepository cardSetRepository;
   @Autowired protected SegmentTypeRepository segmentTypeRepository;
   @Autowired protected DramaEventService dramaEventService;
+  private static Routes routes;
+
+  @BeforeAll
+  public static void discoverRoutes() {
+    // Auto-discover your application's routes
+    routes = new Routes().autoDiscoverViews("com.github.javydreamercsw");
+  }
+
+  @BeforeEach
+  public void setupKaribu() {
+    MockitoAnnotations.openMocks(this);
+    MockVaadin.setup(routes); // Set up Karibu with your discovered routes
+  }
+
+  @AfterEach
+  public void tearDown() {
+    MockVaadin.tearDown();
+  }
 
   protected void clearAllRepositories() {
     deckCardRepository.deleteAllInBatch();
