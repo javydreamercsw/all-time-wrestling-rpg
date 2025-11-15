@@ -615,14 +615,14 @@ public class ShowDetailView extends Main
     Button upButton = new Button(new Icon(VaadinIcon.ARROW_UP));
     upButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     upButton.setTooltipText("Move Up");
-    upButton.setId("move-segment-up-button-"+segment.getId());
+    upButton.setId("move-segment-up-button-" + segment.getId());
     upButton.addClickListener(e -> moveSegment(segment, -1));
     upButton.setEnabled(currentIndex > 0);
 
     Button downButton = new Button(new Icon(VaadinIcon.ARROW_DOWN));
     downButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     downButton.setTooltipText("Move Down");
-    downButton.setId("move-segment-down-button-"+segment.getId());
+    downButton.setId("move-segment-down-button-" + segment.getId());
     downButton.addClickListener(e -> moveSegment(segment, 1));
     downButton.setEnabled(currentIndex < segments.size() - 1);
 
@@ -663,14 +663,14 @@ public class ShowDetailView extends Main
     Button summaryButton = new Button("Summarize", new Icon(VaadinIcon.ACADEMY_CAP));
     summaryButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     summaryButton.setTooltipText("Generate AI Summary");
-    summaryButton.setId("generate-summary-button-"+segment.getId());
+    summaryButton.setId("generate-summary-button-" + segment.getId());
     summaryButton.addClickListener(e -> generateSummary(segment));
     summaryButton.setEnabled(segment.getNarration() != null && !segment.getNarration().isEmpty());
 
     Button narrateButton = new Button("Narrate", new Icon(VaadinIcon.MICROPHONE));
     narrateButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     narrateButton.setTooltipText("Generate AI Narration");
-    narrateButton.setId("generate-narration-button-"+segment.getId());
+    narrateButton.setId("generate-narration-button-" + segment.getId());
     narrateButton.addClickListener(
         e -> {
           NarrationDialog dialog =
@@ -687,13 +687,13 @@ public class ShowDetailView extends Main
     Button editButton = new Button("Edit", new Icon(VaadinIcon.EDIT));
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editButton.setTooltipText("Edit Segment");
-    editButton.setId("edit-segment-button-"+segment.getId());
+    editButton.setId("edit-segment-button-" + segment.getId());
     editButton.addClickListener(e -> openEditSegmentDialog(segment));
 
     Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
     deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
     deleteButton.setTooltipText("Delete Segment");
-    deleteButton.setId("delete-segment-button-"+segment.getId());
+    deleteButton.setId("delete-segment-button-" + segment.getId());
     deleteButton.addClickListener(e -> deleteSegment(segment));
 
     return new VerticalLayout(summaryButton, narrateButton, editButton, deleteButton);
