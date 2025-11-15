@@ -20,10 +20,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.junit.Assert.assertEquals;
 
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SHOW_TYPE_NAME = "Weekly";
@@ -141,18 +144,24 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         7 * 8 + 11, cells.size()); // 11 headers, 7 rows (8 of the columns have values)
 
     // Click the edit button on the first row
-    WebElement editButton = driver.findElement(By.id("edit-segment-button"));
+    WebElement editButton = driver.findElement(By.id("edit-segment-button-"+1));
     clickAndScrollIntoView(editButton);
+
+      // Wait for the dialog to appear
+      wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
     // Edit the description
     String newDescription = "This is the new description.";
     WebElement summaryField =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("edit-summary-text-area")));
-    summaryField.sendKeys(newDescription);
+    summaryField.sendKeys(newDescription, Keys.TAB);
 
     // Click the save button
     WebElement saveButton = driver.findElement(By.id("edit-segment-save-button"));
     clickAndScrollIntoView(saveButton);
+
+      // Wait for the dialog to appear
+      wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
     // Verify the description has been updated
     wait.until(
@@ -195,7 +204,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     Segment fisrtSegment = new Segment();
     fisrtSegment.setNarration("This is a test narration.");
     fisrtSegment.setSummary("This is a test summary.");
-    fisrtSegment.setSegmentOrder(1);
+    fisrtSegment.setSegmentOrder(2);
     fisrtSegment.setShow(show);
     fisrtSegment.setSegmentDate(Instant.now());
     fisrtSegment.setIsTitleSegment(false);
@@ -221,11 +230,21 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.urlContains("/show-detail"));
 
     // Click the down button on the first row
-    WebElement downButton = driver.findElement(By.id("move-segment-down-button"));
+    WebElement downButton = driver.findElement(By.id("move-segment-down-button-"+mainEventSegment.getId()));
     clickAndScrollIntoView(downButton);
+
+      // Navigate to the Show Detail view
+      driver.get("http://localhost:" + serverPort + getContextPath() + "/show-detail/" + show.getId());
 
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
+
+    //Moved up
+      Assertions.assertNotNull(fisrtSegment.getId());
+      Assertions.assertEquals(1, segmentRepository.findById(fisrtSegment.getId()).get().getSegmentOrder());
+      //Moved down
+      Assertions.assertNotNull(mainEventSegment.getId());
+      Assertions.assertEquals(2, segmentRepository.findById(mainEventSegment.getId()).get().getSegmentOrder());
   }
 
   @Test
@@ -271,7 +290,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.urlContains("/show-detail"));
 
     WebElement narrateButton =
-        wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-narration-button")));
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-narration-button-"+fisrtSegment.getId())));
     clickAndScrollIntoView(narrateButton);
 
     // Wait for the dialog to appear
@@ -290,8 +309,11 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
     WebElement summaryButton =
-        wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-summary-button")));
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-summary-button-"+fisrtSegment.getId())));
     clickAndScrollIntoView(summaryButton);
+
+      // Navigate to the Show Detail view
+      driver.get("http://localhost:" + serverPort + getContextPath() + "/show-detail/" + show.getId());
 
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));

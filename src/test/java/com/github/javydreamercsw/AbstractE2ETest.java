@@ -1,25 +1,6 @@
 package com.github.javydreamercsw;
 
 import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
-import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
-import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
-import com.github.javydreamercsw.management.domain.season.SeasonRepository;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.faction.FactionService;
-import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
-import com.github.javydreamercsw.management.service.rivalry.RivalryService;
-import com.github.javydreamercsw.management.service.season.SeasonService;
-import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
-import com.github.javydreamercsw.management.service.segment.SegmentService;
-import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
-import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.io.File;
 import java.io.IOException;
@@ -47,75 +28,16 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringApplication;
-import org.springframework.context.ConfigurableApplicationContext;
 
 @ExtendWith(UITestWatcher.class)
 @Slf4j
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
-  protected static int serverPort;
-  private static final ConfigurableApplicationContext context;
-  protected static InboxRepository inboxRepository; // Added static InboxRepository
-  protected static WrestlerRepository wrestlerRepository;
-  protected static MultiWrestlerFeudService multiWrestlerFeudService;
-  protected static SeasonRepository seasonRepository;
-  protected static SegmentService segmentService;
-  protected static SeasonService seasonService;
-  protected static RivalryService rivalryService;
-  protected static TitleService titleService;
-  protected static ShowService showService;
-  protected static SegmentTypeService segmentTypeService;
-  protected static SegmentRuleService segmentRuleService;
-  protected static SegmentRepository segmentRepository;
-  protected static MultiWrestlerFeudRepository multiWrestlerFeudRepository;
-  protected static ShowRepository showRepository;
-  protected static ShowTypeRepository showTypeRepository;
-  protected static SegmentTypeRepository segmentTypeRepository;
-  protected static FactionService factionService;
-  protected static WrestlerService wrestlerService;
-  protected static ShowTemplateRepository showTemplateRepository;
 
   @Value("${server.servlet.context-path}")
   @Getter
   private String contextPath;
-
-  static {
-    serverPort = Integer.parseInt(System.getProperty("server.port", "9090"));
-    String[] args = {
-      "--server.port=" + serverPort, "--spring.profiles.active=test",
-    };
-    log.info("Attempting to start Spring Boot application for E2E tests on port {}", serverPort);
-    context = SpringApplication.run(Application.class, args);
-    inboxRepository = context.getBean(InboxRepository.class);
-    wrestlerRepository = context.getBean(WrestlerRepository.class);
-    multiWrestlerFeudService = context.getBean(MultiWrestlerFeudService.class);
-    seasonRepository = context.getBean(SeasonRepository.class);
-    segmentService = context.getBean(SegmentService.class);
-    seasonService = context.getBean(SeasonService.class);
-    rivalryService = context.getBean(RivalryService.class);
-    titleService = context.getBean(TitleService.class);
-    showService = context.getBean(ShowService.class);
-    segmentTypeService = context.getBean(SegmentTypeService.class);
-    segmentRuleService = context.getBean(SegmentRuleService.class);
-    segmentRepository = context.getBean(SegmentRepository.class);
-    multiWrestlerFeudRepository = context.getBean(MultiWrestlerFeudRepository.class);
-    showRepository = context.getBean(ShowRepository.class);
-    showTypeRepository = context.getBean(ShowTypeRepository.class);
-    segmentTypeRepository = context.getBean(SegmentTypeRepository.class);
-    factionService = context.getBean(FactionService.class);
-    wrestlerService = context.getBean(WrestlerService.class);
-    showTemplateRepository = context.getBean(ShowTemplateRepository.class);
-    log.info("Spring Boot application started for E2E tests.");
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  log.info("Shutting down Spring Boot application for E2E tests.");
-                  context.close();
-                }));
-  }
 
   @BeforeEach
   public void setup() throws java.io.IOException {

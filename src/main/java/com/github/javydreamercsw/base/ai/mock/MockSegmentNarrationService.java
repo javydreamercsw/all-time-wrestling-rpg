@@ -145,8 +145,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     if (!participants.isEmpty()) {
       // Ensure at least one actual participant is included
       segmentParticipants.add(participants.get(random.nextInt(participants.size())));
-      int additionalParticipants = random.nextInt(2); // 0 or 1 additional participant
-      for (int i = 0; i < additionalParticipants; i++) {
+      for (int i = 0; i < 2; i++) {
         segmentParticipants.add(participants.get(random.nextInt(participants.size())));
       }
     } else {
