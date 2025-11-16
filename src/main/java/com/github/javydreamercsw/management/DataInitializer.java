@@ -112,7 +112,10 @@ public class DataInitializer {
           Optional<SegmentRule> existingRule = segmentRuleService.findByName(dto.getName());
           if (existingRule.isEmpty()) {
             segmentRuleService.createOrUpdateRule(
-                dto.getName(), dto.getDescription(), dto.isRequiresHighHeat());
+                dto.getName(),
+                dto.getDescription(),
+                dto.isRequiresHighHeat(),
+                dto.getBumpAddition());
             log.info(
                 "Loaded segment rule: {} (High Heat: {})", dto.getName(), dto.isRequiresHighHeat());
           } else {

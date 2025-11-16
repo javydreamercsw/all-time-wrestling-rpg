@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,29 +119,38 @@ public class SegmentAdjudicationService {
         }
       }
 
-      // Assign bumps to all losers
-      for (Wrestler participant : segment.getLosers()) {
-        Long id = participant.getId();
-        if (id != null) {
-          wrestlerService.addBump(id);
-        }
-      }
-      if (segment.getSegmentRules().stream()
-          .anyMatch(
-              rule ->
-                  Stream.of(
-                          "Ladder Match",
-                          "Extreme",
-                          "Barbwire Exploding Deathmatch",
-                          "🪖 War Games",
-                          "Tables, Ladders and Chairs (TLC)",
-                          "Casket Match")
-                      .anyMatch(value -> rule.getName().equals(value)))) {
-        for (Wrestler participant : segment.getWrestlers()) {
-          Long id = participant.getId();
-          if (id != null) {
-            wrestlerService.addBump(id);
-          }
+      // Assign bumps based on segment rules
+      for (com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule rule :
+          segment.getSegmentRules()) {
+        switch (rule.getBumpAddition()) {
+          case WINNERS:
+            for (Wrestler winner : segment.getWinners()) {
+              Long id = winner.getId();
+              if (id != null) {
+                wrestlerService.addBump(id);
+              }
+            }
+            break;
+          case LOSERS:
+            for (Wrestler loser : segment.getLosers()) {
+              Long id = loser.getId();
+              if (id != null) {
+                wrestlerService.addBump(id);
+              }
+            }
+            break;
+          case ALL:
+            for (Wrestler participant : segment.getWrestlers()) {
+              Long id = participant.getId();
+              if (id != null) {
+                wrestlerService.addBump(id);
+              }
+            }
+            break;
+          case NONE:
+          default:
+            // Do nothing
+            break;
         }
       }
     } else {

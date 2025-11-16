@@ -91,7 +91,7 @@ class MockMatchNarrationServiceTest {
         .anySatisfy(
             segment ->
                 assertThat(segment.participants())
-                    .containsAnyOf("Stone Cold Steve Austin", "The Rock"));
+                    .containsAnyOf("Wrestler A", "Wrestler B", "Wrestler C", "Wrestler D"));
   }
 
   @Test
@@ -148,7 +148,7 @@ class MockMatchNarrationServiceTest {
                     .constructCollectionType(List.class, MockSegmentDTO.class));
     assertThat(segments)
         .anySatisfy(
-            segment -> assertThat(segment.participants()).containsAnyOf("The Undertaker", "Kane"));
+            segment -> assertThat(segment.participants()).containsAnyOf("Wrestler A", "Wrestler B", "Wrestler C", "Wrestler D"));
   }
 
   @Test

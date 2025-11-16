@@ -1,69 +1,86 @@
 [ {
   "name": "No DQ",
   "description": "No disqualification match - anything goes",
-  "requiresHighHeat": false
+  "requiresHighHeat": false,
+  "bumpAddition": "ALL"
 }, {
   "name": "Extreme",
   "description": "Extreme rules match with weapons and hardcore elements",
-  "requiresHighHeat": true
+  "requiresHighHeat": true,
+  "bumpAddition": "ALL"
 }, {
   "name": "Normal",
   "description": "Standard wrestling match with traditional rules",
-  "requiresHighHeat": false
+  "requiresHighHeat": false,
+  "bumpAddition": "NONE"
 }, {
   "name": "Elimination",
   "description": "Multi-person elimination match",
-  "requiresHighHeat": false
+  "requiresHighHeat": false,
+  "bumpAddition": "NONE"
 }, {
   "name": "Over the Top Rope Elimination",
   "description": "Battle royal style elimination over the top rope",
-  "requiresHighHeat": false
+  "requiresHighHeat": false,
+  "bumpAddition": "NONE"
 }, {
   "name": "Submission",
   "description": "Match can only be won by submission",
-  "requiresHighHeat": false
+  "requiresHighHeat": false,
+  "bumpAddition": "LOSERS"
 }, {
   "name": "Promo",
   "description": "Non-wrestling promo segment for storyline development",
-  "requiresHighHeat": false
+  "requiresHighHeat": false,
+  "bumpAddition": "NONE"
 }, {
   "name": "Cage",
   "description": "Steel cage match with escape or pinfall victory",
-  "requiresHighHeat": true
+  "requiresHighHeat": true,
+  "bumpAddition": "ALL"
 }, {
   "name": "Last Man Standing",
   "description": "Match won by incapacitating opponent for 10-count",
-  "requiresHighHeat": true
+  "requiresHighHeat": true,
+  "bumpAddition": "ALL"
 }, {
   "name": "Free-For-All",
   "description": "Multi-person match with no teams or alliances",
-  "requiresHighHeat": false
+  "requiresHighHeat": false,
+  "bumpAddition": "NONE"
 }, {
   "name": "I Quit Match",
   "description": "Match won only when opponent says 'I Quit'",
-  "requiresHighHeat": true
+  "requiresHighHeat": true,
+  "bumpAddition": "NONE"
 }, {
   "name": "Ladder Match",
   "description": "Match with ladders to retrieve suspended object",
-  "requiresHighHeat": true
+  "requiresHighHeat": true,
+  "bumpAddition": "ALL"
 }, {
   "name": "Casket Match",
   "description": "Match won by placing opponent in a casket",
-  "requiresHighHeat": true
+  "requiresHighHeat": true,
+  "bumpAddition": "LOSERS"
 }, {
   "name": "Tables, Ladders and Chairs (TLC)",
   "description": "Extreme match featuring tables, ladders, and chairs",
-  "requiresHighHeat": true
+  "requiresHighHeat": true,
+  "bumpAddition": "ALL"
 }, {
   "name": "🪖 War Games",
   "description": "Multi-team cage match with timed entries",
-  "requiresHighHeat": true
+  "requiresHighHeat": true,
+  "bumpAddition": "ALL"
 }, {
   "name": "Barbwire Exploding Deathmatch",
   "description": "Extreme deathmatch with barbwire and explosives",
-  "requiresHighHeat": true
+  "requiresHighHeat": true,
+  "bumpAddition": "ALL"
 }, {
   "name": "Gauntlet",
   "description": "One wrestler faces multiple opponents in succession",
-  "requiresHighHeat": false
+  "requiresHighHeat": false,
+  "bumpAddition": "NONE"
 } ]

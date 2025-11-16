@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.service.segment;
 
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import java.util.List;
@@ -161,7 +162,10 @@ public class SegmentRuleService {
    */
   @Transactional
   public SegmentRule createOrUpdateRule(
-      @NonNull String name, String description, boolean requiresHighHeat) {
+      @NonNull String name,
+      String description,
+      boolean requiresHighHeat,
+      BumpAddition bumpAddition) {
     Optional<SegmentRule> existingOpt = segmentRuleRepository.findByName(name);
 
     SegmentRule segmentRule;
@@ -176,6 +180,7 @@ public class SegmentRuleService {
     segmentRule.setName(name);
     segmentRule.setDescription(description);
     segmentRule.setRequiresHighHeat(requiresHighHeat);
+    segmentRule.setBumpAddition(bumpAddition);
 
     return segmentRuleRepository.save(segmentRule);
   }

@@ -1,11 +1,13 @@
 package com.github.javydreamercsw.management.ui.view.segment.rule;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -87,6 +89,11 @@ public class SegmentRuleListView extends Main {
         .setHeader("Requires High Heat")
         .setSortable(true);
 
+    segmentRuleGrid
+        .addColumn(SegmentRule::getBumpAddition)
+        .setHeader("Bump Addition")
+        .setSortable(true);
+
     // Edit and Delete buttons
     segmentRuleGrid.addComponentColumn(this::createActionsColumn).setHeader("Actions");
 
@@ -139,6 +146,8 @@ public class SegmentRuleListView extends Main {
     TextArea editDescription = new TextArea("Description");
     editDescription.setWidthFull();
     Checkbox editRequiresHighHeat = new Checkbox("Requires High Heat");
+    ComboBox<BumpAddition> bumpAdditionComboBox = new ComboBox<>("Bump Addition");
+    bumpAdditionComboBox.setItems(BumpAddition.values());
 
     binder = new Binder<>(SegmentRule.class);
     binder
@@ -149,6 +158,9 @@ public class SegmentRuleListView extends Main {
     binder
         .forField(editRequiresHighHeat)
         .bind(SegmentRule::getRequiresHighHeat, SegmentRule::setRequiresHighHeat);
+    binder
+        .forField(bumpAdditionComboBox)
+        .bind(SegmentRule::getBumpAddition, SegmentRule::setBumpAddition);
 
     Button saveButton = new Button("Save", e -> saveSegmentRule());
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -159,7 +171,8 @@ public class SegmentRuleListView extends Main {
     buttons.setWidthFull();
 
     VerticalLayout dialogLayout =
-        new VerticalLayout(editName, editDescription, editRequiresHighHeat, buttons);
+        new VerticalLayout(
+            editName, editDescription, editRequiresHighHeat, bumpAdditionComboBox, buttons);
     dialogLayout.setPadding(false);
     dialogLayout.setSpacing(true);
 
@@ -172,7 +185,8 @@ public class SegmentRuleListView extends Main {
         segmentRuleService.createOrUpdateRule(
             editingSegmentRule.getName(),
             editingSegmentRule.getDescription(),
-            editingSegmentRule.getRequiresHighHeat());
+            editingSegmentRule.getRequiresHighHeat(),
+            editingSegmentRule.getBumpAddition());
         Notification.show(
                 "Segment rule saved successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
