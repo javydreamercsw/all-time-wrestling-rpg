@@ -878,7 +878,7 @@
                 <include>**/*E2ETest.java</include>
               </includes>
               <systemPropertyVariables>
-                <server.port>9090</server.port>
+                <server.port>7070</server.port>
               </systemPropertyVariables>
             </configuration>
             <executions>
