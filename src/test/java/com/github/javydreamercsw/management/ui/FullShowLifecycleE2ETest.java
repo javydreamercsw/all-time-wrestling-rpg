@@ -24,7 +24,6 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.transaction.annotation.Transactional;
 
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SHOW_TYPE_NAME = "Weekly";
@@ -32,7 +31,6 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String TEMPLATE_NAME = "Continuum";
 
   @BeforeEach
-  @Transactional
   public void setupTestData() {
     segmentRepository.deleteAll();
     showRepository.deleteAll();

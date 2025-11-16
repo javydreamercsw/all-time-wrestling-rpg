@@ -14,6 +14,8 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
@@ -27,14 +29,29 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 class WrestlerProfileViewE2ETest extends AbstractE2ETest {
+
+  @Autowired private TitleRepository titleRepository;
+  @Autowired private TitleReignRepository titleReignRepository;
 
   private Wrestler testWrestler;
 
   @BeforeEach
   void setUp() {
     // Clear all relevant repositories to ensure a clean state for each test
+    titleReignRepository.deleteAll();
+    titleRepository
+        .findAll()
+        .forEach(
+            title -> {
+              title.setChampion(null);
+              titleRepository.save(title);
+            });
     multiWrestlerFeudRepository.deleteAll();
     segmentRepository.deleteAll();
     wrestlerRepository.deleteAll();

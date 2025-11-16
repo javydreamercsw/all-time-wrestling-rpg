@@ -28,40 +28,26 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringApplication;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 
 @ExtendWith(UITestWatcher.class)
 @Slf4j
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    classes = Application.class)
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
-  protected static int serverPort;
-  private static final ConfigurableApplicationContext context;
+
+  @LocalServerPort protected int serverPort;
 
   @Value("${server.servlet.context-path}")
   @Getter
   private String contextPath;
 
-  static {
-    serverPort = Integer.parseInt(System.getProperty("server.port", "9090"));
-    String[] args = {
-      "--server.port=" + serverPort, "--spring.profiles.active=test",
-    };
-    log.info("Attempting to start Spring Boot application for E2E tests on port {}", serverPort);
-    context = SpringApplication.run(Application.class, args);
-    log.info("Spring Boot application started for E2E tests.");
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  log.info("Shutting down Spring Boot application for E2E tests.");
-                  context.close();
-                }));
-  }
-
   @BeforeEach
-  public void setup() throws java.io.IOException {
+  public void setup() {
     WebDriverManager.chromedriver().setup();
     log.info("Waiting for application to be ready on port {}", serverPort);
     waitForAppToBeReady();
