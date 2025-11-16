@@ -46,9 +46,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles("test")
 public abstract class ManagementIntegrationTest extends AbstractIntegrationTest {
   @Autowired protected DeckCardRepository deckCardRepository;
   @Autowired protected DramaEventRepository dramaEventRepository;

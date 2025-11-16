@@ -10,7 +10,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.provider.Query;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,10 +31,6 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
-
-    // Mock UI to allow dialog to be opened
-    UI ui = mock(UI.class);
-    UI.setCurrent(ui);
 
     segment = new ProposedSegment();
     segment.setDescription("Old Description");

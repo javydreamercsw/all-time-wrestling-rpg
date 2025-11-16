@@ -200,19 +200,19 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     mainEventSegment.setTitles(titles);
     segmentRepository.save(mainEventSegment);
 
-    Segment fisrtSegment = new Segment();
-    fisrtSegment.setNarration("This is a test narration.");
-    fisrtSegment.setSummary("This is a test summary.");
-    fisrtSegment.setSegmentOrder(2);
-    fisrtSegment.setShow(show);
-    fisrtSegment.setSegmentDate(Instant.now());
-    fisrtSegment.setIsTitleSegment(false);
-    fisrtSegment.setIsNpcGenerated(false);
-    fisrtSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    fisrtSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
-    fisrtSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
-    fisrtSegment.setWinners(Arrays.asList(wrestlers.get(0)));
-    segmentRepository.save(fisrtSegment);
+    Segment firstSegment = new Segment();
+    firstSegment.setNarration("This is a test narration.");
+    firstSegment.setSummary("This is a test summary.");
+    firstSegment.setSegmentOrder(2);
+    firstSegment.setShow(show);
+    firstSegment.setSegmentDate(Instant.now());
+    firstSegment.setIsTitleSegment(false);
+    firstSegment.setIsNpcGenerated(false);
+    firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
+    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
+    firstSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
+    firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
+    segmentRepository.save(firstSegment);
 
     // Navigate to the Show List view
     driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
@@ -228,6 +228,11 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
 
+    // Wait for the segments to be visible
+    wait.until(
+        ExpectedConditions.presenceOfAllElementsLocatedBy(
+            By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
+
     // Click the down button on the first row
     WebElement downButton =
         driver.findElement(By.id("move-segment-down-button-" + mainEventSegment.getId()));
@@ -241,9 +246,9 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.urlContains("/show-detail"));
 
     // Moved up
-    Assertions.assertNotNull(fisrtSegment.getId());
+    Assertions.assertNotNull(firstSegment.getId());
     Assertions.assertEquals(
-        1, segmentRepository.findById(fisrtSegment.getId()).get().getSegmentOrder());
+        1, segmentRepository.findById(firstSegment.getId()).get().getSegmentOrder());
     // Moved down
     Assertions.assertNotNull(mainEventSegment.getId());
     Assertions.assertEquals(
@@ -264,19 +269,19 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
 
-    Segment fisrtSegment = new Segment();
-    fisrtSegment.setNarration("Rob Van Dam looking for another dominant performance.");
-    fisrtSegment.setSummary("");
-    fisrtSegment.setSegmentOrder(1);
-    fisrtSegment.setShow(show);
-    fisrtSegment.setSegmentDate(Instant.now());
-    fisrtSegment.setIsTitleSegment(false);
-    fisrtSegment.setIsNpcGenerated(false);
-    fisrtSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    fisrtSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
-    fisrtSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
-    fisrtSegment.setWinners(Arrays.asList(wrestlers.get(0)));
-    segmentRepository.save(fisrtSegment);
+    Segment firstSegment = new Segment();
+    firstSegment.setNarration("Rob Van Dam looking for another dominant performance.");
+    firstSegment.setSummary("");
+    firstSegment.setSegmentOrder(1);
+    firstSegment.setShow(show);
+    firstSegment.setSegmentDate(Instant.now());
+    firstSegment.setIsTitleSegment(false);
+    firstSegment.setIsNpcGenerated(false);
+    firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
+    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
+    firstSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
+    firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
+    segmentRepository.save(firstSegment);
 
     // Navigate to the Show List view
     driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
@@ -295,7 +300,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement narrateButton =
         wait.until(
             ExpectedConditions.elementToBeClickable(
-                By.id("generate-narration-button-" + fisrtSegment.getId())));
+                By.id("generate-narration-button-" + firstSegment.getId())));
     clickAndScrollIntoView(narrateButton);
 
     // Wait for the dialog to appear
@@ -316,7 +321,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement summaryButton =
         wait.until(
             ExpectedConditions.elementToBeClickable(
-                By.id("generate-summary-button-" + fisrtSegment.getId())));
+                By.id("generate-summary-button-" + firstSegment.getId())));
     clickAndScrollIntoView(summaryButton);
 
     // Navigate to the Show Detail view
@@ -347,19 +352,19 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
 
-    Segment fisrtSegment = new Segment();
-    fisrtSegment.setNarration("Rob Van Dam looking for another dominant performance.");
-    fisrtSegment.setSummary("");
-    fisrtSegment.setSegmentOrder(1);
-    fisrtSegment.setShow(show);
-    fisrtSegment.setSegmentDate(Instant.now());
-    fisrtSegment.setIsTitleSegment(false);
-    fisrtSegment.setIsNpcGenerated(false);
-    fisrtSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    fisrtSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
-    fisrtSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
-    fisrtSegment.setWinners(Arrays.asList(wrestlers.get(0)));
-    segmentRepository.save(fisrtSegment);
+    Segment firstSegment = new Segment();
+    firstSegment.setNarration("Rob Van Dam looking for another dominant performance.");
+    firstSegment.setSummary("");
+    firstSegment.setSegmentOrder(1);
+    firstSegment.setShow(show);
+    firstSegment.setSegmentDate(Instant.now());
+    firstSegment.setIsTitleSegment(false);
+    firstSegment.setIsNpcGenerated(false);
+    firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
+    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
+    firstSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
+    firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
+    segmentRepository.save(firstSegment);
 
     // Navigate back to the list.
     driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
