@@ -4,10 +4,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
 import com.github.javydreamercsw.management.controller.season.SeasonController.CreateSeasonRequest;
 import com.github.javydreamercsw.management.controller.season.SeasonController.UpdateSeasonRequest;
 import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
