@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeAll;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -51,43 +52,46 @@ public abstract class AbstractIntegrationTest {
   protected static FactionService factionService;
   protected static WrestlerService wrestlerService;
   protected static ShowTemplateRepository showTemplateRepository;
-  private static final ConfigurableApplicationContext context;
+  private static ConfigurableApplicationContext context;
   protected static int serverPort;
 
-  static {
-    serverPort = Integer.parseInt(System.getProperty("server.port", "9090"));
-    String[] args = {
-      "--server.port=" + serverPort, "--spring.profiles.active=test",
-    };
-    log.info("Attempting to start Spring Boot application for E2E tests on port {}", serverPort);
-    context = SpringApplication.run(Application.class, args);
-    inboxRepository = context.getBean(InboxRepository.class);
-    wrestlerRepository = context.getBean(WrestlerRepository.class);
-    multiWrestlerFeudService = context.getBean(MultiWrestlerFeudService.class);
-    seasonRepository = context.getBean(SeasonRepository.class);
-    segmentService = context.getBean(SegmentService.class);
-    seasonService = context.getBean(SeasonService.class);
-    rivalryService = context.getBean(RivalryService.class);
-    titleService = context.getBean(TitleService.class);
-    showService = context.getBean(ShowService.class);
-    segmentTypeService = context.getBean(SegmentTypeService.class);
-    segmentRuleService = context.getBean(SegmentRuleService.class);
-    segmentRepository = context.getBean(SegmentRepository.class);
-    multiWrestlerFeudRepository = context.getBean(MultiWrestlerFeudRepository.class);
-    showRepository = context.getBean(ShowRepository.class);
-    showTypeRepository = context.getBean(ShowTypeRepository.class);
-    segmentTypeRepository = context.getBean(SegmentTypeRepository.class);
-    factionService = context.getBean(FactionService.class);
-    wrestlerService = context.getBean(WrestlerService.class);
-    showTemplateRepository = context.getBean(ShowTemplateRepository.class);
-    log.info("Spring Boot application started for E2E tests.");
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  log.info("Shutting down Spring Boot application for E2E tests.");
-                  context.close();
-                }));
+  @BeforeAll
+  static void setup() {
+    if (context == null) {
+      serverPort = Integer.parseInt(System.getProperty("server.port", "9090"));
+      String[] args = {
+        "--server.port=" + serverPort, "--spring.profiles.active=test",
+      };
+      log.info("Attempting to start Spring Boot application for E2E tests on port {}", serverPort);
+      context = SpringApplication.run(Application.class, args);
+      inboxRepository = context.getBean(InboxRepository.class);
+      wrestlerRepository = context.getBean(WrestlerRepository.class);
+      multiWrestlerFeudService = context.getBean(MultiWrestlerFeudService.class);
+      seasonRepository = context.getBean(SeasonRepository.class);
+      segmentService = context.getBean(SegmentService.class);
+      seasonService = context.getBean(SeasonService.class);
+      rivalryService = context.getBean(RivalryService.class);
+      titleService = context.getBean(TitleService.class);
+      showService = context.getBean(ShowService.class);
+      segmentTypeService = context.getBean(SegmentTypeService.class);
+      segmentRuleService = context.getBean(SegmentRuleService.class);
+      segmentRepository = context.getBean(SegmentRepository.class);
+      multiWrestlerFeudRepository = context.getBean(MultiWrestlerFeudRepository.class);
+      showRepository = context.getBean(ShowRepository.class);
+      showTypeRepository = context.getBean(ShowTypeRepository.class);
+      segmentTypeRepository = context.getBean(SegmentTypeRepository.class);
+      factionService = context.getBean(FactionService.class);
+      wrestlerService = context.getBean(WrestlerService.class);
+      showTemplateRepository = context.getBean(ShowTemplateRepository.class);
+      log.info("Spring Boot application started for E2E tests.");
+      Runtime.getRuntime()
+          .addShutdownHook(
+              new Thread(
+                  () -> {
+                    log.info("Shutting down Spring Boot application for E2E tests.");
+                    context.close();
+                  }));
+    }
   }
 
   protected SegmentNarrationService.SegmentNarrationContext createCustomSegmentContext() {
