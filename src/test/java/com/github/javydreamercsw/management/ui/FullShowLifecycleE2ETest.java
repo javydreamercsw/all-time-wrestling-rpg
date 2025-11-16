@@ -194,6 +194,14 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     wait.until(
         ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
+    // Navigate back to the list.
+    driver.get(
+        "http://localhost:"
+            + serverPort
+            + getContextPath()
+            + "/show-detail/"
+            + showService.findByName(showName).get(0).getId());
+
     // Verify the description has been updated
     wait.until(
         ExpectedConditions.textToBePresentInElementLocated(
