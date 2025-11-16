@@ -148,7 +148,9 @@ class MockMatchNarrationServiceTest {
                     .constructCollectionType(List.class, MockSegmentDTO.class));
     assertThat(segments)
         .anySatisfy(
-            segment -> assertThat(segment.participants()).containsAnyOf("Wrestler A", "Wrestler B", "Wrestler C", "Wrestler D"));
+            segment ->
+                assertThat(segment.participants())
+                    .containsAnyOf("Wrestler A", "Wrestler B", "Wrestler C", "Wrestler D"));
   }
 
   @Test

@@ -1,6 +1,6 @@
 package com.github.javydreamercsw;
 
-import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.io.File;
 import java.io.IOException;

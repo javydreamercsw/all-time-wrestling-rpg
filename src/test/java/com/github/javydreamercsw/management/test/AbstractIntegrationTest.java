@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.base.test;
+package com.github.javydreamercsw.management.test;
 
 import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
