@@ -28,19 +28,26 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 
 @ExtendWith(UITestWatcher.class)
 @Slf4j
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    classes = Application.class)
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
+
+  @LocalServerPort protected int serverPort;
 
   @Value("${server.servlet.context-path}")
   @Getter
   private String contextPath;
 
   @BeforeEach
-  public void setup() throws java.io.IOException {
+  public void setup() {
     WebDriverManager.chromedriver().setup();
     log.info("Waiting for application to be ready on port {}", serverPort);
     waitForAppToBeReady();
@@ -53,9 +60,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       options.addArguments("--no-sandbox");
       options.addArguments("--disable-dev-shm-usage");
     }
-    if (driver == null) {
-      driver = new ChromeDriver(options);
-    }
+    driver = new ChromeDriver(options);
   }
 
   @AfterEach

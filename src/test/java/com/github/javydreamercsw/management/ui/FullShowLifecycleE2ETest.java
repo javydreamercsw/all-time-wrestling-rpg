@@ -24,7 +24,6 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.transaction.annotation.Transactional;
 
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SHOW_TYPE_NAME = "Weekly";
@@ -32,7 +31,6 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String TEMPLATE_NAME = "Continuum";
 
   @BeforeEach
-  @Transactional
   public void setupTestData() {
     segmentRepository.deleteAll();
     showRepository.deleteAll();
@@ -142,7 +140,9 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         7 * 8 + 11, cells.size()); // 11 headers, 7 rows (8 of the columns have values)
 
     // Click the edit button on the first row
-    WebElement editButton = driver.findElement(By.id("edit-segment-button-" + 1));
+    WebElement editButton =
+        driver.findElement(
+            By.id("edit-segment-button-" + segmentService.getSegmentsByShow(show).get(0).getId()));
     clickAndScrollIntoView(editButton);
 
     // Wait for the dialog to appear
