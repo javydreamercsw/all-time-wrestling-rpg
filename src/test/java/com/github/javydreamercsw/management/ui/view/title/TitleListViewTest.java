@@ -10,7 +10,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.data.provider.Query;
@@ -38,10 +37,6 @@ class TitleListViewTest extends ManagementIntegrationTest {
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
-
-    // Mock UI to allow dialogs and components to be used
-    UI ui = mock(UI.class);
-    UI.setCurrent(ui);
 
     // Mock WrestlerService
     Wrestler testWrestler = new Wrestler();

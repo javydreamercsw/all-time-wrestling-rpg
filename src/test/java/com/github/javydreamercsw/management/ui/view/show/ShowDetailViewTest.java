@@ -14,7 +14,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.Location;
@@ -22,11 +21,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -40,17 +36,6 @@ class ShowDetailViewTest extends ManagementIntegrationTest {
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
-
-  @BeforeEach
-  public void setup() {
-    MockitoAnnotations.openMocks(this);
-    MockVaadin.setup();
-  }
-
-  @AfterEach
-  public void tearDown() {
-    MockVaadin.tearDown();
-  }
 
   @Test
   void testEditSegmentResetsAdjudicationStatus() {

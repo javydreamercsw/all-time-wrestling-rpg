@@ -13,14 +13,14 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 // Removed @SpringBootTest and @ActiveProfiles("test") as this is an E2E test and should not
 // manage its own Spring context.
 @Slf4j
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 class InboxViewE2ETest extends AbstractE2ETest {
-
-  // Removed @Autowired private InboxRepository inboxRepository;
-  // Access inboxRepository via AbstractE2ETest.inboxRepository
 
   @BeforeEach
   public void setUp() throws IOException {

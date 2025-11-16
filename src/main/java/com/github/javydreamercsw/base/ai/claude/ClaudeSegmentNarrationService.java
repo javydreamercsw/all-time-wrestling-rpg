@@ -8,11 +8,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 /**
@@ -29,13 +31,16 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
   private final ObjectMapper objectMapper;
   private final String apiKey;
   private final ClaudeConfigProperties claudeConfigProperties;
+  private final Environment environment;
 
   @Autowired
-  public ClaudeSegmentNarrationService(ClaudeConfigProperties claudeConfigProperties) {
+  public ClaudeSegmentNarrationService(
+      ClaudeConfigProperties claudeConfigProperties, Environment environment) {
     this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
     this.objectMapper = new ObjectMapper();
     this.apiKey = System.getenv("ANTHROPIC_API_KEY");
     this.claudeConfigProperties = claudeConfigProperties;
+    this.environment = environment;
   }
 
   @Override
@@ -50,6 +55,9 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
 
   @Override
   public boolean isAvailable() {
+    if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
+      return false;
+    }
     return apiKey != null && !apiKey.trim().isEmpty();
   }
 

@@ -96,11 +96,13 @@ public class NarrationDialog extends Dialog {
 
     generateButton = new Button("Generate Narration");
     generateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    generateButton.setId("generate-narration-button");
     generateButton.addClickListener(e -> generateNarration());
 
     saveButton = new Button("Save Narration");
     saveButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
     saveButton.addClickListener(e -> saveNarration());
+    saveButton.setId("save-narration-button");
     saveButton.setEnabled(false);
 
     feedbackArea = new TextArea("Feedback");

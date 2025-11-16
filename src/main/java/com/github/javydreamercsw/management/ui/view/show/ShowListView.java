@@ -31,6 +31,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
@@ -38,6 +39,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -89,12 +91,14 @@ public class ShowListView extends Main {
     name.setAriaLabel("Show Name");
     name.setMaxLength(255);
     name.setMinWidth("20em");
+    name.setId("show-name");
 
     newShowType = new ComboBox<>("Show Type");
     newShowType.setItems(showTypeService.findAll());
     newShowType.setItemLabelGenerator(ShowType::getName);
     newShowType.setRequired(true);
     newShowType.setPlaceholder("Select a type");
+    newShowType.setId("show-type");
 
     newSeason = new ComboBox<>("Season");
     Page<Season> seasonsPage = seasonService.getAllSeasons(Pageable.unpaged());
@@ -104,19 +108,23 @@ public class ShowListView extends Main {
     newSeason.setItemLabelGenerator(Season::getName);
     newSeason.setClearButtonVisible(true);
     newSeason.setPlaceholder("Select a season (optional)");
+    newSeason.setId("season");
 
     newTemplate = new ComboBox<>("Template");
     newTemplate.setItems(showTemplateService.findAll());
     newTemplate.setItemLabelGenerator(ShowTemplate::getName);
     newTemplate.setClearButtonVisible(true);
     newTemplate.setPlaceholder("Select a template (optional)");
+    newTemplate.setId("show-template");
 
     newShowDate = new DatePicker("Show Date");
     newShowDate.setPlaceholder("Select date (optional)");
     newShowDate.setClearButtonVisible(true);
+    newShowDate.setId("show-date");
 
     createBtn = new Button("Create", event -> createShow());
     createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    createBtn.setId("create-show-button");
 
     HorizontalLayout formLayout =
         new HorizontalLayout(name, newShowType, newSeason, newTemplate, newShowDate, createBtn);
@@ -145,7 +153,10 @@ public class ShowListView extends Main {
                   e ->
                       getUI()
                           .ifPresent(
-                              ui -> ui.navigate("show-detail/" + show.getId() + "?ref=shows")));
+                              ui ->
+                                  ui.navigate(
+                                      "show-detail/" + show.getId(),
+                                      new QueryParameters(Map.of("ref", List.of("shows"))))));
               return nameButton;
             })
         .setHeader("Name")
@@ -221,16 +232,21 @@ public class ShowListView extends Main {
               Button viewBtn = new Button(new Icon(VaadinIcon.EYE));
               viewBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               viewBtn.setTooltipText("View Details");
+              viewBtn.setId("view-details-button-" + show.getId());
               viewBtn.addClickListener(
                   e ->
                       getUI()
                           .ifPresent(
-                              ui -> ui.navigate("show-detail/" + show.getId() + "?ref=shows")));
+                              ui ->
+                                  ui.navigate(
+                                      "show-detail/" + show.getId(),
+                                      new QueryParameters(Map.of("ref", List.of("shows"))))));
 
               // Edit button
               Button editBtn = new Button(new Icon(VaadinIcon.EDIT));
               editBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               editBtn.setTooltipText("Edit Show");
+              editBtn.setId("edit-show-button-" + show.getId());
               editBtn.addClickListener(e -> openEditDialog(show));
 
               // Delete button
@@ -238,6 +254,7 @@ public class ShowListView extends Main {
               deleteBtn.addThemeVariants(
                   ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY_INLINE);
               deleteBtn.setTooltipText("Delete Show");
+              deleteBtn.setId("delete-show-button-" + show.getId());
               deleteBtn.addClickListener(e -> openDeleteDialog(show));
 
               // Calendar button (if show has date)
@@ -245,12 +262,18 @@ public class ShowListView extends Main {
                 Button calendarBtn = new Button(new Icon(VaadinIcon.CALENDAR));
                 calendarBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
                 calendarBtn.setTooltipText("View in Calendar");
+                calendarBtn.setId("view-in-calendar-button-" + show.getId());
                 calendarBtn.addClickListener(
                     e -> {
                       // Navigate to calendar with date parameter
                       String dateParam =
                           show.getShowDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                      getUI().ifPresent(ui -> ui.navigate("show-calendar?date=" + dateParam));
+                      getUI()
+                          .ifPresent(
+                              ui ->
+                                  ui.navigate(
+                                      "show-calendar",
+                                      new QueryParameters(Map.of("date", List.of(dateParam)))));
                     });
                 actions.add(calendarBtn);
               }
@@ -333,35 +356,43 @@ public class ShowListView extends Main {
 
     editName = new TextField("Name");
     editName.setWidthFull();
+    editName.setId("edit-show-name");
 
     editDescription = new TextArea("Description");
     editDescription.setWidthFull();
     editDescription.setHeight("100px");
+    editDescription.setId("edit-show-description");
 
     editType = new ComboBox<>("Type");
     editType.setItems(showTypeService.findAll());
     editType.setItemLabelGenerator(ShowType::getName);
     editType.setWidthFull();
+    editType.setId("edit-show-type");
 
     editSeason = new ComboBox<>("Season");
     editSeason.setItems(seasonService.getAllSeasons(Pageable.unpaged()).getContent());
     editSeason.setItemLabelGenerator(Season::getName);
     editSeason.setWidthFull();
     editSeason.setClearButtonVisible(true);
+    editSeason.setId("edit-season");
 
     editTemplate = new ComboBox<>("Template");
     editTemplate.setItems(showTemplateService.findAll());
     editTemplate.setItemLabelGenerator(ShowTemplate::getName);
     editTemplate.setWidthFull();
     editTemplate.setClearButtonVisible(true);
+    editTemplate.setId("edit-show-template");
 
     editShowDate = new DatePicker("Show Date");
     editShowDate.setWidthFull();
     editShowDate.setClearButtonVisible(true);
+    editShowDate.setId("edit-show-date");
 
     Button saveBtn = new Button("Save", e -> saveEdit());
     saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveBtn.setId("save-changes-button");
     Button cancelBtn = new Button("Cancel", e -> editDialog.close());
+    cancelBtn.setId("cancel-button");
 
     VerticalLayout formLayout =
         new VerticalLayout(

@@ -1,34 +1,26 @@
 package com.github.javydreamercsw;
 
-import com.github.javydreamercsw.base.test.AbstractIntegrationTest;
-import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
-import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
-import com.github.javydreamercsw.management.domain.season.SeasonRepository;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
-import com.github.javydreamercsw.management.service.rivalry.RivalryService;
-import com.github.javydreamercsw.management.service.season.SeasonService;
-import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
-import com.github.javydreamercsw.management.service.segment.SegmentService;
-import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
-import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
+import java.io.File;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.Duration;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -36,72 +28,26 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringApplication;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 
 @ExtendWith(UITestWatcher.class)
 @Slf4j
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    classes = Application.class)
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
-  protected static int serverPort;
-  private static final ConfigurableApplicationContext context;
-  protected static InboxRepository inboxRepository; // Added static InboxRepository
-  protected static WrestlerRepository wrestlerRepository;
-  protected static MultiWrestlerFeudService multiWrestlerFeudService;
-  protected static SeasonRepository seasonRepository;
-  protected static SegmentService segmentService;
-  protected static SeasonService seasonService;
-  protected static RivalryService rivalryService;
-  protected static TitleService titleService;
-  protected static ShowService showService;
-  protected static SegmentTypeService segmentTypeService;
-  protected static SegmentRuleService segmentRuleService;
-  protected static SegmentRepository segmentRepository;
-  protected static MultiWrestlerFeudRepository multiWrestlerFeudRepository;
-  protected static ShowRepository showRepository;
-  protected static ShowTypeRepository showTypeRepository;
-  protected static SegmentTypeRepository segmentTypeRepository;
+
+  @LocalServerPort protected int serverPort;
 
   @Value("${server.servlet.context-path}")
   @Getter
   private String contextPath;
 
-  static {
-    serverPort = Integer.parseInt(System.getProperty("server.port", "9090"));
-    String[] args = {
-      "--server.port=" + serverPort, "--spring.profiles.active=test",
-    };
-    log.info("Attempting to start Spring Boot application for E2E tests on port {}", serverPort);
-    context = SpringApplication.run(Application.class, args);
-    inboxRepository = context.getBean(InboxRepository.class);
-    wrestlerRepository = context.getBean(WrestlerRepository.class);
-    multiWrestlerFeudService = context.getBean(MultiWrestlerFeudService.class);
-    seasonRepository = context.getBean(SeasonRepository.class);
-    segmentService = context.getBean(SegmentService.class);
-    seasonService = context.getBean(SeasonService.class);
-    rivalryService = context.getBean(RivalryService.class);
-    titleService = context.getBean(TitleService.class);
-    showService = context.getBean(ShowService.class);
-    segmentTypeService = context.getBean(SegmentTypeService.class);
-    segmentRuleService = context.getBean(SegmentRuleService.class);
-    segmentRepository = context.getBean(SegmentRepository.class);
-    multiWrestlerFeudRepository = context.getBean(MultiWrestlerFeudRepository.class);
-    showRepository = context.getBean(ShowRepository.class);
-    showTypeRepository = context.getBean(ShowTypeRepository.class);
-    segmentTypeRepository = context.getBean(SegmentTypeRepository.class);
-    log.info("Spring Boot application started for E2E tests.");
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  log.info("Shutting down Spring Boot application for E2E tests.");
-                  context.close();
-                }));
-  }
-
   @BeforeEach
-  public void setup() throws java.io.IOException {
+  public void setup() {
     WebDriverManager.chromedriver().setup();
     log.info("Waiting for application to be ready on port {}", serverPort);
     waitForAppToBeReady();
@@ -114,9 +60,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       options.addArguments("--no-sandbox");
       options.addArguments("--disable-dev-shm-usage");
     }
-    if (driver == null) {
-      driver = new ChromeDriver(options);
-    }
+    driver = new ChromeDriver(options);
   }
 
   @AfterEach
@@ -140,6 +84,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return "true".equalsIgnoreCase(githubActions);
   }
 
+  /** Waits for the application to be ready by polling the root URL. */
   private void waitForAppToBeReady() {
     int maxAttempts = 60;
     int attempt = 0;
@@ -169,17 +114,98 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             + serverPort);
   }
 
+  /**
+   * Waits for the Vaadin components to load by checking for the presence of a vaadin-grid element.
+   *
+   * @param driver the WebDriver instance
+   */
   protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
   }
 
+  /** Waits for the Vaadin client-side application to fully load. */
+  protected void waitForVaadinClientToLoad() {
+    WebDriverWait wait =
+        new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout for Vaadin client
+
+    // Wait for document.readyState to be 'complete'
+    wait.until(
+        webDriver ->
+            Objects.equals(
+                ((JavascriptExecutor) webDriver).executeScript("return document.readyState"),
+                "complete"));
+
+    // Wait for the main Vaadin app layout element to be present
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-app-layout")));
+  }
+
+  /**
+   * Scrolls the given WebElement into view and clicks it using JavaScript.
+   *
+   * @param element the WebElement to scroll into view and click
+   */
   protected void clickAndScrollIntoView(@NonNull WebElement element) {
     scrollIntoView(element);
     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
   }
 
+  /**
+   * Scrolls the given WebElement into view using JavaScript.
+   *
+   * @param element the WebElement to scroll into view
+   */
   protected void scrollIntoView(@NonNull WebElement element) {
     ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
+  }
+
+  /**
+   * Returns all the data from a specific column in a Vaadin grid.
+   *
+   * @param grid the Vaadin grid WebElement
+   * @param columnIndex the index of the column (0-based)
+   * @return List of Strings representing the data in the specified column
+   */
+  protected List<String> getColumnData(@NonNull WebElement grid, int columnIndex) {
+    List<WebElement> cells =
+        grid.findElements(
+            By.xpath(
+                "//vaadin-grid-cell-content[count(ancestor::vaadin-grid-column) = "
+                    + (columnIndex + 1)
+                    + "]"));
+    return cells.stream().map(WebElement::getText).collect(Collectors.toList());
+  }
+
+  /**
+   * Returns all the row elements of a Vaadin grid.
+   *
+   * @param grid the Vaadin grid WebElement
+   * @return List of WebElements, each representing a row
+   */
+  protected List<WebElement> getGridRows(@NonNull WebElement grid) {
+    return (List<WebElement>)
+        ((JavascriptExecutor) driver)
+            .executeScript(
+                "return arguments[0].shadowRoot.querySelectorAll('[part~=\"row\"]')", grid);
+  }
+
+  protected void takeScreenshot(@NonNull String filePath) {
+    File scrFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+    try {
+      FileUtils.copyFile(scrFile, new File(filePath));
+      log.info("Screenshot saved to: {}", filePath);
+    } catch (IOException e) {
+      log.error("Failed to save screenshot to: {}", filePath, e);
+    }
+  }
+
+  protected void takeElementScreenshot(@NonNull WebElement element, @NonNull String filePath) {
+    File scrFile = element.getScreenshotAs(OutputType.FILE);
+    try {
+      FileUtils.copyFile(scrFile, new File(filePath));
+      log.info("Screenshot saved to: {}", filePath);
+    } catch (IOException e) {
+      log.error("Failed to save screenshot to: {}", filePath, e);
+    }
   }
 }

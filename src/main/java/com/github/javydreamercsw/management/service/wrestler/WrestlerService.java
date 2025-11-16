@@ -4,6 +4,7 @@ import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -269,6 +270,7 @@ public class WrestlerService {
             .startingStamina(0)
             .lowStamina(0)
             .fans(0L)
+            .gender(Gender.MALE)
             .isPlayer(isPlayer)
             .bumps(0)
             .build();

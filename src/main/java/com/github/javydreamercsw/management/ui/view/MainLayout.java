@@ -1,6 +1,16 @@
 package com.github.javydreamercsw.management.ui.view;
 
-import static com.vaadin.flow.theme.lumo.LumoUtility.*;
+import static com.vaadin.flow.theme.lumo.LumoUtility.AlignItems;
+import static com.vaadin.flow.theme.lumo.LumoUtility.Display;
+import static com.vaadin.flow.theme.lumo.LumoUtility.FontSize;
+import static com.vaadin.flow.theme.lumo.LumoUtility.FontWeight;
+import static com.vaadin.flow.theme.lumo.LumoUtility.Gap;
+import static com.vaadin.flow.theme.lumo.LumoUtility.IconSize;
+import static com.vaadin.flow.theme.lumo.LumoUtility.JustifyContent;
+import static com.vaadin.flow.theme.lumo.LumoUtility.Margin;
+import static com.vaadin.flow.theme.lumo.LumoUtility.Padding;
+import static com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
+import static com.vaadin.flow.theme.lumo.LumoUtility.Width;
 
 import com.github.javydreamercsw.management.event.FanChangeBroadcaster;
 import com.github.javydreamercsw.management.event.WrestlerInjuryHealedBroadcaster;
@@ -24,13 +34,16 @@ import org.springframework.boot.info.BuildProperties;
 
 @Layout
 @PermitAll // When security is enabled, allow all authenticated users
-public final class MainLayout extends AppLayout {
+public class MainLayout extends AppLayout {
 
-  private final MenuService menuService;
-  private final WrestlerInjuryHealedBroadcaster injuryBroadcaster;
-  private final BuildProperties buildProperties;
+  private MenuService menuService;
+  private WrestlerInjuryHealedBroadcaster injuryBroadcaster;
+  private BuildProperties buildProperties;
   private Registration broadcasterRegistration;
   private Registration injuryBroadcasterRegistration;
+
+  /** For testing purposes. */
+  public MainLayout() {}
 
   @Autowired
   public MainLayout(
@@ -110,27 +123,31 @@ public final class MainLayout extends AppLayout {
                     });
               }
             });
-    injuryBroadcasterRegistration =
-        injuryBroadcaster.register(
-            event -> {
-              if (ui.isAttached()) {
-                ui.access(
-                    () -> {
-                      String message =
-                          String.format(
-                              "%s's injury (%s) has been healed!",
-                              event.getWrestler().getName(), event.getInjury().getName());
-                      Notification.show(message, 3000, Notification.Position.BOTTOM_END)
-                          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                    });
-              }
-            });
+    if (injuryBroadcaster != null) {
+      injuryBroadcasterRegistration =
+          injuryBroadcaster.register(
+              event -> {
+                if (ui.isAttached()) {
+                  ui.access(
+                      () -> {
+                        String message =
+                            String.format(
+                                "%s's injury (%s) has been healed!",
+                                event.getWrestler().getName(), event.getInjury().getName());
+                        Notification.show(message, 3000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                      });
+                }
+              });
+    }
   }
 
   @Override
   protected void onDetach(DetachEvent detachEvent) {
     super.onDetach(detachEvent);
     broadcasterRegistration.remove();
-    injuryBroadcasterRegistration.remove();
+    if (injuryBroadcasterRegistration != null) {
+      injuryBroadcasterRegistration.remove();
+    }
   }
 }

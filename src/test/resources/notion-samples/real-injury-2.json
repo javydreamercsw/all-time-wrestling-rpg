@@ -1,24 +1,24 @@
 {
-  "object" : "page",
-  "id" : "22890edc-c30f-80db-a037-c7c1a610d1db",
-  "created_time" : "2025-07-06T17:33:00.000Z",
-  "last_edited_time" : "2025-07-29T16:48:00.000Z",
-  "created_by" : null,
-  "last_edited_by" : null,
-  "cover" : null,
-  "icon" : null,
-  "parent" : null,
-  "archived" : false,
-  "in_trash" : false,
-  "url" : "https://www.notion.so/Back-injury-22890edcc30f80dba037c7c1a610d1db",
-  "public_url" : "https://alltimewrestlingrpg.notion.site/Back-injury-22890edcc30f80dba037c7c1a610d1db",
-  "request_id" : null,
-  "rawProperties" : {
-    "Stamina Effect" : "-3",
-    "Card Effect" : "0",
-    "Special Effects" : "N/A",
-    "Health Effect" : "-1",
-    "Injury Name" : "Back injury"
+  "object": "page",
+  "id": "22890edc-c30f-80db-a037-c7c1a610d1db",
+  "created_time": "2025-07-06T17:33:00.000Z",
+  "last_edited_time": "2025-07-29T16:48:00.000Z",
+  "created_by": null,
+  "last_edited_by": null,
+  "cover": null,
+  "icon": null,
+  "parent": null,
+  "archived": false,
+  "in_trash": false,
+  "url": "https://www.notion.so/Back-injury-22890edcc30f80dba037c7c1a610d1db",
+  "public_url": "https://alltimewrestlingrpg.notion.site/Back-injury-22890edcc30f80dba037c7c1a610d1db",
+  "request_id": null,
+  "rawProperties": {
+    "Stamina Effect": "-3",
+    "Card Effect": "0",
+    "Special Effects": "N/A",
+    "Health Effect": "-1",
+    "Injury Name": "Back injury"
   },
-  "properties" : null
+  "properties": null
 }

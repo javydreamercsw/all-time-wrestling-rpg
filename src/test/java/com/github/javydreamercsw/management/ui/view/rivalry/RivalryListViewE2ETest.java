@@ -77,14 +77,4 @@ public class RivalryListViewE2ETest extends AbstractE2ETest {
     assertNotNull(grid.findElement(By.xpath("//vaadin-grid-sorter[contains(., 'Start Date')]")));
     assertNotNull(grid.findElement(By.xpath("//vaadin-grid-sorter[contains(., 'End Date')]")));
   }
-
-  private List<String> getColumnData(WebElement grid, int columnIndex) {
-    List<WebElement> cells =
-        grid.findElements(
-            By.xpath(
-                "//vaadin-grid-cell-content[count(ancestor::vaadin-grid-column) = "
-                    + (columnIndex + 1)
-                    + "]"));
-    return cells.stream().map(WebElement::getText).collect(Collectors.toList());
-  }
 }
