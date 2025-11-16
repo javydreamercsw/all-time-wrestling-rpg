@@ -42,6 +42,13 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   @BeforeEach
   public void setupTestData() {
     titleReignRepository.deleteAll();
+    titleRepository
+        .findAll()
+        .forEach(
+            title -> {
+              title.setChampion(null);
+              titleRepository.save(title);
+            });
     segmentRepository.deleteAll();
     showRepository.deleteAll();
     wrestlerRepository.deleteAll();
