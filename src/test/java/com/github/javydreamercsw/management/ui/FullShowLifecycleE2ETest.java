@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.ui;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -34,6 +35,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   public void setupTestData() {
     segmentRepository.deleteAll();
     showRepository.deleteAll();
+    wrestlerRepository.deleteAll(); // Keep this to ensure a clean state
     // Clear and insert required ShowType
     Optional<ShowType> st = showTypeRepository.findByName(SHOW_TYPE_NAME);
     if (st.isEmpty()) {
@@ -56,6 +58,11 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       Season season = new Season();
       season.setName(SEASON_NAME);
       seasonRepository.save(season);
+    }
+
+    // Create some wrestlers for the tests
+    for (int i = 0; i < 4; i++) {
+      TestUtils.createWrestler(wrestlerRepository, "Wrestler " + i);
     }
   }
 
