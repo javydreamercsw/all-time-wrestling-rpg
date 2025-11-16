@@ -6,7 +6,6 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -108,19 +107,13 @@ public class DataInitializer {
             mapper.readValue(is, new TypeReference<List<SegmentRuleDTO>>() {});
 
         for (SegmentRuleDTO dto : segmentRulesFromFile) {
-          // Only create if it's new
-          Optional<SegmentRule> existingRule = segmentRuleService.findByName(dto.getName());
-          if (existingRule.isEmpty()) {
-            segmentRuleService.createOrUpdateRule(
-                dto.getName(),
-                dto.getDescription(),
-                dto.isRequiresHighHeat(),
-                dto.getBumpAddition());
-            log.info(
-                "Loaded segment rule: {} (High Heat: {})", dto.getName(), dto.isRequiresHighHeat());
-          } else {
-            log.debug("Segment rule {} already exists, skipping creation.", dto.getName());
-          }
+          segmentRuleService.createOrUpdateRule(
+              dto.getName(), dto.getDescription(), dto.isRequiresHighHeat(), dto.getBumpAddition());
+          log.info(
+              "Loaded segment rule: {} (High Heat: {}, Bump Addition: {})",
+              dto.getName(),
+              dto.isRequiresHighHeat(),
+              dto.getBumpAddition());
         }
         log.info("Segment rule loading completed - {} rules loaded", segmentRulesFromFile.size());
       } catch (IOException e) {
