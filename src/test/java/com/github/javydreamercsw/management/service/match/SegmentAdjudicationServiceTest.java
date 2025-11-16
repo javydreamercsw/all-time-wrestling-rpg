@@ -4,6 +4,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -20,8 +21,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class SegmentAdjudicationServiceTest {
 
   @Mock private RivalryService rivalryService;
@@ -33,6 +37,7 @@ class SegmentAdjudicationServiceTest {
   @Mock private Wrestler winner;
   @Mock private Wrestler loser;
   @Mock private SegmentType segmentType;
+  @Mock private Show show;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -48,6 +53,8 @@ class SegmentAdjudicationServiceTest {
     when(loser.getId()).thenReturn(2L);
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Test Match");
+    when(segment.getShow()).thenReturn(show);
+    when(show.isPremiumLiveEvent()).thenReturn(false);
   }
 
   @Test
