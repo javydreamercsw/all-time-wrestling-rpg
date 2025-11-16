@@ -142,7 +142,9 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         7 * 8 + 11, cells.size()); // 11 headers, 7 rows (8 of the columns have values)
 
     // Click the edit button on the first row
-    WebElement editButton = driver.findElement(By.id("edit-segment-button-" + 1));
+    WebElement editButton =
+        driver.findElement(
+            By.id("edit-segment-button-" + segmentService.getSegmentsByShow(show).get(0).getId()));
     clickAndScrollIntoView(editButton);
 
     // Wait for the dialog to appear
