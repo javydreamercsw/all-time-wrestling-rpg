@@ -186,4 +186,107 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         });
     assertEquals(initialSize - 1, wrestlerRepository.count());
   }
+
+  @Test
+  void testAddBump() {
+    // Create a wrestler
+    Wrestler wrestler = TestUtils.createWrestler(wrestlerRepository, "Wrestler for Bump");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+    // Find the menu for the wrestler and click it
+    WebElement menu =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.xpath(
+                    "//vaadin-menu-bar[@id='action-menu-"
+                        + wrestler.getId()
+                        + "']/vaadin-menu-bar-button")));
+    clickAndScrollIntoView(menu);
+
+    // Find the "Add Bump" button for the wrestler and click it
+    WebElement addBumpButton =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("add-bump-" + wrestler.getId())));
+
+    clickAndScrollIntoView(addBumpButton);
+
+    // Verify that the bump count is updated
+    wait.until(
+        d -> {
+          try {
+            return wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps() == 1;
+          } catch (Exception e) {
+            return false;
+          }
+        });
+    assertEquals(1, wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps());
+  }
+
+  @Test
+  void testHealBump() {
+    // Create a wrestler with a bump
+    Wrestler wrestler = TestUtils.createWrestler(wrestlerRepository, "Wrestler to Heal Bump");
+    wrestler.addBump();
+    wrestlerRepository.save(wrestler);
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+    // Find the menu for the wrestler and click it
+    WebElement menu =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.xpath(
+                    "//vaadin-menu-bar[@id='action-menu-"
+                        + wrestler.getId()
+                        + "']/vaadin-menu-bar-button")));
+    clickAndScrollIntoView(menu);
+
+    // Find the "Heal Bump" button for the wrestler and click it
+    WebElement healBumpButton =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("heal-bump-" + wrestler.getId())));
+
+    clickAndScrollIntoView(healBumpButton);
+
+    // Verify that the bump count is updated
+    wait.until(
+        d -> {
+          try {
+            return wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps() == 0;
+          } catch (Exception e) {
+            return false;
+          }
+        });
+    assertEquals(0, wrestlerRepository.findById(wrestler.getId()).orElseThrow().getBumps());
+  }
+
+  @Test
+  void testManageInjuries() {
+    // Create a wrestler
+    Wrestler wrestler = TestUtils.createWrestler(wrestlerRepository, "Wrestler for Injuries");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+    // Find the menu for the wrestler and click it
+    WebElement menu =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.xpath(
+                    "//vaadin-menu-bar[@id='action-menu-"
+                        + wrestler.getId()
+                        + "']/vaadin-menu-bar-button")));
+    clickAndScrollIntoView(menu);
+
+    // Find the "Manage Injuries" button for the wrestler and click it
+    WebElement manageInjuriesButton =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(By.id("manage-injuries-" + wrestler.getId())));
+
+    clickAndScrollIntoView(manageInjuriesButton);
+
+    // Verify that the InjuryDialog appears
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    WebElement dialogTitle =
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("injury-dialog")));
+    assertTrue(dialogTitle.isDisplayed());
+  }
 }

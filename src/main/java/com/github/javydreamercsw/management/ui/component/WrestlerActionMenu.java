@@ -142,8 +142,8 @@ public class WrestlerActionMenu extends MenuBar {
     removeFansItem.addComponentAsFirst(new Icon(VaadinIcon.MINUS));
     removeFansItem.setEnabled(wrestler.getFans() > 0);
 
-    subMenu
-        .addItem(
+    MenuItem addBumpItem =
+        subMenu.addItem(
             "Add Bump",
             e -> {
               wrestlerService.addBump(wrestler.getId());
@@ -151,8 +151,9 @@ public class WrestlerActionMenu extends MenuBar {
               Notification.show(
                       "Added bump to " + wrestler.getName(), 3000, Notification.Position.BOTTOM_END)
                   .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-            })
-        .addComponentAsFirst(new Icon(VaadinIcon.PLUS_CIRCLE));
+            });
+    addBumpItem.setId("add-bump-" + wrestler.getId());
+    addBumpItem.addComponentAsFirst(new Icon(VaadinIcon.PLUS_CIRCLE));
     MenuItem healBump =
         subMenu.addItem(
             "Heal Bump",
@@ -166,15 +167,18 @@ public class WrestlerActionMenu extends MenuBar {
                   .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             });
     healBump.addComponentAsFirst(new Icon(VaadinIcon.HEART));
+    healBump.setId("heal-bump-" + wrestler.getId());
     healBump.setEnabled(wrestler.getBumps() > 0);
 
-    subMenu
-        .addItem(
+    MenuItem manageInjuriesItem =
+        subMenu.addItem(
             "Manage Injuries",
             e -> {
               InjuryDialog dialog = new InjuryDialog(wrestler, injuryService, refreshProvider);
+              dialog.setId("injury-dialog");
               dialog.open();
-            })
-        .addComponentAsFirst(new Icon(VaadinIcon.AMBULANCE));
+            });
+    manageInjuriesItem.setId("manage-injuries-" + wrestler.getId());
+    manageInjuriesItem.addComponentAsFirst(new Icon(VaadinIcon.AMBULANCE));
   }
 }
