@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.ui.view.inbox;
 
+import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -19,8 +20,11 @@ import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Route(value = "inbox", layout = MainLayout.class)
 @PageTitle("Inbox")
@@ -67,12 +71,13 @@ public class InboxView extends VerticalLayout {
 
     hideReadCheckbox.addValueChangeListener(e -> updateList());
 
-    eventTypeFilter.setItems(
-        "All",
-        "Rivalry Heat Change",
-        "Faction Rivalry Heat Change",
-        "Feud Heat Change",
-        "Adjudication Completed");
+    List<String> eventTypes =
+        Arrays.stream(InboxEventType.values())
+            .map(InboxEventType::getFriendlyName)
+            .collect(Collectors.toList());
+    eventTypes.add(0, "All");
+    eventTypeFilter.setItems(eventTypes);
+    eventTypeFilter.setPlaceholder("All");
     eventTypeFilter.setValue("All");
     eventTypeFilter.addValueChangeListener(e -> updateList());
 

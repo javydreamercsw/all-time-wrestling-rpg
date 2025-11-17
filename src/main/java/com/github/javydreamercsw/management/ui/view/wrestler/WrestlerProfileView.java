@@ -19,8 +19,11 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -42,6 +45,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.transaction.annotation.Transactional;
 
 @Route("wrestler-profile/:wrestlerId?")
 @PageTitle("Wrestler Profile")
@@ -74,6 +78,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout biographyLayout = new VerticalLayout();
   private final VerticalLayout careerHighlightsLayout = new VerticalLayout();
   private final VerticalLayout recentMatchesLayout = new VerticalLayout();
+  private final VerticalLayout injuriesLayout = new VerticalLayout();
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
   private final Grid<Segment> recentMatchesGrid = new Grid<>(Segment.class);
 
@@ -92,6 +97,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.rivalryService = rivalryService;
 
     wrestlerName.setId("wrestler-name");
+    Image wrestlerImage = new Image();
+    wrestlerImage.setSrc("https://via.placeholder.com/150");
+    wrestlerImage.setAlt("Wrestler Image");
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -103,6 +111,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     add(
         new ViewToolbar(
             "Wrestler Profile", new RouterLink("Back to List", WrestlerListView.class)));
+
+    HorizontalLayout header =
+        new HorizontalLayout(wrestlerImage, new VerticalLayout(wrestlerName, wrestlerDetails));
+    header.setAlignItems(Alignment.CENTER);
 
     List<Season> seasons = seasonService.getAllSeasons(Pageable.unpaged()).getContent();
     ComboBox<Season> seasonFilter = new ComboBox<>("Filter by Season");
@@ -149,22 +161,23 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         .setHeader("Championships");
 
     add(
-        wrestlerName,
-        wrestlerDetails,
+        header,
         statsLayout,
         biographyLayout,
         careerHighlightsLayout,
+        injuriesLayout,
         seasonFilter,
         recentMatchesLayout,
         feudHistoryLayout);
   }
 
   @Override
+  @Transactional
   public void beforeEnter(BeforeEnterEvent event) {
     RouteParameters parameters = event.getRouteParameters();
     if (parameters.get("wrestlerId").isPresent()) {
       Long wrestlerId = Long.valueOf(parameters.get("wrestlerId").get());
-      Optional<Wrestler> foundWrestler = wrestlerService.findById(wrestlerId);
+      Optional<Wrestler> foundWrestler = wrestlerService.findByIdWithInjuries(wrestlerId);
       if (foundWrestler.isPresent()) {
         wrestler = foundWrestler.get();
         updateView();
@@ -178,7 +191,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   }
 
   private void updateView() {
-    if (wrestler != null) {
+    if (wrestler != null && wrestler.getId() != null) {
       wrestlerName.setText(wrestler.getName());
       wrestlerDetails.setText(
           String.format("Gender: %s, Fans: %d", wrestler.getGender(), wrestler.getFans()));
@@ -192,6 +205,11 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         statsLayout.add(new Paragraph("Wins: " + wrestlerStats.getWins()));
         statsLayout.add(new Paragraph("Losses: " + wrestlerStats.getLosses()));
         statsLayout.add(new Paragraph("Titles Held: " + wrestlerStats.getTitlesHeld()));
+        double totalMatches = wrestlerStats.getWins() + wrestlerStats.getLosses();
+        if (totalMatches > 0) {
+          double winPercentage = (wrestlerStats.getWins() / totalMatches) * 100;
+          statsLayout.add(new Paragraph(String.format("Win Percentage: %.2f%%", winPercentage)));
+        }
       } else {
         statsLayout.add(new Paragraph("Stats not available."));
       }
@@ -218,12 +236,27 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
             });
       }
 
+      // Bumps and Injuries
+      injuriesLayout.removeAll();
+      injuriesLayout.add(new H3("Bumps & Injuries"));
+      injuriesLayout.add(new Paragraph("Bumps: " + wrestler.getBumps()));
+      if (wrestler.getInjuries().isEmpty()) {
+        injuriesLayout.add(new Paragraph("No current injuries."));
+      } else {
+        wrestler
+            .getInjuries()
+            .forEach(
+                injury -> {
+                  injuriesLayout.add(new Paragraph("- " + injury.getDisplayString()));
+                });
+      }
+
       updateMatchAndFeudHistory(); // Initial call to populate match and feud history
     }
   }
 
   private void updateMatchAndFeudHistory() {
-    if (wrestler == null) {
+    if (wrestler == null || wrestler.getId() == null) {
       return;
     }
 

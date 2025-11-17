@@ -161,3 +161,22 @@ You can now reorder segments within a show and designate one segment as the main
 **AI Narration:**
 
 The AI narration service is aware of the segment order and which segment is the main event. It also has access to the results and narration of previous segments. This allows the AI to generate more context-aware and compelling narrations that build on events from earlier in the show.
+
+### Segment Rules
+
+#### Bump Addition
+
+You can now configure segment rules to automatically add bumps to participants. This allows for more granular control over the physical toll that different types of matches have on wrestlers.
+
+**How to use:**
+
+1.  **Navigate to the Segment Rule List page:** From the main menu, select "Segment Rules".
+2.  **Create or Edit a Segment Rule:** Click the "Create Segment Rule" button or the edit icon on an existing rule.
+3.  **Select the Bump Addition option:** In the edit dialog, you will see a "Bump Addition" dropdown. You can select one of the following options:
+	*   **NONE:** No bumps are added to any participants.
+	*   **LOSERS:** Bumps are added to all losers of the segment.
+	*   **WINNERS:** Bumps are added to all winners of the segment.
+	*   **ALL:** Bumps are added to all participants of the segment.
+4.  **Save the Segment Rule:** Click the "Save" button to save your changes.
+
+When a segment with the configured rule is adjudicated, bumps will be added to the participants according to the selected option.

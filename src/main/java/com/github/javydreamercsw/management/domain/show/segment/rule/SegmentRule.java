@@ -3,6 +3,8 @@ package com.github.javydreamercsw.management.domain.show.segment.rule;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -44,6 +46,10 @@ public class SegmentRule extends AbstractEntity<Long> {
   @Column(name = "requires_high_heat", nullable = false)
   private Boolean requiresHighHeat = false;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "bump_addition", nullable = false)
+  private BumpAddition bumpAddition = BumpAddition.NONE;
+
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
@@ -61,6 +67,9 @@ public class SegmentRule extends AbstractEntity<Long> {
 
     if (requiresHighHeat == null) {
       requiresHighHeat = false;
+    }
+    if (bumpAddition == null) {
+      bumpAddition = BumpAddition.NONE;
     }
   }
 

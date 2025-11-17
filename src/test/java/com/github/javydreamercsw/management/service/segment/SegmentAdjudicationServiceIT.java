@@ -6,6 +6,9 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -31,6 +34,7 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
   @Autowired private ShowRepository showRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private SegmentRuleRepository segmentRuleRepository;
 
   @Test
   void testAdjudicateMatch() {
@@ -77,6 +81,14 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
     SegmentType segmentType = new SegmentType();
     segmentType.setName("Test Match");
     segmentTypeRepository.save(segmentType);
+    if (segmentRuleRepository.findByName("Submission").isEmpty()) {
+      SegmentRule rule = new SegmentRule();
+      rule.setName("Submission");
+      rule.setDescription("Submission Match");
+      rule.setBumpAddition(BumpAddition.LOSERS);
+      rule.setRequiresHighHeat(false);
+      segmentRuleRepository.save(rule);
+    }
 
     Segment segment = new Segment();
     segment.setShow(show);
@@ -84,6 +96,7 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
     segment.addParticipant(winner);
     segment.addParticipant(loser);
     segment.setWinners(List.of(winner));
+    segment.getSegmentRules().add(segmentRuleRepository.findByName("Submission").get());
     segmentRepository.save(segment);
 
     // When

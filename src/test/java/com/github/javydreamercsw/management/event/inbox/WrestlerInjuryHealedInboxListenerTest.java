@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.event.inbox;
 
 import static org.mockito.Mockito.verify;
 
+import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
@@ -44,13 +45,17 @@ class WrestlerInjuryHealedInboxListenerTest {
     listener.handleWrestlerInjuryHealedEvent(event);
 
     // Then
+    ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
-    verify(inboxService).createInboxItem(messageCaptor.capture(), referenceIdCaptor.capture());
+    verify(inboxService)
+        .createInboxItem(
+            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
 
     String expectedMessage = "Test Wrestler's injury (Test Injury) has been healed!";
     String expectedReferenceId = "1";
 
+    assert (eventTypeCaptor.getValue().equals(InboxEventType.WRESTLER_INJURY_HEALED));
     assert (messageCaptor.getValue().equals(expectedMessage));
     assert (referenceIdCaptor.getValue().equals(expectedReferenceId));
   }

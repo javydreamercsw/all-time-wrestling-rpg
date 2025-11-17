@@ -16,6 +16,7 @@ import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -90,11 +91,13 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
 
     // Create segment rules for testing
     segmentRuleService.createOrUpdateRule(
-        "Steel Cage Match", "Steel cage segment with no escape", false);
+        "Steel Cage Match", "Steel cage segment with no escape", false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Test Match", "Generic Test Match for various scenarios", false);
-    segmentRuleService.createOrUpdateRule("Triple Threat Match", "Triple Threat Match", false);
-    segmentRuleService.createOrUpdateRule("Injury Test", "Injury Test Match", false);
+        "Test Match", "Generic Test Match for various scenarios", false, BumpAddition.NONE);
+    segmentRuleService.createOrUpdateRule(
+        "Triple Threat Match", "Triple Threat Match", false, BumpAddition.NONE);
+    segmentRuleService.createOrUpdateRule(
+        "Injury Test", "Injury Test Match", false, BumpAddition.NONE);
 
     // Create test show
     ShowType showType = showTypeRepository.findByName("Weekly").orElseThrow();

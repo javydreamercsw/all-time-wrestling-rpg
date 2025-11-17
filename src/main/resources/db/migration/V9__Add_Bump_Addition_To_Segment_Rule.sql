@@ -1,0 +1,1 @@
+ALTER TABLE segment_rule ADD COLUMN bump_addition VARCHAR(255) NOT NULL DEFAULT 'NONE';

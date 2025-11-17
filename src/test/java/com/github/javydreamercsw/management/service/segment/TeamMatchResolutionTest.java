@@ -9,6 +9,7 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
@@ -165,15 +166,20 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
 
     // Create segment rules for testing
     segmentRuleService.createOrUpdateRule(
-        "Handicap Match", "Handicap segment with uneven teams", false);
+        "Handicap Match", "Handicap segment with uneven teams", false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Tag Team Championship", "Tag Team Championship Match", false);
+        "Tag Team Championship", "Tag Team Championship Match", false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Test Match", "Generic Test Match for various scenarios", false);
-    segmentRuleService.createOrUpdateRule("3v2 Elimination", "3 vs 2 Elimination Match", false);
+        "Test Match", "Generic Test Match for various scenarios", false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Singles Match via Team Interface", "Singles Match resolved via Team Interface", false);
-    segmentRuleService.createOrUpdateRule("Tag Team Match", "Tag Team Match", false);
+        "3v2 Elimination", "3 vs 2 Elimination Match", false, BumpAddition.NONE);
+    segmentRuleService.createOrUpdateRule(
+        "Singles Match via Team Interface",
+        "Singles Match resolved via Team Interface",
+        false,
+        BumpAddition.NONE);
+    segmentRuleService.createOrUpdateRule(
+        "Tag Team Match", "Tag Team Match", false, BumpAddition.NONE);
 
     // Create test show
     ShowType showType =

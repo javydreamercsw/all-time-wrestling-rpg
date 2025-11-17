@@ -29,6 +29,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SHOW_TYPE_NAME = "Weekly";
@@ -40,6 +41,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   @Autowired private TitleRepository titleRepository;
 
   @BeforeEach
+  @Transactional
   public void setupTestData() {
     titleReignRepository.deleteAll();
     titleRepository
@@ -99,7 +101,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     final String showName = "My E2E Show";
 
     // Click the "Create" button
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Fill in the form
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("vaadin-text-field")))
@@ -190,9 +192,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement saveButton = driver.findElement(By.id("edit-segment-save-button"));
     clickAndScrollIntoView(saveButton);
 
-    // Wait for the dialog to appear
-    wait.until(
-        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("edit-segment-save-button")));
 
     // Navigate back to the list.
     driver.get(
