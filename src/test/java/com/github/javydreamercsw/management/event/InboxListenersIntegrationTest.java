@@ -51,12 +51,15 @@ public class InboxListenersIntegrationTest {
     FanAwardedEvent event = new FanAwardedEvent(this, wrestler1, fanChange);
     eventPublisher.publishEvent(event);
 
+    ArgumentCaptor<String> eventTypeCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
 
     verify(inboxService, times(1))
-        .createInboxItem(messageCaptor.capture(), referenceIdCaptor.capture());
+        .createInboxItem(
+            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
 
+    assertEquals("Fan Adjudication", eventTypeCaptor.getValue());
     String expectedMessage =
         String.format(
             "Wrestler %s gained %d fans. New total: %d",
@@ -80,12 +83,15 @@ public class InboxListenersIntegrationTest {
         new HeatChangeEvent(this, rivalry, oldHeat, reason, List.of(wrestler1, wrestler2));
     eventPublisher.publishEvent(event);
 
+    ArgumentCaptor<String> eventTypeCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
 
     verify(inboxService, times(1))
-        .createInboxItem(messageCaptor.capture(), referenceIdCaptor.capture());
+        .createInboxItem(
+            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
 
+    assertEquals("Rivalry Heat Change", eventTypeCaptor.getValue());
     String expectedMessage =
         String.format(
             "Rivalry between %s and %s gained %d heat. New total: %d. Reason: %s",

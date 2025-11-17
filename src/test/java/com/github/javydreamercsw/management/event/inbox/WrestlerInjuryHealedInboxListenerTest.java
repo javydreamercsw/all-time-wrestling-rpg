@@ -44,13 +44,17 @@ class WrestlerInjuryHealedInboxListenerTest {
     listener.handleWrestlerInjuryHealedEvent(event);
 
     // Then
+    ArgumentCaptor<String> eventTypeCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
-    verify(inboxService).createInboxItem(messageCaptor.capture(), referenceIdCaptor.capture());
+    verify(inboxService)
+        .createInboxItem(
+            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
 
     String expectedMessage = "Test Wrestler's injury (Test Injury) has been healed!";
     String expectedReferenceId = "1";
 
+    assert (eventTypeCaptor.getValue().equals("Wrestler Injury Healed"));
     assert (messageCaptor.getValue().equals(expectedMessage));
     assert (referenceIdCaptor.getValue().equals(expectedReferenceId));
   }

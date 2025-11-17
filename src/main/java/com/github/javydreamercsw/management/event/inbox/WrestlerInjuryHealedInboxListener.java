@@ -23,7 +23,8 @@ public class WrestlerInjuryHealedInboxListener {
         String.format(
             "%s's injury (%s) has been healed!",
             event.getWrestler().getName(), event.getInjury().getName());
-    inboxService.createInboxItem(message, event.getWrestler().getId().toString());
+    inboxService.createInboxItem(
+        "Wrestler Injury Healed", message, event.getWrestler().getId().toString());
     log.info("Inbox item created for WrestlerInjuryHealedEvent: {}", message);
   }
 }

@@ -19,10 +19,11 @@ public class InboxService {
 
   @Autowired private InboxRepository inboxRepository;
 
-  public InboxItem createInboxItem(@NonNull String message, @NonNull String referenceId) {
+  public InboxItem createInboxItem(
+      @NonNull String eventType, @NonNull String message, @NonNull String referenceId) {
     InboxItem inboxItem = new InboxItem();
     inboxItem.setDescription(message);
-    inboxItem.setEventType("FanAdjudication"); // Default event type for now
+    inboxItem.setEventType(eventType);
     inboxItem.setReferenceId(referenceId);
     return inboxRepository.save(inboxItem);
   }

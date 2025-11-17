@@ -25,6 +25,7 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
             Math.abs(event.getFanChange()),
             event.getWrestler().getFans());
 
-    inboxService.createInboxItem(message, event.getWrestler().getId().toString());
+    inboxService.createInboxItem(
+        "Fan Adjudication", message, event.getWrestler().getId().toString());
   }
 }
