@@ -156,6 +156,30 @@ public class WrestlerService {
   }
 
   /**
+   * Heal a bump from a wrestler.
+   *
+   * @param wrestlerId The wrestler's ID
+   * @return The updated wrestler, or empty if not found
+   */
+  public Optional<Wrestler> healBump(@NonNull Long wrestlerId) {
+    return wrestlerRepository
+        .findById(wrestlerId)
+        .map(
+            wrestler -> {
+              if (wrestler.getBumps() > 0) {
+                wrestler.setBumps(wrestler.getBumps() - 1);
+                log.info(
+                    "Wrestler {} healed a bump: {} (was {})",
+                    wrestler.getName(),
+                    wrestler.getBumps(),
+                    wrestler.getBumps() + 1);
+                eventPublisher.publishEvent(new WrestlerBumpHealedEvent(this, wrestler));
+              }
+              return wrestlerRepository.saveAndFlush(wrestler);
+            });
+  }
+
+  /**
    * Add a bump to a wrestler (injury system).
    *
    * @param wrestlerId The wrestler's ID

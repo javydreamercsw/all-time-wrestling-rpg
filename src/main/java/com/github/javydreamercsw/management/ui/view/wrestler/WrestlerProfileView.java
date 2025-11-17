@@ -10,11 +10,13 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
@@ -68,6 +70,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final SegmentService segmentService;
   private final MultiWrestlerFeudService multiWrestlerFeudService;
   private final RivalryService rivalryService;
+  private final InjuryService injuryService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -81,6 +84,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout injuriesLayout = new VerticalLayout();
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
   private final Grid<Segment> recentMatchesGrid = new Grid<>(Segment.class);
+  private final HorizontalLayout header;
 
   @Autowired
   public WrestlerProfileView(
@@ -89,12 +93,14 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       SegmentService segmentService,
       MultiWrestlerFeudService multiWrestlerFeudService,
       RivalryService rivalryService,
-      SeasonService seasonService) {
+      SeasonService seasonService,
+      InjuryService injuryService) {
     this.wrestlerService = wrestlerService;
     this.titleService = titleService;
     this.segmentService = segmentService;
     this.multiWrestlerFeudService = multiWrestlerFeudService;
     this.rivalryService = rivalryService;
+    this.injuryService = injuryService;
 
     wrestlerName.setId("wrestler-name");
     Image wrestlerImage = new Image();
@@ -112,8 +118,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         new ViewToolbar(
             "Wrestler Profile", new RouterLink("Back to List", WrestlerListView.class)));
 
-    HorizontalLayout header =
-        new HorizontalLayout(wrestlerImage, new VerticalLayout(wrestlerName, wrestlerDetails));
+    header = new HorizontalLayout(wrestlerImage, new VerticalLayout(wrestlerName, wrestlerDetails));
     header.setAlignItems(Alignment.CENTER);
 
     List<Season> seasons = seasonService.getAllSeasons(Pageable.unpaged()).getContent();
@@ -192,6 +197,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
   private void updateView() {
     if (wrestler != null && wrestler.getId() != null) {
+      header.getChildren().filter(c -> c instanceof WrestlerActionMenu).forEach(header::remove);
+      header.add(
+          new WrestlerActionMenu(wrestler, wrestlerService, injuryService, this::updateView, true));
       wrestlerName.setText(wrestler.getName());
       wrestlerDetails.setText(
           String.format("Gender: %s, Fans: %d", wrestler.getGender(), wrestler.getFans()));
