@@ -192,20 +192,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement saveButton = driver.findElement(By.id("edit-segment-save-button"));
     clickAndScrollIntoView(saveButton);
 
-    // Wait for the dialog to appear
-    try {
-      wait.until(
-          ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
-    } catch (Exception e) {
-      // If it fails, wait a bit and try again.
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException ex) {
-        // Do nothing
-      }
-      wait.until(
-          ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
-    }
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("edit-segment-save-button")));
 
     // Navigate back to the list.
     driver.get(
