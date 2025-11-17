@@ -66,6 +66,8 @@ public class WrestlerDialog extends Dialog {
     startingStaminaField.setId("wrestler-dialog-starting-stamina-field");
     TextField lowStaminaField = new TextField("Low Stamina");
     lowStaminaField.setId("wrestler-dialog-low-stamina-field");
+    TextField imageUrlField = new TextField("Image URL");
+    imageUrlField.setId("wrestler-dialog-image-url-field");
 
     formLayout.add(
         nameField,
@@ -74,7 +76,8 @@ public class WrestlerDialog extends Dialog {
         startingHealthField,
         lowHealthField,
         startingStaminaField,
-        lowStaminaField);
+        lowStaminaField,
+        imageUrlField);
 
     binder.forField(nameField).bind(Wrestler::getName, Wrestler::setName);
     binder.forField(genderField).bind(Wrestler::getGender, Wrestler::setGender);
@@ -98,6 +101,7 @@ public class WrestlerDialog extends Dialog {
         .forField(lowStaminaField)
         .withConverter(new StringToIntegerConverter(0, "Must be a number"))
         .bind(Wrestler::getLowStamina, Wrestler::setLowStamina);
+    binder.forField(imageUrlField).bind(Wrestler::getImageUrl, Wrestler::setImageUrl);
 
     binder.readBean(this.wrestler);
 

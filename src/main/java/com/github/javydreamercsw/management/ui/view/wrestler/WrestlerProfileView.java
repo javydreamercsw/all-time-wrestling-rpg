@@ -85,6 +85,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
   private final Grid<Segment> recentMatchesGrid = new Grid<>(Segment.class);
   private final HorizontalLayout header;
+  private final Image wrestlerImage = new Image();
+  private final VerticalLayout nameDetailsAndStatsLayout = new VerticalLayout();
 
   @Autowired
   public WrestlerProfileView(
@@ -103,7 +105,6 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.injuryService = injuryService;
 
     wrestlerName.setId("wrestler-name");
-    Image wrestlerImage = new Image();
     wrestlerImage.setSrc("https://via.placeholder.com/150");
     wrestlerImage.setAlt("Wrestler Image");
 
@@ -118,7 +119,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         new ViewToolbar(
             "Wrestler Profile", new RouterLink("Back to List", WrestlerListView.class)));
 
-    header = new HorizontalLayout(wrestlerImage, new VerticalLayout(wrestlerName, wrestlerDetails));
+    nameDetailsAndStatsLayout.add(wrestlerName, wrestlerDetails, statsLayout);
+    header = new HorizontalLayout(wrestlerImage, nameDetailsAndStatsLayout);
     header.setAlignItems(Alignment.CENTER);
 
     List<Season> seasons = seasonService.getAllSeasons(Pageable.unpaged()).getContent();
@@ -167,7 +169,6 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
     add(
         header,
-        statsLayout,
         biographyLayout,
         careerHighlightsLayout,
         injuriesLayout,
@@ -203,6 +204,12 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       wrestlerName.setText(wrestler.getName());
       wrestlerDetails.setText(
           String.format("Gender: %s, Fans: %d", wrestler.getGender(), wrestler.getFans()));
+
+      if (wrestler.getImageUrl() != null && !wrestler.getImageUrl().isEmpty()) {
+        wrestlerImage.setSrc(wrestler.getImageUrl());
+      } else {
+        wrestlerImage.setSrc("https://via.placeholder.com/150");
+      }
 
       // Fetch and display wrestler stats
       Optional<WrestlerStats> stats = wrestlerService.getWrestlerStats(wrestler.getId());

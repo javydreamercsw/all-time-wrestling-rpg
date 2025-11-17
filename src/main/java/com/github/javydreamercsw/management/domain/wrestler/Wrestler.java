@@ -86,6 +86,9 @@ public class Wrestler extends AbstractEntity<Long> {
   @Column(name = "description", length = 4000)
   private String description;
 
+  @Column(name = "image_url")
+  @Size(max = 255) private String imageUrl;
+
   // ==================== ATW RPG RELATIONSHIPS ====================
 
   @ManyToMany(mappedBy = "champions", fetch = FetchType.LAZY)
