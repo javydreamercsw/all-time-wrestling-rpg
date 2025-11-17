@@ -40,6 +40,7 @@ public class InjuryDialog extends Dialog {
                         updateGrid();
                         onSave.run();
                       });
+              createDialog.setId("create-injury-dialog");
               createDialog.open();
             });
     createButton.setId("create-injury-button");
@@ -60,10 +61,11 @@ public class InjuryDialog extends Dialog {
         .addComponentColumn(
             injury -> {
               Button healButton = new Button("Heal");
+              healButton.setId("heal-injury-" + injury.getId());
               healButton.setEnabled(injury.getIsActive());
               healButton.addClickListener(
                   e -> {
-                    injuryService.attemptHealing(injury.getId(), null);
+                    injuryService.attemptHealing(injury.getId());
                     updateGrid();
                     onSave.run();
                   });

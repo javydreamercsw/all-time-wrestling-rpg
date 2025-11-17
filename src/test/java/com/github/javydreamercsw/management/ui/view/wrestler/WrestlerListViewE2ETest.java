@@ -5,7 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.TestUtils;
+import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,11 +18,14 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class WrestlerListViewE2ETest extends AbstractE2ETest {
+
+  @Autowired private InjuryService injuryService;
 
   @BeforeEach
   void setUp() {
@@ -264,6 +270,23 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   void testManageInjuries() {
     // Create a wrestler
     Wrestler wrestler = TestUtils.createWrestler(wrestlerRepository, "Wrestler for Injuries");
+    // Create a couple of injuries for the wrestler
+    injuryService.createInjury(
+        wrestler.getId(),
+        "Bruised Ribs",
+        "Slightly bruised ribs.",
+        InjurySeverity.MINOR,
+        "Fell off the top rope.");
+    Injury injuryToHeal =
+        injuryService
+            .createInjury(
+                wrestler.getId(),
+                "Twisted Ankle",
+                "Twisted his ankle.",
+                InjurySeverity.MODERATE,
+                "Landed awkwardly.")
+            .get();
+
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
@@ -288,5 +311,68 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Verify that the InjuryDialog appears
     WebElement dialog = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("overlay")));
     assertTrue(dialog.isDisplayed());
+
+    // Verify the injuries are in the grid
+    wait.until(
+        d -> {
+          try {
+            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
+                .anyMatch(it -> it.getText().equals("Bruised Ribs"));
+          } catch (Exception e) {
+            return false;
+          }
+        });
+    wait.until(
+        d -> {
+          try {
+            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
+                .anyMatch(it -> it.getText().equals("Twisted Ankle"));
+          } catch (Exception e) {
+            return false;
+          }
+        });
+
+    // Heal an injury
+    WebElement healButton =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(By.id("heal-injury-" + injuryToHeal.getId())));
+    clickAndScrollIntoView(healButton);
+
+    // Create a new injury
+    WebElement createButton =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-button")));
+    clickAndScrollIntoView(createButton);
+
+      // Wait for the dialog to appear
+      wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+
+    // Fill the form
+    WebElement nameField =
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-name")));
+    nameField.sendKeys("Broken Leg");
+    WebElement descriptionField =
+        wait.until(
+            ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-description")));
+    descriptionField.sendKeys("A very broken leg.");
+    WebElement severitySelector =
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-severity")));
+    clickAndScrollIntoView(severitySelector);
+
+      severitySelector.sendKeys("CRITICAL",Keys.TAB);
+
+    WebElement saveButton =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-save-button")));
+    clickAndScrollIntoView(saveButton);
+
+    // Verify the new injury is in the grid
+    wait.until(
+        d -> {
+          try {
+            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
+                .anyMatch(it -> it.getText().equals("Broken Leg"));
+          } catch (Exception e) {
+            return false;
+          }
+        });
   }
 }

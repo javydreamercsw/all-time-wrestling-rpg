@@ -20,13 +20,18 @@ public class CreateInjuryDialog extends Dialog {
   public CreateInjuryDialog(
       @NonNull Wrestler wrestler, @NonNull InjuryService injuryService, @NonNull Runnable onSave) {
     setHeaderTitle("Create Injury for " + wrestler.getName());
+    setId("create-injury-dialog");
 
     FormLayout formLayout = new FormLayout();
     TextField nameField = new TextField("Name");
+    nameField.setId("create-injury-name");
     TextArea descriptionField = new TextArea("Description");
+    descriptionField.setId("create-injury-description");
     ComboBox<InjurySeverity> severityField = new ComboBox<>("Severity");
     severityField.setItems(InjurySeverity.values());
+    severityField.setId("create-injury-severity");
     TextArea injuryNotesField = new TextArea("Injury Notes");
+    injuryNotesField.setId("create-injury-notes");
 
     formLayout.add(nameField, descriptionField, severityField, injuryNotesField);
 
@@ -53,6 +58,7 @@ public class CreateInjuryDialog extends Dialog {
                 close();
               }
             });
+    saveButton.setId("create-injury-save-button");
 
     Button cancelButton = new Button("Cancel", e -> close());
 
