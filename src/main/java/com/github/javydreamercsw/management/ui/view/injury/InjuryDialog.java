@@ -42,6 +42,7 @@ public class InjuryDialog extends Dialog {
                       });
               createDialog.open();
             });
+    createButton.setId("create-injury-button");
 
     add(new VerticalLayout(createButton, injuryGrid));
   }

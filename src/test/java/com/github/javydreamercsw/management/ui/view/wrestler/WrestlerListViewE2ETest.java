@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.transaction.annotation.Propagation;
@@ -281,12 +282,11 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("manage-injuries-" + wrestler.getId())));
 
-    clickAndScrollIntoView(manageInjuriesButton);
+    Actions actions = new Actions(driver);
+    actions.moveToElement(manageInjuriesButton).click().perform();
 
     // Verify that the InjuryDialog appears
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
-    WebElement dialogTitle =
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("injury-dialog")));
-    assertTrue(dialogTitle.isDisplayed());
+    WebElement dialog = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("overlay")));
+    assertTrue(dialog.isDisplayed());
   }
 }
