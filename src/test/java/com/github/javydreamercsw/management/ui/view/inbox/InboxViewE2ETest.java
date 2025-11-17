@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.ui.view.inbox;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import java.io.IOException;
 import java.time.Duration;
@@ -16,8 +17,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-// Removed @SpringBootTest and @ActiveProfiles("test") as this is an E2E test and should not
-// manage its own Spring context.
 @Slf4j
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class InboxViewE2ETest extends AbstractE2ETest {
@@ -49,19 +48,19 @@ class InboxViewE2ETest extends AbstractE2ETest {
     // Given
     InboxItem item1 = new InboxItem();
     item1.setDescription("Filter Me Item");
-    item1.setEventType("Test Event A");
+    item1.setEventType(InboxEventType.FAN_ADJUDICATION);
     item1.setRead(false);
     inboxRepository.save(item1);
 
     InboxItem item2 = new InboxItem();
     item2.setDescription("Do Not Filter");
-    item2.setEventType("Test Event B");
+    item2.setEventType(InboxEventType.RIVALRY_HEAT_CHANGE);
     item2.setRead(false);
     inboxRepository.save(item2);
 
     InboxItem item3 = new InboxItem();
     item3.setDescription("Filter Me Too");
-    item3.setEventType("Test Event A");
+    item3.setEventType(InboxEventType.FAN_ADJUDICATION);
     item3.setRead(true);
     inboxRepository.save(item3);
 
@@ -158,12 +157,12 @@ class InboxViewE2ETest extends AbstractE2ETest {
     // Given
     InboxItem item1 = new InboxItem();
     item1.setDescription("Item 1");
-    item1.setEventType("Test Event");
+    item1.setEventType(InboxEventType.FAN_ADJUDICATION);
     inboxRepository.save(item1);
 
     InboxItem item2 = new InboxItem();
     item2.setDescription("Item 2");
-    item2.setEventType("Test Event");
+    item2.setEventType(InboxEventType.FAN_ADJUDICATION);
     inboxRepository.save(item2);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
@@ -206,7 +205,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
     // Given
     InboxItem unreadItem = new InboxItem();
     unreadItem.setDescription("Unread Item");
-    unreadItem.setEventType("Test Event");
+    unreadItem.setEventType(InboxEventType.FAN_ADJUDICATION);
     unreadItem.setRead(false);
     inboxRepository.save(unreadItem);
 

@@ -1,8 +1,10 @@
 package com.github.javydreamercsw.management.service.inbox;
 
+import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import jakarta.persistence.criteria.Predicate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import lombok.NonNull;
@@ -20,7 +22,7 @@ public class InboxService {
   @Autowired private InboxRepository inboxRepository;
 
   public InboxItem createInboxItem(
-      @NonNull String eventType, @NonNull String message, @NonNull String referenceId) {
+      @NonNull InboxEventType eventType, @NonNull String message, @NonNull String referenceId) {
     InboxItem inboxItem = new InboxItem();
     inboxItem.setDescription(message);
     inboxItem.setEventType(eventType);
@@ -74,7 +76,15 @@ public class InboxService {
           }
 
           if (eventType != null && !eventType.equalsIgnoreCase("All")) {
-            predicate = cb.and(predicate, cb.equal(root.get("eventType"), eventType));
+            // Find the enum by its friendly name
+            InboxEventType foundEventType =
+                Arrays.stream(InboxEventType.values())
+                    .filter(e -> e.getFriendlyName().equalsIgnoreCase(eventType))
+                    .findFirst()
+                    .orElse(null);
+            if (foundEventType != null) {
+              predicate = cb.and(predicate, cb.equal(root.get("eventType"), foundEventType));
+            }
           }
 
           return predicate;

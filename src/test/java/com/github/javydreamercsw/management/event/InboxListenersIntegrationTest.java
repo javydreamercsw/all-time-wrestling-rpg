@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
@@ -51,7 +52,7 @@ public class InboxListenersIntegrationTest {
     FanAwardedEvent event = new FanAwardedEvent(this, wrestler1, fanChange);
     eventPublisher.publishEvent(event);
 
-    ArgumentCaptor<String> eventTypeCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
 
@@ -59,7 +60,7 @@ public class InboxListenersIntegrationTest {
         .createInboxItem(
             eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
 
-    assertEquals("Fan Adjudication", eventTypeCaptor.getValue());
+    assertEquals(InboxEventType.FAN_ADJUDICATION, eventTypeCaptor.getValue());
     String expectedMessage =
         String.format(
             "Wrestler %s gained %d fans. New total: %d",
@@ -83,7 +84,7 @@ public class InboxListenersIntegrationTest {
         new HeatChangeEvent(this, rivalry, oldHeat, reason, List.of(wrestler1, wrestler2));
     eventPublisher.publishEvent(event);
 
-    ArgumentCaptor<String> eventTypeCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
 
@@ -91,7 +92,7 @@ public class InboxListenersIntegrationTest {
         .createInboxItem(
             eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
 
-    assertEquals("Rivalry Heat Change", eventTypeCaptor.getValue());
+    assertEquals(InboxEventType.RIVALRY_HEAT_CHANGE, eventTypeCaptor.getValue());
     String expectedMessage =
         String.format(
             "Rivalry between %s and %s gained %d heat. New total: %d. Reason: %s",

@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.event;
 
+import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
 import org.springframework.context.ApplicationListener;
@@ -27,6 +28,7 @@ public class HeatChangeInboxListener implements ApplicationListener<HeatChangeEv
             event.getReason());
 
     // Assuming the rivalry ID is the relevant reference for the inbox item
-    inboxService.createInboxItem("Rivalry Heat Change", message, event.getRivalryId().toString());
+    inboxService.createInboxItem(
+        InboxEventType.RIVALRY_HEAT_CHANGE, message, event.getRivalryId().toString());
   }
 }
