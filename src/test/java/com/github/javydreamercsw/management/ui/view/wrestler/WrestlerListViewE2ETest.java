@@ -4,16 +4,31 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 class WrestlerListViewE2ETest extends AbstractE2ETest {
+
+  @BeforeEach
+  void setUp() {
+    segmentRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+    // Create some wrestlers for the tests
+    for (int i = 0; i < 4; i++) {
+      TestUtils.createWrestler(wrestlerRepository, "Wrestler " + i);
+    }
+  }
 
   @Test
   void testCreateWrestler() {

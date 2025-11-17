@@ -10,10 +10,14 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
@@ -27,23 +31,48 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 class WrestlerProfileViewE2ETest extends AbstractE2ETest {
+
+  @Autowired private TitleRepository titleRepository;
+  @Autowired private TitleReignRepository titleReignRepository;
+  @Autowired private ShowRepository showRepository;
 
   private Wrestler testWrestler;
 
   @BeforeEach
   void setUp() {
     // Clear all relevant repositories to ensure a clean state for each test
+    titleReignRepository.deleteAll();
+    titleRepository
+        .findAll()
+        .forEach(
+            title -> {
+              title.setChampion(null);
+              titleRepository.save(title);
+            });
     multiWrestlerFeudRepository.deleteAll();
     segmentRepository.deleteAll();
+    showRepository.deleteAll();
     wrestlerRepository.deleteAll();
     seasonRepository.deleteAll();
+    showTemplateRepository.deleteAll();
+    showTypeRepository.deleteAll();
 
     testWrestler = TestUtils.createWrestler(wrestlerRepository, "Test Wrestler");
     // Ensure a default season exists for tests
     if (seasonService.findByName("Default Season") == null) {
       seasonService.createSeason("Default Season", "Default Season", 4);
+    }
+    if (showTypeRepository.findByName("Weekly").isEmpty()) {
+      ShowType showType = new ShowType();
+      showType.setName("Weekly");
+      showType.setDescription("A weekly show");
+      showTypeRepository.save(showType);
     }
   }
 
@@ -133,7 +162,14 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     Title title = titleService.createTitle("Test Title", "Test Title", WrestlerTier.ROOKIE);
 
     Season season = seasonService.createSeason("Test Season", "Test Season", 5);
-    Show show = showService.createShow("Test Show", "Test Show", season.getId(), null, null, null);
+    Show show =
+        showService.createShow(
+            "Test Show",
+            "Test Show",
+            showTypeRepository.findByName("Weekly").get().getId(),
+            null,
+            season.getId(),
+            null);
 
     SegmentType matchType = segmentTypeService.findByName("One on One").get();
     SegmentRule rule = segmentRuleService.findByName("Normal").get();

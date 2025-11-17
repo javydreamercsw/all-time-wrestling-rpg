@@ -21,78 +21,33 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeAll;
-import org.springframework.boot.SpringApplication;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
+@SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
-@Slf4j
 public abstract class AbstractIntegrationTest {
 
-  protected static InboxRepository inboxRepository; // Added static InboxRepository
-  protected static WrestlerRepository wrestlerRepository;
-  protected static MultiWrestlerFeudService multiWrestlerFeudService;
-  protected static SeasonRepository seasonRepository;
-  protected static SegmentService segmentService;
-  protected static SeasonService seasonService;
-  protected static RivalryService rivalryService;
-  protected static TitleService titleService;
-  protected static ShowService showService;
-  protected static SegmentTypeService segmentTypeService;
-  protected static SegmentRuleService segmentRuleService;
-  protected static SegmentRepository segmentRepository;
-  protected static MultiWrestlerFeudRepository multiWrestlerFeudRepository;
-  protected static ShowRepository showRepository;
-  protected static ShowTypeRepository showTypeRepository;
-  protected static SegmentTypeRepository segmentTypeRepository;
-  protected static FactionService factionService;
-  protected static WrestlerService wrestlerService;
-  protected static ShowTemplateRepository showTemplateRepository;
-  private static ConfigurableApplicationContext context;
-  protected static int serverPort;
-
-  @BeforeAll
-  static void setup() {
-    if (context == null) {
-      serverPort = Integer.parseInt(System.getProperty("server.port", "9090"));
-      String[] args = {
-        "--server.port=" + serverPort, "--spring.profiles.active=test",
-      };
-      log.info("Attempting to start Spring Boot application for E2E tests on port {}", serverPort);
-      context = SpringApplication.run(Application.class, args);
-      inboxRepository = context.getBean(InboxRepository.class);
-      wrestlerRepository = context.getBean(WrestlerRepository.class);
-      multiWrestlerFeudService = context.getBean(MultiWrestlerFeudService.class);
-      seasonRepository = context.getBean(SeasonRepository.class);
-      segmentService = context.getBean(SegmentService.class);
-      seasonService = context.getBean(SeasonService.class);
-      rivalryService = context.getBean(RivalryService.class);
-      titleService = context.getBean(TitleService.class);
-      showService = context.getBean(ShowService.class);
-      segmentTypeService = context.getBean(SegmentTypeService.class);
-      segmentRuleService = context.getBean(SegmentRuleService.class);
-      segmentRepository = context.getBean(SegmentRepository.class);
-      multiWrestlerFeudRepository = context.getBean(MultiWrestlerFeudRepository.class);
-      showRepository = context.getBean(ShowRepository.class);
-      showTypeRepository = context.getBean(ShowTypeRepository.class);
-      segmentTypeRepository = context.getBean(SegmentTypeRepository.class);
-      factionService = context.getBean(FactionService.class);
-      wrestlerService = context.getBean(WrestlerService.class);
-      showTemplateRepository = context.getBean(ShowTemplateRepository.class);
-      log.info("Spring Boot application started for E2E tests.");
-      Runtime.getRuntime()
-          .addShutdownHook(
-              new Thread(
-                  () -> {
-                    log.info("Shutting down Spring Boot application for E2E tests.");
-                    context.close();
-                  }));
-    }
-  }
+  @Autowired protected InboxRepository inboxRepository;
+  @Autowired protected WrestlerRepository wrestlerRepository;
+  @Autowired protected MultiWrestlerFeudService multiWrestlerFeudService;
+  @Autowired protected SeasonRepository seasonRepository;
+  @Autowired protected SegmentService segmentService;
+  @Autowired protected SeasonService seasonService;
+  @Autowired protected RivalryService rivalryService;
+  @Autowired protected TitleService titleService;
+  @Autowired protected ShowService showService;
+  @Autowired protected SegmentTypeService segmentTypeService;
+  @Autowired protected SegmentRuleService segmentRuleService;
+  @Autowired protected SegmentRepository segmentRepository;
+  @Autowired protected MultiWrestlerFeudRepository multiWrestlerFeudRepository;
+  @Autowired protected ShowRepository showRepository;
+  @Autowired protected ShowTypeRepository showTypeRepository;
+  @Autowired protected SegmentTypeRepository segmentTypeRepository;
+  @Autowired protected FactionService factionService;
+  @Autowired protected WrestlerService wrestlerService;
+  @Autowired protected ShowTemplateRepository showTemplateRepository;
 
   protected SegmentNarrationService.SegmentNarrationContext createCustomSegmentContext() {
     SegmentNarrationService.SegmentNarrationContext context =

@@ -1,12 +1,16 @@
 package com.github.javydreamercsw.management.ui;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.TestUtils;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,6 +28,7 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
@@ -31,16 +36,37 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SEASON_NAME = "Test Season";
   private static final String TEMPLATE_NAME = "Continuum";
 
+  @Autowired private TitleReignRepository titleReignRepository;
+  @Autowired private RivalryRepository rivalryRepository;
+  @Autowired private TitleRepository titleRepository;
+
   @BeforeEach
   @Transactional
   public void setupTestData() {
+    titleReignRepository.deleteAll();
+    titleRepository
+        .findAll()
+        .forEach(
+            title -> {
+              title.setChampion(null);
+              titleRepository.save(title);
+            });
     segmentRepository.deleteAll();
     showRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+    seasonRepository.deleteAll();
+    showTemplateRepository.deleteAll();
+    showTypeRepository.deleteAll();
+    rivalryRepository.deleteAll();
+    multiWrestlerFeudRepository.deleteAll();
+    titleRepository.deleteAll();
+
     // Clear and insert required ShowType
     Optional<ShowType> st = showTypeRepository.findByName(SHOW_TYPE_NAME);
     if (st.isEmpty()) {
       ShowType showType = new ShowType();
       showType.setName(SHOW_TYPE_NAME);
+      showType.setDescription("A weekly show");
       showTypeRepository.save(showType);
     }
 
@@ -49,6 +75,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     if (t.isEmpty()) {
       ShowTemplate template = new ShowTemplate();
       template.setName(TEMPLATE_NAME);
+      template.setShowType(showTypeRepository.findByName(SHOW_TYPE_NAME).get());
       showTemplateRepository.save(template);
     }
 
@@ -58,6 +85,11 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       Season season = new Season();
       season.setName(SEASON_NAME);
       seasonRepository.save(season);
+    }
+
+    // Create some wrestlers for the tests
+    for (int i = 0; i < 10; i++) {
+      TestUtils.createWrestler(wrestlerRepository, "Wrestler " + i);
     }
   }
 
@@ -164,6 +196,14 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     wait.until(
         ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
+    // Navigate back to the list.
+    driver.get(
+        "http://localhost:"
+            + serverPort
+            + getContextPath()
+            + "/show-detail/"
+            + showService.findByName(showName).get(0).getId());
+
     // Verify the description has been updated
     wait.until(
         ExpectedConditions.textToBePresentInElementLocated(
@@ -198,7 +238,9 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     mainEventSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
     mainEventSegment.setWinners(Arrays.asList(wrestlers.get(3)));
     HashSet<Title> titles = new HashSet<>();
-    titles.add(titleService.getActiveTitles().get(0));
+    if (!titleService.getActiveTitles().isEmpty()) {
+      titles.add(titleService.getActiveTitles().get(0));
+    }
     mainEventSegment.setTitles(titles);
     segmentRepository.save(mainEventSegment);
 

@@ -137,7 +137,7 @@ public class DataInitializer {
           ShowType existingType = existing.get(st.getName());
           if (existingType == null) {
             showTypeService.save(st);
-            log.info("Saved new show type: {}", st.getName());
+            log.debug("Saved new show type: {}", st.getName());
           }
         }
       } catch (IOException e) {
@@ -161,7 +161,7 @@ public class DataInitializer {
           if (existingType.isEmpty()) {
             SegmentType segmentType =
                 segmentTypeService.createOrUpdateSegmentType(dto.getName(), dto.getDescription());
-            log.info(
+            log.debug(
                 "Loaded segment type: {} (Players: {})",
                 segmentType.getName(),
                 dto.isUnlimited() ? "Unlimited" : dto.getPlayerAmount());
@@ -202,7 +202,7 @@ public class DataInitializer {
               showTemplateService.createOrUpdateTemplate(
                   dto.getName(), dto.getDescription(), dto.getShowTypeName(), dto.getNotionUrl());
           if (template != null) {
-            log.info(
+            log.debug(
                 "Loaded show template: {} (Type: {})", template.getName(), dto.getShowTypeName());
           } else {
             log.warn(
@@ -234,10 +234,10 @@ public class DataInitializer {
             // Update fields
             existingSet.setName(c.getName());
             cardSetService.save(existingSet);
-            log.info("Updated existing card set: {}", existingSet.getName());
+            log.debug("Updated existing card set: {}", existingSet.getName());
           } else {
             cardSetService.save(c);
-            log.info("Saved new card set: {}", c.getName());
+            log.debug("Saved new card set: {}", c.getName());
           }
         }
       } catch (IOException e) {
@@ -292,9 +292,9 @@ public class DataInitializer {
           card.setRecover(dto.isRecover());
           cardService.save(card);
           if (existing.containsKey(dto.getName())) {
-            log.info("Updated existing card: {}", card.getName());
+            log.debug("Updated existing card: {}", card.getName());
           } else {
-            log.info("Saved new card: {}", card.getName());
+            log.debug("Saved new card: {}", card.getName());
           }
         }
       } catch (IOException e) {
@@ -340,10 +340,10 @@ public class DataInitializer {
             }
 
             wrestlerService.save(existingWrestler);
-            log.info("Updated existing wrestler: {}", existingWrestler.getName());
+            log.debug("Updated existing wrestler: {}", existingWrestler.getName());
           } else {
             wrestlerService.save(w);
-            log.info("Saved new wrestler: {}", w.getName());
+            log.debug("Saved new wrestler: {}", w.getName());
           }
         }
         log.info("Total wrestlers in database after sync: {}", wrestlerService.count());
@@ -365,7 +365,7 @@ public class DataInitializer {
           Title title;
           if (existingTitle.isEmpty()) {
             title = titleService.createTitle(dto.getName(), dto.getDescription(), dto.getTier());
-            log.info("Created new title: {}", dto.getName());
+            log.debug("Created new title: {}", dto.getName());
           } else {
             title = existingTitle.get();
             log.debug("Title {} already exists, skipping creation.", dto.getName());
@@ -381,7 +381,7 @@ public class DataInitializer {
               if (title.getCurrentChampions().isEmpty()
                   || !title.getCurrentChampions().contains(championOpt.get())) {
                 titleService.awardTitleTo(title, List.of(championOpt.get()));
-                log.info(
+                log.debug(
                     "Awarded title {} to champion {}",
                     title.getName(),
                     dto.getCurrentChampionName());
@@ -500,7 +500,7 @@ public class DataInitializer {
           deck.getCards().removeAll(cardsToRemove);
 
           deckService.save(deck); // Save the deck, which will cascade to the new cards.
-          log.info("Saved deck for wrestler: {}", wrestler.getName());
+          log.debug("Saved deck for wrestler: {}", wrestler.getName());
         }
       } catch (IOException e) {
         log.error("Error loading decks from file", e);
