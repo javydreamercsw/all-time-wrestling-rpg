@@ -86,6 +86,11 @@ public class WrestlerService {
     return getWrestlerById(id);
   }
 
+  /** Find wrestler by ID and fetch injuries. */
+  public Optional<Wrestler> findByIdWithInjuries(Long id) {
+    return wrestlerRepository.findByIdWithInjuries(id);
+  }
+
   /** Get all wrestlers (alias for findAll for UI compatibility). */
   public List<Wrestler> getAllWrestlers() {
     return findAll();
