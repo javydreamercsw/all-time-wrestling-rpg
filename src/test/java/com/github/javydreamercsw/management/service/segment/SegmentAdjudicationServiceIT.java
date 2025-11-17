@@ -6,6 +6,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -31,6 +32,7 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
   @Autowired private ShowRepository showRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private SegmentRuleRepository segmentRuleRepository;
 
   @Test
   void testAdjudicateMatch() {
@@ -84,6 +86,7 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
     segment.addParticipant(winner);
     segment.addParticipant(loser);
     segment.setWinners(List.of(winner));
+    segment.getSegmentRules().add(segmentRuleRepository.findByName("Submission").get());
     segmentRepository.save(segment);
 
     // When
