@@ -24,7 +24,9 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import org.springframework.data.domain.PageRequest;
+import java.util.Comparator;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 @Route("faction-rivalry-list")
@@ -48,18 +50,16 @@ public class FactionRivalryListView extends Main {
 
     ComboBox<Faction> faction1ComboBox = new ComboBox<>("Faction 1");
     faction1ComboBox.setItems(
-        query ->
-            factionService
-                .getAllFactions(PageRequest.of(query.getPage(), query.getPageSize()))
-                .stream());
+        factionService.getAllFactions(Pageable.unpaged()).stream()
+            .sorted(Comparator.comparing(Faction::getName))
+            .collect(Collectors.toList()));
     faction1ComboBox.setItemLabelGenerator(Faction::getName);
 
     ComboBox<Faction> faction2ComboBox = new ComboBox<>("Faction 2");
     faction2ComboBox.setItems(
-        query ->
-            factionService
-                .getAllFactions(PageRequest.of(query.getPage(), query.getPageSize()))
-                .stream());
+        factionService.getAllFactions(Pageable.unpaged()).stream()
+            .sorted(Comparator.comparing(Faction::getName))
+            .collect(Collectors.toList()));
     faction2ComboBox.setItemLabelGenerator(Faction::getName);
 
     TextField storylineNotes = new TextField("Storyline Notes");

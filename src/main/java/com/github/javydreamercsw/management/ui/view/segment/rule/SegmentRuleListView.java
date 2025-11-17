@@ -28,6 +28,9 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -147,7 +150,10 @@ public class SegmentRuleListView extends Main {
     editDescription.setWidthFull();
     Checkbox editRequiresHighHeat = new Checkbox("Requires High Heat");
     ComboBox<BumpAddition> bumpAdditionComboBox = new ComboBox<>("Bump Addition");
-    bumpAdditionComboBox.setItems(BumpAddition.values());
+    bumpAdditionComboBox.setItems(
+        Arrays.stream(BumpAddition.values())
+            .sorted(Comparator.comparing(BumpAddition::name))
+            .collect(Collectors.toList()));
 
     binder = new Binder<>(SegmentRule.class);
     binder

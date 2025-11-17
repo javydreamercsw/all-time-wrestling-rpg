@@ -21,6 +21,8 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.binder.Binder;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.springframework.data.domain.Pageable;
 
@@ -61,19 +63,28 @@ public class EditShowDetailsDialog extends Dialog {
     descriptionField.setValue(show.getDescription() != null ? show.getDescription() : "");
     descriptionField.setWidthFull();
 
-    typeField.setItems(showTypeService.findAll());
+    typeField.setItems(
+        showTypeService.findAll().stream()
+            .sorted(Comparator.comparing(ShowType::getName))
+            .collect(Collectors.toList()));
     typeField.setItemLabelGenerator(ShowType::getName);
     typeField.setValue(show.getType());
     typeField.setRequired(true);
     typeField.setWidthFull();
 
-    seasonField.setItems(seasonService.getAllSeasons(Pageable.unpaged()).getContent());
+    seasonField.setItems(
+        seasonService.getAllSeasons(Pageable.unpaged()).getContent().stream()
+            .sorted(Comparator.comparing(Season::getName))
+            .collect(Collectors.toList()));
     seasonField.setItemLabelGenerator(Season::getName);
     seasonField.setValue(show.getSeason());
     seasonField.setClearButtonVisible(true);
     seasonField.setWidthFull();
 
-    templateField.setItems(showTemplateService.findAll());
+    templateField.setItems(
+        showTemplateService.findAll().stream()
+            .sorted(Comparator.comparing(ShowTemplate::getName))
+            .collect(Collectors.toList()));
     templateField.setItemLabelGenerator(ShowTemplate::getName);
     templateField.setValue(show.getTemplate());
     templateField.setClearButtonVisible(true);

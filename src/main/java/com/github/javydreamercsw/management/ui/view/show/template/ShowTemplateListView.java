@@ -30,7 +30,10 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -73,7 +76,12 @@ public class ShowTemplateListView extends Main {
     nameFilter.addValueChangeListener(e -> refreshGrid());
 
     showTypeFilter = new ComboBox<>("Show Type");
-    showTypeFilter.setItems(showTypeService.findAll());
+    List<ShowType> showTypes =
+        new ArrayList<>(
+            showTypeService.findAll().stream()
+                .sorted(Comparator.comparing(ShowType::getName))
+                .collect(Collectors.toList()));
+    showTypeFilter.setItems(showTypes);
     showTypeFilter.setItemLabelGenerator(ShowType::getName);
     showTypeFilter.setPlaceholder("All types");
     showTypeFilter.setClearButtonVisible(true);
@@ -195,7 +203,10 @@ public class ShowTemplateListView extends Main {
     editDescription.setHeight("100px");
 
     editShowType = new ComboBox<>("Show Type");
-    editShowType.setItems(showTypeService.findAll());
+    editShowType.setItems(
+        showTypeService.findAll().stream()
+            .sorted(Comparator.comparing(ShowType::getName))
+            .collect(Collectors.toList()));
     editShowType.setItemLabelGenerator(ShowType::getName);
     editShowType.setWidthFull();
     editShowType.setRequired(true);

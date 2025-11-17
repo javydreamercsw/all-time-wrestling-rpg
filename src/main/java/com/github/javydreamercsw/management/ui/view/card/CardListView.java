@@ -27,6 +27,9 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.Clock;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 
 @Route("card-list")
@@ -88,12 +91,18 @@ public class CardListView extends Main {
     Checkbox recoverField = new Checkbox();
     Checkbox pinField = new Checkbox();
     ComboBox<String> typeField = new ComboBox<>();
-    typeField.setItems("Strike", "Grapple", "Aerial", "Throw");
+    typeField.setItems(
+        Arrays.asList("Strike", "Grapple", "Aerial", "Throw").stream()
+            .sorted()
+            .collect(Collectors.toList()));
     typeField.setPlaceholder("Select type");
 
     ComboBox<CardSet> setField = new ComboBox<>();
     setField.setPlaceholder("Select set");
-    setField.setItems(cardSetService.findAll());
+    setField.setItems(
+        cardSetService.findAll().stream()
+            .sorted(Comparator.comparing(CardSet::getName))
+            .collect(Collectors.toList()));
     setField.setItemLabelGenerator(CardSet::getName);
 
     cardGrid.setItems(query -> cardService.list(toSpringPageRequest(query)).stream());

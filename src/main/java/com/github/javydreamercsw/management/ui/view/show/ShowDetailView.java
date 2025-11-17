@@ -56,10 +56,12 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -723,7 +725,10 @@ public class ShowDetailView extends Main
 
     // Segment type selection
     ComboBox<SegmentType> segmentTypeCombo = new ComboBox<>("Segment Type");
-    segmentTypeCombo.setItems(segmentTypeRepository.findAll());
+    segmentTypeCombo.setItems(
+        segmentTypeRepository.findAll().stream()
+            .sorted(Comparator.comparing(SegmentType::getName))
+            .collect(Collectors.toList()));
     segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
     segmentTypeCombo.setWidthFull();
     segmentTypeCombo.setRequired(true);
@@ -731,7 +736,10 @@ public class ShowDetailView extends Main
 
     // Segment rules selection (multi-select)
     MultiSelectComboBox<SegmentRule> rulesCombo = new MultiSelectComboBox<>("Segment Rules");
-    rulesCombo.setItems(segmentRuleRepository.findAll());
+    rulesCombo.setItems(
+        segmentRuleRepository.findAll().stream()
+            .sorted(Comparator.comparing(SegmentRule::getName))
+            .collect(Collectors.toList()));
     rulesCombo.setItemLabelGenerator(SegmentRule::getName);
     rulesCombo.setWidthFull();
     rulesCombo.setId("segment-rules-combo-box");
@@ -739,7 +747,10 @@ public class ShowDetailView extends Main
 
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
-    wrestlersCombo.setItems(wrestlerRepository.findAll());
+    wrestlersCombo.setItems(
+        wrestlerRepository.findAll().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setRequired(true);
@@ -755,13 +766,19 @@ public class ShowDetailView extends Main
     // Update winner options when wrestlers change
     wrestlersCombo.addValueChangeListener(
         e -> {
-          winnerCombo.setItems(e.getValue());
+          winnerCombo.setItems(
+              e.getValue().stream()
+                  .sorted(Comparator.comparing(Wrestler::getName))
+                  .collect(Collectors.toList()));
           winnerCombo.clear();
         });
 
     // Add title selection for new segments
     MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
-    titleMultiSelectComboBox.setItems(titleService.findAll());
+    titleMultiSelectComboBox.setItems(
+        titleService.findAll().stream()
+            .sorted(Comparator.comparing(Title::getName))
+            .collect(Collectors.toList()));
     titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
     titleMultiSelectComboBox.setWidthFull();
     titleMultiSelectComboBox.setVisible(false); // Initially hidden
@@ -873,7 +890,10 @@ public class ShowDetailView extends Main
 
     // Segment type selection
     ComboBox<SegmentType> segmentTypeCombo = new ComboBox<>("Segment Type");
-    segmentTypeCombo.setItems(segmentTypeRepository.findAll());
+    segmentTypeCombo.setItems(
+        segmentTypeRepository.findAll().stream()
+            .sorted(Comparator.comparing(SegmentType::getName))
+            .collect(Collectors.toList()));
     segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
     segmentTypeCombo.setWidthFull();
     segmentTypeCombo.setRequired(true);
@@ -882,7 +902,10 @@ public class ShowDetailView extends Main
 
     // Segment rules selection (multi-select)
     MultiSelectComboBox<SegmentRule> rulesCombo = new MultiSelectComboBox<>("Segment Rules");
-    rulesCombo.setItems(segmentRuleRepository.findAll());
+    rulesCombo.setItems(
+        segmentRuleRepository.findAll().stream()
+            .sorted(Comparator.comparing(SegmentRule::getName))
+            .collect(Collectors.toList()));
     rulesCombo.setItemLabelGenerator(SegmentRule::getName);
     rulesCombo.setWidthFull();
     rulesCombo.setValue(segment.getSegmentRules());
@@ -891,7 +914,10 @@ public class ShowDetailView extends Main
 
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
-    wrestlersCombo.setItems(wrestlerRepository.findAll());
+    wrestlersCombo.setItems(
+        wrestlerRepository.findAll().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setRequired(true);
@@ -902,14 +928,20 @@ public class ShowDetailView extends Main
     MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
     winnersCombo.setItemLabelGenerator(Wrestler::getName);
     winnersCombo.setWidthFull();
-    winnersCombo.setItems(segment.getWrestlers());
+    winnersCombo.setItems(
+        segment.getWrestlers().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
     winnersCombo.setValue(segment.getWinners());
     winnersCombo.setId("edit-winners-combo-box");
 
     // Update winner options when wrestlers change
     wrestlersCombo.addValueChangeListener(
         e -> {
-          winnersCombo.setItems(e.getValue());
+          winnersCombo.setItems(
+              e.getValue().stream()
+                  .sorted(Comparator.comparing(Wrestler::getName))
+                  .collect(Collectors.toList()));
           winnersCombo.clear();
         });
 
@@ -931,7 +963,10 @@ public class ShowDetailView extends Main
 
     // Title selection (multi-select) - only visible if segment is a title segment
     MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
-    titleMultiSelectComboBox.setItems(titleService.findAll());
+    titleMultiSelectComboBox.setItems(
+        titleService.findAll().stream()
+            .sorted(Comparator.comparing(Title::getName))
+            .collect(Collectors.toList()));
     titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
     titleMultiSelectComboBox.setWidthFull();
     titleMultiSelectComboBox.setVisible(segment.getIsTitleSegment()); // Control visibility

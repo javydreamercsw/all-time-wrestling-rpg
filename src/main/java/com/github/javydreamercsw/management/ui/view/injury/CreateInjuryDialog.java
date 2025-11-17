@@ -11,6 +11,9 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 
 public class CreateInjuryDialog extends Dialog {
@@ -28,7 +31,10 @@ public class CreateInjuryDialog extends Dialog {
     TextArea descriptionField = new TextArea("Description");
     descriptionField.setId("create-injury-description");
     ComboBox<InjurySeverity> severityField = new ComboBox<>("Severity");
-    severityField.setItems(InjurySeverity.values());
+    severityField.setItems(
+        Arrays.stream(InjurySeverity.values())
+            .sorted(Comparator.comparing(InjurySeverity::name))
+            .collect(Collectors.toList()));
     severityField.setId("create-injury-severity");
     TextArea injuryNotesField = new TextArea("Injury Notes");
     injuryNotesField.setId("create-injury-notes");

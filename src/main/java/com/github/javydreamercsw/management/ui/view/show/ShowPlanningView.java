@@ -29,7 +29,9 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.web.client.RestTemplate;
 
 @Route("show-planning")
@@ -63,7 +65,10 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     showComboBox = new ComboBox<>("Select Show");
     showComboBox.setId("select-show-combo-box");
-    showComboBox.setItems(showService.findAll());
+    showComboBox.setItems(
+        showService.findAll().stream()
+            .sorted(Comparator.comparing(Show::getName))
+            .collect(Collectors.toList()));
     showComboBox.setItemLabelGenerator(Show::getName);
 
     loadContextButton = new Button("Load Context");

@@ -343,8 +343,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-button")));
     clickAndScrollIntoView(createButton);
 
-      // Wait for the dialog to appear
-      wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    // Wait for the dialog to appear
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
     // Fill the form
     WebElement nameField =
@@ -358,7 +358,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-severity")));
     clickAndScrollIntoView(severitySelector);
 
-      severitySelector.sendKeys("CRITICAL",Keys.TAB);
+    severitySelector.sendKeys("CRITICAL", Keys.TAB);
 
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-save-button")));

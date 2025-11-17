@@ -30,8 +30,10 @@ import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -116,27 +118,42 @@ public class NarrationDialog extends Dialog {
     refereeField = new ComboBox<>("Referee");
     refereeField.setItemLabelGenerator(Npc::getName);
     refereeField.setWidthFull();
-    refereeField.setItems(npcService.findAllByType("Referee"));
+    refereeField.setItems(
+        npcService.findAllByType("Referee").stream()
+            .sorted(Comparator.comparing(Npc::getName))
+            .collect(Collectors.toList()));
 
     commissionerField = new ComboBox<>("Commissioner");
     commissionerField.setItemLabelGenerator(Npc::getName);
     commissionerField.setWidthFull();
-    commissionerField.setItems(npcService.findAllByType("Commissioner"));
+    commissionerField.setItems(
+        npcService.findAllByType("Commissioner").stream()
+            .sorted(Comparator.comparing(Npc::getName))
+            .collect(Collectors.toList()));
 
     commentatorsField = new MultiSelectComboBox<>("Commentators");
     commentatorsField.setItemLabelGenerator(Npc::getName);
     commentatorsField.setWidthFull();
-    commentatorsField.setItems(npcService.findAllByType("Commentator"));
+    commentatorsField.setItems(
+        npcService.findAllByType("Commentator").stream()
+            .sorted(Comparator.comparing(Npc::getName))
+            .collect(Collectors.toList()));
 
     ringAnnouncerField = new ComboBox<>("Ring Announcer");
     ringAnnouncerField.setItemLabelGenerator(Npc::getName);
     ringAnnouncerField.setWidthFull();
-    ringAnnouncerField.setItems(npcService.findAllByType("Announcer"));
+    ringAnnouncerField.setItems(
+        npcService.findAllByType("Announcer").stream()
+            .sorted(Comparator.comparing(Npc::getName))
+            .collect(Collectors.toList()));
 
     otherNpcsField = new MultiSelectComboBox<>("Other NPCs");
     otherNpcsField.setItemLabelGenerator(Npc::getName);
     otherNpcsField.setWidthFull();
-    otherNpcsField.setItems(npcService.findAllByType("Other"));
+    otherNpcsField.setItems(
+        npcService.findAllByType("Other").stream()
+            .sorted(Comparator.comparing(Npc::getName))
+            .collect(Collectors.toList()));
 
     teamsLayout = new VerticalLayout();
     teamsLayout.setSpacing(true);
@@ -175,7 +192,10 @@ public class NarrationDialog extends Dialog {
         new MultiSelectComboBox<>("Team " + teamNumber);
     wrestlersCombo.setItemLabelGenerator(WrestlerDTO::getName);
     wrestlersCombo.setWidthFull();
-    wrestlersCombo.setItems(wrestlerService.findAllAsDTO());
+    wrestlersCombo.setItems(
+        wrestlerService.findAllAsDTO().stream()
+            .sorted(Comparator.comparing(WrestlerDTO::getName))
+            .collect(Collectors.toList()));
     if (wrestler != null) {
       wrestlersCombo.setValue(new java.util.HashSet<>(List.of(wrestler)));
     }

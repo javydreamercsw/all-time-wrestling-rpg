@@ -24,7 +24,8 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import org.springframework.data.domain.PageRequest;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 import org.springframework.transaction.annotation.Transactional;
 
 @Route("rivalry-list")
@@ -48,14 +49,16 @@ public class RivalryListView extends Main {
 
     ComboBox<Wrestler> wrestler1ComboBox = new ComboBox<>("Wrestler 1");
     wrestler1ComboBox.setItems(
-        query ->
-            wrestlerService.list(PageRequest.of(query.getPage(), query.getPageSize())).stream());
+        wrestlerService.findAll().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
     wrestler1ComboBox.setItemLabelGenerator(Wrestler::getName);
 
     ComboBox<Wrestler> wrestler2ComboBox = new ComboBox<>("Wrestler 2");
     wrestler2ComboBox.setItems(
-        query ->
-            wrestlerService.list(PageRequest.of(query.getPage(), query.getPageSize())).stream());
+        wrestlerService.findAll().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
     wrestler2ComboBox.setItemLabelGenerator(Wrestler::getName);
 
     TextField storylineNotes = new TextField("Storyline Notes");
