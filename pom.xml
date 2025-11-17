@@ -310,8 +310,7 @@
         <artifactId>spotless-maven-plugin</artifactId>
         <version>3.0.0</version>
         <configuration>
-          <!-- optional: limit format enforcement to just the files changed by this feature branch
-              <ratchetFrom>origin/master</ratchetFrom>-->
+          <ratchetFrom>origin/main</ratchetFrom>
           <formats>
             <!-- you can define as many formats as you want, each is independent -->
             <format>

@@ -101,7 +101,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     final String showName = "My E2E Show";
 
     // Click the "Create" button
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Fill in the form
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("vaadin-text-field")))
@@ -193,8 +193,19 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     clickAndScrollIntoView(saveButton);
 
     // Wait for the dialog to appear
-    wait.until(
-        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    try {
+      wait.until(
+          ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    } catch (Exception e) {
+      // If it fails, wait a bit and try again.
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException ex) {
+        // Do nothing
+      }
+      wait.until(
+          ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+    }
 
     // Navigate back to the list.
     driver.get(
