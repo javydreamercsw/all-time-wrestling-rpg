@@ -89,12 +89,20 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     wrestler.setLowStamina(0);
     wrestlerRepository.save(wrestler);
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
-    // Find the "Edit" button for the wrestler and click it
-    WebElement editButton =
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    // Find the menu for the wrestler and click it
+    WebElement menu =
         wait.until(
             ExpectedConditions.elementToBeClickable(
-                By.xpath("//vaadin-button[@id='edit-" + wrestler.getId() + "']")));
+                By.xpath(
+                    "//vaadin-menu-bar[@id='action-menu-"
+                        + wrestler.getId()
+                        + "']/vaadin-menu-bar-button")));
+    clickAndScrollIntoView(menu);
+
+    // Find the "Edit" button for the wrestler and click it
+    WebElement editButton =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("edit-" + wrestler.getId())));
 
     clickAndScrollIntoView(editButton);
 
@@ -150,11 +158,19 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     long initialSize = wrestlerRepository.count();
 
-    // Find the "Delete" button for the wrestler and click it
-    WebElement deleteButton =
+    // Find the menu for the wrestler and click it
+    WebElement menu =
         wait.until(
             ExpectedConditions.elementToBeClickable(
-                By.xpath("//vaadin-button[@id='delete-" + wrestler.getId() + "']")));
+                By.xpath(
+                    "//vaadin-menu-bar[@id='action-menu-"
+                        + wrestler.getId()
+                        + "']/vaadin-menu-bar-button")));
+    clickAndScrollIntoView(menu);
+
+    // Find the "Delete" button for the wrestler and click it
+    WebElement deleteButton =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("delete-" + wrestler.getId())));
 
     clickAndScrollIntoView(deleteButton);
 

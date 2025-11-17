@@ -80,14 +80,20 @@ public class WrestlerListView extends Main {
     wrestlerGrid.addColumn(Wrestler::getCreationDate).setHeader("Creation Date");
     wrestlerGrid
         .addComponentColumn(
-            wrestler ->
-                new WrestlerActionMenu(
-                    wrestler,
-                    wrestlerService,
-                    injuryService,
-                    wrestlerGrid.getDataProvider()::refreshAll,
-                    false))
-        .setHeader("Actions");
+            wrestler -> {
+              WrestlerActionMenu wrestlerActionMenu =
+                  new WrestlerActionMenu(
+                      wrestler,
+                      wrestlerService,
+                      injuryService,
+                      wrestlerGrid.getDataProvider()::refreshAll,
+                      false);
+              wrestlerActionMenu.setId("action-menu-" + wrestler.getId());
+              return wrestlerActionMenu;
+            })
+        .setHeader("Actions")
+        .setFlexGrow(1)
+        .setWidth("200px");
     wrestlerGrid.setSizeFull();
 
     setSizeFull();

@@ -47,18 +47,19 @@ public class WrestlerActionMenu extends MenuBar {
     viewProfileItem.addComponentAsFirst(new Icon(VaadinIcon.USER));
     viewProfileItem.setEnabled(!isProfileView);
 
-    subMenu
-        .addItem(
+    MenuItem editItem =
+        subMenu.addItem(
             "Edit",
             e -> {
               WrestlerDialog dialog =
                   new WrestlerDialog(wrestlerService, wrestler, refreshProvider);
               dialog.open();
-            })
-        .addComponentAsFirst(new Icon(VaadinIcon.EDIT));
+            });
+    editItem.addComponentAsFirst(new Icon(VaadinIcon.EDIT));
+    editItem.setId("edit-" + wrestler.getId());
 
-    subMenu
-        .addItem(
+    MenuItem deleteItem =
+        subMenu.addItem(
             "Delete",
             e -> {
               wrestlerService.delete(wrestler);
@@ -69,8 +70,9 @@ public class WrestlerActionMenu extends MenuBar {
               } else {
                 refreshProvider.run();
               }
-            })
-        .addComponentAsFirst(new Icon(VaadinIcon.TRASH));
+            });
+    deleteItem.addComponentAsFirst(new Icon(VaadinIcon.TRASH));
+    deleteItem.setId("delete-" + wrestler.getId());
 
     subMenu
         .addItem(
