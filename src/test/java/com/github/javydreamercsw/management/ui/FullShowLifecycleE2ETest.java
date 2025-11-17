@@ -166,6 +166,14 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
 
+    // Navigate back to the list.
+    driver.get(
+        "http://localhost:"
+            + serverPort
+            + getContextPath()
+            + "/show-detail/"
+            + showService.findByName(showName).get(0).getId());
+
     List<WebElement> cells =
         wait.until(
             ExpectedConditions.presenceOfAllElementsLocatedBy(
