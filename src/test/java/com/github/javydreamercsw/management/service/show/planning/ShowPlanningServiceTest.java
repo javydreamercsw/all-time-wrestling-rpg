@@ -180,6 +180,13 @@ class ShowPlanningServiceTest {
     Show show = mock(Show.class);
     when(show.getName()).thenReturn("Future Show");
     when(show.getShowDate()).thenReturn(futureShowDate);
+    when(show.getId()).thenReturn(1L);
+    ShowType currentShowType = new ShowType(); // Create a ShowType for the 'show' object
+    currentShowType.setName("Regular Show Type");
+    currentShowType.setExpectedMatches(5); // Set some default values
+    currentShowType.setExpectedPromos(3); // Set some default values
+    when(show.getType()).thenReturn(currentShowType); // Mock getType() to return this ShowType
+
     ShowType pleShowType = new ShowType();
     pleShowType.setName("Premium Live Event (PLE)");
     pleShowType.setExpectedMatches(7);
@@ -230,6 +237,11 @@ class ShowPlanningServiceTest {
     when(show.getName()).thenReturn("Future Show");
     when(show.getShowDate()).thenReturn(futureShowDate);
     when(show.getId()).thenReturn(1L);
+    ShowType showType = new ShowType(); // Create a ShowType for the 'show' object
+    showType.setName("Regular Show Type");
+    showType.setExpectedMatches(5); // Set some default values
+    showType.setExpectedPromos(2); // Set some default values
+    when(show.getType()).thenReturn(showType); // Mock getType() to return this ShowType
 
     // Mock an upcoming PLE relative to futureShowDate
     ShowType pleShowType = new ShowType();
@@ -310,6 +322,11 @@ class ShowPlanningServiceTest {
     when(show.getName()).thenReturn("Test Show");
     when(show.getShowDate()).thenReturn(LocalDate.now());
     when(show.getId()).thenReturn(1L);
+    ShowType showType = new ShowType(); // Create a ShowType for the 'show' object
+    showType.setName("Regular Show Type");
+    showType.setExpectedMatches(5); // Set some default values
+    showType.setExpectedPromos(3); // Set some default values
+    when(show.getType()).thenReturn(showType); // Mock getType() to return this ShowType
 
     Title title = new Title();
     title.setId(1L);
