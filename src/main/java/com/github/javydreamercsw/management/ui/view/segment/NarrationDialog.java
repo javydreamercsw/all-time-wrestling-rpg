@@ -31,6 +31,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -118,10 +119,31 @@ public class NarrationDialog extends Dialog {
     refereeField = new ComboBox<>("Referee");
     refereeField.setItemLabelGenerator(Npc::getName);
     refereeField.setWidthFull();
-    refereeField.setItems(
+    List<Npc> referees =
         npcService.findAllByType("Referee").stream()
             .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
+    refereeField.setItems(referees);
+
+    // Declare here
+    Button randomRefereeButton = new Button(new Icon(VaadinIcon.RANDOM));
+    randomRefereeButton.addThemeVariants(ButtonVariant.LUMO_ICON);
+    randomRefereeButton.setId("random-referee-button");
+    randomRefereeButton.addClickListener(
+        e -> {
+          if (!referees.isEmpty()) {
+            int randomIndex = (int) (Math.random() * referees.size());
+            refereeField.setValue(referees.get(randomIndex));
+          } else {
+            Notification.show(
+                "No referees available to select randomly.",
+                3000,
+                Notification.Position.BOTTOM_START);
+          }
+        });
+    HorizontalLayout refereeLayout = new HorizontalLayout(refereeField, randomRefereeButton);
+    refereeLayout.setWidthFull();
+    refereeLayout.setFlexGrow(1, refereeField);
 
     commissionerField = new ComboBox<>("Commissioner");
     commissionerField.setItemLabelGenerator(Npc::getName);
@@ -134,10 +156,12 @@ public class NarrationDialog extends Dialog {
     commentatorsField = new MultiSelectComboBox<>("Commentators");
     commentatorsField.setItemLabelGenerator(Npc::getName);
     commentatorsField.setWidthFull();
-    commentatorsField.setItems(
+    List<Npc> commentators =
         npcService.findAllByType("Commentator").stream()
             .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
+    commentatorsField.setItems(commentators);
+    commentatorsField.setValue(new HashSet<>(commentators));
 
     ringAnnouncerField = new ComboBox<>("Ring Announcer");
     ringAnnouncerField.setItemLabelGenerator(Npc::getName);
@@ -150,10 +174,18 @@ public class NarrationDialog extends Dialog {
     otherNpcsField = new MultiSelectComboBox<>("Other NPCs");
     otherNpcsField.setItemLabelGenerator(Npc::getName);
     otherNpcsField.setWidthFull();
-    otherNpcsField.setItems(
-        npcService.findAllByType("Other").stream()
+    List<Npc> allNpcs = npcService.findAll();
+    List<Npc> otherNpcs =
+        allNpcs.stream()
+            .filter(
+                npc ->
+                    !npc.getNpcType().equals("Referee")
+                        && !npc.getNpcType().equals("Commissioner")
+                        && !npc.getNpcType().equals("Commentator")
+                        && !npc.getNpcType().equals("Announcer"))
             .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
+    otherNpcsField.setItems(otherNpcs);
 
     teamsLayout = new VerticalLayout();
     teamsLayout.setSpacing(true);
@@ -175,7 +207,7 @@ public class NarrationDialog extends Dialog {
             progressBar,
             narrationDisplay,
             teamsLayout,
-            refereeField,
+            refereeLayout,
             commissionerField,
             commentatorsField,
             ringAnnouncerField,
