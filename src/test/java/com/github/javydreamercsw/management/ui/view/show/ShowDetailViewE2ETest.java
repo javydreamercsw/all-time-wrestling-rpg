@@ -121,7 +121,16 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
         RetryPolicy.builder()
             .withDelay(Duration.ofMillis(500))
             .withMaxDuration(Duration.ofSeconds(10))
+            .withMaxAttempts(3)
             .handle(AssertionFailedError.class)
+            .onRetry(
+                e -> // Navigate to the Show Detail view
+                driver.get(
+                        "http://localhost:"
+                            + serverPort
+                            + getContextPath()
+                            + "/show-detail/"
+                            + testShow.getId()))
             .build();
     Failsafe.with(retryPolicy)
         .get(

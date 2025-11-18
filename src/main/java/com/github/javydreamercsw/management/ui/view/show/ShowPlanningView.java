@@ -32,12 +32,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.client.RestTemplate;
 
 @Route("show-planning")
 @PageTitle("Show Planning")
 @Menu(order = 6, icon = "vaadin:calendar", title = "Show Planning")
 @PermitAll
+@Slf4j
 public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private final ShowService showService;
@@ -230,6 +232,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       String baseUrl = UrlUtil.getBaseUrl();
       restTemplate.postForEntity(
           baseUrl + "/api/show-planning/approve/" + selectedShow.getId(), segments, Void.class);
+      log.info("Segments approved successfully, showing notification.");
       Notification.show("Segments approved successfully!", 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       proposedSegmentsGrid.setItems(new ArrayList<>());

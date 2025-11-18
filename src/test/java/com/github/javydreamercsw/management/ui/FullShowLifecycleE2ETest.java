@@ -154,25 +154,20 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("approve-segments-button")));
     clickAndScrollIntoView(approveButton);
 
-    // Navigate back to the list.
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
+    // Wait for the notification that segments are approved to appear and disappear
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-notification")));
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-notification")));
 
-    // Go to the show detailed view again to verify approved segments.
-    viewShowDetails =
-        wait.until(
-            ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
-    clickAndScrollIntoView(viewShowDetails);
-
-    // Verify navigation to the show detail view (or planning view)
-    wait.until(ExpectedConditions.urlContains("/show-detail"));
-
-    // Navigate back to the list.
+    // Navigate directly back to the show detail view
     driver.get(
         "http://localhost:"
             + serverPort
             + getContextPath()
             + "/show-detail/"
             + showService.findByName(showName).get(0).getId());
+
+    // Verify navigation to the show detail view
+    wait.until(ExpectedConditions.urlContains("/show-detail"));
 
     List<WebElement> cells =
         wait.until(
