@@ -20,7 +20,10 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.data.validator.StringLengthValidator;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -114,7 +117,10 @@ public class TeamFormDialog extends Dialog {
     factionField.setWidthFull();
 
     // Configure status field
-    statusField.setItems(TeamStatus.values());
+    statusField.setItems(
+        Arrays.stream(TeamStatus.values())
+            .sorted(Comparator.comparing(TeamStatus::getDisplayName))
+            .collect(Collectors.toList()));
     statusField.setItemLabelGenerator(TeamStatus::getDisplayName);
     statusField.setWidthFull();
 
@@ -214,11 +220,20 @@ public class TeamFormDialog extends Dialog {
 
   private void loadComboBoxData() {
     // Load wrestlers
-    wrestler1Field.setItems(wrestlerService.getAllWrestlers());
-    wrestler2Field.setItems(wrestlerService.getAllWrestlers());
+    wrestler1Field.setItems(
+        wrestlerService.getAllWrestlers().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
+    wrestler2Field.setItems(
+        wrestlerService.getAllWrestlers().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
 
     // Load factions
-    factionField.setItems(factionService.getAllFactions());
+    factionField.setItems(
+        factionService.getAllFactions().stream()
+            .sorted(Comparator.comparing(Faction::getName))
+            .collect(Collectors.toList()));
   }
 
   public void setTeam(TeamDTO team) {

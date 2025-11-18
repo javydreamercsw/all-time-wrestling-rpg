@@ -154,24 +154,26 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("approve-segments-button")));
     clickAndScrollIntoView(approveButton);
 
-    // Navigate back to the list.
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
+    // Wait for the notification that segments are approved to appear and disappear
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-notification")));
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-notification")));
 
-    // Go to the show detailed view again to verify approved segments.
-    viewShowDetails =
-        wait.until(
-            ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
-    clickAndScrollIntoView(viewShowDetails);
+    // Navigate directly back to the show detail view
+    driver.get(
+        "http://localhost:"
+            + serverPort
+            + getContextPath()
+            + "/show-detail/"
+            + showService.findByName(showName).get(0).getId());
 
-    // Verify navigation to the show detail view (or planning view)
+    // Verify navigation to the show detail view
     wait.until(ExpectedConditions.urlContains("/show-detail"));
 
     List<WebElement> cells =
         wait.until(
-            ExpectedConditions.presenceOfAllElementsLocatedBy(
-                By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
-    Assertions.assertEquals(
-        7 * 8 + 11, cells.size()); // 11 headers, 7 rows (8 of the columns have values)
+            ExpectedConditions.numberOfElementsToBe(
+                By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)"),
+                67)); // 11 headers, 7 rows (8 of the columns have values)
 
     // Click the edit button on the first row
     WebElement editButton =

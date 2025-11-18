@@ -121,13 +121,29 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
         RetryPolicy.builder()
             .withDelay(Duration.ofMillis(500))
             .withMaxDuration(Duration.ofSeconds(10))
+            .withMaxAttempts(3)
             .handle(AssertionFailedError.class)
+            .onRetry(
+                e -> // Navigate to the Show Detail view
+                driver.get(
+                        "http://localhost:"
+                            + serverPort
+                            + getContextPath()
+                            + "/show-detail/"
+                            + testShow.getId()))
             .build();
     Failsafe.with(retryPolicy)
         .get(
             () -> {
               WebElement segmentGrid = driver.findElement(By.id("segments-grid-wrapper"));
               wait.until(ExpectedConditions.visibilityOfAllElements(segmentGrid));
+              // Add explicit waits for the text to be present in the grid
+              wait.until(
+                  ExpectedConditions.textToBePresentInElementLocated(
+                      By.id("segments-grid"), narrationText));
+              wait.until(
+                  ExpectedConditions.textToBePresentInElementLocated(
+                      By.id("segments-grid"), summaryText));
               WebElement refreshedGrid = segmentGrid.findElement(By.id("segments-grid"));
               assertTrue(refreshedGrid.getText().contains(narrationText));
               assertTrue(refreshedGrid.getText().contains(summaryText));

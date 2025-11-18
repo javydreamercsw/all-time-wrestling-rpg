@@ -56,10 +56,12 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -96,6 +98,8 @@ public class ShowDetailView extends Main
   private H2 showTitle;
   private VerticalLayout contentLayout;
   private Long currentShowId;
+  private Show currentShow; // Store the current show object
+  private Grid<Segment> segmentsGrid; // Declare segmentsGrid as a class member
 
   public ShowDetailView() {
     initializeComponents();
@@ -172,7 +176,8 @@ public class ShowDetailView extends Main
   private void loadShow(Long showId) {
     Optional<Show> showOpt = showService.getShowById(showId);
     if (showOpt.isPresent()) {
-      displayShow(showOpt.get());
+      currentShow = showOpt.get(); // Store the show object
+      displayShow(currentShow);
     } else {
       showNotFound();
     }
@@ -221,7 +226,7 @@ public class ShowDetailView extends Main
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
-                  loadShow(show.getId());
+                  refreshSegmentsGrid();
                 }
               });
           dialog.open();
@@ -356,7 +361,7 @@ public class ShowDetailView extends Main
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
-                  loadShow(show.getId());
+                  refreshSegmentsGrid();
                 }
               });
           dialog.open();
@@ -493,13 +498,9 @@ public class ShowDetailView extends Main
     segmentsLayout.setSizeFull();
     segmentsLayout.addClassNames(LumoUtility.Width.FULL);
 
-    if (segments.isEmpty()) {
-      Span noSegments = new Span("No segments scheduled for this show yet.");
-      noSegments.addClassNames(LumoUtility.TextColor.SECONDARY);
-      segmentsLayout.add(noSegments);
-    } else {
-      // Create segments grid
-      Grid<Segment> segmentsGrid = createSegmentsGrid(segments);
+    // Always initialize segmentsGrid and its wrapper
+    if (segmentsGrid == null) {
+      segmentsGrid = createSegmentsGrid(segments);
       segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
       segmentsGrid.setId("segments-grid");
 
@@ -508,9 +509,24 @@ public class ShowDetailView extends Main
       gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
       gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
       gridWrapper.setId("segments-grid-wrapper");
-
       segmentsLayout.add(gridWrapper);
       segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
+    } else {
+      segmentsGrid.setItems(segments);
+    }
+
+    Span noSegmentsMessage = new Span("No segments scheduled for this show yet.");
+    noSegmentsMessage.addClassNames(LumoUtility.TextColor.SECONDARY);
+    noSegmentsMessage.setId("no-segments-message");
+    segmentsLayout.add(noSegmentsMessage);
+
+    // Conditionally show/hide the grid and the "no segments" message
+    if (segments.isEmpty()) {
+      segmentsGrid.setVisible(false);
+      noSegmentsMessage.setVisible(true);
+    } else {
+      segmentsGrid.setVisible(true);
+      noSegmentsMessage.setVisible(false);
     }
 
     card.add(header, segmentsLayout);
@@ -642,7 +658,7 @@ public class ShowDetailView extends Main
       otherSegment.setSegmentOrder(currentOrder);
       segmentRepository.save(segment);
       segmentRepository.save(otherSegment);
-      loadShow(show.getId());
+      refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
     }
   }
 
@@ -654,7 +670,7 @@ public class ShowDetailView extends Main
         e -> {
           segment.setMainEvent(e.getValue());
           segmentRepository.save(segment);
-          loadShow(segment.getShow().getId());
+          refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
         });
     return checkbox;
   }
@@ -680,7 +696,7 @@ public class ShowDetailView extends Main
                   wrestlerService,
                   titleService,
                   showService,
-                  updatedSegment -> displayShow(updatedSegment.getShow()));
+                  updatedSegment -> refreshSegmentsGrid()); // Call refreshSegmentsGrid
           dialog.open();
         });
 
@@ -707,7 +723,7 @@ public class ShowDetailView extends Main
             baseUrl + "/api/segments/" + segment.getId() + "/summarize", null, Segment.class);
     Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    loadShow(this.currentShowId);
+    refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
   }
 
   private void openAddSegmentDialog(@NonNull Show show) {
@@ -723,7 +739,10 @@ public class ShowDetailView extends Main
 
     // Segment type selection
     ComboBox<SegmentType> segmentTypeCombo = new ComboBox<>("Segment Type");
-    segmentTypeCombo.setItems(segmentTypeRepository.findAll());
+    segmentTypeCombo.setItems(
+        segmentTypeRepository.findAll().stream()
+            .sorted(Comparator.comparing(SegmentType::getName))
+            .collect(Collectors.toList()));
     segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
     segmentTypeCombo.setWidthFull();
     segmentTypeCombo.setRequired(true);
@@ -731,7 +750,10 @@ public class ShowDetailView extends Main
 
     // Segment rules selection (multi-select)
     MultiSelectComboBox<SegmentRule> rulesCombo = new MultiSelectComboBox<>("Segment Rules");
-    rulesCombo.setItems(segmentRuleRepository.findAll());
+    rulesCombo.setItems(
+        segmentRuleRepository.findAll().stream()
+            .sorted(Comparator.comparing(SegmentRule::getName))
+            .collect(Collectors.toList()));
     rulesCombo.setItemLabelGenerator(SegmentRule::getName);
     rulesCombo.setWidthFull();
     rulesCombo.setId("segment-rules-combo-box");
@@ -739,7 +761,10 @@ public class ShowDetailView extends Main
 
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
-    wrestlersCombo.setItems(wrestlerRepository.findAll());
+    wrestlersCombo.setItems(
+        wrestlerRepository.findAll().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setRequired(true);
@@ -755,13 +780,19 @@ public class ShowDetailView extends Main
     // Update winner options when wrestlers change
     wrestlersCombo.addValueChangeListener(
         e -> {
-          winnerCombo.setItems(e.getValue());
+          winnerCombo.setItems(
+              e.getValue().stream()
+                  .sorted(Comparator.comparing(Wrestler::getName))
+                  .collect(Collectors.toList()));
           winnerCombo.clear();
         });
 
     // Add title selection for new segments
     MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
-    titleMultiSelectComboBox.setItems(titleService.findAll());
+    titleMultiSelectComboBox.setItems(
+        titleService.findAll().stream()
+            .sorted(Comparator.comparing(Title::getName))
+            .collect(Collectors.toList()));
     titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
     titleMultiSelectComboBox.setWidthFull();
     titleMultiSelectComboBox.setVisible(false); // Initially hidden
@@ -838,8 +869,7 @@ public class ShowDetailView extends Main
                   rulesCombo.getValue(),
                   newSegment)) { // Pass the new segment object
                 dialog.close();
-                // Refresh the segments display
-                displayShow(show);
+                refreshSegmentsGrid(); // Call refreshSegmentsGrid
               }
             });
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -873,7 +903,10 @@ public class ShowDetailView extends Main
 
     // Segment type selection
     ComboBox<SegmentType> segmentTypeCombo = new ComboBox<>("Segment Type");
-    segmentTypeCombo.setItems(segmentTypeRepository.findAll());
+    segmentTypeCombo.setItems(
+        segmentTypeRepository.findAll().stream()
+            .sorted(Comparator.comparing(SegmentType::getName))
+            .collect(Collectors.toList()));
     segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
     segmentTypeCombo.setWidthFull();
     segmentTypeCombo.setRequired(true);
@@ -882,7 +915,10 @@ public class ShowDetailView extends Main
 
     // Segment rules selection (multi-select)
     MultiSelectComboBox<SegmentRule> rulesCombo = new MultiSelectComboBox<>("Segment Rules");
-    rulesCombo.setItems(segmentRuleRepository.findAll());
+    rulesCombo.setItems(
+        segmentRuleRepository.findAll().stream()
+            .sorted(Comparator.comparing(SegmentRule::getName))
+            .collect(Collectors.toList()));
     rulesCombo.setItemLabelGenerator(SegmentRule::getName);
     rulesCombo.setWidthFull();
     rulesCombo.setValue(segment.getSegmentRules());
@@ -891,7 +927,10 @@ public class ShowDetailView extends Main
 
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
-    wrestlersCombo.setItems(wrestlerRepository.findAll());
+    wrestlersCombo.setItems(
+        wrestlerRepository.findAll().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setRequired(true);
@@ -902,14 +941,20 @@ public class ShowDetailView extends Main
     MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
     winnersCombo.setItemLabelGenerator(Wrestler::getName);
     winnersCombo.setWidthFull();
-    winnersCombo.setItems(segment.getWrestlers());
+    winnersCombo.setItems(
+        segment.getWrestlers().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
     winnersCombo.setValue(segment.getWinners());
     winnersCombo.setId("edit-winners-combo-box");
 
     // Update winner options when wrestlers change
     wrestlersCombo.addValueChangeListener(
         e -> {
-          winnersCombo.setItems(e.getValue());
+          winnersCombo.setItems(
+              e.getValue().stream()
+                  .sorted(Comparator.comparing(Wrestler::getName))
+                  .collect(Collectors.toList()));
           winnersCombo.clear();
         });
 
@@ -931,7 +976,10 @@ public class ShowDetailView extends Main
 
     // Title selection (multi-select) - only visible if segment is a title segment
     MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
-    titleMultiSelectComboBox.setItems(titleService.findAll());
+    titleMultiSelectComboBox.setItems(
+        titleService.findAll().stream()
+            .sorted(Comparator.comparing(Title::getName))
+            .collect(Collectors.toList()));
     titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
     titleMultiSelectComboBox.setWidthFull();
     titleMultiSelectComboBox.setVisible(segment.getIsTitleSegment()); // Control visibility
@@ -982,8 +1030,7 @@ public class ShowDetailView extends Main
                   rulesCombo.getValue(),
                   segment)) { // Pass the segment to update
                 dialog.close();
-                // Refresh the segments display
-                displayShow(segment.getShow());
+                refreshSegmentsGrid(); // Call refreshSegmentsGrid
               }
             });
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -1020,7 +1067,7 @@ public class ShowDetailView extends Main
                         "Segment deleted successfully!", 3000, Notification.Position.BOTTOM_START)
                     .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 confirmDialog.close();
-                displayShow(segment.getShow()); // Refresh the segments display
+                refreshSegmentsGrid(); // Call refreshSegmentsGrid
               } catch (Exception e) {
                 Notification.show(
                         "Error deleting segment: " + e.getMessage(),
@@ -1128,7 +1175,83 @@ public class ShowDetailView extends Main
         .postForObject(baseUrl + "/api/shows/" + show.getId() + "/adjudicate", null, Void.class);
     Notification.show("Fan adjudication completed!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    loadShow(this.currentShowId);
+    refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
+  }
+
+  private void refreshSegmentsGrid() {
+    if (currentShow != null && segmentsGrid != null) {
+      List<Segment> updatedSegments = segmentRepository.findByShow(currentShow);
+      segmentsGrid.setItems(updatedSegments);
+
+      // Update visibility of grid and noSegmentsMessage
+      boolean hasSegments = !updatedSegments.isEmpty();
+      segmentsGrid.setVisible(hasSegments);
+      // Find the noSegmentsMessage and set its visibility
+      contentLayout
+          .getChildren()
+          .filter(VerticalLayout.class::isInstance)
+          .map(VerticalLayout.class::cast)
+          .filter(
+              layout ->
+                  layout
+                      .getChildren()
+                      .anyMatch(
+                          component ->
+                              component instanceof Span
+                                  && "no-segments-message".equals(component.getId())))
+          .findFirst()
+          .ifPresent(
+              layout ->
+                  layout
+                      .getChildren()
+                      .filter(Span.class::isInstance)
+                      .map(Span.class::cast)
+                      .filter(span -> "no-segments-message".equals(span.getId()))
+                      .findFirst()
+                      .ifPresent(span -> span.setVisible(!hasSegments)));
+      // Re-enable/disable adjudicate button based on new segment status
+      boolean hasPendingSegments =
+          updatedSegments.stream()
+              .anyMatch(
+                  segment ->
+                      segment.getAdjudicationStatus()
+                          == com.github.javydreamercsw.management.domain.AdjudicationStatus
+                              .PENDING);
+      // Find the adjudicate button and update its enabled state
+      contentLayout
+          .getChildren()
+          .filter(Div.class::isInstance)
+          .map(Div.class::cast)
+          .filter(
+              card ->
+                  card.getChildren()
+                      .anyMatch(
+                          component ->
+                              component instanceof HorizontalLayout
+                                  && ((HorizontalLayout) component)
+                                      .getChildren()
+                                      .anyMatch(
+                                          btn ->
+                                              btn instanceof Button
+                                                  && "Adjudicate Fans"
+                                                      .equals(((Button) btn).getText()))))
+          .findFirst()
+          .ifPresent(
+              card ->
+                  card.getChildren()
+                      .filter(HorizontalLayout.class::isInstance)
+                      .map(HorizontalLayout.class::cast)
+                      .findFirst()
+                      .ifPresent(
+                          header ->
+                              header
+                                  .getChildren()
+                                  .filter(Button.class::isInstance)
+                                  .map(Button.class::cast)
+                                  .filter(btn -> "Adjudicate Fans".equals(btn.getText()))
+                                  .findFirst()
+                                  .ifPresent(btn -> btn.setEnabled(hasPendingSegments))));
+    }
   }
 
   @Override
@@ -1137,13 +1260,13 @@ public class ShowDetailView extends Main
       // Check if the completed show is the one currently being viewed
       assert adjudicationCompletedEvent.getShow().getId() != null;
       if (adjudicationCompletedEvent.getShow().getId().equals(currentShowId)) {
-        getUI().ifPresent(ui -> ui.access(() -> loadShow(currentShowId)));
+        getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid)); // Call refreshSegmentsGrid
       }
     } else if (event instanceof SegmentsApprovedEvent segmentsApprovedEvent) {
       // Check if the completed show is the one currently being viewed
       assert segmentsApprovedEvent.getShow().getId() != null;
       if (segmentsApprovedEvent.getShow().getId().equals(currentShowId)) {
-        getUI().ifPresent(ui -> ui.access(() -> loadShow(currentShowId)));
+        getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid)); // Call refreshSegmentsGrid
       }
     }
   }

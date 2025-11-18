@@ -38,8 +38,10 @@ import jakarta.annotation.security.PermitAll;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -94,7 +96,10 @@ public class ShowListView extends Main {
     name.setId("show-name");
 
     newShowType = new ComboBox<>("Show Type");
-    newShowType.setItems(showTypeService.findAll());
+    newShowType.setItems(
+        showTypeService.findAll().stream()
+            .sorted(Comparator.comparing(ShowType::getName))
+            .collect(Collectors.toList()));
     newShowType.setItemLabelGenerator(ShowType::getName);
     newShowType.setRequired(true);
     newShowType.setPlaceholder("Select a type");
@@ -103,7 +108,10 @@ public class ShowListView extends Main {
     newSeason = new ComboBox<>("Season");
     Page<Season> seasonsPage = seasonService.getAllSeasons(Pageable.unpaged());
     if (seasonsPage != null) {
-      newSeason.setItems(seasonsPage.getContent());
+      newSeason.setItems(
+          seasonsPage.getContent().stream()
+              .sorted(Comparator.comparing(Season::getName))
+              .collect(Collectors.toList()));
     }
     newSeason.setItemLabelGenerator(Season::getName);
     newSeason.setClearButtonVisible(true);
@@ -111,7 +119,10 @@ public class ShowListView extends Main {
     newSeason.setId("season");
 
     newTemplate = new ComboBox<>("Template");
-    newTemplate.setItems(showTemplateService.findAll());
+    newTemplate.setItems(
+        showTemplateService.findAll().stream()
+            .sorted(Comparator.comparing(ShowTemplate::getName))
+            .collect(Collectors.toList()));
     newTemplate.setItemLabelGenerator(ShowTemplate::getName);
     newTemplate.setClearButtonVisible(true);
     newTemplate.setPlaceholder("Select a template (optional)");
@@ -364,20 +375,29 @@ public class ShowListView extends Main {
     editDescription.setId("edit-show-description");
 
     editType = new ComboBox<>("Type");
-    editType.setItems(showTypeService.findAll());
+    editType.setItems(
+        showTypeService.findAll().stream()
+            .sorted(Comparator.comparing(ShowType::getName))
+            .collect(Collectors.toList()));
     editType.setItemLabelGenerator(ShowType::getName);
     editType.setWidthFull();
     editType.setId("edit-show-type");
 
     editSeason = new ComboBox<>("Season");
-    editSeason.setItems(seasonService.getAllSeasons(Pageable.unpaged()).getContent());
+    editSeason.setItems(
+        seasonService.getAllSeasons(Pageable.unpaged()).getContent().stream()
+            .sorted(Comparator.comparing(Season::getName))
+            .collect(Collectors.toList()));
     editSeason.setItemLabelGenerator(Season::getName);
     editSeason.setWidthFull();
     editSeason.setClearButtonVisible(true);
     editSeason.setId("edit-season");
 
     editTemplate = new ComboBox<>("Template");
-    editTemplate.setItems(showTemplateService.findAll());
+    editTemplate.setItems(
+        showTemplateService.findAll().stream()
+            .sorted(Comparator.comparing(ShowTemplate::getName))
+            .collect(Collectors.toList()));
     editTemplate.setItemLabelGenerator(ShowTemplate::getName);
     editTemplate.setWidthFull();
     editTemplate.setClearButtonVisible(true);

@@ -33,6 +33,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.ZoneOffset;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -206,7 +207,10 @@ public class FactionListView extends Main {
     editDescription.setHeight("100px");
 
     ComboBox<Wrestler> editLeader = new ComboBox<>("Leader");
-    editLeader.setItems(wrestlerService.findAll());
+    editLeader.setItems(
+        wrestlerService.findAll().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
     editLeader.setId("edit-leader");
     editLeader.setItemLabelGenerator(Wrestler::getName);
 
@@ -493,7 +497,10 @@ public class FactionListView extends Main {
     ComboBox<Wrestler> wrestlerCombo = new ComboBox<>("Select Wrestler");
     wrestlerCombo.setId("add-member-wrestler-combo");
     wrestlerCombo.setItems(
-        wrestlerService.findAll().stream().filter(w -> !loadedFaction.hasMember(w)).toList());
+        wrestlerService.findAll().stream()
+            .filter(w -> !loadedFaction.hasMember(w))
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
     wrestlerCombo.setItemLabelGenerator(Wrestler::getName);
     wrestlerCombo.setWidth("300px");
 

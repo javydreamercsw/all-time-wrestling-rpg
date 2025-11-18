@@ -143,10 +143,11 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
     List<String> segmentParticipants = new ArrayList<>();
     if (!participants.isEmpty()) {
-      // Ensure at least one actual participant is included
-      segmentParticipants.add(participants.get(random.nextInt(participants.size())));
-      for (int i = 0; i < 2; i++) {
-        segmentParticipants.add(participants.get(random.nextInt(participants.size())));
+      // Ensure unique participants
+      List<String> availableParticipants = new ArrayList<>(participants);
+      for (int i = 0; i < 3 && !availableParticipants.isEmpty(); i++) {
+        int index = random.nextInt(availableParticipants.size());
+        segmentParticipants.add(availableParticipants.remove(index));
       }
     } else {
       // Fallback if no participants are extracted

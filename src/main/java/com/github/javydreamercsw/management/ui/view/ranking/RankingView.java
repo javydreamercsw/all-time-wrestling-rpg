@@ -18,6 +18,7 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -40,12 +41,16 @@ public class RankingView extends Main {
     this.rankingService = rankingService;
 
     championshipComboBox = new ComboBox<>("Championship");
-    championshipComboBox.setItems(rankingService.getChampionships());
+    championshipComboBox.setItems(
+        rankingService.getChampionships().stream()
+            .sorted(Comparator.comparing(ChampionshipDTO::getName))
+            .collect(Collectors.toList()));
     championshipComboBox.setItemLabelGenerator(ChampionshipDTO::getName);
     championshipComboBox.addValueChangeListener(event -> updateView(event.getValue()));
 
     // Select the first championship by default
     rankingService.getChampionships().stream()
+        .sorted(Comparator.comparing(ChampionshipDTO::getName))
         .findFirst()
         .ifPresent(championshipComboBox::setValue);
 

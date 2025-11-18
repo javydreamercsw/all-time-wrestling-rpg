@@ -98,6 +98,11 @@ public class InjuryService {
   }
 
   /** Attempt to heal an injury. */
+  public HealingResult attemptHealing(@NonNull Long injuryId) {
+    return attemptHealing(injuryId, null);
+  }
+
+  /** Attempt to heal an injury. */
   public HealingResult attemptHealing(@NonNull Long injuryId, Integer diceRoll) {
     Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
 

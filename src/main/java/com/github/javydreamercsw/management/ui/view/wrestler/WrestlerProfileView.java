@@ -123,7 +123,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     header = new HorizontalLayout(wrestlerImage, nameDetailsAndStatsLayout);
     header.setAlignItems(Alignment.CENTER);
 
-    List<Season> seasons = seasonService.getAllSeasons(Pageable.unpaged()).getContent();
+    List<Season> seasons =
+        seasonService.getAllSeasons(Pageable.unpaged()).getContent().stream()
+            .sorted(Comparator.comparing(Season::getName))
+            .collect(Collectors.toList());
     ComboBox<Season> seasonFilter = new ComboBox<>("Filter by Season");
     seasonFilter.setItems(seasons);
     seasonFilter.setItemLabelGenerator(Season::getName);

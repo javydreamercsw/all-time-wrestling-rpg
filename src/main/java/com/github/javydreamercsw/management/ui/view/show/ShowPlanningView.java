@@ -29,13 +29,17 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.client.RestTemplate;
 
 @Route("show-planning")
 @PageTitle("Show Planning")
 @Menu(order = 6, icon = "vaadin:calendar", title = "Show Planning")
 @PermitAll
+@Slf4j
 public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private final ShowService showService;
@@ -63,7 +67,10 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     showComboBox = new ComboBox<>("Select Show");
     showComboBox.setId("select-show-combo-box");
-    showComboBox.setItems(showService.findAll());
+    showComboBox.setItems(
+        showService.findAll().stream()
+            .sorted(Comparator.comparing(Show::getName))
+            .collect(Collectors.toList()));
     showComboBox.setItemLabelGenerator(Show::getName);
 
     loadContextButton = new Button("Load Context");
@@ -225,6 +232,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       String baseUrl = UrlUtil.getBaseUrl();
       restTemplate.postForEntity(
           baseUrl + "/api/show-planning/approve/" + selectedShow.getId(), segments, Void.class);
+      log.info("Segments approved successfully, showing notification.");
       Notification.show("Segments approved successfully!", 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       proposedSegmentsGrid.setItems(new ArrayList<>());

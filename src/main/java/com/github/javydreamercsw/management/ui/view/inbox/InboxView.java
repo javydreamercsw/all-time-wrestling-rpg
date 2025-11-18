@@ -20,6 +20,7 @@ import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -72,9 +73,11 @@ public class InboxView extends VerticalLayout {
     hideReadCheckbox.addValueChangeListener(e -> updateList());
 
     List<String> eventTypes =
-        Arrays.stream(InboxEventType.values())
-            .map(InboxEventType::getFriendlyName)
-            .collect(Collectors.toList());
+        new ArrayList<>(
+            Arrays.stream(InboxEventType.values())
+                .map(InboxEventType::getFriendlyName)
+                .sorted()
+                .collect(Collectors.toList()));
     eventTypes.add(0, "All");
     eventTypeFilter.setItems(eventTypes);
     eventTypeFilter.setPlaceholder("All");

@@ -24,7 +24,9 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.theme.lumo.LumoUtility.Height;
 import com.vaadin.flow.theme.lumo.LumoUtility.Width;
 import jakarta.annotation.security.PermitAll;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -77,7 +79,10 @@ public class TitleListView extends Main {
             title -> {
               ComboBox<Wrestler> contenderComboBox = new ComboBox<>("Contender");
               assert title.getId() != null;
-              contenderComboBox.setItems(titleService.getEligibleChallengers(title.getId()));
+              contenderComboBox.setItems(
+                  titleService.getEligibleChallengers(title.getId()).stream()
+                      .sorted(Comparator.comparing(Wrestler::getName))
+                      .collect(Collectors.toList()));
               contenderComboBox.setItemLabelGenerator(Wrestler::getName);
               contenderComboBox.setWidthFull();
               contenderComboBox.setClearButtonVisible(true); // Allow clearing the field

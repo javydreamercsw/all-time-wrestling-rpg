@@ -17,6 +17,9 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 
 public class TitleFormDialog extends Dialog {
 
@@ -30,12 +33,21 @@ public class TitleFormDialog extends Dialog {
     TextField name = new TextField("Name");
     TextArea description = new TextArea("Description");
     ComboBox<WrestlerTier> tier = new ComboBox<>("Tier");
-    tier.setItems(WrestlerTier.values());
+    tier.setItems(
+        Arrays.stream(WrestlerTier.values())
+            .sorted(Comparator.comparing(WrestlerTier::name))
+            .collect(Collectors.toList()));
     ComboBox<Gender> gender = new ComboBox<>("Gender");
-    gender.setItems(Gender.values());
+    gender.setItems(
+        Arrays.stream(Gender.values())
+            .sorted(Comparator.comparing(Gender::name))
+            .collect(Collectors.toList()));
     Checkbox isActive = new Checkbox("Active");
     MultiSelectComboBox<Wrestler> champion = new MultiSelectComboBox<>("Champion(s)");
-    champion.setItems(wrestlerService.findAll());
+    champion.setItems(
+        wrestlerService.findAll().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
     champion.setItemLabelGenerator(Wrestler::getName);
 
     binder.forField(name).asRequired().bind(Title::getName, Title::setName);
