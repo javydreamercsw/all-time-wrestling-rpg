@@ -98,6 +98,8 @@ public class ShowDetailView extends Main
   private H2 showTitle;
   private VerticalLayout contentLayout;
   private Long currentShowId;
+  private Show currentShow; // Store the current show object
+  private Grid<Segment> segmentsGrid; // Declare segmentsGrid as a class member
 
   public ShowDetailView() {
     initializeComponents();
@@ -174,7 +176,8 @@ public class ShowDetailView extends Main
   private void loadShow(Long showId) {
     Optional<Show> showOpt = showService.getShowById(showId);
     if (showOpt.isPresent()) {
-      displayShow(showOpt.get());
+      currentShow = showOpt.get(); // Store the show object
+      displayShow(currentShow);
     } else {
       showNotFound();
     }
@@ -223,7 +226,7 @@ public class ShowDetailView extends Main
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
-                  loadShow(show.getId());
+                  refreshSegmentsGrid();
                 }
               });
           dialog.open();
@@ -358,7 +361,7 @@ public class ShowDetailView extends Main
           dialog.addOpenedChangeListener(
               event -> {
                 if (!event.isOpened()) {
-                  loadShow(show.getId());
+                  refreshSegmentsGrid();
                 }
               });
           dialog.open();
@@ -500,19 +503,22 @@ public class ShowDetailView extends Main
       noSegments.addClassNames(LumoUtility.TextColor.SECONDARY);
       segmentsLayout.add(noSegments);
     } else {
-      // Create segments grid
-      Grid<Segment> segmentsGrid = createSegmentsGrid(segments);
-      segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
-      segmentsGrid.setId("segments-grid");
+      // Initialize segmentsGrid if null, otherwise update its items
+      if (segmentsGrid == null) {
+        segmentsGrid = createSegmentsGrid(segments);
+        segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
+        segmentsGrid.setId("segments-grid");
 
-      // Wrap the grid in a Div to enable horizontal scrolling
-      Div gridWrapper = new Div(segmentsGrid);
-      gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
-      gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
-      gridWrapper.setId("segments-grid-wrapper");
-
-      segmentsLayout.add(gridWrapper);
-      segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
+        // Wrap the grid in a Div to enable horizontal scrolling
+        Div gridWrapper = new Div(segmentsGrid);
+        gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
+        gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
+        gridWrapper.setId("segments-grid-wrapper");
+        segmentsLayout.add(gridWrapper);
+        segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
+      } else {
+        segmentsGrid.setItems(segments);
+      }
     }
 
     card.add(header, segmentsLayout);
@@ -644,7 +650,7 @@ public class ShowDetailView extends Main
       otherSegment.setSegmentOrder(currentOrder);
       segmentRepository.save(segment);
       segmentRepository.save(otherSegment);
-      loadShow(show.getId());
+      refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
     }
   }
 
@@ -656,7 +662,7 @@ public class ShowDetailView extends Main
         e -> {
           segment.setMainEvent(e.getValue());
           segmentRepository.save(segment);
-          loadShow(segment.getShow().getId());
+          refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
         });
     return checkbox;
   }
@@ -682,7 +688,7 @@ public class ShowDetailView extends Main
                   wrestlerService,
                   titleService,
                   showService,
-                  updatedSegment -> displayShow(updatedSegment.getShow()));
+                  updatedSegment -> refreshSegmentsGrid()); // Call refreshSegmentsGrid
           dialog.open();
         });
 
@@ -709,7 +715,7 @@ public class ShowDetailView extends Main
             baseUrl + "/api/segments/" + segment.getId() + "/summarize", null, Segment.class);
     Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    loadShow(this.currentShowId);
+    refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
   }
 
   private void openAddSegmentDialog(@NonNull Show show) {
@@ -855,8 +861,7 @@ public class ShowDetailView extends Main
                   rulesCombo.getValue(),
                   newSegment)) { // Pass the new segment object
                 dialog.close();
-                // Refresh the segments display
-                displayShow(show);
+                refreshSegmentsGrid(); // Call refreshSegmentsGrid
               }
             });
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -1017,8 +1022,7 @@ public class ShowDetailView extends Main
                   rulesCombo.getValue(),
                   segment)) { // Pass the segment to update
                 dialog.close();
-                // Refresh the segments display
-                displayShow(segment.getShow());
+                refreshSegmentsGrid(); // Call refreshSegmentsGrid
               }
             });
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -1055,7 +1059,7 @@ public class ShowDetailView extends Main
                         "Segment deleted successfully!", 3000, Notification.Position.BOTTOM_START)
                     .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 confirmDialog.close();
-                displayShow(segment.getShow()); // Refresh the segments display
+                refreshSegmentsGrid(); // Call refreshSegmentsGrid
               } catch (Exception e) {
                 Notification.show(
                         "Error deleting segment: " + e.getMessage(),
@@ -1163,7 +1167,56 @@ public class ShowDetailView extends Main
         .postForObject(baseUrl + "/api/shows/" + show.getId() + "/adjudicate", null, Void.class);
     Notification.show("Fan adjudication completed!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    loadShow(this.currentShowId);
+    refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
+  }
+
+  private void refreshSegmentsGrid() {
+    if (currentShow != null && segmentsGrid != null) {
+      List<Segment> updatedSegments = segmentRepository.findByShow(currentShow);
+      segmentsGrid.setItems(updatedSegments);
+      // Re-enable/disable adjudicate button based on new segment status
+      boolean hasPendingSegments =
+          updatedSegments.stream()
+              .anyMatch(
+                  segment ->
+                      segment.getAdjudicationStatus()
+                          == com.github.javydreamercsw.management.domain.AdjudicationStatus
+                              .PENDING);
+      // Find the adjudicate button and update its enabled state
+      contentLayout
+          .getChildren()
+          .filter(Div.class::isInstance)
+          .map(Div.class::cast)
+          .filter(
+              card ->
+                  card.getChildren()
+                      .anyMatch(
+                          component ->
+                              component instanceof HorizontalLayout
+                                  && ((HorizontalLayout) component)
+                                      .getChildren()
+                                      .anyMatch(
+                                          btn ->
+                                              btn instanceof Button
+                                                  && "Adjudicate Fans"
+                                                      .equals(((Button) btn).getText()))))
+          .findFirst()
+          .ifPresent(
+              card ->
+                  card.getChildren()
+                      .filter(HorizontalLayout.class::isInstance)
+                      .map(HorizontalLayout.class::cast)
+                      .findFirst()
+                      .ifPresent(
+                          header ->
+                              header
+                                  .getChildren()
+                                  .filter(Button.class::isInstance)
+                                  .map(Button.class::cast)
+                                  .filter(btn -> "Adjudicate Fans".equals(btn.getText()))
+                                  .findFirst()
+                                  .ifPresent(btn -> btn.setEnabled(hasPendingSegments))));
+    }
   }
 
   @Override
@@ -1172,13 +1225,13 @@ public class ShowDetailView extends Main
       // Check if the completed show is the one currently being viewed
       assert adjudicationCompletedEvent.getShow().getId() != null;
       if (adjudicationCompletedEvent.getShow().getId().equals(currentShowId)) {
-        getUI().ifPresent(ui -> ui.access(() -> loadShow(currentShowId)));
+        getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid)); // Call refreshSegmentsGrid
       }
     } else if (event instanceof SegmentsApprovedEvent segmentsApprovedEvent) {
       // Check if the completed show is the one currently being viewed
       assert segmentsApprovedEvent.getShow().getId() != null;
       if (segmentsApprovedEvent.getShow().getId().equals(currentShowId)) {
-        getUI().ifPresent(ui -> ui.access(() -> loadShow(currentShowId)));
+        getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid)); // Call refreshSegmentsGrid
       }
     }
   }
