@@ -219,4 +219,85 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
     assertEquals(0, updatedParticipant1.get().getBumps());
     assertEquals(0, updatedParticipant2.get().getBumps());
   }
+
+  @Test
+  void testAdjudicateMatchWithAllBumps() {
+    // Given
+    long initialFans = 10_000L;
+    Wrestler winner = Wrestler.builder().build();
+    winner.setName("Winner All Bumps");
+    winner.setFans(initialFans);
+    winner.setBumps(0);
+    winner.setStartingHealth(13);
+    winner.setStartingStamina(14);
+    winner.setLowHealth(2);
+    winner.setLowStamina(2);
+    winner.setDeckSize(16);
+    winner.setTier(WrestlerTier.MIDCARDER);
+    winner.setIsPlayer(false);
+    wrestlerRepository.save(winner);
+
+    Wrestler loser = Wrestler.builder().build();
+    loser.setName("Loser All Bumps");
+    loser.setFans(initialFans);
+    loser.setBumps(0);
+    loser.setStartingHealth(14);
+    loser.setStartingStamina(16);
+    loser.setLowHealth(4);
+    loser.setLowStamina(2);
+    loser.setDeckSize(15);
+    loser.setTier(WrestlerTier.MIDCARDER);
+    loser.setIsPlayer(false);
+    wrestlerRepository.save(loser);
+
+    ShowType showType = new ShowType();
+    showType.setName("Test Show Type All Bumps");
+    showType.setDescription("Test Description");
+    showTypeRepository.save(showType);
+
+    Show show = new Show();
+    show.setName("Test Show All Bumps");
+    show.setDescription("Test Description");
+    show.setShowDate(LocalDate.now());
+    show.setType(showType);
+    showRepository.save(show);
+
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Test Match All Bumps");
+    segmentTypeRepository.save(segmentType);
+
+    if (segmentRuleRepository.findByName("No DQ").isEmpty()) {
+      SegmentRule rule = new SegmentRule();
+      rule.setName("No DQ");
+      rule.setDescription("No Disqualification Match");
+      rule.setBumpAddition(BumpAddition.ALL);
+      rule.setRequiresHighHeat(false);
+      segmentRuleRepository.save(rule);
+    }
+
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(segmentType);
+    segment.addParticipant(winner);
+    segment.addParticipant(loser);
+    segment.setWinners(List.of(winner));
+    segment.getSegmentRules().add(segmentRuleRepository.findByName("No DQ").get());
+    segmentRepository.save(segment);
+
+    // When
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Then
+    Assertions.assertNotNull(winner.getId());
+    Optional<Wrestler> updatedWinner =
+        wrestlerRepository.findById(winner.getId()).stream().findFirst();
+    Assertions.assertTrue(updatedWinner.isPresent());
+    Assertions.assertNotNull(loser.getId());
+    Optional<Wrestler> updatedLoser =
+        wrestlerRepository.findById(loser.getId()).stream().findFirst();
+    Assertions.assertTrue(updatedLoser.isPresent());
+
+    assertEquals(1, updatedWinner.get().getBumps());
+    assertEquals(1, updatedLoser.get().getBumps());
+  }
 }
