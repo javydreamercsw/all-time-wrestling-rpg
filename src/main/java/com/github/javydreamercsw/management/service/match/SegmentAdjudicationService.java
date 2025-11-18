@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.match;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
@@ -120,8 +121,7 @@ public class SegmentAdjudicationService {
       }
 
       // Assign bumps based on segment rules
-      for (com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule rule :
-          segment.getSegmentRules()) {
+      for (SegmentRule rule : segment.getSegmentRules()) {
         switch (rule.getBumpAddition()) {
           case WINNERS:
             for (Wrestler winner : segment.getWinners()) {
