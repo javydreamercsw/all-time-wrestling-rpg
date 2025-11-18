@@ -67,6 +67,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       ShowType showType = new ShowType();
       showType.setName(SHOW_TYPE_NAME);
       showType.setDescription("A weekly show");
+      showType.setExpectedMatches(5);
+      showType.setExpectedPromos(2);
       showTypeRepository.save(showType);
     }
 
