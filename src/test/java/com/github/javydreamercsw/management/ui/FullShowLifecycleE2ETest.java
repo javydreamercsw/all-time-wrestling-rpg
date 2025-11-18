@@ -176,10 +176,9 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
 
     List<WebElement> cells =
         wait.until(
-            ExpectedConditions.presenceOfAllElementsLocatedBy(
-                By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
-    Assertions.assertEquals(
-        7 * 8 + 11, cells.size()); // 11 headers, 7 rows (8 of the columns have values)
+            ExpectedConditions.numberOfElementsToBe(
+                By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)"),
+                67)); // 11 headers, 7 rows (8 of the columns have values)
 
     // Click the edit button on the first row
     WebElement editButton =
