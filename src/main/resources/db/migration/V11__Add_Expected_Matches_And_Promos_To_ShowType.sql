@@ -1,0 +1,2 @@
+ALTER TABLE show_type ADD COLUMN expected_matches INT NOT NULL DEFAULT 0;
+ALTER TABLE show_type ADD COLUMN expected_promos INT NOT NULL DEFAULT 0;

@@ -39,11 +39,14 @@ public class ShowTypeService {
     showTypeRepository.delete(showType);
   }
 
-  public ShowType createOrUpdateShowType(@NonNull String name, @NonNull String description) {
+  public ShowType createOrUpdateShowType(
+      @NonNull String name, @NonNull String description, int expectedMatches, int expectedPromos) {
     Optional<ShowType> existingShowType = findByName(name);
     ShowType showType = existingShowType.orElseGet(ShowType::new);
     showType.setName(name);
     showType.setDescription(description);
+    showType.setExpectedMatches(expectedMatches);
+    showType.setExpectedPromos(expectedPromos);
     return save(showType);
   }
 

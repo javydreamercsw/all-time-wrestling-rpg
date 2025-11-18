@@ -131,18 +131,21 @@ public class DataInitializer {
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         var showTypesFromFile = mapper.readValue(is, new TypeReference<List<ShowType>>() {});
-        Map<String, ShowType> existing =
-            showTypeService.findAll().stream().collect(Collectors.toMap(ShowType::getName, s -> s));
         for (ShowType st : showTypesFromFile) {
-          ShowType existingType = existing.get(st.getName());
-          if (existingType == null) {
-            showTypeService.save(st);
-            log.debug("Saved new show type: {}", st.getName());
-          }
+          showTypeService.createOrUpdateShowType(
+              st.getName(), st.getDescription(), st.getExpectedMatches(), st.getExpectedPromos());
+          log.debug(
+              "Loaded show type: {} (Expected Matches: {}, Expected Promos: {})",
+              st.getName(),
+              st.getExpectedMatches(),
+              st.getExpectedPromos());
         }
+        log.info("Show type loading completed - {} types loaded", showTypesFromFile.size());
       } catch (IOException e) {
         log.error("Error loading show types from file", e);
       }
+    } else {
+      log.warn("Show types file not found: {}", resource.getPath());
     }
   }
 

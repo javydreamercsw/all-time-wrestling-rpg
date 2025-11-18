@@ -56,7 +56,7 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
 
     // Create a season and show for context
     Season season = seasonService.createSeason("Test Season", "Test Season", 5);
-    ShowType showType = showTypeService.createOrUpdateShowType("Weekly", "Weekly Show");
+    ShowType showType = showTypeService.createOrUpdateShowType("Weekly", "Weekly Show", 5, 2);
     Show show =
         showService.createShow(
             "Test Show", "Test Show", showType.getId(), null, season.getId(), null);

@@ -40,6 +40,16 @@ public class ShowType extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
+  @Setter
+  @Getter
+  @Column(name = "expected_matches", nullable = false)
+  private int expectedMatches;
+
+  @Setter
+  @Getter
+  @Column(name = "expected_promos", nullable = false)
+  private int expectedPromos;
+
   @Override
   public @Nullable Long getId() {
     return id;

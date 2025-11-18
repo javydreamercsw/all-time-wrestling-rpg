@@ -57,12 +57,11 @@ public class ShowPlanningService {
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
     Instant lastWeek = showDate.minus(7, ChronoUnit.DAYS);
     log.debug("Getting segments between {} and {}", lastWeek, showDate);
-    List<Segment> lastMonthSegments =
-        segmentRepository.findBySegmentDateBetween(lastWeek, showDate);
-    log.debug("Found {} segments", lastMonthSegments.size());
+    List<Segment> lastWeekSegments = segmentRepository.findBySegmentDateBetween(lastWeek, showDate);
+    log.debug("Found {} segments", lastWeekSegments.size());
 
     // New logic to generate summaries
-    lastMonthSegments.forEach(
+    lastWeekSegments.forEach(
         segment -> {
           if ((segment.getSummary() == null || segment.getSummary().isEmpty())
               && (segment.getNarration() != null && !segment.getNarration().isEmpty())) {
@@ -81,7 +80,7 @@ public class ShowPlanningService {
           }
         });
 
-    context.setRecentSegments(lastMonthSegments);
+    context.setRecentSegments(lastWeekSegments);
 
     // Get current rivalries
     List<Rivalry> currentRivalries = rivalryService.getActiveRivalries();
@@ -89,19 +88,19 @@ public class ShowPlanningService {
     context.setCurrentRivalries(currentRivalries);
 
     // Get promos from the last month
-    List<Segment> lastMonthPromos =
-        lastMonthSegments.stream()
+    List<Segment> lastWeekPromos =
+        lastWeekSegments.stream()
             .filter(promoBookingService::isPromoSegment)
             .collect(Collectors.toList());
-    log.debug("Found {} promos in the last month", lastMonthPromos.size());
-    context.setRecentPromos(lastMonthPromos);
+    log.debug("Found {} promos in the last month", lastWeekPromos.size());
+    context.setRecentPromos(lastWeekPromos);
 
     // Get show template (hardcoded for now)
     ShowTemplate template = new ShowTemplate();
     template.setShowName(show.getName());
-    template.setDescription("Weekly wrestling show");
-    template.setExpectedMatches(5);
-    template.setExpectedPromos(2);
+    template.setDescription(show.getDescription());
+    template.setExpectedMatches(show.getType().getExpectedMatches());
+    template.setExpectedPromos(show.getType().getExpectedPromos());
     context.setShowTemplate(template);
 
     // Get championships

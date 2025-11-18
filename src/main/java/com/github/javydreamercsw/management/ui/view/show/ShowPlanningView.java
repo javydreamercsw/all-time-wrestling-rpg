@@ -193,18 +193,18 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           objectMapper.readValue(contextArea.getValue(), ShowPlanningContextDTO.class);
 
       // Log the request context
-      System.out.println(
-          "Sending context to AI: "
-              + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context));
+      log.debug(
+          "Sending context to AI: {}",
+          objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context));
 
       ProposedShow proposedShow =
           restTemplate.postForObject(
               baseUrl + "/api/show-planning/plan", context, ProposedShow.class);
 
       // Log the response
-      System.out.println(
-          "Received proposed show from AI: "
-              + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(proposedShow));
+      log.debug(
+          "Received proposed show from AI: {}",
+          objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(proposedShow));
 
       if (proposedShow != null) {
         segments = new ArrayList<>(proposedShow.getSegments());

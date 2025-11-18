@@ -180,10 +180,10 @@ class ShowPlanningServiceTest {
     Show show = mock(Show.class);
     when(show.getName()).thenReturn("Future Show");
     when(show.getShowDate()).thenReturn(futureShowDate);
-    when(show.getId()).thenReturn(1L);
-
     ShowType pleShowType = new ShowType();
     pleShowType.setName("Premium Live Event (PLE)");
+    pleShowType.setExpectedMatches(7);
+    pleShowType.setExpectedPromos(2);
     com.github.javydreamercsw.management.domain.show.template.ShowTemplate pleTemplate =
         new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
     pleTemplate.setShowType(pleShowType);
@@ -234,6 +234,8 @@ class ShowPlanningServiceTest {
     // Mock an upcoming PLE relative to futureShowDate
     ShowType pleShowType = new ShowType();
     pleShowType.setName("Premium Live Event (PLE)");
+    pleShowType.setExpectedMatches(7);
+    pleShowType.setExpectedPromos(2);
     com.github.javydreamercsw.management.domain.show.template.ShowTemplate pleTemplate =
         new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
     pleTemplate.setShowType(pleShowType);

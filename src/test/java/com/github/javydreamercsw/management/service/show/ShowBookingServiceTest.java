@@ -55,7 +55,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
 
     // Create and save a weekly show type
     weeklyShowType =
-        showTypeService.createOrUpdateShowType("Weekly Show", "A weekly wrestling show");
+        showTypeService.createOrUpdateShowType("Weekly Show", "A weekly wrestling show", 5, 2);
 
     // Create segment types
     segmentTypeService.createOrUpdateSegmentType("One on One", "1 vs 1 match");
