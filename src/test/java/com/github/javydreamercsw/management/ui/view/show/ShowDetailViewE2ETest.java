@@ -137,6 +137,13 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
             () -> {
               WebElement segmentGrid = driver.findElement(By.id("segments-grid-wrapper"));
               wait.until(ExpectedConditions.visibilityOfAllElements(segmentGrid));
+              // Add explicit waits for the text to be present in the grid
+              wait.until(
+                  ExpectedConditions.textToBePresentInElementLocated(
+                      By.id("segments-grid"), narrationText));
+              wait.until(
+                  ExpectedConditions.textToBePresentInElementLocated(
+                      By.id("segments-grid"), summaryText));
               WebElement refreshedGrid = segmentGrid.findElement(By.id("segments-grid"));
               assertTrue(refreshedGrid.getText().contains(narrationText));
               assertTrue(refreshedGrid.getText().contains(summaryText));

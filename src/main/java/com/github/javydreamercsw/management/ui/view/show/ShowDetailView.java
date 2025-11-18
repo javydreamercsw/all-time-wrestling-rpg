@@ -498,27 +498,35 @@ public class ShowDetailView extends Main
     segmentsLayout.setSizeFull();
     segmentsLayout.addClassNames(LumoUtility.Width.FULL);
 
-    if (segments.isEmpty()) {
-      Span noSegments = new Span("No segments scheduled for this show yet.");
-      noSegments.addClassNames(LumoUtility.TextColor.SECONDARY);
-      segmentsLayout.add(noSegments);
-    } else {
-      // Initialize segmentsGrid if null, otherwise update its items
-      if (segmentsGrid == null) {
-        segmentsGrid = createSegmentsGrid(segments);
-        segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
-        segmentsGrid.setId("segments-grid");
+    // Always initialize segmentsGrid and its wrapper
+    if (segmentsGrid == null) {
+      segmentsGrid = createSegmentsGrid(segments);
+      segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
+      segmentsGrid.setId("segments-grid");
 
-        // Wrap the grid in a Div to enable horizontal scrolling
-        Div gridWrapper = new Div(segmentsGrid);
-        gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
-        gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
-        gridWrapper.setId("segments-grid-wrapper");
-        segmentsLayout.add(gridWrapper);
-        segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
-      } else {
-        segmentsGrid.setItems(segments);
-      }
+      // Wrap the grid in a Div to enable horizontal scrolling
+      Div gridWrapper = new Div(segmentsGrid);
+      gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
+      gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
+      gridWrapper.setId("segments-grid-wrapper");
+      segmentsLayout.add(gridWrapper);
+      segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
+    } else {
+      segmentsGrid.setItems(segments);
+    }
+
+    Span noSegmentsMessage = new Span("No segments scheduled for this show yet.");
+    noSegmentsMessage.addClassNames(LumoUtility.TextColor.SECONDARY);
+    noSegmentsMessage.setId("no-segments-message");
+    segmentsLayout.add(noSegmentsMessage);
+
+    // Conditionally show/hide the grid and the "no segments" message
+    if (segments.isEmpty()) {
+      segmentsGrid.setVisible(false);
+      noSegmentsMessage.setVisible(true);
+    } else {
+      segmentsGrid.setVisible(true);
+      noSegmentsMessage.setVisible(false);
     }
 
     card.add(header, segmentsLayout);
@@ -1174,6 +1182,33 @@ public class ShowDetailView extends Main
     if (currentShow != null && segmentsGrid != null) {
       List<Segment> updatedSegments = segmentRepository.findByShow(currentShow);
       segmentsGrid.setItems(updatedSegments);
+
+      // Update visibility of grid and noSegmentsMessage
+      boolean hasSegments = !updatedSegments.isEmpty();
+      segmentsGrid.setVisible(hasSegments);
+      // Find the noSegmentsMessage and set its visibility
+      contentLayout
+          .getChildren()
+          .filter(VerticalLayout.class::isInstance)
+          .map(VerticalLayout.class::cast)
+          .filter(
+              layout ->
+                  layout
+                      .getChildren()
+                      .anyMatch(
+                          component ->
+                              component instanceof Span
+                                  && "no-segments-message".equals(component.getId())))
+          .findFirst()
+          .ifPresent(
+              layout ->
+                  layout
+                      .getChildren()
+                      .filter(Span.class::isInstance)
+                      .map(Span.class::cast)
+                      .filter(span -> "no-segments-message".equals(span.getId()))
+                      .findFirst()
+                      .ifPresent(span -> span.setVisible(!hasSegments)));
       // Re-enable/disable adjudicate button based on new segment status
       boolean hasPendingSegments =
           updatedSegments.stream()
