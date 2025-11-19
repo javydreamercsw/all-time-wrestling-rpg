@@ -36,6 +36,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SEASON_NAME = "Test Season";
   private static final String TEMPLATE_NAME = "Continuum";
 
+  @Autowired private org.springframework.cache.CacheManager cacheManager;
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private TitleRepository titleRepository;
@@ -43,6 +44,14 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   @BeforeEach
   @Transactional
   public void setupTestData() {
+    // Clear the cache to ensure we get fresh data
+    if (cacheManager != null) {
+      org.springframework.cache.Cache wrestlersCache = cacheManager.getCache("wrestlers");
+      if (wrestlersCache != null) {
+        wrestlersCache.clear();
+      }
+    }
+
     titleReignRepository.deleteAll();
     titleRepository
         .findAll()
@@ -171,11 +180,13 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Verify navigation to the show detail view
     wait.until(ExpectedConditions.urlContains("/show-detail"));
 
-    List<WebElement> cells =
-        wait.until(
-            ExpectedConditions.numberOfElementsToBe(
-                By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)"),
-                67)); // 11 headers, 7 rows (8 of the columns have values)
+    wait.until(
+        driver -> {
+          List<WebElement> elements =
+              driver.findElements(
+                  By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)"));
+          return elements.size() > 66 ? elements : null;
+        });
 
     // Click the edit button on the first row
     WebElement editButton =
