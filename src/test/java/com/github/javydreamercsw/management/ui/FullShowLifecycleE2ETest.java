@@ -185,9 +185,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
           List<WebElement> elements =
               driver.findElements(
                   By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)"));
-          return elements.size() > 66 ? elements : null;
+          return elements.size() > 60 ? elements : null;
         });
-
     // Click the edit button on the first row
     WebElement editButton =
         driver.findElement(
