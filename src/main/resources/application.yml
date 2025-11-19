@@ -1,0 +1,73 @@
+ai:
+  gemini:
+    model-name: gemini-2.0-flash-001
+    api-url: https://generativelanguage.googleapis.com/v1beta/models/
+  claude:
+    model-name: claude-3-haiku-20240307
+    api-url: https://api.anthropic.com/v1/messages/
+  openai:
+    api-url: https://api.openai.com/v1/chat/completions
+    default-model: gpt-3.5-turbo
+    premium-model: gpt-4
+    max-tokens: 4000
+
+# Entity-specific sync configuration example
+# Add this to your application.yml or application.properties
+
+notion:
+  sync:
+    entities:
+      # Default settings for all entities
+      defaults:
+        enabled: true
+        batchSize: 50
+        parallelProcessing: true
+        maxThreads: 4
+        timeoutSeconds: 300
+        retryAttempts: 3
+        retryDelayMs: 1000
+        validationEnabled: true
+        skipOnError: true
+
+      # Entity-specific overrides
+      specific:
+        wrestlers:
+          enabled: true
+          batchSize: 100  # Larger batch for wrestlers
+          maxThreads: 6   # More threads for heavy processing
+          timeoutSeconds: 600  # Longer timeout for complex data
+
+        factions:
+          enabled: true
+          batchSize: 25   # Smaller batch due to relationship complexity
+          parallelProcessing: false  # Disable parallel processing for relationship integrity
+
+        matches:
+          enabled: true
+          batchSize: 200  # Large batch for simple segment data
+          timeoutSeconds: 900  # Very long timeout for large datasets
+
+        injuries:
+          enabled: true
+          batchSize: 20
+          retryAttempts: 5  # More retries for critical injury data
+
+        shows:
+          enabled: true
+          validationEnabled: false  # Skip validation for faster sync
+
+        # Disable certain entities if not needed
+        showtemplates:
+          enabled: false
+
+        seasons:
+          enabled: false
+
+        npcs:
+          enabled: true
+
+        titles:
+          enabled: true
+
+        titlereigns:
+          enabled: true

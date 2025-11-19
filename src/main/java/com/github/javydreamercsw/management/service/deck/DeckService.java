@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.deck;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Clock;
 import java.util.List;
 import lombok.NonNull;
@@ -12,7 +13,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional(propagation = Propagation.REQUIRES_NEW)
+@Transactional(propagation = Propagation.REQUIRED)
 public class DeckService {
 
   private final DeckRepository deckRepository;
@@ -47,8 +48,14 @@ public class DeckService {
     return deckRepository.findAll();
   }
 
+  public void delete(Deck deck) {
+    deckRepository.delete(deck);
+  }
+
   public Deck findById(@NonNull Long id) {
-    return deckRepository.findById(id).get();
+    return deckRepository
+        .findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("Deck with id " + id + " not found"));
   }
 
   public List<Deck> findByWrestler(Wrestler wrestler) {

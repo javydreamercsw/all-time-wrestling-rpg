@@ -13,9 +13,7 @@ import jakarta.annotation.security.PermitAll;
 @PermitAll // When security is enabled, allow all authenticated users
 public final class MainView extends Main {
 
-  // TODO Replace with your own main view.
-
-  MainView() {
+  public MainView() {
     addClassName(LumoUtility.Padding.MEDIUM);
     add(new ViewToolbar("Main"));
     add(new Div("Please select a view from the menu on the left."));

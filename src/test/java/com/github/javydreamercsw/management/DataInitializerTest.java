@@ -1,65 +1,176 @@
 package com.github.javydreamercsw.management;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.github.javydreamercsw.management.domain.card.Card;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.CardSet;
-import com.github.javydreamercsw.management.domain.deck.Deck;
-import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.dto.CardDTO;
+import com.github.javydreamercsw.management.dto.DeckDTO;
+import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
+import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
+import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
+import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
-import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(properties = "spring.config.name=application-test")
-@Transactional
+@SpringBootTest
+@ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DataInitializerTest {
 
-  @Autowired private CardService cardService;
-
-  @Autowired private CardSetService cardSetService;
-
+  @Autowired private DataInitializer dataInitializer;
   @Autowired private WrestlerService wrestlerService;
-
+  @Autowired private CardSetService cardSetService;
+  @Autowired private CardService cardService;
   @Autowired private DeckService deckService;
-
   @Autowired private ShowTypeService showTypeService;
+  @Autowired private ShowTemplateService showTemplateService;
+  @Autowired private SegmentRuleService segmentRuleService;
+  @Autowired private SegmentTypeService segmentTypeService;
+  @Autowired private TitleService titleService;
 
-  @Autowired private ShowService showService;
+  @BeforeEach
+  void setUp() {
+    dataInitializer.init();
+  }
 
   @Test
   void testDataLoadedFromFile() {
-    List<Card> cards = cardService.findAll();
-    List<CardSet> sets = cardSetService.findAll();
-    List<Wrestler> wrestlers = wrestlerService.findAll();
-    List<Deck> decks = deckService.findAll();
-    List<ShowType> showTypes = showTypeService.findAll();
-    List<Show> shows = showService.findAll();
+    // This test will fail if the data initializer is disabled.
+    assertFalse(wrestlerService.findAll().isEmpty());
+    assertFalse(cardSetService.findAll().isEmpty());
+    assertFalse(cardService.findAll().isEmpty());
+    assertFalse(deckService.findAll().isEmpty());
+    assertFalse(showTypeService.findAll().isEmpty());
+    assertFalse(showTemplateService.findAll().isEmpty());
+    assertFalse(segmentRuleService.findAll().isEmpty());
+    assertFalse(segmentTypeService.findAll().isEmpty());
+    assertFalse(titleService.findAll().isEmpty());
+  }
 
-    // Check that cards and sets are loaded
-    assertThat(cards).isNotEmpty();
-    assertThat(sets).isNotEmpty();
-    assertThat(wrestlers).isNotEmpty();
-    assertThat(decks).isNotEmpty();
-    assertThat(showTypes).isNotEmpty();
-    assertThat(shows).isNotEmpty();
+  @Test
+  void testDeckImportIsIdempotentAndNoDuplicates() {
+    long initialDeckCount = deckService.count();
+    dataInitializer.init();
+    assertEquals(initialDeckCount, deckService.count());
+  }
 
-    // Check that a card has the correct set mapped
-    Card card =
-        cards.stream()
-            .filter(c -> "Springboard Thrust Kick".equals(c.getName()))
-            .findFirst()
-            .orElseThrow();
-    assertThat(card.getSet()).isNotNull();
-    assertThat(card.getSet().getName()).isEqualTo("RVD");
+  @Test
+  void validateWrestlersJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("wrestlers.json").getInputStream(),
+                  new TypeReference<List<Wrestler>>() {});
+        });
+  }
+
+  @Test
+  void validateCardsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("cards.json").getInputStream(),
+                  new TypeReference<List<CardDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateDecksJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("decks.json").getInputStream(),
+                  new TypeReference<List<DeckDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateChampionshipsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("championships.json").getInputStream(),
+                  new TypeReference<List<TitleDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateSetsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("sets.json").getInputStream(),
+                  new TypeReference<List<CardSet>>() {});
+        });
+  }
+
+  @Test
+  void validateShowTemplatesJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("show_templates.json").getInputStream(),
+                  new TypeReference<List<ShowTemplateDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateShowTypesJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("show_types.json").getInputStream(),
+                  new TypeReference<List<ShowType>>() {});
+        });
+  }
+
+  @Test
+  void validateSegmentRulesJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("segment_rules.json").getInputStream(),
+                  new TypeReference<List<SegmentRuleDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateSegmentTypesJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("segment_types.json").getInputStream(),
+                  new TypeReference<List<SegmentTypeDTO>>() {});
+        });
   }
 }

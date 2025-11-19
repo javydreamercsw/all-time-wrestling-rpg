@@ -1,0 +1,1 @@
+ALTER TABLE inbox_item ADD COLUMN reference_id VARCHAR(255);

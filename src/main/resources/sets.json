@@ -1,7 +1,73 @@
 [ {
-  "name" : "ATW"
+  "name": "All Time Wrestling",
+  "set_code": "ATW"
 }, {
-  "name" : "RVD"
+  "name": "Rob Van Dam",
+  "set_code": "RVD"
 }, {
-  "name" : "OT"
+  "name": "Oda Tsurugi",
+  "set_code": "OT"
+}, {
+  "name": "Sgt. Slaughter",
+  "set_code": "SGT"
+}, {
+  "name": "Eddie Guerrero",
+  "set_code": "EDDIE"
+}, {
+  "name": "Randy Savage",
+  "set_code": "RS"
+}, {
+  "name": "The British Bulldog",
+  "set_code": "BB"
+}, {
+  "name": "Daemon",
+  "set_code": "DMN"
+}, {
+  "name": "Rey Jaguar",
+  "set_code": "RJ"
+}, {
+  "name": "Raven",
+  "set_code": "RVN"
+}, {
+  "name": "Dynamite Kid",
+  "set_code": "DYN"
+}, {
+  "name": "Jax Felix",
+  "set_code": "JF"
+}, {
+  "name": "Sabu",
+  "set_code": "SBU"
+}, {
+  "name": "Junkyard Dog",
+  "set_code": "JYD"
+}, {
+  "name": "Nick Aldis",
+  "set_code": "NAD"
+}, {
+  "name": "OMZ",
+  "set_code": "OMZ"
+}, {
+  "name": "Brian Pillman",
+  "set_code": "BRP"
+}, {
+  "name": "Matt Cardona",
+  "set_code": "MTC"
+}, {
+  "name": "Gilgamesh",
+  "set_code": "GIL"
+}, {
+  "name": "Kamala",
+  "set_code": "KML"
+}, {
+  "name": "Johnny All Time",
+  "set_code": "JAT"
+}, {
+  "name": "André the Giant",
+  "set_code": "ATG"
+}, {
+  "name": "Mukundi Shumba",
+  "set_code": "MS"
+}, {
+  "name": "Kurt Angle",
+  "set_code": "KA"
 } ]

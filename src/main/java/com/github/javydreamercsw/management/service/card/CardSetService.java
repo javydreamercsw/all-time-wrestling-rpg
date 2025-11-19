@@ -4,7 +4,9 @@ import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import java.time.Clock;
 import java.util.List;
+import java.util.Optional;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -14,22 +16,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 public class CardSetService {
 
-  private final CardSetRepository cardSetRepository;
-  private final Clock clock;
+  @Autowired private CardSetRepository cardSetRepository;
+  @Autowired private Clock clock;
 
-  CardSetService(CardSetRepository cardSetRepository, Clock clock) {
-    this.cardSetRepository = cardSetRepository;
-    this.clock = clock;
-  }
-
-  public void createCard(@NonNull String name) {
+  public CardSet createCardSet(@NonNull String name, @NonNull String setCode) {
     CardSet card = new CardSet();
     card.setName(name);
-    save(card);
+    card.setSetCode(setCode);
+    return save(card);
   }
 
-  public List<CardSet> list(Pageable pageable) {
-    return cardSetRepository.findAllBy(pageable).toList();
+  public List<CardSet> list(@NonNull Pageable pageable) {
+    return cardSetRepository.findAll(pageable).toList();
   }
 
   public long count() {
@@ -43,5 +41,9 @@ public class CardSetService {
 
   public List<CardSet> findAll() {
     return cardSetRepository.findAll();
+  }
+
+  public Optional<CardSet> findBySetCode(@NonNull String setCode) {
+    return cardSetRepository.findBySetCode(setCode);
   }
 }

@@ -11,6 +11,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
@@ -26,10 +27,14 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.Clock;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.stream.Collectors;
+import lombok.NonNull;
 
 @Route("card-list")
 @PageTitle("Card List")
-@Menu(order = 2, icon = "vaadin:clipboard-check", title = "Card List")
+@Menu(order = 2, icon = "vaadin:credit-card", title = "Card List")
 @PermitAll // When security is enabled, allow all authenticated users
 public class CardListView extends Main {
 
@@ -40,7 +45,10 @@ public class CardListView extends Main {
   final Button createBtn;
   final Grid<Card> cardGrid;
 
-  public CardListView(CardService cardService, CardSetService cardSetService, Clock clock) {
+  public CardListView(
+      @NonNull CardService cardService,
+      @NonNull CardSetService cardSetService,
+      @NonNull Clock clock) {
     this.cardService = cardService;
     this.cardSetService = cardSetService;
 
@@ -57,12 +65,22 @@ public class CardListView extends Main {
     // Enable grid editor
     Editor<Card> editor = cardGrid.getEditor();
     editor.setBuffered(true);
+
+    editor.addSaveListener(
+        event -> {
+          cardService.save(event.getItem());
+          cardGrid.getDataProvider().refreshAll();
+          Notification.show("Card updated", 3_000, Notification.Position.BOTTOM_END)
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
     // Create and set the binder
     Binder<Card> binder = new Binder<>(Card.class);
     editor.setBinder(binder);
 
     // Editor fields
     TextField nameField = new TextField();
+    nameField.getElement().setAttribute("data-testid", "name-editor");
     TextField damageField = new TextField();
     TextField targetField = new TextField();
     TextField momentumField = new TextField();
@@ -73,12 +91,18 @@ public class CardListView extends Main {
     Checkbox recoverField = new Checkbox();
     Checkbox pinField = new Checkbox();
     ComboBox<String> typeField = new ComboBox<>();
-    typeField.setItems("Strike", "Grapple", "Aerial", "Throw");
+    typeField.setItems(
+        Arrays.asList("Strike", "Grapple", "Aerial", "Throw").stream()
+            .sorted()
+            .collect(Collectors.toList()));
     typeField.setPlaceholder("Select type");
 
     ComboBox<CardSet> setField = new ComboBox<>();
     setField.setPlaceholder("Select set");
-    setField.setItems(cardSetService.findAll());
+    setField.setItems(
+        cardSetService.findAll().stream()
+            .sorted(Comparator.comparing(CardSet::getName))
+            .collect(Collectors.toList()));
     setField.setItemLabelGenerator(CardSet::getName);
 
     cardGrid.setItems(query -> cardService.list(toSpringPageRequest(query)).stream());
@@ -86,62 +110,74 @@ public class CardListView extends Main {
         .addColumn(Card::getName)
         .setHeader("Name")
         .setEditorComponent(nameField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("name");
     cardGrid
         .addColumn(card -> card.getSet() != null ? card.getSet().getName() : "")
         .setHeader("Set")
         .setEditorComponent(setField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("set.name");
     cardGrid
         .addColumn(Card::getType)
         .setHeader("Type")
         .setEditorComponent(typeField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("type");
     cardGrid
         .addColumn(Card::getDamage)
         .setHeader("Damage")
         .setEditorComponent(damageField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("damage");
     cardGrid
         .addColumn(Card::getTarget)
         .setHeader("Target")
         .setEditorComponent(targetField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("target");
     cardGrid
         .addColumn(Card::getMomentum)
         .setHeader("Momentum")
         .setEditorComponent(momentumField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("momentum");
     cardGrid
         .addColumn(Card::getStamina)
         .setHeader("Stamina")
         .setEditorComponent(staminaField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("stamina");
     cardGrid
         .addColumn(Card::getSignature)
         .setHeader("Is Signature?")
         .setEditorComponent(signatureField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("signature");
     cardGrid
         .addColumn(Card::getFinisher)
         .setHeader("Is Finisher?")
         .setEditorComponent(finisherField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("finisher");
     cardGrid
         .addColumn(Card::getTaunt)
         .setHeader("Is Taunt?")
         .setEditorComponent(tauntField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("taunt");
     cardGrid
         .addColumn(Card::getRecover)
         .setHeader("Is Recover?")
         .setEditorComponent(recoverField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("recover");
     cardGrid
         .addColumn(Card::getPin)
         .setHeader("Is Pin?")
         .setEditorComponent(pinField)
-        .setSortable(true);
+        .setSortable(true)
+        .setSortProperty("pin");
     cardGrid.addColumn(Card::getCreationDate).setHeader("Creation Date");
     cardGrid
         .addComponentColumn(
@@ -151,7 +187,10 @@ public class CardListView extends Main {
                   e -> {
                     cardGrid.getEditor().editItem(card);
                   });
-              return editButton;
+              Button deleteButton = new Button("Delete");
+              deleteButton.getElement().setAttribute("data-testid", "delete-button");
+              deleteButton.addClickListener(e -> deleteCard(card));
+              return new HorizontalLayout(editButton, deleteButton);
             })
         .setHeader("Actions");
     cardGrid.setSizeFull();
@@ -206,5 +245,24 @@ public class CardListView extends Main {
     name.clear();
     Notification.show("Card added", 3_000, Notification.Position.BOTTOM_END)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+  }
+
+  private void deleteCard(@NonNull Card card) {
+    ConfirmDialog dialog = new ConfirmDialog();
+    dialog.setHeader("Delete Card?");
+    dialog.setText("Are you sure you want to delete this card?");
+
+    dialog.setConfirmButton(
+        "Delete",
+        e -> {
+          cardService.delete(card.getId());
+          cardGrid.getDataProvider().refreshAll();
+          Notification.show("Card deleted", 3_000, Notification.Position.BOTTOM_END)
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    dialog.setCancelButton("Cancel", e -> dialog.close());
+
+    dialog.open();
   }
 }

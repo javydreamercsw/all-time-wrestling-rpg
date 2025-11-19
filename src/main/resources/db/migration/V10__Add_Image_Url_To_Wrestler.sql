@@ -1,0 +1,1 @@
+ALTER TABLE wrestler ADD COLUMN image_url VARCHAR(255);

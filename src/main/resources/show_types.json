@@ -1,7 +1,11 @@
 [ {
-  "name" : "PLE",
-  "description" : "Premium Live Event"
+  "name": "Premium Live Event (PLE)",
+  "description": "Premium Live Event",
+  "expectedMatches": 7,
+  "expectedPromos": 2
 }, {
-  "name" : "Weekly",
-  "description" : "Weekly Event"
+  "name": "Weekly",
+  "description": "Weekly Event",
+  "expectedMatches": 5,
+  "expectedPromos": 2
 } ]

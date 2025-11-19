@@ -19,11 +19,13 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 
 @Route("deck-list")
 @PageTitle("Deck List")
-@Menu(order = 1, icon = "vaadin:clipboard-check", title = "Deck List")
+@Menu(order = 1, icon = "vaadin:records", title = "Deck List")
 @PermitAll // When security is enabled, allow all authenticated users
 public class DeckListView extends VerticalLayout {
 
@@ -61,7 +63,9 @@ public class DeckListView extends VerticalLayout {
         .setHeader("Actions");
 
     deckGrid.setItems(deckService.findAll());
+    deckGrid.getStyle().set("height", "100vh");
     add(deckGrid);
+    setSizeFull();
   }
 
   // Java
@@ -129,7 +133,11 @@ public class DeckListView extends VerticalLayout {
     cardGrid.setItems(deckService.findById(deck.getId()).getCards());
 
     // Add new card section (unchanged)
-    ComboBox<Card> cardCombo = new ComboBox<>("Card", cardService.findAll());
+    ComboBox<Card> cardCombo = new ComboBox<>("Card");
+    cardCombo.setItems(
+        cardService.findAll().stream()
+            .sorted(Comparator.comparing(Card::getName))
+            .collect(Collectors.toList()));
     cardCombo.setItemLabelGenerator(Card::getName);
     IntegerField amountInput = new IntegerField("Amount");
     Button addBtn =
@@ -142,6 +150,7 @@ public class DeckListView extends VerticalLayout {
                 DeckCard dc = new DeckCard();
                 dc.setDeck(deck);
                 dc.setCard(selected);
+                dc.setSet(selected.getSet());
                 dc.setAmount(amount);
                 deckCardService.save(dc);
                 cardGrid.setItems(deckService.findById(deck.getId()).getCards());
