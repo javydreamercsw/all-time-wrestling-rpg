@@ -539,7 +539,9 @@ public class ShowDetailView extends Main
     grid.setItems(segments);
 
     // Segment type column
-    grid.addColumn(segment -> segment.getSegmentType().getName())
+    grid.addColumn(
+            segment ->
+                segment.getSegmentType() != null ? segment.getSegmentType().getName() : "N/A")
         .setHeader("Segment Type")
         .setSortable(true)
         .setFlexGrow(1);
