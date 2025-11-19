@@ -12,9 +12,9 @@
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
   <version>1.0.1-SNAPSHOT</version>
-  <name>All Time Wrestling RPG</name>
 
   <packaging>war</packaging>
+  <name>All Time Wrestling RPG</name>
 
   <properties>
     <archunit.version>1.4.1</archunit.version>
