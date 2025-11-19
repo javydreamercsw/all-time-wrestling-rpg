@@ -3,17 +3,34 @@
 All Time Wrestling (ATW) RPG is a web-based wrestling RPG simulator that allows you to book shows, manage wrestlers, and generate AI-narrated matches.
 
 ## Table of Contents
-
+<!-- spotless:off -->
 - [Getting Started](#getting-started)
 - [Features](#features)
 - [Show Management](#show-management)
+	- [Segment Ordering and Main Event](#segment-ordering-and-main-event)
+	- [AI Narration](#ai-narration)
+- [Segment Rules](#segment-rules)
+	- [Bump Addition](#bump-addition)
 - [Notion Synchronization](#notion-synchronization)
 - [Development](#development)
 - [Running the Application](#running-the-application)
 - [Docker](#docker)
+	- [Prerequisites](#prerequisites)
+	- [Building the Docker Image](#building-the-docker-image)
+	- [Running the Application with Docker](#running-the-application-with-docker)
+- [Running with a Standalone Tomcat Server](#running-with-a-standalone-tomcat-server)
 - [Code Quality](#code-quality)
+- [Code Coverage](#code-coverage)
+- [Code Formatting](#code-formatting)
 - [Security](#security)
+- [Dependency Security](#dependency-security)
+- [NVD API Key Configuration](#nvd-api-key-configuration)
+- [Security Workflows](#security-workflows)
+- [Running Security Scans Locally](#running-security-scans-locally)
+- [Security Policies](#security-policies)
 - [Development Workflow](#development-workflow)
+- [Pull Request Labeling](#pull-request-labeling)
+<!-- spotless:on -->
 
 ## Getting Started
 
@@ -96,7 +113,7 @@ To enable the feature, you need to provide a Notion API token via the `NOTION_TO
 
 This section contains information for developers contributing to the project.
 
-### Running the Application
+## Running the Application
 
 To build the application in production mode, run:
 
@@ -128,17 +145,67 @@ This project can be built and run using Docker.
 
 #### Running the Application with Docker
 
-To run the application using Docker, you need to provide a path to the H2 database file.
+To run the application using Docker, you need to provide the required environment variables and mount a volume to persist the database.
 
-1.  Run the Docker container with a volume mounted for the database:
+1.  Run the Docker container:
 
 	```bash
-	docker run -p 8888:8080 -v /path/to/your/database:/database -e SPRING_DATASOURCE_URL=jdbc:h2:file:/database/management-db all-time-wrestling-rpg
+	docker run -p 9090:9090 \
+	-v /path/to/your/data:/data \
+	-e GEMINI_API_KEY="<your_gemini_key>" \
+	-e OPENAI_API_KEY="<your_openai_key>" \
+	-e NOTION_TOKEN="<your_notion_token>" \
+	all-time-wrestling-rpg
 	```
 
-	Replace `/path/to/your/database` with the absolute path to the directory where your `management-db.mv.db` file is located.
+	*   `-p 9090:9090`: Maps the container's port 9090 to the host's port 9090.
+	*   `-v /path/to/your/data:/data`: Mounts a directory from your host machine to the `/data` directory inside the container. This is where the H2 database file will be stored, ensuring data persistence. Replace `/path/to/your/data` with the absolute path on your host machine.
+	*   `-e`: Sets the environment variables required for the AI and Notion integrations.
 
-	The application will be accessible at `http://localhost:8888/atw-rpg`.
+	The application will be accessible at `http://localhost:9090/atw-rpg`.
+
+### Running with a Standalone Tomcat Server
+
+You can also deploy the application to a standalone Tomcat server.
+
+1.  **Build the .war file**:
+
+	```bash
+	./mvnw -Pproduction package
+	```
+
+2.  **Deploy the .war file**:
+
+	You have two options to get the `.war` file:
+	*   **Build from source**: Copy the generated `target/all-time-wrestling-rpg-*.war` file to the `webapps` directory of your Tomcat installation.
+	*   **Download from GitHub Releases**: Download the latest `all-time-wrestling-rpg-*.war` from [GitHub Releases](http://github.com/javydreamercsw/all-time-wrestling-rpg/releases) and copy it to the `webapps` directory of your Tomcat installation.
+
+	In either case, rename the `.war` file to `atw-rpg.war`.
+
+3.  **Configure Environment Variables**:
+
+	Create a `setenv.sh` (for Linux/macOS) or `setenv.bat` (for Windows) file in the `bin` directory of your Tomcat installation and add the required environment variables.
+
+	**Example `setenv.sh`:**
+
+	```bash
+	#!/bin/bash
+	export GEMINI_API_KEY="<your_gemini_key>"
+	export OPENAI_API_KEY="<your_openai_key>"
+	export NOTION_TOKEN="<your_notion_token>"
+	# Use a file-based database for persistence
+	export SPRING_DATASOURCE_URL="jdbc:h2:file:/path/to/your/database/atwrpg;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+	export SPRING_DATASOURCE_USERNAME="sa"
+	export SPRING_DATASOURCE_PASSWORD=""
+	export SPRING_H2_CONSOLE_ENABLED="true"
+	```
+	Replace the placeholder values with your actual keys and desired database path.
+
+4.  **Start Tomcat**:
+
+	Run `startup.sh` or `startup.bat` from the `bin` directory of your Tomcat installation.
+
+The application will be accessible at `http://localhost:8080/atw-rpg` (assuming Tomcat is running on the default port 8080).
 
 ### Code Quality
 
