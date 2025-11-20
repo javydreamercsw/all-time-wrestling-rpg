@@ -102,6 +102,9 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "external_id", unique = true)
   private String externalId;
 
+  @Column(name = "last_sync")
+  private Instant lastSync;
+
   @Column(name = "segment_order", nullable = false)
   private int segmentOrder;
 

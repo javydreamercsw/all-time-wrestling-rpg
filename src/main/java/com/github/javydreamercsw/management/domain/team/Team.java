@@ -74,6 +74,9 @@ public class Team extends AbstractEntity<Long> {
   @Column(name = "external_id")
   @Size(max = 255) private String externalId; // For Notion sync
 
+  @Column(name = "last_sync")
+  private Instant lastSync;
+
   @Override
   public @Nullable Long getId() {
     return id;
