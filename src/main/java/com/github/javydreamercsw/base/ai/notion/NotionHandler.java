@@ -15,6 +15,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
 import notion.api.v1.exception.NotionAPIError;
+import notion.api.v1.http.OkHttp4Client;
 import notion.api.v1.model.databases.DatabaseProperty;
 import notion.api.v1.model.databases.QueryResults;
 import notion.api.v1.model.pages.Page;
@@ -197,7 +198,7 @@ public class NotionHandler {
     }
   }
 
-  private <T> T executeWithRetry(java.util.function.Supplier<T> action) {
+  public <T> T executeWithRetry(java.util.function.Supplier<T> action) {
     RetryPolicy<T> rateLimitPolicy =
         RetryPolicy.<T>builder()
             .handleIf(
@@ -1548,13 +1549,14 @@ public class NotionHandler {
    *
    * @return NotionClient instance, or null if token is not available
    */
-  protected Optional<NotionClient> createNotionClient() {
+  public Optional<NotionClient> createNotionClient() {
     String notionToken = EnvironmentVariableUtil.getNotionToken();
     if (notionToken == null || notionToken.trim().isEmpty()) {
       log.warn("NOTION_TOKEN not available. Cannot create NotionClient.");
       return Optional.empty();
     }
     NotionClient client = new NotionClient(notionToken);
+    client.setHttpClient(new OkHttp4Client());
     client.setLogger(new notion.api.v1.logging.Slf4jLogger());
     return Optional.of(client);
   }
