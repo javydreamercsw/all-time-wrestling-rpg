@@ -9,6 +9,7 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.nio.file.Files;
@@ -273,6 +274,37 @@ public class WrestlerSyncService extends BaseSyncService {
       if (creationDateObj instanceof String) {
         dto.setCreationDate((String) creationDateObj);
       }
+      // Extract Tier
+      Object tierObj = rawProperties.get("Tier");
+      if (tierObj instanceof String) {
+        dto.setTier((String) tierObj);
+      }
+
+      // Extract Starting Health
+      Object startingHealthObj = rawProperties.get("Starting Health");
+      if (startingHealthObj instanceof Number) {
+        dto.setStartingHealth(((Number) startingHealthObj).intValue());
+      }
+      // Extract Low Health
+      Object lowHealthObj = rawProperties.get("Low Health");
+      if (lowHealthObj instanceof Number) {
+        dto.setLowHealth(((Number) lowHealthObj).intValue());
+      }
+      // Extract Starting Stamina
+      Object startingStaminaObj = rawProperties.get("Starting Stamina");
+      if (startingStaminaObj instanceof Number) {
+        dto.setStartingStamina(((Number) startingStaminaObj).intValue());
+      }
+      // Extract Low Stamina
+      Object lowStaminaObj = rawProperties.get("Low Stamina");
+      if (lowStaminaObj instanceof Number) {
+        dto.setLowStamina(((Number) lowStaminaObj).intValue());
+      }
+      // Extract Deck Size
+      Object deckSizeObj = rawProperties.get("Deck Size");
+      if (deckSizeObj instanceof Number) {
+        dto.setDeckSize(((Number) deckSizeObj).intValue());
+      }
     }
     return dto;
   }
@@ -449,20 +481,58 @@ public class WrestlerSyncService extends BaseSyncService {
       merged.setGender(null);
     }
 
-    // Preserve existing game data if available, otherwise use defaults
-    if (existing != null) {
-      merged.setDeckSize(existing.getDeckSize());
+    // Smart tier handling: prefer Notion if available, otherwise preserve existing
+    if (notion.getTier() != null && !notion.getTier().trim().isEmpty()) {
+      merged.setTier(notion.getTier());
+    } else if (existing != null && existing.getTier() != null) {
+      merged.setTier(existing.getTier());
+    } else {
+      merged.setTier(null);
+    }
+
+    // Smart startingHealth handling: prefer Notion if available, otherwise preserve existing
+    if (notion.getStartingHealth() != null) {
+      merged.setStartingHealth(notion.getStartingHealth());
+    } else if (existing != null && existing.getStartingHealth() != null) {
       merged.setStartingHealth(existing.getStartingHealth());
-      merged.setLowHealth(existing.getLowHealth());
+    } else {
+      merged.setStartingHealth(0);
+    }
+
+    // Smart startingStamina handling: prefer Notion if available, otherwise preserve existing
+    if (notion.getStartingStamina() != null) {
+      merged.setStartingStamina(notion.getStartingStamina());
+    } else if (existing != null && existing.getStartingStamina() != null) {
       merged.setStartingStamina(existing.getStartingStamina());
+    } else {
+      merged.setStartingStamina(0);
+    }
+
+    // Smart lowHealth handling: prefer Notion if available, otherwise preserve existing
+    if (notion.getLowHealth() != null) {
+      merged.setLowHealth(notion.getLowHealth());
+    } else if (existing != null && existing.getLowHealth() != null) {
+      merged.setLowHealth(existing.getLowHealth());
+    } else {
+      merged.setLowHealth(0);
+    }
+
+    // Smart lowStamina handling: prefer Notion if available, otherwise preserve existing
+    if (notion.getLowStamina() != null) {
+      merged.setLowStamina(notion.getLowStamina());
+    } else if (existing != null && existing.getLowStamina() != null) {
       merged.setLowStamina(existing.getLowStamina());
     } else {
-      // Set defaults for new wrestlers
-      merged.setDeckSize(15);
-      merged.setStartingHealth(0);
-      merged.setLowHealth(0);
-      merged.setStartingStamina(0);
       merged.setLowStamina(0);
+    }
+
+    // Smart deckSize handling: prefer Notion if available, otherwise preserve existing
+    if (notion.getDeckSize() != null) {
+      merged.setDeckSize(notion.getDeckSize());
+    } else if (existing != null && existing.getDeckSize() != null) {
+      merged.setDeckSize(existing.getDeckSize());
+    } else {
+      merged.setDeckSize(15);
     }
     return merged;
   }
@@ -544,6 +614,14 @@ public class WrestlerSyncService extends BaseSyncService {
             wrestler.setGender(Gender.valueOf(dto.getGender().toUpperCase()));
           } catch (IllegalArgumentException e) {
             log.warn("Invalid sex value '{}' for wrestler '{}'", dto.getGender(), dto.getName());
+          }
+        }
+
+        if (dto.getTier() != null && !dto.getTier().isBlank()) {
+          try {
+            wrestler.setTier(WrestlerTier.fromDisplayName(dto.getTier()));
+          } catch (IllegalArgumentException e) {
+            log.warn("Invalid tier value '{}' for wrestler '{}'", dto.getTier(), dto.getName());
           }
         }
 
@@ -631,6 +709,7 @@ public class WrestlerSyncService extends BaseSyncService {
     private String description;
     private String externalId; // Notion page ID
     private String gender;
+    private String tier;
 
     // Game-specific fields (preserved from existing data)
     private Integer deckSize;

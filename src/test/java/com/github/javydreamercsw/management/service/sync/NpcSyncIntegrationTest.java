@@ -6,14 +6,14 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author Javier Ortiz Bultron @date Oct 10, 2023
  */
 @Slf4j
-@EnabledIfEnvironmentVariable(named = "NOTION_TOKEN", matches = ".*")
+@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class NpcSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private NotionSyncService notionSyncService;

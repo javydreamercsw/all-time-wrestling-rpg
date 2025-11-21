@@ -229,7 +229,6 @@ public class NotionHandler {
             .handleIf(
                 e ->
                     e instanceof NotionAPIError
-                        && ((NotionAPIError) e).getError() != null
                         && ((NotionAPIError) e).getError().getStatus() >= 500)
             .withBackoff(1, 5, java.time.temporal.ChronoUnit.SECONDS)
             .withMaxRetries(3)

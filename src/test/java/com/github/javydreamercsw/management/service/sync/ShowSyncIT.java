@@ -10,15 +10,15 @@ import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author Javier Ortiz Bultron @date Oct 10, 2023
  */
 @Slf4j
-@EnabledIfEnvironmentVariable(named = "NOTION_TOKEN", matches = ".*")
-class ShowSyncIntegrationTest extends ManagementIntegrationTest {
+@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
+class ShowSyncIT extends ManagementIntegrationTest {
   @Autowired private ShowRepository showRepository;
 
   @Test
