@@ -3,9 +3,8 @@ package com.github.javydreamercsw;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
-import lombok.NonNull;
-
 import java.time.Instant;
+import lombok.NonNull;
 
 public class TestUtils {
 

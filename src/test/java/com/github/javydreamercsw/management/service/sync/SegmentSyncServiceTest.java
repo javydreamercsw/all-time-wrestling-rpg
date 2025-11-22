@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.service.sync.entity.SegmentSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentSyncService;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
