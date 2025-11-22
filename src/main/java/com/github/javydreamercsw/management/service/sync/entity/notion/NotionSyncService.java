@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.base.service;
+package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 

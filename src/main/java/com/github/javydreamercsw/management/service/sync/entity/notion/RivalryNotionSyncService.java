@@ -1,0 +1,166 @@
+package com.github.javydreamercsw.management.service.sync.entity.notion;
+
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import notion.api.v1.NotionClient;
+import notion.api.v1.model.pages.Page;
+import notion.api.v1.model.pages.PageParent;
+import notion.api.v1.model.pages.PageProperty;
+import notion.api.v1.request.pages.CreatePageRequest;
+import notion.api.v1.request.pages.UpdatePageRequest;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class RivalryNotionSyncService implements NotionSyncService<Rivalry> {
+
+  private final RivalryRepository rivalryRepository;
+
+  @Override
+  public void syncToNotion(Rivalry entity) {
+    Optional<NotionHandler> handlerOptional = NotionHandler.getInstance();
+    if (handlerOptional.isPresent()) {
+      NotionHandler handler = handlerOptional.get();
+      Optional<NotionClient> clientOptional = handler.createNotionClient();
+      if (clientOptional.isPresent()) {
+        try (NotionClient client = clientOptional.get()) {
+          String databaseId = handler.getDatabaseId("Heat");
+          if (databaseId != null) {
+            Map<String, PageProperty> properties = new HashMap<>();
+            properties.put(
+                "Name",
+                new PageProperty(
+                    UUID.randomUUID().toString(),
+                    notion.api.v1.model.common.PropertyType.Title,
+                    Collections.singletonList(
+                        new PageProperty.RichText(
+                            notion.api.v1.model.common.RichTextType.Text,
+                            new PageProperty.RichText.Text(entity.getDisplayName()),
+                            null,
+                            null,
+                            null,
+                            null,
+                            null))));
+
+            if (entity.getWrestler1() != null && entity.getWrestler1().getExternalId() != null) {
+              List<PageProperty.PageReference> relations = new ArrayList<>();
+              relations.add(new PageProperty.PageReference(entity.getWrestler1().getExternalId()));
+              properties.put(
+                  "Wrestler 1",
+                  new PageProperty(
+                      UUID.randomUUID().toString(),
+                      notion.api.v1.model.common.PropertyType.Relation,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      relations,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null));
+            }
+            if (entity.getWrestler2() != null && entity.getWrestler2().getExternalId() != null) {
+              List<PageProperty.PageReference> relations = new ArrayList<>();
+              relations.add(new PageProperty.PageReference(entity.getWrestler2().getExternalId()));
+              properties.put(
+                  "Wrestler 2",
+                  new PageProperty(
+                      UUID.randomUUID().toString(),
+                      notion.api.v1.model.common.PropertyType.Relation,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      relations,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null));
+            }
+            if (entity.getHeat() != null) {
+              properties.put(
+                  "Heat",
+                  new PageProperty(
+                      UUID.randomUUID().toString(),
+                      notion.api.v1.model.common.PropertyType.Number,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      entity.getHeat().doubleValue(),
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null));
+            }
+
+            if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
+              // Update existing page
+              UpdatePageRequest updatePageRequest =
+                  new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
+              handler.executeWithRetry(() -> client.updatePage(updatePageRequest));
+            } else {
+              // Create new page
+              CreatePageRequest createPageRequest =
+                  new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
+              Page page = handler.executeWithRetry(() -> client.createPage(createPageRequest));
+              entity.setExternalId(page.getId());
+            }
+            entity.setLastSync(Instant.now());
+            rivalryRepository.save(entity);
+          }
+        }
+      }
+    }
+  }
+}

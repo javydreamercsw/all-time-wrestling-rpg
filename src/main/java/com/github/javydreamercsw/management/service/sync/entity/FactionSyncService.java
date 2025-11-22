@@ -5,6 +5,7 @@ import com.github.javydreamercsw.base.ai.notion.FactionPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,9 +116,7 @@ public class FactionSyncService extends BaseSyncService {
 
       long totalTime = System.currentTimeMillis() - startTime;
       log.info(
-          "🎉 Successfully synchronized {} factions in {}ms total",
-          factionDTOs.size(),
-          totalTime);
+          "🎉 Successfully synchronized {} factions in {}ms total", factionDTOs.size(), totalTime);
 
       progressTracker.completeOperation(
           operationId,
@@ -245,7 +245,7 @@ public class FactionSyncService extends BaseSyncService {
         }
 
         if (faction == null && dto.getName() != null && !dto.getName().trim().isEmpty()) {
-          faction = factionService.findByName(dto.getName()).orElse(null);
+          faction = factionService.getFactionByName(dto.getName()).orElse(null);
         }
 
         if (faction == null) {
@@ -258,12 +258,10 @@ public class FactionSyncService extends BaseSyncService {
         faction.setIsActive(dto.getIsActive());
 
         if (dto.getLeader() != null) {
-          wrestlerRepository
-              .findByName(dto.getLeader())
-              .ifPresent(
-                  leader -> {
-                    faction.setLeader(leader);
-                  });
+          Optional<Wrestler> leader = wrestlerRepository.findByName(dto.getLeader());
+          if (leader.isPresent()) {
+            faction.setLeader(leader.get());
+          }
         }
         if (dto.getFormedDate() != null) {
           faction.setFormedDate(Instant.parse(dto.getFormedDate()));

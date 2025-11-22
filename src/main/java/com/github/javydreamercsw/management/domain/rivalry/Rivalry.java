@@ -63,6 +63,12 @@ public class Rivalry extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
+  @Column(name = "external_id")
+  private String externalId; // External system ID (e.g., Notion page ID)
+
+  @Column(name = "last_sync")
+  private Instant lastSync;
+
   // Track heat events for history
   @OneToMany(mappedBy = "rivalry", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"rivalry"})

@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.base.service;
+package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -10,10 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import notion.api.v1.NotionClient;
-import notion.api.v1.model.common.PropertyType;
-import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -41,19 +40,94 @@ public class FactionNotionSyncService implements NotionSyncService<Faction> {
             properties.put(
                 "Name",
                 new PageProperty(
-                    PropertyType.TITLE,
+                    UUID.randomUUID().toString(),
+                    notion.api.v1.model.common.PropertyType.Title,
                     Collections.singletonList(
                         new PageProperty.RichText(
-                            RichTextType.TEXT,
-                            new PageProperty.RichText.Text(entity.getName())))));
+                            notion.api.v1.model.common.RichTextType.Text,
+                            new PageProperty.RichText.Text(entity.getName()),
+                            null,
+                            null,
+                            null,
+                            null,
+                            null)),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null));
             if (entity.getIsActive() != null) {
               properties.put(
-                  "Active", new PageProperty(PropertyType.CHECKBOX, entity.getIsActive()));
+                  "Active",
+                  new PageProperty(
+                      UUID.randomUUID().toString(),
+                      notion.api.v1.model.common.PropertyType.Checkbox,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      entity.getIsActive(),
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null));
             }
             if (entity.getLeader() != null && entity.getLeader().getExternalId() != null) {
               List<PageProperty.PageReference> relations = new ArrayList<>();
               relations.add(new PageProperty.PageReference(entity.getLeader().getExternalId()));
-              properties.put("Leader", new PageProperty(PropertyType.RELATION, relations));
+              properties.put(
+                  "Leader",
+                  new PageProperty(
+                      UUID.randomUUID().toString(),
+                      notion.api.v1.model.common.PropertyType.Relation,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      relations,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null));
             }
 
             if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {

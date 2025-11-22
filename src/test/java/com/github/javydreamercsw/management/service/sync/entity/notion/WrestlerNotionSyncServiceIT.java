@@ -1,4 +1,4 @@
-package com.github.javydreamercsw.base.service;
+package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -24,8 +24,9 @@ import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-
+@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private WrestlerRepository wrestlerRepository;

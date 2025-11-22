@@ -5,6 +5,8 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import lombok.NonNull;
 
+import java.time.Instant;
+
 public class TestUtils {
 
   public static Wrestler createWrestler(
@@ -18,6 +20,7 @@ public class TestUtils {
     wrestler.setLowHealth(4);
     wrestler.setLowStamina(2);
     wrestler.setTier(WrestlerTier.ROOKIE);
+    wrestler.setCreationDate(Instant.now());
     return wrestlerRepository.save(wrestler);
   }
 }
