@@ -126,9 +126,19 @@ public class WrestlerService {
               if (fanChange < 0 && !wrestler.canAfford(-fanChange)) {
                 return null; // Not enough fans
               }
-              wrestler.addFans(fanChange);
+              long tempFans = fanChange;
+              if (fanChange > 0) {
+                switch (wrestler.getTier()) {
+                  case ICON -> tempFans = tempFans * 90 / 100;
+                  case MAIN_EVENTER -> tempFans = tempFans * 93 / 100;
+                  case MIDCARDER -> tempFans = tempFans * 95 / 100;
+                  case CONTENDER -> tempFans = tempFans * 97 / 100;
+                }
+                tempFans = Math.round(tempFans / 1000.0) * 1000;
+              }
+              wrestler.addFans(tempFans);
               Wrestler savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
-              eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, fanChange));
+              eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, tempFans));
               return savedWrestler;
             });
   }

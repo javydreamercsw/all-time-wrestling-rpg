@@ -1,6 +1,8 @@
 package com.github.javydreamercsw.management.domain.wrestler;
 
+import java.util.Arrays;
 import lombok.Getter;
+import lombok.NonNull;
 
 /**
  * Represents the different tiers/ranks a wrestler can achieve based on their fan count. Each tier
@@ -114,6 +116,21 @@ public enum WrestlerTier {
 
     // Fallback to highest tier if fans exceed all ranges
     return ICON;
+  }
+
+  /**
+   * Finds a WrestlerTier enum from its display name.
+   *
+   * @param displayName The display name to find.
+   * @return The matching WrestlerTier.
+   * @throws IllegalArgumentException if no matching tier is found.
+   */
+  public static WrestlerTier fromDisplayName(@NonNull String displayName) {
+    return Arrays.stream(values())
+        .filter(tier -> tier.getDisplayName().equalsIgnoreCase(displayName))
+        .findFirst()
+        .orElseThrow(
+            () -> new IllegalArgumentException("Unknown tier display name: " + displayName));
   }
 
   /**

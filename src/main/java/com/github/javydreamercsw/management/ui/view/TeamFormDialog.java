@@ -231,7 +231,7 @@ public class TeamFormDialog extends Dialog {
 
     // Load factions
     factionField.setItems(
-        factionService.getAllFactions().stream()
+        factionService.findAll().stream()
             .sorted(Comparator.comparing(Faction::getName))
             .collect(Collectors.toList()));
   }

@@ -2,15 +2,11 @@ package com.github.javydreamercsw.management.service.faction;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +28,7 @@ public class FactionService {
 
   @Autowired private FactionRepository factionRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private Clock clock;
+  private final Clock clock; // Injected via constructor
 
   /** Get all factions. */
   @Transactional(readOnly = true)
@@ -55,31 +51,7 @@ public class FactionService {
   /** Get all factions with both members and teams eagerly loaded for UI display. */
   @Transactional(readOnly = true)
   public List<Faction> findAllWithMembersAndTeams() {
-    // First get factions with members
-    List<Faction> factionsWithMembers = factionRepository.findAllWithMembers();
-
-    // Then get factions with teams and merge the data
-    List<Faction> factionsWithTeams = factionRepository.findAllWithTeams();
-
-    // Create a map for quick lookup of teams by faction ID
-    Map<Long, List<Team>> teamsByFactionId =
-        factionsWithTeams.stream()
-            .collect(
-                Collectors.toMap(
-                    Faction::getId,
-                    faction ->
-                        faction.getTeams() != null ? faction.getTeams() : new ArrayList<>()));
-
-    // Populate teams in the factions with members
-    factionsWithMembers.forEach(
-        faction -> {
-          List<Team> teams = teamsByFactionId.get(faction.getId());
-          if (teams != null) {
-            faction.setTeams(teams);
-          }
-        });
-
-    return factionsWithMembers;
+    return factionRepository.findAllWithMembersAndTeams();
   }
 
   /** Get all factions with pagination. */
@@ -106,6 +78,12 @@ public class FactionService {
     return factionRepository.findByName(name);
   }
 
+  /** Get faction by external ID. */
+  @Transactional(readOnly = true)
+  public Optional<Faction> findByExternalId(String externalId) {
+    return factionRepository.findByExternalId(externalId);
+  }
+
   /** Get all active factions. */
   @Transactional(readOnly = true)
   public List<Faction> getActiveFactions() {
@@ -113,8 +91,7 @@ public class FactionService {
   }
 
   /** Create a new faction. */
-  public Optional<Faction> createFaction(
-      @NonNull String name, @NonNull String description, @NonNull Long leaderId) {
+  public Optional<Faction> createFaction(@NonNull String name, String description, Long leaderId) {
     // Check if faction name already exists
     if (factionRepository.existsByName(name)) {
       log.warn("Faction with name '{}' already exists", name);

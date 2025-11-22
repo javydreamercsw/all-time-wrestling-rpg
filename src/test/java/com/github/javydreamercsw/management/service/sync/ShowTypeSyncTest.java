@@ -11,7 +11,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRep
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.ShowTypeSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;

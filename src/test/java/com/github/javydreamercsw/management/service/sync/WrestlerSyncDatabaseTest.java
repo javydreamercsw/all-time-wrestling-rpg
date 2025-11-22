@@ -47,13 +47,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
     wrestler.setIsPlayer(false);
 
     // This simulates the logic in saveWrestlersToDatabase method
-    boolean isNewWrestler = true; // Wrestler not found in database
-    Wrestler result;
-    if (isNewWrestler) {
-      result = wrestlerService.save(wrestler);
-    } else {
-      result = wrestlerRepository.saveAndFlush(wrestler);
-    }
+    Wrestler result = wrestlerService.save(wrestler);
 
     // Then
     assertNotNull(result);
@@ -91,13 +85,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
     existingWrestler.setExternalId("notion-page-id-456"); // Update external ID
 
     // This simulates the logic in saveWrestlersToDatabase method
-    boolean isNewWrestler = false; // Wrestler found in database
-    Wrestler result;
-    if (isNewWrestler) {
-      result = wrestlerService.save(existingWrestler);
-    } else {
-      result = wrestlerRepository.saveAndFlush(existingWrestler);
-    }
+    Wrestler result = wrestlerRepository.saveAndFlush(existingWrestler);
 
     // Then
     assertNotNull(result);

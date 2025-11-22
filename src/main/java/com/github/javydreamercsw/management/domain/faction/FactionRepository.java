@@ -28,8 +28,21 @@ public interface FactionRepository
   /** Find active factions. */
   List<Faction> findByIsActiveTrue();
 
+  /** Find active or inactive factions. */
+  List<Faction> findByIsActive(boolean active);
+
   /** Find disbanded factions. */
   List<Faction> findByIsActiveFalse();
+
+  /** Find all factions with members and teams eagerly loaded for UI display. */
+  @Query(
+      """
+      SELECT DISTINCT f FROM Faction f
+      LEFT JOIN FETCH f.members m
+      LEFT JOIN FETCH f.teams t
+      ORDER BY f.name
+      """)
+  List<Faction> findAllWithMembersAndTeams();
 
   /** Find factions led by a specific wrestler. */
   List<Faction> findByLeader(Wrestler leader);

@@ -64,6 +64,9 @@ public class Faction extends AbstractEntity<Long> {
   @Column(name = "external_id")
   private String externalId; // External system ID (e.g., Notion page ID)
 
+  @Column(name = "last_sync")
+  private Instant lastSync;
+
   // Faction members
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction", "rivalries", "injuries", "deck", "titleReigns"})

@@ -3,6 +3,7 @@ package com.github.javydreamercsw;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import java.time.Instant;
 import lombok.NonNull;
 
 public class TestUtils {
@@ -18,6 +19,7 @@ public class TestUtils {
     wrestler.setLowHealth(4);
     wrestler.setLowStamina(2);
     wrestler.setTier(WrestlerTier.ROOKIE);
+    wrestler.setCreationDate(Instant.now());
     return wrestlerRepository.save(wrestler);
   }
 }
