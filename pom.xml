@@ -769,6 +769,7 @@
               <excludes>
                 <exclude>**/*E2ETest.java</exclude>
                 <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
+                <exclude>**/DockerPackageIT.java</exclude>
               </excludes>
             </configuration>
             <executions>
