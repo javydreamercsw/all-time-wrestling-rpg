@@ -1,7 +1,5 @@
 package com.github.javydreamercsw.management.domain.show.template;
 
-import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
-
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import jakarta.persistence.Column;
