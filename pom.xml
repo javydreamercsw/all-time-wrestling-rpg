@@ -568,6 +568,8 @@
                     <include>jacoco.exec</include>
                     <include>jacoco-it.exec</include>
                     <include>jacoco-e2e.exec</include>
+                    <include>jacoco-notion-it.exec</include>
+                    <include>jacoco-notion-e2e.exec</include>
                   </includes>
                 </fileSet>
               </fileSets>
@@ -687,6 +689,8 @@
                         <include>jacoco.exec</include>
                         <include>jacoco-it.exec</include>
                         <include>jacoco-e2e.exec</include>
+                        <include>jacoco-notion-it.exec</include>
+                        <include>jacoco-notion-e2e.exec</include>
                       </includes>
                     </fileSet>
                   </fileSets>
@@ -766,8 +770,68 @@
                 <exclude>**/*E2ETest.java</exclude>
                 <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
                 <exclude>**/DockerPackageIT.java</exclude>
+                <exclude>**/Notion*IT.java</exclude>
+                <exclude>**/*SyncIT.java</exclude>
+                <exclude>**/*SyncIntegrationTest.java</exclude>
               </excludes>
-
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>notion-integration-test</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <!-- Prepare agent for integration tests -->
+              <execution>
+                <id>prepare-agent-integration</id>
+                <goals>
+                  <goal>prepare-agent-integration</goal>
+                </goals>
+                <configuration>
+                  <propertyName>failsafeArgLine</propertyName>
+                  <destFile>${project.build.directory}/jacoco-notion-it.exec</destFile>
+                </configuration>
+              </execution>
+              <!-- Generate integration test coverage report -->
+              <execution>
+                <id>report-integration</id>
+                <goals>
+                  <goal>report-integration</goal>
+                </goals>
+                <phase>post-integration-test</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <argLine>@{failsafeArgLine} -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+              <trimStackTrace>false</trimStackTrace>
+              <enableAssertions>true</enableAssertions>
+              <!-- Sequential execution for integration tests -->
+              <parallel>none</parallel>
+              <threadCount>1</threadCount>
+              <includes>
+                <include>**/Notion*IT.java</include>
+                <include>**/*SyncIT.java</include>
+                <include>**/*SyncIntegrationTest.java</include>
+                <include>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</include>
+              </includes>
             </configuration>
             <executions>
               <execution>
@@ -851,7 +915,61 @@
               <includes>
                 <include>**/*E2ETest.java</include>
               </includes>
-
+              <excludes>
+                <exclude>**/Notion*E2ETest.java</exclude>
+              </excludes>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>notion-e2e-test</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>prepare-agent-e2e</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+                <configuration>
+                  <propertyName>failsafeArgLine</propertyName>
+                  <destFile>${project.build.directory}/jacoco-notion-e2e.exec</destFile>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <argLine>@{failsafeArgLine}</argLine>
+              <!-- Sequential execution for e2e tests -->
+              <parallel>none</parallel>
+              <threadCount>1</threadCount>
+              <reuseForks>true</reuseForks>
+              <includes>
+                <include>**/Notion*E2ETest.java</include>
+              </includes>
             </configuration>
             <executions>
               <execution>
