@@ -91,7 +91,7 @@ class FactionSyncServiceTest {
     when(notionHandler.loadAllFactions()).thenReturn(mockPages);
     when(factionRepository.findByExternalId(anyString())).thenReturn(Optional.empty());
     when(factionRepository.findByName(anyString())).thenReturn(Optional.empty());
-    when(factionRepository.save(any(Faction.class)))
+    when(factionRepository.saveAndFlush(any(Faction.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
@@ -100,7 +100,7 @@ class FactionSyncServiceTest {
     // Then
     assertTrue(result.isSuccess());
     assertEquals("Factions", result.getEntityType());
-    verify(factionRepository, times(2)).save(any(Faction.class));
+    verify(factionRepository, times(2)).saveAndFlush(any(Faction.class));
     verify(healthMonitor).recordSuccess(eq("Factions"), anyLong(), anyInt());
   }
 
@@ -127,7 +127,7 @@ class FactionSyncServiceTest {
 
     when(notionHandler.loadAllFactions()).thenReturn(mockPages);
     when(factionRepository.findByExternalId("faction-1")).thenReturn(Optional.of(existingFaction));
-    when(factionRepository.save(any(Faction.class)))
+    when(factionRepository.saveAndFlush(any(Faction.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
@@ -135,7 +135,7 @@ class FactionSyncServiceTest {
 
     // Then
     assertTrue(result.isSuccess());
-    verify(factionRepository, atLeast(1)).save(any(Faction.class));
+    verify(factionRepository, atLeast(1)).saveAndFlush(any(Faction.class));
   }
 
   @Test
@@ -160,7 +160,7 @@ class FactionSyncServiceTest {
     when(notionHandler.loadAllFactions()).thenReturn(mockPages);
     when(factionRepository.findByExternalId(anyString())).thenReturn(Optional.empty());
     when(factionRepository.findByName(anyString())).thenReturn(Optional.empty());
-    when(factionRepository.save(any(Faction.class)))
+    when(factionRepository.saveAndFlush(any(Faction.class)))
         .thenThrow(new RuntimeException("Database error"));
 
     // When
