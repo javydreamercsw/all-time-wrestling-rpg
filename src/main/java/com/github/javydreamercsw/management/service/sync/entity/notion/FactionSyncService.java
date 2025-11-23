@@ -109,7 +109,9 @@ public class FactionSyncService extends BaseSyncService {
           operationId, 3, String.format("Saving %d factions to database...", factionDTOs.size()));
       log.info("🗄️ Saving factions to database...");
       long dbStart = System.currentTimeMillis();
-      int savedCount = saveFactionsToDatabase(factionDTOs, operationId);
+      int[] result = saveFactionsToDatabase(factionDTOs, operationId);
+      int savedCount = result[0];
+      int skippedCount = result[1];
       log.info(
           "✅ Saved {} factions to database in {}ms",
           savedCount,
@@ -127,7 +129,12 @@ public class FactionSyncService extends BaseSyncService {
 
       healthMonitor.recordSuccess("Factions", totalTime, factionDTOs.size());
 
-      return SyncResult.success("Factions", factionDTOs.size(), 0, 0);
+      if (skippedCount > 0) {
+        return SyncResult.failure(
+            "Factions", "Some factions failed to sync. Check logs for details.");
+      } else {
+        return SyncResult.success("Factions", factionDTOs.size(), 0, 0);
+      }
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;
@@ -217,7 +224,7 @@ public class FactionSyncService extends BaseSyncService {
     return merged;
   }
 
-  private int saveFactionsToDatabase(
+  private int[] saveFactionsToDatabase(
       @NonNull List<FactionDTO> factionDTOs, @NonNull String operationId) {
     log.info("Starting database persistence for {} factions", factionDTOs.size());
 
@@ -294,6 +301,6 @@ public class FactionSyncService extends BaseSyncService {
             "✅ Completed database save: %d factions saved/updated, %d skipped",
             savedCount, skippedCount));
 
-    return savedCount;
+    return new int[] {savedCount, skippedCount};
   }
 }

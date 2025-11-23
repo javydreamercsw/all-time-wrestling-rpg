@@ -11,6 +11,7 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
@@ -21,11 +22,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -35,7 +37,6 @@ import org.springframework.test.util.ReflectionTestUtils;
  * relationship handling and error conditions.
  */
 @ExtendWith(MockitoExtension.class)
-@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class FactionSyncServiceTest {
 
   @Mock private FactionRepository factionRepository;
@@ -46,11 +47,15 @@ class FactionSyncServiceTest {
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionRateLimitService rateLimitService;
+  @Mock private FactionService factionService;
 
   private FactionSyncService factionSyncService;
+  private MockedStatic<NotionHandler> mockedNotionHandler;
 
   @BeforeEach
   void setUp() {
+    mockedNotionHandler = mockStatic(NotionHandler.class);
+    mockedNotionHandler.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
     Mockito.lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     Mockito.lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
 
@@ -61,7 +66,13 @@ class FactionSyncServiceTest {
     lenient().doReturn(true).when(factionSyncService).validateNotionToken("Factions");
   }
 
+  @AfterEach
+  void tearDown() {
+    mockedNotionHandler.close();
+  }
+
   private void injectMockDependencies() {
+    ReflectionTestUtils.setField(factionSyncService, "factionService", factionService);
     ReflectionTestUtils.setField(factionSyncService, "factionRepository", factionRepository);
     ReflectionTestUtils.setField(factionSyncService, "wrestlerRepository", wrestlerRepository);
     ReflectionTestUtils.setField(factionSyncService, "notionHandler", notionHandler);
@@ -89,9 +100,9 @@ class FactionSyncServiceTest {
     // Given
     List<FactionPage> mockPages = createMockFactionPages();
     when(notionHandler.loadAllFactions()).thenReturn(mockPages);
-    when(factionRepository.findByExternalId(anyString())).thenReturn(Optional.empty());
-    when(factionRepository.findByName(anyString())).thenReturn(Optional.empty());
-    when(factionRepository.saveAndFlush(any(Faction.class)))
+    when(factionService.findByExternalId(anyString())).thenReturn(Optional.empty());
+    when(factionService.getFactionByName(anyString())).thenReturn(Optional.empty());
+    when(factionService.save(any(Faction.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
@@ -100,7 +111,7 @@ class FactionSyncServiceTest {
     // Then
     assertTrue(result.isSuccess());
     assertEquals("Factions", result.getEntityType());
-    verify(factionRepository, times(2)).saveAndFlush(any(Faction.class));
+    verify(factionService, times(2)).save(any(Faction.class));
     verify(healthMonitor).recordSuccess(eq("Factions"), anyLong(), anyInt());
   }
 
@@ -114,7 +125,7 @@ class FactionSyncServiceTest {
 
     // Then
     assertTrue(result.isSuccess());
-    verify(factionRepository, never()).save(any(Faction.class));
+    verify(factionRepository, never()).saveAndFlush(any(Faction.class));
   }
 
   @Test
@@ -126,7 +137,7 @@ class FactionSyncServiceTest {
     existingFaction.setName("The Shield");
 
     when(notionHandler.loadAllFactions()).thenReturn(mockPages);
-    when(factionRepository.findByExternalId("faction-1")).thenReturn(Optional.of(existingFaction));
+    when(factionService.findByExternalId("faction-1")).thenReturn(Optional.of(existingFaction));
     when(factionRepository.saveAndFlush(any(Faction.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -158,10 +169,9 @@ class FactionSyncServiceTest {
     // Given
     List<FactionPage> mockPages = createMockFactionPages();
     when(notionHandler.loadAllFactions()).thenReturn(mockPages);
-    when(factionRepository.findByExternalId(anyString())).thenReturn(Optional.empty());
-    when(factionRepository.findByName(anyString())).thenReturn(Optional.empty());
-    when(factionRepository.saveAndFlush(any(Faction.class)))
-        .thenThrow(new RuntimeException("Database error"));
+    when(factionService.findByExternalId(anyString())).thenReturn(Optional.empty());
+    when(factionService.getFactionByName(anyString())).thenReturn(Optional.empty());
+    when(factionService.save(any(Faction.class))).thenThrow(new RuntimeException("Database error"));
 
     // When
     SyncResult result = factionSyncService.syncFactions("test-operation");
