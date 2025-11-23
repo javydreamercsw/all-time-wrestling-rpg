@@ -1,9 +1,10 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
-import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,216 +17,72 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
+import notion.api.v1.model.pages.PageProperty.Date;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class RivalryNotionSyncService implements NotionSyncService<Rivalry> {
+public class ShowNotionSyncService implements NotionSyncService<Show> {
 
-  private final RivalryRepository rivalryRepository;
+  private final ShowRepository showRepository;
 
   @Override
-  public void syncToNotion(Rivalry entity) {
+  public void syncToNotion(Show entity) {
     Optional<NotionHandler> handlerOptional = NotionHandler.getInstance();
     if (handlerOptional.isPresent()) {
       NotionHandler handler = handlerOptional.get();
       Optional<NotionClient> clientOptional = handler.createNotionClient();
       if (clientOptional.isPresent()) {
         try (NotionClient client = clientOptional.get()) {
-          String databaseId = handler.getDatabaseId("Heat");
+          String databaseId =
+              handler.getDatabaseId("Shows"); // Assuming a Notion database named "Shows"
           if (databaseId != null) {
             Map<String, PageProperty> properties = new HashMap<>();
             properties.put(
-                "Name",
+                "Name", // Assuming Notion property is "Name"
                 new PageProperty(
                     UUID.randomUUID().toString(),
                     notion.api.v1.model.common.PropertyType.Title,
                     Collections.singletonList(
                         new PageProperty.RichText(
                             notion.api.v1.model.common.RichTextType.Text,
-                            new PageProperty.RichText.Text(entity.getDisplayName()),
+                            new PageProperty.RichText.Text(entity.getName()),
                             null,
                             null,
                             null,
                             null,
-                            null))));
+                            null)),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null));
 
-            if (entity.getWrestler1() != null) {
-              List<PageProperty.PageReference> relations = new ArrayList<>();
-              relations.add(new PageProperty.PageReference(entity.getWrestler1().getExternalId()));
+            // Map Description
+            if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
               properties.put(
-                  "Wrestler 1",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      notion.api.v1.model.common.PropertyType.Relation,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      relations,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-            if (entity.getWrestler2() != null) {
-              List<PageProperty.PageReference> relations = new ArrayList<>();
-              relations.add(new PageProperty.PageReference(entity.getWrestler2().getExternalId()));
-              properties.put(
-                  "Wrestler 2",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      notion.api.v1.model.common.PropertyType.Relation,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      relations,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-            if (entity.getHeat() != null) {
-              properties.put(
-                  "Heat",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      notion.api.v1.model.common.PropertyType.Number,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      entity.getHeat().doubleValue(),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-            // Map isActive
-            /*
-             * if (entity.getIsActive() != null) { properties.put( "Status", // Corrected Notion property
-             * name new PageProperty( UUID.randomUUID().toString(),
-             * notion.api.v1.model.common.PropertyType.Select, // Changed to Select null, null, null, null,
-             * null, null, null, null, null, new PageProperty.Select( entity.getIsActive() ? "Active" :
-             * "Inactive", null, null), // Select object null, null, null, null, null, null, null, null,
-             * null, null, null, null)); }
-             */
-
-            // Map startedDate
-            if (entity.getStartedDate() != null) {
-              properties.put(
-                  "Start Date", // Assuming Notion property is "Start Date"
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      notion.api.v1.model.common.PropertyType.Date,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      new PageProperty.Date(entity.getStartedDate().toString(), null),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-
-            // Map endedDate
-            if (entity.getEndedDate() != null) {
-              properties.put(
-                  "Ended Date", // Assuming Notion property is "Ended Date"
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      notion.api.v1.model.common.PropertyType.Date,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      new PageProperty.Date(entity.getEndedDate().toString(), null),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-
-            // Map storylineNotes
-            if (entity.getStorylineNotes() != null && !entity.getStorylineNotes().isBlank()) {
-              properties.put(
-                  "Storyline Notes", // Assuming Notion property is "Storyline Notes"
+                  "Description", // Assuming Notion property is "Description"
                   new PageProperty(
                       UUID.randomUUID().toString(),
                       notion.api.v1.model.common.PropertyType.RichText,
                       Collections.singletonList(
                           new PageProperty.RichText(
                               notion.api.v1.model.common.RichTextType.Text,
-                              new PageProperty.RichText.Text(entity.getStorylineNotes()),
+                              new PageProperty.RichText.Text(entity.getDescription()),
                               null,
                               null,
                               null,
@@ -233,6 +90,138 @@ public class RivalryNotionSyncService implements NotionSyncService<Rivalry> {
                               null)),
                       null,
                       null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null));
+            }
+
+            // Map Show Type (Relation)
+            if (entity.getType() != null) {
+              List<PageProperty.PageReference> relations = new ArrayList<>();
+              relations.add(new PageProperty.PageReference(entity.getType().getExternalId()));
+              properties.put(
+                  "Show Type", // Assuming Notion property is "Show Type"
+                  new PageProperty(
+                      UUID.randomUUID().toString(),
+                      notion.api.v1.model.common.PropertyType.Relation,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      relations,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null));
+            }
+
+            // Map Season (Relation)
+            if (entity.getSeason() != null) {
+              List<PageProperty.PageReference> relations = new ArrayList<>();
+              relations.add(new PageProperty.PageReference(entity.getSeason().getExternalId()));
+              properties.put(
+                  "Season", // Assuming Notion property is "Season"
+                  new PageProperty(
+                      UUID.randomUUID().toString(),
+                      notion.api.v1.model.common.PropertyType.Relation,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      relations,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null));
+            }
+
+            // Map Template (Relation)
+            if (entity.getTemplate() != null) {
+              List<PageProperty.PageReference> relations = new ArrayList<>();
+              relations.add(new PageProperty.PageReference(entity.getTemplate().getExternalId()));
+              properties.put(
+                  "Template", // Assuming Notion property is "Template"
+                  new PageProperty(
+                      UUID.randomUUID().toString(),
+                      notion.api.v1.model.common.PropertyType.Relation,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      relations,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null));
+            }
+
+            // Map Show Date
+            if (entity.getShowDate() != null) {
+              properties.put(
+                  "Date", // Assuming Notion property is "Date"
+                  new PageProperty(
+                      UUID.randomUUID().toString(),
+                      notion.api.v1.model.common.PropertyType.Date,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      new Date(
+                          entity.getShowDate().atStartOfDay().atOffset(ZoneOffset.UTC).toString(),
+                          null),
                       null,
                       null,
                       null,
@@ -263,7 +252,7 @@ public class RivalryNotionSyncService implements NotionSyncService<Rivalry> {
               entity.setExternalId(page.getId());
             }
             entity.setLastSync(Instant.now());
-            rivalryRepository.save(entity);
+            showRepository.save(entity);
           }
         }
       }

@@ -31,12 +31,6 @@ public class Title extends AbstractEntity<Long> {
   @Column(name = "title_id")
   private Long id;
 
-  @Column(name = "external_id")
-  private String externalId;
-
-  @Column(name = "last_sync")
-  private Instant lastSync;
-
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;
 

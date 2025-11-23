@@ -169,9 +169,9 @@ public class SeasonSyncService extends BaseSyncService {
 
         if (existingSeason != null) {
           log.info("Season already exists: {}", seasonDTO.getName());
-          // Update Notion ID if not set
-          if (existingSeason.getNotionId() == null && seasonDTO.getNotionId() != null) {
-            existingSeason.setNotionId(seasonDTO.getNotionId());
+          // Update External ID if not set
+          if (existingSeason.getExternalId() == null && seasonDTO.getNotionId() != null) {
+            existingSeason.setExternalId(seasonDTO.getNotionId());
             seasonService.save(existingSeason);
             updatedCount++;
             log.info("Updated Notion ID for existing season: {}", seasonDTO.getName());
@@ -184,7 +184,7 @@ public class SeasonSyncService extends BaseSyncService {
           Season newSeason = new Season();
           newSeason.setName(seasonDTO.getName());
           newSeason.setDescription(seasonDTO.getDescription());
-          newSeason.setNotionId(seasonDTO.getNotionId());
+          newSeason.setExternalId(seasonDTO.getNotionId());
 
           seasonService.save(newSeason);
           savedCount++;

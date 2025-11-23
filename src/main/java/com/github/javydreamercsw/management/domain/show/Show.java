@@ -56,12 +56,6 @@ public class Show extends AbstractEntity<Long> {
   @Column(name = "show_date")
   private LocalDate showDate;
 
-  @Column(name = "external_id", unique = true)
-  @Size(max = 255) private String externalId;
-
-  @Column(name = "last_sync")
-  private Instant lastSync;
-
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 

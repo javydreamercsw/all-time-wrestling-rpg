@@ -41,9 +41,6 @@ public class InjuryType extends AbstractEntity<Long> {
   @Column(name = "special_effects")
   private String specialEffects; // Text description of special game effects
 
-  @Column(name = "external_id", unique = true)
-  @Size(max = 255) private String externalId; // External system ID (e.g., Notion page ID)
-
   // ==================== HELPER METHODS ====================
 
   /** Gets the effective health effect, defaulting to 0 if not specified. */
