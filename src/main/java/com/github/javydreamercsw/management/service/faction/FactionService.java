@@ -10,7 +10,6 @@ import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,8 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class FactionService {
 
-  @Autowired private FactionRepository factionRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
+  private final FactionRepository factionRepository;
+  private final WrestlerRepository wrestlerRepository;
   private final Clock clock; // Injected via constructor
 
   /** Get all factions. */
