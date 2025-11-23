@@ -13,6 +13,11 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
+/**
+ * This is an integration test that packages the application into a Docker image and runs it.
+ * It should be run with the 'integration-test' or 'docker-it' profile.
+ * e.g. `mvn verify -Pintegration-test -Dtest=DockerPackageIT`
+ */
 class DockerPackageIT {
 
   @Test
