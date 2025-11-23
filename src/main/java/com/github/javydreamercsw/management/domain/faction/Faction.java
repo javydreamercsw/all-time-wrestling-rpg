@@ -12,14 +12,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 import org.jspecify.annotations.Nullable;
 
@@ -27,12 +28,13 @@ import org.jspecify.annotations.Nullable;
  * Represents a faction (stable) of wrestlers in the ATW RPG system. Factions can have rivalries
  * with other factions and participate in multi-wrestler feuds.
  */
-@Data
 @Entity
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 @Table(name = "faction")
 public class Faction extends AbstractEntity<Long> {
   @Id
@@ -77,7 +79,6 @@ public class Faction extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"faction", "rivalries", "injuries", "deck", "titleReigns"})
   @Builder.Default
   @ToString.Exclude
-  @EqualsAndHashCode.Exclude
   private Set<Wrestler> members = new HashSet<>();
 
   // Teams associated with this faction
@@ -85,7 +86,6 @@ public class Faction extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"faction", "wrestler1", "wrestler2"})
   @Builder.Default
   @ToString.Exclude
-  @EqualsAndHashCode.Exclude
   private Set<Team> teams = new HashSet<>();
 
   // Faction rivalries where this faction is faction1
@@ -93,7 +93,6 @@ public class Faction extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"faction1", "faction2"})
   @Builder.Default
   @ToString.Exclude
-  @EqualsAndHashCode.Exclude
   private Set<FactionRivalry> rivalriesAsFaction1 = new HashSet<>();
 
   // Faction rivalries where this faction is faction2
@@ -101,7 +100,6 @@ public class Faction extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"faction1", "faction2"})
   @Builder.Default
   @ToString.Exclude
-  @EqualsAndHashCode.Exclude
   private Set<FactionRivalry> rivalriesAsFaction2 = new HashSet<>();
 
   @Override
@@ -212,5 +210,18 @@ public class Faction extends AbstractEntity<Long> {
     if (members.size() == 1) return "Singles";
     if (members.size() == 2) return "Tag Team";
     return "Stable";
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Faction faction = (Faction) o;
+    return id != null && Objects.equals(id, faction.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return getClass().hashCode();
   }
 }
