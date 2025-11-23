@@ -10,21 +10,15 @@ name: Java CI with Maven
 
 on:
   push:
-    branches:
-      - main
-      - 'release/**'
     tags:
       - 'v*.*.*'
     paths:
-      - 'src/**'                                                                                                                                                                                                                                                                                                                                                                                                                    │
+      - 'src/**'
       - 'pom.xml'
 
   pull_request:
-    branches:
-      - main
-      - 'release/**'
     paths:
-      - 'src/**'                                                                                                                                                                                                                                                                                                                                                                                                                    │
+      - 'src/**'
       - 'pom.xml'
 
 permissions:
