@@ -11,7 +11,9 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.grid.Grid;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -180,7 +182,7 @@ class FactionListViewTest {
     evolution.setDisbandedDate(Instant.now().minusSeconds(180 * 24 * 60 * 60)); // 6 months ago
 
     // Add members to Evolution (this is what was missing!)
-    List<Wrestler> evolutionMembers = new ArrayList<>();
+    Set<Wrestler> evolutionMembers = new HashSet<>();
     evolutionMembers.add(testWrestlers.get(0)); // Triple H
     evolutionMembers.add(testWrestlers.get(2)); // Randy Orton
     evolution.setMembers(evolutionMembers);
@@ -195,7 +197,7 @@ class FactionListViewTest {
     dx.setFormedDate(Instant.now().minusSeconds(200 * 24 * 60 * 60)); // ~7 months ago
 
     // Add members to DX
-    List<Wrestler> dxMembers = new ArrayList<>();
+    Set<Wrestler> dxMembers = new HashSet<>();
     dxMembers.add(testWrestlers.get(1)); // Shawn Michaels
     dx.setMembers(dxMembers);
 

@@ -10,12 +10,17 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -71,25 +76,33 @@ public class Faction extends AbstractEntity<Long> {
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction", "rivalries", "injuries", "deck", "titleReigns"})
   @Builder.Default
-  private List<Wrestler> members = new ArrayList<>();
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private Set<Wrestler> members = new HashSet<>();
 
   // Teams associated with this faction
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction", "wrestler1", "wrestler2"})
   @Builder.Default
-  private List<Team> teams = new ArrayList<>();
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private Set<Team> teams = new HashSet<>();
 
   // Faction rivalries where this faction is faction1
   @OneToMany(mappedBy = "faction1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction1", "faction2"})
   @Builder.Default
-  private List<FactionRivalry> rivalriesAsFaction1 = new ArrayList<>();
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private Set<FactionRivalry> rivalriesAsFaction1 = new HashSet<>();
 
   // Faction rivalries where this faction is faction2
   @OneToMany(mappedBy = "faction2", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction1", "faction2"})
   @Builder.Default
-  private List<FactionRivalry> rivalriesAsFaction2 = new ArrayList<>();
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private Set<FactionRivalry> rivalriesAsFaction2 = new HashSet<>();
 
   @Override
   public @Nullable Long getId() {
@@ -162,21 +175,9 @@ public class Faction extends AbstractEntity<Long> {
 
   /** Get all active faction rivalries involving this faction. */
   public List<FactionRivalry> getActiveRivalries() {
-    List<FactionRivalry> activeRivalries = new ArrayList<>();
-
-    for (FactionRivalry rivalry : rivalriesAsFaction1) {
-      if (rivalry.getIsActive()) {
-        activeRivalries.add(rivalry);
-      }
-    }
-
-    for (FactionRivalry rivalry : rivalriesAsFaction2) {
-      if (rivalry.getIsActive()) {
-        activeRivalries.add(rivalry);
-      }
-    }
-
-    return activeRivalries;
+    return Stream.concat(rivalriesAsFaction1.stream(), rivalriesAsFaction2.stream())
+        .filter(FactionRivalry::getIsActive)
+        .collect(Collectors.toList());
   }
 
   /** Get the opposing faction in a rivalry. */

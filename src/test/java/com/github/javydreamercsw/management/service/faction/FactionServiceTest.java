@@ -135,7 +135,7 @@ class FactionServiceTest {
   @DisplayName("Should find faction by ID with members")
   void shouldFindFactionByIdWithMembers() {
     // Given
-    List<Wrestler> members = new ArrayList<>();
+    Set<Wrestler> members = new HashSet<>();
     members.add(testWrestler);
     testFaction.setMembers(members);
 
@@ -224,7 +224,7 @@ class FactionServiceTest {
   @DisplayName("Should remove member from faction")
   void shouldRemoveMemberFromFaction() {
     // Given
-    List<Wrestler> members = new ArrayList<>();
+    Set<Wrestler> members = new HashSet<>();
     members.add(testWrestler);
     testFaction.setMembers(members);
 
