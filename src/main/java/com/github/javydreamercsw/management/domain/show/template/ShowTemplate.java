@@ -48,9 +48,6 @@ public class ShowTemplate extends AbstractEntity<Long> {
   @Column(name = "notion_url")
   @Size(max = 500) private String notionUrl;
 
-  @Column(name = "external_id", unique = true)
-  @Size(max = 255) private String externalId;
-
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
