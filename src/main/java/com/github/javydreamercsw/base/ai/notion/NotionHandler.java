@@ -1555,7 +1555,7 @@ public class NotionHandler {
       return Optional.empty();
     }
     NotionClient client = new NotionClient(notionToken);
-    client.setHttpClient(new OkHttp4Client());
+    client.setHttpClient(new OkHttp4Client(60_000, 60_000, 60_000));
     client.setLogger(new notion.api.v1.logging.Slf4jLogger());
     return Optional.of(client);
   }
