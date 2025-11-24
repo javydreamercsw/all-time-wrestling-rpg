@@ -20,7 +20,6 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.domain.storyline.StorylineBranchRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -57,7 +56,6 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   @Autowired protected InjuryTypeRepository injuryTypeRepository;
   @Autowired protected SegmentRepository segmentRepository;
   @Autowired protected SegmentRuleRepository segmentRuleRepository;
-  @Autowired protected StorylineBranchRepository storylineBranchRepository;
   @Autowired protected NpcRepository npcRepository;
   @Autowired protected SeasonRepository seasonRepository;
   @Autowired protected SegmentRuleService segmentRuleService;
@@ -114,7 +112,6 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
     injuryTypeRepository.deleteAll();
     segmentRepository.deleteAll();
     segmentRuleRepository.deleteAll();
-    storylineBranchRepository.deleteAll();
     teamRepository.deleteAll();
     titleReignRepository.deleteAll();
     titleRepository.deleteAll();

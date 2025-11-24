@@ -236,7 +236,7 @@ public class NotionSyncScheduler {
    * @param entityName The name of the entity to sync
    * @return SyncResult for the specified entity
    */
-  public NotionSyncService.SyncResult triggerEntitySync(String entityName) {
+  public NotionSyncService.SyncResult triggerEntitySync(@NonNull String entityName) {
     log.info("=== MANUAL {} SYNC TRIGGERED ===", entityName.toUpperCase());
 
     try {
@@ -265,7 +265,7 @@ public class NotionSyncScheduler {
    * @param entityName The name of the entity to sync
    * @return SyncResult for the specified entity
    */
-  public NotionSyncService.SyncResult triggerEntitySyncToNotion(String entityName) {
+  public NotionSyncService.SyncResult triggerEntitySyncToNotion(@NonNull String entityName) {
     log.info("=== MANUAL {} SYNC TO NOTION TRIGGERED ===", entityName.toUpperCase());
     int syncedCount = 0;
     try {
