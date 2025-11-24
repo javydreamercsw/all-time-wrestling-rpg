@@ -1,5 +1,8 @@
 package com.github.javydreamercsw.management.config;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -30,6 +33,9 @@ public class NotionSyncProperties {
 
   /** Whether to load existing data from JSON files during sync. */
   private boolean loadFromJson = true;
+
+  /** Map to store the last sync time for each entity. */
+  private final Map<String, LocalDateTime> lastSyncTimes = new ConcurrentHashMap<>();
 
   /** Scheduler-specific configuration properties. */
   @Data
@@ -95,5 +101,25 @@ public class NotionSyncProperties {
    */
   public boolean isBackupEnabled() {
     return backup.enabled;
+  }
+
+  /**
+   * Updates the last sync time for a specific entity.
+   *
+   * @param entityName The name of the entity.
+   * @param syncTime The time of synchronization.
+   */
+  public void setLastSyncTime(String entityName, LocalDateTime syncTime) {
+    lastSyncTimes.put(entityName, syncTime);
+  }
+
+  /**
+   * Retrieves the last sync time for a specific entity.
+   *
+   * @param entityName The name of the entity.
+   * @return The last sync time, or null if it has never been synced.
+   */
+  public LocalDateTime getLastSyncTime(String entityName) {
+    return lastSyncTimes.get(entityName);
   }
 }
