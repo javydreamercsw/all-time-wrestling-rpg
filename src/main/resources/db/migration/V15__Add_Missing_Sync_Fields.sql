@@ -18,3 +18,6 @@ ALTER TABLE faction_rivalry ADD COLUMN external_id VARCHAR(255);
 ALTER TABLE faction_rivalry ADD COLUMN last_sync TIMESTAMP;
 ALTER TABLE injury_type ADD COLUMN last_sync TIMESTAMP;
 ALTER TABLE season ADD COLUMN last_sync TIMESTAMP;
+ALTER TABLE season ADD COLUMN external_id VARCHAR(255);
+ALTER TABLE inbox_item ADD COLUMN external_id VARCHAR(255);
+ALTER TABLE inbox_item ADD COLUMN last_sync TIMESTAMP;
