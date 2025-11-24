@@ -58,6 +58,12 @@ public class NotionSyncView extends Main {
   private final NotionSyncProperties syncProperties;
   private final SyncProgressTracker progressTracker;
   private final EntityDependencyAnalyzer dependencyAnalyzer;
+  private ComboBox<SyncDirection> syncDirection;
+
+  private enum SyncDirection {
+    FROM_NOTION,
+    TO_NOTION
+  }
 
   // UI Components
   private Button syncAllButton;
@@ -142,6 +148,10 @@ public class NotionSyncView extends Main {
     HorizontalLayout controlSection = new HorizontalLayout();
     controlSection.addClassNames(LumoUtility.Gap.MEDIUM);
 
+    syncDirection = new ComboBox<>("Sync Direction");
+    syncDirection.setItems(SyncDirection.values());
+    syncDirection.setValue(SyncDirection.FROM_NOTION);
+
     syncAllButton = new Button("Sync All Entities", VaadinIcon.REFRESH.create());
     syncAllButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     syncAllButton.addClickListener(e -> triggerFullSync());
@@ -164,7 +174,11 @@ public class NotionSyncView extends Main {
         e -> {
           String selectedEntity = entitySelectionCombo.getValue();
           if (selectedEntity != null && !selectedEntity.isEmpty()) {
-            triggerEntitySync(selectedEntity);
+            if (syncDirection.getValue() == SyncDirection.FROM_NOTION) {
+              triggerEntitySync(selectedEntity);
+            } else {
+              triggerEntitySyncToNotion(selectedEntity);
+            }
           } else {
             showNotification("Please select an entity to sync", NotificationVariant.LUMO_CONTRAST);
           }
@@ -176,7 +190,12 @@ public class NotionSyncView extends Main {
 
     controlSection.setAlignItems(Alignment.BASELINE);
     controlSection.add(
-        syncAllButton, entitySelectionCombo, lastEntitySyncLabel, syncSelectedButton, statusButton);
+        syncAllButton,
+        syncDirection,
+        entitySelectionCombo,
+        lastEntitySyncLabel,
+        syncSelectedButton,
+        statusButton);
     return controlSection;
   }
 
@@ -296,6 +315,25 @@ public class NotionSyncView extends Main {
                 "All entities synced successfully");
           } catch (Exception e) {
             log.error("Full sync failed", e);
+            return new SyncOperationResult(false, 0, 0, "Sync failed: " + e.getMessage());
+          }
+        });
+  }
+
+  private void triggerEntitySyncToNotion(@NonNull String entityName) {
+    if (syncInProgress) {
+      showNotification("Sync already in progress", NotificationVariant.LUMO_CONTRAST);
+      return;
+    }
+    String displayName = entityName.substring(0, 1).toUpperCase() + entityName.substring(1);
+    startSyncOperation(
+        "Syncing " + displayName + " to Notion...",
+        () -> {
+          try {
+            notionSyncScheduler.triggerEntitySyncToNotion(entityName);
+            return new SyncOperationResult(true, 1, 1, "Sync to Notion successful!");
+          } catch (Exception e) {
+            log.error("Sync to Notion failed", e);
             return new SyncOperationResult(false, 0, 0, "Sync failed: " + e.getMessage());
           }
         });

@@ -6,9 +6,12 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,13 +28,20 @@ class NotionSyncSchedulerTest extends BaseTest {
 
   @Mock private NotionSyncProperties syncProperties;
   @Mock private EntityDependencyAnalyzer dependencyAnalyzer;
+  @Mock private WrestlerNotionSyncService wrestlerNotionSyncService;
+  @Mock private WrestlerRepository wrestlerRepository;
 
   private NotionSyncScheduler notionSyncScheduler;
 
   @BeforeEach
   void setUp() {
     notionSyncScheduler =
-        new NotionSyncScheduler(notionSyncService, syncProperties, dependencyAnalyzer);
+        new NotionSyncScheduler(
+            notionSyncService,
+            syncProperties,
+            dependencyAnalyzer,
+            wrestlerNotionSyncService,
+            wrestlerRepository);
   }
 
   @Test
@@ -139,6 +149,23 @@ class NotionSyncSchedulerTest extends BaseTest {
     assertFalse(result.isSuccess());
     assertEquals("unknown", result.getEntityType());
     assertEquals("Unknown entity type", result.getErrorMessage());
+  }
+
+  @Test
+  @DisplayName("Should trigger sync to notion for wrestlers")
+  void shouldTriggerSyncToNotionForWrestlers() {
+    // Given
+    Wrestler wrestler = new Wrestler();
+    wrestler.setName("Test Wrestler");
+    List<Wrestler> wrestlers = Collections.singletonList(wrestler);
+    when(wrestlerRepository.findAll()).thenReturn(wrestlers);
+
+    // When
+    notionSyncScheduler.triggerEntitySyncToNotion("wrestlers");
+
+    // Then
+    verify(wrestlerRepository).findAll();
+    verify(wrestlerNotionSyncService).syncToNotion(wrestler);
   }
 
   @Test

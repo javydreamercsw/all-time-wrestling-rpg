@@ -1,6 +1,9 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +32,8 @@ public class NotionSyncScheduler {
   private final NotionSyncService notionSyncService;
   private final NotionSyncProperties syncProperties;
   private final EntityDependencyAnalyzer dependencyAnalyzer;
+  private final WrestlerNotionSyncService wrestlerNotionSyncService;
+  private final WrestlerRepository wrestlerRepository;
 
   /**
    * Gets the list of entities to sync using automatic dependency analysis. Analyzes entity
@@ -251,6 +256,19 @@ public class NotionSyncScheduler {
     } catch (Exception e) {
       log.error("❌ Unexpected error during manual {} sync: {}", entityName, e.getMessage(), e);
       return NotionSyncService.SyncResult.failure(entityName, e.getMessage());
+    }
+  }
+
+  /**
+   * Manual trigger for syncing a specific entity to Notion.
+   *
+   * @param entityName The name of the entity to sync
+   */
+  public void triggerEntitySyncToNotion(String entityName) {
+    log.info("=== MANUAL {} SYNC TO NOTION TRIGGERED ===", entityName.toUpperCase());
+    if (entityName.equalsIgnoreCase("wrestlers")) {
+      List<Wrestler> wrestlers = wrestlerRepository.findAll();
+      wrestlers.forEach(wrestlerNotionSyncService::syncToNotion);
     }
   }
 

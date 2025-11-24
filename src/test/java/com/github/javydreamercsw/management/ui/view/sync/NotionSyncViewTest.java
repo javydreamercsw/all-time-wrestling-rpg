@@ -146,13 +146,19 @@ class NotionSyncViewTest {
         (ComboBox<String>)
             notionSyncView
                 .getChildren()
-                .filter(c -> c instanceof HorizontalLayout)
+                .filter(c -> c instanceof HorizontalLayout) // Find the control section
                 .findFirst()
-                .get()
+                .orElseThrow(() -> new AssertionError("Control section not found"))
                 .getChildren()
-                .filter(c -> c instanceof ComboBox)
+                .filter(c -> c instanceof ComboBox) // Find all ComboBoxes in the section
+                .skip(1) // Skip the first ComboBox (syncDirection)
+                .map(c -> (ComboBox<String>) c) // Cast to ComboBox<String>
+                .filter(
+                    comboBox ->
+                        "Select Entity to Sync"
+                            .equals(comboBox.getLabel())) // Further filter by label if needed
                 .findFirst()
-                .get();
+                .orElseThrow(() -> new AssertionError("Entity selection combo box not found"));
 
     List<String> dropdownItems = new ArrayList<>();
     entitySelectionCombo.getDataProvider().fetch(new Query<>()).forEach(dropdownItems::add);
