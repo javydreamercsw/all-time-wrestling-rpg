@@ -47,7 +47,6 @@ public class NarrationDialog extends Dialog {
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
   private final WrestlerService wrestlerService;
-  private final TitleService titleService;
   private final ShowService showService;
 
   private final ProgressBar progressBar;
@@ -75,7 +74,6 @@ public class NarrationDialog extends Dialog {
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
-    this.titleService = titleService;
     this.showService = showService;
     this.onSaveCallback = onSaveCallback; // Assign callback
 
@@ -228,9 +226,7 @@ public class NarrationDialog extends Dialog {
         wrestlerService.findAllAsDTO().stream()
             .sorted(Comparator.comparing(WrestlerDTO::getName))
             .collect(Collectors.toList()));
-    if (wrestler != null) {
-      wrestlersCombo.setValue(new java.util.HashSet<>(List.of(wrestler)));
-    }
+    wrestlersCombo.setValue(new HashSet<>(List.of(wrestler)));
 
     Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
     removeTeamButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
@@ -592,8 +588,11 @@ public class NarrationDialog extends Dialog {
           restTemplate.postForEntity(
               baseUrl + "/api/segment-narration/narrate/" + provider, context, String.class);
 
-      handleNarrationResponse(response.getBody());
-
+      if (response.getBody() != null) {
+        handleNarrationResponse(response.getBody());
+      } else {
+        log.warn("GOt an empty response from provider!");
+      }
     } catch (org.springframework.web.client.HttpClientErrorException e) {
       log.error("HTTP Client Error retrying with provider {}: {}", provider, e.getMessage(), e);
       try {
