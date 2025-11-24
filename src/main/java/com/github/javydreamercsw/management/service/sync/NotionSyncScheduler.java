@@ -263,12 +263,29 @@ public class NotionSyncScheduler {
    * Manual trigger for syncing a specific entity to Notion.
    *
    * @param entityName The name of the entity to sync
+   * @return SyncResult for the specified entity
    */
-  public void triggerEntitySyncToNotion(String entityName) {
+  public NotionSyncService.SyncResult triggerEntitySyncToNotion(String entityName) {
     log.info("=== MANUAL {} SYNC TO NOTION TRIGGERED ===", entityName.toUpperCase());
-    if (entityName.equalsIgnoreCase("wrestlers")) {
-      List<Wrestler> wrestlers = wrestlerRepository.findAll();
-      wrestlers.forEach(wrestlerNotionSyncService::syncToNotion);
+    int syncedCount = 0;
+    try {
+      if (entityName.equalsIgnoreCase("wrestlers")) {
+        List<Wrestler> wrestlers = wrestlerRepository.findAll();
+        for (Wrestler wrestler : wrestlers) {
+          wrestlerNotionSyncService.syncToNotion(wrestler);
+          syncedCount++;
+        }
+        syncProperties.setLastSyncTime(entityName, LocalDateTime.now());
+        return NotionSyncService.SyncResult.success(entityName, syncedCount, 0, 0);
+      } else {
+        log.warn("Unknown entity type for sync to Notion: {}", entityName);
+        return NotionSyncService.SyncResult.failure(
+            entityName, "Unknown entity type for sync to Notion");
+      }
+    } catch (Exception e) {
+      log.error(
+          "❌ Unexpected error during manual {} sync to Notion: {}", entityName, e.getMessage(), e);
+      return NotionSyncService.SyncResult.failure(entityName, e.getMessage());
     }
   }
 

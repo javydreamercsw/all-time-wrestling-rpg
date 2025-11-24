@@ -325,15 +325,26 @@ public class NotionSyncView extends Main {
       showNotification("Sync already in progress", NotificationVariant.LUMO_CONTRAST);
       return;
     }
+    String operationId = entityName + "-sync-to-notion-" + System.currentTimeMillis();
     String displayName = entityName.substring(0, 1).toUpperCase() + entityName.substring(1);
-    startSyncOperation(
+    startSyncOperationWithProgress(
         "Syncing " + displayName + " to Notion...",
+        operationId,
         () -> {
           try {
-            notionSyncScheduler.triggerEntitySyncToNotion(entityName);
-            return new SyncOperationResult(true, 1, 1, "Sync to Notion successful!");
+            NotionSyncService.SyncResult result =
+                notionSyncScheduler.triggerEntitySyncToNotion(entityName);
+            return new SyncOperationResult(
+                result.isSuccess(),
+                1,
+                result.getSyncedCount(),
+                result.isSuccess()
+                    ? displayName + " synced to Notion successfully"
+                    : result.getErrorMessage());
           } catch (Exception e) {
             log.error("Sync to Notion failed", e);
+            progressTracker.failOperation(
+                operationId, displayName + " sync to Notion failed: " + e.getMessage());
             return new SyncOperationResult(false, 0, 0, "Sync failed: " + e.getMessage());
           }
         });

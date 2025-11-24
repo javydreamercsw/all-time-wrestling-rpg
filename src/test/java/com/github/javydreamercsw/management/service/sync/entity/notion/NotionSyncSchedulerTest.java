@@ -10,7 +10,9 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
+import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,8 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class NotionSyncSchedulerTest extends BaseTest {
 
-  @Mock
-  private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
+  @Mock private NotionSyncService notionSyncService;
 
   @Mock private NotionSyncProperties syncProperties;
   @Mock private EntityDependencyAnalyzer dependencyAnalyzer;
@@ -65,13 +66,9 @@ class NotionSyncSchedulerTest extends BaseTest {
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
     when(notionSyncService.syncShows(anyString()))
-        .thenReturn(
-            com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult.success(
-                "Shows", 5, 0, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 5, 0, 0));
     when(notionSyncService.syncWrestlers(anyString()))
-        .thenReturn(
-            com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult.success(
-                "Wrestlers", 3, 0, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Wrestlers", 3, 0, 0));
 
     // When
     notionSyncScheduler.performScheduledSync();
@@ -88,9 +85,7 @@ class NotionSyncSchedulerTest extends BaseTest {
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows"));
     when(notionSyncService.syncShows(anyString()))
-        .thenReturn(
-            com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult.failure(
-                "Shows", "Connection failed"));
+        .thenReturn(NotionSyncService.SyncResult.failure("Shows", "Connection failed"));
 
     // When & Then - Should not throw exception
     assertDoesNotThrow(() -> notionSyncScheduler.performScheduledSync());
@@ -104,9 +99,7 @@ class NotionSyncSchedulerTest extends BaseTest {
     // Given
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows"));
     when(notionSyncService.syncShows(anyString()))
-        .thenReturn(
-            com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult.success(
-                "Shows", 10, 0, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 10, 0, 0));
 
     // When
     List<BaseSyncService.SyncResult> results = notionSyncScheduler.triggerManualSync();
@@ -124,9 +117,7 @@ class NotionSyncSchedulerTest extends BaseTest {
   void shouldTriggerSyncForSpecificEntity() {
     // Given
     when(notionSyncService.syncShows(anyString()))
-        .thenReturn(
-            com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult.success(
-                "Shows", 7, 0, 0));
+        .thenReturn(NotionSyncService.SyncResult.success("Shows", 7, 0, 0));
 
     // When
     BaseSyncService.SyncResult result = notionSyncScheduler.triggerEntitySync("shows");
@@ -152,8 +143,8 @@ class NotionSyncSchedulerTest extends BaseTest {
   }
 
   @Test
-  @DisplayName("Should trigger sync to notion for wrestlers")
-  void shouldTriggerSyncToNotionForWrestlers() {
+  @DisplayName("Should trigger sync to notion for wrestlers and return success")
+  void shouldTriggerSyncToNotionForWrestlersAndReturnSuccess() {
     // Given
     Wrestler wrestler = new Wrestler();
     wrestler.setName("Test Wrestler");
@@ -161,11 +152,33 @@ class NotionSyncSchedulerTest extends BaseTest {
     when(wrestlerRepository.findAll()).thenReturn(wrestlers);
 
     // When
-    notionSyncScheduler.triggerEntitySyncToNotion("wrestlers");
+    NotionSyncService.SyncResult result =
+        notionSyncScheduler.triggerEntitySyncToNotion("wrestlers");
 
     // Then
     verify(wrestlerRepository).findAll();
     verify(wrestlerNotionSyncService).syncToNotion(wrestler);
+    verify(syncProperties)
+        .setLastSyncTime(
+            eq("wrestlers"), any(LocalDateTime.class)); // Verify with any(LocalDateTime.class)
+    assertNotNull(result);
+    assertTrue(result.isSuccess());
+    assertEquals("wrestlers", result.getEntityType());
+    assertEquals(1, result.getSyncedCount());
+  }
+
+  @Test
+  @DisplayName("Should handle unknown entity type for sync to Notion")
+  void shouldHandleUnknownEntityTypeForSyncToNotion() {
+    // When
+    NotionSyncService.SyncResult result = notionSyncScheduler.triggerEntitySyncToNotion("unknown");
+
+    // Then
+    assertNotNull(result);
+    assertFalse(result.isSuccess());
+    assertEquals("unknown", result.getEntityType());
+    assertEquals("Unknown entity type for sync to Notion", result.getErrorMessage());
+    verifyNoInteractions(wrestlerRepository, wrestlerNotionSyncService);
   }
 
   @Test
