@@ -216,7 +216,10 @@ public class NotionSyncController {
     try {
       log.info("Manual shows sync triggered via REST API");
 
-      NotionSyncService.SyncResult result = notionSyncService.syncShows();
+      NotionSyncService.SyncResult result =
+          notionSyncService.syncShows(
+              "manual-show-sync-" + java.util.UUID.randomUUID(),
+              com.github.javydreamercsw.management.service.sync.base.SyncDirection.INBOUND);
 
       Map<String, Object> response =
           Map.of(

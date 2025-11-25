@@ -7,6 +7,7 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -32,7 +33,8 @@ class FactionSyncIntegrationTest extends ManagementIntegrationTest {
     log.info("🚀 Starting real faction sync integration test...");
 
     // When - Perform real sync with real services
-    BaseSyncService.SyncResult result = notionSyncService.syncFactions("integration-test-factions");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncFactions("integration-test-factions", SyncDirection.INBOUND);
 
     // Then - Verify the sync result
     assertNotNull(result, "Sync result should not be null");
@@ -181,7 +183,8 @@ class FactionSyncIntegrationTest extends ManagementIntegrationTest {
     String operationId = "test-faction-sync-" + System.currentTimeMillis();
 
     // When - Perform sync with specific operation ID
-    BaseSyncService.SyncResult result = notionSyncService.syncFactions(operationId);
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncFactions(operationId, SyncDirection.INBOUND);
 
     // Then - Verify the result structure
     assertNotNull(result, "Sync result should not be null");

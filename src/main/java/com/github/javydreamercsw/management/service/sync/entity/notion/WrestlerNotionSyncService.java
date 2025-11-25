@@ -30,7 +30,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class WrestlerNotionSyncService implements NotionSyncService<Wrestler> {
+public class WrestlerNotionSyncService implements NotionSyncService {
 
   private final WrestlerRepository wrestlerRepository;
   // Enhanced sync infrastructure services - autowired

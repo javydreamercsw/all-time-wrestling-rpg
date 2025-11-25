@@ -22,6 +22,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 class ShowSyncIT extends ManagementIntegrationTest {
   @Autowired private ShowRepository showRepository;
 
+  @Autowired
+  private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
+
   @Test
   @DisplayName("Should validate sync result structure")
   void shouldValidateSyncResultStructure() {
@@ -176,7 +179,10 @@ class ShowSyncIT extends ManagementIntegrationTest {
     if (!showIds.isEmpty()) {
       return; // Skip test if there are shows to sync
     }
-    BaseSyncService.SyncResult result = notionSyncService.syncShows("test-operation-303");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncShows(
+            "test-operation-303",
+            com.github.javydreamercsw.management.service.sync.base.SyncDirection.INBOUND);
 
     // Then - Verify sync handles empty results gracefully
     assertNotNull(result);

@@ -3,6 +3,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -28,9 +29,7 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,44 +43,12 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private ShowTemplateRepository showTemplateRepository;
 
-  private ShowType testShowType;
-  private Season testSeason;
-  private ShowTemplate testShowTemplate;
-
-  @BeforeEach
-  void setUp() {
-    testShowType = new ShowType();
-    testShowType.setName("Test ShowType");
-    testShowType.setDescription("Test ShowType Description");
-    testShowType.setExternalId(UUID.randomUUID().toString()); // Mock external ID
-    showTypeRepository.save(testShowType);
-
-    testSeason = new Season();
-    testSeason.setName("Test Season");
-    testSeason.setStartDate(Instant.now());
-    testSeason.setIsActive(true);
-    testSeason.setExternalId(UUID.randomUUID().toString()); // Mock external ID
-    seasonRepository.save(testSeason);
-
-    testShowTemplate = new ShowTemplate();
-    testShowTemplate.setName("Test Template");
-    testShowTemplate.setExternalId(UUID.randomUUID().toString()); // Mock external ID
-    testShowTemplate.setShowType(testShowType); // Set the required ShowType
-    showTemplateRepository.save(testShowTemplate);
-  }
-
-  @AfterEach
-  public void tearDown() {
-    // Clean up created entities to avoid conflicts in other tests
-    showRepository.deleteAll();
-    showTypeRepository.deleteAll();
-    seasonRepository.deleteAll();
-    showTemplateRepository.deleteAll();
-  }
-
   @Test
   void testSyncToNotion() {
     Show show = null;
+    ShowType testShowType = null;
+    Season testSeason = null;
+    ShowTemplate testShowTemplate = null;
     Optional<NotionHandler> handlerOpt = NotionHandler.getInstance();
     if (handlerOpt.isEmpty()) {
       Assertions.fail("Notion credentials not configured, skipping test.");
@@ -92,9 +59,27 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
       Assertions.fail("Unable to create Notion client, skipping test.");
     }
     try (NotionClient client = clientOptional.get()) {
+      testShowType = new ShowType();
+      testShowType.setName("Test ShowType " + UUID.randomUUID());
+      testShowType.setDescription("Test ShowType Description");
+      testShowType.setExternalId(UUID.randomUUID().toString()); // Mock external ID
+      showTypeRepository.save(testShowType);
+
+      testSeason = new Season();
+      testSeason.setName("Test Season " + UUID.randomUUID());
+      testSeason.setStartDate(Instant.now());
+      testSeason.setIsActive(true);
+      testSeason.setExternalId(UUID.randomUUID().toString()); // Mock external ID
+      seasonRepository.save(testSeason);
+
+      testShowTemplate = new ShowTemplate();
+      testShowTemplate.setName("Test Template " + UUID.randomUUID());
+      testShowTemplate.setExternalId(UUID.randomUUID().toString()); // Mock external ID
+      testShowTemplate.setShowType(testShowType); // Set the required ShowType
+      showTemplateRepository.save(testShowTemplate);
       // Create a new Show
       show = new Show();
-      show.setName("Test Show");
+      show.setName("Test Show " + UUID.randomUUID());
       show.setDescription("A test wrestling show");
       show.setType(testShowType);
       show.setSeason(testSeason);
@@ -103,7 +88,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
       showRepository.save(show);
 
       // Sync to Notion for the first time
-      showNotionSyncService.syncToNotion(show);
+      showNotionSyncService.syncToNotion("test-op-1");
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(show.getId());
@@ -117,7 +102,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedShow.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
-          "Test Show",
+          updatedShow.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
@@ -140,12 +125,13 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
       assertNotNull(props.get("Date").getDate());
 
       // Sync to Notion again with updates
-      updatedShow.setName("Test Show Updated");
+      updatedShow.setName("Test Show Updated " + UUID.randomUUID());
       updatedShow.setDescription("Updated description for the show");
       updatedShow.setShowDate(LocalDate.now().plusDays(7));
-      showNotionSyncService.syncToNotion(updatedShow);
+      showRepository.save(updatedShow);
+      showNotionSyncService.syncToNotion("test-op-2");
       Show updatedShow2 = showRepository.findById(show.getId()).get();
-      Assertions.assertEquals(updatedShow2.getLastSync(), updatedShow.getLastSync());
+      assertTrue(updatedShow2.getLastSync().isAfter(updatedShow.getLastSync()));
 
       // Verify updated properties
       page =
@@ -153,7 +139,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedShow.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
-          "Test Show Updated",
+          updatedShow2.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());

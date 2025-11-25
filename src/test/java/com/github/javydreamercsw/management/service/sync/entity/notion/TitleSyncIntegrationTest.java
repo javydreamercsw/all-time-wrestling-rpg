@@ -9,7 +9,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.ui.view.sync.SyncDirection;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

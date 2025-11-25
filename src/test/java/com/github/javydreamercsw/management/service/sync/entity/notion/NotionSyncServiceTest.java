@@ -9,7 +9,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.ui.view.sync.SyncDirection;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -97,7 +97,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // When - Sync wrestlers from Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncWrestlers("integration-test-wrestlers", SyncDirection.OUTBOUND);
+        notionSyncService.syncWrestlers("integration-test-wrestlers", SyncDirection.INBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -116,7 +116,8 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     when(seasonSyncService.syncSeasons(anyString())).thenReturn(expectedResult);
 
     // When - Sync seasons from Notion
-    BaseSyncService.SyncResult result = notionSyncService.syncSeasons("integration-test-seasons");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncSeasons("integration-test-seasons", SyncDirection.INBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -155,7 +156,8 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     when(factionSyncService.syncFactions(anyString())).thenReturn(expectedResult);
 
     // When - Sync factions from Notion
-    BaseSyncService.SyncResult result = notionSyncService.syncFactions("integration-test-factions");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncFactions("integration-test-factions", SyncDirection.INBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -171,15 +173,16 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Shows", 1, 0, 0);
-    when(showSyncService.syncShows()).thenReturn(expectedResult);
+    when(showSyncService.syncShows(anyString())).thenReturn(expectedResult);
 
     // When - Sync shows from Notion
-    BaseSyncService.SyncResult result = notionSyncService.syncShows();
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncShows("integration-test-shows", SyncDirection.INBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
     assertThat(result).isEqualTo(expectedResult);
-    verify(showSyncService, times(1)).syncShows();
+    verify(showSyncService, times(1)).syncShows(anyString());
   }
 
   @Test
@@ -212,7 +215,8 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     when(npcSyncService.syncNpcs(anyString())).thenReturn(expectedResult);
 
     // When - Sync NPCs from Notion
-    BaseSyncService.SyncResult result = notionSyncService.syncNpcs("integration-test-npcs");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncNpcs("integration-test-npcs", SyncDirection.INBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -272,7 +276,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // When - Sync rivalries from Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncRivalries("integration-test-rivalries");
+        notionSyncService.syncRivalries("integration-test-rivalries", SyncDirection.INBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");

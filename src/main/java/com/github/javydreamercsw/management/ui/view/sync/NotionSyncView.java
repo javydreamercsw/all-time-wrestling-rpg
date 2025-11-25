@@ -7,6 +7,7 @@ import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker.SyncProgress;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.button.Button;

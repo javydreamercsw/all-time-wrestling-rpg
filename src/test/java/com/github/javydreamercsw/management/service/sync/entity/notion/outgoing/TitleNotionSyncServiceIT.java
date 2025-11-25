@@ -9,7 +9,6 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
@@ -26,9 +25,7 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,46 +37,11 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
   @Autowired private TitleNotionSyncService titleNotionSyncService;
   @Autowired private WrestlerRepository wrestlerRepository;
 
-  private Wrestler testChampion;
-  private Wrestler testContender;
-
-  @BeforeEach
-  void setUp() {
-    testChampion = new Wrestler();
-    testChampion.setName("Test Champion");
-    testChampion.setExternalId(UUID.randomUUID().toString());
-    testChampion.setStartingHealth(100);
-    testChampion.setLowHealth(20);
-    testChampion.setStartingStamina(100);
-    testChampion.setLowStamina(20);
-    testChampion.setDeckSize(20);
-    testChampion.setTier(WrestlerTier.MAIN_EVENTER);
-    testChampion.setGender(Gender.MALE);
-    wrestlerRepository.save(testChampion);
-
-    testContender = new Wrestler();
-    testContender.setName("Test Contender");
-    testContender.setExternalId(UUID.randomUUID().toString());
-    testContender.setStartingHealth(100);
-    testContender.setLowHealth(20);
-    testContender.setStartingStamina(100);
-    testContender.setLowStamina(20);
-    testContender.setDeckSize(20);
-    testContender.setTier(WrestlerTier.CONTENDER);
-    testContender.setGender(Gender.MALE);
-    wrestlerRepository.save(testContender);
-  }
-
-  @AfterEach
-  public void tearDown() {
-    // Clean up created entities
-    titleRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-  }
-
   @Test
   void testSyncToNotion() {
     Title title = null;
+    Wrestler testChampion = null;
+    Wrestler testContender = null;
     Optional<NotionHandler> handlerOpt = NotionHandler.getInstance();
     if (handlerOpt.isEmpty()) {
       Assertions.fail("Notion credentials not configured, skipping test.");
@@ -90,19 +52,25 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       Assertions.fail("Unable to create Notion client, skipping test.");
     }
     try (NotionClient client = clientOptional.get()) {
+      testChampion = createTestWrestler("Test Champion " + UUID.randomUUID());
+      wrestlerRepository.save(testChampion);
+
+      testContender = createTestWrestler("Test Contender " + UUID.randomUUID());
+      wrestlerRepository.save(testContender);
+
       // Create a new Title
       title = new Title();
-      title.setName("World Championship");
+      title.setName("World Championship " + UUID.randomUUID());
       title.setDescription("The most prestigious title");
       title.setTier(WrestlerTier.MAIN_EVENTER);
-      title.setGender(Gender.MALE);
+      title.setGender(com.github.javydreamercsw.management.domain.wrestler.Gender.MALE);
       title.setIsActive(true);
       title.setChampion(List.of(testChampion));
       title.setContender(List.of(testContender));
       titleRepository.save(title);
 
       // Sync to Notion for the first time
-      titleNotionSyncService.syncToNotion(title);
+      titleNotionSyncService.syncToNotion("test-op-1");
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(title.getId());
@@ -116,7 +84,7 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedTitle.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
-          "World Championship",
+          updatedTitle.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
@@ -126,9 +94,12 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
                   Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
               .getContent());
       assertEquals(
-          WrestlerTier.MAIN_EVENTER.getDisplayName(), props.get("Tier").getSelect().getName());
-      assertEquals(Gender.MALE.name(), props.get("Gender").getSelect().getName());
-      assertTrue(props.get("Active").getCheckbox());
+          WrestlerTier.MAIN_EVENTER.getDisplayName(),
+          Objects.requireNonNull(props.get("Tier").getSelect()).getName());
+      assertEquals(
+          com.github.javydreamercsw.management.domain.wrestler.Gender.MALE.name(),
+          Objects.requireNonNull(props.get("Gender").getSelect()).getName());
+      assertTrue(Objects.requireNonNull(props.get("Active").getCheckbox()));
       assertNotNull(props.get("Champion").getRelation());
       assertFalse(props.get("Champion").getRelation().isEmpty());
       assertEquals(
@@ -139,15 +110,16 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
           testContender.getExternalId(), props.get("Contender").getRelation().get(0).getId());
 
       // Sync to Notion again with updates
-      updatedTitle.setName("Unified World Championship");
+      updatedTitle.setName("Unified World Championship " + UUID.randomUUID());
       updatedTitle.setDescription("The undisputed title");
       updatedTitle.setTier(WrestlerTier.ICON);
-      updatedTitle.setGender(Gender.FEMALE);
+      updatedTitle.setGender(com.github.javydreamercsw.management.domain.wrestler.Gender.FEMALE);
       updatedTitle.setIsActive(false);
       updatedTitle.setChampion(Collections.emptyList()); // Vacate title
-      titleNotionSyncService.syncToNotion(updatedTitle);
+      titleRepository.save(updatedTitle);
+      titleNotionSyncService.syncToNotion("test-op-2");
       Title updatedTitle2 = titleRepository.findById(title.getId()).get();
-      Assertions.assertEquals(updatedTitle2.getLastSync(), updatedTitle.getLastSync());
+      assertTrue(updatedTitle2.getLastSync().isAfter(updatedTitle.getLastSync()));
 
       // Verify updated properties
       page =
@@ -155,7 +127,7 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedTitle.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
-          "Unified World Championship",
+          updatedTitle2.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
@@ -164,9 +136,13 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
               .getContent());
-      assertEquals(WrestlerTier.ICON.getDisplayName(), props.get("Tier").getSelect().getName());
-      assertEquals(Gender.FEMALE.name(), props.get("Gender").getSelect().getName());
-      assertFalse(props.get("Active").getCheckbox());
+      assertEquals(
+          WrestlerTier.ICON.getDisplayName(),
+          Objects.requireNonNull(props.get("Tier").getSelect()).getName());
+      assertEquals(
+          com.github.javydreamercsw.management.domain.wrestler.Gender.FEMALE.name(),
+          Objects.requireNonNull(props.get("Gender").getSelect()).getName());
+      assertFalse(Objects.requireNonNull(props.get("Active").getCheckbox()));
       // Champion relation should be empty if vacated
       assertTrue(props.get("Champion").getRelation().isEmpty());
 
@@ -181,13 +157,13 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
           // Ignore timeout on cleanup
         }
       }
-      if (title != null) {
+      if (title != null && title.getId() != null) {
         titleRepository.delete(title);
       }
-      if (testChampion != null) {
+      if (testChampion != null && testChampion.getId() != null) {
         wrestlerRepository.delete(testChampion);
       }
-      if (testContender != null) {
+      if (testContender != null && testContender.getId() != null) {
         wrestlerRepository.delete(testContender);
       }
     }

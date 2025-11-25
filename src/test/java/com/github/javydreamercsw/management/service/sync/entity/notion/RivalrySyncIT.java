@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -10,6 +11,7 @@ import com.github.javydreamercsw.management.domain.faction.FactionRivalryReposit
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +33,7 @@ class RivalrySyncIT extends ManagementIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    when(notionSyncService.syncRivalries(anyString()))
+    when(notionSyncService.syncRivalries(anyString(), any(SyncDirection.class)))
         .thenReturn(
             com.github.javydreamercsw.management.service.sync.NotionSyncService.SyncResult.success(
                 "Rivalries", 0, 0, 0));
@@ -49,7 +51,7 @@ class RivalrySyncIT extends ManagementIntegrationTest {
 
     // When - Sync rivalries from real Notion database
     BaseSyncService.SyncResult result =
-        notionSyncService.syncRivalries("test-operation-rivalry-123");
+        notionSyncService.syncRivalries("test-operation-rivalry-123", SyncDirection.INBOUND);
 
     // Then - Verify sync completed successfully (regardless of rivalry count)
     assertThat(result).isNotNull();
@@ -83,7 +85,7 @@ class RivalrySyncIT extends ManagementIntegrationTest {
     int initialRivalryCount = factionRivalryRepository.findAll().size();
 
     // When - Sync faction rivalries from real Notion database
-    notionSyncService.syncFactions("test-operation-faction-123");
+    notionSyncService.syncFactions("test-operation-faction-123", SyncDirection.INBOUND);
     BaseSyncService.SyncResult result =
         notionSyncService.syncFactionRivalries("test-operation-faction-rivalry-123");
 

@@ -63,7 +63,7 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
       rivalryRepository.save(rivalry);
 
       // Sync to Notion for the first time
-      rivalryNotionSyncService.syncToNotion(rivalry);
+      rivalryNotionSyncService.syncToNotion("test-op-1");
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(rivalry.getId());
@@ -93,13 +93,13 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
           // Ignore timeout on cleanup
         }
         rivalryRepository.delete(rivalry);
-      } else if (rivalry != null) {
+      } else if (rivalry != null && rivalry.getId() != null) {
         rivalryRepository.delete(rivalry);
       }
-      if (wrestler1 != null) {
+      if (wrestler1 != null && wrestler1.getId() != null) {
         wrestlerRepository.delete(wrestler1);
       }
-      if (wrestler2 != null) {
+      if (wrestler2 != null && wrestler2.getId() != null) {
         wrestlerRepository.delete(wrestler2);
       }
     }

@@ -27,6 +27,7 @@ public class TitleSyncService extends BaseSyncService {
   @Autowired protected TitleRepository titleRepository;
   @Autowired protected WrestlerRepository wrestlerRepository;
   @Autowired protected TitleReignRepository titleReignRepository;
+  @Autowired private TitleNotionSyncService titleNotionSyncService;
 
   public TitleSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -267,5 +268,9 @@ public class TitleSyncService extends BaseSyncService {
       title.setContender(new java.util.ArrayList<>());
       titleRepository.save(title);
     }
+  }
+
+  public SyncResult syncToNotion(@NonNull String operationId) {
+    return titleNotionSyncService.syncToNotion(operationId);
   }
 }

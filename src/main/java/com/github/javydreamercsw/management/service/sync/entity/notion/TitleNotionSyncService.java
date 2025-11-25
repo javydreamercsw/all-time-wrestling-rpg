@@ -15,6 +15,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.common.PropertyType;
 import notion.api.v1.model.databases.DatabaseProperty;
@@ -28,7 +29,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class TitleNotionSyncService implements NotionSyncService<Title> {
+@Slf4j
+public class TitleNotionSyncService implements NotionSyncService {
 
   private final TitleRepository titleRepository;
   // Enhanced sync infrastructure services - autowired
@@ -50,7 +52,17 @@ public class TitleNotionSyncService implements NotionSyncService<Title> {
             int created = 0;
             int processedCount = 0;
             progressTracker.startOperation(operationId, "Sync Titles", 1);
-            for (Title entity : titleRepository.findAll()) {
+            List<Title> titles = titleRepository.findAll();
+            for (Title entity : titles) {
+              // Update progress every 5 entities
+              if (processedCount % 5 == 0) {
+                progressTracker.updateProgress(
+                    operationId,
+                    1,
+                    String.format(
+                        "Saving titles to Notion... (%d/%d processedCount)",
+                        processedCount, titles.size()));
+              }
               try {
                 Map<String, PageProperty> properties = new HashMap<>();
                 properties.put(
@@ -308,10 +320,18 @@ public class TitleNotionSyncService implements NotionSyncService<Title> {
                 titleRepository.save(entity);
                 processedCount++;
               } catch (Exception ex) {
+                log.error("Error processing title: " + entity.getName(), ex);
                 errors++;
                 processedCount++;
               }
             }
+            // Final progress update
+            progressTracker.updateProgress(
+                operationId,
+                1,
+                String.format(
+                    "✅ Completed Notion sync: %d titles saved/updated, %d errors",
+                    created + updated, errors));
             return errors > 0
                 ? BaseSyncService.SyncResult.failure("titles", "Error syncing titles!")
                 : BaseSyncService.SyncResult.success("titles", created, updated, errors);
@@ -319,6 +339,7 @@ public class TitleNotionSyncService implements NotionSyncService<Title> {
         }
       }
     }
+    progressTracker.failOperation(operationId, "Error syncing titles!");
     return BaseSyncService.SyncResult.failure("titles", "Unable to sync!");
   }
 }

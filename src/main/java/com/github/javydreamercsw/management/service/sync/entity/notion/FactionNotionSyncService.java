@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class FactionNotionSyncService implements NotionSyncService<Faction> {
+public class FactionNotionSyncService implements NotionSyncService {
 
   private final FactionRepository factionRepository;
   // Enhanced sync infrastructure services - autowired

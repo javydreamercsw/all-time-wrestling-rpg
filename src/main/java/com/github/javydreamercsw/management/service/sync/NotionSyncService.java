@@ -4,16 +4,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
+import com.github.javydreamercsw.management.service.sync.entity.notion.FactionNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionRivalrySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.InjurySyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.NpcNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.NpcSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.RivalryNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.RivalrySyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTemplateSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TeamNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TeamSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleReignSyncService;
@@ -22,7 +29,6 @@ import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerN
 import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerSyncService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
-import com.github.javydreamercsw.management.ui.view.sync.SyncDirection;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +64,12 @@ public class NotionSyncService extends BaseSyncService {
   // Outbound to Notion sync services
   @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
   @Autowired private TitleNotionSyncService titleNotionSyncService;
+  @Autowired private NpcNotionSyncService npcNotionSyncService;
+  @Autowired private RivalryNotionSyncService rivalryNotionSyncService;
+  @Autowired private SeasonNotionSyncService seasonNotionSyncService;
+  @Autowired private ShowNotionSyncService showNotionSyncService;
+  @Autowired private FactionNotionSyncService factionNotionSyncService;
+  @Autowired private TeamNotionSyncService teamNotionSyncService;
 
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
@@ -138,19 +150,10 @@ public class NotionSyncService extends BaseSyncService {
    *
    * @return SyncResult containing the outcome of the sync operation
    */
-  public SyncResult syncShows() {
-    return showSyncService.syncShows();
-  }
-
-  /**
-   * Synchronizes shows from Notion Shows database directly to the database with optional progress
-   * tracking.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @return SyncResult containing the outcome of the sync operation
-   */
-  public SyncResult syncShows(@NonNull String operationId) {
-    return showSyncService.syncShows(operationId);
+  public SyncResult syncShows(@NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? showSyncService.syncShows(operationId)
+        : showNotionSyncService.syncToNotion(operationId);
   }
 
   /**
@@ -171,8 +174,10 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
-  public SyncResult syncFactions(@NonNull String operationId) {
-    return factionSyncService.syncFactions(operationId);
+  public SyncResult syncFactions(@NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? factionSyncService.syncFactions(operationId)
+        : factionNotionSyncService.syncToNotion(operationId);
   }
 
   /**
@@ -180,8 +185,10 @@ public class NotionSyncService extends BaseSyncService {
    *
    * @return SyncResult containing the operation status and details
    */
-  public SyncResult syncTeams(@NonNull String operationId) {
-    return teamSyncService.syncTeams(operationId);
+  public SyncResult syncTeams(@NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? teamSyncService.syncTeams(operationId)
+        : teamNotionSyncService.syncToNotion(operationId);
   }
 
   /**
@@ -210,8 +217,10 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
-  public SyncResult syncSeasons(@NonNull String operationId) {
-    return seasonSyncService.syncSeasons(operationId);
+  public SyncResult syncSeasons(@NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? seasonSyncService.syncSeasons(operationId)
+        : seasonNotionSyncService.syncToNotion(operationId);
   }
 
   /**
@@ -240,8 +249,10 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
-  public SyncResult syncNpcs(@NonNull String operationId) {
-    return npcSyncService.syncNpcs(operationId);
+  public SyncResult syncNpcs(@NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? npcSyncService.syncNpcs(operationId)
+        : npcNotionSyncService.syncToNotion(operationId);
   }
 
   /**
@@ -253,7 +264,7 @@ public class NotionSyncService extends BaseSyncService {
   public SyncResult syncTitles(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? titleSyncService.syncTitles(operationId)
-        : titleNotionSyncService.syncToNotion(operationId);
+        : titleSyncService.syncToNotion(operationId);
   }
 
   /**
@@ -272,8 +283,10 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
-  public SyncResult syncRivalries(@NonNull String operationId) {
-    return rivalrySyncService.syncRivalries(operationId);
+  public SyncResult syncRivalries(@NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? rivalrySyncService.syncRivalries(operationId)
+        : rivalryNotionSyncService.syncToNotion(operationId);
   }
 
   /**

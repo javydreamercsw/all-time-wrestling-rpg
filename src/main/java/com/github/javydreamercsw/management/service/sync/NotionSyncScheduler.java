@@ -2,7 +2,7 @@ package com.github.javydreamercsw.management.service.sync;
 
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.ui.view.sync.SyncDirection;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -106,18 +106,18 @@ public class NotionSyncScheduler {
 
     NotionSyncService.SyncResult result =
         switch (entityName.toLowerCase()) {
-          case "shows" -> notionSyncService.syncShows(operationId);
+          case "shows" -> notionSyncService.syncShows(operationId, direction);
           case "wrestlers" -> notionSyncService.syncWrestlers(operationId, direction);
-          case "factions" -> notionSyncService.syncFactions(operationId);
-          case "teams" -> notionSyncService.syncTeams(operationId);
+          case "factions" -> notionSyncService.syncFactions(operationId, direction);
+          case "teams" -> notionSyncService.syncTeams(operationId, direction);
           case "segments" -> notionSyncService.syncSegments(operationId);
           case "templates" -> notionSyncService.syncShowTemplates(operationId);
-          case "seasons" -> notionSyncService.syncSeasons(operationId);
+          case "seasons" -> notionSyncService.syncSeasons(operationId, direction);
           case "show-types" -> notionSyncService.syncShowTypes(operationId);
           case "injuries" -> notionSyncService.syncInjuryTypes(operationId);
-          case "npcs" -> notionSyncService.syncNpcs(operationId);
+          case "npcs" -> notionSyncService.syncNpcs(operationId, direction);
           case "titles" -> notionSyncService.syncTitles(operationId, direction);
-          case "rivalries" -> notionSyncService.syncRivalries(operationId);
+          case "rivalries" -> notionSyncService.syncRivalries(operationId, direction);
           case "faction-rivalries" -> notionSyncService.syncFactionRivalries(operationId);
           default -> {
             log.warn("Unknown entity type for sync: {}", entityName);

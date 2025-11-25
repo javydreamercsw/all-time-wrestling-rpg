@@ -9,6 +9,7 @@ import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import java.time.Instant;
 import java.util.List;
@@ -30,26 +31,17 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
   @Autowired private TeamRepository teamRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private TeamService teamService;
-  private Wrestler wrestler1;
-  private Wrestler wrestler2;
-
-  @org.junit.jupiter.api.BeforeEach
-  void setUp() {
-    clearAllRepositories();
-    wrestler1 = createTestWrestler("Wrestler 1");
-    wrestlerRepository.save(wrestler1);
-
-    wrestler2 = createTestWrestler("Wrestler 2");
-    wrestlerRepository.save(wrestler2);
-  }
 
   @Test
   void shouldSyncTeamsFromNotionSuccessfully() {
     // Given - Ensure we have wrestlers in database for team creation
+    wrestlerRepository.save(createTestWrestler("Wrestler 1"));
+    wrestlerRepository.save(createTestWrestler("Wrestler 2"));
     assertThat(wrestlerRepository.count()).isGreaterThanOrEqualTo(2);
 
     // When
-    BaseSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncTeams("test-team-sync", SyncDirection.INBOUND);
 
     // Then
     assertThat(result).isNotNull();
@@ -109,7 +101,8 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
   void shouldHandleTeamSyncWithoutNotionToken() {
     // Given - No NOTION_TOKEN available (handled by conditional test)
     // When
-    BaseSyncService.SyncResult result = notionSyncService.syncTeams("test-team-sync");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncTeams("test-team-sync", SyncDirection.INBOUND);
 
     // Then - Should handle gracefully
     assertThat(result).isNotNull();
@@ -119,6 +112,10 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
   @Test
   void shouldCreateTeamWithValidWrestlers() {
     // Given - Create a team manually to test the save functionality
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1");
+    wrestlerRepository.save(wrestler1);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2");
+    wrestlerRepository.save(wrestler2);
     Team testTeam = new Team();
     testTeam.setName("Integration Test Team");
     testTeam.setDescription("Test team for integration testing");
@@ -149,6 +146,10 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
   @Test
   void shouldUpdateExistingTeamByExternalId() {
     // Given - Create an existing team
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1");
+    wrestlerRepository.save(wrestler1);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2");
+    wrestlerRepository.save(wrestler2);
     Team existingTeam = new Team();
     existingTeam.setName("Original Team Name");
     existingTeam.setDescription("Original description");
@@ -182,6 +183,10 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
   @Test
   void shouldHandleTeamCreationWithTeamService() {
     // Given
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1");
+    wrestlerRepository.save(wrestler1);
+    Wrestler wrestler2 = createTestWrestler("Wrestler 2");
+    wrestlerRepository.save(wrestler2);
     String teamName = "Service Test Team";
     String description = "Team created via service";
     Long wrestler1Id = wrestler1.getId();
@@ -211,6 +216,8 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
   @Test
   void shouldValidateTeamRequirements() {
     // Test that teams require both wrestlers
+    Wrestler wrestler1 = createTestWrestler("Wrestler 1");
+    wrestlerRepository.save(wrestler1);
     Optional<Team> invalidTeam =
         teamService.createTeam("Invalid Team", "Missing wrestler", wrestler1.getId(), null, null);
 

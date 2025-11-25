@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
@@ -51,12 +53,12 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
     try (NotionClient client = clientOptional.get()) {
       // Create a new faction
       faction = new Faction();
-      faction.setName("Test Faction");
+      faction.setName("Test Faction " + UUID.randomUUID());
       factionRepository.save(faction);
 
       // Create a new wrestler
       wrestler = new Wrestler();
-      wrestler.setName("Test Wrestler");
+      wrestler.setName("Test Wrestler " + UUID.randomUUID());
       wrestler.setStartingStamina(16);
       wrestler.setFans(1000L);
       wrestler.setBumps(1);
@@ -71,7 +73,7 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
       wrestlerRepository.save(wrestler);
 
       // Sync to Notion for the first time
-      wrestlerNotionSyncService.syncToNotion(wrestler);
+      wrestlerNotionSyncService.syncToNotion("test-op-1");
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(wrestler.getId());
@@ -85,7 +87,7 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedWrestler.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
-          "Test Wrestler",
+          updatedWrestler.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
@@ -111,10 +113,11 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
       assertEquals(15, Objects.requireNonNull(props.get("Deck Size").getNumber()).intValue());
 
       // Sync to Notion again
-      updatedWrestler.setName("Test Wrestler Updated");
-      wrestlerNotionSyncService.syncToNotion(updatedWrestler);
+      updatedWrestler.setName("Test Wrestler Updated " + UUID.randomUUID());
+      wrestlerRepository.save(updatedWrestler);
+      wrestlerNotionSyncService.syncToNotion("test-op-2");
       Wrestler updatedWrestler2 = wrestlerRepository.findById(wrestler.getId()).get();
-      Assertions.assertEquals(updatedWrestler2.getLastSync(), updatedWrestler.getLastSync());
+      assertTrue(updatedWrestler2.getLastSync().isAfter(updatedWrestler.getLastSync()));
 
       // Verify updated name
       page =
@@ -122,7 +125,7 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedWrestler.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
-          "Test Wrestler Updated",
+          updatedWrestler2.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
@@ -136,11 +139,11 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
         } catch (FailsafeException e) {
           // Ignore timeout on cleanup
         }
-        wrestlerRepository.delete(wrestler);
-      } else if (wrestler != null) {
+      }
+      if (wrestler != null && wrestler.getId() != null) {
         wrestlerRepository.delete(wrestler);
       }
-      if (faction != null) {
+      if (faction != null && faction.getId() != null) {
         factionRepository.delete(faction);
       }
     }

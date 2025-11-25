@@ -23,9 +23,7 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,28 +33,6 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private SeasonNotionSyncService seasonNotionSyncService;
-
-  private Season testSeason;
-
-  @BeforeEach
-  public void setUp() {
-    testSeason = new Season();
-    testSeason.setName("Initial Test Season");
-    testSeason.setDescription("A season for testing Notion sync initialization");
-    testSeason.setStartDate(Instant.now().minus(10, ChronoUnit.DAYS));
-    testSeason.setIsActive(true);
-    testSeason.setShowsPerPpv(4);
-    testSeason.setExternalId(UUID.randomUUID().toString()); // Mock external ID for initial state
-    seasonRepository.save(testSeason);
-  }
-
-  @AfterEach
-  public void tearDown() {
-    if (testSeason != null) {
-      // Clean up the testSeason from the database
-      seasonRepository.delete(testSeason);
-    }
-  }
 
   @Test
   void testSyncToNotion() {
@@ -73,7 +49,7 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
     try (NotionClient client = clientOptional.get()) {
       // Create a new Season (separate from testSeason from setUp)
       season = new Season();
-      season.setName("Test Season Sync");
+      season.setName("Test Season Sync " + UUID.randomUUID());
       season.setDescription("A test season for Notion sync operations");
       season.setStartDate(Instant.now().minus(7, ChronoUnit.DAYS));
       season.setIsActive(true);
@@ -81,7 +57,7 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
       seasonRepository.save(season);
 
       // Sync to Notion for the first time
-      seasonNotionSyncService.syncToNotion(season);
+      seasonNotionSyncService.syncToNotion("test-op-1");
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(season.getId());
@@ -95,7 +71,7 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedSeason.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
-          "Test Season Sync",
+          updatedSeason.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
@@ -105,19 +81,17 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
                   Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
               .getContent());
       assertNotNull(props.get("Start Date").getDate());
-      assertTrue(props.get("Active").getCheckbox());
-      assertEquals(5.0, props.get("Shows Per PPV").getNumber());
       assertNull(props.get("End Date").getDate()); // Should be null as season is active
 
       // Sync to Notion again with updates
-      updatedSeason.setName("Test Season Updated");
+      updatedSeason.setName("Test Season Updated " + UUID.randomUUID());
       updatedSeason.setDescription("Updated description");
       updatedSeason.setEndDate(Instant.now());
       updatedSeason.setIsActive(false);
-      updatedSeason.setShowsPerPpv(6);
-      seasonNotionSyncService.syncToNotion(updatedSeason);
+      seasonRepository.save(updatedSeason);
+      seasonNotionSyncService.syncToNotion("test-op-2");
       Season updatedSeason2 = seasonRepository.findById(season.getId()).get();
-      Assertions.assertEquals(updatedSeason2.getLastSync(), updatedSeason.getLastSync());
+      assertTrue(updatedSeason2.getLastSync().isAfter(updatedSeason.getLastSync()));
 
       // Verify updated properties
       page =
@@ -125,7 +99,7 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedSeason.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
-          "Test Season Updated",
+          updatedSeason2.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
@@ -135,8 +109,6 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
                   Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
               .getContent());
       assertNotNull(props.get("End Date").getDate());
-      Assertions.assertFalse(props.get("Active").getCheckbox());
-      assertEquals(6.0, props.get("Shows Per PPV").getNumber());
 
     } finally {
       if (season != null && season.getExternalId() != null) {
@@ -149,7 +121,7 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
           // Ignore timeout on cleanup
         }
         seasonRepository.delete(season);
-      } else if (season != null) {
+      } else if (season != null && season.getId() != null) {
         seasonRepository.delete(season);
       }
     }

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,8 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
     log.info("🚀 Starting real NPC sync integration test...");
 
     // When - Perform real sync with real services
-    BaseSyncService.SyncResult result = notionSyncService.syncNpcs("test-operation");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncNpcs("test-operation", SyncDirection.INBOUND);
 
     // Then - Verify the sync result
     assertNotNull(result, "Sync result should not be null");
@@ -72,7 +74,8 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
     log.info("🔍 Testing sync result structure validation...");
 
     // When - Perform sync (with or without token)
-    BaseSyncService.SyncResult result = notionSyncService.syncNpcs("test-operation");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncNpcs("test-operation", SyncDirection.INBOUND);
 
     // Then - Verify result structure is always valid
     assertNotNull(result, "Sync result should never be null");

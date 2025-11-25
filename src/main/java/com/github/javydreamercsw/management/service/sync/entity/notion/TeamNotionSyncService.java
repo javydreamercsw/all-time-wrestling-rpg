@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class TeamNotionSyncService implements NotionSyncService<Team> {
+public class TeamNotionSyncService implements NotionSyncService {
 
   private final TeamRepository teamRepository;
   // Enhanced sync infrastructure services - autowired

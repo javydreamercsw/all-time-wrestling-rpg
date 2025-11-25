@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
@@ -44,12 +46,12 @@ class NpcNotionSyncServiceIT extends ManagementIntegrationTest {
     try (NotionClient client = clientOptional.get()) {
       // Create a new Npc
       npc = new Npc();
-      npc.setName("Test NPC");
+      npc.setName("Test NPC " + UUID.randomUUID());
       npc.setNpcType("Referee");
       npcRepository.save(npc);
 
       // Sync to Notion for the first time
-      npcNotionSyncService.syncToNotion(npc);
+      npcNotionSyncService.syncToNotion("test-op-1");
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(npc.getId());
@@ -63,18 +65,19 @@ class NpcNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedNpc.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
-          "Test NPC",
+          updatedNpc.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
       assertEquals("Referee", Objects.requireNonNull(props.get("Role").getSelect()).getName());
 
       // Sync to Notion again
-      updatedNpc.setName("Test NPC Updated");
+      updatedNpc.setName("Test NPC Updated " + UUID.randomUUID());
       updatedNpc.setNpcType("Commentator");
-      npcNotionSyncService.syncToNotion(updatedNpc);
+      npcRepository.save(updatedNpc);
+      npcNotionSyncService.syncToNotion("test-op-2");
       Npc updatedNpc2 = npcRepository.findById(npc.getId()).get();
-      Assertions.assertEquals(updatedNpc2.getLastSync(), updatedNpc.getLastSync());
+      assertTrue(updatedNpc2.getLastSync().isAfter(updatedNpc.getLastSync()));
 
       // Verify updated properties
       page =
@@ -82,7 +85,7 @@ class NpcNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedNpc.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
-          "Test NPC Updated",
+          updatedNpc2.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
@@ -99,7 +102,7 @@ class NpcNotionSyncServiceIT extends ManagementIntegrationTest {
           // Ignore timeout on cleanup
         }
         npcRepository.delete(npc);
-      } else if (npc != null) {
+      } else if (npc != null && npc.getId() != null) {
         npcRepository.delete(npc);
       }
     }

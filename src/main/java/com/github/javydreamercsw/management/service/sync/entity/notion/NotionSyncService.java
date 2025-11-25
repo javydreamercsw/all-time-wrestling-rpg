@@ -1,10 +1,9 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import lombok.NonNull;
 
-public interface NotionSyncService<T extends AbstractEntity<?>> {
+public interface NotionSyncService {
 
   /**
    * Sync entities to Notion

@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
@@ -45,12 +47,12 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
     try (NotionClient client = clientOptional.get()) {
       // Create a new faction
       faction = new Faction();
-      faction.setName("Test Faction");
+      faction.setName("Test Faction " + UUID.randomUUID());
       faction.setCreationDate(Instant.now());
       factionRepository.save(faction);
 
       // Sync to Notion for the first time
-      factionNotionSyncService.syncToNotion(faction);
+      factionNotionSyncService.syncToNotion("test-op-1");
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(faction.getId());
@@ -64,16 +66,17 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedFaction.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
-          "Test Faction",
+          updatedFaction.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
 
       // Sync to Notion again
-      updatedFaction.setName("Test Faction Updated");
-      factionNotionSyncService.syncToNotion(updatedFaction);
+      updatedFaction.setName("Test Faction Updated " + UUID.randomUUID());
+      factionRepository.save(updatedFaction);
+      factionNotionSyncService.syncToNotion("test-op-2");
       Faction updatedFaction2 = factionRepository.findById(faction.getId()).get();
-      Assertions.assertEquals(updatedFaction2.getLastSync(), updatedFaction.getLastSync());
+      assertTrue(updatedFaction2.getLastSync().isAfter(updatedFaction.getLastSync()));
 
       // Verify updated name
       page =
@@ -81,7 +84,7 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedFaction.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
-          "Test Faction Updated",
+          updatedFaction2.getName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
@@ -96,7 +99,7 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
           // Ignore timeout on cleanup
         }
         factionRepository.delete(faction);
-      } else if (faction != null) {
+      } else if (faction != null && faction.getId() != null) {
         factionRepository.delete(faction);
       }
     }

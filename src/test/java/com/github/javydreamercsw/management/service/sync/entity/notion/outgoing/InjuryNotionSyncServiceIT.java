@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
@@ -44,7 +46,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
     try (NotionClient client = clientOptional.get()) {
       // Create a new InjuryType
       injuryType = new InjuryType();
-      injuryType.setInjuryName("Test Injury Type");
+      injuryType.setInjuryName("Test Injury Type " + UUID.randomUUID());
       injuryType.setHealthEffect(-1);
       injuryType.setStaminaEffect(-2);
       injuryType.setCardEffect(-1);
@@ -52,7 +54,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
       injuryTypeRepository.save(injuryType);
 
       // Sync to Notion for the first time
-      injuryNotionSyncService.syncToNotion(injuryType);
+      injuryNotionSyncService.syncToNotion("test-op-1");
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(injuryType.getId());
@@ -67,7 +69,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
                   client.retrievePage(updatedInjuryType.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
-          "Test Injury Type",
+          updatedInjuryType.getInjuryName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
@@ -83,14 +85,15 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
               .getContent());
 
       // Sync to Notion again
-      updatedInjuryType.setInjuryName("Test Injury Type Updated");
+      updatedInjuryType.setInjuryName("Test Injury Type Updated " + UUID.randomUUID());
       updatedInjuryType.setHealthEffect(-5);
       updatedInjuryType.setStaminaEffect(-5);
       updatedInjuryType.setCardEffect(-5);
       updatedInjuryType.setSpecialEffects("Cannot perform any moves");
-      injuryNotionSyncService.syncToNotion(updatedInjuryType);
+      injuryTypeRepository.save(updatedInjuryType);
+      injuryNotionSyncService.syncToNotion("test-op-2");
       InjuryType updatedInjuryType2 = injuryTypeRepository.findById(injuryType.getId()).get();
-      Assertions.assertEquals(updatedInjuryType2.getLastSync(), updatedInjuryType.getLastSync());
+      assertTrue(updatedInjuryType2.getLastSync().isAfter(updatedInjuryType.getLastSync()));
 
       // Verify updated properties
       page =
@@ -99,7 +102,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
                   client.retrievePage(updatedInjuryType.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
-          "Test Injury Type Updated",
+          updatedInjuryType2.getInjuryName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
@@ -125,7 +128,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
           // Ignore timeout on cleanup
         }
         injuryTypeRepository.delete(injuryType);
-      } else if (injuryType != null) {
+      } else if (injuryType != null && injuryType.getId() != null) {
         injuryTypeRepository.delete(injuryType);
       }
     }

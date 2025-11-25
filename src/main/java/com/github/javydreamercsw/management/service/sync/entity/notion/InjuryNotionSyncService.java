@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class InjuryNotionSyncService implements NotionSyncService<InjuryType> {
+public class InjuryNotionSyncService implements NotionSyncService {
 
   private final InjuryTypeRepository injuryTypeRepository;
   // Enhanced sync infrastructure services - autowired
