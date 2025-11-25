@@ -3,13 +3,18 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.common.PropertyType;
 import notion.api.v1.model.common.RichTextType;
@@ -19,16 +24,20 @@ import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WrestlerNotionSyncService implements NotionSyncService<Wrestler> {
 
   private final WrestlerRepository wrestlerRepository;
+  // Enhanced sync infrastructure services - autowired
+  @Autowired public SyncProgressTracker progressTracker;
 
   @Override
-  public void syncToNotion(Wrestler entity) {
+  public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
     Optional<NotionHandler> handlerOptional = NotionHandler.getInstance();
     if (handlerOptional.isPresent()) {
       NotionHandler handler = handlerOptional.get();
@@ -37,321 +46,361 @@ public class WrestlerNotionSyncService implements NotionSyncService<Wrestler> {
         try (NotionClient client = clientOptional.get()) {
           String databaseId = handler.getDatabaseId("Wrestlers");
           if (databaseId != null) {
-            Map<String, PageProperty> properties = new HashMap<>();
-            properties.put(
-                "Name",
-                new PageProperty(
-                    UUID.randomUUID().toString(),
-                    PropertyType.Title,
-                    Collections.singletonList(
-                        new PageProperty.RichText(
-                            RichTextType.Text,
-                            new PageProperty.RichText.Text(entity.getName()),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null)),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null));
-            if (entity.getStartingStamina() != null) {
-              properties.put(
-                  "Starting Stamina",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Number,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      entity.getStartingStamina().doubleValue(),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-            if (entity.getStartingHealth() != null) {
-              properties.put(
-                  "Starting Health",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Number,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      entity.getStartingHealth().doubleValue(),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-            if (entity.getFans() != null) {
-              properties.put(
-                  "Fans",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Number,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      entity.getFans().doubleValue(),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-            if (entity.getTier() != null) {
-              properties.put(
-                  "Tier",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Select,
-                      null,
-                      null,
-                      new DatabaseProperty.Select.Option(
-                          null, entity.getTier().getDisplayName(), null, null),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-            if (entity.getGender() != null) {
-              properties.put(
-                  "Gender",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Select,
-                      null,
-                      null,
-                      new DatabaseProperty.Select.Option(
-                          null, entity.getGender().name(), null, null),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-            if (entity.getBumps() != null) {
-              properties.put(
-                  "Bumps",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Number,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      entity.getBumps().doubleValue(),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-            if (entity.getLowHealth() != null) {
-              properties.put(
-                  "Low Health",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Number,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      entity.getLowHealth().doubleValue(),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-            if (entity.getLowStamina() != null) {
-              properties.put(
-                  "Low Stamina",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Number,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      entity.getLowStamina().doubleValue(),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
-            if (entity.getDeckSize() != null) {
-              properties.put(
-                  "Deck Size",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Number,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      entity.getDeckSize().doubleValue(),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-            }
+            int processedCount = 0;
+            int created = 0;
+            int updated = 0;
+            int errors = 0;
+            progressTracker.startOperation(operationId, "Sync Wrestlers", 1);
+            List<Wrestler> wrestlers = wrestlerRepository.findAll();
+            for (Wrestler entity : wrestlers) {
+              // Update progress every 5 entities
+              if (processedCount % 5 == 0) {
+                progressTracker.updateProgress(
+                    operationId,
+                    1,
+                    String.format(
+                        "Saving wrestlers to Notion... (%d/%d processedCount)",
+                        processedCount, wrestlers.size()));
+              }
+              try {
+                Map<String, PageProperty> properties = new HashMap<>();
+                properties.put(
+                    "Name",
+                    new PageProperty(
+                        UUID.randomUUID().toString(),
+                        PropertyType.Title,
+                        Collections.singletonList(
+                            new PageProperty.RichText(
+                                RichTextType.Text,
+                                new PageProperty.RichText.Text(entity.getName()),
+                                null,
+                                null,
+                                null,
+                                null,
+                                null)),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null));
+                if (entity.getStartingStamina() != null) {
+                  properties.put(
+                      "Starting Stamina",
+                      new PageProperty(
+                          UUID.randomUUID().toString(),
+                          PropertyType.Number,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          entity.getStartingStamina().doubleValue(),
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null));
+                }
+                if (entity.getStartingHealth() != null) {
+                  properties.put(
+                      "Starting Health",
+                      new PageProperty(
+                          UUID.randomUUID().toString(),
+                          PropertyType.Number,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          entity.getStartingHealth().doubleValue(),
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null));
+                }
+                if (entity.getFans() != null) {
+                  properties.put(
+                      "Fans",
+                      new PageProperty(
+                          UUID.randomUUID().toString(),
+                          PropertyType.Number,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          entity.getFans().doubleValue(),
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null));
+                }
+                if (entity.getTier() != null) {
+                  properties.put(
+                      "Tier",
+                      new PageProperty(
+                          UUID.randomUUID().toString(),
+                          PropertyType.Select,
+                          null,
+                          null,
+                          new DatabaseProperty.Select.Option(
+                              null, entity.getTier().getDisplayName(), null, null),
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null));
+                }
+                if (entity.getGender() != null) {
+                  properties.put(
+                      "Gender",
+                      new PageProperty(
+                          UUID.randomUUID().toString(),
+                          PropertyType.Select,
+                          null,
+                          null,
+                          new DatabaseProperty.Select.Option(
+                              null, entity.getGender().name(), null, null),
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null));
+                }
+                if (entity.getBumps() != null) {
+                  properties.put(
+                      "Bumps",
+                      new PageProperty(
+                          UUID.randomUUID().toString(),
+                          PropertyType.Number,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          entity.getBumps().doubleValue(),
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null));
+                }
+                if (entity.getLowHealth() != null) {
+                  properties.put(
+                      "Low Health",
+                      new PageProperty(
+                          UUID.randomUUID().toString(),
+                          PropertyType.Number,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          entity.getLowHealth().doubleValue(),
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null));
+                }
+                if (entity.getLowStamina() != null) {
+                  properties.put(
+                      "Low Stamina",
+                      new PageProperty(
+                          UUID.randomUUID().toString(),
+                          PropertyType.Number,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          entity.getLowStamina().doubleValue(),
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null));
+                }
+                if (entity.getDeckSize() != null) {
+                  properties.put(
+                      "Deck Size",
+                      new PageProperty(
+                          UUID.randomUUID().toString(),
+                          PropertyType.Number,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          entity.getDeckSize().doubleValue(),
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null));
+                }
 
-            if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
-              // Update existing page
-              UpdatePageRequest updatePageRequest =
-                  new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
-              handler.executeWithRetry(() -> client.updatePage(updatePageRequest));
-            } else {
-              // Create new page
-              CreatePageRequest createPageRequest =
-                  new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
-              Page page = handler.executeWithRetry(() -> client.createPage(createPageRequest));
-              entity.setExternalId(page.getId());
+                if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
+                  log.debug("Updating existing wrestler page: {}", entity.getName());
+                  // Update existing page
+                  UpdatePageRequest updatePageRequest =
+                      new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
+                  handler.executeWithRetry(() -> client.updatePage(updatePageRequest));
+                  updated++;
+                } else {
+                  log.debug("Creating a new wrestler page for: {}", entity.getName());
+                  // Create new page
+                  CreatePageRequest createPageRequest =
+                      new CreatePageRequest(
+                          new PageParent(null, databaseId), properties, null, null);
+                  Page page = handler.executeWithRetry(() -> client.createPage(createPageRequest));
+                  entity.setExternalId(page.getId());
+                  created++;
+                }
+                entity.setLastSync(Instant.now());
+                wrestlerRepository.save(entity);
+                processedCount++;
+              } catch (Exception ex) {
+                errors++;
+                processedCount++;
+              }
             }
-            entity.setLastSync(Instant.now());
-            wrestlerRepository.save(entity);
+            // Final progress update
+            progressTracker.updateProgress(
+                operationId,
+                1,
+                String.format(
+                    "✅ Completed database save: %d wrestlers saved/updated, %d errors",
+                    created + updated, errors));
+            return errors > 0
+                ? BaseSyncService.SyncResult.failure("wrestlers", "Error syncing wrestlers!")
+                : BaseSyncService.SyncResult.success("wrestlers", created, updated, errors);
           }
         }
       }
     }
+    progressTracker.failOperation(operationId, "Error syncing wrestlers!");
+    return BaseSyncService.SyncResult.failure("wrestlers", "Error syncing wrestlers!");
   }
 }

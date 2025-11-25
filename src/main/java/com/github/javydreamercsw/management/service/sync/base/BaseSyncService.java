@@ -32,6 +32,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -365,6 +366,7 @@ public abstract class BaseSyncService {
         items, processor, batchSize, operationId, progressStep, description, null);
   }
 
+  @SneakyThrows
   protected <T, R> List<R> processWithControlledParallelism(
       List<T> items,
       Function<T, R> processor,
@@ -447,7 +449,12 @@ public abstract class BaseSyncService {
 
         // Small delay between batches to be nice to the API
         if (endIndex < items.size()) {
-          Thread.sleep(500);
+          CompletableFuture<Void> delay =
+              CompletableFuture.runAsync(
+                  () -> {},
+                  CompletableFuture.delayedExecutor(
+                      500, TimeUnit.MILLISECONDS, syncExecutorService));
+          delay.get();
         }
 
       } catch (InterruptedException e) {

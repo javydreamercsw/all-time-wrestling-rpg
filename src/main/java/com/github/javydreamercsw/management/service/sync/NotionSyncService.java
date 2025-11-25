@@ -15,11 +15,14 @@ import com.github.javydreamercsw.management.service.sync.entity.notion.ShowSyncS
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTemplateSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TeamSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TitleNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleReignSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerSyncService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
+import com.github.javydreamercsw.management.ui.view.sync.SyncDirection;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +54,10 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private TitleReignSyncService titleReignSyncService;
   @Autowired private RivalrySyncService rivalrySyncService;
   @Autowired private FactionRivalrySyncService factionRivalrySyncService;
+
+  // Outbound to Notion sync services
+  @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
+  @Autowired private TitleNotionSyncService titleNotionSyncService;
 
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
@@ -152,8 +159,10 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
-  public SyncResult syncWrestlers(@NonNull String operationId) {
-    return wrestlerSyncService.syncWrestlers(operationId);
+  public SyncResult syncWrestlers(@NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? wrestlerSyncService.syncWrestlers(operationId)
+        : wrestlerSyncService.syncToNotion(operationId);
   }
 
   /**
@@ -241,8 +250,10 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
-  public SyncResult syncTitles(@NonNull String operationId) {
-    return titleSyncService.syncTitles(operationId);
+  public SyncResult syncTitles(@NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? titleSyncService.syncTitles(operationId)
+        : titleNotionSyncService.syncToNotion(operationId);
   }
 
   /**

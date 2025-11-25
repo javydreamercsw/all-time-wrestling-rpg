@@ -33,6 +33,7 @@ public class WrestlerSyncService extends BaseSyncService {
 
   @Autowired private WrestlerService wrestlerService;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
 
   public WrestlerSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -48,7 +49,7 @@ public class WrestlerSyncService extends BaseSyncService {
     // Check if already synced in current session
     if (isAlreadySyncedInSession("wrestlers")) {
       log.info("⏭️ Wrestlers already synced in current session, skipping");
-      return SyncResult.success("Wrestlers", 0, 0, 0);
+      return SyncResult.success("wrestlers", 0, 0, 0);
     }
 
     log.info("🤼 Starting wrestlers synchronization from Notion...");
@@ -62,7 +63,7 @@ public class WrestlerSyncService extends BaseSyncService {
       return result;
     } catch (Exception e) {
       log.error("Failed to sync wrestlers", e);
-      return SyncResult.failure("Wrestlers", e.getMessage());
+      return SyncResult.failure("wrestlers", e.getMessage());
     }
   }
 
@@ -698,6 +699,10 @@ public class WrestlerSyncService extends BaseSyncService {
             savedCount, skippedCount));
 
     return savedCount;
+  }
+
+  public SyncResult syncToNotion(@NonNull String operationId) {
+    return wrestlerNotionSyncService.syncToNotion(operationId);
   }
 
   /** DTO for Wrestler data from Notion. */

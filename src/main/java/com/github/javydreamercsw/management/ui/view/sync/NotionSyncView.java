@@ -60,11 +60,6 @@ public class NotionSyncView extends Main {
   private final EntityDependencyAnalyzer dependencyAnalyzer;
   private ComboBox<SyncDirection> syncDirection;
 
-  private enum SyncDirection {
-    FROM_NOTION,
-    TO_NOTION
-  }
-
   // UI Components
   private Button syncAllButton;
   private ComboBox<String> entitySelectionCombo;
@@ -150,7 +145,7 @@ public class NotionSyncView extends Main {
 
     syncDirection = new ComboBox<>("Sync Direction");
     syncDirection.setItems(SyncDirection.values());
-    syncDirection.setValue(SyncDirection.FROM_NOTION);
+    syncDirection.setValue(SyncDirection.INBOUND);
 
     syncAllButton = new Button("Sync All Entities", VaadinIcon.REFRESH.create());
     syncAllButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -174,7 +169,7 @@ public class NotionSyncView extends Main {
         e -> {
           String selectedEntity = entitySelectionCombo.getValue();
           if (selectedEntity != null && !selectedEntity.isEmpty()) {
-            if (syncDirection.getValue() == SyncDirection.FROM_NOTION) {
+            if (syncDirection.getValue() == SyncDirection.INBOUND) {
               triggerEntitySync(selectedEntity);
             } else {
               triggerEntitySyncToNotion(selectedEntity);
@@ -333,7 +328,7 @@ public class NotionSyncView extends Main {
         () -> {
           try {
             NotionSyncService.SyncResult result =
-                notionSyncScheduler.triggerEntitySyncToNotion(entityName);
+                notionSyncScheduler.triggerEntitySyncToNotion(entityName, operationId);
             return new SyncOperationResult(
                 result.isSuccess(),
                 1,
@@ -365,7 +360,7 @@ public class NotionSyncView extends Main {
         () -> {
           try {
             NotionSyncService.SyncResult result =
-                notionSyncScheduler.syncEntity(entityName, operationId);
+                notionSyncScheduler.syncEntity(entityName, operationId, SyncDirection.OUTBOUND);
             return new SyncOperationResult(
                 result.isSuccess(),
                 1,

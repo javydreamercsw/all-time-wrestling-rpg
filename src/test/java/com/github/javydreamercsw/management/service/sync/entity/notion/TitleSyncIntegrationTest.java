@@ -9,6 +9,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.ui.view.sync.SyncDirection;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +26,7 @@ class TitleSyncIntegrationTest extends ManagementIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    when(notionSyncService.syncTitles(anyString()))
+    when(notionSyncService.syncTitles(anyString(), SyncDirection.INBOUND))
         .thenReturn(BaseSyncService.SyncResult.success("Titles", 1, 0, 0));
   }
 
@@ -35,7 +36,8 @@ class TitleSyncIntegrationTest extends ManagementIntegrationTest {
     log.info("🚀 Starting real title sync integration test...");
 
     // Act
-    BaseSyncService.SyncResult result = notionSyncService.syncTitles("integration-test-titles");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncTitles("integration-test-titles", SyncDirection.INBOUND);
 
     // Assert
     assertNotNull(result);

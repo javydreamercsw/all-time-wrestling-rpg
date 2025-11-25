@@ -38,8 +38,6 @@ public class MenuService {
 
     MenuItem contentGeneration = new MenuItem("Content Generation", VaadinIcon.AUTOMATION, null);
     contentGeneration.addChild(new MenuItem("Show Planning", VaadinIcon.CALENDAR, "show-planning"));
-    contentGeneration.addChild(
-        new MenuItem("Segment Narration", VaadinIcon.MICROPHONE, "segment-narration"));
 
     MenuItem cardGame = new MenuItem("Card Game", VaadinIcon.RECORDS, null);
     cardGame.addChild(new MenuItem("Cards", VaadinIcon.CREDIT_CARD, "card-list"));

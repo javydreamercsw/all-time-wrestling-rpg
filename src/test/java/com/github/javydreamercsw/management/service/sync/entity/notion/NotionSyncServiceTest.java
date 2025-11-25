@@ -9,6 +9,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.ui.view.sync.SyncDirection;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +40,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionSyncProperties syncProperties;
 
-  private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
+  private NotionSyncService notionSyncService;
 
   @BeforeEach
   public void setUp() {
@@ -96,7 +97,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // When - Sync wrestlers from Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncWrestlers("integration-test-wrestlers");
+        notionSyncService.syncWrestlers("integration-test-wrestlers", SyncDirection.OUTBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -230,7 +231,8 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     when(titleSyncService.syncTitles(anyString())).thenReturn(expectedResult);
 
     // When - Sync titles from Notion
-    BaseSyncService.SyncResult result = notionSyncService.syncTitles("integration-test-titles");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncTitles("integration-test-titles", SyncDirection.INBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");

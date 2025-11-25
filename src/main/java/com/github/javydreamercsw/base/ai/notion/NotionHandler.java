@@ -203,8 +203,7 @@ public class NotionHandler {
         RetryPolicy.<T>builder()
             .handleIf(
                 e -> {
-                  if (e instanceof NotionAPIError) {
-                    NotionAPIError notionError = (NotionAPIError) e;
+                  if (e instanceof NotionAPIError notionError) {
                     String message = notionError.getMessage().toLowerCase();
                     if (message.contains("429")
                         || message.contains("rate limit")
@@ -212,10 +211,8 @@ public class NotionHandler {
                         || message.contains("rate_limited")) {
                       return true;
                     }
-                    if (notionError.getError() != null) {
-                      return notionError.getError().getStatus() == 429
-                          || "rate_limited".equals(notionError.getError().getCode());
-                    }
+                    return notionError.getError().getStatus() == 429
+                        || "rate_limited".equals(notionError.getError().getCode());
                   }
                   return false;
                 })
