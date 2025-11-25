@@ -9,6 +9,7 @@ import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,8 +43,8 @@ class FactionSyncIntegrationTest extends ManagementIntegrationTest {
 
     if (result.isSuccess()) {
       log.info("✅ Faction sync completed successfully!");
-      log.info("   - Synced: {} factions", result.getSyncedCount());
-      log.info("   - Errors: {} factions", result.getErrorCount());
+      log.info("   - Synced: {} factions", Optional.of(result.getSyncedCount()));
+      log.info("   - Errors: {} factions", Optional.of(result.getErrorCount()));
 
       // Verify we actually synced some data
       assertTrue(result.getSyncedCount() >= 0, "Should have synced 0 or more factions");
@@ -56,7 +57,7 @@ class FactionSyncIntegrationTest extends ManagementIntegrationTest {
       assertNotNull(factionsWithMembers, "Factions list should not be null");
 
       if (!factionsWithMembers.isEmpty()) {
-        log.info("   Found {} factions in database", factionsWithMembers.size());
+        log.info("   Found {} factions in database", Optional.of(factionsWithMembers.size()));
 
         // Check if any factions have members
         long factionsWithMemberCount =
@@ -64,7 +65,7 @@ class FactionSyncIntegrationTest extends ManagementIntegrationTest {
                 .filter(faction -> faction.getMembers() != null && !faction.getMembers().isEmpty())
                 .count();
 
-        log.info("   {} factions have members", factionsWithMemberCount);
+        log.info("   {} factions have members", Optional.of(factionsWithMemberCount));
 
         // First, validate that ALL factions have members - the test should fail if any faction has
         // no members
@@ -94,13 +95,15 @@ class FactionSyncIntegrationTest extends ManagementIntegrationTest {
                       faction -> faction.getMembers() != null && !faction.getMembers().isEmpty())
                   .toList();
 
-          log.info("   ✅ Testing {} factions with members", factionsWithMembersFiltered.size());
+          log.info(
+              "   ✅ Testing {} factions with members",
+              Optional.of(factionsWithMembersFiltered.size()));
 
           for (Faction factionWithMembers : factionsWithMembersFiltered) {
             log.info(
                 "   🔍 Validating faction '{}' with {} members",
                 factionWithMembers.getName(),
-                factionWithMembers.getMembers().size());
+                (Object) factionWithMembers.getMembers().size());
 
             // This is critical - accessing member properties outside transaction context
             // would throw LazyInitializationException if not properly loaded
@@ -166,10 +169,10 @@ class FactionSyncIntegrationTest extends ManagementIntegrationTest {
 
     // Always log the result for debugging
     log.info("📊 Sync Result Summary:");
-    log.info("   - Success: {}", result.isSuccess());
+    log.info("   - Success: {}", Optional.of(result.isSuccess()));
     log.info("   - Entity: {}", result.getEntityType());
-    log.info("   - Synced: {}", result.getSyncedCount());
-    log.info("   - Errors: {}", result.getErrorCount());
+    log.info("   - Synced: {}", Optional.of(result.getSyncedCount()));
+    log.info("   - Errors: {}", Optional.of(result.getErrorCount()));
     if (!result.isSuccess()) {
       log.info("   - Error: {}", result.getErrorMessage());
     }
