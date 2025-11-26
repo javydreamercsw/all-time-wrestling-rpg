@@ -54,8 +54,7 @@ public class ShowTypeSyncService extends BaseSyncService {
     }
   }
 
-  private SyncResult performShowTypesSync(@NonNull String operationId, long startTime)
-      throws InterruptedException {
+  private SyncResult performShowTypesSync(@NonNull String operationId, long startTime) {
     int createdCount = 0;
     int updatedCount = 0;
 
