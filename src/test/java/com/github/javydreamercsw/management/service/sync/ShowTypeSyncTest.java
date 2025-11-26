@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** Unit tests for ShowTypeSyncService. */
 @ActiveProfiles("test")
 @Slf4j
+@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class ShowTypeSyncTest extends ManagementIntegrationTest {
 
   @Autowired private ShowTypeSyncService showTypeSyncService;
@@ -52,7 +54,6 @@ class ShowTypeSyncTest extends ManagementIntegrationTest {
   @DisplayName("Should ensure default show types exist in database")
   void shouldEnsureDefaultShowTypesExist() {
     log.info("🎭 Testing default show types creation");
-
     // Given - DataInitializer will have already created default show types.
     // Verify they exist
     Optional<ShowType> weeklyTypeBeforeSync = showTypeService.findByName("Weekly");
