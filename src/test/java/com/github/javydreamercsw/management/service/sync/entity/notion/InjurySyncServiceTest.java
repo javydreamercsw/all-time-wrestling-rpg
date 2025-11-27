@@ -1,5 +1,6 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -9,6 +10,7 @@ import com.github.javydreamercsw.base.ai.notion.InjuryPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
@@ -16,13 +18,16 @@ import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
+import java.io.File;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -50,12 +55,14 @@ class InjurySyncServiceTest {
   @Mock private NotionRateLimitService rateLimitService;
 
   private InjurySyncService injurySyncService;
+  private ObjectMapper realObjectMapper;
 
   @BeforeEach
   void setUp() {
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
     injurySyncService = new InjurySyncService(objectMapper, syncProperties);
+    realObjectMapper = new ObjectMapper();
 
     // Use reflection to inject mocked dependencies
     injectMockDependencies();
@@ -106,35 +113,44 @@ class InjurySyncServiceTest {
   }
 
   @Test
-  void syncInjuryTypes_WhenSuccessful_ShouldReturnCorrectResult() {
-    // Given
-    try (MockedStatic<EnvironmentVariableUtil> envUtil =
+  @DisplayName("Should sync injury types from Notion sample data successfully")
+  void shouldSyncInjuryTypesFromNotionSampleDataSuccessfully() throws Exception {
+    try (MockedStatic<EnvironmentVariableUtil> mockedUtil =
         mockStatic(EnvironmentVariableUtil.class)) {
-      envUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
-      when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+      mockedUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
 
-      List<InjuryPage> mockPages = createMockInjuryPages();
-      when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
-      when(injuryTypeRepository.existsByInjuryName(anyString())).thenReturn(false);
+      List<InjuryPage> sampleInjuries = loadSampleInjuries();
+      when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+      when(notionHandler.loadAllInjuries()).thenReturn(sampleInjuries);
+      when(injuryTypeRepository.findByExternalId(anyString())).thenReturn(Optional.empty());
       when(injuryTypeService.createInjuryType(
               anyString(), anyInt(), anyInt(), anyInt(), anyString()))
-          .thenReturn(createMockInjuryType());
-      when(injuryTypeService.updateInjuryType(any())).thenReturn(createMockInjuryType());
+          .thenAnswer(
+              invocation -> {
+                InjuryType injuryType = new InjuryType();
+                injuryType.setId(1L);
+                injuryType.setInjuryName(invocation.getArgument(0));
+                injuryType.setHealthEffect(invocation.getArgument(1));
+                injuryType.setStaminaEffect(invocation.getArgument(2));
+                injuryType.setCardEffect(invocation.getArgument(3));
+                injuryType.setSpecialEffects(invocation.getArgument(4));
+                return injuryType;
+              });
+      when(injuryTypeService.updateInjuryType(any(InjuryType.class)))
+          .thenAnswer(invocation -> invocation.getArgument(0));
 
-      // When
-      SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
+      BaseSyncService.SyncResult result = injurySyncService.syncInjuryTypes("test-operation-id");
 
-      // Then
-      assertTrue(result.isSuccess());
-      assertEquals("Injuries", result.getEntityType());
-      assertEquals(2, result.getSyncedCount()); // Two mock injuries
+      assertThat(result).isNotNull();
+      assertThat(result.isSuccess()).isTrue();
+      assertThat(result.getEntityType()).isEqualTo("Injuries");
+      assertThat(result.getSyncedCount()).isEqualTo(3);
+      assertThat(result.getErrorCount()).isEqualTo(0);
 
-      // Verify progress tracking
-      verify(progressTracker).startOperation(eq("test-operation"), eq("Sync Injuries"), eq(4));
-      verify(progressTracker).completeOperation(eq("test-operation"), eq(true), anyString(), eq(2));
-
-      // Verify health monitoring
-      verify(healthMonitor).recordSuccess(eq("Injuries"), anyLong(), eq(2));
+      verify(notionHandler).loadAllInjuries();
+      verify(injuryTypeService, times(3))
+          .createInjuryType(anyString(), anyInt(), anyInt(), anyInt(), anyString());
+      verify(injuryTypeService, times(3)).updateInjuryType(any(InjuryType.class));
     }
   }
 
@@ -336,5 +352,16 @@ class InjurySyncServiceTest {
     injuryType.setId(1L);
     injuryType.setInjuryName("Test Injury");
     return injuryType;
+  }
+
+  private List<InjuryPage> loadSampleInjuries() throws Exception {
+    File samplesDir = new File("src/test/resources/notion-samples");
+    InjuryPage injury1 =
+        realObjectMapper.readValue(new File(samplesDir, "real-injury-1.json"), InjuryPage.class);
+    InjuryPage injury2 =
+        realObjectMapper.readValue(new File(samplesDir, "real-injury-2.json"), InjuryPage.class);
+    InjuryPage injury3 =
+        realObjectMapper.readValue(new File(samplesDir, "real-injury-3.json"), InjuryPage.class);
+    return Arrays.asList(injury1, injury2, injury3);
   }
 }
