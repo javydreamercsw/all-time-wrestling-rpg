@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 @Slf4j
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
-class FactionSyncIntegrationTest extends ManagementIntegrationTest {
+class FactionSyncIT extends ManagementIntegrationTest {
 
   @Autowired
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
