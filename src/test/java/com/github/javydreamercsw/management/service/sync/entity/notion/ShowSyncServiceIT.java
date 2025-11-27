@@ -20,13 +20,15 @@ import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.Sy
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class ShowSyncServiceTest {
+@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
+class ShowSyncServiceIT {
 
   @Mock private ShowService showService;
   @Mock private ShowTypeService showTypeService;
@@ -124,7 +126,7 @@ class ShowSyncServiceTest {
 
     // Then
     assertTrue(result.isSuccess());
-    assertEquals("Shows", result.getEntityType());
+    assertEquals("shows", result.getEntityType());
     assertEquals(1, result.getSyncedCount());
     verify(healthMonitor, never()).recordFailure(anyString(), anyString());
   }
@@ -139,9 +141,9 @@ class ShowSyncServiceTest {
     SyncResult result = showSyncService.syncShows("test-operation");
 
     // Then
-    assertTrue(result.isSuccess());
-    assertEquals("Shows", result.getEntityType());
+    assertTrue(result.isSuccess(), result.getErrorMessage());
+    assertEquals("shows", result.getEntityType());
     assertEquals(0, result.getSyncedCount());
-    verify(healthMonitor, never()).recordSuccess(eq("Shows"), anyLong(), anyInt());
+    verify(healthMonitor, never()).recordSuccess(eq("shows"), anyLong(), anyInt());
   }
 }

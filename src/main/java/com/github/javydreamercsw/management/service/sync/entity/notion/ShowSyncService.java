@@ -66,7 +66,7 @@ public class ShowSyncService extends BaseSyncService {
       // Check if already synced in current session
       if (isAlreadySyncedInSession("shows")) {
         log.info("⏭️ Shows already synced in current session, skipping");
-        return SyncResult.success("Shows", 0, 0, 0);
+        return SyncResult.success("shows", 0, 0, 0);
       }
 
       try {
@@ -77,26 +77,26 @@ public class ShowSyncService extends BaseSyncService {
         return result;
       } catch (Exception e) {
         log.error("Failed to sync shows", e);
-        return SyncResult.failure("Shows", e.getMessage());
+        return SyncResult.failure("shows", e.getMessage());
       }
     }
-    return SyncResult.failure("Shows", "Notion Token was not provided!");
+    return SyncResult.failure("shows", "Notion Token was not provided!");
   }
 
   /** Internal method to perform the actual shows sync logic. */
   private SyncResult performShowsSync(@NonNull String operationId) {
     if (!syncProperties.isEntityEnabled("shows")) {
       log.info("Shows sync is disabled in configuration");
-      return SyncResult.success("Shows", 0, 0, 0);
+      return SyncResult.success("shows", 0, 0, 0);
     }
 
     // Check if NOTION_TOKEN is available before starting sync
-    if (!validateNotionToken("Shows")) {
+    if (!validateNotionToken("shows")) {
       progressTracker.failOperation(
           operationId, "NOTION_TOKEN environment variable is required for Notion sync");
-      healthMonitor.recordFailure("Shows", "NOTION_TOKEN not available");
+      healthMonitor.recordFailure("shows", "NOTION_TOKEN not available");
       return SyncResult.failure(
-          "Shows", "NOTION_TOKEN environment variable is required for Notion sync");
+          "shows", "NOTION_TOKEN environment variable is required for Notion sync");
     }
 
     log.info("🚀 Starting shows synchronization from Notion to database...");
@@ -131,7 +131,7 @@ public class ShowSyncService extends BaseSyncService {
 
       return result != null
           ? result
-          : SyncResult.failure("Shows", "Sync operation returned null result");
+          : SyncResult.failure("shows", "Sync operation returned null result");
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;
@@ -139,9 +139,9 @@ public class ShowSyncService extends BaseSyncService {
 
       // Fail progress tracking
       progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
-      healthMonitor.recordFailure("Shows", e.getMessage());
+      healthMonitor.recordFailure("shows", e.getMessage());
 
-      return SyncResult.failure("Shows", e.getMessage());
+      return SyncResult.failure("shows", e.getMessage());
     }
   }
 
@@ -169,7 +169,7 @@ public class ShowSyncService extends BaseSyncService {
       if (newShowIds.isEmpty()) {
         log.info("No new shows to sync from Notion.");
         progressTracker.completeOperation(operationId, true, "No new shows to sync.", 0);
-        return SyncResult.success("Shows", 0, 0, 0);
+        return SyncResult.success("shows", 0, 0, 0);
       }
       log.info("Found {} new shows to sync from Notion.", newShowIds.size());
 
@@ -215,9 +215,9 @@ public class ShowSyncService extends BaseSyncService {
       progressTracker.completeOperation(operationId, success, message, savedCount);
 
       if (success) {
-        return SyncResult.success("Shows", savedCount, 0, errorCount);
+        return SyncResult.success("shows", savedCount, 0, errorCount);
       } else {
-        return SyncResult.failure("Shows", message);
+        return SyncResult.failure("shows", message);
       }
 
     } catch (Exception e) {
