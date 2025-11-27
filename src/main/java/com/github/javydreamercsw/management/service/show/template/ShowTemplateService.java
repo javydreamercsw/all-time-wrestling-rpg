@@ -158,7 +158,7 @@ public class ShowTemplateService {
     } else {
       template = new ShowTemplate();
       template.setCreationDate(clock.instant());
-      log.info("Creating new show template: {}", name);
+      log.debug("Creating new show template: {}", name);
     }
 
     template.setName(name);

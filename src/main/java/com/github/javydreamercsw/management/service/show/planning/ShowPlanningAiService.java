@@ -33,10 +33,10 @@ public class ShowPlanningAiService {
     }
 
     String prompt = buildShowPlanningPrompt(context);
-    log.info("Sending prompt to AI: {}", prompt);
+    log.debug("Sending prompt to AI: {}", prompt);
 
     String aiResponse = aiService.generateText(prompt);
-    log.info("Received response from AI: {}", aiResponse);
+    log.debug("Received response from AI: {}", aiResponse);
 
     if (aiResponse == null || aiResponse.trim().isEmpty()) {
       log.warn("AI returned an empty or null response for show planning.");

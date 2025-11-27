@@ -232,7 +232,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       String baseUrl = UrlUtil.getBaseUrl();
       restTemplate.postForEntity(
           baseUrl + "/api/show-planning/approve/" + selectedShow.getId(), segments, Void.class);
-      log.info("Segments approved successfully, showing notification.");
       Notification.show("Segments approved successfully!", 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       proposedSegmentsGrid.setItems(new ArrayList<>());

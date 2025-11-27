@@ -31,7 +31,7 @@ public class SegmentNarrationServiceFactory {
     List<SegmentNarrationService> sortedServices = getAvailableServicesInPriorityOrder();
     if (!sortedServices.isEmpty()) {
       SegmentNarrationService service = sortedServices.get(0);
-      log.info(
+      log.debug(
           "Selected segment narration provider: {} (priority: {}, cost: ${}/1K tokens, reason: {})",
           service.getProviderName(),
           getCostInfo(service.getProviderName()).priority(),

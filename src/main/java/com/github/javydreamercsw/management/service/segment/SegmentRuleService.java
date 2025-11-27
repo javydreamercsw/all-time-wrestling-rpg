@@ -174,7 +174,7 @@ public class SegmentRuleService {
       log.debug("Updating existing segment rule: {}", name);
     } else {
       segmentRule = new SegmentRule();
-      log.info("Creating new segment rule: {}", name);
+      log.debug("Creating new segment rule: {}", name);
     }
 
     segmentRule.setName(name);

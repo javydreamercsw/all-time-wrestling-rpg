@@ -42,7 +42,7 @@ public class SegmentTypeService {
       log.debug("Updating existing segment type: {}", name);
     } else {
       segmentType = new SegmentType();
-      log.info("Creating new segment type: {}", name);
+      log.debug("Creating new segment type: {}", name);
     }
     segmentType.setName(name);
     segmentType.setDescription(description);
@@ -53,7 +53,7 @@ public class SegmentTypeService {
   public void deleteSegmentType(@NonNull Long id) {
     if (segmentTypeRepository.existsById(id)) {
       segmentTypeRepository.deleteById(id);
-      log.info("Deleted segment type with ID: {}", id);
+      log.debug("Deleted segment type with ID: {}", id);
     } else {
       log.warn("Segment type with ID {} not found for deletion.", id);
       throw new IllegalArgumentException("Segment type not found with ID: " + id);

@@ -100,7 +100,7 @@ public class DataInitializer {
   private void loadSegmentRulesFromFile() {
     ClassPathResource resource = new ClassPathResource("segment_rules.json");
     if (resource.exists()) {
-      log.info("Loading segment rules from file: {}", resource.getPath());
+      log.debug("Loading segment rules from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         var segmentRulesFromFile =

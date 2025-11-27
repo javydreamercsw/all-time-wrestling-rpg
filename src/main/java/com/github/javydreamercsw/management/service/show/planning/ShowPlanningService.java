@@ -153,7 +153,7 @@ public class ShowPlanningService {
     int currentSegmentCount = segmentRepository.findByShow(show).size();
     for (int i = 0; i < proposedSegments.size(); i++) {
       ProposedSegment proposedSegment = proposedSegments.get(i);
-      log.info("Processing segment: {}", proposedSegment);
+      log.debug("Processing segment: {}", proposedSegment);
       Segment segment = new Segment();
       segment.setShow(show);
       segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
