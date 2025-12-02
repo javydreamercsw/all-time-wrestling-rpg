@@ -71,50 +71,59 @@ public class TitleSyncService extends BaseSyncService {
 
       for (TitlePage titlePage : titlePages) {
         String titleName = extractNameFromNotionPage(titlePage);
-        Title title =
-            titleService
-                .findByName(titleName)
-                .orElseGet(
-                    () -> {
-                      log.info(
-                          "Title '{}' not found locally, creating new one from Notion data.",
-                          titleName);
-                      Title newTitle = new Title();
-                      newTitle.setName(titleName);
-                      newTitle.setExternalId(titlePage.getId());
-                      // Set defaults or extract from page
-                      String tierString = titlePage.getTier();
-                      if (tierString != null) {
-                        try {
-                          // Attempt to map Notion tier string to WrestlerTier enum
-                          WrestlerTier mappedTier =
-                              switch (tierString) {
-                                case "Main Event" -> WrestlerTier.MAIN_EVENTER;
-                                case "Midcard" -> WrestlerTier.MIDCARDER;
-                                case "Lower Midcard" -> WrestlerTier.CONTENDER;
-                                case "Rookie" -> WrestlerTier.ROOKIE;
-                                case "Riser" -> WrestlerTier.RISER;
-                                case "Icon" -> WrestlerTier.ICON;
-                                default -> {
-                                  log.warn(
-                                      "Unknown tier string '{}' for title '{}'",
-                                      tierString,
-                                      titleName);
-                                  // Fallback to direct valueOf if no specific mapping
-                                  yield WrestlerTier.valueOf(
-                                      tierString.toUpperCase().replace(" ", "_"));
-                                }
-                              };
-                          newTitle.setTier(mappedTier);
-                        } catch (IllegalArgumentException e) {
-                          log.warn("Invalid tier '{}' for title '{}'", tierString, titleName);
-                        }
-                      }
-                      newTitle.setGender(Gender.valueOf(titlePage.getGender().toUpperCase()));
-                      newTitle.setIsActive(true);
+        Title title = null;
 
-                      return titleRepository.save(newTitle);
-                    });
+        // 1. Find by externalId
+        if (titlePage.getId() != null && !titlePage.getId().isBlank()) {
+          title = titleService.findByExternalId(titlePage.getId()).orElse(null);
+        }
+
+        // 2. Find by name
+        if (title == null) {
+          title = titleService.findByName(titleName).orElse(null);
+        }
+
+        boolean isNew = title == null;
+
+        if (isNew) {
+          log.info(
+              "Title '{}' not found locally, creating new one from Notion data.", titleName);
+          title = new Title();
+          title.setName(titleName);
+        }
+
+        // Always set/update externalId
+        title.setExternalId(titlePage.getId());
+
+        // Set defaults or extract from page
+        String tierString = titlePage.getTier();
+        if (tierString != null) {
+          try {
+            // Attempt to map Notion tier string to WrestlerTier enum
+            WrestlerTier mappedTier =
+                switch (tierString) {
+                  case "Main Event" -> WrestlerTier.MAIN_EVENTER;
+                  case "Midcard" -> WrestlerTier.MIDCARDER;
+                  case "Lower Midcard" -> WrestlerTier.CONTENDER;
+                  case "Rookie" -> WrestlerTier.ROOKIE;
+                  case "Riser" -> WrestlerTier.RISER;
+                  case "Icon" -> WrestlerTier.ICON;
+                  default -> {
+                    log.warn(
+                        "Unknown tier string '{}' for title '{}'", tierString, titleName);
+                    // Fallback to direct valueOf if no specific mapping
+                    yield WrestlerTier.valueOf(tierString.toUpperCase().replace(" ", "_"));
+                  }
+                };
+            title.setTier(mappedTier);
+          } catch (IllegalArgumentException e) {
+            log.warn("Invalid tier '{}' for title '{}'", tierString, titleName);
+          }
+        }
+        title.setGender(Gender.valueOf(titlePage.getGender().toUpperCase()));
+        title.setIsActive(true);
+
+        titleRepository.save(title);
 
         updateTitleFromNotion(title, titlePage);
       }

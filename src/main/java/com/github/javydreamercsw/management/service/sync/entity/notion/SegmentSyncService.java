@@ -164,7 +164,7 @@ public class SegmentSyncService extends BaseSyncService {
     try {
       SegmentDTO segmentDTO = new SegmentDTO();
       segmentDTO.setExternalId(segmentPage.getId());
-      segmentDTO.setName(segmentPage.getRawProperties().get("Name").toString());
+      segmentDTO.setName(extractNameFromNotionPage(segmentPage));
 
       if (segmentPage.getProperties().getShows() != null
           && !segmentPage.getProperties().getShows().getRelation().isEmpty()) {

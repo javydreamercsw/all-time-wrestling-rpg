@@ -99,14 +99,17 @@ public class TitleReignSyncService extends BaseSyncService {
           continue;
         }
 
-        // Attempt to find existing reign by title, and reign number
-        Optional<TitleReign> existingReignOpt = Optional.empty();
-        if (page.getReignNumber() != null) {
+        // Attempt to find existing reign by external ID first
+        Optional<TitleReign> existingReignOpt = titleReignRepository.findByExternalId(page.getId());
+
+        if (existingReignOpt.isEmpty() && page.getReignNumber() != null) {
+          // Fallback to title and reign number
           existingReignOpt =
               titleReignRepository.findByTitleAndReignNumber(title, page.getReignNumber());
         }
 
         TitleReign reign = existingReignOpt.orElse(new TitleReign());
+        reign.setExternalId(page.getId()); // Set external ID
         reign.setTitle(title);
         reign.getChampions().clear();
         reign.getChampions().addAll(champions);

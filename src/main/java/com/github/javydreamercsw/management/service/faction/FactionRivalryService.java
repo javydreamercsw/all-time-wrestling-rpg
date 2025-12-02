@@ -343,4 +343,13 @@ public class FactionRivalryService {
   public List<FactionRivalry> getRivalriesWithMostWrestlers(int limit) {
     return factionRivalryRepository.findRivalriesWithMostWrestlers(Pageable.ofSize(limit));
   }
+
+  @Transactional(readOnly = true)
+  public Optional<FactionRivalry> findByExternalId(@NonNull String externalId) {
+    return factionRivalryRepository.findByExternalId(externalId);
+  }
+
+  public FactionRivalry save(@NonNull FactionRivalry rivalry) {
+    return factionRivalryRepository.saveAndFlush(rivalry);
+  }
 }

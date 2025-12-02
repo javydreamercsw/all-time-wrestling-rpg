@@ -216,10 +216,31 @@ public class FactionSyncService extends BaseSyncService {
   private FactionDTO mergeFactionData(FactionDTO existing, @NonNull FactionDTO notion) {
     FactionDTO merged = new FactionDTO();
 
+    // These are the source of truth from Notion
     merged.setName(notion.getName());
     merged.setExternalId(notion.getExternalId());
-    merged.setIsActive(notion.getIsActive());
-    merged.setLeader(notion.getLeader());
+
+    // Smart merge for isActive
+    if (notion.getIsActive() != null) {
+      merged.setIsActive(notion.getIsActive());
+    } else if (existing != null && existing.getIsActive() != null) {
+      merged.setIsActive(existing.getIsActive());
+    } else {
+      merged.setIsActive(false); // Default to not active
+    }
+
+    // Smart merge for leader
+    if (notion.getLeader() != null && !notion.getLeader().isBlank()) {
+      merged.setLeader(notion.getLeader());
+    } else if (existing != null && existing.getLeader() != null) {
+      merged.setLeader(existing.getLeader());
+    }
+
+    // Preserve fields not sourced from Notion
+    if (existing != null) {
+      merged.setFormedDate(existing.getFormedDate());
+      merged.setDisbandedDate(existing.getDisbandedDate());
+    }
 
     return merged;
   }

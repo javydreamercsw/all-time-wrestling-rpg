@@ -164,20 +164,41 @@ public class SeasonSyncService extends BaseSyncService {
 
     for (SeasonDTO seasonDTO : seasonDTOs) {
       try {
-        // Check if season already exists by name
-        Season existingSeason = seasonService.findByName(seasonDTO.getName());
+        Season existingSeason = null;
+
+        // Find by external ID first
+        if (seasonDTO.getNotionId() != null && !seasonDTO.getNotionId().isBlank()) {
+          existingSeason = seasonService.findByExternalId(seasonDTO.getNotionId()).orElse(null);
+        }
+
+        // If not found, find by name
+        if (existingSeason == null) {
+          existingSeason = seasonService.findByName(seasonDTO.getName());
+        }
 
         if (existingSeason != null) {
-          log.info("Season already exists: {}", seasonDTO.getName());
-          // Update External ID if not set
-          if (existingSeason.getExternalId() == null && seasonDTO.getNotionId() != null) {
+          boolean updated = false;
+          if (existingSeason.getExternalId() == null
+              || !existingSeason.getExternalId().equals(seasonDTO.getNotionId())) {
             existingSeason.setExternalId(seasonDTO.getNotionId());
+            updated = true;
+          }
+          if (existingSeason.getName() == null || !existingSeason.getName().equals(seasonDTO.getName())) {
+            existingSeason.setName(seasonDTO.getName());
+            updated = true;
+          }
+          if (existingSeason.getDescription() == null
+              || !existingSeason.getDescription().equals(seasonDTO.getDescription())) {
+            existingSeason.setDescription(seasonDTO.getDescription());
+            updated = true;
+          }
+
+          if (updated) {
             seasonService.save(existingSeason);
             updatedCount++;
-            log.info("Updated Notion ID for existing season: {}", seasonDTO.getName());
+            log.info("Updating existing season: {}", seasonDTO.getName());
           } else {
             skippedCount++;
-            log.debug("Season '{}' already up-to-date, skipping", seasonDTO.getName());
           }
         } else {
           // Create new season
@@ -193,6 +214,7 @@ public class SeasonSyncService extends BaseSyncService {
 
       } catch (Exception e) {
         log.error("Failed to save season '{}': {}", seasonDTO.getName(), e.getMessage(), e);
+        skippedCount++;
       }
     }
 

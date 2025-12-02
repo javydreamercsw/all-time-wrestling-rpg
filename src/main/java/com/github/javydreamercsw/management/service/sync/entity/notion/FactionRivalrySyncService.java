@@ -103,10 +103,21 @@ public class FactionRivalrySyncService extends BaseSyncService {
     FactionRivalryDTO dto = new FactionRivalryDTO();
     Map<String, Object> props = page.getRawProperties();
     dto.setExternalId(page.getId());
-    dto.setFaction1Name((String) props.get("Faction 1"));
-    dto.setFaction2Name((String) props.get("Faction 2"));
     try {
-      dto.setHeat(Integer.parseInt((String) props.get("Heat")));
+      dto.setFaction1Name(extractStringPropertyFromNotionPage(page, "Faction 1"));
+      dto.setFaction2Name(extractStringPropertyFromNotionPage(page, "Faction 2"));
+    } catch (ClassCastException e) {
+      log.warn("Failed to cast faction name for rivalry page {}: {}", page.getId(), e.getMessage());
+    }
+    try {
+      Object heatObj = props.get("Heat");
+      if (heatObj instanceof Number) {
+        dto.setHeat(((Number) heatObj).intValue());
+      } else if (heatObj instanceof String) {
+        dto.setHeat(Integer.parseInt((String) heatObj));
+      } else {
+        dto.setHeat(0);
+      }
     } catch (NumberFormatException e) {
       log.warn(
           "Invalid heat value for faction rivalry page {}: {}", page.getId(), props.get("Heat"));
@@ -139,32 +150,90 @@ public class FactionRivalrySyncService extends BaseSyncService {
       Faction f1 = faction1Opt.get();
       Faction f2 = faction2Opt.get();
 
+      // Find by externalId first
       Optional<FactionRivalry> existingRivalryOpt =
-          factionRivalryService.getFactionRivalryBetweenFactions(f1.getId(), f2.getId());
+          factionRivalryService.findByExternalId(dto.getExternalId());
+      if (existingRivalryOpt.isEmpty()) {
+        // Fallback to factions
+        existingRivalryOpt =
+            factionRivalryService.getFactionRivalryBetweenFactions(f1.getId(), f2.getId());
+      }
 
+      FactionRivalry rivalry;
+      boolean newRivalry = false;
       if (existingRivalryOpt.isPresent()) {
-        FactionRivalry rivalry = existingRivalryOpt.get();
-        if (rivalry.getHeat() != dto.getHeat()) {
-          int heatChange = dto.getHeat() - rivalry.getHeat();
-          factionRivalryService.addHeat(rivalry.getId(), heatChange, "Notion Sync");
-          updatedCount.incrementAndGet();
-          log.info("Updated heat for faction rivalry: {} vs {}", f1.getName(), f2.getName());
-        }
+        rivalry = existingRivalryOpt.get();
       } else {
         Optional<FactionRivalry> newRivalryOpt =
             factionRivalryService.createFactionRivalry(
                 f1.getId(), f2.getId(), "Created from Notion Sync");
-        if (newRivalryOpt.isPresent()) {
-          FactionRivalry newRivalry = newRivalryOpt.get();
-          if (dto.getHeat() > 0) {
-            factionRivalryService.addHeat(
-                newRivalry.getId(), dto.getHeat(), "Initial heat from Notion Sync");
+        if (newRivalryOpt.isEmpty()) {
+          log.warn("Failed to create faction rivalry for {} and {}", f1.getName(), f2.getName());
+          continue;
+        }
+        rivalry = newRivalryOpt.get();
+        newRivalry = true;
+      }
+
+      rivalry.setExternalId(dto.getExternalId());
+
+      if (rivalry.getHeat() != dto.getHeat()) {
+        int heatChange = dto.getHeat() - rivalry.getHeat();
+        factionRivalryService.addHeat(rivalry.getId(), heatChange, "Notion Sync");
+      }
+
+      factionRivalryService.save(rivalry);
+
+      if (newRivalry) {
+        createdCount.incrementAndGet();
+        log.info("Created new faction rivalry: {} vs {}", f1.getName(), f2.getName());
+      } else {
+        updatedCount.incrementAndGet();
+        log.info("Updated faction rivalry: {} vs {}", f1.getName(), f2.getName());
+      }
+    }
+  }
+
+  /** Extracts a string property from any NotionPage type using raw properties. */
+  private String extractStringPropertyFromNotionPage(
+      @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page,
+      @NonNull String propertyName) {
+    if (page.getRawProperties() != null) {
+      Object property = page.getRawProperties().get(propertyName);
+      if (property != null) {
+        String propertyStr = property.toString().trim();
+
+        // Handle relationship properties that show as "X items" or "X relations"
+        if (propertyStr.matches("\\d+ (items?|relations?)")) {
+          log.debug(
+              "Property '{}' shows as relationship count ({}), cannot resolve in sync mode",
+              propertyName,
+              propertyStr);
+          return null;
+        }
+
+        // Handle comma-separated values
+        if (propertyStr.contains(",")) {
+          String[] parts = propertyStr.split(",");
+          String firstPart = parts[0].trim();
+          if (!firstPart.isEmpty()) {
+            log.debug(
+                "Property '{}' contains multiple values, using first: '{}'",
+                propertyName,
+                firstPart);
+            return firstPart;
           }
-          createdCount.incrementAndGet();
-          log.info("Created new faction rivalry: {} vs {}", f1.getName(), f2.getName());
+        }
+
+        // Return the property value if it's not empty and not a UUID
+        if (!propertyStr.isEmpty()
+            && !propertyStr.matches(
+                "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+          return propertyStr;
         }
       }
     }
+    return null;
   }
 
   @Data

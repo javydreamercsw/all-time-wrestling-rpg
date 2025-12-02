@@ -205,49 +205,71 @@ public class InjurySyncService extends BaseSyncService {
       return null;
     }
 
-    Optional<InjuryType> existingInjuryType =
-        injuryTypeRepository.findByInjuryName(dto.getInjuryName());
-    if (existingInjuryType.isPresent()) {
-      log.info("Injury type already exists, retrieving: {}", dto.getInjuryName());
-      return existingInjuryType.get();
+    InjuryType injuryType = null;
+    // 1. Try to find by external ID
+    if (dto.getExternalId() != null && !dto.getExternalId().isBlank()) {
+      Optional<InjuryType> byExternalId = injuryTypeRepository.findByExternalId(dto.getExternalId());
+      if (byExternalId.isPresent()) {
+        injuryType = byExternalId.get();
+      }
     }
 
-    try {
-      log.debug(
-          "Attempting to create injury type: {} with effects H:{}, S:{}, C:{}",
-          dto.getInjuryName(),
-          dto.getHealthEffect(),
-          dto.getStaminaEffect(),
-          dto.getCardEffect());
+    // 2. Try to find by name if not found by external ID
+    if (injuryType == null) {
+      Optional<InjuryType> byName = injuryTypeRepository.findByInjuryName(dto.getInjuryName());
+      if (byName.isPresent()) {
+        injuryType = byName.get();
+      }
+    }
 
-      // Create injury type using the service's create method
-      InjuryType injuryType =
-          injuryTypeService.createInjuryType(
-              dto.getInjuryName(),
-              dto.getHealthEffect(),
-              dto.getStaminaEffect(),
-              dto.getCardEffect(),
-              dto.getSpecialEffects());
+    if (injuryType != null) {
+      // Update existing injury type
+      log.info("Updating existing injury type: {}", dto.getInjuryName());
+      injuryType.setExternalId(dto.getExternalId()); // Make sure externalId is set
+      injuryType.setInjuryName(dto.getInjuryName());
+      injuryType.setHealthEffect(dto.getHealthEffect());
+      injuryType.setStaminaEffect(dto.getStaminaEffect());
+      injuryType.setCardEffect(dto.getCardEffect());
+      injuryType.setSpecialEffects(dto.getSpecialEffects());
+      return injuryTypeService.updateInjuryType(injuryType);
+    } else {
+      // Create new injury type
+      try {
+        log.debug(
+            "Attempting to create injury type: {} with effects H:{}, S:{}, C:{}",
+            dto.getInjuryName(),
+            dto.getHealthEffect(),
+            dto.getStaminaEffect(),
+            dto.getCardEffect());
 
-      if (injuryType == null) {
+        InjuryType newInjuryType =
+            injuryTypeService.createInjuryType(
+                dto.getInjuryName(),
+                dto.getHealthEffect(),
+                dto.getStaminaEffect(),
+                dto.getCardEffect(),
+                dto.getSpecialEffects());
+
+        if (newInjuryType == null) {
+          log.error(
+              "Failed to create injury type ''{}'' as service returned null.",
+              dto.getInjuryName());
+          return null;
+        }
+
+        log.debug("Successfully created injury type with ID: {}", newInjuryType.getId());
+
+        newInjuryType.setExternalId(dto.getExternalId());
+
+        InjuryType updated = injuryTypeService.updateInjuryType(newInjuryType);
+        log.debug("Updated injury type with external ID: {}", dto.getExternalId());
+
+        return updated;
+      } catch (Exception e) {
         log.error(
-            "Failed to create injury type ''{}'' as service returned null.", dto.getInjuryName());
+            "Failed to create injury type ''{}' ': {}", dto.getInjuryName(), e.getMessage(), e);
         return null;
       }
-
-      log.debug("Successfully created injury type with ID: {}", injuryType.getId());
-
-      // Set external ID for tracking
-      injuryType.setExternalId(dto.getExternalId());
-
-      // Update the entity to save the external ID
-      InjuryType updated = injuryTypeService.updateInjuryType(injuryType);
-      log.debug("Updated injury type with external ID: {}", dto.getExternalId());
-
-      return updated;
-    } catch (Exception e) {
-      log.error("Failed to create injury type ''{}' ': {}", dto.getInjuryName(), e.getMessage(), e);
-      return null;
     }
   }
 

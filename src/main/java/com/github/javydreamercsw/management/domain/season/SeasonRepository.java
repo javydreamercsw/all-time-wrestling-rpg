@@ -15,6 +15,8 @@ public interface SeasonRepository
 
   Optional<Season> findByName(String name);
 
+  Optional<Season> findByExternalId(String externalId);
+
   /** Find the currently active season. There should only be one active season at a time. */
   @Query("SELECT s FROM Season s WHERE s.isActive = true AND s.endDate IS NULL")
   Optional<Season> findActiveSeason();

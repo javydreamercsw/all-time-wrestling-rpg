@@ -25,6 +25,14 @@ public interface ShowTemplateRepository extends JpaRepository<ShowTemplate, Long
   Optional<ShowTemplate> findByName(String name);
 
   /**
+   * Find a show template by external ID.
+   *
+   * @param externalId The external ID of the template
+   * @return Optional containing the template if found
+   */
+  Optional<ShowTemplate> findByExternalId(String externalId);
+
+  /**
    * Check if a show template exists by name.
    *
    * @param name The name to check

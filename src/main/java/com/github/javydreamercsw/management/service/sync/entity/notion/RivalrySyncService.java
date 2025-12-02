@@ -101,10 +101,21 @@ public class RivalrySyncService extends BaseSyncService {
     RivalryDTO dto = new RivalryDTO();
     Map<String, Object> props = page.getRawProperties();
     dto.setExternalId(page.getId());
-    dto.setWrestler1Name((String) props.get("Wrestler 1"));
-    dto.setWrestler2Name((String) props.get("Wrestler 2"));
     try {
-      dto.setHeat(Integer.parseInt((String) props.get("Heat")));
+      dto.setWrestler1Name((String) props.get("Wrestler 1"));
+      dto.setWrestler2Name((String) props.get("Wrestler 2"));
+    } catch (ClassCastException e) {
+      log.warn("Failed to cast wrestler name for rivalry page {}: {}", page.getId(), e.getMessage());
+    }
+    try {
+      Object heatObj = props.get("Heat");
+      if (heatObj instanceof Number) {
+        dto.setHeat(((Number) heatObj).intValue());
+      } else if (heatObj instanceof String) {
+        dto.setHeat(Integer.parseInt((String) heatObj));
+      } else {
+        dto.setHeat(0);
+      }
     } catch (NumberFormatException e) {
       log.warn("Invalid heat value for rivalry page {}: {}", page.getId(), props.get("Heat"));
       dto.setHeat(0);
@@ -134,29 +145,43 @@ public class RivalrySyncService extends BaseSyncService {
       Wrestler w1 = wrestler1Opt.get();
       Wrestler w2 = wrestler2Opt.get();
 
-      Optional<Rivalry> existingRivalryOpt =
-          rivalryService.getRivalryBetweenWrestlers(w1.getId(), w2.getId());
+      // Find by externalId first
+      Optional<Rivalry> existingRivalryOpt = rivalryService.findByExternalId(dto.getExternalId());
+      if (existingRivalryOpt.isEmpty()) {
+        // Fallback to wrestlers
+        existingRivalryOpt = rivalryService.getRivalryBetweenWrestlers(w1.getId(), w2.getId());
+      }
 
+      Rivalry rivalry;
+      boolean newRivalry = false;
       if (existingRivalryOpt.isPresent()) {
-        Rivalry rivalry = existingRivalryOpt.get();
-        if (rivalry.getHeat() != dto.getHeat()) {
-          int heatChange = dto.getHeat() - rivalry.getHeat();
-          rivalryService.addHeat(rivalry.getId(), heatChange, "Notion Sync");
-          updatedCount.incrementAndGet();
-          log.info("Updated heat for rivalry: {} vs {}", w1.getName(), w2.getName());
-        }
+        rivalry = existingRivalryOpt.get();
       } else {
         Optional<Rivalry> newRivalryOpt =
             rivalryService.createRivalry(w1.getId(), w2.getId(), "Created from Notion Sync");
-        if (newRivalryOpt.isPresent()) {
-          Rivalry newRivalry = newRivalryOpt.get();
-          if (dto.getHeat() > 0) {
-            rivalryService.addHeat(
-                newRivalry.getId(), dto.getHeat(), "Initial heat from Notion Sync");
-          }
-          createdCount.incrementAndGet();
-          log.info("Created new rivalry: {} vs {}", w1.getName(), w2.getName());
+        if (newRivalryOpt.isEmpty()) {
+          log.warn("Failed to create rivalry for {} and {}", w1.getName(), w2.getName());
+          continue;
         }
+        rivalry = newRivalryOpt.get();
+        newRivalry = true;
+      }
+
+      rivalry.setExternalId(dto.getExternalId());
+
+      if (rivalry.getHeat() != dto.getHeat()) {
+        int heatChange = dto.getHeat() - rivalry.getHeat();
+        rivalryService.addHeat(rivalry.getId(), heatChange, "Notion Sync");
+      }
+
+      rivalryService.save(rivalry);
+
+      if (newRivalry) {
+        createdCount.incrementAndGet();
+        log.info("Created new rivalry: {} vs {}", w1.getName(), w2.getName());
+      } else {
+        updatedCount.incrementAndGet();
+        log.info("Updated rivalry: {} vs {}", w1.getName(), w2.getName());
       }
     }
   }

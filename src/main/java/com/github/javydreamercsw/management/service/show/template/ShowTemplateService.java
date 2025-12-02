@@ -80,6 +80,10 @@ public class ShowTemplateService {
     return showTemplateRepository.findByName(name);
   }
 
+  public Optional<ShowTemplate> findByExternalId(@NonNull String externalId) {
+    return showTemplateRepository.findByExternalId(externalId);
+  }
+
   /**
    * Check if a show template exists by name.
    *

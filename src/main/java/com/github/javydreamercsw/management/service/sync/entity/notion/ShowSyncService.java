@@ -460,11 +460,7 @@ public class ShowSyncService extends BaseSyncService {
 
   // Property extraction methods
   private String extractName(@NonNull ShowPage showPage) {
-    if (showPage.getRawProperties() != null) {
-      Object name = showPage.getRawProperties().get("Name");
-      return name != null ? name.toString() : "Unknown Show";
-    }
-    return "Unknown Show";
+    return extractNameFromNotionPage(showPage);
   }
 
   private String extractDescription(@NonNull ShowPage showPage) {

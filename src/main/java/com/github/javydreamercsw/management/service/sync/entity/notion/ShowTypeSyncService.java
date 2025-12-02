@@ -141,7 +141,6 @@ public class ShowTypeSyncService extends BaseSyncService {
     }
   }
 
-  /** Extracts all unique show types from the Shows database in Notion. */
   private Set<String> extractShowTypesFromNotionShows() throws InterruptedException {
     Set<String> showTypes = new HashSet<>();
 
@@ -155,7 +154,7 @@ public class ShowTypeSyncService extends BaseSyncService {
     List<ShowPage> allShows = executeWithRateLimit(notionHandler::loadAllShowsForSync);
 
     for (ShowPage showPage : allShows) {
-      String showType = extractShowType(showPage);
+      String showType = extractShowTypeFromNotionPage(showPage);
       if (showType != null && !showType.trim().isEmpty() && !"N/A".equals(showType)) {
         showTypes.add(showType.trim());
       }
@@ -165,12 +164,106 @@ public class ShowTypeSyncService extends BaseSyncService {
     return showTypes;
   }
 
-  /** Extracts show type from a ShowPage. */
-  private String extractShowType(@NonNull ShowPage showPage) {
-    if (showPage.getRawProperties() != null) {
-      Object showType = showPage.getRawProperties().get("Show Type");
-      return showType != null ? showType.toString() : null;
+  /** Extracts show type from any NotionPage type using raw properties. */
+  private String extractShowTypeFromNotionPage(
+      @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page) {
+    if (page.getRawProperties() != null) {
+      Object showType = page.getRawProperties().get("Show Type");
+      if (showType == null) {
+        showType = page.getRawProperties().get("ShowType");
+      }
+      if (showType == null) {
+        showType = page.getRawProperties().get("Type");
+      }
+
+      if (showType != null) {
+        // Handle different property types
+        String showTypeStr = extractShowTypeValue(showType);
+        if (showTypeStr != null && !showTypeStr.trim().isEmpty() && !"N/A".equals(showTypeStr)) {
+          return showTypeStr.trim();
+        }
+      }
+
+      log.debug("Show type not found or empty for page: {}", page.getId());
+      return null;
     }
+    return null;
+  }
+
+  /**
+   * Extracts show type value from different Notion property types. Handles text, select, and
+   * relation properties.
+   */
+  private String extractShowTypeValue(Object property) {
+    if (property == null) {
+      return null;
+    }
+
+    try {
+      // Handle PageProperty objects (from Notion API)
+      if (property instanceof notion.api.v1.model.pages.PageProperty pageProperty) {
+
+        // Handle relation properties
+        if (pageProperty.getRelation() != null && !pageProperty.getRelation().isEmpty()) {
+          // For relation properties, we need to resolve the referenced page
+          // The relation contains PageReference objects with IDs
+          var relation = pageProperty.getRelation().get(0); // Get first relation
+          String relationId = relation.getId();
+
+          // Try to resolve the relation by fetching the referenced page title
+          // For now, we'll use a mapping based on known show type page IDs
+          return resolveShowTypeFromRelationId(relationId);
+        }
+
+        // Handle select properties
+        if (pageProperty.getSelect() != null) {
+          return pageProperty.getSelect().getName();
+        }
+
+        // Handle title properties
+        if (pageProperty.getTitle() != null && !pageProperty.getTitle().isEmpty()) {
+          return pageProperty.getTitle().get(0).getPlainText();
+        }
+
+        // Handle rich text properties
+        if (pageProperty.getRichText() != null && !pageProperty.getRichText().isEmpty()) {
+          return pageProperty.getRichText().get(0).getPlainText();
+        }
+      }
+
+      // Fallback: try to extract as string
+      String fallbackStr = property.toString().trim();
+      if (!fallbackStr.isEmpty() && !"N/A".equals(fallbackStr)) {
+        // Check if it looks like a relation string
+        if (fallbackStr.contains("PageReference") || fallbackStr.contains("relation=")) {
+          log.warn("Show type appears to be a relation but could not be resolved: {}", fallbackStr);
+          return null;
+        }
+        return fallbackStr;
+      }
+
+    } catch (Exception e) {
+      log.error("Failed to extract show type from property: {}", property, e);
+    }
+
+    return null;
+  }
+
+  /**
+   * Resolves show type name from relation ID. This is a temporary solution until we can implement
+   * proper relation resolution.
+   */
+  private String resolveShowTypeFromRelationId(@NonNull String relationId) {
+    // For now, we'll map known relation IDs to show types
+    // In a full implementation, you would fetch the referenced page from Notion
+
+    // You can add mappings here based on your Notion show type page IDs
+    // Example: if ("1fe90edc-c30f-800b-bbd0-d6e0cba01c9b".equals(relationId)) return "Weekly";
+
+    log.warn(
+        "Show type relation ID '{}' could not be resolved to a show type name. Please check your"
+            + " Notion database configuration.",
+        relationId);
     return null;
   }
 

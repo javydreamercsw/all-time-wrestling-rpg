@@ -72,6 +72,12 @@ public class SeasonService {
     return seasonRepository.findByName(name).orElse(null);
   }
 
+  /** Find season by external ID. */
+  @Transactional(readOnly = true)
+  public Optional<Season> findByExternalId(@NonNull String externalId) {
+    return seasonRepository.findByExternalId(externalId);
+  }
+
   /** Save a season. */
   public Season save(@NonNull Season season) {
     return seasonRepository.saveAndFlush(season);

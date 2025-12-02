@@ -59,6 +59,11 @@ public class TitleService {
     return titleRepository.findByName(name);
   }
 
+  @Transactional(readOnly = true)
+  public Optional<Title> findByExternalId(@NonNull String externalId) {
+    return titleRepository.findByExternalId(externalId);
+  }
+
   /** Get all titles with pagination. */
   @Transactional(readOnly = true)
   public Page<Title> getAllTitles(@NonNull Pageable pageable) {

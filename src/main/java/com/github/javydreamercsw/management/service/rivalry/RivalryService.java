@@ -269,6 +269,15 @@ public class RivalryService {
         .orElse(null);
   }
 
+  @Transactional(readOnly = true)
+  public Optional<Rivalry> findByExternalId(@NonNull String externalId) {
+    return rivalryRepository.findByExternalId(externalId);
+  }
+
+  public Rivalry save(@NonNull Rivalry rivalry) {
+    return rivalryRepository.saveAndFlush(rivalry);
+  }
+
   /** Get rivalry between two wrestlers. */
   @Transactional(readOnly = true)
   public Optional<Rivalry> getRivalryBetweenWrestlers(

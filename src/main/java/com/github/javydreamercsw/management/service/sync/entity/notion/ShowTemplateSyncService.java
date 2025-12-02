@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class ShowTemplateSyncService extends BaseSyncService {
 
   @Autowired private ShowTemplateService showTemplateService;
+  @Autowired private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository showTypeRepository;
 
   public ShowTemplateSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -273,51 +274,65 @@ public class ShowTemplateSyncService extends BaseSyncService {
   private int saveShowTemplatesToDatabase(@NonNull List<ShowTemplateDTO> templateDTOs) {
     log.info("💾 Saving {} show templates to database...", templateDTOs.size());
     int savedCount = 0;
+    int updatedCount = 0;
+    int skippedCount = 0;
 
     for (ShowTemplateDTO dto : templateDTOs) {
       try {
-        // Skip templates without a determined show type
         if (dto.getShowType() == null || dto.getShowType().trim().isEmpty()) {
           log.warn(
-              "Skipping template '{}' - no show type could be determined. Please manually assign a"
-                  + " show type.",
+              "Skipping template '{}' - no show type could be determined.",
               dto.getName());
+          skippedCount++;
           continue;
         }
 
-        // Use the ShowTemplateService to create or update the template
-        ShowTemplate savedTemplate =
-            showTemplateService.createOrUpdateTemplate(
-                dto.getName(),
-                dto.getDescription(),
-                dto.getShowType(), // This maps to showTypeName in the service
-                null // notionUrl - we don't have this in the DTO currently
-                );
+        ShowTemplate template = null;
+        if (dto.getExternalId() != null && !dto.getExternalId().isBlank()) {
+          template = showTemplateService.findByExternalId(dto.getExternalId()).orElse(null);
+        }
 
-        if (savedTemplate != null) {
-          // Set external ID if available and save only once
-          if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
-            savedTemplate.setExternalId(dto.getExternalId());
-            // Save again only if we modified the external ID
-            savedTemplate = showTemplateService.save(savedTemplate);
-          }
+        if (template == null) {
+          template = showTemplateService.findByName(dto.getName()).orElse(null);
+        }
+
+        boolean isNew = template == null;
+
+        if (isNew) {
+          template = new ShowTemplate();
+        }
+
+        Optional<com.github.javydreamercsw.management.domain.show.type.ShowType> showTypeOpt =
+            showTypeRepository.findByName(dto.getShowType());
+        if (showTypeOpt.isEmpty()) {
+          log.warn("Show type not found: {}", dto.getShowType());
+          skippedCount++;
+          continue;
+        }
+
+        template.setName(dto.getName());
+        template.setDescription(dto.getDescription());
+        template.setShowType(showTypeOpt.get());
+        template.setExternalId(dto.getExternalId());
+
+        showTemplateService.save(template);
+
+        if (isNew) {
           savedCount++;
-          log.debug("Saved show template: {} with show type: {}", dto.getName(), dto.getShowType());
         } else {
-          log.warn(
-              "Failed to save show template: {} (show type not found: {})",
-              dto.getName(),
-              dto.getShowType());
+          updatedCount++;
         }
       } catch (Exception e) {
         log.error("Failed to save show template '{}': {}", dto.getName(), e.getMessage());
+        skippedCount++;
       }
     }
-
     log.info(
-        "Successfully saved {} out of {} show templates to database",
+        "Successfully saved/updated {} show templates ({} new, {} updated, {} skipped)",
+        savedCount + updatedCount,
         savedCount,
-        templateDTOs.size());
+        updatedCount,
+        skippedCount);
     return savedCount;
   }
 

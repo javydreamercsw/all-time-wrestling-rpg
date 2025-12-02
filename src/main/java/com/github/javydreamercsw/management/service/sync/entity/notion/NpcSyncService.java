@@ -50,8 +50,13 @@ public class NpcSyncService extends BaseSyncService {
       int savedCount = 0;
       for (NpcPage npcPage : npcPages) {
         // Assuming the Notion database has properties "Name" and "Role"
-        String npcName = (String) npcPage.getRawProperties().get("Name");
-        String npcType = (String) npcPage.getRawProperties().get("Role");
+        String npcName = extractNameFromNotionPage(npcPage);
+        Object roleObj = npcPage.getRawProperties().get("Role");
+        String npcType = null;
+        if (roleObj instanceof String) {
+          npcType = (String) roleObj;
+        }
+        
         if (npcName != null && !npcName.isEmpty() && npcType != null && !npcType.isEmpty()) {
           Npc npc = npcService.findByExternalId(npcPage.getId());
           if (npc == null) {
