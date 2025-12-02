@@ -1,46 +1,78 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.TitlePage;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 @Slf4j
 class TitleSyncIntegrationTest extends ManagementIntegrationTest {
 
-  @MockitoBean private NotionSyncService notionSyncService;
+  @Autowired
+  private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
+
+  @MockBean private NotionHandler notionHandler;
+
+  @Mock private TitlePage titlePage;
 
   @BeforeEach
   void setUp() {
-    when(notionSyncService.syncTitles(anyString(), eq(SyncDirection.INBOUND)))
-        .thenReturn(BaseSyncService.SyncResult.success("Titles", 1, 0, 0));
+    clearAllRepositories();
   }
 
   @Test
   @DisplayName("Should Sync Titles From Notion")
   void shouldSyncTitlesFromNotion() {
-    log.info("🚀 Starting real title sync integration test...");
+    try (MockedStatic<NotionHandler> mocked = Mockito.mockStatic(NotionHandler.class)) {
+      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
+      log.info("🚀 Starting real title sync integration test...");
 
-    // Act
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncTitles("integration-test-titles", SyncDirection.INBOUND);
+      // Given
+      String titleId = UUID.randomUUID().toString();
+      when(titlePage.getId()).thenReturn(titleId);
+      when(titlePage.getRawProperties()).thenReturn(Map.of("Name", "Test Title"));
+      when(titlePage.getTier()).thenReturn("Main Event");
+      when(titlePage.getGender()).thenReturn("MALE");
 
-    // Assert
-    assertNotNull(result);
-    assertTrue(result.isSuccess());
-    assertEquals("Titles", result.getEntityType());
-    assertEquals(1, result.getSyncedCount());
+      when(notionHandler.loadAllTitles()).thenReturn(List.of(titlePage));
 
-    log.info("✅ Title sync completed successfully!");
+      // Act
+      BaseSyncService.SyncResult result =
+          notionSyncService.syncTitles("integration-test-titles");
+
+      // Assert
+      assertThat(result).isNotNull();
+      assertThat(result.isSuccess()).isTrue();
+      assertThat(result.getEntityType()).isEqualTo("Titles");
+      assertThat(result.getSyncedCount()).isEqualTo(1);
+
+      List<Title> titles = titleRepository.findAll();
+      assertThat(titles).hasSize(1);
+      Title title = titles.get(0);
+      assertThat(title.getName()).isEqualTo("Test Title");
+      assertThat(title.getExternalId()).isEqualTo(titleId);
+      assertThat(title.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
+
+      log.info("✅ Title sync completed successfully!");
+    }
   }
 }

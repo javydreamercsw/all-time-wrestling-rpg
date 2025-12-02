@@ -3,12 +3,12 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.notion.FactionRivalryPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.base.ai.notion.RivalryPage;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,15 +24,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 @Slf4j
-@DisplayName("Rivalry Sync Integration Tests")
-class RivalrySyncIT extends ManagementIntegrationTest {
+@DisplayName("Faction Rivalry Sync Integration Tests")
+class FactionRivalrySyncIT extends ManagementIntegrationTest {
 
   @Autowired
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
   @MockBean private NotionHandler notionHandler;
 
-  @Mock private RivalryPage rivalryPage;
+  @Mock private FactionRivalryPage factionRivalryPage;
 
   @BeforeEach
   void setUp() {
@@ -40,29 +40,34 @@ class RivalrySyncIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @DisplayName("Should sync rivalries from Notion to database successfully")
-  void shouldSyncRivalriesFromNotionToDatabaseSuccessfully() {
+  @DisplayName("Should sync faction rivalries from Notion to database successfully")
+  void shouldSyncFactionRivalriesFromNotionToDatabaseSuccessfully() {
     try (MockedStatic<NotionHandler> mocked = Mockito.mockStatic(NotionHandler.class)) {
       mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
       // Given
-      String wrestler1Name = "Wrestler 1";
-      String wrestler2Name = "Wrestler 2";
-      createTestWrestler(wrestler1Name);
-      createTestWrestler(wrestler2Name);
+      String faction1Name = "Faction 1";
+      Faction f1 = new Faction();
+      f1.setName(faction1Name);
+      factionRepository.save(f1);
 
+      String faction2Name = "Faction 2";
+      Faction f2 = new Faction();
+      f2.setName(faction2Name);
+      factionRepository.save(f2);
+      
       String rivalryId = UUID.randomUUID().toString();
-      when(rivalryPage.getId()).thenReturn(rivalryId);
-      when(rivalryPage.getRawProperties())
+      when(factionRivalryPage.getId()).thenReturn(rivalryId);
+      when(factionRivalryPage.getRawProperties())
           .thenReturn(
               Map.of(
-                  "Wrestler 1", wrestler1Name,
-                  "Wrestler 2", wrestler2Name,
+                  "Faction 1", faction1Name,
+                  "Faction 2", faction2Name,
                   "Heat", "10"));
-      when(notionHandler.loadAllRivalries()).thenReturn(List.of(rivalryPage));
+      when(notionHandler.loadAllFactionRivalries()).thenReturn(List.of(factionRivalryPage));
 
-      // When - Sync rivalries from real Notion database
+      // When - Sync faction rivalries from real Notion database
       BaseSyncService.SyncResult result =
-          notionSyncService.syncRivalries("test-operation-rivalry-123", SyncDirection.INBOUND);
+          notionSyncService.syncFactionRivalries("test-operation-faction-rivalry-123");
 
       // Then - Verify sync completed successfully
       assertThat(result).isNotNull();
@@ -70,13 +75,13 @@ class RivalrySyncIT extends ManagementIntegrationTest {
       assertThat(result.getSyncedCount()).isEqualTo(1);
       
       // Verify database state is consistent
-      List<Rivalry> finalRivalries = rivalryRepository.findAll();
+      List<FactionRivalry> finalRivalries = factionRivalryRepository.findAll();
       assertThat(finalRivalries).hasSize(1);
-      Rivalry rivalry = finalRivalries.get(0);
+      FactionRivalry rivalry = finalRivalries.get(0);
       assertThat(rivalry.getExternalId()).isEqualTo(rivalryId);
       assertThat(rivalry.getHeat()).isEqualTo(10);
-      assertThat(rivalry.getWrestler1().getName()).isEqualTo(wrestler1Name);
-      assertThat(rivalry.getWrestler2().getName()).isEqualTo(wrestler2Name);
+      assertThat(rivalry.getFaction1().getName()).isEqualTo(faction1Name);
+      assertThat(rivalry.getFaction2().getName()).isEqualTo(faction2Name);
     }
   }
 }

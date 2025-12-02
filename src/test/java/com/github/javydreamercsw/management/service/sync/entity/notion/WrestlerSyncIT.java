@@ -1,90 +1,92 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-/**
- * Real integration test for wrestler sync that uses actual Spring services and real Notion API
- * calls. This test requires the NOTION_TOKEN environment variable to be set.
- *
- * <p>Run with: mvn test -Dtest=WrestlerSyncIntegrationTest -DNOTION_TOKEN=your_token
- */
 @Slf4j
 @TestPropertySource(properties = "notion.sync.load-from-json=false")
-@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class WrestlerSyncIT extends ManagementIntegrationTest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerSyncService wrestlerSyncService;
 
-  @MockitoBean private NotionHandler notionHandler;
+  @MockBean private NotionHandler notionHandler;
+
+  @Mock private WrestlerPage wrestlerPage;
 
   @BeforeEach
   void setUp() {
-    wrestlerSyncService.notionHandler = notionHandler;
-    // Mock NotionHandler to return a dummy NotionPage
-    when(notionHandler.loadAllWrestlers())
-        .thenReturn(
-            List.of(
-                new WrestlerPage() {
-                  {
-                    setId("dummy-id");
-                    setRawProperties(
-                        Map.of(
-                            "Name",
-                            Map.of(
-                                "title",
-                                List.of(Map.of("text", Map.of("content", "Test Wrestler")))),
-                            "Fans",
-                            100000));
-                  }
-                }));
+    clearAllRepositories();
   }
 
   @Test
-  @DisplayName("Should correctly sync fans property from Notion")
-  void shouldSyncFansPropertyFromNotion() {
-    log.info("🧪 Verifying fans property sync from Notion...");
+  @DisplayName("Should sync wrestlers from Notion")
+  void shouldSyncWrestlersFromNotion() {
+    try (MockedStatic<NotionHandler> mocked = Mockito.mockStatic(NotionHandler.class)) {
+      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
+      log.info("🧪 Verifying wrestler sync from Notion...");
 
-    // Ensure sync has run
-    BaseSyncService.SyncResult result = wrestlerSyncService.syncWrestlers("fans-sync-test");
+      // Given
+      String wrestlerId = UUID.randomUUID().toString();
+      when(wrestlerPage.getId()).thenReturn(wrestlerId);
+      when(wrestlerPage.getRawProperties())
+          .thenReturn(
+              Map.of(
+                  "Name", "Test Wrestler",
+                  "Fans", 100000L));
 
-    // The operation should complete (success or failure is less important than proper handling)
-    assertThat(result.isSuccess()).withFailMessage("Success status should be defined").isTrue();
-    assertThat(result.getSyncedCount()).isEqualTo(1);
+      when(notionHandler.loadAllWrestlers()).thenReturn(List.of(wrestlerPage));
 
-    // Verify the fans property in the database
-    wrestlerRepository
-        .findByExternalId("dummy-id")
-        .ifPresentOrElse(
-            wrestler -> assertThat(wrestler.getFans()).isEqualTo(100000L),
-            () -> fail("Wrestler with externalId 'dummy-id' not found in database"));
+      // When
+      BaseSyncService.SyncResult result = wrestlerSyncService.syncWrestlers("wrestler-sync-test");
 
-    // Always log the result for debugging
-    log.info("📊 Sync Result Summary:");
-    log.info("   - Success: {}", result.isSuccess());
-    log.info("   - Entity: {}", result.getEntityType());
-    log.info("   - Synced: {}", result.getSyncedCount());
-    log.info("   - Errors: {}", result.getErrorCount());
-    if (!result.isSuccess()) {
-      log.info("   - Error: {}", result.getErrorMessage());
+      // Then
+      assertThat(result.isSuccess()).isTrue();
+      assertThat(result.getSyncedCount()).isEqualTo(1);
+
+      // Verify the wrestler in the database
+      Optional<Wrestler> wrestlerOpt = wrestlerRepository.findByExternalId(wrestlerId);
+      assertThat(wrestlerOpt).isPresent();
+      Wrestler wrestler = wrestlerOpt.get();
+      assertThat(wrestler.getName()).isEqualTo("Test Wrestler");
+      assertThat(wrestler.getFans()).isEqualTo(100000L);
+
+      // Test update
+      when(wrestlerPage.getRawProperties())
+          .thenReturn(
+              Map.of(
+                  "Name", "Test Wrestler Updated",
+                  "Fans", 120000L));
+      
+      wrestlerSyncService.syncWrestlers("wrestler-sync-test-2");
+
+      assertThat(wrestlerRepository.findAll()).hasSize(1);
+      Optional<Wrestler> updatedWrestlerOpt = wrestlerRepository.findByExternalId(wrestlerId);
+      assertThat(updatedWrestlerOpt).isPresent();
+      Wrestler updatedWrestler = updatedWrestlerOpt.get();
+      assertThat(updatedWrestler.getName()).isEqualTo("Test Wrestler Updated");
+      assertThat(updatedWrestler.getFans()).isEqualTo(120000L);
     }
   }
 }

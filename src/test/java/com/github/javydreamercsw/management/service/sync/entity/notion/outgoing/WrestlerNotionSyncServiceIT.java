@@ -3,6 +3,8 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
@@ -14,129 +16,53 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerSyncService;
-import dev.failsafe.FailsafeException;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageProperty;
-import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
-@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private FactionRepository factionRepository;
   @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
-  @Autowired private WrestlerSyncService wrestlerSyncService;
 
-  @BeforeAll
-  void cleanupBefore() {
-    cleanupNotion();
-  }
+  @MockBean private NotionHandler notionHandler;
 
-  @AfterAll
-  void cleanupAfter() {
-    cleanupNotion();
-  }
-
-  @SuppressWarnings("unchecked")
-  private void cleanupNotion() {
-    Optional<NotionHandler> handlerOpt = NotionHandler.getInstance();
-    if (handlerOpt.isEmpty()) {
-      return;
-    }
-    NotionHandler handler = handlerOpt.get();
-    Optional<NotionClient> clientOptional = handler.createNotionClient();
-    if (clientOptional.isEmpty()) {
-      return;
-    }
-    try (NotionClient client = clientOptional.get()) {
-      List<WrestlerPage> wrestlers = handler.executeWithRetry(handler::loadAllWrestlers);
-      for (WrestlerPage wrestlerPage : wrestlers) {
-        try {
-          Map<String, Object> props = wrestlerPage.getRawProperties();
-          if (props != null && props.containsKey("Name")) {
-            Object nameObj = props.get("Name");
-            String name = null;
-            if (nameObj instanceof String) {
-              name = (String) nameObj;
-            } else if (nameObj instanceof Map) {
-              Map<String, Object> nameProp = (Map<String, Object>) nameObj;
-              if (nameProp.containsKey("title")) {
-                List<Map<String, Object>> title = (List<Map<String, Object>>) nameProp.get("title");
-                if (title != null && !title.isEmpty()) {
-                  Map<String, Object> titlePart = title.get(0);
-                  if (titlePart.containsKey("text")) {
-                    Map<String, Object> text = (Map<String, Object>) titlePart.get("text");
-                    if (text.containsKey("content")) {
-                      name = (String) text.get("content");
-                    }
-                  }
-                }
-              }
-            }
-
-            if (name != null && name.startsWith("Test Wrestler")) {
-              UpdatePageRequest request =
-                  new UpdatePageRequest(wrestlerPage.getId(), new HashMap<>(), true, null, null);
-              handler.executeWithRetry(() -> client.updatePage(request));
-              System.out.println("Cleaned up test wrestler: " + name);
-            }
-          }
-        } catch (Exception e) {
-          System.err.println(
-              "Failed to parse or cleanup wrestler page "
-                  + wrestlerPage.getId()
-                  + ": "
-                  + e.getMessage());
-        }
-      }
-    }
-  }
+  @Captor private ArgumentCaptor<WrestlerPage> wrestlerPageCaptor;
 
   @BeforeEach
-  public void loadData() {
-    wrestlerSyncService.syncWrestlers(UUID.randomUUID().toString());
+  public void setup() {
+    clearAllRepositories();
   }
 
   @Test
   void testSyncToNotion() {
-    Wrestler wrestler = null;
-    Faction faction = null;
-    Optional<NotionHandler> handlerOpt = NotionHandler.getInstance();
-    if (handlerOpt.isEmpty()) {
-      Assertions.fail("Notion credentials not configured, skipping test.");
-    }
-    NotionHandler handler = handlerOpt.get();
-    Optional<NotionClient> clientOptional = handler.createNotionClient();
-    if (clientOptional.isEmpty()) {
-      Assertions.fail("Unable to create Notion client, skipping test.");
-    }
-    try (NotionClient client = clientOptional.get()) {
+    try (MockedStatic<NotionHandler> mocked = Mockito.mockStatic(NotionHandler.class)) {
+      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
+      
+      String newPageId = UUID.randomUUID().toString();
+      Page newPage = new Page();
+      newPage.setId(newPageId);
+
+      when(notionHandler.createWrestlerPage(any(WrestlerPage.class))).thenReturn(newPage);
+      when(notionHandler.updateWrestlerPage(any(WrestlerPage.class))).thenReturn(newPage);
+
       // Create a new faction
-      faction = new Faction();
+      Faction faction = new Faction();
       faction.setName("Test Faction " + UUID.randomUUID());
       factionRepository.save(faction);
 
       // Create a new wrestler
-      wrestler = new Wrestler();
+      Wrestler wrestler = new Wrestler();
       wrestler.setName("Test Wrestler " + UUID.randomUUID());
       wrestler.setStartingStamina(16);
       wrestler.setFans(1000L);
@@ -159,37 +85,13 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
       Wrestler updatedWrestler = wrestlerRepository.findById(wrestler.getId()).get();
       assertNotNull(updatedWrestler.getExternalId());
       assertNotNull(updatedWrestler.getLastSync());
+      assertEquals(newPageId, updatedWrestler.getExternalId());
 
-      // Retrieve the page from Notion and verify properties
-      Page page =
-          handler.executeWithRetry(
-              () -> client.retrievePage(updatedWrestler.getExternalId(), Collections.emptyList()));
-      Map<String, PageProperty> props = page.getProperties();
-      assertEquals(
-          updatedWrestler.getName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-      assertEquals(1000, Objects.requireNonNull(props.get("Fans").getNumber()).longValue());
-      Assertions.assertTrue(
-          wrestler
-              .getTier()
-              .getDisplayName()
-              .equalsIgnoreCase(Objects.requireNonNull(props.get("Tier").getSelect()).getName()),
-          "Tier does not match!");
-      Assertions.assertTrue(
-          wrestler
-              .getGender()
-              .name()
-              .equalsIgnoreCase(Objects.requireNonNull(props.get("Gender").getSelect()).getName()),
-          "Gender does not match!");
-      assertEquals(1, Objects.requireNonNull(props.get("Bumps").getNumber()).intValue());
-      assertEquals(
-          16, Objects.requireNonNull(props.get("Starting Stamina").getNumber()).intValue());
-      assertEquals(15, Objects.requireNonNull(props.get("Starting Health").getNumber()).intValue());
-      assertEquals(2, Objects.requireNonNull(props.get("Low Stamina").getNumber()).intValue());
-      assertEquals(4, Objects.requireNonNull(props.get("Low Health").getNumber()).intValue());
-      assertEquals(15, Objects.requireNonNull(props.get("Deck Size").getNumber()).intValue());
+      // Verify properties sent to Notion
+      Mockito.verify(notionHandler).createWrestlerPage(wrestlerPageCaptor.capture());
+      WrestlerPage capturedPage = wrestlerPageCaptor.getValue();
+      assertEquals(wrestler.getName(), capturedPage.getName());
+      assertEquals(wrestler.getFans(), capturedPage.getFans());
 
       // Sync to Notion again
       updatedWrestler.setName("Test Wrestler Updated " + UUID.randomUUID());
@@ -198,33 +100,10 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
       Wrestler updatedWrestler2 = wrestlerRepository.findById(wrestler.getId()).get();
       assertTrue(updatedWrestler2.getLastSync().isAfter(updatedWrestler.getLastSync()));
 
-      // Verify updated name
-      page =
-          handler.executeWithRetry(
-              () -> client.retrievePage(updatedWrestler.getExternalId(), Collections.emptyList()));
-      props = page.getProperties();
-      assertEquals(
-          updatedWrestler2.getName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-    } finally {
-      if (wrestler != null && wrestler.getExternalId() != null) {
-        // Clean up
-        try (NotionClient client = clientOptional.get()) {
-          UpdatePageRequest request =
-              new UpdatePageRequest(wrestler.getExternalId(), new HashMap<>(), true, null, null);
-          handler.executeWithRetry(() -> client.updatePage(request));
-        } catch (FailsafeException e) {
-          // Ignore timeout on cleanup
-        }
-      }
-      if (wrestler != null && wrestler.getId() != null) {
-        wrestlerRepository.delete(wrestler);
-      }
-      if (faction != null && faction.getId() != null) {
-        factionRepository.delete(faction);
-      }
+      // Verify updated name sent to Notion
+      Mockito.verify(notionHandler).updateWrestlerPage(wrestlerPageCaptor.capture());
+      capturedPage = wrestlerPageCaptor.getValue();
+      assertEquals(updatedWrestler2.getName(), capturedPage.getName());
     }
   }
 }

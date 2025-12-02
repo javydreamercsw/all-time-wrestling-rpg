@@ -1,97 +1,113 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NpcPage;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
-/**
- * @author Javier Ortiz Bultron @date Oct 10, 2023
- */
 @Slf4j
-@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class NpcSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
-  @Test
-  @DisplayName("Should sync NPCs from Notion with real services")
-  void shouldSyncNpcsFromNotionWithRealServices() {
-    log.info("🚀 Starting real NPC sync integration test...");
+  @Autowired private NpcService npcService;
 
-    // When - Perform real sync with real services
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncNpcs("test-operation", SyncDirection.INBOUND);
+  @MockBean private NotionHandler notionHandler;
 
-    // Then - Verify the sync result
-    assertNotNull(result, "Sync result should not be null");
-    assertEquals("NPCs", result.getEntityType(), "Entity type should be 'NPCs'");
-
-    if (result.isSuccess()) {
-      log.info("✅ NPC sync completed successfully!");
-      log.info("   - Synced: {} NPCs", result.getSyncedCount());
-      log.info("   - Errors: {} NPCs", result.getErrorCount());
-
-      // Verify we actually synced some data
-      assertTrue(result.getSyncedCount() >= 0, "Should have synced 0 or more NPCs");
-      assertTrue(result.getErrorCount() >= 0, "Should have 0 or more errors");
-
-    } else {
-      log.error("❌ NPC sync failed: {}", result.getErrorMessage());
-
-      // For debugging - log the full error details
-      if (result.getErrorMessage() != null) {
-        log.error("   Error details: {}", result.getErrorMessage());
-      }
-
-      // Don't fail the test immediately - let's see what the actual error is
-      // This helps with debugging real integration issues
-      log.warn("   This might be expected if there are data quality issues in Notion");
-      log.warn("   Check the error message above to see if it's a known issue");
-    }
-
-    // Always log the result for debugging
-    log.info("📊 Sync Result Summary:");
-    log.info("   - Success: {}", result.isSuccess());
-    log.info("   - Entity: {}", result.getEntityType());
-    log.info("   - Synced: {}", result.getSyncedCount());
-    log.info("   - Errors: {}", result.getErrorCount());
-    if (!result.isSuccess()) {
-      log.info("   - Error: {}", result.getErrorMessage());
-    }
+  @Mock private NpcPage npcPage1;
+  @Mock private NpcPage npcPage2;
+  
+  @BeforeEach
+  void setUp() {
+    clearAllRepositories();
   }
 
   @Test
-  @DisplayName("Should validate sync result structure")
-  void shouldValidateSyncResultStructure() {
-    log.info("🔍 Testing sync result structure validation...");
+  @DisplayName("Should sync NPCs from Notion")
+  void shouldSyncNpcsFromNotion() {
+    try (MockedStatic<NotionHandler> mocked = Mockito.mockStatic(NotionHandler.class)) {
+      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
+      log.info("🚀 Starting real NPC sync integration test...");
 
-    // When - Perform sync (with or without token)
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncNpcs("test-operation", SyncDirection.INBOUND);
+      // Given
+      String npc1Id = UUID.randomUUID().toString();
+      when(npcPage1.getId()).thenReturn(npc1Id);
+      when(npcPage1.getRawProperties())
+          .thenReturn(
+              Map.of(
+                  "Name", "Test NPC 1",
+                  "Role", "Interviewer"));
 
-    // Then - Verify result structure is always valid
-    assertNotNull(result, "Sync result should never be null");
-    assertNotNull(result.getEntityType(), "Entity type should never be null");
-    assertEquals("NPCs", result.getEntityType(), "Entity type should be 'NPCs'");
+      String npc2Id = UUID.randomUUID().toString();
+      when(npcPage2.getId()).thenReturn(npc2Id);
+      when(npcPage2.getRawProperties())
+          .thenReturn(
+              Map.of(
+                  "Name", "Test NPC 2",
+                  "Role", "General Manager"));
 
-    // Verify numeric fields are valid
-    assertTrue(result.getSyncedCount() >= 0, "Synced count should be non-negative");
-    assertTrue(result.getErrorCount() >= 0, "Error count should be non-negative");
+      when(notionHandler.loadAllNpcs()).thenReturn(List.of(npcPage1, npcPage2));
 
-    // If failed, should have error message
-    if (!result.isSuccess()) {
-      assertNotNull(result.getErrorMessage(), "Failed sync should have error message");
-      assertFalse(result.getErrorMessage().trim().isEmpty(), "Error message should not be empty");
+      // When - Perform real sync with real services
+      BaseSyncService.SyncResult result =
+          notionSyncService.syncNpcs("test-operation", SyncDirection.INBOUND);
+
+      // Then - Verify the sync result
+      assertNotNull(result, "Sync result should not be null");
+      assertEquals("NPCs", result.getEntityType(), "Entity type should be 'NPCs'");
+      assertTrue(result.isSuccess(), "Sync should be successful");
+      assertEquals(2, result.getSyncedCount(), "Should have synced 2 NPCs");
+
+      // Verify NPCs in database
+      Optional<Npc> npc1Opt = npcService.findByName("Test NPC 1");
+      assertTrue(npc1Opt.isPresent());
+      Npc npc1 = npc1Opt.get();
+      assertEquals(npc1Id, npc1.getExternalId());
+      assertEquals("Interviewer", npc1.getNpcType());
+
+      Optional<Npc> npc2Opt = npcService.findByName("Test NPC 2");
+      assertTrue(npc2Opt.isPresent());
+      Npc npc2 = npc2Opt.get();
+      assertEquals(npc2Id, npc2.getExternalId());
+      assertEquals("General Manager", npc2.getNpcType());
+
+      // Run sync again to test updates and no duplicates
+      when(npcPage1.getRawProperties())
+          .thenReturn(
+              Map.of(
+                  "Name", "Test NPC 1 Updated",
+                  "Role", "Announcer"));
+      
+      BaseSyncService.SyncResult secondResult =
+          notionSyncService.syncNpcs("second-sync-operation", SyncDirection.INBOUND);
+      
+      assertEquals(2, npcService.findAll().size());
+
+      Optional<Npc> updatedNpc1Opt = npcService.findByExternalId(npc1Id);
+      assertTrue(updatedNpc1Opt.isPresent());
+      Npc updatedNpc1 = updatedNpc1Opt.get();
+      assertEquals("Test NPC 1 Updated", updatedNpc1.getName());
+      assertEquals("Announcer", updatedNpc1.getNpcType());
     }
-
-    log.info("✅ Sync result structure is valid");
   }
 }

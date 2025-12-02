@@ -1,26 +1,30 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.notion.FactionPage;
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
-/**
- * @author Javier Ortiz Bultron @date Oct 10, 2023
- */
 @Slf4j
-@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class FactionSyncIT extends ManagementIntegrationTest {
 
   @Autowired
@@ -28,173 +32,95 @@ class FactionSyncIT extends ManagementIntegrationTest {
 
   @Autowired private FactionService factionService;
 
+  @MockBean private NotionHandler notionHandler;
+
+  @Mock private FactionPage factionPage1;
+  @Mock private FactionPage factionPage2;
+
+  @BeforeEach
+  void setUp() {
+    clearAllRepositories();
+  }
+
   @Test
-  @DisplayName("Should sync factions from Notion with real services")
-  void shouldSyncFactionsFromNotionWithRealServices() {
-    log.info("🚀 Starting real faction sync integration test...");
+  @DisplayName("Should sync factions from Notion")
+  void shouldSyncFactionsFromNotion() {
+    try (MockedStatic<NotionHandler> mocked = Mockito.mockStatic(NotionHandler.class)) {
+      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
+      log.info("🚀 Starting faction sync integration test...");
 
-    // When - Perform real sync with real services
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncFactions("integration-test-factions", SyncDirection.INBOUND);
+      // Given
+      String leaderName = "Test Leader";
+      createTestWrestler(leaderName);
 
-    // Then - Verify the sync result
-    assertNotNull(result, "Sync result should not be null");
-    assertEquals("Factions", result.getEntityType(), "Entity type should be 'Factions'");
+      when(factionPage1.getId()).thenReturn(UUID.randomUUID().toString());
+      when(factionPage1.getRawProperties())
+          .thenReturn(
+              Map.of(
+                  "Name", "Test Faction 1",
+                  "Active", true,
+                  "Leader", leaderName));
 
-    if (result.isSuccess()) {
-      log.info("✅ Faction sync completed successfully!");
-      log.info("   - Synced: {} factions", Optional.of(result.getSyncedCount()));
-      log.info("   - Errors: {} factions", Optional.of(result.getErrorCount()));
+      when(factionPage2.getId()).thenReturn(UUID.randomUUID().toString());
+      when(factionPage2.getRawProperties())
+          .thenReturn(
+              Map.of(
+                  "Name", "Test Faction 2",
+                  "Active", false,
+                  "Leader", ""));
 
-      // Verify we actually synced some data
-      assertTrue(result.getSyncedCount() >= 0, "Should have synced 0 or more factions");
-      assertTrue(result.getErrorCount() >= 0, "Should have 0 or more errors");
+      when(notionHandler.loadAllFactions()).thenReturn(List.of(factionPage1, factionPage2));
 
-      // Additional assertions to verify factions with members exist in database
-      log.info("🔍 Verifying factions with members in database...");
+      // When - Perform sync with mocked services
+      BaseSyncService.SyncResult result =
+          notionSyncService.syncFactions("integration-test-factions", SyncDirection.INBOUND);
 
-      List<Faction> factionsWithMembers = factionService.findAllWithMembers();
-      assertNotNull(factionsWithMembers, "Factions list should not be null");
+      // Then - Verify the sync result
+      assertNotNull(result, "Sync result should not be null");
+      assertTrue(result.isSuccess(), "Sync should be successful");
+      assertEquals("Factions", result.getEntityType(), "Entity type should be 'Factions'");
+      assertEquals(2, result.getSyncedCount(), "Should have synced 2 factions");
 
-      if (!factionsWithMembers.isEmpty()) {
-        log.info("   Found {} factions in database", Optional.of(factionsWithMembers.size()));
+      // Verify factions in the database
+      Optional<Faction> faction1Opt = factionService.getFactionByName("Test Faction 1");
+      assertTrue(faction1Opt.isPresent(), "Test Faction 1 should be in the database");
+      Faction faction1 = faction1Opt.get();
+      assertEquals(factionPage1.getId(), faction1.getExternalId());
+      assertTrue(faction1.getIsActive());
+      assertNotNull(faction1.getLeader());
+      assertEquals(leaderName, faction1.getLeader().getName());
 
-        // Check if any factions have members
-        long factionsWithMemberCount =
-            factionsWithMembers.stream()
-                .filter(faction -> faction.getMembers() != null && !faction.getMembers().isEmpty())
-                .count();
-
-        log.info("   {} factions have members", Optional.of(factionsWithMemberCount));
-
-        // First, validate that ALL factions have members - the test should fail if any faction has
-        // no members
-        List<Faction> factionsWithoutMembers =
-            factionsWithMembers.stream()
-                .filter(faction -> faction.getMembers() == null || faction.getMembers().isEmpty())
-                .toList();
-
-        if (!factionsWithoutMembers.isEmpty()) {
-          StringBuilder errorMessage =
-              new StringBuilder("Found factions without members after sync:");
-          for (Faction faction : factionsWithoutMembers) {
-            errorMessage.append(
-                String.format(
-                    "\n  - Faction '%s' (ID: %d) has no members",
-                    faction.getName(), faction.getId()));
-          }
-          log.error("❌ {}", errorMessage);
-          fail(errorMessage.toString());
-        }
-
-        if (factionsWithMemberCount > 0) {
-          // Verify member relationships are properly loaded for ALL factions with members
-          List<Faction> factionsWithMembersFiltered =
-              factionsWithMembers.stream()
-                  .filter(
-                      faction -> faction.getMembers() != null && !faction.getMembers().isEmpty())
-                  .toList();
-
-          log.info(
-              "   ✅ Testing {} factions with members",
-              Optional.of(factionsWithMembersFiltered.size()));
-
-          for (Faction factionWithMembers : factionsWithMembersFiltered) {
-            log.info(
-                "   🔍 Validating faction '{}' with {} members",
-                factionWithMembers.getName(),
-                (Object) factionWithMembers.getMembers().size());
-
-            // This is critical - accessing member properties outside transaction context
-            // would throw LazyInitializationException if not properly loaded
-            for (Wrestler member : factionWithMembers.getMembers()) {
-              assertNotNull(
-                  member.getId(),
-                  String.format(
-                      "Member ID should not be null in faction '%s'",
-                      factionWithMembers.getName()));
-              assertNotNull(
-                  member.getName(),
-                  String.format(
-                      "Member name should not be null in faction '%s'",
-                      factionWithMembers.getName()));
-              assertFalse(
-                  member.getName().trim().isEmpty(),
-                  String.format(
-                      "Member name should not be empty in faction '%s'",
-                      factionWithMembers.getName()));
-
-              log.info("     - Member: {} (ID: {})", member.getName(), member.getId());
-            }
-
-            // Verify faction leader if present
-            if (factionWithMembers.getLeader() != null) {
-              Wrestler leader = factionWithMembers.getLeader();
-              assertNotNull(
-                  leader.getId(),
-                  String.format(
-                      "Leader ID should not be null in faction '%s'",
-                      factionWithMembers.getName()));
-              assertNotNull(
-                  leader.getName(),
-                  String.format(
-                      "Leader name should not be null in faction '%s'",
-                      factionWithMembers.getName()));
-              log.info("     - Leader: {} (ID: {})", leader.getName(), leader.getId());
-            } else {
-              log.info("     - No leader assigned");
-            }
-          }
-        } else {
-          log.info(
-              "   ℹ️ No factions with members found (this may be expected if Notion data doesn't"
-                  + " include member relationships)");
-        }
-      } else {
-        log.info("   ℹ️ No factions found in database after sync");
-      }
-    } else {
-      log.error("❌ Faction sync failed: {}", result.getErrorMessage());
-
-      // For debugging - log the full error details
-      if (result.getErrorMessage() != null) {
-        log.error("   Error details: {}", result.getErrorMessage());
-      }
-
-      // Don't fail the test immediately - let's see what the actual error is
-      // This helps with debugging real integration issues
-      log.warn("   This might be expected if there are data quality issues in Notion");
-      log.warn("   Check the error message above to see if it's a known issue");
-    }
-
-    // Always log the result for debugging
-    log.info("📊 Sync Result Summary:");
-    log.info("   - Success: {}", Optional.of(result.isSuccess()));
-    log.info("   - Entity: {}", result.getEntityType());
-    log.info("   - Synced: {}", Optional.of(result.getSyncedCount()));
-    log.info("   - Errors: {}", Optional.of(result.getErrorCount()));
-    if (!result.isSuccess()) {
-      log.info("   - Error: {}", result.getErrorMessage());
+      Optional<Faction> faction2Opt = factionService.getFactionByName("Test Faction 2");
+      assertTrue(faction2Opt.isPresent(), "Test Faction 2 should be in the database");
+      Faction faction2 = faction2Opt.get();
+      assertEquals(factionPage2.getId(), faction2.getExternalId());
+      assertFalse(faction2.getIsActive());
+      assertNull(faction2.getLeader());
     }
   }
 
   @Test
   @DisplayName("Should validate faction sync operation ID handling")
   void shouldValidateFactionSyncOperationIdHandling() {
-    log.info("🧪 Testing faction sync with specific operation ID...");
+    try (MockedStatic<NotionHandler> mocked = Mockito.mockStatic(NotionHandler.class)) {
+      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
+      log.info("🧪 Testing faction sync with specific operation ID...");
 
-    String operationId = "test-faction-sync-" + System.currentTimeMillis();
+      String operationId = "test-faction-sync-" + System.currentTimeMillis();
 
-    // When - Perform sync with specific operation ID
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncFactions(operationId, SyncDirection.INBOUND);
+      when(notionHandler.loadAllFactions()).thenReturn(List.of());
 
-    // Then - Verify the result structure
-    assertNotNull(result, "Sync result should not be null");
-    assertEquals("Factions", result.getEntityType(), "Entity type should be 'Factions'");
+      // When - Perform sync with specific operation ID
+      BaseSyncService.SyncResult result =
+          notionSyncService.syncFactions(operationId, SyncDirection.INBOUND);
 
-    log.info("✅ Faction sync operation ID handling validated");
-    log.info("   Operation ID: {}", operationId);
-    log.info("   Result: {}", result.isSuccess() ? "SUCCESS" : "FAILURE");
+      // Then - Verify the result structure
+      assertNotNull(result, "Sync result should not be null");
+      assertEquals("Factions", result.getEntityType(), "Entity type should be 'Factions'");
+
+      log.info("✅ Faction sync operation ID handling validated");
+      log.info("   Operation ID: {}", operationId);
+      log.info("   Result: {}", result.isSuccess() ? "SUCCESS" : "FAILURE");
+    }
   }
 }
