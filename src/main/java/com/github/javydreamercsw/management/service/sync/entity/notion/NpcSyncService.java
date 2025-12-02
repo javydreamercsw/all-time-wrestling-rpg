@@ -56,7 +56,7 @@ public class NpcSyncService extends BaseSyncService {
         if (roleObj instanceof String) {
           npcType = (String) roleObj;
         }
-        
+
         if (npcName != null && !npcName.isEmpty() && npcType != null && !npcType.isEmpty()) {
           Npc npc = npcService.findByExternalId(npcPage.getId());
           if (npc == null) {

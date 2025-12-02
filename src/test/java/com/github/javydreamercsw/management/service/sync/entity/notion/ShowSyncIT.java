@@ -11,8 +11,8 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -66,18 +66,25 @@ class ShowSyncIT extends ManagementIntegrationTest {
       when(showPage.getRawProperties())
           .thenReturn(
               Map.of(
-                  "Name", "Test Show",
-                  "Description", "Test Description",
-                  "Show Type", showType.getName(),
-                  "Date", LocalDate.now().toString(),
-                  "Season", season.getName(),
-                  "Template", showTemplate.getName()));
+                  "Name",
+                  "Test Show",
+                  "Description",
+                  "Test Description",
+                  "Show Type",
+                  showType.getName(),
+                  "Date",
+                  LocalDate.now().toString(),
+                  "Season",
+                  season.getName(),
+                  "Template",
+                  showTemplate.getName()));
 
       when(notionHandler.getDatabasePageIds("Shows")).thenReturn(List.of(showId));
       when(notionHandler.loadShowById(showId)).thenReturn(Optional.of(showPage));
 
       // When
-      BaseSyncService.SyncResult result = notionSyncService.syncShows("test-operation");
+      BaseSyncService.SyncResult result =
+          notionSyncService.syncShows("test-operation", SyncDirection.INBOUND);
 
       // Then
       assertThat(result).isNotNull();

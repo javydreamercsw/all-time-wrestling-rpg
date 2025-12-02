@@ -8,6 +8,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -21,7 +22,10 @@ import org.springframework.stereotype.Service;
 public class ShowTemplateSyncService extends BaseSyncService {
 
   @Autowired private ShowTemplateService showTemplateService;
-  @Autowired private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository showTypeRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository
+      showTypeRepository;
 
   public ShowTemplateSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
     super(objectMapper, syncProperties);
@@ -280,9 +284,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
     for (ShowTemplateDTO dto : templateDTOs) {
       try {
         if (dto.getShowType() == null || dto.getShowType().trim().isEmpty()) {
-          log.warn(
-              "Skipping template '{}' - no show type could be determined.",
-              dto.getName());
+          log.warn("Skipping template '{}' - no show type could be determined.", dto.getName());
           skippedCount++;
           continue;
         }

@@ -69,13 +69,19 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
       when(segmentPage.getRawProperties())
           .thenReturn(
               Map.of(
-                  "Name", "Test Segment",
-                  "Show", "test-show-id",
-                  "Participants", wrestler1.getName() + "," + wrestler2.getName(),
-                  "Winners", wrestler1.getName(),
-                  "Segment Type", segmentType.getName(),
-                  "Date", LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))));
-      
+                  "Name",
+                  "Test Segment",
+                  "Show",
+                  "test-show-id",
+                  "Participants",
+                  wrestler1.getName() + "," + wrestler2.getName(),
+                  "Winners",
+                  wrestler1.getName(),
+                  "Segment Type",
+                  segmentType.getName(),
+                  "Date",
+                  LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))));
+
       when(notionHandler.loadSegmentById(segmentId)).thenReturn(Optional.of(segmentPage));
 
       // When

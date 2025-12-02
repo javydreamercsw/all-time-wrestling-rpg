@@ -55,19 +55,11 @@ class FactionSyncIT extends ManagementIntegrationTest {
 
       when(factionPage1.getId()).thenReturn(UUID.randomUUID().toString());
       when(factionPage1.getRawProperties())
-          .thenReturn(
-              Map.of(
-                  "Name", "Test Faction 1",
-                  "Active", true,
-                  "Leader", leaderName));
+          .thenReturn(Map.of("Name", "Test Faction 1", "Active", true, "Leader", leaderName));
 
       when(factionPage2.getId()).thenReturn(UUID.randomUUID().toString());
       when(factionPage2.getRawProperties())
-          .thenReturn(
-              Map.of(
-                  "Name", "Test Faction 2",
-                  "Active", false,
-                  "Leader", ""));
+          .thenReturn(Map.of("Name", "Test Faction 2", "Active", false, "Leader", ""));
 
       when(notionHandler.loadAllFactions()).thenReturn(List.of(factionPage1, factionPage2));
 

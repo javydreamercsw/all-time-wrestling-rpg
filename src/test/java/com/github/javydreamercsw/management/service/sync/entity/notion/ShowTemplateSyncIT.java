@@ -5,11 +5,11 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,7 +26,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 @Slf4j
 @DisplayName("Show Template Sync Integration Tests")
-class ShowTemplateSyncIT extends AbstractIntegrationTest {
+class ShowTemplateSyncIT extends ManagementIntegrationTest {
 
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
   @Autowired private ShowTemplateService showTemplateService;
@@ -34,10 +34,10 @@ class ShowTemplateSyncIT extends AbstractIntegrationTest {
   @MockBean private NotionHandler notionHandler;
 
   @Mock private ShowTemplatePage showTemplatePage;
-  
+
   @BeforeEach
   void setUp() {
-      clearAllRepositories();
+    clearAllRepositories();
   }
 
   @Test
@@ -57,9 +57,12 @@ class ShowTemplateSyncIT extends AbstractIntegrationTest {
       when(showTemplatePage.getRawProperties())
           .thenReturn(
               Map.of(
-                  "Name", "Test Template",
-                  "Description", "Test Description",
-                  "Show Type", "Weekly"));
+                  "Name",
+                  "Test Template",
+                  "Description",
+                  "Test Description",
+                  "Show Type",
+                  "Weekly"));
 
       when(notionHandler.loadAllShowTemplates()).thenReturn(List.of(showTemplatePage));
 
@@ -78,17 +81,20 @@ class ShowTemplateSyncIT extends AbstractIntegrationTest {
       assertThat(template.getName()).isEqualTo("Test Template");
       assertThat(template.getExternalId()).isEqualTo(templateId);
       assertThat(template.getShowType().getName()).isEqualTo("Weekly");
-      
+
       // Test update
       when(showTemplatePage.getRawProperties())
-      .thenReturn(
-          Map.of(
-              "Name", "Test Template Updated",
-              "Description", "Test Description Updated",
-              "Show Type", "Weekly"));
-      
+          .thenReturn(
+              Map.of(
+                  "Name",
+                  "Test Template Updated",
+                  "Description",
+                  "Test Description Updated",
+                  "Show Type",
+                  "Weekly"));
+
       showTemplateSyncService.syncShowTemplates("test-operation-2");
-      
+
       allTemplates = showTemplateService.findAll();
       assertThat(allTemplates).hasSize(1);
       template = allTemplates.get(0);

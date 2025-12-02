@@ -1,7 +1,6 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
@@ -71,13 +70,19 @@ class SegmentSyncIT extends ManagementIntegrationTest {
       when(segmentPage.getRawProperties())
           .thenReturn(
               Map.of(
-                  "Name", "Test Segment",
-                  "Show", "test-show-id",
-                  "Participants", wrestler1.getName() + "," + wrestler2.getName(),
-                  "Winners", wrestler1.getName(),
-                  "Segment Type", segmentType.getName(),
-                  "Date", LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))));
-      
+                  "Name",
+                  "Test Segment",
+                  "Show",
+                  "test-show-id",
+                  "Participants",
+                  wrestler1.getName() + "," + wrestler2.getName(),
+                  "Winners",
+                  wrestler1.getName(),
+                  "Segment Type",
+                  segmentType.getName(),
+                  "Date",
+                  LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))));
+
       when(notionHandler.getDatabasePageIds("Segments")).thenReturn(List.of(segmentId));
       when(notionHandler.loadSegmentById(segmentId)).thenReturn(Optional.of(segmentPage));
 

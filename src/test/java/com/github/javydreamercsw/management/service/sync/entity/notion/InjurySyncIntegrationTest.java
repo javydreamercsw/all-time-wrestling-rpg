@@ -55,22 +55,32 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
       when(injuryPage1.getRawProperties())
           .thenReturn(
               Map.of(
-                  "Name", "Head Injury",
-                  "Health Effect", -1,
-                  "Stamina Effect", 0,
-                  "Card Effect", 0,
-                  "Special Effects", "Cannot use headbutts."));
+                  "Name",
+                  "Head Injury",
+                  "Health Effect",
+                  -1,
+                  "Stamina Effect",
+                  0,
+                  "Card Effect",
+                  0,
+                  "Special Effects",
+                  "Cannot use headbutts."));
 
       String injury2Id = UUID.randomUUID().toString();
       when(injuryPage2.getId()).thenReturn(injury2Id);
       when(injuryPage2.getRawProperties())
           .thenReturn(
               Map.of(
-                  "Name", "Leg Injury",
-                  "Health Effect", 0,
-                  "Stamina Effect", -1,
-                  "Card Effect", 0,
-                  "Special Effects", "Cannot use leg attacks."));
+                  "Name",
+                  "Leg Injury",
+                  "Health Effect",
+                  0,
+                  "Stamina Effect",
+                  -1,
+                  "Card Effect",
+                  0,
+                  "Special Effects",
+                  "Cannot use leg attacks."));
 
       when(notionHandler.loadAllInjuries()).thenReturn(List.of(injuryPage1, injuryPage2));
 
@@ -105,19 +115,23 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
       when(injuryPage1.getRawProperties())
           .thenReturn(
               Map.of(
-                  "Name", "Head Injury",
-                  "Health Effect", -2, // Changed
-                  "Stamina Effect", 0,
-                  "Card Effect", 0,
-                  "Special Effects", "Cannot use headbutts. Dizzy."));
+                  "Name",
+                  "Head Injury",
+                  "Health Effect",
+                  -2, // Changed
+                  "Stamina Effect",
+                  0,
+                  "Card Effect",
+                  0,
+                  "Special Effects",
+                  "Cannot use headbutts. Dizzy."));
 
       BaseSyncService.SyncResult secondResult =
           notionSyncService.syncInjuryTypes("second-sync-operation");
       assertThat(secondResult.isSuccess()).isTrue();
       assertThat(injuryTypeRepository.findAll()).hasSize(2); // No new injuries
 
-      InjuryType updatedHeadInjury =
-          injuryTypeRepository.findByExternalId(injury1Id).get();
+      InjuryType updatedHeadInjury = injuryTypeRepository.findByExternalId(injury1Id).get();
       assertThat(updatedHeadInjury.getHealthEffect()).isEqualTo(-2);
       assertThat(updatedHeadInjury.getSpecialEffects()).isEqualTo("Cannot use headbutts. Dizzy.");
     }

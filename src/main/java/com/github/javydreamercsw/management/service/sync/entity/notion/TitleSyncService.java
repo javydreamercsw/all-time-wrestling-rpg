@@ -86,8 +86,7 @@ public class TitleSyncService extends BaseSyncService {
         boolean isNew = title == null;
 
         if (isNew) {
-          log.info(
-              "Title '{}' not found locally, creating new one from Notion data.", titleName);
+          log.info("Title '{}' not found locally, creating new one from Notion data.", titleName);
           title = new Title();
           title.setName(titleName);
         }
@@ -109,8 +108,7 @@ public class TitleSyncService extends BaseSyncService {
                   case "Riser" -> WrestlerTier.RISER;
                   case "Icon" -> WrestlerTier.ICON;
                   default -> {
-                    log.warn(
-                        "Unknown tier string '{}' for title '{}'", tierString, titleName);
+                    log.warn("Unknown tier string '{}' for title '{}'", tierString, titleName);
                     // Fallback to direct valueOf if no specific mapping
                     yield WrestlerTier.valueOf(tierString.toUpperCase().replace(" ", "_"));
                   }

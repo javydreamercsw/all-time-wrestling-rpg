@@ -51,10 +51,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
       String wrestlerId = UUID.randomUUID().toString();
       when(wrestlerPage.getId()).thenReturn(wrestlerId);
       when(wrestlerPage.getRawProperties())
-          .thenReturn(
-              Map.of(
-                  "Name", "Test Wrestler",
-                  "Fans", 100000L));
+          .thenReturn(Map.of("Name", "Test Wrestler", "Fans", 100000L));
 
       when(notionHandler.loadAllWrestlers()).thenReturn(List.of(wrestlerPage));
 
@@ -74,11 +71,8 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
 
       // Test update
       when(wrestlerPage.getRawProperties())
-          .thenReturn(
-              Map.of(
-                  "Name", "Test Wrestler Updated",
-                  "Fans", 120000L));
-      
+          .thenReturn(Map.of("Name", "Test Wrestler Updated", "Fans", 120000L));
+
       wrestlerSyncService.syncWrestlers("wrestler-sync-test-2");
 
       assertThat(wrestlerRepository.findAll()).hasSize(1);

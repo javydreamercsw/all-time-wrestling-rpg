@@ -1,7 +1,6 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
@@ -10,6 +9,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,7 +57,7 @@ class TitleSyncIntegrationTest extends ManagementIntegrationTest {
 
       // Act
       BaseSyncService.SyncResult result =
-          notionSyncService.syncTitles("integration-test-titles");
+          notionSyncService.syncTitles("integration-test-titles", SyncDirection.INBOUND);
 
       // Assert
       assertThat(result).isNotNull();

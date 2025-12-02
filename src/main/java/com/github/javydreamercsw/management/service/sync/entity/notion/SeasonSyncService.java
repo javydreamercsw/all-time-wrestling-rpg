@@ -183,7 +183,8 @@ public class SeasonSyncService extends BaseSyncService {
             existingSeason.setExternalId(seasonDTO.getNotionId());
             updated = true;
           }
-          if (existingSeason.getName() == null || !existingSeason.getName().equals(seasonDTO.getName())) {
+          if (existingSeason.getName() == null
+              || !existingSeason.getName().equals(seasonDTO.getName())) {
             existingSeason.setName(seasonDTO.getName());
             updated = true;
           }

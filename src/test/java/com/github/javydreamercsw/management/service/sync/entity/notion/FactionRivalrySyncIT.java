@@ -54,15 +54,11 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
       Faction f2 = new Faction();
       f2.setName(faction2Name);
       factionRepository.save(f2);
-      
+
       String rivalryId = UUID.randomUUID().toString();
       when(factionRivalryPage.getId()).thenReturn(rivalryId);
       when(factionRivalryPage.getRawProperties())
-          .thenReturn(
-              Map.of(
-                  "Faction 1", faction1Name,
-                  "Faction 2", faction2Name,
-                  "Heat", "10"));
+          .thenReturn(Map.of("Faction 1", faction1Name, "Faction 2", faction2Name, "Heat", "10"));
       when(notionHandler.loadAllFactionRivalries()).thenReturn(List.of(factionRivalryPage));
 
       // When - Sync faction rivalries from real Notion database
@@ -73,7 +69,7 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
       assertThat(result).isNotNull();
       assertThat(result.isSuccess()).isTrue();
       assertThat(result.getSyncedCount()).isEqualTo(1);
-      
+
       // Verify database state is consistent
       List<FactionRivalry> finalRivalries = factionRivalryRepository.findAll();
       assertThat(finalRivalries).hasSize(1);

@@ -36,7 +36,7 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Mock private NpcPage npcPage1;
   @Mock private NpcPage npcPage2;
-  
+
   @BeforeEach
   void setUp() {
     clearAllRepositories();
@@ -53,18 +53,12 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
       String npc1Id = UUID.randomUUID().toString();
       when(npcPage1.getId()).thenReturn(npc1Id);
       when(npcPage1.getRawProperties())
-          .thenReturn(
-              Map.of(
-                  "Name", "Test NPC 1",
-                  "Role", "Interviewer"));
+          .thenReturn(Map.of("Name", "Test NPC 1", "Role", "Interviewer"));
 
       String npc2Id = UUID.randomUUID().toString();
       when(npcPage2.getId()).thenReturn(npc2Id);
       when(npcPage2.getRawProperties())
-          .thenReturn(
-              Map.of(
-                  "Name", "Test NPC 2",
-                  "Role", "General Manager"));
+          .thenReturn(Map.of("Name", "Test NPC 2", "Role", "General Manager"));
 
       when(notionHandler.loadAllNpcs()).thenReturn(List.of(npcPage1, npcPage2));
 
@@ -79,33 +73,27 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
       assertEquals(2, result.getSyncedCount(), "Should have synced 2 NPCs");
 
       // Verify NPCs in database
-      Optional<Npc> npc1Opt = npcService.findByName("Test NPC 1");
-      assertTrue(npc1Opt.isPresent());
-      Npc npc1 = npc1Opt.get();
+      Npc npc1 = npcService.findByName("Test NPC 1");
+      assertNotNull(npc1);
       assertEquals(npc1Id, npc1.getExternalId());
       assertEquals("Interviewer", npc1.getNpcType());
 
-      Optional<Npc> npc2Opt = npcService.findByName("Test NPC 2");
-      assertTrue(npc2Opt.isPresent());
-      Npc npc2 = npc2Opt.get();
+      Npc npc2 = npcService.findByName("Test NPC 2");
+      assertNotNull(npc2);
       assertEquals(npc2Id, npc2.getExternalId());
       assertEquals("General Manager", npc2.getNpcType());
 
       // Run sync again to test updates and no duplicates
       when(npcPage1.getRawProperties())
-          .thenReturn(
-              Map.of(
-                  "Name", "Test NPC 1 Updated",
-                  "Role", "Announcer"));
-      
+          .thenReturn(Map.of("Name", "Test NPC 1 Updated", "Role", "Announcer"));
+
       BaseSyncService.SyncResult secondResult =
           notionSyncService.syncNpcs("second-sync-operation", SyncDirection.INBOUND);
-      
+
       assertEquals(2, npcService.findAll().size());
 
-      Optional<Npc> updatedNpc1Opt = npcService.findByExternalId(npc1Id);
-      assertTrue(updatedNpc1Opt.isPresent());
-      Npc updatedNpc1 = updatedNpc1Opt.get();
+      Npc updatedNpc1 = npcService.findByExternalId(npc1Id);
+      assertNotNull(updatedNpc1);
       assertEquals("Test NPC 1 Updated", updatedNpc1.getName());
       assertEquals("Announcer", updatedNpc1.getNpcType());
     }

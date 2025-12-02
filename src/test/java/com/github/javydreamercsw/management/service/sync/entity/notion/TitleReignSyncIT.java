@@ -73,7 +73,7 @@ class TitleReignSyncIT extends ManagementIntegrationTest {
       assertThat(result).isNotNull();
       assertThat(result.isSuccess()).isTrue();
       assertThat(result.getSyncedCount()).isEqualTo(1);
-      
+
       List<TitleReign> reigns = titleReignRepository.findAll();
       assertThat(reigns).hasSize(1);
       TitleReign reign = reigns.get(0);

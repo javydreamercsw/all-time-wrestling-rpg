@@ -208,7 +208,8 @@ public class InjurySyncService extends BaseSyncService {
     InjuryType injuryType = null;
     // 1. Try to find by external ID
     if (dto.getExternalId() != null && !dto.getExternalId().isBlank()) {
-      Optional<InjuryType> byExternalId = injuryTypeRepository.findByExternalId(dto.getExternalId());
+      Optional<InjuryType> byExternalId =
+          injuryTypeRepository.findByExternalId(dto.getExternalId());
       if (byExternalId.isPresent()) {
         injuryType = byExternalId.get();
       }
@@ -252,8 +253,7 @@ public class InjurySyncService extends BaseSyncService {
 
         if (newInjuryType == null) {
           log.error(
-              "Failed to create injury type ''{}'' as service returned null.",
-              dto.getInjuryName());
+              "Failed to create injury type ''{}'' as service returned null.", dto.getInjuryName());
           return null;
         }
 

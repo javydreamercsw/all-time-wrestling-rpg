@@ -54,10 +54,7 @@ class RivalrySyncIT extends ManagementIntegrationTest {
       when(rivalryPage.getId()).thenReturn(rivalryId);
       when(rivalryPage.getRawProperties())
           .thenReturn(
-              Map.of(
-                  "Wrestler 1", wrestler1Name,
-                  "Wrestler 2", wrestler2Name,
-                  "Heat", "10"));
+              Map.of("Wrestler 1", wrestler1Name, "Wrestler 2", wrestler2Name, "Heat", "10"));
       when(notionHandler.loadAllRivalries()).thenReturn(List.of(rivalryPage));
 
       // When - Sync rivalries from real Notion database
@@ -68,7 +65,7 @@ class RivalrySyncIT extends ManagementIntegrationTest {
       assertThat(result).isNotNull();
       assertThat(result.isSuccess()).isTrue();
       assertThat(result.getSyncedCount()).isEqualTo(1);
-      
+
       // Verify database state is consistent
       List<Rivalry> finalRivalries = rivalryRepository.findAll();
       assertThat(finalRivalries).hasSize(1);

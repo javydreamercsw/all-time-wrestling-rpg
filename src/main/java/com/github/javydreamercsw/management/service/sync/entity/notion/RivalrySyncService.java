@@ -105,7 +105,8 @@ public class RivalrySyncService extends BaseSyncService {
       dto.setWrestler1Name((String) props.get("Wrestler 1"));
       dto.setWrestler2Name((String) props.get("Wrestler 2"));
     } catch (ClassCastException e) {
-      log.warn("Failed to cast wrestler name for rivalry page {}: {}", page.getId(), e.getMessage());
+      log.warn(
+          "Failed to cast wrestler name for rivalry page {}: {}", page.getId(), e.getMessage());
     }
     try {
       Object heatObj = props.get("Heat");
