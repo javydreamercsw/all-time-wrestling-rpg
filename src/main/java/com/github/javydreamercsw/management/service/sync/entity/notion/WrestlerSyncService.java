@@ -535,6 +535,8 @@ public class WrestlerSyncService extends BaseSyncService {
     } else {
       merged.setDeckSize(15);
     }
+
+    merged.setExternalId(notion.getExternalId());
     return merged;
   }
 

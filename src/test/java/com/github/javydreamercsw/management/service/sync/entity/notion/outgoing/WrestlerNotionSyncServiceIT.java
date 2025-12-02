@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -13,10 +14,12 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerSyncService;
 import dev.failsafe.FailsafeException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,17 +28,93 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.UpdatePageRequest;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private FactionRepository factionRepository;
   @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
+  @Autowired private WrestlerSyncService wrestlerSyncService;
+
+  @BeforeAll
+  void cleanupBefore() {
+    cleanupNotion();
+  }
+
+  @AfterAll
+  void cleanupAfter() {
+    cleanupNotion();
+  }
+
+  @SuppressWarnings("unchecked")
+  private void cleanupNotion() {
+    Optional<NotionHandler> handlerOpt = NotionHandler.getInstance();
+    if (handlerOpt.isEmpty()) {
+      return;
+    }
+    NotionHandler handler = handlerOpt.get();
+    Optional<NotionClient> clientOptional = handler.createNotionClient();
+    if (clientOptional.isEmpty()) {
+      return;
+    }
+    try (NotionClient client = clientOptional.get()) {
+      List<WrestlerPage> wrestlers = handler.executeWithRetry(handler::loadAllWrestlers);
+      for (WrestlerPage wrestlerPage : wrestlers) {
+        try {
+          Map<String, Object> props = wrestlerPage.getRawProperties();
+          if (props != null && props.containsKey("Name")) {
+            Object nameObj = props.get("Name");
+            String name = null;
+            if (nameObj instanceof String) {
+              name = (String) nameObj;
+            } else if (nameObj instanceof Map) {
+              Map<String, Object> nameProp = (Map<String, Object>) nameObj;
+              if (nameProp.containsKey("title")) {
+                List<Map<String, Object>> title = (List<Map<String, Object>>) nameProp.get("title");
+                if (title != null && !title.isEmpty()) {
+                  Map<String, Object> titlePart = title.get(0);
+                  if (titlePart.containsKey("text")) {
+                    Map<String, Object> text = (Map<String, Object>) titlePart.get("text");
+                    if (text.containsKey("content")) {
+                      name = (String) text.get("content");
+                    }
+                  }
+                }
+              }
+            }
+
+            if (name != null && name.startsWith("Test Wrestler")) {
+              UpdatePageRequest request =
+                  new UpdatePageRequest(wrestlerPage.getId(), new HashMap<>(), true, null, null);
+              handler.executeWithRetry(() -> client.updatePage(request));
+              System.out.println("Cleaned up test wrestler: " + name);
+            }
+          }
+        } catch (Exception e) {
+          System.err.println(
+              "Failed to parse or cleanup wrestler page "
+                  + wrestlerPage.getId()
+                  + ": "
+                  + e.getMessage());
+        }
+      }
+    }
+  }
+
+  @BeforeEach
+  public void loadData() {
+    wrestlerSyncService.syncWrestlers(UUID.randomUUID().toString());
+  }
 
   @Test
   void testSyncToNotion() {
