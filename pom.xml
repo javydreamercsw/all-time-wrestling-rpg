@@ -367,10 +367,10 @@
             <importOrder/>
             <removeUnusedImports/>
             <formatAnnotations/>
-            <!--<licenseHeader>
-                  <file>${project.build.directory}/test-classes/license.template</file>
-                  <delimiter>package</delimiter>
-                </licenseHeader>-->
+            <licenseHeader>
+              <file>${project.basedir}/LICENSE.template</file>
+              <delimiter>package</delimiter>
+            </licenseHeader>
           </java>
           <groovy>
             <!-- These are the defaults, you can override if you want -->
