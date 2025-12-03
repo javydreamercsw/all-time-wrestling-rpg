@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -74,6 +75,12 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
     segmentType.setName("Test Segment Type");
     segmentTypeRepository.save(segmentType);
 
+    // Commit the data so it's visible to new transactions
+    TestTransaction.flagForCommit();
+    TestTransaction.end();
+    // Start a new transaction for the rest of the test method
+    TestTransaction.start();
+
     when(segmentPage.getId()).thenReturn(UUID.randomUUID().toString());
 
     SegmentPage.NotionProperties properties = mock(SegmentPage.NotionProperties.class);
@@ -105,17 +112,11 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
         .thenReturn(
             Map.of(
                 "Name",
-                "Test Segment",
-                "Show",
-                showExternalId,
-                "Participants",
-                wrestler1.getName() + "," + wrestler2.getName(),
-                "Winners",
-                wrestler1.getName(),
-                "Segment Type",
-                segmentType.getName(),
+                "Test Show",
+                "Show Type",
+                showType.getName(),
                 "Date",
-                LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))));
+                LocalDate.now().toString()));
 
     when(notionHandler.loadSegmentById(segmentPage.getId())).thenReturn(Optional.of(segmentPage));
     when(notionHandler.loadShowById(showExternalId)).thenReturn(Optional.of(showPage));
