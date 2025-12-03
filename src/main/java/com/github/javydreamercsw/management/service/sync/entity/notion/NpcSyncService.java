@@ -7,6 +7,7 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
@@ -27,11 +28,8 @@ public class NpcSyncService extends BaseSyncService {
     super(objectMapper, syncProperties, notionHandler);
   }
 
-  public SyncResult syncNpcs(
-      @NonNull String operationId,
-      @NonNull com.github.javydreamercsw.management.service.sync.base.SyncDirection direction) {
-    if (direction
-        == com.github.javydreamercsw.management.service.sync.base.SyncDirection.OUTBOUND) {
+  public SyncResult syncNpcs(@NonNull String operationId, @NonNull SyncDirection direction) {
+    if (direction == SyncDirection.OUTBOUND) {
       return SyncResult.success("NPCs", 0, 0, 0);
     }
     if (isAlreadySyncedInSession("npcs")) {

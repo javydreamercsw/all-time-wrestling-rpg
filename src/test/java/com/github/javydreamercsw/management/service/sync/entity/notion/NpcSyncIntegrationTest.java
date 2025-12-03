@@ -19,7 +19,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
 class NpcSyncIntegrationTest extends ManagementIntegrationTest {
@@ -28,8 +28,8 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
   @Autowired private NpcService npcService;
-
-  @MockBean private NotionHandler notionHandler;
+  @Autowired private NpcSyncService npcSyncService;
+  @MockitoBean private NotionHandler notionHandler;
 
   @Mock private NpcPage npcPage1;
   @Mock private NpcPage npcPage2;
@@ -77,10 +77,9 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
     when(npcPage1.getRawProperties())
         .thenReturn(Map.of("Name", "Test NPC 1 Updated", "Role", "Announcer"));
     when(notionHandler.loadAllNpcs()).thenReturn(List.of(npcPage1));
-    notionSyncService.clearSyncSession();
+    npcSyncService.clearSyncSession();
 
-    BaseSyncService.SyncResult secondResult =
-        notionSyncService.syncNpcs("second-sync-operation", SyncDirection.INBOUND);
+    notionSyncService.syncNpcs("second-sync-operation", SyncDirection.INBOUND);
 
     assertEquals(1, npcService.findAll().size());
 

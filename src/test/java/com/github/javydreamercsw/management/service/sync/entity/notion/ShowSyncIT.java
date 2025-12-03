@@ -32,7 +32,6 @@ class ShowSyncIT extends ManagementIntegrationTest {
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
   @MockitoBean private NotionHandler notionHandler;
-
   @Mock private ShowPage showPage;
 
   @BeforeEach

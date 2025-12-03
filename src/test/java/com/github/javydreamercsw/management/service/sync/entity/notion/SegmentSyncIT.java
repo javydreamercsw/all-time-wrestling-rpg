@@ -38,9 +38,7 @@ class SegmentSyncIT extends ManagementIntegrationTest {
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
   @Autowired private SegmentRepository segmentRepository;
-
   @MockitoBean private NotionHandler notionHandler;
-
   @Mock private SegmentPage segmentPage;
 
   @BeforeEach

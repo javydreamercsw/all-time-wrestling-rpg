@@ -16,6 +16,7 @@ import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -391,7 +392,7 @@ public class SegmentSyncService extends BaseSyncService {
     log.info("🤼 Starting segment synchronization from Notion for ID: {}", segmentId);
     String operationId = "segment-sync-" + segmentId;
     progressTracker.startOperation(operationId, "Segment Sync", 4);
-    final List<String> messages = new java.util.concurrent.CopyOnWriteArrayList<>();
+    final List<String> messages = new CopyOnWriteArrayList<>();
 
     try {
       Optional<SegmentPage> segmentPageOpt = notionHandler.loadSegmentById(segmentId);

@@ -18,7 +18,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
 @DisplayName("Injury Sync Integration Tests")
@@ -28,8 +28,8 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
   @Autowired private InjuryTypeRepository injuryTypeRepository;
-
-  @MockBean private NotionHandler notionHandler;
+  @Autowired private InjurySyncService injurySyncService;
+  @MockitoBean private NotionHandler notionHandler;
 
   @Mock private InjuryPage injuryPage1;
   @Mock private InjuryPage injuryPage2;
@@ -120,7 +120,7 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
                 0,
                 "Special Effects",
                 "Cannot use headbutts. Dizzy."));
-
+    injurySyncService.clearSyncSession();
     BaseSyncService.SyncResult secondResult =
         notionSyncService.syncInjuryTypes("second-sync-operation");
     assertThat(secondResult.isSuccess()).isTrue();
