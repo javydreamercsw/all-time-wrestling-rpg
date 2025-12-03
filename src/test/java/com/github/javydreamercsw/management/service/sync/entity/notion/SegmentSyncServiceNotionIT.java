@@ -29,8 +29,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.transaction.TestTransaction;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @DisplayName("SegmentSyncService Single Sync Integration Tests")
@@ -41,6 +43,7 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
   @MockitoBean private NotionHandler notionHandler;
   @Mock private SegmentPage segmentPage;
   @Mock private ShowPage showPage;
+  @Autowired private PlatformTransactionManager transactionManager;
 
   @BeforeEach
   void setUp() {
@@ -49,7 +52,7 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should sync a single segment by ID")
-  @Transactional
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
   void shouldSyncSingleSegmentById() {
     // Given
     Wrestler wrestler1 = createTestWrestler("Wrestler 1");
@@ -74,12 +77,6 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
     SegmentType segmentType = new SegmentType();
     segmentType.setName("Test Segment Type");
     segmentTypeRepository.save(segmentType);
-
-    // Commit the data so it's visible to new transactions
-    TestTransaction.flagForCommit();
-    TestTransaction.end();
-    // Start a new transaction for the rest of the test method
-    TestTransaction.start();
 
     when(segmentPage.getId()).thenReturn(UUID.randomUUID().toString());
 
@@ -129,13 +126,18 @@ class SegmentSyncServiceNotionIT extends ManagementIntegrationTest {
     assertThat(result.isSuccess()).isTrue();
     assertThat(result.getSyncedCount()).isEqualTo(1);
 
-    List<Segment> finalSegments = segmentRepository.findAll();
-    assertThat(finalSegments).hasSize(1);
-    Segment segment = finalSegments.get(0);
-    assertThat(segment.getExternalId()).isEqualTo(segmentPage.getId());
-    assertThat(segment.getShow().getName()).isEqualTo("Test Show");
-    assertThat(segment.getParticipants()).hasSize(2);
-    assertThat(segment.getWinners()).hasSize(1);
-    assertThat(segment.getWinners().get(0).getName()).isEqualTo(wrestler1.getName());
+    new TransactionTemplate(transactionManager)
+        .execute(
+            status -> {
+              List<Segment> finalSegments = segmentRepository.findAll();
+              assertThat(finalSegments).hasSize(1);
+              Segment segment = finalSegments.get(0);
+              assertThat(segment.getExternalId()).isEqualTo(segmentPage.getId());
+              assertThat(segment.getShow().getName()).isEqualTo("Test Show");
+              assertThat(segment.getParticipants()).hasSize(2);
+              assertThat(segment.getWinners()).hasSize(1);
+              assertThat(segment.getWinners().get(0).getName()).isEqualTo(wrestler1.getName());
+              return null;
+            });
   }
 }
