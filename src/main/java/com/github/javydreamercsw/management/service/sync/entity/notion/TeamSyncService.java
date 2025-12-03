@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -31,8 +32,10 @@ public class TeamSyncService extends BaseSyncService {
   @Autowired private WrestlerService wrestlerService;
   @Autowired private FactionRepository factionRepository;
 
-  public TeamSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
-    super(objectMapper, syncProperties);
+  @Autowired
+  public TeamSyncService(
+      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
+    super(objectMapper, syncProperties, notionHandler);
   }
 
   /**

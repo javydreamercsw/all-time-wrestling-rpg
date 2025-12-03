@@ -128,6 +128,6 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   }
 
   protected Wrestler createTestWrestler(@NonNull String name) {
-    return TestUtils.createWrestler(wrestlerRepository, name);
+    return TestUtils.createWrestler(name);
   }
 }

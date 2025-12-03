@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NpcPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -20,8 +21,10 @@ public class NpcSyncService extends BaseSyncService {
 
   @Autowired protected NpcService npcService;
 
-  public NpcSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
-    super(objectMapper, syncProperties);
+  @Autowired
+  public NpcSyncService(
+      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
+    super(objectMapper, syncProperties, notionHandler);
   }
 
   public SyncResult syncNpcs(@NonNull String operationId) {

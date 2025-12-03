@@ -1,15 +1,18 @@
 package com.github.javydreamercsw;
 
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.time.Instant;
 import lombok.NonNull;
 
 public class TestUtils {
-
-  public static Wrestler createWrestler(
-      @NonNull WrestlerRepository wrestlerRepository, @NonNull String name) {
+  /**
+   * Create a wrestler with default values. Stil needs to be persisted in the database.
+   *
+   * @param name Desired wrestler's name.
+   * @return Created wrestler.
+   */
+  public static Wrestler createWrestler(@NonNull String name) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
     wrestler.setDescription("Test Wrestler");
@@ -20,6 +23,6 @@ public class TestUtils {
     wrestler.setLowStamina(2);
     wrestler.setTier(WrestlerTier.ROOKIE);
     wrestler.setCreationDate(Instant.now());
-    return wrestlerRepository.save(wrestler);
+    return wrestler;
   }
 }

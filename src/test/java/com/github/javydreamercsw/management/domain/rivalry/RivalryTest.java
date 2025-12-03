@@ -26,9 +26,9 @@ class RivalryTest {
 
   @BeforeEach
   void setUp() {
-    wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
-    wrestler2 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 2");
-    wrestler3 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 3");
+    wrestler1 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 1"));
+    wrestler2 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 2"));
+    wrestler3 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 3"));
 
     rivalry = new Rivalry();
     rivalry.setWrestler1(wrestler1);

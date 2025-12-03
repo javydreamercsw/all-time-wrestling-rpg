@@ -63,7 +63,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
 
-    testWrestler = TestUtils.createWrestler(wrestlerRepository, "Test Wrestler");
+    testWrestler = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Test Wrestler"));
     // Ensure a default season exists for tests
     if (seasonService.findByName("Default Season") == null) {
       seasonService.createSeason("Default Season", "Default Season", 4);
@@ -104,15 +104,15 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @Test
   void testFeudHistorySorting() {
     // Given
-    Wrestler wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
+    Wrestler wrestler1 = TestUtils.createWrestler("Wrestler 1");
     wrestler1.setGender(Gender.MALE);
     wrestler1.setFans(1000L);
-    wrestler1 = wrestlerRepository.save(wrestler1);
+    wrestlerRepository.saveAndFlush(wrestler1);
 
-    Wrestler wrestler2 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 2");
+    Wrestler wrestler2 = TestUtils.createWrestler("Wrestler 2");
     wrestler2.setGender(Gender.MALE);
     wrestler2.setFans(1000L);
-    wrestler2 = wrestlerRepository.save(wrestler2);
+    wrestlerRepository.saveAndFlush(wrestler2);
 
     Assertions.assertNotNull(wrestler1.getId());
     Assertions.assertNotNull(wrestler2.getId());
@@ -154,10 +154,10 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @Test
   void testRecentMatchesGrid() {
     // Given
-    Wrestler wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
+    Wrestler wrestler1 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 1"));
     wrestler1.setGender(Gender.MALE);
     wrestler1.setFans(1000L);
-    wrestler1 = wrestlerRepository.save(wrestler1);
+    wrestlerRepository.saveAndFlush(wrestler1);
 
     Title title = titleService.createTitle("Test Title", "Test Title", WrestlerTier.ROOKIE);
 

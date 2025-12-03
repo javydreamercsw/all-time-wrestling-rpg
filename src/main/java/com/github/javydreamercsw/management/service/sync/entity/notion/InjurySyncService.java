@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.InjuryPage;
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
@@ -25,8 +26,10 @@ public class InjurySyncService extends BaseSyncService {
   @Autowired private InjuryTypeService injuryTypeService;
   @Autowired private InjuryTypeRepository injuryTypeRepository;
 
-  public InjurySyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
-    super(objectMapper, syncProperties);
+  @Autowired
+  public InjurySyncService(
+      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
+    super(objectMapper, syncProperties, notionHandler);
   }
 
   /**

@@ -55,7 +55,7 @@ class NotionPropertyTest {
     when(notionSyncProperties.getParallelThreads()).thenReturn(1);
 
     // Manually instantiate NotionSyncService with mocked constructor dependencies
-    notionSyncService = new NotionSyncService(objectMapper, notionSyncProperties);
+    notionSyncService = new NotionSyncService(objectMapper, notionSyncProperties, notionHandler);
     ReflectionTestUtils.setField(notionSyncService, "segmentSyncService", segmentSyncService);
     ReflectionTestUtils.setField(
         notionSyncService, "parallelSyncOrchestrator", parallelSyncOrchestrator);

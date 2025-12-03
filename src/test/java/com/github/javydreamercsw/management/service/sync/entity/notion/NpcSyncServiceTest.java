@@ -51,7 +51,7 @@ class NpcSyncServiceTest {
   void setUp() {
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-    npcSyncService = new NpcSyncService(objectMapper, syncProperties);
+    npcSyncService = new NpcSyncService(objectMapper, syncProperties, notionHandler);
 
     // Manually inject all mocked dependencies using reflection
     ReflectionTestUtils.setField(npcSyncService, "npcService", npcService);

@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -22,8 +23,10 @@ public class ShowTypeSyncService extends BaseSyncService {
 
   @Autowired private ShowTypeService showTypeService;
 
-  public ShowTypeSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
-    super(objectMapper, syncProperties);
+  @Autowired
+  public ShowTypeSyncService(
+      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
+    super(objectMapper, syncProperties, notionHandler);
   }
 
   /**

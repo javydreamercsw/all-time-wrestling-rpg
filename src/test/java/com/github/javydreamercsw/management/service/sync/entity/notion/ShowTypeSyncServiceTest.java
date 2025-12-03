@@ -50,7 +50,7 @@ class ShowTypeSyncServiceTest {
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
 
-    showTypeSyncService = new ShowTypeSyncService(objectMapper, syncProperties);
+    showTypeSyncService = new ShowTypeSyncService(objectMapper, syncProperties, notionHandler);
     ReflectionTestUtils.setField(showTypeSyncService, "notionHandler", notionHandler);
     ReflectionTestUtils.setField(showTypeSyncService, "progressTracker", progressTracker);
     ReflectionTestUtils.setField(showTypeSyncService, "healthMonitor", healthMonitor);

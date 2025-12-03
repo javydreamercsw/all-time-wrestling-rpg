@@ -12,15 +12,12 @@ import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
@@ -42,37 +39,34 @@ class TitleSyncIntegrationTest extends ManagementIntegrationTest {
   @Test
   @DisplayName("Should Sync Titles From Notion")
   void shouldSyncTitlesFromNotion() {
-    try (MockedStatic<NotionHandler> mocked = Mockito.mockStatic(NotionHandler.class)) {
-      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
-      log.info("🚀 Starting real title sync integration test...");
+    log.info("🚀 Starting real title sync integration test...");
 
-      // Given
-      String titleId = UUID.randomUUID().toString();
-      when(titlePage.getId()).thenReturn(titleId);
-      when(titlePage.getRawProperties()).thenReturn(Map.of("Name", "Test Title"));
-      when(titlePage.getTier()).thenReturn("Main Event");
-      when(titlePage.getGender()).thenReturn("MALE");
+    // Given
+    String titleId = UUID.randomUUID().toString();
+    when(titlePage.getId()).thenReturn(titleId);
+    when(titlePage.getRawProperties()).thenReturn(Map.of("Name", "Test Title"));
+    when(titlePage.getTier()).thenReturn("Main Event");
+    when(titlePage.getGender()).thenReturn("MALE");
 
-      when(notionHandler.loadAllTitles()).thenReturn(List.of(titlePage));
+    when(notionHandler.loadAllTitles()).thenReturn(List.of(titlePage));
 
-      // Act
-      BaseSyncService.SyncResult result =
-          notionSyncService.syncTitles("integration-test-titles", SyncDirection.INBOUND);
+    // Act
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncTitles("integration-test-titles", SyncDirection.INBOUND);
 
-      // Assert
-      assertThat(result).isNotNull();
-      assertThat(result.isSuccess()).isTrue();
-      assertThat(result.getEntityType()).isEqualTo("Titles");
-      assertThat(result.getSyncedCount()).isEqualTo(1);
+    // Assert
+    assertThat(result).isNotNull();
+    assertThat(result.isSuccess()).isTrue();
+    assertThat(result.getEntityType()).isEqualTo("Titles");
+    assertThat(result.getSyncedCount()).isEqualTo(1);
 
-      List<Title> titles = titleRepository.findAll();
-      assertThat(titles).hasSize(1);
-      Title title = titles.get(0);
-      assertThat(title.getName()).isEqualTo("Test Title");
-      assertThat(title.getExternalId()).isEqualTo(titleId);
-      assertThat(title.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
+    List<Title> titles = titleRepository.findAll();
+    assertThat(titles).hasSize(1);
+    Title title = titles.get(0);
+    assertThat(title.getName()).isEqualTo("Test Title");
+    assertThat(title.getExternalId()).isEqualTo(titleId);
+    assertThat(title.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
 
-      log.info("✅ Title sync completed successfully!");
-    }
+    log.info("✅ Title sync completed successfully!");
   }
 }

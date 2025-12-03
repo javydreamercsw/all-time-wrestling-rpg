@@ -54,7 +54,7 @@ class ShowSyncServiceIT {
         .when(objectMapper.getTypeFactory())
         .thenReturn(com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance());
 
-    showSyncService = new ShowSyncService(objectMapper, syncProperties);
+    showSyncService = new ShowSyncService(objectMapper, syncProperties, notionHandler);
 
     injectMockDependencies();
 

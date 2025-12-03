@@ -61,7 +61,7 @@ class InjurySyncServiceTest {
   void setUp() {
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-    injurySyncService = new InjurySyncService(objectMapper, syncProperties);
+    injurySyncService = new InjurySyncService(objectMapper, syncProperties, notionHandler);
     realObjectMapper = new ObjectMapper();
 
     // Use reflection to inject mocked dependencies

@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.RivalryPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -17,6 +18,7 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,12 +27,14 @@ public class RivalrySyncService extends BaseSyncService {
   private final RivalryService rivalryService;
   private final WrestlerRepository wrestlerRepository;
 
+  @Autowired
   public RivalrySyncService(
       ObjectMapper objectMapper,
       NotionSyncProperties syncProperties,
       RivalryService rivalryService,
-      WrestlerRepository wrestlerRepository) {
-    super(objectMapper, syncProperties);
+      WrestlerRepository wrestlerRepository,
+      NotionHandler notionHandler) {
+    super(objectMapper, syncProperties, notionHandler);
     this.rivalryService = rivalryService;
     this.wrestlerRepository = wrestlerRepository;
   }

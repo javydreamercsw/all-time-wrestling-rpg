@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.SegmentPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -33,8 +34,10 @@ public class SegmentSyncService extends BaseSyncService {
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private ShowSyncService showSyncService;
 
-  public SegmentSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
-    super(objectMapper, syncProperties);
+  @Autowired
+  public SegmentSyncService(
+      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
+    super(objectMapper, syncProperties, notionHandler);
   }
 
   @Transactional

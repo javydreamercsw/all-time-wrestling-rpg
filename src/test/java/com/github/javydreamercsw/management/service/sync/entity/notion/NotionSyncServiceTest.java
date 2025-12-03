@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
@@ -39,6 +40,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private FactionRivalrySyncService factionRivalrySyncService;
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionSyncProperties syncProperties;
+  @Mock private NotionHandler notionHandler;
 
   private NotionSyncService notionSyncService;
 
@@ -46,7 +48,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   public void setUp() {
     log.info("🧪 Setting up NotionSyncServiceTest");
     when(syncProperties.getParallelThreads()).thenReturn(1);
-    notionSyncService = new NotionSyncService(objectMapper, syncProperties);
+    notionSyncService = new NotionSyncService(objectMapper, syncProperties, notionHandler);
     ReflectionTestUtils.setField(notionSyncService, "showTypeSyncService", showTypeSyncService);
     ReflectionTestUtils.setField(notionSyncService, "seasonSyncService", seasonSyncService);
     ReflectionTestUtils.setField(

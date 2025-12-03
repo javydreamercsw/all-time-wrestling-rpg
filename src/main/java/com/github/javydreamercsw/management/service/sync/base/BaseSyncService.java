@@ -54,8 +54,7 @@ public abstract class BaseSyncService {
   // Controlled parallelism executor for all sync operations
   private final ExecutorService syncExecutorService;
 
-  // Optional NotionHandler for integration tests
-  public NotionHandler notionHandler;
+  protected final NotionHandler notionHandler;
 
   // Enhanced sync infrastructure services - autowired
   @Autowired public SyncProgressTracker progressTracker;
@@ -71,11 +70,13 @@ public abstract class BaseSyncService {
   @Autowired public NotionRateLimitService rateLimitService;
 
   protected BaseSyncService(
-      @NonNull ObjectMapper objectMapper, @NonNull NotionSyncProperties syncProperties) {
+      @NonNull ObjectMapper objectMapper,
+      @NonNull NotionSyncProperties syncProperties,
+      @NonNull NotionHandler notionHandler) {
     this.objectMapper = objectMapper;
     this.syncProperties = syncProperties;
     this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
-    this.notionHandler = NotionHandler.getInstance().orElse(null);
+    this.notionHandler = notionHandler;
   }
 
   // Constructor injection for SyncHealthMonitor, made optional
@@ -91,7 +92,8 @@ public abstract class BaseSyncService {
       SyncTransactionManager syncTransactionManager,
       DataIntegrityChecker integrityChecker,
       NotionRateLimitService rateLimitService,
-      EntitySyncConfiguration entitySyncConfig) {
+      EntitySyncConfiguration entitySyncConfig,
+      @NonNull NotionHandler notionHandler) {
     this.objectMapper = objectMapper;
     this.syncProperties = syncProperties;
     this.healthMonitor = healthMonitor; // Assign optional healthMonitor
@@ -104,7 +106,7 @@ public abstract class BaseSyncService {
     this.rateLimitService = rateLimitService;
     this.entitySyncConfig = entitySyncConfig;
     this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
-    this.notionHandler = NotionHandler.getInstance().orElse(null);
+    this.notionHandler = notionHandler;
   }
 
   /**

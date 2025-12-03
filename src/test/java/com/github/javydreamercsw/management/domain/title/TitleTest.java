@@ -32,8 +32,8 @@ class TitleTest {
     title.setTier(WrestlerTier.MAIN_EVENTER);
     title.setDescription("Test title for unit tests");
 
-    wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
-    wrestler2 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 2");
+    wrestler1 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 1"));
+    wrestler2 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 2"));
   }
 
   @Test
@@ -147,12 +147,12 @@ class TitleTest {
   void shouldCheckWrestlerEligibility() {
     title.setTier(WrestlerTier.MAIN_EVENTER); // Requires 100k fans
 
-    Wrestler eligibleWrestler = TestUtils.createWrestler(wrestlerRepository, "Eligible");
+    Wrestler eligibleWrestler =
+        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Eligible"));
     eligibleWrestler.setFans(120000L);
-    wrestlerRepository.save(eligibleWrestler);
-    Wrestler ineligibleWrestler = TestUtils.createWrestler(wrestlerRepository, "Ineligible");
+    Wrestler ineligibleWrestler =
+        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Ineligible"));
     ineligibleWrestler.setFans(50000L);
-    wrestlerRepository.save(ineligibleWrestler);
 
     assertThat(title.isWrestlerEligible(eligibleWrestler)).isTrue();
     assertThat(title.isWrestlerEligible(ineligibleWrestler)).isFalse();

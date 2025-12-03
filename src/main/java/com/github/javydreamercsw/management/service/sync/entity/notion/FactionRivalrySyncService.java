@@ -2,6 +2,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionRivalryPage;
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -17,6 +18,7 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,12 +28,14 @@ public class FactionRivalrySyncService extends BaseSyncService {
   private final FactionRivalryService factionRivalryService;
   private final FactionRepository factionRepository;
 
+  @Autowired
   public FactionRivalrySyncService(
       ObjectMapper objectMapper,
       NotionSyncProperties syncProperties,
       FactionRivalryService factionRivalryService,
-      FactionRepository factionRepository) {
-    super(objectMapper, syncProperties);
+      FactionRepository factionRepository,
+      NotionHandler notionHandler) {
+    super(objectMapper, syncProperties, notionHandler);
     this.factionRivalryService = factionRivalryService;
     this.factionRepository = factionRepository;
   }
@@ -43,7 +47,6 @@ public class FactionRivalrySyncService extends BaseSyncService {
     }
 
     log.info("🔥 Starting faction rivalries synchronization from Notion...");
-    long startTime = System.currentTimeMillis();
 
     try {
       SyncResult result = performFactionRivalriesSync(operationId);
@@ -163,6 +166,7 @@ public class FactionRivalrySyncService extends BaseSyncService {
       boolean newRivalry = false;
       if (existingRivalryOpt.isPresent()) {
         rivalry = existingRivalryOpt.get();
+        rivalry.setHeat(rivalry.getHeat() + dto.getHeat());
       } else {
         Optional<FactionRivalry> newRivalryOpt =
             factionRivalryService.createFactionRivalry(
@@ -172,6 +176,7 @@ public class FactionRivalrySyncService extends BaseSyncService {
           continue;
         }
         rivalry = newRivalryOpt.get();
+        rivalry.setHeat(dto.getHeat());
         newRivalry = true;
       }
 

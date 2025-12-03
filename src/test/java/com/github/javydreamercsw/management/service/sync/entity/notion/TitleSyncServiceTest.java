@@ -44,7 +44,7 @@ class TitleSyncServiceTest {
   @BeforeEach
   void setUp() throws Exception {
     when(syncProperties.getParallelThreads()).thenReturn(1);
-    titleSyncService = new TitleSyncService(new ObjectMapper(), syncProperties);
+    titleSyncService = new TitleSyncService(new ObjectMapper(), syncProperties, notionHandler);
 
     // Manually inject the mocks using reflection
     ReflectionTestUtils.setField(titleSyncService, "titleRepository", titleRepository);

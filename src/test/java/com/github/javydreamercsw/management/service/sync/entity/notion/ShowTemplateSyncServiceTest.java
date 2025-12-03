@@ -50,7 +50,7 @@ class ShowTemplateSyncServiceTest {
   void setUp() {
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-    syncService = new ShowTemplateSyncService(objectMapper, syncProperties);
+    syncService = new ShowTemplateSyncService(objectMapper, syncProperties, notionHandler);
 
     // Inject mocked dependencies using reflection
     ReflectionTestUtils.setField(syncService, "showTemplateService", showTemplateService);

@@ -59,7 +59,7 @@ class FactionSyncServiceTest {
     Mockito.lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     Mockito.lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
 
-    factionSyncService = new FactionSyncService(objectMapper, syncProperties);
+    factionSyncService = new FactionSyncService(objectMapper, syncProperties, notionHandler);
     injectMockDependencies();
     factionSyncService = spy(factionSyncService); // create a spy for stubbing
 

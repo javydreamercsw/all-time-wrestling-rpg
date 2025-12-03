@@ -12,15 +12,12 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
@@ -43,62 +40,54 @@ class ShowTemplateSyncIT extends ManagementIntegrationTest {
   @Test
   @DisplayName("Should sync show templates from Notion")
   void shouldSyncShowTemplatesFromNotion() {
-    try (MockedStatic<NotionHandler> mocked = Mockito.mockStatic(NotionHandler.class)) {
-      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
-      log.info("🎭 Testing show template sync with mock Notion data");
+    log.info("🎭 Testing show template sync with mock Notion data");
 
-      // Given
-      ShowType showType = new ShowType();
-      showType.setName("Weekly");
-      showTypeRepository.save(showType);
+    // Given
+    ShowType showType = new ShowType();
+    showType.setName("Weekly");
+    showType.setDescription("A weekly show");
+    showTypeRepository.save(showType);
 
-      String templateId = UUID.randomUUID().toString();
-      when(showTemplatePage.getId()).thenReturn(templateId);
-      when(showTemplatePage.getRawProperties())
-          .thenReturn(
-              Map.of(
-                  "Name",
-                  "Test Template",
-                  "Description",
-                  "Test Description",
-                  "Show Type",
-                  "Weekly"));
+    String templateId = UUID.randomUUID().toString();
+    when(showTemplatePage.getId()).thenReturn(templateId);
+    when(showTemplatePage.getRawProperties())
+        .thenReturn(
+            Map.of(
+                "Name", "Test Template", "Description", "Test Description", "Show Type", "Weekly"));
 
-      when(notionHandler.loadAllShowTemplates()).thenReturn(List.of(showTemplatePage));
+    when(notionHandler.loadAllShowTemplates()).thenReturn(List.of(showTemplatePage));
 
-      // When
-      BaseSyncService.SyncResult result =
-          showTemplateSyncService.syncShowTemplates("test-operation");
+    // When
+    BaseSyncService.SyncResult result = showTemplateSyncService.syncShowTemplates("test-operation");
 
-      // Then
-      assertThat(result).isNotNull();
-      assertThat(result.isSuccess()).isTrue();
-      assertThat(result.getSyncedCount()).isEqualTo(1);
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.isSuccess()).isTrue();
+    assertThat(result.getSyncedCount()).isEqualTo(1);
 
-      List<ShowTemplate> allTemplates = showTemplateService.findAll();
-      assertThat(allTemplates).hasSize(1);
-      ShowTemplate template = allTemplates.get(0);
-      assertThat(template.getName()).isEqualTo("Test Template");
-      assertThat(template.getExternalId()).isEqualTo(templateId);
-      assertThat(template.getShowType().getName()).isEqualTo("Weekly");
+    List<ShowTemplate> allTemplates = showTemplateService.findAll();
+    assertThat(allTemplates).hasSize(1);
+    ShowTemplate template = allTemplates.get(0);
+    assertThat(template.getName()).isEqualTo("Test Template");
+    assertThat(template.getExternalId()).isEqualTo(templateId);
+    assertThat(template.getShowType().getName()).isEqualTo("Weekly");
 
-      // Test update
-      when(showTemplatePage.getRawProperties())
-          .thenReturn(
-              Map.of(
-                  "Name",
-                  "Test Template Updated",
-                  "Description",
-                  "Test Description Updated",
-                  "Show Type",
-                  "Weekly"));
+    // Test update
+    when(showTemplatePage.getRawProperties())
+        .thenReturn(
+            Map.of(
+                "Name",
+                "Test Template Updated",
+                "Description",
+                "Test Description Updated",
+                "Show Type",
+                "Weekly"));
 
-      showTemplateSyncService.syncShowTemplates("test-operation-2");
+    showTemplateSyncService.syncShowTemplates("test-operation-2");
 
-      allTemplates = showTemplateService.findAll();
-      assertThat(allTemplates).hasSize(1);
-      template = allTemplates.get(0);
-      assertThat(template.getName()).isEqualTo("Test Template Updated");
-    }
+    allTemplates = showTemplateService.findAll();
+    assertThat(allTemplates).hasSize(1);
+    template = allTemplates.get(0);
+    assertThat(template.getName()).isEqualTo("Test Template Updated");
   }
 }

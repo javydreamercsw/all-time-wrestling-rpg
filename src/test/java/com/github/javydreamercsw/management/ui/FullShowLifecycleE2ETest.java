@@ -100,7 +100,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
 
     // Create some wrestlers for the tests
     for (int i = 0; i < 10; i++) {
-      TestUtils.createWrestler(wrestlerRepository, "Wrestler " + i);
+      wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler " + i));
     }
   }
 

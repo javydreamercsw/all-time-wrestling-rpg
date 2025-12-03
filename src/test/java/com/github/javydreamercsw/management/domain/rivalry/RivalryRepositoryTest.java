@@ -21,10 +21,10 @@ class RivalryRepositoryTest {
   @Test
   void findActiveRivalriesBetween() {
     // Given
-    Wrestler wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
-    Wrestler wrestler2 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 2");
-    Wrestler wrestler3 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 3");
-    Wrestler wrestler4 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 4");
+    Wrestler wrestler1 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 1"));
+    Wrestler wrestler2 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 2"));
+    Wrestler wrestler3 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 3"));
+    Wrestler wrestler4 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 4"));
 
     Instant now = Instant.now();
     Instant lastMonth = now.minus(30, ChronoUnit.DAYS);

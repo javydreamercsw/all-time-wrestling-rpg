@@ -55,7 +55,7 @@ class WrestlerSyncServiceTest {
     lenient()
         .when(objectMapper.getTypeFactory())
         .thenReturn(com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance());
-    wrestlerSyncService = new WrestlerSyncService(objectMapper, syncProperties);
+    wrestlerSyncService = new WrestlerSyncService(objectMapper, syncProperties, notionHandler);
     injectMockDependencies();
   }
 

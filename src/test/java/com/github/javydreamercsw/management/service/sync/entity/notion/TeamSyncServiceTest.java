@@ -50,7 +50,7 @@ class TeamSyncServiceTest {
   void setUp() {
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-    teamSyncService = new TeamSyncService(objectMapper, syncProperties);
+    teamSyncService = new TeamSyncService(objectMapper, syncProperties, notionHandler);
 
     // Manually inject the mocked dependencies using reflection
     ReflectionTestUtils.setField(teamSyncService, "notionHandler", notionHandler);

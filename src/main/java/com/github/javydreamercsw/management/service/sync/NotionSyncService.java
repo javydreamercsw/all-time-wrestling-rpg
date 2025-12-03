@@ -1,6 +1,7 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -76,8 +77,12 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private EntitySyncConfiguration entitySyncConfiguration;
 
   /** Constructor for NotionSyncService. */
-  public NotionSyncService(ObjectMapper objectMapper, NotionSyncProperties syncProperties) {
-    super(objectMapper, syncProperties);
+  @Autowired // Add @Autowired for constructor injection
+  public NotionSyncService(
+      ObjectMapper objectMapper,
+      NotionSyncProperties syncProperties,
+      NotionHandler notionHandler) { // Add NotionHandler here
+    super(objectMapper, syncProperties, notionHandler); // Pass it to super
   }
 
   // ==================== PARALLEL SYNC OPERATIONS ====================

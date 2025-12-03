@@ -49,7 +49,7 @@ class TitleReignSyncServiceTest {
   @BeforeEach
   void setUp() {
     when(syncProperties.getParallelThreads()).thenReturn(1);
-    service = new TitleReignSyncService(objectMapper, syncProperties);
+    service = new TitleReignSyncService(objectMapper, syncProperties, notionHandler);
 
     // Manually inject mocks into the private fields of the base class
     ReflectionTestUtils.setField(service, "notionHandler", notionHandler);

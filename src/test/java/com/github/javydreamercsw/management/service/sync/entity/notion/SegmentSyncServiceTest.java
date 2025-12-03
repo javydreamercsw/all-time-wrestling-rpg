@@ -54,7 +54,7 @@ class SegmentSyncServiceTest {
   @BeforeEach
   void setUp() {
     Mockito.lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    segmentSyncService = new SegmentSyncService(objectMapper, syncProperties);
+    segmentSyncService = new SegmentSyncService(objectMapper, syncProperties, notionHandler);
     injectMockDependencies();
   }
 
