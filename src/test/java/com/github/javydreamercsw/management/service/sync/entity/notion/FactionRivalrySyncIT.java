@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @DisplayName("Faction Rivalry Sync Integration Tests")
@@ -39,6 +40,7 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should sync faction rivalries from Notion to database successfully")
+  @Transactional
   void shouldSyncFactionRivalriesFromNotionToDatabaseSuccessfully() {
     // Given
     String faction1Name = "Test Faction 1";

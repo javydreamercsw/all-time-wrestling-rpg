@@ -35,8 +35,8 @@ class RivalrySyncIT extends ManagementIntegrationTest {
   @Transactional
   void shouldSyncRivalriesFromNotionToDatabaseSuccessfully() {
     // Given
-    String wrestler1Name = "Wrestler 1";
-    String wrestler2Name = "Wrestler 2";
+    String wrestler1Name = "Test Wrestler 1";
+    String wrestler2Name = "Test Wrestler 2";
     wrestlerRepository.saveAndFlush(createTestWrestler(wrestler1Name));
     wrestlerRepository.saveAndFlush(createTestWrestler(wrestler2Name));
 

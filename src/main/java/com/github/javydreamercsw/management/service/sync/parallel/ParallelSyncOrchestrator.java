@@ -194,7 +194,14 @@ public class ParallelSyncOrchestrator {
     if (entityConfig.isEntityEnabled("npcs")) {
       futures.add(
           executor.submit(
-              () -> syncEntity("npcs", () -> npcSyncService.syncNpcs(baseOperationId + "-npcs"))));
+              () ->
+                  syncEntity(
+                      "npcs",
+                      () ->
+                          npcSyncService.syncNpcs(
+                              baseOperationId + "-npcs",
+                              com.github.javydreamercsw.management.service.sync.base.SyncDirection
+                                  .INBOUND))));
     }
 
     if (entityConfig.isEntityEnabled("titles")) {

@@ -87,7 +87,10 @@ class NpcSyncServiceTest {
     doNothing().when(rateLimitService).acquirePermit();
 
     // When
-    SyncResult result = npcSyncService.syncNpcs("test-operation");
+    SyncResult result =
+        npcSyncService.syncNpcs(
+            "test-operation",
+            com.github.javydreamercsw.management.service.sync.base.SyncDirection.INBOUND);
 
     // Then
     assertTrue(result.isSuccess());

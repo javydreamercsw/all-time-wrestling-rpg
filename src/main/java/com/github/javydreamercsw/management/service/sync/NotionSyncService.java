@@ -256,7 +256,7 @@ public class NotionSyncService extends BaseSyncService {
    */
   public SyncResult syncNpcs(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
-        ? npcSyncService.syncNpcs(operationId)
+        ? npcSyncService.syncNpcs(operationId, direction)
         : npcNotionSyncService.syncToNotion(operationId);
   }
 

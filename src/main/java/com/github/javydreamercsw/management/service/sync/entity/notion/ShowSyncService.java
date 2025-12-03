@@ -3,7 +3,6 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -65,7 +64,7 @@ public class ShowSyncService extends BaseSyncService {
    * @return SyncResult containing the outcome of the sync operation
    */
   public SyncResult syncShows(@NonNull String operationId) {
-    if (EnvironmentVariableUtil.isNotionTokenAvailable()) {
+    if (isNotionHandlerAvailable()) {
       // Check if already synced in current session
       if (isAlreadySyncedInSession("shows")) {
         log.info("⏭️ Shows already synced in current session, skipping");

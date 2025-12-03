@@ -3,7 +3,6 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.InjuryPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
@@ -74,8 +73,8 @@ public class InjurySyncService extends BaseSyncService {
 
     try {
       // Check if NOTION_TOKEN is available
-      if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
-        String errorMsg = "NOTION_TOKEN is not available for injuries sync";
+      if (!isNotionHandlerAvailable()) {
+        String errorMsg = "NotionHandler is not available for injuries sync";
         log.error(errorMsg);
         return SyncResult.failure("Injuries", errorMsg);
       }

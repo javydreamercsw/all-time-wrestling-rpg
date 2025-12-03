@@ -271,7 +271,7 @@ public class WrestlerSyncService extends BaseSyncService {
 
       // Extract IsPlayer
       Object isPlayerObj = rawProperties.get("Player");
-      dto.setIsPlayer(isPlayerObj == null);
+      dto.setIsPlayer(Boolean.TRUE.equals(isPlayerObj));
 
       // Extract CreationDate
       Object creationDateObj = rawProperties.get("Created");

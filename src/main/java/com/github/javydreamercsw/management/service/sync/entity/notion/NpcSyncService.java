@@ -27,7 +27,13 @@ public class NpcSyncService extends BaseSyncService {
     super(objectMapper, syncProperties, notionHandler);
   }
 
-  public SyncResult syncNpcs(@NonNull String operationId) {
+  public SyncResult syncNpcs(
+      @NonNull String operationId,
+      @NonNull com.github.javydreamercsw.management.service.sync.base.SyncDirection direction) {
+    if (direction
+        == com.github.javydreamercsw.management.service.sync.base.SyncDirection.OUTBOUND) {
+      return SyncResult.success("NPCs", 0, 0, 0);
+    }
     if (isAlreadySyncedInSession("npcs")) {
       log.info("⏭️ NPCs already synced in current session, skipping");
       return SyncResult.success("NPCs", 0, 0, 0);

@@ -84,7 +84,7 @@ class ParallelSyncOrchestratorTest {
     verify(showTypeSyncService).syncShowTypes(anyString());
     verify(showTemplateSyncService).syncShowTemplates(anyString());
     verify(injurySyncService).syncInjuryTypes(anyString());
-    verify(npcSyncService).syncNpcs(anyString());
+    verify(npcSyncService).syncNpcs(anyString(), any());
     verify(titleSyncService).syncTitles(anyString());
     verify(titleReignSyncService).syncTitleReigns(anyString());
   }
@@ -144,7 +144,8 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTemplates", 6, 0, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
-    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0, 0));
+    when(npcSyncService.syncNpcs(anyString(), any()))
+        .thenReturn(SyncResult.success("NPCs", 5, 0, 0));
     when(titleSyncService.syncTitles(anyString()))
         .thenReturn(SyncResult.success("Titles", 5, 0, 0));
     when(titleReignSyncService.syncTitleReigns(anyString()))
@@ -196,7 +197,8 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTemplates", 1, 0, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
-    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 1, 0, 0));
+    when(npcSyncService.syncNpcs(anyString(), any()))
+        .thenReturn(SyncResult.success("NPCs", 1, 0, 0));
     when(titleSyncService.syncTitles(anyString()))
         .thenReturn(SyncResult.success("Titles", 1, 0, 0));
     when(titleReignSyncService.syncTitleReigns(anyString()))
@@ -243,7 +245,8 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTemplates", 6, 0, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
-    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0, 0));
+    when(npcSyncService.syncNpcs(anyString(), any()))
+        .thenReturn(SyncResult.success("NPCs", 5, 0, 0));
     when(titleSyncService.syncTitles(anyString()))
         .thenReturn(SyncResult.success("Titles", 5, 0, 0));
     when(titleReignSyncService.syncTitleReigns(anyString()))

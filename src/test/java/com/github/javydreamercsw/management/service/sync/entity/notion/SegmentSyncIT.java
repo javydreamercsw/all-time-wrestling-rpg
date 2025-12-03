@@ -1,9 +1,11 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.SegmentPage;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -26,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @DisplayName("Segment Sync Integration Tests")
@@ -47,6 +50,7 @@ class SegmentSyncIT extends ManagementIntegrationTest {
 
   @Test
   @DisplayName("Should sync segments from Notion to database successfully")
+  @Transactional
   void shouldSyncSegmentsFromNotionToDatabaseSuccessfully() {
     // Given
     Wrestler wrestler1 = createTestWrestler("Wrestler 1");
@@ -72,6 +76,16 @@ class SegmentSyncIT extends ManagementIntegrationTest {
 
     String segmentId = UUID.randomUUID().toString();
     when(segmentPage.getId()).thenReturn(segmentId);
+
+    SegmentPage.NotionProperties properties = mock(SegmentPage.NotionProperties.class);
+    NotionPage.Property shows = mock(NotionPage.Property.class);
+    when(properties.getShows()).thenReturn(shows);
+    NotionPage.Relation relation = new NotionPage.Relation();
+    relation.setId("test-show-id");
+    when(shows.getRelation()).thenReturn(List.of(relation));
+
+    when(segmentPage.getProperties()).thenReturn(properties);
+
     when(segmentPage.getRawProperties())
         .thenReturn(
             Map.of(

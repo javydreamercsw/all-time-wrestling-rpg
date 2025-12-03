@@ -214,7 +214,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult = BaseSyncService.SyncResult.success("NPCs", 1, 0, 0);
-    when(npcSyncService.syncNpcs(anyString())).thenReturn(expectedResult);
+    when(npcSyncService.syncNpcs(anyString(), any(SyncDirection.class))).thenReturn(expectedResult);
 
     // When - Sync NPCs from Notion
     BaseSyncService.SyncResult result =
@@ -223,7 +223,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
     assertThat(result).isEqualTo(expectedResult);
-    verify(npcSyncService, times(1)).syncNpcs(anyString());
+    verify(npcSyncService, times(1)).syncNpcs(anyString(), any(SyncDirection.class));
   }
 
   @Test
