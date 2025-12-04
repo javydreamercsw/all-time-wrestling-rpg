@@ -21,17 +21,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.TitleReignPage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,41 +37,31 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@ExtendWith(MockitoExtension.class)
-class TitleReignSyncServiceTest {
+class TitleReignSyncServiceTest extends AbstractSyncTest {
 
   @Mock private TitleReignRepository titleReignRepository;
   @Mock private TitleRepository titleRepository;
   @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private NotionSyncProperties syncProperties;
-  @Mock private ObjectMapper objectMapper; // Needed for constructor
-  @Mock private NotionHandler notionHandler;
-  @Mock private SyncHealthMonitor healthMonitor;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.sync.NotionRateLimitService rateLimitService;
 
   private TitleReignSyncService service;
 
   @BeforeEach
-  void setUp() {
-    when(syncProperties.getParallelThreads()).thenReturn(1);
+  @Override
+  protected void setUp() {
+    super.setUp(); // Call parent setup first
     service = new TitleReignSyncService(objectMapper, syncProperties, notionHandler);
 
     // Manually inject mocks into the private fields of the base class
-    ReflectionTestUtils.setField(service, "notionHandler", notionHandler);
-    ReflectionTestUtils.setField(service, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(service, "rateLimitService", rateLimitService);
-
     ReflectionTestUtils.setField(service, "titleReignRepository", titleReignRepository);
     ReflectionTestUtils.setField(service, "titleRepository", titleRepository);
     ReflectionTestUtils.setField(service, "wrestlerRepository", wrestlerRepository);
+    ReflectionTestUtils.setField(service, "progressTracker", progressTracker);
+    ReflectionTestUtils.setField(service, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(service, "rateLimitService", rateLimitService);
 
     service.clearSyncSession();
   }
@@ -82,8 +69,8 @@ class TitleReignSyncServiceTest {
   @Test
   void syncTitleReigns_whenAlreadySynced_shouldSkip() {
     // Given: A sync has already run successfully in this session.
-    when(syncProperties.isEntityEnabled("titlereigns")).thenReturn(true);
-    when(notionHandler.loadAllTitleReigns()).thenReturn(Collections.emptyList());
+    lenient().when(syncProperties.isEntityEnabled("titlereigns")).thenReturn(true);
+    lenient().when(notionHandler.loadAllTitleReigns()).thenReturn(Collections.emptyList());
     SyncResult firstResult = service.syncTitleReigns("first-op"); // First call
     assertTrue(firstResult.isSuccess()); // Ensure the first sync completes
 
@@ -99,7 +86,7 @@ class TitleReignSyncServiceTest {
   @Test
   void syncTitleReigns_whenDisabled_shouldSkip() {
     // Given: The entity sync is disabled in properties.
-    when(syncProperties.isEntityEnabled("titlereigns")).thenReturn(false);
+    lenient().when(syncProperties.isEntityEnabled("titlereigns")).thenReturn(false);
 
     // When: The sync is executed.
     SyncResult result = service.syncTitleReigns("test-op");
@@ -112,7 +99,7 @@ class TitleReignSyncServiceTest {
   @Test
   void syncTitleReigns_whenSuccessful_shouldSaveReigns() {
     // Given: Notion returns a valid title reign page.
-    when(syncProperties.isEntityEnabled("titlereigns")).thenReturn(true);
+    lenient().when(syncProperties.isEntityEnabled("titlereigns")).thenReturn(true);
 
     TitleReignPage page = new TitleReignPage();
     page.setId("page-id-1");
@@ -124,19 +111,23 @@ class TitleReignSyncServiceTest {
     page.setRawProperties(props);
     List<TitleReignPage> pages = Collections.singletonList(page);
 
-    when(notionHandler.loadAllTitleReigns()).thenReturn(pages);
+    lenient().when(notionHandler.loadAllTitleReigns()).thenReturn(pages);
 
     Title title = new Title();
     title.setExternalId("title-id-1");
     title.setName("World Championship");
-    when(titleRepository.findByExternalId("title-id-1")).thenReturn(Optional.of(title));
+    lenient().when(titleRepository.findByExternalId("title-id-1")).thenReturn(Optional.of(title));
 
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setExternalId("wrestler-id-1");
     wrestler.setName("Champion Wrestler");
-    when(wrestlerRepository.findByExternalId("wrestler-id-1")).thenReturn(Optional.of(wrestler));
+    lenient()
+        .when(wrestlerRepository.findByExternalId("wrestler-id-1"))
+        .thenReturn(Optional.of(wrestler));
 
-    when(titleReignRepository.findByTitleAndReignNumber(title, 1)).thenReturn(Optional.empty());
+    lenient()
+        .when(titleReignRepository.findByTitleAndReignNumber(title, 1))
+        .thenReturn(Optional.empty());
 
     // When: The sync is executed.
     SyncResult result = service.syncTitleReigns("test-op");
@@ -155,7 +146,7 @@ class TitleReignSyncServiceTest {
   @Test
   void syncTitleReigns_whenTitleNotFound_shouldSkipReign() {
     // Given: Notion returns a page where the related title does not exist locally.
-    when(syncProperties.isEntityEnabled("titlereigns")).thenReturn(true);
+    lenient().when(syncProperties.isEntityEnabled("titlereigns")).thenReturn(true);
 
     TitleReignPage page = new TitleReignPage();
     page.setId("page-id-1");
@@ -165,9 +156,11 @@ class TitleReignSyncServiceTest {
     page.setRawProperties(props);
     List<TitleReignPage> pages = Collections.singletonList(page);
 
-    when(notionHandler.loadAllTitleReigns()).thenReturn(pages);
+    lenient().when(notionHandler.loadAllTitleReigns()).thenReturn(pages);
 
-    when(titleRepository.findByExternalId("non-existent-title-id")).thenReturn(Optional.empty());
+    lenient()
+        .when(titleRepository.findByExternalId("non-existent-title-id"))
+        .thenReturn(Optional.empty());
 
     // When: The sync is executed.
     SyncResult result = service.syncTitleReigns("test-op");
