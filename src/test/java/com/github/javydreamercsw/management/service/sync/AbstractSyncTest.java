@@ -50,6 +50,9 @@ public abstract class AbstractSyncTest {
     mockedEnvironmentVariableUtil
         .when(EnvironmentVariableUtil::isNotionTokenAvailable)
         .thenReturn(true);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::getNotionToken)
+        .thenReturn("test-token");
   }
 
   @AfterAll

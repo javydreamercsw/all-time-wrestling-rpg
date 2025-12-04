@@ -47,6 +47,17 @@ public class InjurySyncService extends BaseSyncService {
     super(objectMapper, syncProperties, notionHandler);
   }
 
+  public InjurySyncService(
+      ObjectMapper objectMapper,
+      NotionSyncProperties syncProperties,
+      NotionHandler notionHandler,
+      InjuryTypeService injuryTypeService,
+      InjuryTypeRepository injuryTypeRepository) {
+    super(objectMapper, syncProperties, notionHandler);
+    this.injuryTypeService = injuryTypeService;
+    this.injuryTypeRepository = injuryTypeRepository;
+  }
+
   /**
    * Synchronizes injury types from Notion Injuries database to the local database.
    *
