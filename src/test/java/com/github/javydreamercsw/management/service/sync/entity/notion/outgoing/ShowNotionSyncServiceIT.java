@@ -58,6 +58,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private ShowTemplateRepository showTemplateRepository;
+  @Autowired private NotionHandler notionHandler;
 
   @Test
   void testSyncToNotion() {
@@ -65,12 +66,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
     ShowType testShowType = null;
     Season testSeason = null;
     ShowTemplate testShowTemplate = null;
-    Optional<NotionHandler> handlerOpt = NotionHandler.getInstance();
-    if (handlerOpt.isEmpty()) {
-      Assertions.fail("Notion credentials not configured, skipping test.");
-    }
-    NotionHandler handler = handlerOpt.get();
-    Optional<NotionClient> clientOptional = handler.createNotionClient();
+    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isEmpty()) {
       Assertions.fail("Unable to create Notion client, skipping test.");
     }
@@ -114,7 +110,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
 
       // Retrieve the page from Notion and verify properties
       Page page =
-          handler.executeWithRetry(
+          notionHandler.executeWithRetry(
               () -> client.retrievePage(updatedShow.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
@@ -151,7 +147,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
 
       // Verify updated properties
       page =
-          handler.executeWithRetry(
+          notionHandler.executeWithRetry(
               () -> client.retrievePage(updatedShow.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
@@ -184,7 +180,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
         try (NotionClient client = clientOptional.get()) {
           UpdatePageRequest request =
               new UpdatePageRequest(show.getExternalId(), new HashMap<>(), true, null, null);
-          handler.executeWithRetry(() -> client.updatePage(request));
+          notionHandler.executeWithRetry(() -> client.updatePage(request));
         } catch (FailsafeException e) {
           // Ignore timeout on cleanup
         }

@@ -49,16 +49,12 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private SeasonNotionSyncService seasonNotionSyncService;
+  @Autowired private NotionHandler notionHandler;
 
   @Test
   void testSyncToNotion() {
     Season season = null;
-    Optional<NotionHandler> handlerOpt = NotionHandler.getInstance();
-    if (handlerOpt.isEmpty()) {
-      Assertions.fail("Notion credentials not configured, skipping test.");
-    }
-    NotionHandler handler = handlerOpt.get();
-    Optional<NotionClient> clientOptional = handler.createNotionClient();
+    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isEmpty()) {
       Assertions.fail("Unable to create Notion client, skipping test.");
     }
@@ -83,7 +79,7 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
 
       // Retrieve the page from Notion and verify properties
       Page page =
-          handler.executeWithRetry(
+          notionHandler.executeWithRetry(
               () -> client.retrievePage(updatedSeason.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
@@ -111,7 +107,7 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
 
       // Verify updated properties
       page =
-          handler.executeWithRetry(
+          notionHandler.executeWithRetry(
               () -> client.retrievePage(updatedSeason.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
@@ -132,7 +128,7 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
         try (NotionClient client = clientOptional.get()) {
           UpdatePageRequest request =
               new UpdatePageRequest(season.getExternalId(), new HashMap<>(), true, null, null);
-          handler.executeWithRetry(() -> client.updatePage(request));
+          notionHandler.executeWithRetry(() -> client.updatePage(request));
         } catch (FailsafeException e) {
           // Ignore timeout on cleanup
         }

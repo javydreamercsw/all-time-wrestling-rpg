@@ -47,16 +47,12 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private FactionRepository factionRepository;
   @Autowired private FactionNotionSyncService factionNotionSyncService;
+  @Autowired private NotionHandler notionHandler;
 
   @Test
   void testSyncToNotion() {
     Faction faction = null;
-    Optional<NotionHandler> handlerOpt = NotionHandler.getInstance();
-    if (handlerOpt.isEmpty()) {
-      Assertions.fail("Notion credentials not configured, skipping test.");
-    }
-    NotionHandler handler = handlerOpt.get();
-    Optional<NotionClient> clientOptional = handler.createNotionClient();
+    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isEmpty()) {
       Assertions.fail("Unable to create Notion client, skipping test.");
     }
@@ -78,7 +74,7 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
 
       // Retrieve the page from Notion and verify properties
       Page page =
-          handler.executeWithRetry(
+          notionHandler.executeWithRetry(
               () -> client.retrievePage(updatedFaction.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
@@ -96,7 +92,7 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
 
       // Verify updated name
       page =
-          handler.executeWithRetry(
+          notionHandler.executeWithRetry(
               () -> client.retrievePage(updatedFaction.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
@@ -110,7 +106,7 @@ class FactionNotionSyncServiceIT extends ManagementIntegrationTest {
         try (NotionClient client = clientOptional.get()) {
           UpdatePageRequest request =
               new UpdatePageRequest(faction.getExternalId(), new HashMap<>(), true, null, null);
-          handler.executeWithRetry(() -> client.updatePage(request));
+          notionHandler.executeWithRetry(() -> client.updatePage(request));
         } catch (FailsafeException e) {
           // Ignore timeout on cleanup
         }

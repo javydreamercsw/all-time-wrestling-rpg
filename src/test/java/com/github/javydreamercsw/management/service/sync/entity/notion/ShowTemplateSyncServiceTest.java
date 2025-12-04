@@ -60,19 +60,23 @@ class ShowTemplateSyncServiceTest {
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private NotionRateLimitService rateLimitService;
 
+  @Mock
+  private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository
+      showTypeRepository;
+
   private ShowTemplateSyncService syncService;
 
   @BeforeEach
   void setUp() {
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-    syncService = new ShowTemplateSyncService(objectMapper, syncProperties, notionHandler);
+    syncService =
+        new ShowTemplateSyncService(
+            objectMapper, syncProperties, notionHandler, showTemplateService, showTypeRepository);
 
     // Inject mocked dependencies using reflection
-    ReflectionTestUtils.setField(syncService, "showTemplateService", showTemplateService);
     ReflectionTestUtils.setField(syncService, "progressTracker", progressTracker);
     ReflectionTestUtils.setField(syncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
     ReflectionTestUtils.setField(syncService, "rateLimitService", rateLimitService);
 
     // Clear sync session before each test
@@ -101,7 +105,6 @@ class ShowTemplateSyncServiceTest {
   void shouldFailWhenNotionHandlerNotAvailable() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    // Set notionHandler to null for this test
     ReflectionTestUtils.setField(syncService, "notionHandler", null);
 
     // When
@@ -117,7 +120,6 @@ class ShowTemplateSyncServiceTest {
   void shouldHandleEmptyTemplateListGracefully() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
     when(notionHandler.loadAllShowTemplates()).thenReturn(Arrays.asList());
 
     // When
@@ -136,7 +138,6 @@ class ShowTemplateSyncServiceTest {
   void shouldHandleExceptionsDuringSyncGracefully() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
     when(notionHandler.loadAllShowTemplates()).thenThrow(new RuntimeException("Notion API error"));
 
     // When

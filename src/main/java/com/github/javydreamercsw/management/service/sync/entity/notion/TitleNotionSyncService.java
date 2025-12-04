@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.common.PropertyType;
@@ -44,24 +43,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class TitleNotionSyncService implements NotionSyncService {
 
   private final TitleRepository titleRepository;
+  private final NotionHandler notionHandler;
   // Enhanced sync infrastructure services - autowired
   @Autowired public SyncProgressTracker progressTracker;
 
+  public TitleNotionSyncService(TitleRepository titleRepository, NotionHandler notionHandler) {
+    this.titleRepository = titleRepository;
+    this.notionHandler = notionHandler;
+  }
+
   @Override
   public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    Optional<NotionHandler> handlerOptional = NotionHandler.getInstance();
-    if (handlerOptional.isPresent()) {
-      NotionHandler handler = handlerOptional.get();
-      Optional<NotionClient> clientOptional = handler.createNotionClient();
+    if (notionHandler != null) {
+      Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
       if (clientOptional.isPresent()) {
         try (NotionClient client = clientOptional.get()) {
           String databaseId =
-              handler.getDatabaseId("Titles"); // Assuming a Notion database named "Titles"
+              notionHandler.getDatabaseId("Titles"); // Assuming a Notion database named "Titles"
           if (databaseId != null) {
             int updated = 0;
             int errors = 0;
@@ -321,14 +323,15 @@ public class TitleNotionSyncService implements NotionSyncService {
                   // Update existing page
                   UpdatePageRequest updatePageRequest =
                       new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
-                  handler.executeWithRetry(() -> client.updatePage(updatePageRequest));
+                  notionHandler.executeWithRetry(() -> client.updatePage(updatePageRequest));
                   updated++;
                 } else {
                   // Create new page
                   CreatePageRequest createPageRequest =
                       new CreatePageRequest(
                           new PageParent(null, databaseId), properties, null, null);
-                  Page page = handler.executeWithRetry(() -> client.createPage(createPageRequest));
+                  Page page =
+                      notionHandler.executeWithRetry(() -> client.createPage(createPageRequest));
                   entity.setExternalId(page.getId());
                   created++;
                 }

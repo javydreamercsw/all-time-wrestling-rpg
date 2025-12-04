@@ -140,8 +140,8 @@ public abstract class BaseSyncService {
    *
    * @return true if NotionHandler is available, false otherwise
    */
-  protected boolean isNotionHandlerAvailable() {
-    return notionHandler != null;
+  public boolean isNotionHandlerAvailable() {
+    return notionHandler != null && EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 
   /**

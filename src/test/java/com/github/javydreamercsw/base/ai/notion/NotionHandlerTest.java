@@ -18,50 +18,33 @@ package com.github.javydreamercsw.base.ai.notion;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 class NotionHandlerTest {
 
-  @BeforeEach
-  void resetSingleton() throws Exception {
-    // Use reflection to reset the singleton for isolated tests
-    var field = NotionHandler.class.getDeclaredField("instance");
-    field.setAccessible(true);
-    field.set(null, null);
-  }
-
   @Test
   void testInitializationSkipsIfNoToken() {
-    try (MockedStatic<com.github.javydreamercsw.base.util.EnvironmentVariableUtil> envMock =
-        Mockito.mockStatic(com.github.javydreamercsw.base.util.EnvironmentVariableUtil.class)) {
-      envMock
-          .when(com.github.javydreamercsw.base.util.EnvironmentVariableUtil::isNotionTokenAvailable)
-          .thenReturn(false);
-      Optional<NotionHandler> instance = NotionHandler.getInstance();
-      // Should not throw, and should return empty Optional
-      assertTrue(instance.isEmpty());
+    try (MockedStatic<EnvironmentVariableUtil> envMock =
+        Mockito.mockStatic(EnvironmentVariableUtil.class)) {
+      envMock.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(false);
+      NotionHandler handler = new NotionHandler();
+      assertTrue(handler.databaseMap.isEmpty());
     }
   }
 
   @Test
   void testInitializationThrowsOnClientError() {
-    try (MockedStatic<com.github.javydreamercsw.base.util.EnvironmentVariableUtil> envMock =
-            Mockito.mockStatic(com.github.javydreamercsw.base.util.EnvironmentVariableUtil.class);
-        MockedStatic<NotionHandler> handlerMock =
-            Mockito.mockStatic(NotionHandler.class, Mockito.CALLS_REAL_METHODS)) {
-      envMock
-          .when(com.github.javydreamercsw.base.util.EnvironmentVariableUtil::isNotionTokenAvailable)
-          .thenReturn(true);
-      handlerMock.when(NotionHandler::getInstance).thenCallRealMethod();
-      // Simulate NotionClient failure by throwing exception in loadDatabases
-      Optional<NotionHandler> handler = NotionHandler.getInstance();
-      // Should not throw here, but if loadDatabases is called, simulate error
-      // (This is a placeholder, actual NotionClient mocking would be more involved)
-      assertTrue(handler.isEmpty());
+    try (MockedStatic<EnvironmentVariableUtil> envMock =
+        Mockito.mockStatic(EnvironmentVariableUtil.class)) {
+      envMock.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
+      // This is a placeholder for a more complex test that would involve
+      // mocking the NotionClient and throwing an exception.
+      // For now, we just ensure that the constructor doesn't throw an
+      // unhandled exception.
+      assertDoesNotThrow(() -> new NotionHandler());
     }
   }
 }

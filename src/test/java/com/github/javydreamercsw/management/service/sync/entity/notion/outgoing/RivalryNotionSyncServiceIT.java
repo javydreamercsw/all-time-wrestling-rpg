@@ -48,18 +48,14 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private RivalryNotionSyncService rivalryNotionSyncService;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private NotionHandler notionHandler;
 
   @Test
   void testSyncToNotion() {
     Rivalry rivalry = null;
     Wrestler wrestler1 = null;
     Wrestler wrestler2 = null;
-    Optional<NotionHandler> handlerOpt = NotionHandler.getInstance();
-    if (handlerOpt.isEmpty()) {
-      Assertions.fail("Notion credentials not configured, skipping test.");
-    }
-    NotionHandler handler = handlerOpt.get();
-    Optional<NotionClient> clientOptional = handler.createNotionClient();
+    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isEmpty()) {
       Assertions.fail("Unable to create Notion client, skipping test.");
     }
@@ -89,7 +85,7 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
 
       // Retrieve the page from Notion and verify properties
       Page page =
-          handler.executeWithRetry(
+          notionHandler.executeWithRetry(
               () -> client.retrievePage(updatedRivalry.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
@@ -104,7 +100,7 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
         try (NotionClient client = clientOptional.get()) {
           UpdatePageRequest request =
               new UpdatePageRequest(rivalry.getExternalId(), new HashMap<>(), true, null, null);
-          handler.executeWithRetry(() -> client.updatePage(request));
+          notionHandler.executeWithRetry(() -> client.updatePage(request));
         } catch (FailsafeException e) {
           // Ignore timeout on cleanup
         }

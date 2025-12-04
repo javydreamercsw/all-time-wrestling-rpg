@@ -50,6 +50,17 @@ public class ShowTemplateSyncService extends BaseSyncService {
     super(objectMapper, syncProperties, notionHandler);
   }
 
+  public ShowTemplateSyncService(
+      ObjectMapper objectMapper,
+      NotionSyncProperties syncProperties,
+      NotionHandler notionHandler,
+      ShowTemplateService showTemplateService,
+      com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository showTypeRepository) {
+    super(objectMapper, syncProperties, notionHandler);
+    this.showTemplateService = showTemplateService;
+    this.showTypeRepository = showTypeRepository;
+  }
+
   /**
    * Synchronizes show templates from Notion to the local JSON file and database.
    *
@@ -107,6 +118,12 @@ public class ShowTemplateSyncService extends BaseSyncService {
           "✅ Retrieved {} show templates in {}ms",
           templatePages.size(),
           System.currentTimeMillis() - retrieveStart);
+
+      if (templatePages.isEmpty()) {
+        log.info("No show templates found in Notion database");
+        progressTracker.completeOperation(operationId, true, "No show templates to sync", 0);
+        return SyncResult.success("Show Templates", 0, 0, 0);
+      }
 
       // Convert to DTOs
       progressTracker.updateProgress(

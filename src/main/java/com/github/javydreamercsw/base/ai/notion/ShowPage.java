@@ -33,6 +33,15 @@ import org.slf4j.LoggerFactory;
 @EqualsAndHashCode(callSuper = false)
 public class ShowPage extends NotionPage {
   private NotionProperties properties;
+  private transient NotionHandler notionHandler;
+
+  public ShowPage() {
+    // Default constructor
+  }
+
+  public ShowPage(NotionHandler notionHandler) {
+    this.notionHandler = notionHandler;
+  }
 
   @Data
   @EqualsAndHashCode(callSuper = false)
@@ -56,7 +65,7 @@ public class ShowPage extends NotionPage {
 
     List<SegmentPage> matches = new ArrayList<>();
 
-    try (NotionClient client = NotionHandler.getInstance().get().createNotionClient().get()) {
+    try (NotionClient client = notionHandler.createNotionClient().get()) {
       try {
         Page pageData = client.retrievePage(this.getId(), Collections.emptyList());
 

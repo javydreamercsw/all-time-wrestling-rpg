@@ -30,7 +30,7 @@ public class TestNotionConfiguration {
 
   @Bean
   @Primary
-  public NotionHandler notionHandler() {
+  public NotionHandler testNotionHandler() {
     return mock(NotionHandler.class);
   }
 }

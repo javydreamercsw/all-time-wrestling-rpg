@@ -41,65 +41,26 @@ import notion.api.v1.model.search.SearchResults;
 import notion.api.v1.model.users.User;
 import notion.api.v1.request.databases.QueryDatabaseRequest;
 import notion.api.v1.request.search.SearchRequest;
+import org.springframework.stereotype.Service;
 
 @Slf4j
+@Service
 public class NotionHandler {
-
-  // Singleton instance
-  private static volatile NotionHandler instance;
 
   // Map to store database names and their corresponding IDs for later reference
   protected final Map<String, String> databaseMap = new HashMap<>();
 
-  // Flag to track if databases have been loaded
-  private volatile boolean initialized = false;
-
-  // Private constructor to prevent instantiation
-  private NotionHandler() {}
-
-  /** Constructor for testing purposes. */
-  public NotionHandler(boolean test) {
-    // Do nothing
-  }
-
-  /** Gets the singleton instance of NotionHandler. Initializes databases on first call. */
-  public static Optional<NotionHandler> getInstance() {
-    if (instance == null) {
-      synchronized (NotionHandler.class) {
-        if (instance == null) {
-          NotionHandler tempInstance = new NotionHandler();
-          if (tempInstance.initializeDatabases()) {
-            instance = tempInstance;
-          } else {
-            return Optional.empty();
-          }
-        }
-      }
-    }
-    return Optional.ofNullable(instance);
-  }
-
-  public static void main(String[] args) {
-    // Example usage
-    Optional<NotionHandler> handlerOptional = NotionHandler.getInstance();
-    if (handlerOptional.isPresent()) {
-      NotionHandler handler = handlerOptional.get();
-      log.debug("Database map loaded with {} databases", handler.databaseMap.size());
-      log.debug("You can now reference databases by name using getDatabaseId(name)");
-
-      handler.databaseMap.forEach((key, value) -> log.debug("{}: {}", key, value));
-    } else {
-      log.error("NotionHandler could not be initialized. Check NOTION_TOKEN.");
-    }
+  public NotionHandler() {
+    initializeDatabases();
   }
 
   /**
    * Initializes the database map by loading all databases from Notion workspace. This method is
    * called automatically on first access to the singleton.
    */
-  private boolean initializeDatabases() {
-    if (initialized || !EnvironmentVariableUtil.isNotionTokenAvailable()) {
-      return false;
+  private void initializeDatabases() {
+    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      return;
     }
 
     log.debug("Initializing NotionHandler - loading databases from workspace");
@@ -107,12 +68,10 @@ public class NotionHandler {
     try (NotionClient client = createNotionClient().orElse(null)) {
       if (client == null) {
         log.warn("NotionClient not available, skipping database initialization.");
-        return false;
+        return;
       }
       loadDatabases(client);
-      initialized = true;
       log.debug("NotionHandler initialized successfully with {} databases", databaseMap.size());
-      return true;
     } catch (Exception e) {
       log.error("Failed to initialize NotionHandler", e);
       throw new RuntimeException("Failed to initialize NotionHandler", e);
@@ -593,36 +552,6 @@ public class NotionHandler {
     return exists;
   }
 
-  // Static convenience methods for backward compatibility
-  /**
-   * Static convenience method to get database ID.
-   *
-   * @param databaseName The name of the database
-   * @return The database ID, or null if not found
-   */
-  public static String getStaticDatabaseId(String databaseName) {
-    return getInstance().map(handler -> handler.getDatabaseId(databaseName)).orElse(null);
-  }
-
-  /**
-   * Static convenience method to get all databases.
-   *
-   * @return A copy of the database map
-   */
-  public static Map<String, String> getStaticAllDatabases() {
-    return getInstance().map(NotionHandler::getAllDatabases).orElse(Collections.emptyMap());
-  }
-
-  /**
-   * Static convenience method to check if database exists.
-   *
-   * @param databaseName The name of the database
-   * @return true if the database exists, false otherwise
-   */
-  public static boolean staticDatabaseExists(@NonNull String databaseName) {
-    return getInstance().map(handler -> handler.databaseExists(databaseName)).orElse(false);
-  }
-
   /**
    * Loads a wrestler from the Notion database by name.
    *
@@ -648,16 +577,6 @@ public class NotionHandler {
       log.error("Failed to load wrestler: {}", wrestlerName, e);
       return Optional.empty();
     }
-  }
-
-  /**
-   * Static convenience method to load a wrestler.
-   *
-   * @param wrestlerName The name of the wrestler to load
-   * @return Optional containing the WrestlerPage object if found, empty otherwise
-   */
-  public static Optional<WrestlerPage> loadWrestlerStatic(@NonNull String wrestlerName) {
-    return getInstance().flatMap(handler -> handler.loadWrestler(wrestlerName));
   }
 
   /**
@@ -934,11 +853,6 @@ public class NotionHandler {
     return loadPage(showId).map(page -> mapPageToShowPage(page, ""));
   }
 
-  /** Static convenience method to load a show. */
-  public static Optional<ShowPage> loadShowStatic(String showName) {
-    return getInstance().flatMap(handler -> handler.loadShow(showName));
-  }
-
   /**
    * Loads all shows from the Notion Shows database.
    *
@@ -962,15 +876,6 @@ public class NotionHandler {
       log.error("Failed to load all shows", e);
       return new ArrayList<>();
     }
-  }
-
-  /**
-   * Static convenience method to load all shows.
-   *
-   * @return List of all ShowPage objects from the Shows database
-   */
-  public static List<ShowPage> loadAllShowsStatic() {
-    return getInstance().map(NotionHandler::loadAllShows).orElse(Collections.emptyList());
   }
 
   /**
@@ -1046,11 +951,6 @@ public class NotionHandler {
       log.error("Failed to load show template: {}", templateName, e);
       return Optional.empty();
     }
-  }
-
-  /** Static convenience method to load a show template. */
-  public static Optional<ShowTemplatePage> loadShowTemplateStatic(@NonNull String templateName) {
-    return getInstance().flatMap(handler -> handler.loadShowTemplate(templateName));
   }
 
   /**
@@ -1232,11 +1132,6 @@ public class NotionHandler {
     }
   }
 
-  /** Static convenience method to load a heat entry. */
-  public static Optional<HeatPage> loadHeatStatic(@NonNull String heatName) {
-    return getInstance().flatMap(handler -> handler.loadHeat(heatName));
-  }
-
   // ==================== TEAM LOADING METHODS ====================
 
   /** Loads a team from the Notion database by name. */
@@ -1289,11 +1184,6 @@ public class NotionHandler {
       log.error("Failed to load all teams", e);
       throw new RuntimeException("Failed to load teams from Notion: " + e.getMessage(), e);
     }
-  }
-
-  /** Static convenience method to load a team. */
-  public static Optional<TeamPage> loadTeamStatic(@NonNull String teamName) {
-    return getInstance().flatMap(handler -> handler.loadTeam(teamName));
   }
 
   // ==================== SEASON LOADING METHODS ====================
@@ -1352,11 +1242,6 @@ public class NotionHandler {
     }
   }
 
-  /** Static convenience method to load a season. */
-  public static Optional<SeasonPage> loadSeasonStatic(@NonNull String seasonName) {
-    return getInstance().flatMap(handler -> handler.loadSeason(seasonName));
-  }
-
   // ==================== FACTION LOADING METHODS ====================
 
   /** Loads a faction from the Notion database by name. */
@@ -1412,11 +1297,6 @@ public class NotionHandler {
       log.error("Failed to load all factions", e);
       throw new RuntimeException("Failed to load factions from Notion: " + e.getMessage(), e);
     }
-  }
-
-  /** Static convenience method to load a faction. */
-  public static Optional<FactionPage> loadFactionStatic(@NonNull String factionName) {
-    return getInstance().flatMap(handler -> handler.loadFaction(factionName));
   }
 
   // ==================== TITLE LOADING METHODS ====================
@@ -1760,7 +1640,7 @@ public class NotionHandler {
 
   /** Creates a minimal ShowPage object for sync operations without detailed property extraction. */
   private ShowPage createMinimalShowPage(@NonNull Page page) {
-    ShowPage showPage = new ShowPage();
+    ShowPage showPage = new ShowPage(this);
 
     // Set basic page properties
     showPage.setId(page.getId());
@@ -1900,8 +1780,11 @@ public class NotionHandler {
 
   /** Maps a Notion page to a ShowPage object with full relationship resolution. */
   private ShowPage mapPageToShowPage(@NonNull Page pageData, @NonNull String showName) {
-    return mapPageToGenericEntity(
-        pageData, showName, "Show", ShowPage::new, ShowPage.NotionParent::new, true);
+    ShowPage showPage =
+        mapPageToGenericEntity(
+            pageData, showName, "Show", () -> new ShowPage(this), ShowPage.NotionParent::new, true);
+    showPage.setNotionHandler(this);
+    return showPage;
   }
 
   /** Maps a Notion page to a ShowTypePage object. */
@@ -1912,8 +1795,11 @@ public class NotionHandler {
 
   /** Maps a Notion page to a ShowPage object with minimal relationship resolution for sync. */
   private ShowPage mapPageToShowPageForSync(@NonNull Page pageData, @NonNull String showName) {
-    return mapPageToGenericEntity(
-        pageData, showName, "Show", ShowPage::new, ShowPage.NotionParent::new, true);
+    ShowPage showPage =
+        mapPageToGenericEntity(
+            pageData, showName, "Show", () -> new ShowPage(this), ShowPage.NotionParent::new, true);
+    showPage.setNotionHandler(this);
+    return showPage;
   }
 
   /** Maps a Notion page to a MatchPage object. */

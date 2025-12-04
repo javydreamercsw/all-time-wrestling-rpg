@@ -56,6 +56,7 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
   @Autowired private TeamNotionSyncService teamNotionSyncService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private FactionRepository factionRepository;
+  @Autowired private NotionHandler notionHandler;
 
   @Test
   void testSyncToNotion() {
@@ -64,12 +65,7 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
     Wrestler testWrestler2 = null;
     Faction testFaction = null;
 
-    Optional<NotionHandler> handlerOpt = NotionHandler.getInstance();
-    if (handlerOpt.isEmpty()) {
-      Assertions.fail("Notion credentials not configured, skipping test.");
-    }
-    NotionHandler handler = handlerOpt.get();
-    Optional<NotionClient> clientOptional = handler.createNotionClient();
+    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isEmpty()) {
       Assertions.fail("Unable to create Notion client, skipping test.");
     }
@@ -107,7 +103,7 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
 
       // Retrieve the page from Notion and verify properties
       Page page =
-          handler.executeWithRetry(
+          notionHandler.executeWithRetry(
               () -> client.retrievePage(updatedTeam.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
@@ -149,7 +145,7 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
 
       // Verify updated properties
       page =
-          handler.executeWithRetry(
+          notionHandler.executeWithRetry(
               () -> client.retrievePage(updatedTeam.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
@@ -173,7 +169,7 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
         try (NotionClient client = clientOptional.get()) {
           UpdatePageRequest request =
               new UpdatePageRequest(team.getExternalId(), new HashMap<>(), true, null, null);
-          handler.executeWithRetry(() -> client.updatePage(request));
+          notionHandler.executeWithRetry(() -> client.updatePage(request));
         } catch (FailsafeException e) {
           // Ignore timeout on cleanup
         }

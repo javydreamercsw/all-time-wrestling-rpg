@@ -35,20 +35,26 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 public class FactionSyncService extends BaseSyncService {
-  @Autowired private FactionService factionService;
-  @Autowired private FactionRepository factionRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
+  private final FactionService factionService;
+  private final FactionRepository factionRepository;
+  private final WrestlerRepository wrestlerRepository;
 
-  @Autowired
   public FactionSyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
+      ObjectMapper objectMapper,
+      NotionSyncProperties syncProperties,
+      NotionHandler notionHandler,
+      FactionService factionService,
+      FactionRepository factionRepository,
+      WrestlerRepository wrestlerRepository) {
     super(objectMapper, syncProperties, notionHandler);
+    this.factionService = factionService;
+    this.factionRepository = factionRepository;
+    this.wrestlerRepository = wrestlerRepository;
   }
 
   public SyncResult syncFactions(@NonNull String operationId) {
