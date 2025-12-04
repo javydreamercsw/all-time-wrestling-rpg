@@ -20,16 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
@@ -42,40 +38,30 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@ExtendWith(MockitoExtension.class)
-class TeamSyncServiceTest {
+class TeamSyncServiceTest extends AbstractSyncTest {
 
-  @Mock private ObjectMapper objectMapper;
-  @Mock private NotionHandler notionHandler;
-  @Mock private NotionSyncProperties syncProperties;
-  @Mock private SyncProgressTracker progressTracker;
-  @Mock private SyncHealthMonitor healthMonitor;
   @Mock private WrestlerService wrestlerService;
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
-  @Mock private NotionRateLimitService rateLimitService;
 
   private TeamSyncService teamSyncService;
 
   @BeforeEach
-  void setUp() {
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+  @Override
+  public void setUp() {
+    super.setUp(); // Call parent setup first
     teamSyncService = new TeamSyncService(objectMapper, syncProperties, notionHandler);
 
     // Manually inject the mocked dependencies using reflection
-    ReflectionTestUtils.setField(teamSyncService, "notionHandler", notionHandler);
     ReflectionTestUtils.setField(teamSyncService, "progressTracker", progressTracker);
     ReflectionTestUtils.setField(teamSyncService, "healthMonitor", healthMonitor);
+    ReflectionTestUtils.setField(teamSyncService, "rateLimitService", rateLimitService);
     ReflectionTestUtils.setField(teamSyncService, "wrestlerService", wrestlerService);
     ReflectionTestUtils.setField(teamSyncService, "teamService", teamService);
     ReflectionTestUtils.setField(teamSyncService, "teamRepository", teamRepository);
-    ReflectionTestUtils.setField(teamSyncService, "rateLimitService", rateLimitService);
   }
 
   @Test
