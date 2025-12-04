@@ -20,15 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,38 +34,24 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Show Type Sync Service Tests")
-class ShowTypeSyncServiceTest {
+class ShowTypeSyncServiceTest extends AbstractSyncTest {
 
-  @Mock private ObjectMapper objectMapper;
-  @Mock private NotionHandler notionHandler;
-  @Mock private NotionSyncProperties syncProperties;
   @Mock private ShowTypeService showTypeService;
-  @Mock private SyncProgressTracker progressTracker;
-  @Mock private SyncHealthMonitor healthMonitor;
-  @Mock public NotionRateLimitService rateLimitService;
 
   private ShowTypeSyncService showTypeSyncService;
 
   @BeforeEach
-  void setUp() {
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-
+  @Override
+  protected void setUp() {
+    super.setUp(); // Call parent setup first
     showTypeSyncService = new ShowTypeSyncService(objectMapper, syncProperties, notionHandler);
-    ReflectionTestUtils.setField(showTypeSyncService, "notionHandler", notionHandler);
+    ReflectionTestUtils.setField(showTypeSyncService, "showTypeService", showTypeService);
     ReflectionTestUtils.setField(showTypeSyncService, "progressTracker", progressTracker);
     ReflectionTestUtils.setField(showTypeSyncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(showTypeSyncService, "showTypeService", showTypeService);
     ReflectionTestUtils.setField(showTypeSyncService, "rateLimitService", rateLimitService);
   }
 
@@ -79,11 +60,14 @@ class ShowTypeSyncServiceTest {
   void shouldExtractAndCreateShowTypesFromNotion() {
     // Given
     List<ShowPage> mockShowPages = createMockShowPages();
-    when(notionHandler.loadAllShowsForSync()).thenReturn(mockShowPages);
-    when(showTypeService.findByName("Weekly")).thenReturn(Optional.empty());
-    when(showTypeService.findByName("Premium Live Event (PLE)")).thenReturn(Optional.empty());
-    when(showTypeService.findAll()).thenReturn(List.of());
-    when(showTypeService.save(any(ShowType.class)))
+    lenient().when(notionHandler.loadAllShowsForSync()).thenReturn(mockShowPages);
+    lenient().when(showTypeService.findByName("Weekly")).thenReturn(Optional.empty());
+    lenient()
+        .when(showTypeService.findByName("Premium Live Event (PLE)"))
+        .thenReturn(Optional.empty());
+    lenient().when(showTypeService.findAll()).thenReturn(List.of());
+    lenient()
+        .when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
@@ -99,11 +83,14 @@ class ShowTypeSyncServiceTest {
   @DisplayName("Should ensure default show types exist in database")
   void shouldEnsureDefaultShowTypesExist() {
     // Given - Initially empty database
-    when(showTypeService.findAll()).thenReturn(Collections.emptyList());
-    when(notionHandler.loadAllShowsForSync()).thenReturn(Collections.emptyList());
-    when(showTypeService.findByName("Weekly")).thenReturn(Optional.empty());
-    when(showTypeService.findByName("Premium Live Event (PLE)")).thenReturn(Optional.empty());
-    when(showTypeService.save(any(ShowType.class)))
+    lenient().when(showTypeService.findAll()).thenReturn(Collections.emptyList());
+    lenient().when(notionHandler.loadAllShowsForSync()).thenReturn(Collections.emptyList());
+    lenient().when(showTypeService.findByName("Weekly")).thenReturn(Optional.empty());
+    lenient()
+        .when(showTypeService.findByName("Premium Live Event (PLE)"))
+        .thenReturn(Optional.empty());
+    lenient()
+        .when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When - Sync show types (should create defaults when no Notion data available)
@@ -155,12 +142,16 @@ class ShowTypeSyncServiceTest {
   void shouldNotDuplicateShowTypesOnSubsequentSyncs() {
     // Given - Initial state with some show types
     List<ShowType> initialShowTypes = createMockShowTypes();
-    when(showTypeService.findAll()).thenReturn(initialShowTypes);
-    when(notionHandler.loadAllShowsForSync()).thenReturn(createMockShowPages());
-    when(showTypeService.findByName("Weekly")).thenReturn(Optional.of(initialShowTypes.get(0)));
-    when(showTypeService.findByName("Premium Live Event (PLE)"))
+    lenient().when(showTypeService.findAll()).thenReturn(initialShowTypes);
+    lenient().when(notionHandler.loadAllShowsForSync()).thenReturn(createMockShowPages());
+    lenient()
+        .when(showTypeService.findByName("Weekly"))
+        .thenReturn(Optional.of(initialShowTypes.get(0)));
+    lenient()
+        .when(showTypeService.findByName("Premium Live Event (PLE)"))
         .thenReturn(Optional.of(initialShowTypes.get(1)));
-    when(showTypeService.save(any(ShowType.class)))
+    lenient()
+        .when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When - Run first sync
@@ -193,13 +184,17 @@ class ShowTypeSyncServiceTest {
     ShowType existingType = new ShowType();
     existingType.setName("Weekly");
     existingType.setDescription("Pre-existing weekly show type");
-    when(showTypeService.save(any(ShowType.class)))
+    lenient()
+        .when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
-    when(showTypeService.findByName("Weekly")).thenReturn(Optional.of(existingType));
-    when(showTypeService.findByName("Premium Live Event (PLE)")).thenReturn(Optional.empty());
-    when(showTypeService.findAll())
+    lenient().when(showTypeService.findByName("Weekly")).thenReturn(Optional.of(existingType));
+    lenient()
+        .when(showTypeService.findByName("Premium Live Event (PLE)"))
+        .thenReturn(Optional.empty());
+    lenient()
+        .when(showTypeService.findAll())
         .thenReturn(List.of(existingType)); // Mock findAll to prevent default saves
-    when(notionHandler.loadAllShowsForSync()).thenReturn(createMockShowPages());
+    lenient().when(notionHandler.loadAllShowsForSync()).thenReturn(createMockShowPages());
 
     // When - Run sync
     BaseSyncService.SyncResult result = showTypeSyncService.syncShowTypes("test-operation-id");
@@ -221,15 +216,21 @@ class ShowTypeSyncServiceTest {
 
     // Given - NotionHandler throws an exception
 
-    when(notionHandler.loadAllShowsForSync()).thenThrow(new RuntimeException("Notion API error"));
+    lenient()
+        .when(notionHandler.loadAllShowsForSync())
+        .thenThrow(new RuntimeException("Notion API error"));
 
-    when(showTypeService.findAll())
+    lenient()
+        .when(showTypeService.findAll())
         .thenReturn(Collections.emptyList()); // Ensure default types are created
 
-    when(showTypeService.findByName("Weekly")).thenReturn(Optional.empty());
-    when(showTypeService.findByName("Premium Live Event (PLE)")).thenReturn(Optional.empty());
+    lenient().when(showTypeService.findByName("Weekly")).thenReturn(Optional.empty());
+    lenient()
+        .when(showTypeService.findByName("Premium Live Event (PLE)"))
+        .thenReturn(Optional.empty());
 
-    when(showTypeService.save(any(ShowType.class)))
+    lenient()
+        .when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When - Attempt sync
@@ -259,10 +260,11 @@ class ShowTypeSyncServiceTest {
     // Given
     String operationId = "test-operation-id-progress";
     List<ShowPage> mockShowPages = createMockShowPages();
-    when(notionHandler.loadAllShowsForSync()).thenReturn(mockShowPages);
-    when(showTypeService.findAll()).thenReturn(Collections.emptyList());
-    when(showTypeService.findByName(anyString())).thenReturn(Optional.empty());
-    when(showTypeService.save(any(ShowType.class)))
+    lenient().when(notionHandler.loadAllShowsForSync()).thenReturn(mockShowPages);
+    lenient().when(showTypeService.findAll()).thenReturn(Collections.emptyList());
+    lenient().when(showTypeService.findByName(anyString())).thenReturn(Optional.empty());
+    lenient()
+        .when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When - Run sync with operation ID for progress tracking
@@ -288,13 +290,18 @@ class ShowTypeSyncServiceTest {
     // Given
     List<ShowPage> mockShowPages = createMockShowPages();
     List<ShowType> existingShowTypes = createMockShowTypes();
-    when(notionHandler.loadAllShowsForSync()).thenReturn(mockShowPages);
-    when(showTypeService.findAll())
+    lenient().when(notionHandler.loadAllShowsForSync()).thenReturn(mockShowPages);
+    lenient()
+        .when(showTypeService.findAll())
         .thenReturn(existingShowTypes); // Return existing types to prevent default saves
-    when(showTypeService.findByName("Weekly")).thenReturn(Optional.of(existingShowTypes.get(0)));
-    when(showTypeService.findByName("Premium Live Event (PLE)"))
+    lenient()
+        .when(showTypeService.findByName("Weekly"))
+        .thenReturn(Optional.of(existingShowTypes.get(0)));
+    lenient()
+        .when(showTypeService.findByName("Premium Live Event (PLE)"))
         .thenReturn(Optional.of(existingShowTypes.get(1)));
-    when(showTypeService.save(any(ShowType.class)))
+    lenient()
+        .when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When - Sync with mocked Notion connection
