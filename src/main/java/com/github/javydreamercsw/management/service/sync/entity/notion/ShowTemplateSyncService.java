@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
@@ -340,8 +341,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
           template = new ShowTemplate();
         }
 
-        Optional<com.github.javydreamercsw.management.domain.show.type.ShowType> showTypeOpt =
-            showTypeRepository.findByName(dto.getShowType());
+        Optional<ShowType> showTypeOpt = showTypeRepository.findByName(dto.getShowType());
         if (showTypeOpt.isEmpty()) {
           log.warn("Show type not found: {}", dto.getShowType());
           skippedCount++;

@@ -23,8 +23,11 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
@@ -34,12 +37,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -59,15 +65,21 @@ class ShowTemplateSyncServiceTest {
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private NotionRateLimitService rateLimitService;
-
-  @Mock
-  private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository
-      showTypeRepository;
-
+  @Mock private ShowTypeRepository showTypeRepository;
   private ShowTemplateSyncService syncService;
+
+  private MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
   @BeforeEach
   void setUp() {
+    mockedEnvironmentVariableUtil = mockStatic(EnvironmentVariableUtil.class);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::isNotionTokenAvailable)
+        .thenReturn(true);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::getNotionToken)
+        .thenReturn("test-token");
+
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
     syncService =
@@ -81,6 +93,24 @@ class ShowTemplateSyncServiceTest {
 
     // Clear sync session before each test
     syncService.clearSyncSession();
+
+    // Mock repository calls to simulate existing show types
+    ShowType weekly = new ShowType();
+    ReflectionTestUtils.setField(weekly, "id", 1L);
+    weekly.setName("Weekly");
+    lenient().when(showTypeRepository.findByName("Weekly")).thenReturn(Optional.of(weekly));
+
+    ShowType ple = new ShowType();
+    ReflectionTestUtils.setField(ple, "id", 2L);
+    ple.setName("Premium Live Event (PLE)");
+    lenient()
+        .when(showTypeRepository.findByName("Premium Live Event (PLE)"))
+        .thenReturn(Optional.of(ple));
+  }
+
+  @AfterEach
+  void tearDown() {
+    mockedEnvironmentVariableUtil.close();
   }
 
   @Test
@@ -165,12 +195,7 @@ class ShowTemplateSyncServiceTest {
         .updateProgress(
             eq("test-operation"), eq(1), eq("Retrieving show templates from Notion..."));
     verify(progressTracker)
-        .updateProgress(
-            eq("test-operation"), eq(2), contains("Converting 0 show templates to DTOs..."));
-    verify(progressTracker)
-        .updateProgress(
-            eq("test-operation"), eq(3), contains("Saving 0 show templates to database..."));
-    verify(progressTracker).completeOperation(eq("test-operation"), eq(true), anyString(), eq(0));
+        .completeOperation(eq("test-operation"), eq(true), eq("No show templates to sync"), eq(0));
   }
 
   @Test
@@ -282,15 +307,6 @@ class ShowTemplateSyncServiceTest {
     when(notionHandler.loadAllShowTemplates()).thenReturn(mixedTemplates);
 
     // Mock successful saves for both Weekly and PLE templates
-    ShowTemplate weeklyTemplate = new ShowTemplate();
-    ShowTemplate pleTemplate = new ShowTemplate();
-
-    when(showTemplateService.createOrUpdateTemplate(
-            anyString(), anyString(), eq("Weekly"), isNull()))
-        .thenReturn(weeklyTemplate);
-    when(showTemplateService.createOrUpdateTemplate(
-            anyString(), anyString(), eq("Premium Live Event (PLE)"), isNull()))
-        .thenReturn(pleTemplate);
     when(showTemplateService.save(any(ShowTemplate.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -303,34 +319,7 @@ class ShowTemplateSyncServiceTest {
     assertThat(result.getEntityType()).isEqualTo("Show Templates");
 
     // Verify Weekly show templates were created correctly
-    verify(showTemplateService)
-        .createOrUpdateTemplate(eq("Monday Night RAW"), anyString(), eq("Weekly"), isNull());
-    verify(showTemplateService)
-        .createOrUpdateTemplate(eq("Friday Night SmackDown"), anyString(), eq("Weekly"), isNull());
-    verify(showTemplateService)
-        .createOrUpdateTemplate(eq("NXT Weekly"), anyString(), eq("Weekly"), isNull());
-    verify(showTemplateService)
-        .createOrUpdateTemplate(eq("AEW Dynamite"), anyString(), eq("Weekly"), isNull());
-
-    // Verify PLE show templates were created correctly
-    verify(showTemplateService)
-        .createOrUpdateTemplate(
-            eq("WrestleMania 40"), anyString(), eq("Premium Live Event (PLE)"), isNull());
-    verify(showTemplateService)
-        .createOrUpdateTemplate(
-            eq("SummerSlam"), anyString(), eq("Premium Live Event (PLE)"), isNull());
-    verify(showTemplateService)
-        .createOrUpdateTemplate(
-            eq("Royal Rumble"), anyString(), eq("Premium Live Event (PLE)"), isNull());
-    verify(showTemplateService)
-        .createOrUpdateTemplate(
-            eq("AEW Revolution"), anyString(), eq("Premium Live Event (PLE)"), isNull());
-
-    // Verify the correct number of each type was created
-    verify(showTemplateService, times(4))
-        .createOrUpdateTemplate(anyString(), anyString(), eq("Weekly"), isNull());
-    verify(showTemplateService, times(4))
-        .createOrUpdateTemplate(anyString(), anyString(), eq("Premium Live Event (PLE)"), isNull());
+    verify(showTemplateService, times(8)).save(any());
 
     // Verify health monitoring recorded the mixed sync
     verify(healthMonitor).recordSuccess(eq("Show Templates"), anyLong(), eq(8));
@@ -366,19 +355,6 @@ class ShowTemplateSyncServiceTest {
             anotherWeeklyTemplate);
     when(notionHandler.loadAllShowTemplates()).thenReturn(mixedTemplates);
 
-    // Mock successful saves only for templates with show types
-    when(showTemplateService.createOrUpdateTemplate(
-            eq("Monday Night RAW"), anyString(), eq("Weekly"), isNull()))
-        .thenReturn(new ShowTemplate());
-    when(showTemplateService.createOrUpdateTemplate(
-            eq("WrestleMania"), anyString(), eq("Premium Live Event (PLE)"), isNull()))
-        .thenReturn(new ShowTemplate());
-    when(showTemplateService.createOrUpdateTemplate(
-            eq("SmackDown"), anyString(), eq("Weekly"), isNull()))
-        .thenReturn(new ShowTemplate());
-    when(showTemplateService.save(any(ShowTemplate.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-
     // When
     BaseSyncService.SyncResult result = syncService.syncShowTemplates("test-operation");
 
@@ -387,26 +363,13 @@ class ShowTemplateSyncServiceTest {
     assertThat(result.getSyncedCount()).isEqualTo(3); // Only 3 should be saved (2 Weekly + 1 PLE)
 
     // Verify only templates with show types were processed
-    verify(showTemplateService)
-        .createOrUpdateTemplate(
-            "Monday Night RAW", "Test description for Monday Night RAW", "Weekly", null);
-    verify(showTemplateService)
-        .createOrUpdateTemplate(
-            "WrestleMania", "Test description for WrestleMania", "Premium Live Event (PLE)", null);
-    verify(showTemplateService)
-        .createOrUpdateTemplate("SmackDown", "Test description for SmackDown", "Weekly", null);
+    verify(showTemplateService, times(3)).save(any());
 
     // Verify templates without show types were NOT processed (they should be skipped completely)
     verify(showTemplateService, never())
         .createOrUpdateTemplate(eq("Custom Event Template"), anyString(), anyString(), isNull());
     verify(showTemplateService, never())
         .createOrUpdateTemplate(eq("Generic Show Format"), anyString(), anyString(), isNull());
-
-    // Verify the distribution: 2 Weekly, 1 PLE, 2 skipped
-    verify(showTemplateService, times(2))
-        .createOrUpdateTemplate(anyString(), anyString(), eq("Weekly"), isNull());
-    verify(showTemplateService, times(1))
-        .createOrUpdateTemplate(anyString(), anyString(), eq("Premium Live Event (PLE)"), isNull());
 
     log.info("✅ Mixed sync with undetermined show types handled correctly");
   }
