@@ -186,11 +186,7 @@ public class NotionSyncView extends Main {
         e -> {
           String selectedEntity = entitySelectionCombo.getValue();
           if (selectedEntity != null && !selectedEntity.isEmpty()) {
-            if (syncDirection.getValue() == SyncDirection.INBOUND) {
-              triggerEntitySync(selectedEntity);
-            } else {
-              triggerEntitySyncToNotion(selectedEntity);
-            }
+            triggerEntitySync(selectedEntity, syncDirection.getValue());
           } else {
             showNotification("Please select an entity to sync", NotificationVariant.LUMO_CONTRAST);
           }
@@ -332,37 +328,7 @@ public class NotionSyncView extends Main {
         });
   }
 
-  private void triggerEntitySyncToNotion(@NonNull String entityName) {
-    if (syncInProgress) {
-      showNotification("Sync already in progress", NotificationVariant.LUMO_CONTRAST);
-      return;
-    }
-    String operationId = entityName + "-sync-to-notion-" + System.currentTimeMillis();
-    String displayName = entityName.substring(0, 1).toUpperCase() + entityName.substring(1);
-    startSyncOperationWithProgress(
-        "Syncing " + displayName + " to Notion...",
-        operationId,
-        () -> {
-          try {
-            NotionSyncService.SyncResult result =
-                notionSyncScheduler.triggerEntitySyncToNotion(entityName, operationId);
-            return new SyncOperationResult(
-                result.isSuccess(),
-                1,
-                result.getSyncedCount(),
-                result.isSuccess()
-                    ? displayName + " synced to Notion successfully"
-                    : result.getErrorMessage());
-          } catch (Exception e) {
-            log.error("Sync to Notion failed", e);
-            progressTracker.failOperation(
-                operationId, displayName + " sync to Notion failed: " + e.getMessage());
-            return new SyncOperationResult(false, 0, 0, "Sync failed: " + e.getMessage());
-          }
-        });
-  }
-
-  private void triggerEntitySync(@NonNull String entityName) {
+  private void triggerEntitySync(@NonNull String entityName, @NonNull SyncDirection direction) {
     if (syncInProgress) {
       showNotification("Sync already in progress", NotificationVariant.LUMO_CONTRAST);
       return;
@@ -377,7 +343,7 @@ public class NotionSyncView extends Main {
         () -> {
           try {
             NotionSyncService.SyncResult result =
-                notionSyncScheduler.syncEntity(entityName, operationId, SyncDirection.OUTBOUND);
+                notionSyncScheduler.syncEntity(entityName, operationId, direction);
             return new SyncOperationResult(
                 result.isSuccess(),
                 1,

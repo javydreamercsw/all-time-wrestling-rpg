@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -152,7 +151,7 @@ public class NotionSyncScheduler {
    * @param entityName The name of the entity to sync
    * @return SyncResult containing the outcome of the sync operation
    */
-  private NotionSyncService.SyncResult syncEntity(
+  public NotionSyncService.SyncResult syncEntity(
       @NonNull String entityName, @NonNull SyncDirection direction) {
     log.debug("Syncing entity: {}", entityName);
 
@@ -271,33 +270,6 @@ public class NotionSyncScheduler {
 
     } catch (Exception e) {
       log.error("❌ Unexpected error during manual {} sync: {}", entityName, e.getMessage(), e);
-      return NotionSyncService.SyncResult.failure(entityName, e.getMessage());
-    }
-  }
-
-  /**
-   * Manual trigger for syncing a specific entity to Notion.
-   *
-   * @param entityName The name of the entity to sync
-   * @return SyncResult for the specified entity
-   */
-  public NotionSyncService.SyncResult triggerEntitySyncToNotion(
-      @NonNull String entityName, @NonNull String operationId) {
-    log.info("=== MANUAL {} SYNC TO NOTION TRIGGERED ===", entityName.toUpperCase());
-    try {
-      if (entityName.equalsIgnoreCase("wrestlers")) {
-        BaseSyncService.SyncResult result =
-            notionSyncService.syncWrestlers(operationId, SyncDirection.OUTBOUND);
-        syncProperties.setLastSyncTime(entityName, LocalDateTime.now());
-        return result;
-      } else {
-        log.warn("Unknown entity type for sync to Notion: {}", entityName);
-        return NotionSyncService.SyncResult.failure(
-            entityName, "Unknown entity type for sync to Notion");
-      }
-    } catch (Exception e) {
-      log.error(
-          "❌ Unexpected error during manual {} sync to Notion: {}", entityName, e.getMessage(), e);
       return NotionSyncService.SyncResult.failure(entityName, e.getMessage());
     }
   }

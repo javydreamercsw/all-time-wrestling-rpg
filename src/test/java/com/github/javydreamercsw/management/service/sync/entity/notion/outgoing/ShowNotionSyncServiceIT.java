@@ -176,7 +176,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
 
     } finally {
       if (show != null && show.getExternalId() != null) {
-        // Clean up
+        // Clean up Notion page
         try (NotionClient client = clientOptional.get()) {
           UpdatePageRequest request =
               new UpdatePageRequest(show.getExternalId(), new HashMap<>(), true, null, null);
@@ -185,17 +185,18 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
           // Ignore timeout on cleanup
         }
       }
+      // Correct order of deletion
       if (show != null) {
         showRepository.delete(show);
       }
-      if (testShowType != null) {
-        showTypeRepository.delete(testShowType);
+      if (testShowTemplate != null) {
+        showTemplateRepository.delete(testShowTemplate);
       }
       if (testSeason != null) {
         seasonRepository.delete(testSeason);
       }
-      if (testShowTemplate != null) {
-        showTemplateRepository.delete(testShowTemplate);
+      if (testShowType != null) {
+        showTypeRepository.delete(testShowType);
       }
     }
   }

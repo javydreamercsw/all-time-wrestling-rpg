@@ -41,7 +41,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class NotionSyncSchedulerTest extends BaseTest {
 
   @Mock private NotionSyncService notionSyncService;
-
   @Mock private NotionSyncProperties syncProperties;
   @Mock private EntityDependencyAnalyzer dependencyAnalyzer;
 
@@ -157,16 +156,15 @@ class NotionSyncSchedulerTest extends BaseTest {
   @DisplayName("Should trigger sync to notion for wrestlers and return success")
   void shouldTriggerSyncToNotionForWrestlersAndReturnSuccess() {
     // Given
-    String operationId = UUID.randomUUID().toString();
-    when(notionSyncService.syncWrestlers(operationId, SyncDirection.OUTBOUND))
+    when(notionSyncService.syncWrestlers(any(), eq(SyncDirection.OUTBOUND)))
         .thenReturn(BaseSyncService.SyncResult.success("wrestlers", 1, 0, 0));
 
     // When
     BaseSyncService.SyncResult result =
-        notionSyncScheduler.triggerEntitySyncToNotion("wrestlers", operationId);
+        notionSyncScheduler.syncEntity("wrestlers", SyncDirection.OUTBOUND);
 
     // Then
-    verify(notionSyncService).syncWrestlers(operationId, SyncDirection.OUTBOUND);
+    verify(notionSyncService).syncWrestlers(any(), eq(SyncDirection.OUTBOUND));
     verify(syncProperties).setLastSyncTime(eq("wrestlers"), any(LocalDateTime.class));
     assertNotNull(result);
     assertTrue(result.isSuccess());
@@ -179,13 +177,13 @@ class NotionSyncSchedulerTest extends BaseTest {
   void shouldHandleUnknownEntityTypeForSyncToNotion() {
     // When
     BaseSyncService.SyncResult result =
-        notionSyncScheduler.triggerEntitySyncToNotion("unknown", UUID.randomUUID().toString());
+        notionSyncScheduler.syncEntity("unknown", SyncDirection.OUTBOUND);
 
     // Then
     assertNotNull(result);
     assertFalse(result.isSuccess());
     assertEquals("unknown", result.getEntityType());
-    assertEquals("Unknown entity type for sync to Notion", result.getErrorMessage());
+    assertEquals("Unknown entity type", result.getErrorMessage());
     verifyNoInteractions(notionSyncService);
   }
 
