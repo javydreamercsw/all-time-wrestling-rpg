@@ -158,13 +158,13 @@ public class NotionSyncView extends Main {
 
   private HorizontalLayout createControlSection() {
     HorizontalLayout controlSection = new HorizontalLayout();
-    controlSection.addClassNames(LumoUtility.Gap.MEDIUM);
-
+    controlSection.setId("control-section");
     syncDirection = new ComboBox<>("Sync Direction");
     syncDirection.setItems(SyncDirection.values());
     syncDirection.setValue(SyncDirection.INBOUND);
 
     syncAllButton = new Button("Sync All Entities", VaadinIcon.REFRESH.create());
+    syncAllButton.setId("sync-all-button");
     syncAllButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     syncAllButton.addClickListener(e -> triggerFullSync());
 

@@ -36,10 +36,7 @@ public class NotionSyncViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     WebElement controlSection =
-        wait.until(
-            ExpectedConditions.visibilityOfElementLocated(
-                By.xpath(
-                    "//vaadin-horizontal-layout[.//vaadin-button[text()='Sync All Entities']]")));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("control-section")));
 
     assertEquals("baseline", controlSection.getCssValue("align-items"));
   }
