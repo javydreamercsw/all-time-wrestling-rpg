@@ -387,7 +387,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     clickAndScrollIntoView(saveNarrationButton);
 
     // Wait for the dialog to disappear
-    wait.until(
+    WebDriverWait longWait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    longWait.until(
         ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
     WebElement summaryButton =

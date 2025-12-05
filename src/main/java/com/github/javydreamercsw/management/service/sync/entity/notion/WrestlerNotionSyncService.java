@@ -41,6 +41,7 @@ import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -60,6 +61,7 @@ public class WrestlerNotionSyncService implements NotionSyncService {
   }
 
   @Override
+  @Transactional
   public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
@@ -399,7 +401,7 @@ public class WrestlerNotionSyncService implements NotionSyncService {
                 created++;
               }
               entity.setLastSync(Instant.now());
-              wrestlerRepository.save(entity);
+              entity = wrestlerRepository.save(entity);
               processedCount++;
             } catch (Exception ex) {
               errors++;

@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -114,8 +113,9 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
     // Verify that the externalId and lastSync fields are updated
     assertNotNull(wrestler.getId());
     Wrestler updatedWrestler = wrestlerRepository.findById(wrestler.getId()).get();
-    assertNull(updatedWrestler.getExternalId());
-    assertNull(updatedWrestler.getLastSync());
+    assertNotNull(updatedWrestler.getExternalId());
+    assertEquals(newPageId, updatedWrestler.getExternalId());
+    assertNotNull(updatedWrestler.getLastSync());
 
     // Verify properties sent to Notion
     Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
