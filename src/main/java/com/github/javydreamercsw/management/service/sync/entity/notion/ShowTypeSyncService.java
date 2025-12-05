@@ -116,17 +116,17 @@ public class ShowTypeSyncService extends BaseSyncService {
 
         if (existingShowType.isEmpty()) {
           // Create new show type
-          ShowType newShowType = new ShowType();
-          newShowType.setName(showTypeName);
-          newShowType.setDescription(generateShowTypeDescription(showTypeName));
-          showTypeService.save(newShowType);
+          showTypeService.createOrUpdateShowType(
+              showTypeName, generateShowTypeDescription(showTypeName), 0, 0);
           createdCount++;
           log.info("Created show type from Notion: {}", showTypeName);
         } else {
           // Show type already exists, update it
-          // Only update if necessary (e.g., description changed)
-          // For now, just increment updatedCount if it exists
-          showTypeService.save(existingShowType.get()); // Persist changes to existing entity
+          showTypeService.createOrUpdateShowType(
+              showTypeName,
+              existingShowType.get().getDescription(),
+              existingShowType.get().getExpectedMatches(),
+              existingShowType.get().getExpectedPromos());
           updatedCount++;
           log.debug("Show type already exists: {}", showTypeName);
         }
@@ -315,47 +315,25 @@ public class ShowTypeSyncService extends BaseSyncService {
   private SyncResult createDefaultShowTypesIfNeeded() {
     try {
       log.info("createDefaultShowTypesIfNeeded called");
-      // Check if any show types exist
-      List<ShowType> existingShowTypes = showTypeService.findAll();
-      log.info("existingShowTypes: {}", existingShowTypes);
-      if (existingShowTypes.isEmpty()) {
-        log.info("No show types found in database. Creating default show types...");
+      int createdCount = 0;
 
-        int createdCount = 0;
-
-        // Create Weekly show type
-        log.info("Checking for Weekly show type");
-        if (showTypeService.findByName("Weekly").isEmpty()) {
-          log.info("Creating Weekly show type");
-          ShowType weeklyType = new ShowType();
-          weeklyType.setName("Weekly");
-          weeklyType.setDescription("Weekly television show format");
-          showTypeService.save(weeklyType);
-          createdCount++;
-          log.info("Created show type: Weekly");
-        }
-
-        // Create Premium Live Event (PLE) show type
-        log.info("Checking for Premium Live Event (PLE) show type");
-        if (showTypeService.findByName("Premium Live Event (PLE)").isEmpty()) {
-          log.info("Creating Premium Live Event (PLE) show type");
-          ShowType pleType = new ShowType();
-          pleType.setName("Premium Live Event (PLE)");
-          pleType.setDescription("Premium live event or pay-per-view format");
-          showTypeService.save(pleType);
-          createdCount++;
-          log.info("Created show type: Premium Live Event (PLE)");
-        }
-
-        log.info("✅ Created {} default show types", createdCount);
-        return SyncResult.success("Show Types", createdCount, 0, 0);
-
-      } else {
-        log.info(
-            "Show types already exist in database: {}",
-            existingShowTypes.stream().map(ShowType::getName).toList());
-        return SyncResult.success("Show Types", 0, 0, 0);
+      // Create Weekly show type if it doesn't exist
+      if (showTypeService.findByName("Weekly").isEmpty()) {
+        showTypeService.createOrUpdateShowType("Weekly", "Weekly television show format", 4, 2);
+        createdCount++;
+        log.info("Created show type: Weekly");
       }
+
+      // Create Premium Live Event (PLE) show type if it doesn't exist
+      if (showTypeService.findByName("Premium Live Event (PLE)").isEmpty()) {
+        showTypeService.createOrUpdateShowType(
+            "Premium Live Event (PLE)", "Premium live event or pay-per-view format", 7, 3);
+        createdCount++;
+        log.info("Created show type: Premium Live Event (PLE)");
+      }
+
+      log.info("✅ Ensured {} show types exist", createdCount);
+      return SyncResult.success("Show Types", createdCount, 0, 0);
 
     } catch (Exception e) {
       log.error("Failed to create default show types: {}", e.getMessage(), e);

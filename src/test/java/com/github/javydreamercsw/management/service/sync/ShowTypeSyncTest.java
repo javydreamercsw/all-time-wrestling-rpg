@@ -22,10 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
 import java.util.Collections;
@@ -35,35 +34,32 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /** Unit tests for ShowTypeSyncService. */
 @Slf4j
-@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class ShowTypeSyncTest extends ManagementIntegrationTest {
 
   @Autowired private ShowTypeSyncService showTypeSyncService;
+  @Autowired private DataInitializer dataInitializer;
 
-  @Autowired private ShowTypeRepository showTypeRepository;
-  @Autowired private ShowTemplateRepository showTemplateRepository;
-
-  @Autowired private NotionHandler notionHandler;
+  @MockitoBean private NotionHandler notionHandler;
 
   private static final String TEST_OPERATION_ID = "unit-test-show-types";
 
   @BeforeEach
-  @Transactional
-  void cleanupData() {
+  void setUp() {
     log.debug("🧹 Cleaning up test data before test execution");
-    showTemplateRepository.deleteAll();
-    showTypeRepository.deleteAll();
+    clearAllRepositories();
     log.debug("✅ Test data cleanup completed");
+    log.debug("🌱 Initializing data");
+    dataInitializer.init();
+    log.debug("✅ Data initialization completed");
+    showTypeSyncService.clearSyncSession();
   }
 
   @Test
-  @Transactional
   @DisplayName("Should ensure default show types exist in database")
   void shouldEnsureDefaultShowTypesExist() {
     log.info("🎭 Testing default show types creation");
@@ -85,7 +81,7 @@ class ShowTypeSyncTest extends ManagementIntegrationTest {
     log.info("📊 Sync result: {}", result);
     assertThat(result.isSuccess()).isTrue();
     assertThat(result.getCreatedCount()).isEqualTo(0);
-    assertThat(result.getUpdatedCount()).isEqualTo(2);
+    assertThat(result.getUpdatedCount()).isEqualTo(0);
 
     // Verify default show types still exist and are unchanged
     Optional<ShowType> weeklyTypeAfterSync = showTypeService.findByName("Weekly");
@@ -109,7 +105,6 @@ class ShowTypeSyncTest extends ManagementIntegrationTest {
   }
 
   @Test
-  @Transactional
   @DisplayName("Should not duplicate show types on subsequent syncs")
   void shouldNotDuplicateShowTypesOnSubsequentSyncs() {
     log.info("🔄 Testing show types deduplication");
@@ -152,7 +147,6 @@ class ShowTypeSyncTest extends ManagementIntegrationTest {
   }
 
   @Test
-  @Transactional
   @DisplayName("Should handle sync when show types already exist")
   void shouldHandleSyncWhenShowTypesAlreadyExist() {
     log.info("🎯 Testing sync with pre-existing show types");
@@ -196,7 +190,6 @@ class ShowTypeSyncTest extends ManagementIntegrationTest {
   }
 
   @Test
-  @Transactional
   @DisplayName("Should handle sync failures gracefully")
   void shouldHandleSyncFailuresGracefully() {
     log.info("🚨 Testing sync failure handling");
@@ -222,13 +215,12 @@ class ShowTypeSyncTest extends ManagementIntegrationTest {
     log.info("📊 Show types in database after sync attempt: {}", showTypes.size());
 
     // Should have at least the default show types
-    assertThat(showTypes.size()).isGreaterThanOrEqualTo(0);
+    assertThat(showTypes.size()).isGreaterThanOrEqualTo(2);
 
     log.info("✅ Failure handling verification completed successfully");
   }
 
   @Test
-  @Transactional
   @DisplayName("Should track sync progress correctly")
   void shouldTrackSyncProgressCorrectly() {
     log.info("📈 Testing sync progress tracking");

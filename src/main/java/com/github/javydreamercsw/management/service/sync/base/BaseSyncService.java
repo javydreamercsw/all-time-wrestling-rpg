@@ -170,6 +170,16 @@ public abstract class BaseSyncService {
     log.debug("🧹 Cleared sync session");
   }
 
+  /**
+   * Resets the sync status for a specific entity.
+   *
+   * @param entityName The name of the entity to reset
+   */
+  public void resetSyncStatus(@NonNull String entityName) {
+    currentSyncSession.get().remove(entityName.toLowerCase());
+    log.debug("🔄 Reset sync status for '{}'", entityName);
+  }
+
   /** Cleans up the sync session thread local (should be called at the end of operations). */
   public void cleanupSyncSession() {
     currentSyncSession.remove();
