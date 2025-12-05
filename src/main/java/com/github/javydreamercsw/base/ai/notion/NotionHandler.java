@@ -530,29 +530,7 @@ public class NotionHandler {
     }
   }
 
-  /**
-   * Gets all loaded databases as a map of name -> ID.
-   *
-   * @return A copy of the database map
-   */
-  public Map<String, String> getAllDatabases() {
-    log.debug("Returning copy of all {} loaded databases", databaseMap.size());
-    return new HashMap<>(databaseMap);
-  }
-
-  /**
-   * Checks if a database with the given name exists.
-   *
-   * @param databaseName The name of the database
-   * @return true if the database exists, false otherwise
-   */
-  public boolean databaseExists(@NonNull String databaseName) {
-    boolean exists = databaseMap.containsKey(databaseName);
-    log.debug("Database '{}' exists: {}", databaseName, exists);
-    return exists;
-  }
-
-  /**
+    /**
    * Loads a wrestler from the Notion database by name.
    *
    * @param wrestlerName The name of the wrestler to load (e.g., "Rob Van Dam")
@@ -800,49 +778,9 @@ public class NotionHandler {
     return wrestlerPage;
   }
 
-  /** Helper method to extract integer values from Notion properties. */
-  private Integer getIntegerProperty(
-      Map<String, PageProperty> properties, String propertyName, Integer defaultValue) {
-    PageProperty property = properties.get(propertyName);
-    if (property != null && property.getNumber() != null) {
-      Number number = property.getNumber();
-      log.debug("Found property '{}': {}", propertyName, number);
-      return number.intValue();
-    }
-    log.debug("Property '{}' not found or null, using default: {}", propertyName, defaultValue);
-    return defaultValue;
-  }
+    // ==================== SHOW LOADING METHODS ====================
 
-  // ==================== SHOW LOADING METHODS ====================
-
-  /**
-   * Loads a show from the Notion database by name.
-   *
-   * @param showName The name of the show to load (e.g., "WrestleMania 40")
-   * @return Optional containing the ShowPage object if found, empty otherwise
-   */
-  public Optional<ShowPage> loadShow(String showName) {
-    log.debug("Loading show: '{}'", showName);
-
-    String showDbId = getDatabaseId("Shows");
-    if (showDbId == null) {
-      log.warn("Shows database not found in workspace");
-      return Optional.empty();
-    }
-
-    try (NotionClient client = createNotionClient().orElse(null)) {
-      if (client == null) {
-        log.warn("NotionClient not available, returning empty Optional for show: {}", showName);
-        return Optional.empty();
-      }
-      return loadEntityFromDatabase(client, showDbId, showName, "Show", this::mapPageToShowPage);
-    } catch (Exception e) {
-      log.error("Failed to load show: {}", showName, e);
-      return Optional.empty();
-    }
-  }
-
-  /**
+    /**
    * Loads a show from the Notion database by ID.
    *
    * @param showId The ID of the show to load.
@@ -853,32 +791,7 @@ public class NotionHandler {
     return loadPage(showId).map(page -> mapPageToShowPage(page, ""));
   }
 
-  /**
-   * Loads all shows from the Notion Shows database.
-   *
-   * @return List of all ShowPage objects from the Shows database
-   */
-  public List<ShowPage> loadAllShows() {
-    log.debug("Loading all shows from Shows database");
-
-    String showDbId = getDatabaseId("Shows");
-    if (showDbId == null) {
-      log.warn("Shows database not found in workspace");
-      return new ArrayList<>();
-    }
-
-    try (NotionClient client = createNotionClient().orElse(null)) {
-      if (client == null) {
-        return new ArrayList<>();
-      }
-      return loadAllEntitiesFromDatabase(client, showDbId, "Show", this::mapPageToShowPage, true);
-    } catch (Exception e) {
-      log.error("Failed to load all shows", e);
-      return new ArrayList<>();
-    }
-  }
-
-  /**
+    /**
    * Loads all shows from the Notion Shows database with minimal processing for sync operations.
    * This method is optimized for bulk operations and extracts only essential properties.
    *

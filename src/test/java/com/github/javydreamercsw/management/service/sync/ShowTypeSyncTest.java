@@ -42,7 +42,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Unit tests for ShowTypeSyncService. */
-@ActiveProfiles("test")
 @Slf4j
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class ShowTypeSyncTest extends ManagementIntegrationTest {
@@ -52,7 +51,7 @@ class ShowTypeSyncTest extends ManagementIntegrationTest {
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private ShowTemplateRepository showTemplateRepository;
 
-  @MockitoBean private NotionHandler notionHandler;
+    @Autowired private NotionHandler notionHandler;
 
   private static final String TEST_OPERATION_ID = "unit-test-show-types";
 
