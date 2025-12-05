@@ -52,6 +52,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     // Click the "Create Faction" button
     WebElement createButton =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-faction-button")));
+    Assertions.assertNotNull(createButton);
     wait.until(ExpectedConditions.elementToBeClickable(createButton));
     clickAndScrollIntoView(createButton);
 
@@ -61,11 +62,13 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     // Find the name field and enter a new faction name
     WebElement nameField =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("edit-name")));
+    Assertions.assertNotNull(nameField);
     nameField.sendKeys("Test Faction", Keys.TAB);
 
     // Find the save button and click it
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("save-button")));
+    Assertions.assertNotNull(saveButton);
     clickAndScrollIntoView(saveButton);
 
     wait.until(
@@ -105,11 +108,13 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     // Find the name field and change the value
     WebElement nameField =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("edit-name")));
+    Assertions.assertNotNull(nameField);
     nameField.sendKeys(" Edited", Keys.TAB);
 
     // Find the save button and click it
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("save-button")));
+    Assertions.assertNotNull(saveButton);
     clickAndScrollIntoView(saveButton);
 
     // Verify that the faction is updated in the grid
@@ -152,6 +157,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.visibilityOfElementLocated(
                 By.tagName("vaadin-confirm-dialog-overlay")));
 
+    Assertions.assertNotNull(confirmDialogOverlay);
     WebElement dialogDeleteButton =
         confirmDialogOverlay.findElement(By.xpath(".//vaadin-button[text()='Delete']"));
     clickAndScrollIntoView(dialogDeleteButton);
@@ -200,12 +206,14 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     WebElement wrestlerComboBox =
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(By.id("add-member-wrestler-combo")));
+    Assertions.assertNotNull(wrestlerComboBox);
     wrestlerComboBox.sendKeys(wrestler.getName());
     wrestlerComboBox.sendKeys(Keys.ENTER);
 
     // Click the "Add Member" button
     WebElement addMemberButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("add-member-button")));
+    Assertions.assertNotNull(addMemberButton);
     clickAndScrollIntoView(addMemberButton);
 
     // Verify the wrestler is added to the members grid
@@ -263,6 +271,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     WebElement removeButton =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("remove-member-" + wrestler.getId())));
+    Assertions.assertNotNull(removeButton);
     clickAndScrollIntoView(removeButton);
 
     // Verify the wrestler is removed from the members grid

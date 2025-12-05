@@ -37,8 +37,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Unit tests for ShowTypeSyncService. */
@@ -51,7 +49,7 @@ class ShowTypeSyncTest extends ManagementIntegrationTest {
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private ShowTemplateRepository showTemplateRepository;
 
-    @Autowired private NotionHandler notionHandler;
+  @Autowired private NotionHandler notionHandler;
 
   private static final String TEST_OPERATION_ID = "unit-test-show-types";
 

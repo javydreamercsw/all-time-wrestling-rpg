@@ -530,7 +530,7 @@ public class NotionHandler {
     }
   }
 
-    /**
+  /**
    * Loads a wrestler from the Notion database by name.
    *
    * @param wrestlerName The name of the wrestler to load (e.g., "Rob Van Dam")
@@ -778,9 +778,9 @@ public class NotionHandler {
     return wrestlerPage;
   }
 
-    // ==================== SHOW LOADING METHODS ====================
+  // ==================== SHOW LOADING METHODS ====================
 
-    /**
+  /**
    * Loads a show from the Notion database by ID.
    *
    * @param showId The ID of the show to load.
@@ -791,7 +791,7 @@ public class NotionHandler {
     return loadPage(showId).map(page -> mapPageToShowPage(page, ""));
   }
 
-    /**
+  /**
    * Loads all shows from the Notion Shows database with minimal processing for sync operations.
    * This method is optimized for bulk operations and extracts only essential properties.
    *
