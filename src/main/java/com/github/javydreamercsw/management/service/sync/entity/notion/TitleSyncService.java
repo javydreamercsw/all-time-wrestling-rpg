@@ -158,7 +158,7 @@ public class TitleSyncService extends BaseSyncService {
     }
   }
 
-  private void updateTitleFromNotion(Title title, TitlePage titlePage) {
+  void updateTitleFromNotion(Title title, TitlePage titlePage) {
     log.debug("Updating title: {}", title.getName());
 
     String gender = titlePage.getGender();
@@ -286,13 +286,13 @@ public class TitleSyncService extends BaseSyncService {
                   .map(Wrestler::getName)
                   .collect(java.util.stream.Collectors.joining(", ")));
           title.setContender(newContenders);
-          titleRepository.save(title);
+          titleRepository.saveAndFlush(title);
         }
       }
     } else if (title.getContender() != null && !title.getContender().isEmpty()) {
       log.info("Removing contenders from title: {}", title.getName());
       title.setContender(new java.util.ArrayList<>());
-      titleRepository.save(title);
+      titleRepository.saveAndFlush(title);
     }
   }
 

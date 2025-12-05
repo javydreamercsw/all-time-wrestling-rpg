@@ -42,6 +42,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -123,5 +124,15 @@ class TitleSyncServiceTest extends AbstractSyncTest {
 
     // Assert
     assertThat(result.isSuccess()).isTrue();
+
+    ArgumentCaptor<Title> titleCaptor = ArgumentCaptor.forClass(Title.class);
+    verify(titleRepository, atLeastOnce()).saveAndFlush(titleCaptor.capture());
+
+    Title finalSave = titleCaptor.getValue();
+    assertFalse(finalSave.isVacant());
+    assertEquals(1, finalSave.getCurrentChampions().size());
+    assertEquals("Champion Wrestler", finalSave.getCurrentChampions().get(0).getName());
+    assertNotNull(finalSave.getContender());
+    assertEquals("Contender Wrestler", finalSave.getContender().get(0).getName());
   }
 }
