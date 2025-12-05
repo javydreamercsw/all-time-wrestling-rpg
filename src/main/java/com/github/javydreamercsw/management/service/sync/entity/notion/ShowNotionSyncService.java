@@ -33,6 +33,8 @@ import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
+import notion.api.v1.model.common.PropertyType;
+import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -86,10 +88,10 @@ public class ShowNotionSyncService implements NotionSyncService {
                     "Name", // Assuming Notion property is "Name"
                     new PageProperty(
                         UUID.randomUUID().toString(),
-                        notion.api.v1.model.common.PropertyType.Title,
+                        PropertyType.Title,
                         Collections.singletonList(
                             new PageProperty.RichText(
-                                notion.api.v1.model.common.RichTextType.Text,
+                                RichTextType.Text,
                                 new PageProperty.RichText.Text(entity.getName()),
                                 null,
                                 null,
@@ -117,20 +119,20 @@ public class ShowNotionSyncService implements NotionSyncService {
                 // Map Description
                 if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
                   properties.put(
-                      "Description", // Assuming Notion property is "Description"
+                      "Description",
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.RichText,
+                          PropertyType.RichText,
+                          null,
                           Collections.singletonList(
                               new PageProperty.RichText(
-                                  notion.api.v1.model.common.RichTextType.Text,
+                                  RichTextType.Text,
                                   new PageProperty.RichText.Text(entity.getDescription()),
                                   null,
                                   null,
                                   null,
                                   null,
                                   null)),
-                          null,
                           null,
                           null,
                           null,
@@ -154,10 +156,10 @@ public class ShowNotionSyncService implements NotionSyncService {
                   List<PageProperty.PageReference> relations = new ArrayList<>();
                   relations.add(new PageProperty.PageReference(entity.getType().getExternalId()));
                   properties.put(
-                      "Show Type", // Assuming Notion property is "Show Type"
+                      "Show Type",
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Relation,
+                          PropertyType.Relation,
                           null,
                           null,
                           null,
@@ -190,7 +192,7 @@ public class ShowNotionSyncService implements NotionSyncService {
                       "Season", // Assuming Notion property is "Season"
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Relation,
+                          PropertyType.Relation,
                           null,
                           null,
                           null,
@@ -224,7 +226,7 @@ public class ShowNotionSyncService implements NotionSyncService {
                       "Template", // Assuming Notion property is "Template"
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Relation,
+                          PropertyType.Relation,
                           null,
                           null,
                           null,
@@ -255,7 +257,7 @@ public class ShowNotionSyncService implements NotionSyncService {
                       "Date", // Assuming Notion property is "Date"
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Date,
+                          PropertyType.Date,
                           null,
                           null,
                           null,
@@ -306,7 +308,7 @@ public class ShowNotionSyncService implements NotionSyncService {
                 showRepository.save(entity);
                 processedCount++;
               } catch (Exception ex) {
-                log.error("Error processing show: " + entity.getName(), ex);
+                log.error("Error processing show: {}", entity.getName(), ex);
                 errors++;
                 processedCount++;
               }

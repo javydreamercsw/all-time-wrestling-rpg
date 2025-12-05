@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
@@ -51,6 +52,7 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
   @Autowired private NotionHandler notionHandler;
 
   @Test
+  @Transactional
   void testSyncToNotion() {
     Rivalry rivalry = null;
     Wrestler wrestler1 = null;

@@ -32,6 +32,8 @@ import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
+import notion.api.v1.model.common.PropertyType;
+import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -86,10 +88,10 @@ public class SeasonNotionSyncService implements NotionSyncService {
                   "Name", // Assuming Notion property is "Name"
                   new PageProperty(
                       UUID.randomUUID().toString(),
-                      notion.api.v1.model.common.PropertyType.Title,
+                      PropertyType.Title,
                       Collections.singletonList(
                           new PageProperty.RichText(
-                              notion.api.v1.model.common.RichTextType.Text,
+                              RichTextType.Text,
                               new PageProperty.RichText.Text(entity.getName()),
                               null,
                               null,
@@ -120,10 +122,10 @@ public class SeasonNotionSyncService implements NotionSyncService {
                     "Description", // Assuming Notion property is "Description"
                     new PageProperty(
                         UUID.randomUUID().toString(),
-                        notion.api.v1.model.common.PropertyType.RichText,
+                        PropertyType.RichText,
                         Collections.singletonList(
                             new PageProperty.RichText(
-                                notion.api.v1.model.common.RichTextType.Text,
+                                RichTextType.Text,
                                 new PageProperty.RichText.Text(entity.getDescription()),
                                 null,
                                 null,
@@ -155,7 +157,7 @@ public class SeasonNotionSyncService implements NotionSyncService {
                     "Start Date", // Assuming Notion property is "Start Date"
                     new PageProperty(
                         UUID.randomUUID().toString(),
-                        notion.api.v1.model.common.PropertyType.Date,
+                        PropertyType.Date,
                         null,
                         null,
                         null,
@@ -186,7 +188,7 @@ public class SeasonNotionSyncService implements NotionSyncService {
                     "End Date", // Assuming Notion property is "End Date"
                     new PageProperty(
                         UUID.randomUUID().toString(),
-                        notion.api.v1.model.common.PropertyType.Date,
+                        PropertyType.Date,
                         null,
                         null,
                         null,
@@ -218,7 +220,7 @@ public class SeasonNotionSyncService implements NotionSyncService {
                     "End Date",
                     new PageProperty(
                         UUID.randomUUID().toString(),
-                        notion.api.v1.model.common.PropertyType.Date,
+                        PropertyType.Date,
                         null,
                         null,
                         null,
@@ -262,7 +264,7 @@ public class SeasonNotionSyncService implements NotionSyncService {
               seasonRepository.save(entity);
               processedCount++;
             } catch (Exception ex) {
-              log.error("Error processing season: " + entity.getName(), ex);
+              log.error("Error processing season: {}", entity.getName(), ex);
               errors++;
               processedCount++;
             }

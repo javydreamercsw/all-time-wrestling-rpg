@@ -31,6 +31,8 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.NonNull;
 import notion.api.v1.NotionClient;
+import notion.api.v1.model.common.PropertyType;
+import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -83,10 +85,10 @@ public class FactionNotionSyncService implements NotionSyncService {
                     "Name",
                     new PageProperty(
                         UUID.randomUUID().toString(),
-                        notion.api.v1.model.common.PropertyType.Title,
+                        PropertyType.Title,
                         Collections.singletonList(
                             new PageProperty.RichText(
-                                notion.api.v1.model.common.RichTextType.Text,
+                                RichTextType.Text,
                                 new PageProperty.RichText.Text(entity.getName()),
                                 null,
                                 null,
@@ -116,7 +118,7 @@ public class FactionNotionSyncService implements NotionSyncService {
                       "Active",
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Checkbox,
+                          PropertyType.Checkbox,
                           null,
                           null,
                           null,
@@ -147,7 +149,7 @@ public class FactionNotionSyncService implements NotionSyncService {
                       "Leader",
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Relation,
+                          PropertyType.Relation,
                           null,
                           null,
                           null,

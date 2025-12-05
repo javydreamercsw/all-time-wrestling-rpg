@@ -32,6 +32,8 @@ import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
+import notion.api.v1.model.common.PropertyType;
+import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -85,17 +87,16 @@ public class RivalryNotionSyncService implements NotionSyncService {
                     "Name",
                     new PageProperty(
                         UUID.randomUUID().toString(),
-                        notion.api.v1.model.common.PropertyType.Title,
+                        PropertyType.Title,
                         Collections.singletonList(
                             new PageProperty.RichText(
-                                notion.api.v1.model.common.RichTextType.Text,
+                                RichTextType.Text,
                                 new PageProperty.RichText.Text(entity.getDisplayName()),
                                 null,
                                 null,
                                 null,
                                 null,
                                 null))));
-
                 if (entity.getWrestler1() != null) {
                   List<PageProperty.PageReference> relations = new ArrayList<>();
                   relations.add(
@@ -104,7 +105,7 @@ public class RivalryNotionSyncService implements NotionSyncService {
                       "Wrestler 1",
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Relation,
+                          PropertyType.Relation,
                           null,
                           null,
                           null,
@@ -136,7 +137,7 @@ public class RivalryNotionSyncService implements NotionSyncService {
                       "Wrestler 2",
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Relation,
+                          PropertyType.Relation,
                           null,
                           null,
                           null,
@@ -165,7 +166,7 @@ public class RivalryNotionSyncService implements NotionSyncService {
                       "Heat",
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Number,
+                          PropertyType.Number,
                           null,
                           null,
                           null,
@@ -196,7 +197,7 @@ public class RivalryNotionSyncService implements NotionSyncService {
                       "Start Date", // Assuming Notion property is "Start Date"
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Date,
+                          PropertyType.Date,
                           null,
                           null,
                           null,
@@ -227,7 +228,7 @@ public class RivalryNotionSyncService implements NotionSyncService {
                       "Ended Date", // Assuming Notion property is "Ended Date"
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Date,
+                          PropertyType.Date,
                           null,
                           null,
                           null,
@@ -258,10 +259,10 @@ public class RivalryNotionSyncService implements NotionSyncService {
                       "Storyline Notes", // Assuming Notion property is "Storyline Notes"
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.RichText,
+                          PropertyType.RichText,
                           Collections.singletonList(
                               new PageProperty.RichText(
-                                  notion.api.v1.model.common.RichTextType.Text,
+                                  RichTextType.Text,
                                   new PageProperty.RichText.Text(entity.getStorylineNotes()),
                                   null,
                                   null,
@@ -307,7 +308,7 @@ public class RivalryNotionSyncService implements NotionSyncService {
                 rivalryRepository.save(entity);
                 processedCount++;
               } catch (Exception ex) {
-                log.error("Error processing rivalry: " + entity.getDisplayName(), ex);
+                log.error("Error processing rivalry: {}", entity.getDisplayName(), ex);
                 errors++;
                 processedCount++;
               }

@@ -33,6 +33,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.common.PropertyType;
+import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -91,7 +92,7 @@ public class TeamNotionSyncService implements NotionSyncService {
                       PropertyType.Title,
                       Collections.singletonList(
                           new PageProperty.RichText(
-                              notion.api.v1.model.common.RichTextType.Text,
+                              RichTextType.Text,
                               new PageProperty.RichText.Text(entity.getName()),
                               null,
                               null,
@@ -125,7 +126,7 @@ public class TeamNotionSyncService implements NotionSyncService {
                         PropertyType.RichText,
                         Collections.singletonList(
                             new PageProperty.RichText(
-                                notion.api.v1.model.common.RichTextType.Text,
+                                RichTextType.Text,
                                 new PageProperty.RichText.Text(entity.getDescription()),
                                 null,
                                 null,
@@ -268,7 +269,7 @@ public class TeamNotionSyncService implements NotionSyncService {
                         null,
                         null,
                         null,
-                        entity.isActive(), // Use entity.isActive() for boolean value
+                        entity.isActive(),
                         null,
                         null,
                         null,
@@ -318,7 +319,7 @@ public class TeamNotionSyncService implements NotionSyncService {
               // Map Disbanded Date
               if (entity.getDisbandedDate() != null) {
                 properties.put(
-                    "Disbanded Date", // Assuming Notion property is "Disbanded Date"
+                    "Disbanded Date",
                     new PageProperty(
                         UUID.randomUUID().toString(),
                         PropertyType.Date,
@@ -377,7 +378,6 @@ public class TeamNotionSyncService implements NotionSyncService {
                         null,
                         null));
               }
-
               if (!entity.getExternalId().isBlank()) {
                 // Update existing page
                 UpdatePageRequest updatePageRequest =
