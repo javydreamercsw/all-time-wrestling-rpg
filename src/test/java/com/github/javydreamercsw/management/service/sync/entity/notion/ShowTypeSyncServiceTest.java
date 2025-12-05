@@ -99,7 +99,8 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
     // Then - Should have created default show types
     assertThat(result).isNotNull();
     assertThat(result.isSuccess()).isTrue();
-    verify(showTypeService, times(2)).save(any(ShowType.class));
+    verify(showTypeService, times(2))
+        .createOrUpdateShowType(anyString(), anyString(), anyInt(), anyInt());
   }
 
   private List<ShowPage> createMockShowPages() {
@@ -174,7 +175,7 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
         .isZero(); // Because it's already synced in this session
 
     verify(showTypeService, times(2))
-        .save(any(ShowType.class)); // Save is only called for the first sync
+        .createOrUpdateShowType(anyString(), anyString(), anyInt(), anyInt());
   }
 
   @Test
@@ -205,7 +206,7 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
     assertThat(result.getSyncedCount()).isEqualTo(2); // One update, one creation
 
     verify(showTypeService, times(2))
-        .save(any(ShowType.class)); // One for existingType, one for PLE
+        .createOrUpdateShowType(anyString(), anyString(), anyInt(), anyInt());
 
     verify(showTypeService, times(2)).findByName(anyString()); // findByName for Weekly and PLE
   }
@@ -251,7 +252,8 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
     verify(healthMonitor, times(1)).recordFailure(eq("Show Types"), anyString());
 
     // Verify that no show types were saved
-    verify(showTypeService, never()).save(any(ShowType.class));
+    verify(showTypeService, never())
+        .createOrUpdateShowType(anyString(), anyString(), anyInt(), anyInt());
   }
 
   @Test
@@ -314,6 +316,7 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
     assertThat(result.getSyncedCount()).isEqualTo(2); // Two updates
 
     verify(notionHandler).loadAllShowsForSync();
-    verify(showTypeService, times(2)).save(any(ShowType.class)); // Weekly and PLE are updated
+    verify(showTypeService, times(2))
+        .createOrUpdateShowType(anyString(), anyString(), anyInt(), anyInt());
   }
 }

@@ -36,7 +36,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -44,7 +44,7 @@ class TitleReignSyncIT extends ManagementIntegrationTest {
   @Autowired
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
-  @MockBean private NotionHandler notionHandler;
+  @MockitoBean private NotionHandler notionHandler;
 
   @Mock private TitleReignPage titleReignPage;
 

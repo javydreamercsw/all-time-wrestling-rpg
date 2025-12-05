@@ -35,7 +35,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
 class TitleSyncIntegrationTest extends ManagementIntegrationTest {
@@ -43,7 +43,7 @@ class TitleSyncIntegrationTest extends ManagementIntegrationTest {
   @Autowired
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
-  @MockBean private NotionHandler notionHandler;
+  @MockitoBean private NotionHandler notionHandler;
 
   @Mock private TitlePage titlePage;
 
