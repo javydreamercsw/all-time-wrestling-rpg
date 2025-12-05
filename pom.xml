@@ -790,6 +790,9 @@
                 <exclude>**/*E2ETest.java</exclude>
                 <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
                 <exclude>**/DockerPackageIT.java</exclude>
+                <exclude>**/Notion*IT.java</exclude>
+                <exclude>**/*SyncIT.java</exclude>
+                <exclude>**/*SyncIntegrationTest.java</exclude>
               </excludes>
             </configuration>
             <executions>

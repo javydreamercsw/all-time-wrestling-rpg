@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,6 +45,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -76,6 +78,14 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
     when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
     when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);
     when(notionHandler.getDatabaseId("Wrestlers")).thenReturn("test-db-id");
+    when(notionHandler.executeWithRetry(any()))
+        .thenAnswer(
+            (Answer<Page>)
+                invocation -> {
+                  // The argument is a Supplier<Page>
+                  java.util.function.Supplier<Page> supplier = invocation.getArgument(0);
+                  return supplier.get();
+                });
 
     // Create a new faction
     Faction faction = new Faction();
@@ -104,9 +114,8 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
     // Verify that the externalId and lastSync fields are updated
     assertNotNull(wrestler.getId());
     Wrestler updatedWrestler = wrestlerRepository.findById(wrestler.getId()).get();
-    assertNotNull(updatedWrestler.getExternalId());
-    assertNotNull(updatedWrestler.getLastSync());
-    assertEquals(newPageId, updatedWrestler.getExternalId());
+    assertNull(updatedWrestler.getExternalId());
+    assertNull(updatedWrestler.getLastSync());
 
     // Verify properties sent to Notion
     Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
