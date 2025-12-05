@@ -70,24 +70,27 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
 
       // Verify that the externalId and lastSync fields are updated
       assertNotNull(injuryType.getId());
-      InjuryType updatedInjuryType = injuryTypeRepository.findById(injuryType.getId()).get();
-      assertNotNull(updatedInjuryType.getExternalId());
-      assertNotNull(updatedInjuryType.getLastSync());
+      injuryType = injuryTypeRepository.findById(injuryType.getId()).get();
+      assertNotNull(injuryType.getExternalId());
+      assertNotNull(injuryType.getLastSync());
 
       // Retrieve the page from Notion and verify properties
+      InjuryType finalInjuryType = injuryType;
       Page page =
           notionHandler.executeWithRetry(
-              () ->
-                  client.retrievePage(updatedInjuryType.getExternalId(), Collections.emptyList()));
+              () -> client.retrievePage(finalInjuryType.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
-          updatedInjuryType.getInjuryName(),
+          injuryType.getInjuryName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
-      assertEquals(-1.0, Objects.requireNonNull(props.get("Health Effect").getNumber()));
-      assertEquals(-2.0, Objects.requireNonNull(props.get("Stamina Effect").getNumber()));
-      assertEquals(-1.0, Objects.requireNonNull(props.get("Card Effect").getNumber()));
+      assertEquals(
+          -1.0, Objects.requireNonNull(props.get("Health Effect").getNumber()).doubleValue());
+      assertEquals(
+          -2.0, Objects.requireNonNull(props.get("Stamina Effect").getNumber()).doubleValue());
+      assertEquals(
+          -1.0, Objects.requireNonNull(props.get("Card Effect").getNumber()).doubleValue());
       assertEquals(
           "No reversal ability",
           Objects.requireNonNull(
@@ -97,30 +100,33 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
               .getContent());
 
       // Sync to Notion again
-      updatedInjuryType.setInjuryName("Test Injury Type Updated " + UUID.randomUUID());
-      updatedInjuryType.setHealthEffect(-5);
-      updatedInjuryType.setStaminaEffect(-5);
-      updatedInjuryType.setCardEffect(-5);
-      updatedInjuryType.setSpecialEffects("Cannot perform any moves");
-      injuryTypeRepository.save(updatedInjuryType);
+      injuryType.setInjuryName("Test Injury Type Updated " + UUID.randomUUID());
+      injuryType.setHealthEffect(-5);
+      injuryType.setStaminaEffect(-5);
+      injuryType.setCardEffect(-5);
+      injuryType.setSpecialEffects("Cannot perform any moves");
+      injuryTypeRepository.save(injuryType);
       injuryNotionSyncService.syncToNotion("test-op-2");
       InjuryType updatedInjuryType2 = injuryTypeRepository.findById(injuryType.getId()).get();
-      assertTrue(updatedInjuryType2.getLastSync().isAfter(updatedInjuryType.getLastSync()));
+      assertTrue(updatedInjuryType2.getLastSync().isAfter(injuryType.getLastSync()));
 
       // Verify updated properties
+      InjuryType finalInjuryType1 = injuryType;
       page =
           notionHandler.executeWithRetry(
-              () ->
-                  client.retrievePage(updatedInjuryType.getExternalId(), Collections.emptyList()));
+              () -> client.retrievePage(finalInjuryType1.getExternalId(), Collections.emptyList()));
       props = page.getProperties();
       assertEquals(
           updatedInjuryType2.getInjuryName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
-      assertEquals(-5.0, Objects.requireNonNull(props.get("Health Effect").getNumber()));
-      assertEquals(-5.0, Objects.requireNonNull(props.get("Stamina Effect").getNumber()));
-      assertEquals(-5.0, Objects.requireNonNull(props.get("Card Effect").getNumber()));
+      assertEquals(
+          -5.0, Objects.requireNonNull(props.get("Health Effect").getNumber()).doubleValue());
+      assertEquals(
+          -5.0, Objects.requireNonNull(props.get("Stamina Effect").getNumber()).doubleValue());
+      assertEquals(
+          -5.0, Objects.requireNonNull(props.get("Card Effect").getNumber()).doubleValue());
       assertEquals(
           "Cannot perform any moves",
           Objects.requireNonNull(

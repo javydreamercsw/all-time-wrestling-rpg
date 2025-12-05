@@ -29,7 +29,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
+import notion.api.v1.model.common.PropertyType;
+import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -39,6 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class InjuryNotionSyncService implements NotionSyncService {
 
   private final InjuryTypeRepository injuryTypeRepository;
@@ -58,9 +62,7 @@ public class InjuryNotionSyncService implements NotionSyncService {
       Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
       if (clientOptional.isPresent()) {
         try (NotionClient client = clientOptional.get()) {
-          String databaseId =
-              notionHandler.getDatabaseId(
-                  "Injury Types"); // Assuming a Notion database named "Injury Types"
+          String databaseId = notionHandler.getDatabaseId("Injuries");
           if (databaseId != null) {
             int processedCount = 0;
             int created = 0;
@@ -81,13 +83,13 @@ public class InjuryNotionSyncService implements NotionSyncService {
                 }
                 Map<String, PageProperty> properties = new HashMap<>();
                 properties.put(
-                    "Name", // Assuming Notion property is "Name"
+                    "Name",
                     new PageProperty(
                         UUID.randomUUID().toString(),
-                        notion.api.v1.model.common.PropertyType.Title,
+                        PropertyType.Title,
                         Collections.singletonList(
                             new PageProperty.RichText(
-                                notion.api.v1.model.common.RichTextType.Text,
+                                RichTextType.Text,
                                 new PageProperty.RichText.Text(entity.getInjuryName()),
                                 null,
                                 null,
@@ -115,17 +117,16 @@ public class InjuryNotionSyncService implements NotionSyncService {
                 // Map Health Effect
                 if (entity.getHealthEffect() != null) {
                   properties.put(
-                      "Health Effect", // Assuming Notion property is "Health Effect"
+                      "Health Effect",
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Number,
+                          PropertyType.Number,
                           null,
                           null,
                           null,
                           null,
                           null,
-                          entity.getHealthEffect().doubleValue(),
-                          null,
+                          entity.getHealthEffect(),
                           null,
                           null,
                           null,
@@ -146,17 +147,16 @@ public class InjuryNotionSyncService implements NotionSyncService {
                 // Map Stamina Effect
                 if (entity.getStaminaEffect() != null) {
                   properties.put(
-                      "Stamina Effect", // Assuming Notion property is "Stamina Effect"
+                      "Stamina Effect",
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Number,
+                          PropertyType.Number,
                           null,
                           null,
                           null,
                           null,
                           null,
-                          entity.getStaminaEffect().doubleValue(),
-                          null,
+                          entity.getStaminaEffect(),
                           null,
                           null,
                           null,
@@ -177,17 +177,16 @@ public class InjuryNotionSyncService implements NotionSyncService {
                 // Map Card Effect
                 if (entity.getCardEffect() != null) {
                   properties.put(
-                      "Card Effect", // Assuming Notion property is "Card Effect"
+                      "Card Effect",
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.Number,
+                          PropertyType.Number,
                           null,
                           null,
                           null,
                           null,
                           null,
-                          entity.getCardEffect().doubleValue(),
-                          null,
+                          entity.getCardEffect(),
                           null,
                           null,
                           null,
@@ -206,15 +205,16 @@ public class InjuryNotionSyncService implements NotionSyncService {
                 }
 
                 // Map Special Effects
-                if (entity.getSpecialEffects() != null && !entity.getSpecialEffects().isBlank()) {
+                if (entity.getSpecialEffects() != null) {
                   properties.put(
-                      "Special Effects", // Assuming Notion property is "Special Effects"
+                      "Special Effects",
                       new PageProperty(
                           UUID.randomUUID().toString(),
-                          notion.api.v1.model.common.PropertyType.RichText,
+                          PropertyType.RichText,
+                          null,
                           Collections.singletonList(
                               new PageProperty.RichText(
-                                  notion.api.v1.model.common.RichTextType.Text,
+                                  RichTextType.Text,
                                   new PageProperty.RichText.Text(entity.getSpecialEffects()),
                                   null,
                                   null,
@@ -236,11 +236,9 @@ public class InjuryNotionSyncService implements NotionSyncService {
                           null,
                           null,
                           null,
-                          null,
                           null));
                 }
-
-                if (!entity.getExternalId().isBlank()) {
+                if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                   // Update existing page
                   UpdatePageRequest updatePageRequest =
                       new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
@@ -262,6 +260,7 @@ public class InjuryNotionSyncService implements NotionSyncService {
               } catch (Exception ex) {
                 errors++;
                 processedCount++;
+                log.error("Error syncing injuries!", ex);
               }
             }
             // Final progress update
