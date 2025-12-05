@@ -28,6 +28,17 @@ public class TitlePage extends NotionPage {
   // This class can be expanded to include specific properties from the Notion
   // database for Titles, such as relation IDs for the current champion.
 
+  public String getName() {
+    if (getRawProperties() != null && getRawProperties().containsKey("Name")) {
+      Object nameProp = getRawProperties().get("Name");
+      if (nameProp instanceof String) {
+        return (String) nameProp;
+      }
+      // Handle other Notion property types for 'Name' if necessary in future
+    }
+    return null;
+  }
+
   public List<String> getChampionRelationIds() {
     if (getRawProperties() != null && getRawProperties().containsKey("Current Champion")) {
       Object championProp = getRawProperties().get("Current Champion");

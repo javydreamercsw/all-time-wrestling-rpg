@@ -20,15 +20,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
@@ -39,46 +34,28 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Unit tests for WrestlerSyncService covering wrestler synchronization including stats,
  * relationships, and error handling.
  */
-@ExtendWith(MockitoExtension.class)
-class WrestlerSyncServiceTest {
+class WrestlerSyncServiceTest extends AbstractSyncTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
 
   @Mock private WrestlerService wrestlerService;
 
-  @Mock private NotionHandler notionHandler;
-  @Mock private NotionSyncProperties syncProperties;
-  @Mock private SyncProgressTracker progressTracker;
-  @Mock private SyncHealthMonitor healthMonitor;
-  @Mock private ObjectMapper objectMapper;
-  @Mock private NotionRateLimitService rateLimitService;
-
   private WrestlerSyncService wrestlerSyncService;
 
   @BeforeEach
-  void setUp() {
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-    lenient()
-        .when(objectMapper.getTypeFactory())
-        .thenReturn(com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance());
+  @Override
+  protected void setUp() {
+    super.setUp(); // Call parent setup first
     wrestlerSyncService = new WrestlerSyncService(objectMapper, syncProperties, notionHandler);
-    injectMockDependencies();
-  }
-
-  private void injectMockDependencies() {
     ReflectionTestUtils.setField(wrestlerSyncService, "wrestlerRepository", wrestlerRepository);
     ReflectionTestUtils.setField(wrestlerSyncService, "wrestlerService", wrestlerService);
-    ReflectionTestUtils.setField(wrestlerSyncService, "notionHandler", notionHandler);
     ReflectionTestUtils.setField(wrestlerSyncService, "progressTracker", progressTracker);
     ReflectionTestUtils.setField(wrestlerSyncService, "healthMonitor", healthMonitor);
     ReflectionTestUtils.setField(wrestlerSyncService, "rateLimitService", rateLimitService);
@@ -88,10 +65,11 @@ class WrestlerSyncServiceTest {
   void syncWrestlers_WhenSuccessful_ShouldReturnCorrectResult() {
     // Given
     List<WrestlerPage> mockPages = createMockWrestlerPages();
-    when(notionHandler.loadAllWrestlers()).thenReturn(mockPages);
-    when(wrestlerService.findByExternalId(anyString())).thenReturn(Optional.empty());
-    when(wrestlerService.findByName(anyString())).thenReturn(Optional.empty());
-    when(wrestlerService.save(any(Wrestler.class)))
+    lenient().when(notionHandler.loadAllWrestlers()).thenReturn(mockPages);
+    lenient().when(wrestlerService.findByExternalId(anyString())).thenReturn(Optional.empty());
+    lenient().when(wrestlerService.findByName(anyString())).thenReturn(Optional.empty());
+    lenient()
+        .when(wrestlerService.save(any(Wrestler.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
@@ -107,7 +85,7 @@ class WrestlerSyncServiceTest {
   @Test
   void syncWrestlers_WhenDisabled_ShouldSkipSync() {
     // Given
-    when(syncProperties.isEntityEnabled("wrestlers")).thenReturn(false);
+    lenient().when(syncProperties.isEntityEnabled("wrestlers")).thenReturn(false);
 
     // When
     SyncResult result = wrestlerSyncService.syncWrestlers("test-operation");
@@ -120,7 +98,7 @@ class WrestlerSyncServiceTest {
   @Test
   void syncWrestlers_WhenNoWrestlersFound_ShouldReturnSuccess() {
     // Given
-    when(notionHandler.loadAllWrestlers()).thenReturn(Collections.emptyList());
+    lenient().when(notionHandler.loadAllWrestlers()).thenReturn(Collections.emptyList());
 
     // When
     SyncResult result = wrestlerSyncService.syncWrestlers("test-operation");
