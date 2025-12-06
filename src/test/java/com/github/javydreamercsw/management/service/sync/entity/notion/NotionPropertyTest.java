@@ -50,6 +50,7 @@ class NotionPropertyTest {
 
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
   @Mock private SegmentSyncService segmentSyncService;
+  @Mock private SegmentNotionSyncService segmentNotionSyncService;
   @Mock private ParallelSyncOrchestrator parallelSyncOrchestrator;
   @Mock private EntitySyncConfiguration entitySyncConfiguration;
   @Mock private ObjectMapper objectMapper;
@@ -75,6 +76,8 @@ class NotionPropertyTest {
     notionSyncService = new NotionSyncService(objectMapper, notionSyncProperties, notionHandler);
     ReflectionTestUtils.setField(notionSyncService, "segmentSyncService", segmentSyncService);
     ReflectionTestUtils.setField(
+        notionSyncService, "segmentNotionSyncService", segmentNotionSyncService);
+    ReflectionTestUtils.setField(
         notionSyncService, "parallelSyncOrchestrator", parallelSyncOrchestrator);
     ReflectionTestUtils.setField(
         notionSyncService, "entitySyncConfiguration", entitySyncConfiguration);
@@ -91,7 +94,8 @@ class NotionPropertyTest {
     List<String> mockSegmentIds =
         Arrays.asList(UUID.randomUUID().toString(), UUID.randomUUID().toString());
     when(segmentSyncService.getSegmentIds()).thenReturn(mockSegmentIds);
-    when(segmentSyncService.syncSegments(anyString()))
+
+    when(segmentNotionSyncService.syncToNotion(anyString()))
         .thenReturn(BaseSyncService.SyncResult.success("Segment", 2, 0, 0));
 
     // When - Call getAllSegmentIds and syncSegments
@@ -105,7 +109,7 @@ class NotionPropertyTest {
     assertThat(result.getSyncedCount()).isEqualTo(2);
 
     verify(segmentSyncService, times(1)).getSegmentIds();
-    verify(segmentSyncService, times(1)).syncSegments(anyString());
+    verify(segmentNotionSyncService, times(1)).syncToNotion(anyString());
     verify(segmentSyncService, never())
         .syncSegment(anyString()); // Ensure individual sync is not called
   }

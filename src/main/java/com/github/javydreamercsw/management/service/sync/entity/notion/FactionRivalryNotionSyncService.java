@@ -17,23 +17,19 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
-import notion.api.v1.model.common.PropertyType;
-import notion.api.v1.model.common.RichTextType;
-import notion.api.v1.model.databases.DatabaseProperty;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -87,69 +83,33 @@ public class FactionRivalryNotionSyncService implements NotionSyncService {
             try {
               Map<String, PageProperty> properties = new HashMap<>();
               properties.put(
-                  "Name",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Title,
-                      Collections.singletonList(
-                          new PageProperty.RichText(
-                              RichTextType.Text,
-                              new PageProperty.RichText.Text(entity.getDisplayName()),
-                              null,
-                              null,
-                              null,
-                              null,
-                              null)),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
-              PageProperty faction1Property = new PageProperty();
-              faction1Property.setType(PropertyType.Relation);
-              faction1Property.setRelation(
-                  Collections.singletonList(
-                      new PageProperty.PageReference(entity.getFaction1().getExternalId())));
-              properties.put("Faction 1", faction1Property);
+                  "Name", NotionPropertyBuilder.createTitleProperty(entity.getDisplayName()));
+
+              properties.put(
+                  "Faction 1",
+                  NotionPropertyBuilder.createRelationProperty(
+                      entity.getFaction1().getExternalId()));
 
               // Faction 2
-              PageProperty faction2Property = new PageProperty();
-              faction2Property.setType(PropertyType.Relation);
-              faction2Property.setRelation(
-                  Collections.singletonList(
-                      new PageProperty.PageReference(entity.getFaction2().getExternalId())));
-              properties.put("Faction 2", faction2Property);
+              properties.put(
+                  "Faction 2",
+                  NotionPropertyBuilder.createRelationProperty(
+                      entity.getFaction2().getExternalId()));
 
               // Heat
-              PageProperty heatProperty = new PageProperty();
-              heatProperty.setType(PropertyType.Number);
-              heatProperty.setNumber(entity.getHeat().doubleValue());
-              properties.put("Heat", heatProperty);
+              properties.put(
+                  "Heat",
+                  NotionPropertyBuilder.createNumberProperty(entity.getHeat().doubleValue()));
 
               // Active
-              PageProperty activeProperty = new PageProperty();
-              activeProperty.setType(PropertyType.Checkbox);
-              activeProperty.setCheckbox(entity.getIsActive());
-              properties.put("Active", activeProperty);
+              properties.put(
+                  "Active", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
 
               // Intensity
-              PageProperty intensityProperty = new PageProperty();
-              intensityProperty.setType(PropertyType.Select);
-              intensityProperty.setSelect(
-                  new DatabaseProperty.Select.Option(
-                      entity.getIntensity().getDisplayName(), null, null, null));
-              properties.put("Intensity", intensityProperty);
+              properties.put(
+                  "Intensity",
+                  NotionPropertyBuilder.createSelectProperty(
+                      entity.getIntensity().getDisplayName()));
 
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                 log.debug("Updating existing faction rivalry page: {}", entity.getDisplayName());

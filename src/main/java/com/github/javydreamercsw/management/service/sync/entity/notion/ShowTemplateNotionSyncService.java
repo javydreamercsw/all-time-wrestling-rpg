@@ -17,22 +17,19 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
-import notion.api.v1.model.common.PropertyType;
-import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -87,70 +84,27 @@ public class ShowTemplateNotionSyncService implements NotionSyncService {
               Map<String, PageProperty> properties = new HashMap<>();
 
               // Name (Title property)
-              properties.put(
-                  "Name",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Title,
-                      Collections.singletonList(
-                          new PageProperty.RichText(
-                              RichTextType.Text,
-                              new PageProperty.RichText.Text(entity.getName()),
-                              null,
-                              null,
-                              null,
-                              null,
-                              null)),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
+              properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
               // Description (Rich Text property)
               if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
-                PageProperty descriptionProperty = new PageProperty();
-                descriptionProperty.setType(PropertyType.RichText);
-                descriptionProperty.setRichText(
-                    Collections.singletonList(
-                        new PageProperty.RichText(
-                            RichTextType.Text,
-                            new PageProperty.RichText.Text(entity.getDescription()),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null)));
-                properties.put("Description", descriptionProperty);
+                properties.put(
+                    "Description",
+                    NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
               }
 
               // Show Type (Relation property)
               if (entity.getShowType() != null && entity.getShowType().getExternalId() != null) {
-                PageProperty showTypeProperty = new PageProperty();
-                showTypeProperty.setType(PropertyType.Relation);
-                showTypeProperty.setRelation(
-                    Collections.singletonList(
-                        new PageProperty.PageReference(entity.getShowType().getExternalId())));
-                properties.put("Show Type", showTypeProperty);
+                properties.put(
+                    "Show Type",
+                    NotionPropertyBuilder.createRelationProperty(
+                        entity.getShowType().getExternalId()));
               }
 
               // Notion URL (URL property)
               if (entity.getNotionUrl() != null && !entity.getNotionUrl().isBlank()) {
-                PageProperty notionUrlProperty = new PageProperty();
-                notionUrlProperty.setType(PropertyType.Url);
-                notionUrlProperty.setUrl(entity.getNotionUrl());
-                properties.put("Notion URL", notionUrlProperty);
+                properties.put(
+                    "Notion URL", NotionPropertyBuilder.createUrlProperty(entity.getNotionUrl()));
               }
 
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {

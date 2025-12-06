@@ -17,24 +17,21 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
-import notion.api.v1.model.common.PropertyType;
-import notion.api.v1.model.common.RichTextType;
-import notion.api.v1.model.databases.DatabaseProperty;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -91,189 +88,111 @@ public class SegmentNotionSyncService implements NotionSyncService {
               // Name (Title property)
               properties.put(
                   "Name",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Title,
-                      Collections.singletonList(
-                          new PageProperty.RichText(
-                              RichTextType.Text,
-                              new PageProperty.RichText.Text(
-                                  entity.getSegmentType().getName()
-                                      + " - "
-                                      + entity.getShow().getName()),
-                              null,
-                              null,
-                              null,
-                              null,
-                              null)),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
+                  NotionPropertyBuilder.createTitleProperty(
+                      entity.getSegmentType().getName() + " - " + entity.getShow().getName()));
 
               // Show (Relation property)
               if (entity.getShow() != null && entity.getShow().getExternalId() != null) {
-                PageProperty showProperty = new PageProperty();
-                showProperty.setType(PropertyType.Relation);
-                showProperty.setRelation(
-                    Collections.singletonList(
-                        new PageProperty.PageReference(entity.getShow().getExternalId())));
-                properties.put("Show", showProperty);
+                properties.put(
+                    "Show",
+                    NotionPropertyBuilder.createRelationProperty(entity.getShow().getExternalId()));
               }
 
               // Segment Type (Relation property)
               if (entity.getSegmentType() != null
                   && entity.getSegmentType().getExternalId() != null) {
-                PageProperty segmentTypeProperty = new PageProperty();
-                segmentTypeProperty.setType(PropertyType.Relation);
-                segmentTypeProperty.setRelation(
-                    Collections.singletonList(
-                        new PageProperty.PageReference(entity.getSegmentType().getExternalId())));
-                properties.put("Segment Type", segmentTypeProperty);
+                properties.put(
+                    "Segment Type",
+                    NotionPropertyBuilder.createRelationProperty(
+                        entity.getSegmentType().getExternalId()));
               }
 
               // Segment Date (Date property)
               if (entity.getSegmentDate() != null) {
-                PageProperty segmentDateProperty = new PageProperty();
-                segmentDateProperty.setType(PropertyType.Date);
-                segmentDateProperty.setDate(
-                    new PageProperty.Date(entity.getSegmentDate().toString(), null));
-                properties.put("Date", segmentDateProperty);
+                properties.put(
+                    "Date",
+                    NotionPropertyBuilder.createDateProperty(entity.getSegmentDate().toString()));
               }
 
               // Status (Select property)
               if (entity.getStatus() != null) {
-                PageProperty statusProperty = new PageProperty();
-                statusProperty.setType(PropertyType.Select);
-                DatabaseProperty.Select.Option selectStatus =
-                    new DatabaseProperty.Select.Option(
-                        null,
-                        entity.getStatus().name(),
-                        null,
-                        null); // Only set name, Notion fills in ID/color
-                statusProperty.setSelect(selectStatus);
-                properties.put("Status", statusProperty);
+                properties.put(
+                    "Status",
+                    NotionPropertyBuilder.createSelectProperty(entity.getStatus().name()));
               }
 
               // Adjudication Status (Select property)
               if (entity.getAdjudicationStatus() != null) {
-                PageProperty adjudicationStatusProperty = new PageProperty();
-                adjudicationStatusProperty.setType(PropertyType.Select);
-                DatabaseProperty.Select.Option selectAdjudicationStatus =
-                    new DatabaseProperty.Select.Option(
-                        null,
-                        entity.getAdjudicationStatus().name(),
-                        null,
-                        null); // Only set name, Notion fills in ID/color
-                adjudicationStatusProperty.setSelect(selectAdjudicationStatus);
-                properties.put("Adjudication Status", adjudicationStatusProperty);
+                properties.put(
+                    "Adjudication Status",
+                    NotionPropertyBuilder.createSelectProperty(
+                        entity.getAdjudicationStatus().name()));
               }
 
               // Segment Rules (Multi-relation)
               if (entity.getSegmentRules() != null && !entity.getSegmentRules().isEmpty()) {
-                PageProperty segmentRulesProperty = new PageProperty();
-                segmentRulesProperty.setType(PropertyType.Relation);
-                segmentRulesProperty.setRelation(
-                    entity.getSegmentRules().stream()
-                        .filter(rule -> rule.getExternalId() != null)
-                        .map(rule -> new PageProperty.PageReference(rule.getExternalId()))
-                        .collect(Collectors.toList()));
-                properties.put("Rules", segmentRulesProperty);
+                properties.put(
+                    "Rules",
+                    NotionPropertyBuilder.createRelationProperty(
+                        entity.getSegmentRules().stream()
+                            .filter(rule -> rule.getExternalId() != null)
+                            .map(rule -> rule.getExternalId())
+                            .collect(Collectors.toList())));
               }
 
               // Narration (Rich Text property)
               if (entity.getNarration() != null && !entity.getNarration().isBlank()) {
-                PageProperty narrationProperty = new PageProperty();
-                narrationProperty.setType(PropertyType.RichText);
-                narrationProperty.setRichText(
-                    Collections.singletonList(
-                        new PageProperty.RichText(
-                            RichTextType.Text,
-                            new PageProperty.RichText.Text(entity.getNarration()),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null)));
-                properties.put("Narration", narrationProperty);
+                properties.put(
+                    "Narration",
+                    NotionPropertyBuilder.createRichTextProperty(entity.getNarration()));
               }
 
               // Summary (Rich Text property)
               if (entity.getSummary() != null && !entity.getSummary().isBlank()) {
-                PageProperty summaryProperty = new PageProperty();
-                summaryProperty.setType(PropertyType.RichText);
-                summaryProperty.setRichText(
-                    Collections.singletonList(
-                        new PageProperty.RichText(
-                            RichTextType.Text,
-                            new PageProperty.RichText.Text(entity.getSummary()),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null)));
-                properties.put("Summary", summaryProperty);
+                properties.put(
+                    "Summary", NotionPropertyBuilder.createRichTextProperty(entity.getSummary()));
               }
 
               // Is Title Segment (Checkbox property)
-              PageProperty isTitleSegmentProperty = new PageProperty();
-              isTitleSegmentProperty.setType(PropertyType.Checkbox);
-              isTitleSegmentProperty.setCheckbox(entity.getIsTitleSegment());
-              properties.put("Title Segment", isTitleSegmentProperty);
+              properties.put(
+                  "Title Segment",
+                  NotionPropertyBuilder.createCheckboxProperty(entity.getIsTitleSegment()));
 
               // Is NPC Generated (Checkbox property)
-              PageProperty isNpcGeneratedProperty = new PageProperty();
-              isNpcGeneratedProperty.setType(PropertyType.Checkbox);
-              isNpcGeneratedProperty.setCheckbox(entity.getIsNpcGenerated());
-              properties.put("NPC Generated", isNpcGeneratedProperty);
+              properties.put(
+                  "NPC Generated",
+                  NotionPropertyBuilder.createCheckboxProperty(entity.getIsNpcGenerated()));
 
               // Segment Order (Number property)
-              PageProperty segmentOrderProperty = new PageProperty();
-              segmentOrderProperty.setType(PropertyType.Number);
-              segmentOrderProperty.setNumber(
-                  Integer.valueOf(entity.getSegmentOrder()).doubleValue());
-              properties.put("Order", segmentOrderProperty);
+              properties.put(
+                  "Order",
+                  NotionPropertyBuilder.createNumberProperty(
+                      Integer.valueOf(entity.getSegmentOrder()).doubleValue()));
 
               // Is Main Event (Checkbox property)
-              PageProperty isMainEventProperty = new PageProperty();
-              isMainEventProperty.setType(PropertyType.Checkbox);
-              isMainEventProperty.setCheckbox(entity.isMainEvent());
-              properties.put("Main Event", isMainEventProperty);
+              properties.put(
+                  "Main Event", NotionPropertyBuilder.createCheckboxProperty(entity.isMainEvent()));
 
               // Participants (Multi-relation to Wrestler - via SegmentParticipant)
               if (entity.getParticipants() != null && !entity.getParticipants().isEmpty()) {
-                PageProperty participantsProperty = new PageProperty();
-                participantsProperty.setType(PropertyType.Relation);
-                participantsProperty.setRelation(
-                    entity.getParticipants().stream()
-                        .filter(p -> p.getWrestler().getExternalId() != null)
-                        .map(p -> new PageProperty.PageReference(p.getWrestler().getExternalId()))
-                        .collect(Collectors.toList()));
-                properties.put("Participants", participantsProperty);
+                properties.put(
+                    "Participants",
+                    NotionPropertyBuilder.createRelationProperty(
+                        entity.getParticipants().stream()
+                            .filter(p -> p.getWrestler().getExternalId() != null)
+                            .map(p -> p.getWrestler().getExternalId())
+                            .collect(Collectors.toList())));
               }
 
               // Titles (Multi-relation to Title)
               if (entity.getTitles() != null && !entity.getTitles().isEmpty()) {
-                PageProperty titlesProperty = new PageProperty();
-                titlesProperty.setType(PropertyType.Relation);
-                titlesProperty.setRelation(
-                    entity.getTitles().stream()
-                        .filter(title -> title.getExternalId() != null)
-                        .map(title -> new PageProperty.PageReference(title.getExternalId()))
-                        .collect(Collectors.toList()));
-                properties.put("Titles", titlesProperty);
+                properties.put(
+                    "Titles",
+                    NotionPropertyBuilder.createRelationProperty(
+                        entity.getTitles().stream()
+                            .map(AbstractEntity::getExternalId)
+                            .filter(externalId -> externalId != null)
+                            .collect(Collectors.toList())));
               }
 
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {

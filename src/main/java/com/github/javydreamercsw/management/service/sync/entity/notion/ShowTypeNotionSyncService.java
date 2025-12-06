@@ -17,22 +17,19 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
-import notion.api.v1.model.common.PropertyType;
-import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -87,67 +84,26 @@ public class ShowTypeNotionSyncService implements NotionSyncService {
               Map<String, PageProperty> properties = new HashMap<>();
 
               // Name (Title property)
-              properties.put(
-                  "Name",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Title,
-                      Collections.singletonList(
-                          new PageProperty.RichText(
-                              RichTextType.Text,
-                              new PageProperty.RichText.Text(entity.getName()),
-                              null,
-                              null,
-                              null,
-                              null,
-                              null)),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
+              properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
               // Description (Rich Text property)
               if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
-                PageProperty descriptionProperty = new PageProperty();
-                descriptionProperty.setType(PropertyType.RichText);
-                descriptionProperty.setRichText(
-                    Collections.singletonList(
-                        new PageProperty.RichText(
-                            RichTextType.Text,
-                            new PageProperty.RichText.Text(entity.getDescription()),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null)));
-                properties.put("Description", descriptionProperty);
+                properties.put(
+                    "Description",
+                    NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
               }
 
               // Expected Matches (Number property)
-              PageProperty expectedMatchesProperty = new PageProperty();
-              expectedMatchesProperty.setType(PropertyType.Number);
-              expectedMatchesProperty.setNumber(
-                  Integer.valueOf(entity.getExpectedMatches()).doubleValue());
-              properties.put("Expected Matches", expectedMatchesProperty);
+              properties.put(
+                  "Expected Matches",
+                  NotionPropertyBuilder.createNumberProperty(
+                      Integer.valueOf(entity.getExpectedMatches()).doubleValue()));
 
               // Expected Promos (Number property)
-              PageProperty expectedPromosProperty = new PageProperty();
-              expectedPromosProperty.setType(PropertyType.Number);
-              expectedPromosProperty.setNumber(
-                  Integer.valueOf(entity.getExpectedPromos()).doubleValue());
-              properties.put("Expected Promos", expectedPromosProperty);
+              properties.put(
+                  "Expected Promos",
+                  NotionPropertyBuilder.createNumberProperty(
+                      Integer.valueOf(entity.getExpectedPromos()).doubleValue()));
 
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                 log.debug("Updating existing show type page: {}", entity.getName());

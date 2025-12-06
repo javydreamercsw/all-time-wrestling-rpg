@@ -54,6 +54,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private SegmentSyncService segmentSyncService;
   @Mock private RivalrySyncService rivalrySyncService;
   @Mock private FactionRivalrySyncService factionRivalrySyncService;
+  @Mock private FactionRivalryNotionSyncService factionRivalryNotionSyncService;
   @Mock private ShowTemplateNotionSyncService showTemplateNotionSyncService;
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionSyncProperties syncProperties;
@@ -82,6 +83,8 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     ReflectionTestUtils.setField(notionSyncService, "rivalrySyncService", rivalrySyncService);
     ReflectionTestUtils.setField(
         notionSyncService, "factionRivalrySyncService", factionRivalrySyncService);
+    ReflectionTestUtils.setField(
+        notionSyncService, "factionRivalryNotionSyncService", factionRivalryNotionSyncService);
     ReflectionTestUtils.setField(
         notionSyncService, "showTemplateNotionSyncService", showTemplateNotionSyncService);
   }
@@ -313,7 +316,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Faction Rivalries", 1, 0, 0);
-    when(factionRivalrySyncService.syncFactionRivalries(anyString())).thenReturn(expectedResult);
+    when(factionRivalryNotionSyncService.syncToNotion(anyString())).thenReturn(expectedResult);
 
     // When - Sync faction rivalries from Notion
     BaseSyncService.SyncResult result =
@@ -323,6 +326,6 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
     assertThat(result).isEqualTo(expectedResult);
-    verify(factionRivalrySyncService, times(1)).syncFactionRivalries(anyString());
+    verify(factionRivalryNotionSyncService, times(1)).syncToNotion(anyString());
   }
 }

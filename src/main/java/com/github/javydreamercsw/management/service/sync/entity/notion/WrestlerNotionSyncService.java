@@ -17,23 +17,19 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
-import notion.api.v1.model.common.PropertyType;
-import notion.api.v1.model.common.RichTextType;
-import notion.api.v1.model.databases.DatabaseProperty;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -86,301 +82,55 @@ public class WrestlerNotionSyncService implements NotionSyncService {
             }
             try {
               Map<String, PageProperty> properties = new HashMap<>();
-              properties.put(
-                  "Name",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Title,
-                      Collections.singletonList(
-                          new PageProperty.RichText(
-                              RichTextType.Text,
-                              new PageProperty.RichText.Text(entity.getName()),
-                              null,
-                              null,
-                              null,
-                              null,
-                              null)),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
+              properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
               if (entity.getStartingStamina() != null) {
                 properties.put(
                     "Starting Stamina",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Number,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        entity.getStartingStamina().doubleValue(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createNumberProperty(
+                        entity.getStartingStamina().doubleValue()));
               }
               if (entity.getStartingHealth() != null) {
                 properties.put(
                     "Starting Health",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Number,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        entity.getStartingHealth().doubleValue(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createNumberProperty(
+                        entity.getStartingHealth().doubleValue()));
               }
               if (entity.getFans() != null) {
                 properties.put(
                     "Fans",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Number,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        entity.getFans().doubleValue(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createNumberProperty(entity.getFans().doubleValue()));
               }
               if (entity.getTier() != null) {
                 properties.put(
                     "Tier",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Select,
-                        null,
-                        null,
-                        new DatabaseProperty.Select.Option(
-                            null, entity.getTier().getDisplayName(), null, null),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createSelectProperty(entity.getTier().getDisplayName()));
               }
               if (entity.getGender() != null) {
                 properties.put(
                     "Gender",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Select,
-                        null,
-                        null,
-                        new DatabaseProperty.Select.Option(
-                            null, entity.getGender().name(), null, null),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createSelectProperty(entity.getGender().name()));
               }
               if (entity.getBumps() != null) {
                 properties.put(
                     "Bumps",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Number,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        entity.getBumps().doubleValue(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createNumberProperty(entity.getBumps().doubleValue()));
               }
               if (entity.getLowHealth() != null) {
                 properties.put(
                     "Low Health",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Number,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        entity.getLowHealth().doubleValue(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createNumberProperty(
+                        entity.getLowHealth().doubleValue()));
               }
               if (entity.getLowStamina() != null) {
                 properties.put(
                     "Low Stamina",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Number,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        entity.getLowStamina().doubleValue(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createNumberProperty(
+                        entity.getLowStamina().doubleValue()));
               }
               if (entity.getDeckSize() != null) {
                 properties.put(
                     "Deck Size",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Number,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        entity.getDeckSize().doubleValue(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createNumberProperty(entity.getDeckSize().doubleValue()));
               }
 
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {

@@ -17,23 +17,19 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.NotionClient;
-import notion.api.v1.model.common.PropertyType;
-import notion.api.v1.model.common.RichTextType;
-import notion.api.v1.model.databases.DatabaseProperty;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -88,147 +84,65 @@ public class InjuryNotionSyncService implements NotionSyncService {
               Map<String, PageProperty> properties = new HashMap<>();
 
               // Name (Title property)
-              properties.put(
-                  "Name",
-                  new PageProperty(
-                      UUID.randomUUID().toString(),
-                      PropertyType.Title,
-                      Collections.singletonList(
-                          new PageProperty.RichText(
-                              RichTextType.Text,
-                              new PageProperty.RichText.Text(entity.getName()),
-                              null,
-                              null,
-                              null,
-                              null,
-                              null)),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null));
+              properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
               // Wrestler (Relation property)
               if (entity.getWrestler() != null && entity.getWrestler().getExternalId() != null) {
-                PageProperty wrestlerProperty = new PageProperty();
-                wrestlerProperty.setType(PropertyType.Relation);
-                wrestlerProperty.setRelation(
-                    Collections.singletonList(
-                        new PageProperty.PageReference(entity.getWrestler().getExternalId())));
-                properties.put("Wrestler", wrestlerProperty);
+                properties.put(
+                    "Wrestler",
+                    NotionPropertyBuilder.createRelationProperty(
+                        entity.getWrestler().getExternalId()));
               }
 
               // Description (Rich Text property)
               if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
-                PageProperty descriptionProperty = new PageProperty();
-                descriptionProperty.setType(PropertyType.RichText);
-                descriptionProperty.setRichText(
-                    Collections.singletonList(
-                        new PageProperty.RichText(
-                            RichTextType.Text,
-                            new PageProperty.RichText.Text(entity.getDescription()),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null)));
-                properties.put("Description", descriptionProperty);
+                properties.put(
+                    "Description",
+                    NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
               }
 
               // Severity (Select property)
               if (entity.getSeverity() != null) {
                 properties.put(
                     "Severity",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Select,
-                        null,
-                        null,
-                        new DatabaseProperty.Select.Option(
-                            null, entity.getSeverity().name(), null, null),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                    NotionPropertyBuilder.createSelectProperty(entity.getSeverity().name()));
               }
 
               // Health Penalty (Number property)
-              PageProperty healthPenaltyProperty = new PageProperty();
-              healthPenaltyProperty.setType(PropertyType.Number);
-              healthPenaltyProperty.setNumber(
-                  Integer.valueOf(entity.getHealthPenalty()).doubleValue());
-              properties.put("Health Penalty", healthPenaltyProperty);
+              properties.put(
+                  "Health Penalty",
+                  NotionPropertyBuilder.createNumberProperty(
+                      Integer.valueOf(entity.getHealthPenalty()).doubleValue()));
 
               // Is Active (Checkbox property)
-              PageProperty isActiveProperty = new PageProperty();
-              isActiveProperty.setType(PropertyType.Checkbox);
-              isActiveProperty.setCheckbox(entity.getIsActive());
-              properties.put("Active", isActiveProperty);
+              properties.put(
+                  "Active", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
 
               // Injury Date (Date property)
               if (entity.getInjuryDate() != null) {
-                PageProperty injuryDateProperty = new PageProperty();
-                injuryDateProperty.setType(PropertyType.Date);
-                injuryDateProperty.setDate(
-                    new PageProperty.Date(entity.getInjuryDate().toString(), null));
-                properties.put("Injury Date", injuryDateProperty);
+                properties.put(
+                    "Injury Date",
+                    NotionPropertyBuilder.createDateProperty(entity.getInjuryDate().toString()));
               }
 
               // Healed Date (Date property)
               if (entity.getHealedDate() != null) {
-                PageProperty healedDateProperty = new PageProperty();
-                healedDateProperty.setType(PropertyType.Date);
-                healedDateProperty.setDate(
-                    new PageProperty.Date(entity.getHealedDate().toString(), null));
-                properties.put("Healed Date", healedDateProperty);
+                properties.put(
+                    "Healed Date",
+                    NotionPropertyBuilder.createDateProperty(entity.getHealedDate().toString()));
               }
 
               // Healing Cost (Number property)
-              PageProperty healingCostProperty = new PageProperty();
-              healingCostProperty.setType(PropertyType.Number);
-              healingCostProperty.setNumber(entity.getHealingCost().doubleValue());
-              properties.put("Healing Cost", healingCostProperty);
+              properties.put(
+                  "Healing Cost",
+                  NotionPropertyBuilder.createNumberProperty(
+                      entity.getHealingCost().doubleValue()));
 
               // Injury Notes (Rich Text property)
               if (entity.getInjuryNotes() != null && !entity.getInjuryNotes().isBlank()) {
-                PageProperty injuryNotesProperty = new PageProperty();
-                injuryNotesProperty.setType(PropertyType.RichText);
-                injuryNotesProperty.setRichText(
-                    Collections.singletonList(
-                        new PageProperty.RichText(
-                            RichTextType.Text,
-                            new PageProperty.RichText.Text(entity.getInjuryNotes()),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null)));
-                properties.put("Injury Notes", injuryNotesProperty);
+                properties.put(
+                    "Injury Notes",
+                    NotionPropertyBuilder.createRichTextProperty(entity.getInjuryNotes()));
               }
 
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
