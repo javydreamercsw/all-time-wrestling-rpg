@@ -218,7 +218,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // When - Sync injury types from Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncInjuryTypes("integration-test-injury-types");
+        notionSyncService.syncInjuryTypes("integration-test-injury-types", SyncDirection.INBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");

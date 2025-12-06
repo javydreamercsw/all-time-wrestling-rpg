@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -97,7 +98,7 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
 
     // When - Sync injury types from Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncInjuryTypes("integration-test-operation");
+        notionSyncService.syncInjuryTypes("integration-test-operation", SyncDirection.INBOUND);
 
     // Then - Verify sync was successful
     assertThat(result).isNotNull();
@@ -138,7 +139,7 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
                 "Cannot use headbutts. Dizzy."));
     injurySyncService.clearSyncSession();
     BaseSyncService.SyncResult secondResult =
-        notionSyncService.syncInjuryTypes("second-sync-operation");
+        notionSyncService.syncInjuryTypes("second-sync-operation", SyncDirection.INBOUND);
     assertThat(secondResult.isSuccess()).isTrue();
     assertThat(injuryTypeRepository.findAll()).hasSize(2); // No new injuries
 

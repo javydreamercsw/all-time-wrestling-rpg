@@ -19,136 +19,186 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.injury.InjuryType;
-import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
+import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.entity.notion.InjuryNotionSyncService;
-import dev.failsafe.FailsafeException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.time.Instant;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageProperty;
+import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
 
-  @Autowired private InjuryTypeRepository injuryTypeRepository;
+  @Autowired private InjuryRepository injuryRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private FactionRepository factionRepository;
   @Autowired private InjuryNotionSyncService injuryNotionSyncService;
-  @Autowired private NotionHandler notionHandler;
+
+  @MockitoBean private NotionHandler notionHandler;
+
+  @Mock private NotionClient notionClient;
+  @Mock private Page newPage;
+
+  @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
+  @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
+
+  @BeforeEach
+  public void setup() {
+    clearAllRepositories();
+  }
 
   @Test
   void testSyncToNotion() {
-    InjuryType injuryType = null;
-    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-    if (clientOptional.isEmpty()) {
-      Assertions.fail("Unable to create Notion client, skipping test.");
-    }
-    try (NotionClient client = clientOptional.get()) {
-      // Create a new InjuryType
-      injuryType = new InjuryType();
-      injuryType.setInjuryName("Test Injury Type " + UUID.randomUUID());
-      injuryType.setHealthEffect(-1);
-      injuryType.setStaminaEffect(-2);
-      injuryType.setCardEffect(-1);
-      injuryType.setSpecialEffects("No reversal ability");
-      injuryTypeRepository.save(injuryType);
+    when(notionHandler.createNotionClient()).thenReturn(java.util.Optional.of(notionClient));
 
-      // Sync to Notion for the first time
-      injuryNotionSyncService.syncToNotion("test-op-1");
+    String newPageId = UUID.randomUUID().toString();
+    when(newPage.getId()).thenReturn(newPageId);
 
-      // Verify that the externalId and lastSync fields are updated
-      assertNotNull(injuryType.getId());
-      injuryType = injuryTypeRepository.findById(injuryType.getId()).get();
-      assertNotNull(injuryType.getExternalId());
-      assertNotNull(injuryType.getLastSync());
+    when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
+    when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);
+    when(notionHandler.getDatabaseId("Injuries")).thenReturn("test-db-id");
+    when(notionHandler.executeWithRetry(any()))
+        .thenAnswer(
+            (Answer<Page>)
+                invocation -> {
+                  java.util.function.Supplier<Page> supplier = invocation.getArgument(0);
+                  return supplier.get();
+                });
 
-      // Retrieve the page from Notion and verify properties
-      InjuryType finalInjuryType = injuryType;
-      Page page =
-          notionHandler.executeWithRetry(
-              () -> client.retrievePage(finalInjuryType.getExternalId(), Collections.emptyList()));
-      Map<String, PageProperty> props = page.getProperties();
-      assertEquals(
-          injuryType.getInjuryName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-      assertEquals(
-          -1.0, Objects.requireNonNull(props.get("Health Effect").getNumber()).doubleValue());
-      assertEquals(
-          -2.0, Objects.requireNonNull(props.get("Stamina Effect").getNumber()).doubleValue());
-      assertEquals(
-          -1.0, Objects.requireNonNull(props.get("Card Effect").getNumber()).doubleValue());
-      assertEquals(
-          "No reversal ability",
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Special Effects").getRichText())
-                      .get(0)
-                      .getText())
-              .getContent());
+    // Create a Faction (for Wrestler)
+    Faction faction = new Faction();
+    faction.setName("Test Faction " + UUID.randomUUID());
+    factionRepository.save(faction);
 
-      // Sync to Notion again
-      injuryType.setInjuryName("Test Injury Type Updated " + UUID.randomUUID());
-      injuryType.setHealthEffect(-5);
-      injuryType.setStaminaEffect(-5);
-      injuryType.setCardEffect(-5);
-      injuryType.setSpecialEffects("Cannot perform any moves");
-      injuryTypeRepository.save(injuryType);
-      injuryNotionSyncService.syncToNotion("test-op-2");
-      InjuryType updatedInjuryType2 = injuryTypeRepository.findById(injuryType.getId()).get();
-      assertTrue(updatedInjuryType2.getLastSync().isAfter(injuryType.getLastSync()));
+    // Create a Wrestler
+    Wrestler wrestler = new Wrestler();
+    wrestler.setName("Test Wrestler " + UUID.randomUUID());
+    wrestler.setStartingStamina(16);
+    wrestler.setFans(1000L);
+    wrestler.setBumps(1);
+    wrestler.setGender(Gender.MALE);
+    wrestler.setLowStamina(2);
+    wrestler.setStartingHealth(15);
+    wrestler.setLowHealth(4);
+    wrestler.setDeckSize(15);
+    wrestler.setTier(WrestlerTier.MIDCARDER);
+    wrestler.setCreationDate(Instant.now());
+    wrestler.setFaction(faction);
+    wrestler.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
+    wrestlerRepository.save(wrestler);
 
-      // Verify updated properties
-      InjuryType finalInjuryType1 = injuryType;
-      page =
-          notionHandler.executeWithRetry(
-              () -> client.retrievePage(finalInjuryType1.getExternalId(), Collections.emptyList()));
-      props = page.getProperties();
-      assertEquals(
-          updatedInjuryType2.getInjuryName(),
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
-              .getContent());
-      assertEquals(
-          -5.0, Objects.requireNonNull(props.get("Health Effect").getNumber()).doubleValue());
-      assertEquals(
-          -5.0, Objects.requireNonNull(props.get("Stamina Effect").getNumber()).doubleValue());
-      assertEquals(
-          -5.0, Objects.requireNonNull(props.get("Card Effect").getNumber()).doubleValue());
-      assertEquals(
-          "Cannot perform any moves",
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Special Effects").getRichText())
-                      .get(0)
-                      .getText())
-              .getContent());
+    // Create a new Injury
+    Injury injury = new Injury();
+    injury.setWrestler(wrestler);
+    injury.setName("Sprained Ankle");
+    injury.setDescription("Minor injury to the ankle.");
+    injury.setSeverity(InjurySeverity.MINOR);
+    injury.setHealthPenalty(5);
+    injury.setIsActive(true);
+    injury.setInjuryDate(Instant.now());
+    injury.setHealingCost(5000L);
+    injury.setInjuryNotes("Wrestler landed awkwardly during a match.");
+    injuryRepository.save(injury);
 
-    } finally {
-      if (injuryType != null && injuryType.getExternalId() != null) {
-        // Clean up
-        try (NotionClient client = clientOptional.get()) {
-          UpdatePageRequest request =
-              new UpdatePageRequest(injuryType.getExternalId(), new HashMap<>(), true, null, null);
-          notionHandler.executeWithRetry(() -> client.updatePage(request));
-        } catch (FailsafeException e) {
-          // Ignore timeout on cleanup
-        }
-        injuryTypeRepository.delete(injuryType);
-      } else if (injuryType != null && injuryType.getId() != null) {
-        injuryTypeRepository.delete(injuryType);
-      }
-    }
+    // Sync to Notion for the first time
+    injuryNotionSyncService.syncToNotion("test-op-1");
+
+    // Verify that the externalId and lastSync fields are updated
+    assertNotNull(injury.getId());
+    Injury updatedInjury = injuryRepository.findById(injury.getId()).get();
+    assertNotNull(updatedInjury.getExternalId());
+    assertEquals(newPageId, updatedInjury.getExternalId());
+    assertNotNull(updatedInjury.getLastSync());
+
+    // Verify properties sent to Notion
+    Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
+    CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
+    assertEquals(
+        injury.getName(),
+        capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
+    assertEquals(
+        injury.getWrestler().getExternalId(),
+        capturedRequest.getProperties().get("Wrestler").getRelation().get(0).getId());
+    assertEquals(
+        injury.getDescription(),
+        capturedRequest
+            .getProperties()
+            .get("Description")
+            .getRichText()
+            .get(0)
+            .getText()
+            .getContent());
+    assertEquals(
+        injury.getSeverity().name(),
+        capturedRequest.getProperties().get("Severity").getSelect().getName());
+    assertEquals(
+        Integer.valueOf(injury.getHealthPenalty()).doubleValue(),
+        capturedRequest.getProperties().get("Health Penalty").getNumber());
+    assertEquals(injury.getIsActive(), capturedRequest.getProperties().get("Active").getCheckbox());
+    assertEquals(
+        injury.getInjuryDate().toString(),
+        capturedRequest.getProperties().get("Injury Date").getDate().getStart());
+    assertEquals(
+        injury.getHealingCost().doubleValue(),
+        capturedRequest.getProperties().get("Healing Cost").getNumber());
+    assertEquals(
+        injury.getInjuryNotes(),
+        capturedRequest
+            .getProperties()
+            .get("Injury Notes")
+            .getRichText()
+            .get(0)
+            .getText()
+            .getContent());
+
+    // Sync to Notion again
+    updatedInjury.heal(); // Mark as healed
+    updatedInjury.setInjuryNotes("Updated notes " + UUID.randomUUID());
+    injuryRepository.save(updatedInjury);
+    injuryNotionSyncService.syncToNotion("test-op-2");
+    Injury updatedInjury2 = injuryRepository.findById(injury.getId()).get();
+    assertTrue(updatedInjury2.getLastSync().isAfter(updatedInjury.getLastSync()));
+
+    // Verify updated properties sent to Notion
+    Mockito.verify(notionClient).updatePage(updatePageRequestCaptor.capture());
+    UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
+    assertEquals(
+        updatedInjury2.getIsActive(),
+        capturedUpdateRequest.getProperties().get("Active").getCheckbox());
+    assertEquals(
+        updatedInjury2.getHealedDate().toString(),
+        capturedUpdateRequest.getProperties().get("Healed Date").getDate().getStart());
+    assertEquals(
+        updatedInjury2.getInjuryNotes(),
+        capturedUpdateRequest
+            .getProperties()
+            .get("Injury Notes")
+            .getRichText()
+            .get(0)
+            .getText()
+            .getContent());
   }
 }
