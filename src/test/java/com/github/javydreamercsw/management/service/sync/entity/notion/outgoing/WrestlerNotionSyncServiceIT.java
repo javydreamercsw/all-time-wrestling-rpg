@@ -32,10 +32,14 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
+import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,6 +111,18 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
     wrestler.setFaction(faction);
     wrestlerRepository.save(wrestler);
 
+    PageProperty nameProperty = Mockito.mock(PageProperty.class);
+    PageProperty.RichText richText = Mockito.mock(PageProperty.RichText.class);
+    PageProperty.RichText.Text text = Mockito.mock(PageProperty.RichText.Text.class);
+
+    Map<String, PageProperty> propertiesMap = new HashMap<>();
+    propertiesMap.put("Name", nameProperty);
+
+    when(newPage.getProperties()).thenReturn(propertiesMap);
+    when(nameProperty.getTitle()).thenReturn(Collections.singletonList(richText));
+    when(richText.getText()).thenReturn(text);
+    when(text.getContent()).thenReturn(wrestler.getName());
+
     // Sync to Notion for the first time
     wrestlerNotionSyncService.syncToNotion("test-op-1");
 
@@ -122,12 +138,15 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
     CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
     assertEquals(
         wrestler.getName(),
-        capturedRequest.getProperties().get("Name").getTitle().get(0).getPlainText());
-    assertEquals(wrestler.getFans(), capturedRequest.getProperties().get("Fans").getNumber());
+        capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
+    assertEquals(
+        wrestler.getFans().doubleValue(), capturedRequest.getProperties().get("Fans").getNumber());
 
     // Sync to Notion again
     updatedWrestler.setName("Test Wrestler Updated " + UUID.randomUUID());
     wrestlerRepository.save(updatedWrestler);
+    // Update the mock to return the new name
+    when(text.getContent()).thenReturn(updatedWrestler.getName());
     wrestlerNotionSyncService.syncToNotion("test-op-2");
     Wrestler updatedWrestler2 = wrestlerRepository.findById(wrestler.getId()).get();
     assertTrue(updatedWrestler2.getLastSync().isAfter(updatedWrestler.getLastSync()));
@@ -137,6 +156,10 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
     UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
     assertEquals(
         updatedWrestler2.getName(),
-        capturedUpdateRequest.getProperties().get("Name").getTitle().get(0).getPlainText());
+        capturedUpdateRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
+
+    assertEquals(
+        updatedWrestler.getName(),
+        newPage.getProperties().get("Name").getTitle().get(0).getText().getContent());
   }
 }
