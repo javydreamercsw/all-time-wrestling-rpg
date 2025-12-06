@@ -1,4 +1,4 @@
-FROM tomcat:11-jdk17
+FROM tomcat:11-jdk25
 COPY src/main/resources/docker/tomcat/server.xml /usr/local/tomcat/conf/server.xml
 COPY target/all-time-wrestling-rpg-*.war /usr/local/tomcat/webapps/atw-rpg.war
 ENV GEMINI_API_KEY=

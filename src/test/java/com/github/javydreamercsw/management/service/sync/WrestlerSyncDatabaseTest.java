@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,13 +63,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
     wrestler.setIsPlayer(false);
 
     // This simulates the logic in saveWrestlersToDatabase method
-    boolean isNewWrestler = true; // Wrestler not found in database
-    Wrestler result;
-    if (isNewWrestler) {
-      result = wrestlerService.save(wrestler);
-    } else {
-      result = wrestlerRepository.saveAndFlush(wrestler);
-    }
+    Wrestler result = wrestlerService.save(wrestler);
 
     // Then
     assertNotNull(result);
@@ -91,13 +101,7 @@ class WrestlerSyncDatabaseTest extends BaseTest {
     existingWrestler.setExternalId("notion-page-id-456"); // Update external ID
 
     // This simulates the logic in saveWrestlersToDatabase method
-    boolean isNewWrestler = false; // Wrestler found in database
-    Wrestler result;
-    if (isNewWrestler) {
-      result = wrestlerService.save(existingWrestler);
-    } else {
-      result = wrestlerRepository.saveAndFlush(existingWrestler);
-    }
+    Wrestler result = wrestlerRepository.saveAndFlush(existingWrestler);
 
     // Then
     assertNotNull(result);

@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.wrestler;
 
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
@@ -126,9 +142,19 @@ public class WrestlerService {
               if (fanChange < 0 && !wrestler.canAfford(-fanChange)) {
                 return null; // Not enough fans
               }
-              wrestler.addFans(fanChange);
+              long tempFans = fanChange;
+              if (fanChange > 0) {
+                switch (wrestler.getTier()) {
+                  case ICON -> tempFans = tempFans * 90 / 100;
+                  case MAIN_EVENTER -> tempFans = tempFans * 93 / 100;
+                  case MIDCARDER -> tempFans = tempFans * 95 / 100;
+                  case CONTENDER -> tempFans = tempFans * 97 / 100;
+                }
+                tempFans = Math.round(tempFans / 1000.0) * 1000;
+              }
+              wrestler.addFans(tempFans);
               Wrestler savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
-              eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, fanChange));
+              eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, tempFans));
               return savedWrestler;
             });
   }

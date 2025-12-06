@@ -1,10 +1,29 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.sync;
 
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -63,7 +82,7 @@ public class NotionSyncScheduler {
       // Sync each entity in dependency order
       for (String entity : getSyncEntities()) {
         try {
-          NotionSyncService.SyncResult result = syncEntity(entity);
+          NotionSyncService.SyncResult result = syncEntity(entity, SyncDirection.OUTBOUND);
           results.add(result);
 
           if (result.isSuccess()) {
@@ -95,29 +114,36 @@ public class NotionSyncScheduler {
    * @param operationId Custom operation ID for progress tracking
    * @return SyncResult containing the outcome of the sync operation
    */
+  @SneakyThrows
   public NotionSyncService.SyncResult syncEntity(
-      @NonNull String entityName, @NonNull String operationId) {
+      @NonNull String entityName, @NonNull String operationId, @NonNull SyncDirection direction) {
     log.debug("Syncing entity: {} with operation ID: {}", entityName, operationId);
 
-    return switch (entityName.toLowerCase()) {
-      case "shows" -> notionSyncService.syncShows(operationId);
-      case "wrestlers" -> notionSyncService.syncWrestlers(operationId);
-      case "factions" -> notionSyncService.syncFactions(operationId);
-      case "teams" -> notionSyncService.syncTeams(operationId);
-      case "segments" -> notionSyncService.syncSegments(operationId);
-      case "templates" -> notionSyncService.syncShowTemplates(operationId);
-      case "seasons" -> notionSyncService.syncSeasons(operationId);
-      case "show-types" -> notionSyncService.syncShowTypes(operationId);
-      case "injuries" -> notionSyncService.syncInjuryTypes(operationId);
-      case "npcs" -> notionSyncService.syncNpcs(operationId);
-      case "titles" -> notionSyncService.syncTitles(operationId);
-      case "rivalries" -> notionSyncService.syncRivalries(operationId);
-      case "faction-rivalries" -> notionSyncService.syncFactionRivalries(operationId);
-      default -> {
-        log.warn("Unknown entity type for sync: {}", entityName);
-        yield NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
-      }
-    };
+    NotionSyncService.SyncResult result =
+        switch (entityName.toLowerCase()) {
+          case "shows" -> notionSyncService.syncShows(operationId, direction);
+          case "wrestlers" -> notionSyncService.syncWrestlers(operationId, direction);
+          case "factions" -> notionSyncService.syncFactions(operationId, direction);
+          case "teams" -> notionSyncService.syncTeams(operationId, direction);
+          case "templates" -> notionSyncService.syncShowTemplates(operationId, direction);
+          case "seasons" -> notionSyncService.syncSeasons(operationId, direction);
+          case "show-types" -> notionSyncService.syncShowTypes(operationId, direction);
+          case "injuries" -> notionSyncService.syncInjuryTypes(operationId, direction);
+          case "npcs" -> notionSyncService.syncNpcs(operationId, direction);
+          case "titles" -> notionSyncService.syncTitles(operationId, direction);
+          case "rivalries" -> notionSyncService.syncRivalries(operationId, direction);
+          case "faction-rivalries" ->
+              notionSyncService.syncFactionRivalries(operationId, direction);
+          case "segments" -> notionSyncService.syncSegments(operationId, direction);
+          default -> {
+            log.warn("Unknown entity type for sync: {}", entityName);
+            yield NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
+          }
+        };
+    if (result.isSuccess()) {
+      syncProperties.setLastSyncTime(entityName, LocalDateTime.now());
+    }
+    return result;
   }
 
   /**
@@ -126,13 +152,14 @@ public class NotionSyncScheduler {
    * @param entityName The name of the entity to sync
    * @return SyncResult containing the outcome of the sync operation
    */
-  private NotionSyncService.SyncResult syncEntity(String entityName) {
+  public NotionSyncService.SyncResult syncEntity(
+      @NonNull String entityName, @NonNull SyncDirection direction) {
     log.debug("Syncing entity: {}", entityName);
 
     // Generate operation ID for progress tracking
     String operationId = "sync-" + entityName.toLowerCase() + "-" + System.currentTimeMillis();
 
-    return syncEntity(entityName, operationId);
+    return syncEntity(entityName, operationId, direction);
   }
 
   /**
@@ -190,7 +217,7 @@ public class NotionSyncScheduler {
     try {
       for (String entity : getSyncEntities()) {
         try {
-          NotionSyncService.SyncResult result = syncEntity(entity);
+          NotionSyncService.SyncResult result = syncEntity(entity, SyncDirection.OUTBOUND);
           results.add(result);
 
           if (result.isSuccess()) {
@@ -225,11 +252,11 @@ public class NotionSyncScheduler {
    * @param entityName The name of the entity to sync
    * @return SyncResult for the specified entity
    */
-  public NotionSyncService.SyncResult triggerEntitySync(String entityName) {
+  public NotionSyncService.SyncResult triggerEntitySync(@NonNull String entityName) {
     log.info("=== MANUAL {} SYNC TRIGGERED ===", entityName.toUpperCase());
 
     try {
-      NotionSyncService.SyncResult result = syncEntity(entityName);
+      NotionSyncService.SyncResult result = syncEntity(entityName, SyncDirection.OUTBOUND);
 
       if (result.isSuccess()) {
         log.info(
@@ -277,5 +304,15 @@ public class NotionSyncScheduler {
     }
 
     return status.toString();
+  }
+
+  /**
+   * Retrieves the last sync time for a specific entity.
+   *
+   * @param entityName The name of the entity.
+   * @return The last sync time, or null if it has never been synced.
+   */
+  public LocalDateTime getLastSyncTime(String entityName) {
+    return syncProperties.getLastSyncTime(entityName);
   }
 }

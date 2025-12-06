@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.domain.faction;
 
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
@@ -10,24 +26,31 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a faction (stable) of wrestlers in the ATW RPG system. Factions can have rivalries
  * with other factions and participate in multi-wrestler feuds.
  */
-@Data
 @Entity
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 @Table(name = "faction")
 public class Faction extends AbstractEntity<Long> {
   @Id
@@ -64,29 +87,36 @@ public class Faction extends AbstractEntity<Long> {
   @Column(name = "external_id")
   private String externalId; // External system ID (e.g., Notion page ID)
 
+  @Column(name = "last_sync")
+  private Instant lastSync;
+
   // Faction members
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction", "rivalries", "injuries", "deck", "titleReigns"})
   @Builder.Default
-  private List<Wrestler> members = new ArrayList<>();
+  @ToString.Exclude
+  private Set<Wrestler> members = new HashSet<>();
 
   // Teams associated with this faction
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction", "wrestler1", "wrestler2"})
   @Builder.Default
-  private List<Team> teams = new ArrayList<>();
+  @ToString.Exclude
+  private Set<Team> teams = new HashSet<>();
 
   // Faction rivalries where this faction is faction1
   @OneToMany(mappedBy = "faction1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction1", "faction2"})
   @Builder.Default
-  private List<FactionRivalry> rivalriesAsFaction1 = new ArrayList<>();
+  @ToString.Exclude
+  private Set<FactionRivalry> rivalriesAsFaction1 = new HashSet<>();
 
   // Faction rivalries where this faction is faction2
   @OneToMany(mappedBy = "faction2", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction1", "faction2"})
   @Builder.Default
-  private List<FactionRivalry> rivalriesAsFaction2 = new ArrayList<>();
+  @ToString.Exclude
+  private Set<FactionRivalry> rivalriesAsFaction2 = new HashSet<>();
 
   @Override
   public @Nullable Long getId() {
@@ -159,21 +189,9 @@ public class Faction extends AbstractEntity<Long> {
 
   /** Get all active faction rivalries involving this faction. */
   public List<FactionRivalry> getActiveRivalries() {
-    List<FactionRivalry> activeRivalries = new ArrayList<>();
-
-    for (FactionRivalry rivalry : rivalriesAsFaction1) {
-      if (rivalry.getIsActive()) {
-        activeRivalries.add(rivalry);
-      }
-    }
-
-    for (FactionRivalry rivalry : rivalriesAsFaction2) {
-      if (rivalry.getIsActive()) {
-        activeRivalries.add(rivalry);
-      }
-    }
-
-    return activeRivalries;
+    return Stream.concat(rivalriesAsFaction1.stream(), rivalriesAsFaction2.stream())
+        .filter(FactionRivalry::getIsActive)
+        .collect(Collectors.toList());
   }
 
   /** Get the opposing faction in a rivalry. */
@@ -208,5 +226,18 @@ public class Faction extends AbstractEntity<Long> {
     if (members.size() == 1) return "Singles";
     if (members.size() == 2) return "Tag Team";
     return "Stable";
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Faction faction = (Faction) o;
+    return id != null && Objects.equals(id, faction.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return getClass().hashCode();
   }
 }

@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.sync.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +48,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -53,8 +70,7 @@ public abstract class BaseSyncService {
   // Controlled parallelism executor for all sync operations
   private final ExecutorService syncExecutorService;
 
-  // Optional NotionHandler for integration tests
-  public NotionHandler notionHandler;
+  protected final NotionHandler notionHandler;
 
   // Enhanced sync infrastructure services - autowired
   @Autowired public SyncProgressTracker progressTracker;
@@ -70,11 +86,13 @@ public abstract class BaseSyncService {
   @Autowired public NotionRateLimitService rateLimitService;
 
   protected BaseSyncService(
-      @NonNull ObjectMapper objectMapper, @NonNull NotionSyncProperties syncProperties) {
+      @NonNull ObjectMapper objectMapper,
+      @NonNull NotionSyncProperties syncProperties,
+      @NonNull NotionHandler notionHandler) {
     this.objectMapper = objectMapper;
     this.syncProperties = syncProperties;
     this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
-    this.notionHandler = NotionHandler.getInstance().orElse(null);
+    this.notionHandler = notionHandler;
   }
 
   // Constructor injection for SyncHealthMonitor, made optional
@@ -90,7 +108,8 @@ public abstract class BaseSyncService {
       SyncTransactionManager syncTransactionManager,
       DataIntegrityChecker integrityChecker,
       NotionRateLimitService rateLimitService,
-      EntitySyncConfiguration entitySyncConfig) {
+      EntitySyncConfiguration entitySyncConfig,
+      @NonNull NotionHandler notionHandler) {
     this.objectMapper = objectMapper;
     this.syncProperties = syncProperties;
     this.healthMonitor = healthMonitor; // Assign optional healthMonitor
@@ -103,7 +122,7 @@ public abstract class BaseSyncService {
     this.rateLimitService = rateLimitService;
     this.entitySyncConfig = entitySyncConfig;
     this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
-    this.notionHandler = NotionHandler.getInstance().orElse(null);
+    this.notionHandler = notionHandler;
   }
 
   /**
@@ -121,8 +140,8 @@ public abstract class BaseSyncService {
    *
    * @return true if NotionHandler is available, false otherwise
    */
-  protected boolean isNotionHandlerAvailable() {
-    return notionHandler != null;
+  public boolean isNotionHandlerAvailable() {
+    return notionHandler != null && EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 
   /**
@@ -149,6 +168,16 @@ public abstract class BaseSyncService {
   public void clearSyncSession() {
     currentSyncSession.get().clear();
     log.debug("🧹 Cleared sync session");
+  }
+
+  /**
+   * Resets the sync status for a specific entity.
+   *
+   * @param entityName The name of the entity to reset
+   */
+  public void resetSyncStatus(@NonNull String entityName) {
+    currentSyncSession.get().remove(entityName.toLowerCase());
+    log.debug("🔄 Reset sync status for '{}'", entityName);
   }
 
   /** Cleans up the sync session thread local (should be called at the end of operations). */
@@ -365,6 +394,7 @@ public abstract class BaseSyncService {
         items, processor, batchSize, operationId, progressStep, description, null);
   }
 
+  @SneakyThrows
   protected <T, R> List<R> processWithControlledParallelism(
       List<T> items,
       Function<T, R> processor,
@@ -447,7 +477,12 @@ public abstract class BaseSyncService {
 
         // Small delay between batches to be nice to the API
         if (endIndex < items.size()) {
-          Thread.sleep(500);
+          CompletableFuture<Void> delay =
+              CompletableFuture.runAsync(
+                  () -> {},
+                  CompletableFuture.delayedExecutor(
+                      500, TimeUnit.MILLISECONDS, syncExecutorService));
+          delay.get();
         }
 
       } catch (InterruptedException e) {
@@ -503,6 +538,10 @@ public abstract class BaseSyncService {
     }
 
     public static SyncResult failure(@NonNull String entityType, String errorMessage) {
+      return new SyncResult(false, entityType, 0, 0, 0, errorMessage);
+    }
+
+    public static SyncResult unsupported(@NonNull String entityType, String errorMessage) {
       return new SyncResult(false, entityType, 0, 0, 0, errorMessage);
     }
 

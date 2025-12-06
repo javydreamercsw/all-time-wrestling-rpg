@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,7 +79,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
 
-    testWrestler = TestUtils.createWrestler(wrestlerRepository, "Test Wrestler");
+    testWrestler = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Test Wrestler"));
     // Ensure a default season exists for tests
     if (seasonService.findByName("Default Season") == null) {
       seasonService.createSeason("Default Season", "Default Season", 4);
@@ -104,15 +120,15 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @Test
   void testFeudHistorySorting() {
     // Given
-    Wrestler wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
+    Wrestler wrestler1 = TestUtils.createWrestler("Wrestler 1");
     wrestler1.setGender(Gender.MALE);
     wrestler1.setFans(1000L);
-    wrestler1 = wrestlerRepository.save(wrestler1);
+    wrestlerRepository.saveAndFlush(wrestler1);
 
-    Wrestler wrestler2 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 2");
+    Wrestler wrestler2 = TestUtils.createWrestler("Wrestler 2");
     wrestler2.setGender(Gender.MALE);
     wrestler2.setFans(1000L);
-    wrestler2 = wrestlerRepository.save(wrestler2);
+    wrestlerRepository.saveAndFlush(wrestler2);
 
     Assertions.assertNotNull(wrestler1.getId());
     Assertions.assertNotNull(wrestler2.getId());
@@ -154,10 +170,10 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @Test
   void testRecentMatchesGrid() {
     // Given
-    Wrestler wrestler1 = TestUtils.createWrestler(wrestlerRepository, "Wrestler 1");
+    Wrestler wrestler1 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 1"));
     wrestler1.setGender(Gender.MALE);
     wrestler1.setFans(1000L);
-    wrestler1 = wrestlerRepository.save(wrestler1);
+    wrestlerRepository.saveAndFlush(wrestler1);
 
     Title title = titleService.createTitle("Test Title", "Test Title", WrestlerTier.ROOKIE);
 

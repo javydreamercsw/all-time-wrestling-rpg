@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.segment;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,7 +63,6 @@ public class NarrationDialog extends Dialog {
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
   private final WrestlerService wrestlerService;
-  private final TitleService titleService;
   private final ShowService showService;
 
   private final ProgressBar progressBar;
@@ -75,7 +90,6 @@ public class NarrationDialog extends Dialog {
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
-    this.titleService = titleService;
     this.showService = showService;
     this.onSaveCallback = onSaveCallback; // Assign callback
 
@@ -228,9 +242,7 @@ public class NarrationDialog extends Dialog {
         wrestlerService.findAllAsDTO().stream()
             .sorted(Comparator.comparing(WrestlerDTO::getName))
             .collect(Collectors.toList()));
-    if (wrestler != null) {
-      wrestlersCombo.setValue(new java.util.HashSet<>(List.of(wrestler)));
-    }
+    wrestlersCombo.setValue(new HashSet<>(List.of(wrestler)));
 
     Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
     removeTeamButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
@@ -592,8 +604,11 @@ public class NarrationDialog extends Dialog {
           restTemplate.postForEntity(
               baseUrl + "/api/segment-narration/narrate/" + provider, context, String.class);
 
-      handleNarrationResponse(response.getBody());
-
+      if (response.getBody() != null) {
+        handleNarrationResponse(response.getBody());
+      } else {
+        log.warn("GOt an empty response from provider!");
+      }
     } catch (org.springframework.web.client.HttpClientErrorException e) {
       log.error("HTTP Client Error retrying with provider {}: {}", provider, e.getMessage(), e);
       try {

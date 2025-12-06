@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.sync;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
@@ -7,6 +23,7 @@ import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker.SyncProgress;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.button.Button;
@@ -58,6 +75,7 @@ public class NotionSyncView extends Main {
   private final NotionSyncProperties syncProperties;
   private final SyncProgressTracker progressTracker;
   private final EntityDependencyAnalyzer dependencyAnalyzer;
+  private ComboBox<SyncDirection> syncDirection;
 
   // UI Components
   private Button syncAllButton;
@@ -65,7 +83,7 @@ public class NotionSyncView extends Main {
   private Button syncSelectedButton;
   private ProgressBar progressBar;
   private Span statusLabel;
-  private Span lastSyncLabel;
+  private Span lastEntitySyncLabel;
   private VerticalLayout progressContainer;
   private VerticalLayout logContainer;
 
@@ -130,14 +148,9 @@ public class NotionSyncView extends Main {
     statusLabel = new Span("Ready");
     statusLabel.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.TextColor.SUCCESS);
 
-    lastSyncLabel = new Span("Never");
-    lastSyncLabel.addClassNames(LumoUtility.TextColor.SECONDARY);
-
     HorizontalLayout statusInfo = new HorizontalLayout();
     statusInfo.addClassNames(LumoUtility.Gap.LARGE);
-    statusInfo.add(
-        new Div(new Span("Status: "), statusLabel),
-        new Div(new Span("Last Sync: "), lastSyncLabel));
+    statusInfo.add(new Div(new Span("Status: "), statusLabel));
 
     statusSection.add(statusTitle, statusInfo);
     return statusSection;
@@ -145,9 +158,13 @@ public class NotionSyncView extends Main {
 
   private HorizontalLayout createControlSection() {
     HorizontalLayout controlSection = new HorizontalLayout();
-    controlSection.addClassNames(LumoUtility.Gap.MEDIUM);
+    controlSection.setId("control-section");
+    syncDirection = new ComboBox<>("Sync Direction");
+    syncDirection.setItems(SyncDirection.values());
+    syncDirection.setValue(SyncDirection.INBOUND);
 
     syncAllButton = new Button("Sync All Entities", VaadinIcon.REFRESH.create());
+    syncAllButton.setId("sync-all-button");
     syncAllButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     syncAllButton.addClickListener(e -> triggerFullSync());
 
@@ -155,6 +172,13 @@ public class NotionSyncView extends Main {
     List<String> entities = dependencyAnalyzer.getAutomaticSyncOrder();
     java.util.Collections.sort(entities);
     entitySelectionCombo.setItems(entities);
+    entitySelectionCombo.addValueChangeListener(
+        event -> {
+          updateLastSyncTimeForSelectedEntity();
+        });
+
+    lastEntitySyncLabel = new Span("Last Sync: Never");
+    lastEntitySyncLabel.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
 
     syncSelectedButton = new Button("Sync Selected", VaadinIcon.PLAY.create());
     syncSelectedButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
@@ -162,7 +186,7 @@ public class NotionSyncView extends Main {
         e -> {
           String selectedEntity = entitySelectionCombo.getValue();
           if (selectedEntity != null && !selectedEntity.isEmpty()) {
-            triggerEntitySync(selectedEntity);
+            triggerEntitySync(selectedEntity, syncDirection.getValue());
           } else {
             showNotification("Please select an entity to sync", NotificationVariant.LUMO_CONTRAST);
           }
@@ -173,8 +197,28 @@ public class NotionSyncView extends Main {
     statusButton.addClickListener(e -> updateSyncStatus());
 
     controlSection.setAlignItems(Alignment.BASELINE);
-    controlSection.add(syncAllButton, entitySelectionCombo, syncSelectedButton, statusButton);
+    controlSection.add(
+        syncAllButton,
+        syncDirection,
+        entitySelectionCombo,
+        lastEntitySyncLabel,
+        syncSelectedButton,
+        statusButton);
     return controlSection;
+  }
+
+  private void updateLastSyncTimeForSelectedEntity() {
+    String selectedEntity = entitySelectionCombo.getValue();
+    if (selectedEntity != null && !selectedEntity.isEmpty()) {
+      LocalDateTime lastSync = notionSyncScheduler.getLastSyncTime(selectedEntity);
+      String timestamp =
+          (lastSync != null)
+              ? lastSync.format(DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm:ss"))
+              : "Never";
+      lastEntitySyncLabel.setText("Last Sync: " + timestamp);
+    } else {
+      lastEntitySyncLabel.setText("Last Sync: Never");
+    }
   }
 
   private VerticalLayout createProgressSection() {
@@ -284,7 +328,7 @@ public class NotionSyncView extends Main {
         });
   }
 
-  private void triggerEntitySync(@NonNull String entityName) {
+  private void triggerEntitySync(@NonNull String entityName, @NonNull SyncDirection direction) {
     if (syncInProgress) {
       showNotification("Sync already in progress", NotificationVariant.LUMO_CONTRAST);
       return;
@@ -299,7 +343,7 @@ public class NotionSyncView extends Main {
         () -> {
           try {
             NotionSyncService.SyncResult result =
-                notionSyncScheduler.syncEntity(entityName, operationId);
+                notionSyncScheduler.syncEntity(entityName, operationId, direction);
             return new SyncOperationResult(
                 result.isSuccess(),
                 1,
@@ -530,9 +574,7 @@ public class NotionSyncView extends Main {
   }
 
   private void updateLastSyncTime() {
-    String timestamp =
-        LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm:ss"));
-    lastSyncLabel.setText(timestamp);
+    updateLastSyncTimeForSelectedEntity();
   }
 
   private void addLogEntry(@NonNull String message, @NonNull String level) {

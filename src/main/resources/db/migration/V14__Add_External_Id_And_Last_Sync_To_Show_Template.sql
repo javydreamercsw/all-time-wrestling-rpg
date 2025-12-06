@@ -1,0 +1,1 @@
+ALTER TABLE show_template ADD COLUMN last_sync TIMESTAMP WITH TIME ZONE;
