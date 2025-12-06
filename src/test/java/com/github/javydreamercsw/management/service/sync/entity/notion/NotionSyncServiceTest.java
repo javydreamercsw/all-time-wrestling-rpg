@@ -314,7 +314,8 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // When - Sync faction rivalries from Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncFactionRivalries("integration-test-faction-rivalries");
+        notionSyncService.syncFactionRivalries(
+            "integration-test-faction-rivalries", SyncDirection.OUTBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");

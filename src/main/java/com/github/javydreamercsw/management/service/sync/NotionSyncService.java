@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionNotionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.FactionRivalryNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionRivalrySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.InjurySyncService;
@@ -87,6 +88,7 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private ShowNotionSyncService showNotionSyncService;
   @Autowired private FactionNotionSyncService factionNotionSyncService;
   @Autowired private TeamNotionSyncService teamNotionSyncService;
+  @Autowired private FactionRivalryNotionSyncService factionRivalryNotionSyncService;
 
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
@@ -316,7 +318,10 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
-  public SyncResult syncFactionRivalries(@NonNull String operationId) {
-    return factionRivalrySyncService.syncFactionRivalries(operationId);
+  public SyncResult syncFactionRivalries(
+      @NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? factionRivalrySyncService.syncFactionRivalries(operationId)
+        : factionRivalryNotionSyncService.syncToNotion(operationId);
   }
 }

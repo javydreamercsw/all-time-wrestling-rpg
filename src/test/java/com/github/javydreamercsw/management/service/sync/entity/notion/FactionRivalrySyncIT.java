@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -84,7 +85,8 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
 
     // When - Sync faction rivalries from real Notion database
     BaseSyncService.SyncResult result =
-        notionSyncService.syncFactionRivalries("test-operation-faction-rivalry-123");
+        notionSyncService.syncFactionRivalries(
+            "test-operation-faction-rivalry-123", SyncDirection.OUTBOUND);
 
     // Then - Verify sync completed successfully
     assertThat(result).isNotNull();

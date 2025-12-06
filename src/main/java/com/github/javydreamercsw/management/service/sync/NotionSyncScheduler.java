@@ -133,7 +133,8 @@ public class NotionSyncScheduler {
           case "npcs" -> notionSyncService.syncNpcs(operationId, direction);
           case "titles" -> notionSyncService.syncTitles(operationId, direction);
           case "rivalries" -> notionSyncService.syncRivalries(operationId, direction);
-          case "faction-rivalries" -> notionSyncService.syncFactionRivalries(operationId);
+          case "faction-rivalries" ->
+              notionSyncService.syncFactionRivalries(operationId, direction);
           default -> {
             log.warn("Unknown entity type for sync: {}", entityName);
             yield NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");
