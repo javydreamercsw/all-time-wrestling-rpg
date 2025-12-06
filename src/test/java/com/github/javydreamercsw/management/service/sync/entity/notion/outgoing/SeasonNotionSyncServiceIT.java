@@ -20,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -40,16 +43,44 @@ import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
 class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private SeasonNotionSyncService seasonNotionSyncService;
-  @Autowired private NotionHandler notionHandler;
+  @MockitoBean private NotionHandler notionHandler;
+  @Mock private NotionClient notionClient;
+
+  @BeforeEach
+  void setUp() throws Exception {
+    when(notionHandler.createNotionClient()).thenReturn(Optional.of(notionClient));
+
+    // Mock notionHandler.executeWithRetry to directly execute the callable
+    doAnswer(
+            (Answer<Object>)
+                invocation -> {
+                  java.util.function.Supplier<?> supplier = invocation.getArgument(0);
+                  return supplier.get();
+                })
+        .when(notionHandler)
+        .executeWithRetry(any(java.util.function.Supplier.class));
+
+    // Mock getDatabaseId for Season
+    when(notionHandler.getDatabaseId(any())).thenReturn("dummy-season-database-id");
+
+    // Mock notionClient.updatePage to return a mock Page object
+    when(notionClient.updatePage(any(UpdatePageRequest.class)))
+        .thenReturn(Mockito.mock(Page.class));
+  }
 
   @Test
   void testSyncToNotion() {
