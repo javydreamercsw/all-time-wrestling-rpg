@@ -98,7 +98,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // When - Sync show types from Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncShowTypes("integration-test-show-types");
+        notionSyncService.syncShowTypes("integration-test-show-types", SyncDirection.INBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");

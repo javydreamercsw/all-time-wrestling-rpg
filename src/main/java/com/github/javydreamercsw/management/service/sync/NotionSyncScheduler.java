@@ -127,7 +127,7 @@ public class NotionSyncScheduler {
           case "teams" -> notionSyncService.syncTeams(operationId, direction);
           case "templates" -> notionSyncService.syncShowTemplates(operationId, direction);
           case "seasons" -> notionSyncService.syncSeasons(operationId, direction);
-          case "show-types" -> notionSyncService.syncShowTypes(operationId);
+          case "show-types" -> notionSyncService.syncShowTypes(operationId, direction);
           case "injuries" -> notionSyncService.syncInjuryTypes(operationId);
           case "npcs" -> notionSyncService.syncNpcs(operationId, direction);
           case "titles" -> notionSyncService.syncTitles(operationId, direction);

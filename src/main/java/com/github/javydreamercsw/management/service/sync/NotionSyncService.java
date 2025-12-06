@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.service.sync.entity.notion.ShowNotio
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTemplateNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTemplateSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TeamNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TeamSyncService;
@@ -93,6 +94,7 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private FactionRivalryNotionSyncService factionRivalryNotionSyncService;
   @Autowired private SegmentNotionSyncService segmentNotionSyncService;
   @Autowired private ShowTemplateNotionSyncService showTemplateNotionSyncService;
+  @Autowired private ShowTypeNotionSyncService showTypeNotionSyncService;
 
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
@@ -249,10 +251,13 @@ public class NotionSyncService extends BaseSyncService {
    * Synchronizes show types from Notion or creates default show types.
    *
    * @param operationId Operation ID for progress tracking
+   * @param direction The direction of the synchronization (inbound or outbound)
    * @return SyncResult indicating success or failure with details
    */
-  public SyncResult syncShowTypes(@NonNull String operationId) {
-    return showTypeSyncService.syncShowTypes(operationId);
+  public SyncResult syncShowTypes(@NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? showTypeSyncService.syncShowTypes(operationId)
+        : showTypeNotionSyncService.syncToNotion(operationId);
   }
 
   /**
