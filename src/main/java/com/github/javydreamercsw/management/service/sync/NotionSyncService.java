@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.sync.entity.notion.RivalryNo
 import com.github.javydreamercsw.management.service.sync.entity.notion.RivalrySyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowSyncService;
@@ -89,6 +90,7 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private FactionNotionSyncService factionNotionSyncService;
   @Autowired private TeamNotionSyncService teamNotionSyncService;
   @Autowired private FactionRivalryNotionSyncService factionRivalryNotionSyncService;
+  @Autowired private SegmentNotionSyncService segmentNotionSyncService;
 
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
@@ -215,16 +217,6 @@ public class NotionSyncService extends BaseSyncService {
   }
 
   /**
-   * Synchronizes segments from Notion Segments database directly to the database.
-   *
-   * @param operationId Optional operation ID for progress tracking
-   * @return SyncResult containing the outcome of the sync operation
-   */
-  public SyncResult syncSegments(@NonNull String operationId) {
-    return segmentSyncService.syncSegments(operationId + "-segments");
-  }
-
-  /**
    * Synchronizes show templates from Notion to the local JSON file and database.
    *
    * @param operationId Optional operation ID for progress tracking
@@ -323,5 +315,18 @@ public class NotionSyncService extends BaseSyncService {
     return direction.equals(SyncDirection.INBOUND)
         ? factionRivalrySyncService.syncFactionRivalries(operationId)
         : factionRivalryNotionSyncService.syncToNotion(operationId);
+  }
+
+  /**
+   * Synchronizes segment data between the application and Notion based on the specified direction.
+   *
+   * @param operationId Optional operation ID for progress tracking
+   * @param direction The direction of the synchronization (inbound or outbound)
+   * @return SyncResult indicating success or failure with details
+   */
+  public SyncResult syncSegments(@NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? segmentSyncService.syncSegments(operationId + "-segments")
+        : segmentNotionSyncService.syncToNotion(operationId);
   }
 }

@@ -32,6 +32,9 @@ import org.springframework.data.repository.query.Param;
 public interface SegmentRepository
     extends JpaRepository<Segment, Long>, JpaSpecificationExecutor<Segment> {
 
+  @Query("SELECT s FROM Segment s JOIN FETCH s.show")
+  List<Segment> findAllWithShow();
+
   // If you don't need a total row count, Slice is better than Page.
   Page<Segment> findAllBy(Pageable pageable);
 

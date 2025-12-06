@@ -125,7 +125,6 @@ public class NotionSyncScheduler {
           case "wrestlers" -> notionSyncService.syncWrestlers(operationId, direction);
           case "factions" -> notionSyncService.syncFactions(operationId, direction);
           case "teams" -> notionSyncService.syncTeams(operationId, direction);
-          case "segments" -> notionSyncService.syncSegments(operationId);
           case "templates" -> notionSyncService.syncShowTemplates(operationId);
           case "seasons" -> notionSyncService.syncSeasons(operationId, direction);
           case "show-types" -> notionSyncService.syncShowTypes(operationId);
@@ -135,6 +134,7 @@ public class NotionSyncScheduler {
           case "rivalries" -> notionSyncService.syncRivalries(operationId, direction);
           case "faction-rivalries" ->
               notionSyncService.syncFactionRivalries(operationId, direction);
+          case "segments" -> notionSyncService.syncSegments(operationId, direction);
           default -> {
             log.warn("Unknown entity type for sync: {}", entityName);
             yield NotionSyncService.SyncResult.failure(entityName, "Unknown entity type");

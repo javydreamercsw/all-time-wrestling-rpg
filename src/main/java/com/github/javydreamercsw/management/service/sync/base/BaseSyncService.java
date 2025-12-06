@@ -541,6 +541,10 @@ public abstract class BaseSyncService {
       return new SyncResult(false, entityType, 0, 0, 0, errorMessage);
     }
 
+    public static SyncResult unsupported(@NonNull String entityType, String errorMessage) {
+      return new SyncResult(false, entityType, 0, 0, 0, errorMessage);
+    }
+
     public String getSummary() {
       if (success) {
         return String.format(

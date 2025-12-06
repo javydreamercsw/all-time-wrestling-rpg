@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import java.util.Arrays;
 import java.util.List;
@@ -95,7 +96,8 @@ class NotionPropertyTest {
 
     // When - Call getAllSegmentIds and syncSegments
     List<String> retrievedSegmentIds = notionSyncService.getAllSegmentIds();
-    BaseSyncService.SyncResult result = notionSyncService.syncSegments("test-operation-123");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncSegments("test-operation-123", SyncDirection.OUTBOUND);
 
     // Then - Verify interactions and results
     assertThat(retrievedSegmentIds).isEqualTo(mockSegmentIds);

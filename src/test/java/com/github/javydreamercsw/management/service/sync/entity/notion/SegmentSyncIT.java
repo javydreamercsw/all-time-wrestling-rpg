@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -120,7 +121,8 @@ class SegmentSyncIT extends ManagementIntegrationTest {
     when(notionHandler.loadSegmentById(segmentId)).thenReturn(Optional.of(segmentPage));
 
     // When
-    BaseSyncService.SyncResult result = notionSyncService.syncSegments("test-operation");
+    BaseSyncService.SyncResult result =
+        notionSyncService.syncSegments("test-operation", SyncDirection.OUTBOUND);
 
     // Then
     assertThat(result).isNotNull();
