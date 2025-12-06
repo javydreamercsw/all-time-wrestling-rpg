@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.TitleReignPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -27,6 +26,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
@@ -44,16 +44,17 @@ public class TitleReignSyncService extends BaseSyncService {
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public TitleReignSyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      ObjectMapper objectMapper,
+      NotionSyncProperties syncProperties,
+      SyncServiceDependencies syncServiceDependencies) {
+    super(objectMapper, syncProperties, syncServiceDependencies);
   }
 
   public SyncResult syncTitleReigns(@NonNull String operationId) {
-    if (syncSessionManager.isAlreadySyncedInSession("titlereigns")) {
+    if (syncServiceDependencies.syncSessionManager.isAlreadySyncedInSession("titlereigns")) {
       return SyncResult.success("TitleReigns", 0, 0, 0);
     }
 
@@ -63,7 +64,7 @@ public class TitleReignSyncService extends BaseSyncService {
     try {
       SyncResult result = performTitleReignsSync(operationId, startTime);
       if (result.isSuccess()) {
-        syncSessionManager.markAsSyncedInSession("titlereigns");
+        syncServiceDependencies.syncSessionManager.markAsSyncedInSession("titlereigns");
       }
       return result;
     } catch (Exception e) {
@@ -86,7 +87,7 @@ public class TitleReignSyncService extends BaseSyncService {
 
     try {
       List<TitleReignPage> titleReignPages =
-          executeWithRateLimit(notionHandler::loadAllTitleReigns);
+          executeWithRateLimit(syncServiceDependencies.notionHandler::loadAllTitleReigns);
       log.info("✅ Retrieved {} title reigns from Notion", titleReignPages.size());
       // Log each retrieved page
       titleReignPages.forEach(page -> log.info("Retrieved Title Reign Page: {}", page));
@@ -167,13 +168,13 @@ public class TitleReignSyncService extends BaseSyncService {
           "🎉 Successfully synchronized {} title reigns in {}ms total",
           titleReignPages.size(),
           totalTime);
-      healthMonitor.recordSuccess("TitleReigns", totalTime, titleReignPages.size());
+      syncServiceDependencies.healthMonitor.recordSuccess("TitleReigns", totalTime, titleReignPages.size());
       return SyncResult.success("TitleReigns", titleReignPages.size(), 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize title reigns from Notion after {}ms", totalTime, e);
-      healthMonitor.recordFailure("TitleReigns", e.getMessage());
+      syncServiceDependencies.healthMonitor.recordFailure("TitleReigns", e.getMessage());
       return SyncResult.failure("TitleReigns", e.getMessage());
     }
   }

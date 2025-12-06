@@ -17,13 +17,12 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
 import java.util.Optional;
@@ -39,31 +38,27 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ShowTemplateSyncService extends BaseSyncService {
 
-      @Autowired private ShowTemplateService showTemplateService;
+  @Autowired private ShowTemplateService showTemplateService;
 
-      @Autowired
-
-      private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository
-
-          showTypeRepository;
-
-      @Autowired private NotionPageDataExtractor notionPageDataExtractor;
-
-      @Autowired private SyncSessionManager syncSessionManager;
+  @Autowired
+  private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository
+      showTypeRepository;
 
   @Autowired
   public ShowTemplateSyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      ObjectMapper objectMapper,
+      NotionSyncProperties syncProperties,
+      SyncServiceDependencies syncServiceDependencies) {
+    super(objectMapper, syncProperties, syncServiceDependencies);
   }
 
   public ShowTemplateSyncService(
       ObjectMapper objectMapper,
       NotionSyncProperties syncProperties,
-      NotionHandler notionHandler,
+      SyncServiceDependencies syncServiceDependencies,
       ShowTemplateService showTemplateService,
       com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository showTypeRepository) {
-    super(objectMapper, syncProperties, notionHandler);
+    super(objectMapper, syncProperties, syncServiceDependencies);
     this.showTemplateService = showTemplateService;
     this.showTypeRepository = showTypeRepository;
   }
@@ -76,7 +71,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
    */
   public SyncResult syncShowTemplates(@NonNull String operationId) {
     // Check if already synced in current session
-    if (syncSessionManager.isAlreadySyncedInSession("templates")) {
+    if (syncServiceDependencies.syncSessionManager.isAlreadySyncedInSession("templates")) {
       log.info("⏭️ Show templates already synced in current session, skipping");
       return SyncResult.success("Show Templates", 0, 0, 0);
     }
@@ -87,7 +82,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
     try {
       SyncResult result = performShowTemplatesSync(operationId, startTime);
       if (result.isSuccess()) {
-        syncSessionManager.markAsSyncedInSession("Show Templates");
+        syncServiceDependencies.syncSessionManager.markAsSyncedInSession("Show Templates");
       }
       return result;
     } catch (Exception e) {
@@ -105,8 +100,9 @@ public class ShowTemplateSyncService extends BaseSyncService {
       }
 
       // Initialize progress tracking (3 steps: retrieve, convert, save to database)
-      progressTracker.startOperation(operationId, "Sync Show Templates", 3);
-      progressTracker.updateProgress(operationId, 1, "Retrieving show templates from Notion...");
+      syncServiceDependencies.progressTracker.startOperation(operationId, "Sync Show Templates", 3);
+      syncServiceDependencies.progressTracker.updateProgress(
+          operationId, 1, "Retrieving show templates from Notion...");
 
       // Retrieve show templates from Notion
       log.info("📥 Retrieving show templates from Notion...");
@@ -119,8 +115,9 @@ public class ShowTemplateSyncService extends BaseSyncService {
             "Show Templates", "NotionHandler is not available for sync operations");
       }
 
-      rateLimitService.acquirePermit();
-      List<ShowTemplatePage> templatePages = notionHandler.loadAllShowTemplates();
+      syncServiceDependencies.rateLimitService.acquirePermit();
+      List<ShowTemplatePage> templatePages =
+          syncServiceDependencies.notionHandler.loadAllShowTemplates();
       log.info(
           "✅ Retrieved {} show templates in {}ms",
           templatePages.size(),
@@ -128,12 +125,13 @@ public class ShowTemplateSyncService extends BaseSyncService {
 
       if (templatePages.isEmpty()) {
         log.info("No show templates found in Notion database");
-        progressTracker.completeOperation(operationId, true, "No show templates to sync", 0);
+        syncServiceDependencies.progressTracker.completeOperation(
+            operationId, true, "No show templates to sync", 0);
         return SyncResult.success("Show Templates", 0, 0, 0);
       }
 
       // Convert to DTOs
-      progressTracker.updateProgress(
+      syncServiceDependencies.progressTracker.updateProgress(
           operationId,
           2,
           String.format("Converting %d show templates to DTOs...", templatePages.size()));
@@ -147,7 +145,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
           System.currentTimeMillis() - convertStart);
 
       // Save show templates to database
-      progressTracker.updateProgress(
+      syncServiceDependencies.progressTracker.updateProgress(
           operationId,
           3,
           String.format("Saving %d show templates to database...", templateDTOs.size()));
@@ -162,14 +160,14 @@ public class ShowTemplateSyncService extends BaseSyncService {
           "🎉 Successfully synchronized {} show templates in {}ms total", savedCount, totalTime);
 
       // Complete progress tracking
-      progressTracker.completeOperation(
+      syncServiceDependencies.progressTracker.completeOperation(
           operationId,
           true,
           String.format("Successfully synced %d show templates", savedCount),
           savedCount);
 
       // Record success in health monitor
-      healthMonitor.recordSuccess("Show Templates", totalTime, savedCount);
+      syncServiceDependencies.healthMonitor.recordSuccess("Show Templates", totalTime, savedCount);
 
       return SyncResult.success("Show Templates", savedCount, 0, 0);
 
@@ -177,10 +175,11 @@ public class ShowTemplateSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize show templates from Notion after {}ms", totalTime, e);
 
-      progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
+      syncServiceDependencies.progressTracker.failOperation(
+          operationId, "Sync failed: " + e.getMessage());
 
       // Record failure in health monitor
-      healthMonitor.recordFailure("Show Templates", e.getMessage());
+      syncServiceDependencies.healthMonitor.recordFailure("Show Templates", e.getMessage());
 
       return SyncResult.failure("Show Templates", e.getMessage());
     }
@@ -200,116 +199,17 @@ public class ShowTemplateSyncService extends BaseSyncService {
   /** Converts a single ShowTemplatePage to ShowTemplateDTO. */
   private ShowTemplateDTO convertShowTemplatePageToDTO(@NonNull ShowTemplatePage templatePage) {
     ShowTemplateDTO dto = new ShowTemplateDTO();
-    dto.setName(notionPageDataExtractor.extractNameFromNotionPage(templatePage));
-    dto.setDescription(notionPageDataExtractor.extractDescriptionFromNotionPage(templatePage));
+    dto.setName(
+        syncServiceDependencies.notionPageDataExtractor.extractNameFromNotionPage(templatePage));
+    dto.setDescription(
+        syncServiceDependencies.notionPageDataExtractor.extractDescriptionFromNotionPage(
+            templatePage));
 
     // Extract show type from Notion properties
     String showType = extractShowTypeFromNotionPage(templatePage);
     dto.setShowType(showType);
     dto.setExternalId(templatePage.getId());
     return dto;
-  }
-
-  /** Extracts show type from any NotionPage type using raw properties. */
-  private String extractShowTypeFromNotionPage(@NonNull NotionPage page) {
-    if (page.getRawProperties() != null) {
-      Object showType = page.getRawProperties().get("Show Type");
-      if (showType == null) {
-        showType = page.getRawProperties().get("ShowType");
-      }
-      if (showType == null) {
-        showType = page.getRawProperties().get("Type");
-      }
-
-      if (showType != null) {
-        // Handle different property types
-        String showTypeStr = extractShowTypeValue(showType);
-        if (showTypeStr != null && !showTypeStr.trim().isEmpty() && !"N/A".equals(showTypeStr)) {
-          return showTypeStr.trim();
-        }
-      }
-
-      log.debug("Show type not found or empty for page: {}", page.getId());
-      return null;
-    }
-    return null;
-  }
-
-  /**
-   * Extracts show type value from different Notion property types. Handles text, select, and
-   * relation properties.
-   */
-  private String extractShowTypeValue(Object property) {
-    if (property == null) {
-      return null;
-    }
-
-    try {
-      // Handle PageProperty objects (from Notion API)
-      if (property instanceof notion.api.v1.model.pages.PageProperty pageProperty) {
-
-        // Handle relation properties
-        if (pageProperty.getRelation() != null && !pageProperty.getRelation().isEmpty()) {
-          // For relation properties, we need to resolve the referenced page
-          // The relation contains PageReference objects with IDs
-          var relation = pageProperty.getRelation().get(0); // Get first relation
-          String relationId = relation.getId();
-
-          // Try to resolve the relation by fetching the referenced page title
-          // For now, we'll use a mapping based on known show type page IDs
-          return resolveShowTypeFromRelationId(relationId);
-        }
-
-        // Handle select properties
-        if (pageProperty.getSelect() != null) {
-          return pageProperty.getSelect().getName();
-        }
-
-        // Handle title properties
-        if (pageProperty.getTitle() != null && !pageProperty.getTitle().isEmpty()) {
-          return pageProperty.getTitle().get(0).getPlainText();
-        }
-
-        // Handle rich text properties
-        if (pageProperty.getRichText() != null && !pageProperty.getRichText().isEmpty()) {
-          return pageProperty.getRichText().get(0).getPlainText();
-        }
-      }
-
-      // Fallback: try to extract as string
-      String fallbackStr = property.toString().trim();
-      if (!fallbackStr.isEmpty() && !"N/A".equals(fallbackStr)) {
-        // Check if it looks like a relation string
-        if (fallbackStr.contains("PageReference") || fallbackStr.contains("relation=")) {
-          log.warn("Show type appears to be a relation but could not be resolved: {}", fallbackStr);
-          return null;
-        }
-        return fallbackStr;
-      }
-
-    } catch (Exception e) {
-      log.error("Failed to extract show type from property: {}", property, e);
-    }
-
-    return null;
-  }
-
-  /**
-   * Resolves show type name from relation ID. This is a temporary solution until we can implement
-   * proper relation resolution.
-   */
-  private String resolveShowTypeFromRelationId(@NonNull String relationId) {
-    // For now, we'll map known relation IDs to show types
-    // In a full implementation, you would fetch the referenced page from Notion
-
-    // You can add mappings here based on your Notion show type page IDs
-    // Example: if ("1fe90edc-c30f-800b-bbd0-d6e0cba01c9b".equals(relationId)) return "Weekly";
-
-    log.warn(
-        "Show type relation ID '{}' could not be resolved to a show type name. Please check your"
-            + " Notion database configuration.",
-        relationId);
-    return null;
   }
 
   /**

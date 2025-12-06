@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
@@ -27,6 +26,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.nio.file.Files;
@@ -51,13 +51,12 @@ public class WrestlerSyncService extends BaseSyncService {
   @Autowired private WrestlerService wrestlerService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
-  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
-  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public WrestlerSyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      ObjectMapper objectMapper,
+      SyncServiceDependencies syncServiceDependencies) {
+    super(objectMapper, syncServiceDependencies);
   }
 
   /**
@@ -68,7 +67,7 @@ public class WrestlerSyncService extends BaseSyncService {
    */
   public SyncResult syncWrestlers(@NonNull String operationId) {
     // Check if already synced in current session
-    if (syncSessionManager.isAlreadySyncedInSession("wrestlers")) {
+    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("wrestlers")) {
       log.info("⏭️ Wrestlers already synced in current session, skipping");
       return SyncResult.success("wrestlers", 0, 0, 0);
     }
@@ -79,7 +78,7 @@ public class WrestlerSyncService extends BaseSyncService {
     try {
       SyncResult result = performWrestlersSync(operationId, startTime);
       if (result.isSuccess()) {
-        syncSessionManager.markAsSyncedInSession("wrestlers");
+        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("wrestlers");
       }
       return result;
     } catch (Exception e) {
@@ -91,14 +90,15 @@ public class WrestlerSyncService extends BaseSyncService {
   private SyncResult performWrestlersSync(@NonNull String operationId, long startTime) {
     try {
       // Check if entity is enabled
-      if (!syncProperties.isEntityEnabled("wrestlers")) {
+      if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("wrestlers")) {
         log.info("Wrestlers sync is disabled in configuration");
         return SyncResult.success("Wrestlers", 0, 0, 0);
       }
 
       // Initialize progress tracking
-      progressTracker.startOperation(operationId, "Sync Wrestlers", 3);
-      progressTracker.updateProgress(operationId, 1, "Retrieving wrestlers from Notion...");
+      syncServiceDependencies.getProgressTracker().startOperation(operationId, "Sync Wrestlers", 3);
+      syncServiceDependencies.getProgressTracker().updateProgress(
+          operationId, 1, "Retrieving wrestlers from Notion...");
 
       // Retrieve wrestlers from Notion
       log.info("📥 Retrieving wrestlers from Notion...");
@@ -110,14 +110,15 @@ public class WrestlerSyncService extends BaseSyncService {
             "Wrestlers", "NotionHandler is not available for sync operations");
       }
 
-      List<WrestlerPage> wrestlerPages = executeWithRateLimit(notionHandler::loadAllWrestlers);
+      List<WrestlerPage> wrestlerPages =
+          super.executeWithRateLimit(syncServiceDependencies.getNotionHandler()::loadAllWrestlers);
       log.info(
           "✅ Retrieved {} wrestlers in {}ms",
           wrestlerPages.size(),
           System.currentTimeMillis() - retrieveStart);
 
       // Update progress with retrieval results
-      progressTracker.updateProgress(
+      syncServiceDependencies.getProgressTracker().updateProgress(
           operationId,
           1,
           String.format(
@@ -125,7 +126,7 @@ public class WrestlerSyncService extends BaseSyncService {
               wrestlerPages.size(), System.currentTimeMillis() - retrieveStart));
 
       // Convert to DTOs and merge with existing data
-      progressTracker.updateProgress(
+      syncServiceDependencies.getProgressTracker().updateProgress(
           operationId,
           2,
           String.format(
@@ -140,15 +141,11 @@ public class WrestlerSyncService extends BaseSyncService {
           System.currentTimeMillis() - convertStart);
 
       // Update progress with conversion results
-      progressTracker.updateProgress(
-          operationId,
-          2,
-          String.format(
-              "✅ Converted and merged %d wrestlers in %dms",
-              wrestlerDTOs.size(), System.currentTimeMillis() - convertStart));
+      syncServiceDependencies.getProgressTracker().updateProgress(
+          operationId, 3, String.format("Saving %d wrestlers to database...", wrestlerDTOs.size()));
 
       // Save wrestlers to database
-      progressTracker.updateProgress(
+      syncServiceDependencies.getProgressTracker().updateProgress(
           operationId, 3, String.format("Saving %d wrestlers to database...", wrestlerDTOs.size()));
       log.info("🗄️ Saving wrestlers to database...");
       long dbStart = System.currentTimeMillis();
@@ -165,14 +162,15 @@ public class WrestlerSyncService extends BaseSyncService {
           totalTime);
 
       // Complete progress tracking
-      progressTracker.completeOperation(
+      syncServiceDependencies.getProgressTracker().completeOperation(
           operationId,
           true,
           String.format("Successfully synced %d wrestlers", wrestlerDTOs.size()),
           wrestlerDTOs.size());
 
       // Record success in health monitor
-      healthMonitor.recordSuccess("Wrestlers", totalTime, wrestlerDTOs.size());
+      syncServiceDependencies.getHealthMonitor().recordSuccess(
+          "Wrestlers", totalTime, wrestlerDTOs.size());
 
       return SyncResult.success("Wrestlers", wrestlerDTOs.size(), 0, 0);
 
@@ -180,10 +178,11 @@ public class WrestlerSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize wrestlers from Notion after {}ms", totalTime, e);
 
-      progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
+      syncServiceDependencies.getProgressTracker().failOperation(
+          operationId, "Sync failed: " + e.getMessage());
 
       // Record failure in health monitor
-      healthMonitor.recordFailure("Wrestlers", e.getMessage());
+      syncServiceDependencies.getHealthMonitor().recordFailure("Wrestlers", e.getMessage());
 
       return SyncResult.failure("Wrestlers", e.getMessage());
     }
@@ -192,7 +191,7 @@ public class WrestlerSyncService extends BaseSyncService {
   /** Converts WrestlerPage objects to WrestlerDTO objects and merges with existing JSON data. */
   private List<WrestlerDTO> convertAndMergeWrestlerData(@NonNull List<WrestlerPage> wrestlerPages) {
     Map<String, WrestlerDTO> existingWrestlers = new HashMap<>();
-    if (syncProperties.isLoadFromJson()) {
+    if (syncServiceDependencies.getNotionSyncProperties().isLoadFromJson()) {
       existingWrestlers = loadExistingWrestlersFromJson();
     }
 
@@ -243,7 +242,8 @@ public class WrestlerSyncService extends BaseSyncService {
   /** Converts a single WrestlerPage to WrestlerDTO. */
   private WrestlerDTO convertWrestlerPageToDTO(@NonNull WrestlerPage wrestlerPage) {
     WrestlerDTO dto = new WrestlerDTO();
-    dto.setName(notionPageDataExtractor.extractNameFromNotionPage(wrestlerPage));
+    dto.setName(
+        syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(wrestlerPage));
 
     // Extract and truncate description to fit database constraint (1000 chars)
     String description = extractDescriptionFromPageBody(wrestlerPage);
@@ -575,7 +575,7 @@ public class WrestlerSyncService extends BaseSyncService {
 
       // Update progress every 5 wrestlers
       if (processedCount % 5 == 0) {
-        progressTracker.updateProgress(
+        syncServiceDependencies.getProgressTracker().updateProgress(
             operationId,
             4,
             String.format(
@@ -714,7 +714,7 @@ public class WrestlerSyncService extends BaseSyncService {
         "Database persistence completed: {} saved/updated, {} skipped", savedCount, skippedCount);
 
     // Final progress update
-    progressTracker.updateProgress(
+    syncServiceDependencies.getProgressTracker().updateProgress(
         operationId,
         4,
         String.format(

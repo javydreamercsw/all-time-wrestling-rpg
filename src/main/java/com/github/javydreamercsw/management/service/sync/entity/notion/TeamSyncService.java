@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -28,6 +27,7 @@ import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.TeamDTO;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -47,12 +47,12 @@ public class TeamSyncService extends BaseSyncService {
   @Autowired private TeamRepository teamRepository;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private FactionRepository factionRepository;
-  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
 
   @Autowired
   public TeamSyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      ObjectMapper objectMapper,
+      SyncServiceDependencies syncServiceDependencies) {
+    super(objectMapper, syncServiceDependencies);
   }
 
   /**
@@ -67,34 +67,38 @@ public class TeamSyncService extends BaseSyncService {
     try {
       // Start progress tracking
       SyncProgressTracker.SyncProgress progress =
-          progressTracker.startOperation("Teams Sync", "Synchronizing teams from Notion", 0);
+          syncServiceDependencies.getProgressTracker().startOperation(
+              "Teams Sync", "Synchronizing teams from Notion", 0);
       operationId = progress.getOperationId();
 
       // Load teams from Notion
-      progressTracker.addLogMessage(
+      syncServiceDependencies.getProgressTracker().addLogMessage(
           operationId, "📥 Loading teams from Notion database...", "INFO");
 
       if (!isNotionHandlerAvailable()) {
         log.warn("NotionHandler not available. Cannot sync teams from Notion.");
-        progressTracker.failOperation(
+        syncServiceDependencies.getProgressTracker().failOperation(
             operationId, "NotionHandler is not available for sync operations");
         return SyncResult.failure("Teams", "NotionHandler is not available for sync operations");
       }
 
-      List<TeamPage> teamPages = executeWithRateLimit(notionHandler::loadAllTeams);
+      List<TeamPage> teamPages =
+          executeWithRateLimit(syncServiceDependencies.getNotionHandler()::loadAllTeams);
 
       if (teamPages.isEmpty()) {
-        progressTracker.addLogMessage(operationId, "⚠️ No teams found in Notion database", "WARN");
-        progressTracker.completeOperation(operationId, true, "No teams to sync", 0);
+        syncServiceDependencies.getProgressTracker().addLogMessage(
+            operationId, "⚠️ No teams found in Notion database", "WARN");
+        syncServiceDependencies.getProgressTracker().completeOperation(
+            operationId, true, "No teams to sync", 0);
 
         // Record success in health monitor
         long totalTime = System.currentTimeMillis() - startTime;
-        healthMonitor.recordSuccess("Teams", totalTime, 0);
+        syncServiceDependencies.getHealthMonitor().recordSuccess("Teams", totalTime, 0);
 
         return SyncResult.success("Teams", 0, 0, 0);
       }
 
-      progressTracker.addLogMessage(
+      syncServiceDependencies.getProgressTracker().addLogMessage(
           operationId, String.format("📋 Found %d teams in Notion", teamPages.size()), "INFO");
 
       // Convert to DTOs
@@ -107,13 +111,14 @@ public class TeamSyncService extends BaseSyncService {
               2, // Progress step
               "Converted %d/%d teams");
 
-      progressTracker.addLogMessage(
+      syncServiceDependencies.getProgressTracker().addLogMessage(
           operationId,
           String.format("✅ Successfully converted %d teams to DTOs", teamDTOs.size()),
           "INFO");
 
       // Save teams to database
-      progressTracker.addLogMessage(operationId, "💾 Saving teams to database...", "INFO");
+      syncServiceDependencies.getProgressTracker().addLogMessage(
+          operationId, "💾 Saving teams to database...", "INFO");
       int savedCount =
           (int)
               processWithControlledParallelism(
@@ -128,12 +133,12 @@ public class TeamSyncService extends BaseSyncService {
                   .count();
 
       // Complete progress tracking
-      progressTracker.completeOperation(
+      syncServiceDependencies.getProgressTracker().completeOperation(
           operationId, true, String.format("Successfully synced %d teams", savedCount), savedCount);
 
       // Record success in health monitor
       long totalTime = System.currentTimeMillis() - startTime;
-      healthMonitor.recordSuccess("Teams", totalTime, savedCount);
+      syncServiceDependencies.getHealthMonitor().recordSuccess("Teams", totalTime, savedCount);
 
       return SyncResult.success("Teams", savedCount, 0, 0);
 
@@ -141,11 +146,13 @@ public class TeamSyncService extends BaseSyncService {
       log.error("❌ Teams sync failed", e);
 
       // Fail progress tracking
-      progressTracker.addLogMessage(operationId, "❌ Team sync failed: " + e.getMessage(), "ERROR");
-      progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
+      syncServiceDependencies.getProgressTracker().addLogMessage(
+          operationId, "❌ Team sync failed: " + e.getMessage(), "ERROR");
+      syncServiceDependencies.getProgressTracker().failOperation(
+          operationId, "Sync failed: " + e.getMessage());
 
       // Record failure in health monitor
-      healthMonitor.recordFailure("Teams", e.getMessage());
+      syncServiceDependencies.getHealthMonitor().recordFailure("Teams", e.getMessage());
 
       return SyncResult.failure("Teams", e.getMessage());
     }
@@ -157,9 +164,12 @@ public class TeamSyncService extends BaseSyncService {
       TeamDTO dto = new TeamDTO();
 
       // Extract basic properties using existing methods
-      dto.setName(notionPageDataExtractor.extractNameFromNotionPage(teamPage));
+      dto.setName(
+          syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(teamPage));
       dto.setExternalId(teamPage.getId());
-      dto.setDescription(notionPageDataExtractor.extractDescriptionFromNotionPage(teamPage));
+      dto.setDescription(
+          syncServiceDependencies.getNotionPageDataExtractor().extractDescriptionFromNotionPage(
+              teamPage));
 
       // Log available properties for debugging
       log.debug(
@@ -224,14 +234,16 @@ public class TeamSyncService extends BaseSyncService {
           wrestler2Name);
 
       // Extract faction name if available
-      String factionName = notionPageDataExtractor.extractFactionFromNotionPage(teamPage);
+      String factionName =
+          syncServiceDependencies.getNotionPageDataExtractor().extractFactionFromNotionPage(teamPage);
       if (factionName != null && !factionName.trim().isEmpty()) {
         dto.setFactionName(factionName);
       }
 
       // Extract status
       String statusStr =
-          notionPageDataExtractor.extractPropertyAsString(teamPage.getRawProperties(), "Status");
+          syncServiceDependencies.getNotionPageDataExtractor().extractPropertyAsString(
+              teamPage.getRawProperties(), "Status");
       if (statusStr != null && !statusStr.trim().isEmpty()) {
         try {
           dto.setStatus(TeamStatus.valueOf(statusStr.toUpperCase()));
@@ -276,12 +288,8 @@ public class TeamSyncService extends BaseSyncService {
           propertyName,
           propertyStr);
 
-      // Try to resolve the relation using the NotionHandler if available
-      String resolvedName = resolveWrestlerRelation(teamPage, propertyName);
-      if (resolvedName != null) {
-        log.debug("Successfully resolved '{}' to '{}'", propertyName, resolvedName);
-        return resolvedName;
-      }
+      // If we can't resolve it directly, return null to indicate it's unresolved for now
+      return null;
 
       // If we can't resolve it, return the count so we can detect this case later
       return propertyStr;
@@ -318,36 +326,6 @@ public class TeamSyncService extends BaseSyncService {
     }
 
     return null;
-  }
-
-  /**
-   * Attempts to resolve wrestler relation using alternative methods. This method tries to work
-   * around Notion API limitations for unresolved relations.
-   */
-  private String resolveWrestlerRelation(@NonNull TeamPage teamPage, @NonNull String propertyName) {
-    if (!isNotionHandlerAvailable()) {
-      return null;
-    }
-
-    try {
-      // Try to get more detailed information about the relation
-      // This is a workaround for when Notion returns "X items" instead of actual names
-
-      // For now, we'll implement a simple fallback strategy
-      // In a production environment, you might want to make additional API calls
-      // to resolve the relation IDs to actual wrestler names
-
-      log.debug(
-          "Attempting to resolve relation '{}' for team '{}'", propertyName, teamPage.getId());
-
-      // Since we can't easily resolve the relations without additional API calls,
-      // we'll return null and let the higher-level logic handle it
-      return null;
-
-    } catch (Exception e) {
-      log.warn("Failed to resolve wrestler relation '{}': {}", propertyName, e.getMessage());
-      return null;
-    }
   }
 
   /** Saves or updates a team in the database. */

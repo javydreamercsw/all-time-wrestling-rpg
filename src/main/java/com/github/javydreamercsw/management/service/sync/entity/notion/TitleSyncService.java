@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.TitlePage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -27,6 +26,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.List;
@@ -45,18 +45,18 @@ public class TitleSyncService extends BaseSyncService {
   @Autowired protected WrestlerRepository wrestlerRepository;
   @Autowired protected TitleReignRepository titleReignRepository;
   @Autowired private TitleNotionSyncService titleNotionSyncService;
-  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
-  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public TitleSyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      ObjectMapper objectMapper,
+      NotionSyncProperties syncProperties,
+      SyncServiceDependencies syncServiceDependencies) {
+    super(objectMapper, syncProperties, syncServiceDependencies);
   }
 
   @Transactional
   public SyncResult syncTitles(@NonNull String operationId) {
-    if (syncSessionManager.isAlreadySyncedInSession("titles")) {
+    if (syncServiceDependencies.syncSessionManager.isAlreadySyncedInSession("titles")) {
       return SyncResult.success("Titles", 0, 0, 0);
     }
 
@@ -66,7 +66,7 @@ public class TitleSyncService extends BaseSyncService {
     try {
       SyncResult result = performTitlesSync(operationId, startTime);
       if (result.isSuccess()) {
-        syncSessionManager.markAsSyncedInSession("titles");
+        syncServiceDependencies.syncSessionManager.markAsSyncedInSession("titles");
       }
       return result;
     } catch (Exception e) {
@@ -87,11 +87,12 @@ public class TitleSyncService extends BaseSyncService {
     }
 
     try {
-      List<TitlePage> titlePages = executeWithRateLimit(notionHandler::loadAllTitles);
+      List<TitlePage> titlePages = executeWithRateLimit(syncServiceDependencies.notionHandler::loadAllTitles);
       log.info("✅ Retrieved {} titles from Notion", titlePages.size());
 
       for (TitlePage titlePage : titlePages) {
-        String titleName = notionPageDataExtractor.extractNameFromNotionPage(titlePage);
+        String titleName =
+            syncServiceDependencies.notionPageDataExtractor.extractNameFromNotionPage(titlePage);
         Title title = null;
 
         // 1. Find by externalId
@@ -149,13 +150,13 @@ public class TitleSyncService extends BaseSyncService {
 
       long totalTime = System.currentTimeMillis() - startTime;
       log.info("🎉 Successfully synchronized titles in {}ms total", totalTime);
-      healthMonitor.recordSuccess("Titles", totalTime, titlePages.size());
+      syncServiceDependencies.healthMonitor.recordSuccess("Titles", totalTime, titlePages.size());
       return SyncResult.success("Titles", titlePages.size(), 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize titles from Notion after {}ms", totalTime, e);
-      healthMonitor.recordFailure("Titles", e.getMessage());
+      syncServiceDependencies.healthMonitor.recordFailure("Titles", e.getMessage());
       return SyncResult.failure("Titles", e.getMessage());
     }
   }

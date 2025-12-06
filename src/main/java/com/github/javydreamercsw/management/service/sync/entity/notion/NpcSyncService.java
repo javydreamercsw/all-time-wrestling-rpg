@@ -17,11 +17,11 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NpcPage;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
@@ -37,20 +37,20 @@ import org.springframework.stereotype.Service;
 public class NpcSyncService extends BaseSyncService {
 
   @Autowired protected NpcService npcService;
-  @Autowired protected NotionPageDataExtractor notionPageDataExtractor;
-  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public NpcSyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      ObjectMapper objectMapper,
+      NotionSyncProperties syncProperties,
+      SyncServiceDependencies syncServiceDependencies) {
+    super(objectMapper, syncProperties, syncServiceDependencies);
   }
 
   public SyncResult syncNpcs(@NonNull String operationId, @NonNull SyncDirection direction) {
     if (direction == SyncDirection.OUTBOUND) {
       return SyncResult.success("NPCs", 0, 0, 0);
     }
-    if (syncSessionManager.isAlreadySyncedInSession("npcs")) {
+    if (syncServiceDependencies.syncSessionManager.isAlreadySyncedInSession("npcs")) {
       log.info("⏭️ NPCs already synced in current session, skipping");
       return SyncResult.success("NPCs", 0, 0, 0);
     }
@@ -69,13 +69,15 @@ public class NpcSyncService extends BaseSyncService {
         return SyncResult.failure("NPCs", "NotionHandler is not available for sync operations");
       }
 
-      List<NpcPage> npcPages = executeWithRateLimit(notionHandler::loadAllNpcs);
+      List<NpcPage> npcPages =
+          executeWithRateLimit(syncServiceDependencies.notionHandler::loadAllNpcs);
       log.info("Retrieved {} NPCs from Notion", npcPages.size());
 
       int savedCount = 0;
       for (NpcPage npcPage : npcPages) {
         // Assuming the Notion database has properties "Name" and "Role"
-        String npcName = notionPageDataExtractor.extractNameFromNotionPage(npcPage);
+        String npcName =
+            syncServiceDependencies.notionPageDataExtractor.extractNameFromNotionPage(npcPage);
         Object roleObj = npcPage.getRawProperties().get("Role");
         String npcType = null;
         if (roleObj instanceof String) {
@@ -101,7 +103,7 @@ public class NpcSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.info("Successfully synchronized {} NPCs in {}ms total", savedCount, totalTime);
 
-      syncSessionManager.markAsSyncedInSession("npcs");
+      syncServiceDependencies.syncSessionManager.markAsSyncedInSession("npcs");
       return SyncResult.success("NPCs", savedCount, 0, 0);
 
     } catch (Exception e) {

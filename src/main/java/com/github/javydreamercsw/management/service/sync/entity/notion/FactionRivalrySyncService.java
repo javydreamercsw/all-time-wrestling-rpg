@@ -18,13 +18,13 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionRivalryPage;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,23 +43,21 @@ public class FactionRivalrySyncService extends BaseSyncService {
 
   private final FactionRivalryService factionRivalryService;
   private final FactionRepository factionRepository;
-  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
-  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public FactionRivalrySyncService(
       ObjectMapper objectMapper,
       NotionSyncProperties syncProperties,
+      SyncServiceDependencies syncServiceDependencies,
       FactionRivalryService factionRivalryService,
-      FactionRepository factionRepository,
-      NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      FactionRepository factionRepository) {
+    super(objectMapper, syncProperties, syncServiceDependencies);
     this.factionRivalryService = factionRivalryService;
     this.factionRepository = factionRepository;
   }
 
   public SyncResult syncFactionRivalries(@NonNull String operationId) {
-    if (syncSessionManager.isAlreadySyncedInSession("faction-rivalries")) {
+    if (syncServiceDependencies.syncSessionManager.isAlreadySyncedInSession("faction-rivalries")) {
       log.info("⏭️ Faction Rivalries already synced in current session, skipping");
       return SyncResult.success("Faction Rivalries", 0, 0, 0);
     }
@@ -69,12 +67,12 @@ public class FactionRivalrySyncService extends BaseSyncService {
     try {
       SyncResult result = performFactionRivalriesSync(operationId);
       if (result.isSuccess()) {
-        syncSessionManager.markAsSyncedInSession("faction-rivalries");
+        syncServiceDependencies.syncSessionManager.markAsSyncedInSession("faction-rivalries");
       }
       return result;
     } catch (Exception e) {
       log.error("Failed to sync faction rivalries", e);
-      healthMonitor.recordFailure("Faction Rivalries", e.getMessage());
+      syncServiceDependencies.healthMonitor.recordFailure("Faction Rivalries", e.getMessage());
       return SyncResult.failure("Faction Rivalries", e.getMessage());
     }
   }
@@ -85,34 +83,38 @@ public class FactionRivalrySyncService extends BaseSyncService {
       return SyncResult.failure("Faction Rivalries", "NotionHandler is not available.");
     }
 
-    progressTracker.startOperation(operationId, "Sync Faction Rivalries", 3);
+    syncServiceDependencies.progressTracker.startOperation(
+        operationId, "Sync Faction Rivalries", 3);
 
     // 1. Load all rivalry pages from Notion
-    progressTracker.updateProgress(operationId, 1, "Retrieving faction rivalries from Notion...");
-    List<FactionRivalryPage> pages = executeWithRateLimit(notionHandler::loadAllFactionRivalries);
+    syncServiceDependencies.progressTracker.updateProgress(
+        operationId, 1, "Retrieving faction rivalries from Notion...");
+    List<FactionRivalryPage> pages = executeWithRateLimit(syncServiceDependencies.notionHandler::loadAllFactionRivalries);
     log.info("Found {} faction rivalries in Notion.", pages.size());
-    progressTracker.updateProgress(
+    syncServiceDependencies.progressTracker.updateProgress(
         operationId, 1, "Retrieved " + pages.size() + " faction rivalries.");
 
     // 2. Convert pages to DTOs
-    progressTracker.updateProgress(operationId, 2, "Processing faction rivalry data...");
+    syncServiceDependencies.progressTracker.updateProgress(
+        operationId, 2, "Processing faction rivalry data...");
     List<FactionRivalryDTO> dtos = pages.stream().map(this::toDto).collect(Collectors.toList());
-    progressTracker.updateProgress(
+    syncServiceDependencies.progressTracker.updateProgress(
         operationId, 2, "Processed " + dtos.size() + " faction rivalries.");
 
     // 3. Save to database
-    progressTracker.updateProgress(operationId, 3, "Saving faction rivalries to database...");
+    syncServiceDependencies.progressTracker.updateProgress(
+        operationId, 3, "Saving faction rivalries to database...");
     AtomicInteger createdCount = new AtomicInteger(0);
     AtomicInteger updatedCount = new AtomicInteger(0);
     saveFactionRivalriesToDatabase(dtos, createdCount, updatedCount);
-    progressTracker.updateProgress(
+    syncServiceDependencies.progressTracker.updateProgress(
         operationId,
         3,
         "Saved to database. Created: " + createdCount.get() + ", Updated: " + updatedCount.get());
 
-    progressTracker.completeOperation(
+    syncServiceDependencies.progressTracker.completeOperation(
         operationId, true, "Sync complete.", createdCount.get() + updatedCount.get());
-    healthMonitor.recordSuccess(
+    syncServiceDependencies.healthMonitor.recordSuccess(
         "Faction Rivalries",
         System.currentTimeMillis() - System.currentTimeMillis(),
         createdCount.get() + updatedCount.get());
@@ -126,9 +128,11 @@ public class FactionRivalrySyncService extends BaseSyncService {
     dto.setExternalId(page.getId());
     try {
       dto.setFaction1Name(
-          notionPageDataExtractor.extractPropertyAsString(page.getRawProperties(), "Faction 1"));
+          syncServiceDependencies.notionPageDataExtractor.extractPropertyAsString(
+              page.getRawProperties(), "Faction 1"));
       dto.setFaction2Name(
-          notionPageDataExtractor.extractPropertyAsString(page.getRawProperties(), "Faction 2"));
+          syncServiceDependencies.notionPageDataExtractor.extractPropertyAsString(
+              page.getRawProperties(), "Faction 2"));
     } catch (ClassCastException e) {
       log.warn("Failed to cast faction name for rivalry page {}: {}", page.getId(), e.getMessage());
     }

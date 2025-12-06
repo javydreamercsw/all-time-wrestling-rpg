@@ -18,13 +18,13 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.FactionDTO;
 import java.time.Instant;
@@ -43,24 +43,21 @@ public class FactionSyncService extends BaseSyncService {
   private final FactionService factionService;
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
-  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
-  @Autowired private SyncSessionManager syncSessionManager;
 
   public FactionSyncService(
       ObjectMapper objectMapper,
-      NotionSyncProperties syncProperties,
-      NotionHandler notionHandler,
+      SyncServiceDependencies syncServiceDependencies,
       FactionService factionService,
       FactionRepository factionRepository,
       WrestlerRepository wrestlerRepository) {
-    super(objectMapper, syncProperties, notionHandler);
+    super(objectMapper, syncServiceDependencies);
     this.factionService = factionService;
     this.factionRepository = factionRepository;
     this.wrestlerRepository = wrestlerRepository;
   }
 
   public SyncResult syncFactions(@NonNull String operationId) {
-    if (syncSessionManager.isAlreadySyncedInSession("factions")) {
+    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("factions")) {
       log.info("⏭️ Factions already synced in current session, skipping");
       return SyncResult.success("Factions", 0, 0, 0);
     }
@@ -71,7 +68,7 @@ public class FactionSyncService extends BaseSyncService {
     try {
       SyncResult result = performFactionsSync(operationId, startTime);
       if (result.isSuccess()) {
-        syncSessionManager.markAsSyncedInSession("factions");
+        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("factions");
       }
       return result;
     } catch (Exception e) {
@@ -82,13 +79,14 @@ public class FactionSyncService extends BaseSyncService {
 
   private SyncResult performFactionsSync(@NonNull String operationId, long startTime) {
     try {
-      if (!syncProperties.isEntityEnabled("factions")) {
+      if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("factions")) {
         log.info("Factions sync is disabled in configuration");
         return SyncResult.success("Factions", 0, 0, 0);
       }
 
-      progressTracker.startOperation(operationId, "Sync Factions", 3);
-      progressTracker.updateProgress(operationId, 1, "Retrieving factions from Notion...");
+      syncServiceDependencies.getProgressTracker().startOperation(operationId, "Sync Factions", 3);
+      syncServiceDependencies.getProgressTracker().updateProgress(
+          operationId, 1, "Retrieving factions from Notion...");
 
       log.info("📥 Retrieving factions from Notion...");
       long retrieveStart = System.currentTimeMillis();
@@ -98,20 +96,21 @@ public class FactionSyncService extends BaseSyncService {
         return SyncResult.failure("Factions", "NotionHandler is not available for sync operations");
       }
 
-      List<FactionPage> factionPages = executeWithRateLimit(notionHandler::loadAllFactions);
+      List<FactionPage> factionPages =
+          executeWithRateLimit(syncServiceDependencies.getNotionHandler()::loadAllFactions);
       log.info(
           "✅ Retrieved {} factions in {}ms",
           factionPages.size(),
           System.currentTimeMillis() - retrieveStart);
 
-      progressTracker.updateProgress(
+      syncServiceDependencies.getProgressTracker().updateProgress(
           operationId,
           1,
           String.format(
               "✅ Retrieved %d factions from Notion in %dms",
               factionPages.size(), System.currentTimeMillis() - retrieveStart));
 
-      progressTracker.updateProgress(
+      syncServiceDependencies.getProgressTracker().updateProgress(
           operationId,
           2,
           String.format(
@@ -125,14 +124,14 @@ public class FactionSyncService extends BaseSyncService {
           factionDTOs.size(),
           System.currentTimeMillis() - convertStart);
 
-      progressTracker.updateProgress(
+      syncServiceDependencies.getProgressTracker().updateProgress(
           operationId,
           2,
           String.format(
               "✅ Converted and merged %d factions in %dms",
               factionDTOs.size(), System.currentTimeMillis() - convertStart));
 
-      progressTracker.updateProgress(
+      syncServiceDependencies.getProgressTracker().updateProgress(
           operationId, 3, String.format("Saving %d factions to database...", factionDTOs.size()));
       log.info("🗄️ Saving factions to database...");
       long dbStart = System.currentTimeMillis();
@@ -148,13 +147,14 @@ public class FactionSyncService extends BaseSyncService {
       log.info(
           "🎉 Successfully synchronized {} factions in {}ms total", factionDTOs.size(), totalTime);
 
-      progressTracker.completeOperation(
+      syncServiceDependencies.getProgressTracker().completeOperation(
           operationId,
           true,
           String.format("Successfully synced %d factions", factionDTOs.size()),
           factionDTOs.size());
 
-      healthMonitor.recordSuccess("Factions", totalTime, factionDTOs.size());
+      syncServiceDependencies.getHealthMonitor().recordSuccess(
+          "Factions", totalTime, factionDTOs.size());
 
       if (skippedCount > 0) {
         return SyncResult.failure(
@@ -167,9 +167,10 @@ public class FactionSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize factions from Notion after {}ms", totalTime, e);
 
-      progressTracker.failOperation(operationId, "Sync failed: " + e.getMessage());
+      syncServiceDependencies.getProgressTracker().failOperation(
+          operationId, "Sync failed: " + e.getMessage());
 
-      healthMonitor.recordFailure("Factions", e.getMessage());
+      syncServiceDependencies.getHealthMonitor().recordFailure("Factions", e.getMessage());
 
       return SyncResult.failure("Factions", e.getMessage());
     }
@@ -177,7 +178,7 @@ public class FactionSyncService extends BaseSyncService {
 
   private List<FactionDTO> convertAndMergeFactionData(@NonNull List<FactionPage> factionPages) {
     Map<String, FactionDTO> existingFactions = new HashMap<>();
-    if (syncProperties.isLoadFromJson()) {
+    if (syncServiceDependencies.getNotionSyncProperties().isLoadFromJson()) {
       // DTO does not exist for factions yet.
     }
 
@@ -223,7 +224,8 @@ public class FactionSyncService extends BaseSyncService {
 
   private FactionDTO convertFactionPageToDTO(@NonNull FactionPage factionPage) {
     FactionDTO dto = new FactionDTO();
-    dto.setName(notionPageDataExtractor.extractNameFromNotionPage(factionPage));
+    dto.setName(
+        syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(factionPage));
     dto.setExternalId(factionPage.getId());
 
     Map<String, Object> rawProperties = factionPage.getRawProperties();
@@ -284,7 +286,7 @@ public class FactionSyncService extends BaseSyncService {
       processedCount++;
 
       if (processedCount % 5 == 0) {
-        progressTracker.updateProgress(
+        syncServiceDependencies.getProgressTracker().updateProgress(
             operationId,
             4,
             String.format(
@@ -342,7 +344,7 @@ public class FactionSyncService extends BaseSyncService {
     log.info(
         "Database persistence completed: {} saved/updated, {} skipped", savedCount, skippedCount);
 
-    progressTracker.updateProgress(
+    syncServiceDependencies.getProgressTracker().updateProgress(
         operationId,
         4,
         String.format(

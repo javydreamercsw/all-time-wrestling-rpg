@@ -17,38 +17,23 @@
 package com.github.javydreamercsw.management.service.sync.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.config.NotionSyncProperties;
-import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
-import com.github.javydreamercsw.management.service.sync.DataIntegrityChecker;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
-import com.github.javydreamercsw.management.service.sync.RetryService;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.SyncTransactionManager;
-import com.github.javydreamercsw.management.service.sync.SyncValidationService;
-import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
-import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
+import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -63,30 +48,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 public abstract class BaseSyncService {
 
   protected final ObjectMapper objectMapper;
-  protected final NotionSyncProperties syncProperties;
 
   @Autowired protected SyncServiceDependencies syncServiceDependencies;
-  @Autowired protected NotionApiExecutor notionApiExecutor;
-  @Autowired protected SyncSessionManager syncSessionManager;
 
   protected BaseSyncService(
       @NonNull ObjectMapper objectMapper,
-      @NonNull NotionSyncProperties syncProperties,
       @NonNull SyncServiceDependencies syncServiceDependencies) {
     this.objectMapper = objectMapper;
-    this.syncProperties = syncProperties;
     this.syncServiceDependencies = syncServiceDependencies;
   }
 
-  /**
-   * Gets the effective sync settings for a specific entity type.
-   *
-   * @param entityType The entity type (e.g., "rivalries")
-   * @return The effective sync settings for the entity.
-   */
-  protected EntitySyncConfiguration.EntitySyncSettings getSyncSettings(@NonNull String entityType) {
-    return syncServiceDependencies.entitySyncConfig.getEffectiveSettings(entityType);
-  }
+
 
   /**
    * Helper method to check if NotionHandler is available for operations.
@@ -94,18 +66,9 @@ public abstract class BaseSyncService {
    * @return true if NotionHandler is available, false otherwise
    */
   public boolean isNotionHandlerAvailable() {
-    return notionApiExecutor.notionHandler != null && EnvironmentVariableUtil.isNotionTokenAvailable();
+    return syncServiceDependencies.getNotionHandler() != null
+        && EnvironmentVariableUtil.isNotionTokenAvailable();
   }
-
-
-
-
-
-
-
-
-
-
 
   /**
    * Creates a backup of the specified JSON file before sync operation.
@@ -122,7 +85,7 @@ public abstract class BaseSyncService {
     }
 
     // Create backup directory
-    Path backupDir = Paths.get(syncProperties.getBackup().getDirectory());
+    Path backupDir = Paths.get(syncServiceDependencies.getNotionSyncProperties().getBackup().getDirectory());
     Files.createDirectories(backupDir);
 
     // Create backup file with timestamp
@@ -145,7 +108,7 @@ public abstract class BaseSyncService {
    */
   private void cleanupOldBackups(@NonNull String fileName) {
     try {
-      Path backupDir = Paths.get(syncProperties.getBackup().getDirectory());
+      Path backupDir = Paths.get(syncServiceDependencies.getNotionSyncProperties().getBackup().getDirectory());
       if (!Files.exists(backupDir)) {
         return;
       }
@@ -161,7 +124,7 @@ public abstract class BaseSyncService {
                           .compareTo(p1.getFileName().toString())) // Newest first
               .toList();
 
-      int maxFiles = syncProperties.getBackup().getMaxFiles();
+      int maxFiles = syncServiceDependencies.getNotionSyncProperties().getBackup().getMaxFiles();
       if (backupFiles.size() > maxFiles) {
         List<Path> filesToDelete = backupFiles.subList(maxFiles, backupFiles.size());
         for (Path fileToDelete : filesToDelete) {
@@ -286,7 +249,8 @@ public abstract class BaseSyncService {
    * @return true if token is available, false otherwise
    */
   public boolean validateNotionToken(@NonNull String entityType) {
-    SyncValidationService.ValidationResult result = syncServiceDependencies.validationService.validateSyncPrerequisites();
+    SyncValidationService.ValidationResult result =
+        syncServiceDependencies.getValidationService().validateSyncPrerequisites();
     if (!result.isValid()) {
       log.warn("Notion token validation failed for {}: {}", entityType, result.getErrors());
       return false;
@@ -350,7 +314,7 @@ public abstract class BaseSyncService {
                       CompletableFuture.supplyAsync(
                           () -> {
                             try {
-                              syncServiceDependencies.rateLimitService.acquirePermit();
+                              syncServiceDependencies.getRateLimitService().acquirePermit();
                               return processor.apply(item);
                             } catch (InterruptedException e) {
                               Thread.currentThread().interrupt();
@@ -365,7 +329,7 @@ public abstract class BaseSyncService {
                               throw new RuntimeException("Processing failed", e);
                             }
                           },
-                          notionApiExecutor.syncExecutorService))
+                          syncServiceDependencies.getNotionApiExecutor().getSyncExecutorService()))
               .toList();
 
       // Wait for batch completion with timeout
@@ -390,7 +354,7 @@ public abstract class BaseSyncService {
         // Update progress
         int processedCount = Math.min(endIndex, items.size());
         double progressPercent = (double) processedCount / items.size() * 100;
-        syncServiceDependencies.progressTracker.updateProgress(
+        syncServiceDependencies.getProgressTracker().updateProgress(
             operationId,
             progressStep,
             String.format(
@@ -403,7 +367,9 @@ public abstract class BaseSyncService {
               CompletableFuture.runAsync(
                   () -> {},
                   CompletableFuture.delayedExecutor(
-                      500, TimeUnit.MILLISECONDS, notionApiExecutor.syncExecutorService));
+                      500,
+                      TimeUnit.MILLISECONDS,
+                      syncServiceDependencies.getNotionApiExecutor().getSyncExecutorService()));
           delay.get();
         }
 
@@ -418,8 +384,6 @@ public abstract class BaseSyncService {
 
     return allResults;
   }
-
-
 
   /** Represents the result of a synchronization operation. */
   @Getter
