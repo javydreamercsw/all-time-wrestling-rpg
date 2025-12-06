@@ -54,6 +54,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private SegmentSyncService segmentSyncService;
   @Mock private RivalrySyncService rivalrySyncService;
   @Mock private FactionRivalrySyncService factionRivalrySyncService;
+  @Mock private ShowTemplateNotionSyncService showTemplateNotionSyncService;
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionSyncProperties syncProperties;
   @Mock private NotionHandler notionHandler;
@@ -81,6 +82,8 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     ReflectionTestUtils.setField(notionSyncService, "rivalrySyncService", rivalrySyncService);
     ReflectionTestUtils.setField(
         notionSyncService, "factionRivalrySyncService", factionRivalrySyncService);
+    ReflectionTestUtils.setField(
+        notionSyncService, "showTemplateNotionSyncService", showTemplateNotionSyncService);
   }
 
   @Test
@@ -144,23 +147,23 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
-  @DisplayName("Should sync show templates from Notion to database")
-  void shouldSyncShowTemplatesFromNotionToDatabase() {
-    log.info("📋 Testing show templates sync from Notion to database");
+  @DisplayName("Should sync show templates to Notion")
+  void shouldSyncShowTemplatesToNotion() {
+    log.info("📋 Testing show templates sync to Notion");
 
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Show Templates", 1, 0, 0);
-    when(showTemplateSyncService.syncShowTemplates(anyString())).thenReturn(expectedResult);
+    when(showTemplateNotionSyncService.syncToNotion(anyString())).thenReturn(expectedResult);
 
-    // When - Sync show templates from Notion
+    // When - Sync show templates to Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncShowTemplates("integration-test-templates");
+        notionSyncService.syncShowTemplates("integration-test-templates", SyncDirection.OUTBOUND);
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
     assertThat(result).isEqualTo(expectedResult);
-    verify(showTemplateSyncService, times(1)).syncShowTemplates(anyString());
+    verify(showTemplateNotionSyncService, times(1)).syncToNotion(anyString());
   }
 
   @Test

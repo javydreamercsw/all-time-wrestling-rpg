@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentNo
 import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTemplateNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTemplateSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TeamNotionSyncService;
@@ -91,6 +92,7 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private TeamNotionSyncService teamNotionSyncService;
   @Autowired private FactionRivalryNotionSyncService factionRivalryNotionSyncService;
   @Autowired private SegmentNotionSyncService segmentNotionSyncService;
+  @Autowired private ShowTemplateNotionSyncService showTemplateNotionSyncService;
 
   // New parallel sync capabilities
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
@@ -217,13 +219,18 @@ public class NotionSyncService extends BaseSyncService {
   }
 
   /**
-   * Synchronizes show templates from Notion to the local JSON file and database.
+   * Synchronizes show template data between the application and Notion based on the specified
+   * direction.
    *
    * @param operationId Optional operation ID for progress tracking
+   * @param direction The direction of the synchronization (inbound or outbound)
    * @return SyncResult indicating success or failure with details
    */
-  public SyncResult syncShowTemplates(@NonNull String operationId) {
-    return showTemplateSyncService.syncShowTemplates(operationId);
+  public SyncResult syncShowTemplates(
+      @NonNull String operationId, @NonNull SyncDirection direction) {
+    return direction.equals(SyncDirection.INBOUND)
+        ? showTemplateSyncService.syncShowTemplates(operationId)
+        : showTemplateNotionSyncService.syncToNotion(operationId);
   }
 
   /**
