@@ -50,6 +50,7 @@ public class SegmentSyncService extends BaseSyncService {
   @Autowired private WrestlerService wrestlerService;
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private ShowSyncService showSyncService;
+  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
 
   @Autowired
   public SegmentSyncService(
@@ -184,7 +185,7 @@ public class SegmentSyncService extends BaseSyncService {
     try {
       SegmentDTO segmentDTO = new SegmentDTO();
       segmentDTO.setExternalId(segmentPage.getId());
-      segmentDTO.setName(extractNameFromNotionPage(segmentPage));
+      segmentDTO.setName(notionPageDataExtractor.extractNameFromNotionPage(segmentPage));
 
       if (segmentPage.getProperties().getShows() != null
           && !segmentPage.getProperties().getShows().getRelation().isEmpty()) {

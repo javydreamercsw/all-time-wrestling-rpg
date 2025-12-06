@@ -51,6 +51,8 @@ public class WrestlerSyncService extends BaseSyncService {
   @Autowired private WrestlerService wrestlerService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
+  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
+  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public WrestlerSyncService(
@@ -66,7 +68,7 @@ public class WrestlerSyncService extends BaseSyncService {
    */
   public SyncResult syncWrestlers(@NonNull String operationId) {
     // Check if already synced in current session
-    if (isAlreadySyncedInSession("wrestlers")) {
+    if (syncSessionManager.isAlreadySyncedInSession("wrestlers")) {
       log.info("⏭️ Wrestlers already synced in current session, skipping");
       return SyncResult.success("wrestlers", 0, 0, 0);
     }
@@ -77,7 +79,7 @@ public class WrestlerSyncService extends BaseSyncService {
     try {
       SyncResult result = performWrestlersSync(operationId, startTime);
       if (result.isSuccess()) {
-        markAsSyncedInSession("wrestlers");
+        syncSessionManager.markAsSyncedInSession("wrestlers");
       }
       return result;
     } catch (Exception e) {
@@ -241,7 +243,7 @@ public class WrestlerSyncService extends BaseSyncService {
   /** Converts a single WrestlerPage to WrestlerDTO. */
   private WrestlerDTO convertWrestlerPageToDTO(@NonNull WrestlerPage wrestlerPage) {
     WrestlerDTO dto = new WrestlerDTO();
-    dto.setName(extractNameFromNotionPage(wrestlerPage));
+    dto.setName(notionPageDataExtractor.extractNameFromNotionPage(wrestlerPage));
 
     // Extract and truncate description to fit database constraint (1000 chars)
     String description = extractDescriptionFromPageBody(wrestlerPage);

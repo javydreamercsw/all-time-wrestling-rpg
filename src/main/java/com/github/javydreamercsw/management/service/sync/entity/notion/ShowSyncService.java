@@ -56,6 +56,8 @@ public class ShowSyncService extends BaseSyncService {
   @Autowired private ShowTypeService showTypeService;
   @Autowired private SeasonService seasonService;
   @Autowired private ShowTemplateService showTemplateService;
+  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
+  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public ShowSyncService(
@@ -82,7 +84,7 @@ public class ShowSyncService extends BaseSyncService {
   public SyncResult syncShows(@NonNull String operationId) {
     if (isNotionHandlerAvailable()) {
       // Check if already synced in current session
-      if (isAlreadySyncedInSession("shows")) {
+      if (syncSessionManager.isAlreadySyncedInSession("shows")) {
         log.info("⏭️ Shows already synced in current session, skipping");
         return SyncResult.success("shows", 0, 0, 0);
       }
@@ -90,7 +92,7 @@ public class ShowSyncService extends BaseSyncService {
       try {
         SyncResult result = performShowsSync(operationId);
         if (result.isSuccess()) {
-          markAsSyncedInSession("shows");
+          syncSessionManager.markAsSyncedInSession("shows");
         }
         return result;
       } catch (Exception e) {
@@ -258,13 +260,16 @@ public class ShowSyncService extends BaseSyncService {
   private ShowDTO convertShowPageToDTO(@NonNull ShowPage showPage) {
     try {
       ShowDTO dto = new ShowDTO();
-      String showName = extractName(showPage);
+      String showName = notionPageDataExtractor.extractNameFromNotionPage(showPage);
       dto.setName(showName);
-      dto.setDescription(extractDescription(showPage));
-      dto.setShowType(extractShowType(showPage));
+      dto.setDescription(notionPageDataExtractor.extractDescriptionFromNotionPage(showPage));
+      dto.setShowType(
+          notionPageDataExtractor.extractPropertyAsString(
+              showPage.getRawProperties(), "Show Type"));
       dto.setShowDate(extractShowDate(showPage));
       dto.setSeasonName(extractSeasonName(showPage));
-      dto.setTemplateName(extractTemplateName(showPage));
+      dto.setTemplateName(
+          notionPageDataExtractor.extractPropertyAsString(showPage.getRawProperties(), "Template"));
       dto.setExternalId(showPage.getId());
 
       log.debug("Converted show: {} -> DTO", showName);
@@ -477,37 +482,14 @@ public class ShowSyncService extends BaseSyncService {
   }
 
   // Property extraction methods
-  private String extractName(@NonNull ShowPage showPage) {
-    return extractNameFromNotionPage(showPage);
-  }
-
-  private String extractDescription(@NonNull ShowPage showPage) {
-    if (showPage.getRawProperties() != null) {
-      Object description = showPage.getRawProperties().get("Description");
-      return description != null ? description.toString() : "";
-    }
-    return "";
-  }
-
-  private String extractShowType(@NonNull ShowPage showPage) {
-    if (showPage.getRawProperties() != null) {
-      Object showType = showPage.getRawProperties().get("Show Type");
-      return showType != null ? showType.toString() : null;
-    }
-    return null;
-  }
-
-  private String extractShowDate(@NonNull ShowPage showPage) {
-    if (showPage.getRawProperties() != null) {
-      Object showDate = showPage.getRawProperties().get("Date");
-      if (showDate != null) {
-        String dateStr = showDate.toString().trim();
-
+    private String extractShowDate(@NonNull ShowPage showPage) {
+      String dateStr = notionPageDataExtractor.extractPropertyAsString(showPage.getRawProperties(), "Date");
+      if (dateStr != null) {
         if ("date".equals(dateStr) || dateStr.isEmpty()) {
           log.debug("Skipping placeholder date value: {}", dateStr);
           return null;
         }
-
+  
         try {
           LocalDate date = LocalDate.parse(dateStr);
           return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
@@ -516,37 +498,44 @@ public class ShowSyncService extends BaseSyncService {
           return null;
         }
       }
+      return null;
     }
-    return null;
-  }
-
-  private String extractSeasonName(@NonNull ShowPage showPage) {
-    if (showPage.getRawProperties() != null) {
-      Object season = showPage.getRawProperties().get("Season");
-      if (season != null) {
-        String seasonStr = season.toString().trim();
-
-        if (seasonStr.matches("\\d+ items?")) {
-          log.debug("Season shows as relation count ({}), attempting to resolve", seasonStr);
-          return resolveSeasonRelationship(showPage);
-        }
-
-        if (!seasonStr.isEmpty()
-            && !seasonStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[^w-z]{4}-[0-9a-f]{12}")) {
-          return seasonStr;
+  
+    private String extractSeasonName(@NonNull ShowPage showPage) {
+      if (showPage.getRawProperties() != null) {
+        Object season = showPage.getRawProperties().get("Season");
+        if (season != null) {
+          String seasonStr = season.toString().trim();
+  
+          if (seasonStr.matches("\\d+ items?")) {
+            log.debug("Season shows as relation count ({}), attempting to resolve", seasonStr);
+            return resolveSeasonRelationship(showPage);
+          }
+  
+          if (!seasonStr.isEmpty()
+              && !seasonStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[^w-z]{4}-[0-9a-f]{12}")) {
+            return seasonStr;
+          }
         }
       }
+      return null;
     }
-    return null;
-  }
-
-  private String extractTemplateName(@NonNull ShowPage showPage) {
-    if (showPage.getRawProperties() != null) {
-      Object template = showPage.getRawProperties().get("Template");
-      return template != null ? template.toString() : null;
+  
+    /** Resolves season relationship by looking up the season name from the database. */
+    private String resolveSeasonRelationship(@NonNull ShowPage showPage) {
+      try {
+        var seasonsPage = seasonService.getAllSeasons(Pageable.unpaged());
+        if (seasonsPage != null && !seasonsPage.isEmpty()) {
+          Season firstSeason = seasonsPage.iterator().next();
+          log.debug("Resolved season relationship to: {}", firstSeason.getName());
+          return firstSeason.getName();
+        }
+      } catch (Exception e) {
+        log.debug("Failed to resolve season relationship: {}", e.getMessage());
+      }
+  
+      return null;
     }
-    return null;
-  }
 
   /** Resolves season relationship by looking up the season name from the database. */
   private String resolveSeasonRelationship(@NonNull ShowPage showPage) {

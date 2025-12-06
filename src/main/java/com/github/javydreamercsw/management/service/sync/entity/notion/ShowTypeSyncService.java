@@ -38,6 +38,8 @@ import org.springframework.stereotype.Service;
 public class ShowTypeSyncService extends BaseSyncService {
 
   @Autowired private ShowTypeService showTypeService;
+  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
+  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public ShowTypeSyncService(
@@ -53,7 +55,7 @@ public class ShowTypeSyncService extends BaseSyncService {
    */
   public SyncResult syncShowTypes(@NonNull String operationId) {
     // Check if already synced in current session
-    if (isAlreadySyncedInSession("show-types")) {
+    if (syncSessionManager.isAlreadySyncedInSession("show-types")) {
       log.info("⏭️ Show types already synced in current session, skipping");
       return SyncResult.success("Show Types", 0, 0, 0);
     }
@@ -64,7 +66,7 @@ public class ShowTypeSyncService extends BaseSyncService {
     try {
       SyncResult result = performShowTypesSync(operationId, startTime);
       if (result.isSuccess()) {
-        markAsSyncedInSession("show-types");
+        syncSessionManager.markAsSyncedInSession("show-types");
       }
       return result;
     } catch (Exception e) {
@@ -197,7 +199,7 @@ public class ShowTypeSyncService extends BaseSyncService {
 
       if (showType != null) {
         // Handle different property types
-        String showTypeStr = extractShowTypeValue(showType);
+        String showTypeStr = notionPageDataExtractor.extractTextFromProperty(showType);
         if (showTypeStr != null && !showTypeStr.trim().isEmpty() && !"N/A".equals(showTypeStr)) {
           return showTypeStr.trim();
         }

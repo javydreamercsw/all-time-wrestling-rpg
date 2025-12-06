@@ -45,6 +45,8 @@ public class TitleSyncService extends BaseSyncService {
   @Autowired protected WrestlerRepository wrestlerRepository;
   @Autowired protected TitleReignRepository titleReignRepository;
   @Autowired private TitleNotionSyncService titleNotionSyncService;
+  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
+  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public TitleSyncService(
@@ -54,7 +56,7 @@ public class TitleSyncService extends BaseSyncService {
 
   @Transactional
   public SyncResult syncTitles(@NonNull String operationId) {
-    if (isAlreadySyncedInSession("titles")) {
+    if (syncSessionManager.isAlreadySyncedInSession("titles")) {
       return SyncResult.success("Titles", 0, 0, 0);
     }
 
@@ -64,7 +66,7 @@ public class TitleSyncService extends BaseSyncService {
     try {
       SyncResult result = performTitlesSync(operationId, startTime);
       if (result.isSuccess()) {
-        markAsSyncedInSession("titles");
+        syncSessionManager.markAsSyncedInSession("titles");
       }
       return result;
     } catch (Exception e) {
@@ -89,7 +91,7 @@ public class TitleSyncService extends BaseSyncService {
       log.info("✅ Retrieved {} titles from Notion", titlePages.size());
 
       for (TitlePage titlePage : titlePages) {
-        String titleName = extractNameFromNotionPage(titlePage);
+        String titleName = notionPageDataExtractor.extractNameFromNotionPage(titlePage);
         Title title = null;
 
         // 1. Find by externalId

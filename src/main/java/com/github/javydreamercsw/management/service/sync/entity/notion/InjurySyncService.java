@@ -40,6 +40,9 @@ public class InjurySyncService extends BaseSyncService {
 
   @Autowired private InjuryTypeService injuryTypeService;
   @Autowired private InjuryTypeRepository injuryTypeRepository;
+  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
+  @Autowired private SyncSessionManager syncSessionManager;
+  @Autowired private NotionApiExecutor notionApiExecutor;
 
   @Autowired
   public InjurySyncService(
@@ -66,7 +69,7 @@ public class InjurySyncService extends BaseSyncService {
    */
   public SyncResult syncInjuryTypes(@NonNull String operationId) {
     // Check if already synced in current session
-    if (isAlreadySyncedInSession("injury-types")) {
+    if (syncSessionManager.isAlreadySyncedInSession("injury-types")) {
       log.info("⏭️ Injury types already synced in current session, skipping");
       return SyncResult.success("Injuries", 0, 0, 0);
     }
@@ -79,7 +82,7 @@ public class InjurySyncService extends BaseSyncService {
     try {
       SyncResult result = performInjuryTypesSync(operationId);
       if (result.isSuccess()) {
-        markAsSyncedInSession("injury-types");
+        syncSessionManager.markAsSyncedInSession("injury-types");
       }
       return result;
     } catch (Exception e) {
@@ -129,7 +132,7 @@ public class InjurySyncService extends BaseSyncService {
       progressTracker.updateProgress(operationId, 1, "Loading injuries from Notion...");
 
       // Load injuries from Notion
-      List<InjuryPage> injuryPages = executeWithRateLimit(notionHandler::loadAllInjuries);
+      List<InjuryPage> injuryPages = notionApiExecutor.executeWithRateLimit(notionHandler::loadAllInjuries);
       log.info("📥 Loaded {} injuries from Notion", injuryPages.size());
 
       if (injuryPages.isEmpty()) {
@@ -189,7 +192,7 @@ public class InjurySyncService extends BaseSyncService {
     try {
       // Extract basic properties first
       String externalId = injuryPage.getId();
-      String injuryName = extractNameFromNotionPage(injuryPage);
+      String injuryName = notionPageDataExtractor.extractNameFromNotionPage(injuryPage);
 
       // Create DTO with required constructor parameters
       InjuryDTO dto = new InjuryDTO(externalId, injuryName);

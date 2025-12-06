@@ -39,11 +39,17 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ShowTemplateSyncService extends BaseSyncService {
 
-  @Autowired private ShowTemplateService showTemplateService;
+      @Autowired private ShowTemplateService showTemplateService;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository
-      showTypeRepository;
+      @Autowired
+
+      private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository
+
+          showTypeRepository;
+
+      @Autowired private NotionPageDataExtractor notionPageDataExtractor;
+
+      @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public ShowTemplateSyncService(
@@ -70,7 +76,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
    */
   public SyncResult syncShowTemplates(@NonNull String operationId) {
     // Check if already synced in current session
-    if (isAlreadySyncedInSession("templates")) {
+    if (syncSessionManager.isAlreadySyncedInSession("templates")) {
       log.info("⏭️ Show templates already synced in current session, skipping");
       return SyncResult.success("Show Templates", 0, 0, 0);
     }
@@ -81,7 +87,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
     try {
       SyncResult result = performShowTemplatesSync(operationId, startTime);
       if (result.isSuccess()) {
-        markAsSyncedInSession("Show Templates");
+        syncSessionManager.markAsSyncedInSession("Show Templates");
       }
       return result;
     } catch (Exception e) {
@@ -194,8 +200,8 @@ public class ShowTemplateSyncService extends BaseSyncService {
   /** Converts a single ShowTemplatePage to ShowTemplateDTO. */
   private ShowTemplateDTO convertShowTemplatePageToDTO(@NonNull ShowTemplatePage templatePage) {
     ShowTemplateDTO dto = new ShowTemplateDTO();
-    dto.setName(extractNameFromNotionPage(templatePage));
-    dto.setDescription(extractDescriptionFromNotionPage(templatePage));
+    dto.setName(notionPageDataExtractor.extractNameFromNotionPage(templatePage));
+    dto.setDescription(notionPageDataExtractor.extractDescriptionFromNotionPage(templatePage));
 
     // Extract show type from Notion properties
     String showType = extractShowTypeFromNotionPage(templatePage);

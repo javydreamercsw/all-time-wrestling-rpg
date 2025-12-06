@@ -44,6 +44,7 @@ public class TitleReignSyncService extends BaseSyncService {
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public TitleReignSyncService(
@@ -52,7 +53,7 @@ public class TitleReignSyncService extends BaseSyncService {
   }
 
   public SyncResult syncTitleReigns(@NonNull String operationId) {
-    if (isAlreadySyncedInSession("titlereigns")) {
+    if (syncSessionManager.isAlreadySyncedInSession("titlereigns")) {
       return SyncResult.success("TitleReigns", 0, 0, 0);
     }
 
@@ -62,7 +63,7 @@ public class TitleReignSyncService extends BaseSyncService {
     try {
       SyncResult result = performTitleReignsSync(operationId, startTime);
       if (result.isSuccess()) {
-        markAsSyncedInSession("titlereigns");
+        syncSessionManager.markAsSyncedInSession("titlereigns");
       }
       return result;
     } catch (Exception e) {

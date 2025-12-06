@@ -42,6 +42,8 @@ import org.springframework.stereotype.Service;
 public class RivalrySyncService extends BaseSyncService {
   private final RivalryService rivalryService;
   private final WrestlerRepository wrestlerRepository;
+  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
+  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public RivalrySyncService(
@@ -56,7 +58,7 @@ public class RivalrySyncService extends BaseSyncService {
   }
 
   public SyncResult syncRivalries(@NonNull String operationId) {
-    if (isAlreadySyncedInSession("rivalries")) {
+    if (syncSessionManager.isAlreadySyncedInSession("rivalries")) {
       log.info("⏭️ Rivalries already synced in current session, skipping");
       return SyncResult.success("Rivalries", 0, 0, 0);
     }
@@ -67,7 +69,7 @@ public class RivalrySyncService extends BaseSyncService {
     try {
       SyncResult result = performRivalriesSync(operationId);
       if (result.isSuccess()) {
-        markAsSyncedInSession("rivalries");
+        syncSessionManager.markAsSyncedInSession("rivalries");
       }
       return result;
     } catch (Exception e) {
@@ -122,8 +124,8 @@ public class RivalrySyncService extends BaseSyncService {
     Map<String, Object> props = page.getRawProperties();
     dto.setExternalId(page.getId());
     try {
-      dto.setWrestler1Name((String) props.get("Wrestler 1"));
-      dto.setWrestler2Name((String) props.get("Wrestler 2"));
+      dto.setWrestler1Name(notionPageDataExtractor.extractPropertyAsString(props, "Wrestler 1"));
+      dto.setWrestler2Name(notionPageDataExtractor.extractPropertyAsString(props, "Wrestler 2"));
     } catch (ClassCastException e) {
       log.warn(
           "Failed to cast wrestler name for rivalry page {}: {}", page.getId(), e.getMessage());

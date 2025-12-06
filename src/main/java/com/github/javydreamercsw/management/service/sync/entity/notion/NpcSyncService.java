@@ -37,6 +37,8 @@ import org.springframework.stereotype.Service;
 public class NpcSyncService extends BaseSyncService {
 
   @Autowired protected NpcService npcService;
+  @Autowired protected NotionPageDataExtractor notionPageDataExtractor;
+  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public NpcSyncService(
@@ -48,7 +50,7 @@ public class NpcSyncService extends BaseSyncService {
     if (direction == SyncDirection.OUTBOUND) {
       return SyncResult.success("NPCs", 0, 0, 0);
     }
-    if (isAlreadySyncedInSession("npcs")) {
+    if (syncSessionManager.isAlreadySyncedInSession("npcs")) {
       log.info("⏭️ NPCs already synced in current session, skipping");
       return SyncResult.success("NPCs", 0, 0, 0);
     }
@@ -73,7 +75,7 @@ public class NpcSyncService extends BaseSyncService {
       int savedCount = 0;
       for (NpcPage npcPage : npcPages) {
         // Assuming the Notion database has properties "Name" and "Role"
-        String npcName = extractNameFromNotionPage(npcPage);
+        String npcName = notionPageDataExtractor.extractNameFromNotionPage(npcPage);
         Object roleObj = npcPage.getRawProperties().get("Role");
         String npcType = null;
         if (roleObj instanceof String) {
@@ -99,7 +101,7 @@ public class NpcSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.info("Successfully synchronized {} NPCs in {}ms total", savedCount, totalTime);
 
-      markAsSyncedInSession("npcs");
+      syncSessionManager.markAsSyncedInSession("npcs");
       return SyncResult.success("NPCs", savedCount, 0, 0);
 
     } catch (Exception e) {

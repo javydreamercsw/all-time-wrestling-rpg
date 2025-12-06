@@ -43,6 +43,8 @@ public class FactionSyncService extends BaseSyncService {
   private final FactionService factionService;
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
+  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
+  @Autowired private SyncSessionManager syncSessionManager;
 
   public FactionSyncService(
       ObjectMapper objectMapper,
@@ -58,7 +60,7 @@ public class FactionSyncService extends BaseSyncService {
   }
 
   public SyncResult syncFactions(@NonNull String operationId) {
-    if (isAlreadySyncedInSession("factions")) {
+    if (syncSessionManager.isAlreadySyncedInSession("factions")) {
       log.info("⏭️ Factions already synced in current session, skipping");
       return SyncResult.success("Factions", 0, 0, 0);
     }
@@ -69,7 +71,7 @@ public class FactionSyncService extends BaseSyncService {
     try {
       SyncResult result = performFactionsSync(operationId, startTime);
       if (result.isSuccess()) {
-        markAsSyncedInSession("factions");
+        syncSessionManager.markAsSyncedInSession("factions");
       }
       return result;
     } catch (Exception e) {
@@ -221,7 +223,7 @@ public class FactionSyncService extends BaseSyncService {
 
   private FactionDTO convertFactionPageToDTO(@NonNull FactionPage factionPage) {
     FactionDTO dto = new FactionDTO();
-    dto.setName(extractNameFromNotionPage(factionPage));
+    dto.setName(notionPageDataExtractor.extractNameFromNotionPage(factionPage));
     dto.setExternalId(factionPage.getId());
 
     Map<String, Object> rawProperties = factionPage.getRawProperties();

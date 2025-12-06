@@ -43,6 +43,8 @@ public class FactionRivalrySyncService extends BaseSyncService {
 
   private final FactionRivalryService factionRivalryService;
   private final FactionRepository factionRepository;
+  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
+  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public FactionRivalrySyncService(
@@ -57,7 +59,7 @@ public class FactionRivalrySyncService extends BaseSyncService {
   }
 
   public SyncResult syncFactionRivalries(@NonNull String operationId) {
-    if (isAlreadySyncedInSession("faction-rivalries")) {
+    if (syncSessionManager.isAlreadySyncedInSession("faction-rivalries")) {
       log.info("⏭️ Faction Rivalries already synced in current session, skipping");
       return SyncResult.success("Faction Rivalries", 0, 0, 0);
     }
@@ -67,7 +69,7 @@ public class FactionRivalrySyncService extends BaseSyncService {
     try {
       SyncResult result = performFactionRivalriesSync(operationId);
       if (result.isSuccess()) {
-        markAsSyncedInSession("faction-rivalries");
+        syncSessionManager.markAsSyncedInSession("faction-rivalries");
       }
       return result;
     } catch (Exception e) {
@@ -123,8 +125,10 @@ public class FactionRivalrySyncService extends BaseSyncService {
     Map<String, Object> props = page.getRawProperties();
     dto.setExternalId(page.getId());
     try {
-      dto.setFaction1Name(extractStringPropertyFromNotionPage(page, "Faction 1"));
-      dto.setFaction2Name(extractStringPropertyFromNotionPage(page, "Faction 2"));
+      dto.setFaction1Name(
+          notionPageDataExtractor.extractPropertyAsString(page.getRawProperties(), "Faction 1"));
+      dto.setFaction2Name(
+          notionPageDataExtractor.extractPropertyAsString(page.getRawProperties(), "Faction 2"));
     } catch (ClassCastException e) {
       log.warn("Failed to cast faction name for rivalry page {}: {}", page.getId(), e.getMessage());
     }
@@ -213,48 +217,6 @@ public class FactionRivalrySyncService extends BaseSyncService {
         log.info("Updated faction rivalry: {} vs {}", f1.getName(), f2.getName());
       }
     }
-  }
-
-  /** Extracts a string property from any NotionPage type using raw properties. */
-  private String extractStringPropertyFromNotionPage(
-      @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page,
-      @NonNull String propertyName) {
-    if (page.getRawProperties() != null) {
-      Object property = page.getRawProperties().get(propertyName);
-      if (property != null) {
-        String propertyStr = property.toString().trim();
-
-        // Handle relationship properties that show as "X items" or "X relations"
-        if (propertyStr.matches("\\d+ (items?|relations?)")) {
-          log.debug(
-              "Property '{}' shows as relationship count ({}), cannot resolve in sync mode",
-              propertyName,
-              propertyStr);
-          return null;
-        }
-
-        // Handle comma-separated values
-        if (propertyStr.contains(",")) {
-          String[] parts = propertyStr.split(",");
-          String firstPart = parts[0].trim();
-          if (!firstPart.isEmpty()) {
-            log.debug(
-                "Property '{}' contains multiple values, using first: '{}'",
-                propertyName,
-                firstPart);
-            return firstPart;
-          }
-        }
-
-        // Return the property value if it's not empty and not a UUID
-        if (!propertyStr.isEmpty()
-            && !propertyStr.matches(
-                "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-          return propertyStr;
-        }
-      }
-    }
-    return null;
   }
 
   @Data

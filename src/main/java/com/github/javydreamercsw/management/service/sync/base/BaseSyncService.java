@@ -30,6 +30,9 @@ import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncTransactionManager;
 import com.github.javydreamercsw.management.service.sync.SyncValidationService;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,67 +65,17 @@ public abstract class BaseSyncService {
   protected final ObjectMapper objectMapper;
   protected final NotionSyncProperties syncProperties;
 
-  @Autowired protected EntitySyncConfiguration entitySyncConfig;
-
-  // Session-based tracking to prevent duplicate syncing during batch operations
-  private final ThreadLocal<Set<String>> currentSyncSession = ThreadLocal.withInitial(HashSet::new);
-
-  // Controlled parallelism executor for all sync operations
-  private final ExecutorService syncExecutorService;
-
-  protected final NotionHandler notionHandler;
-
-  // Enhanced sync infrastructure services - autowired
-  @Autowired public SyncProgressTracker progressTracker;
-
-  @Autowired(required = false)
-  public SyncHealthMonitor healthMonitor; // Made optional in field injection
-
-  @Autowired public RetryService retryService;
-  @Autowired public CircuitBreakerService circuitBreakerService;
-  @Autowired public SyncValidationService validationService;
-  @Autowired public SyncTransactionManager syncTransactionManager;
-  @Autowired public DataIntegrityChecker integrityChecker;
-  @Autowired public NotionRateLimitService rateLimitService;
+  @Autowired protected SyncServiceDependencies syncServiceDependencies;
+  @Autowired protected NotionApiExecutor notionApiExecutor;
+  @Autowired protected SyncSessionManager syncSessionManager;
 
   protected BaseSyncService(
       @NonNull ObjectMapper objectMapper,
       @NonNull NotionSyncProperties syncProperties,
-      @NonNull NotionHandler notionHandler) {
+      @NonNull SyncServiceDependencies syncServiceDependencies) {
     this.objectMapper = objectMapper;
     this.syncProperties = syncProperties;
-    this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
-    this.notionHandler = notionHandler;
-  }
-
-  // Constructor injection for SyncHealthMonitor, made optional
-  @Autowired(required = false)
-  public BaseSyncService(
-      @NonNull ObjectMapper objectMapper,
-      @NonNull NotionSyncProperties syncProperties,
-      SyncHealthMonitor healthMonitor, // Made optional
-      SyncProgressTracker progressTracker,
-      RetryService retryService,
-      CircuitBreakerService circuitBreakerService,
-      SyncValidationService validationService,
-      SyncTransactionManager syncTransactionManager,
-      DataIntegrityChecker integrityChecker,
-      NotionRateLimitService rateLimitService,
-      EntitySyncConfiguration entitySyncConfig,
-      @NonNull NotionHandler notionHandler) {
-    this.objectMapper = objectMapper;
-    this.syncProperties = syncProperties;
-    this.healthMonitor = healthMonitor; // Assign optional healthMonitor
-    this.progressTracker = progressTracker;
-    this.retryService = retryService;
-    this.circuitBreakerService = circuitBreakerService;
-    this.validationService = validationService;
-    this.syncTransactionManager = syncTransactionManager;
-    this.integrityChecker = integrityChecker;
-    this.rateLimitService = rateLimitService;
-    this.entitySyncConfig = entitySyncConfig;
-    this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
-    this.notionHandler = notionHandler;
+    this.syncServiceDependencies = syncServiceDependencies;
   }
 
   /**
@@ -132,7 +85,7 @@ public abstract class BaseSyncService {
    * @return The effective sync settings for the entity.
    */
   protected EntitySyncConfiguration.EntitySyncSettings getSyncSettings(@NonNull String entityType) {
-    return entitySyncConfig.getEffectiveSettings(entityType);
+    return syncServiceDependencies.entitySyncConfig.getEffectiveSettings(entityType);
   }
 
   /**
@@ -141,50 +94,18 @@ public abstract class BaseSyncService {
    * @return true if NotionHandler is available, false otherwise
    */
   public boolean isNotionHandlerAvailable() {
-    return notionHandler != null && EnvironmentVariableUtil.isNotionTokenAvailable();
+    return notionApiExecutor.notionHandler != null && EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 
-  /**
-   * Checks if an entity has already been synced in the current session.
-   *
-   * @param entityName The name of the entity to check
-   * @return true if already synced, false otherwise
-   */
-  protected boolean isAlreadySyncedInSession(@NonNull String entityName) {
-    return currentSyncSession.get().contains(entityName.toLowerCase());
-  }
 
-  /**
-   * Marks an entity as synced in the current session.
-   *
-   * @param entityName The name of the entity to mark as synced
-   */
-  protected void markAsSyncedInSession(@NonNull String entityName) {
-    currentSyncSession.get().add(entityName.toLowerCase());
-    log.debug("🏷️ Marked '{}' as synced in current session", entityName);
-  }
 
-  /** Clears the current sync session (should be called at the start of batch operations). */
-  public void clearSyncSession() {
-    currentSyncSession.get().clear();
-    log.debug("🧹 Cleared sync session");
-  }
 
-  /**
-   * Resets the sync status for a specific entity.
-   *
-   * @param entityName The name of the entity to reset
-   */
-  public void resetSyncStatus(@NonNull String entityName) {
-    currentSyncSession.get().remove(entityName.toLowerCase());
-    log.debug("🔄 Reset sync status for '{}'", entityName);
-  }
 
-  /** Cleans up the sync session thread local (should be called at the end of operations). */
-  public void cleanupSyncSession() {
-    currentSyncSession.remove();
-    log.debug("🗑️ Cleaned up sync session thread local");
-  }
+
+
+
+
+
 
   /**
    * Creates a backup of the specified JSON file before sync operation.
@@ -365,8 +286,9 @@ public abstract class BaseSyncService {
    * @return true if token is available, false otherwise
    */
   public boolean validateNotionToken(@NonNull String entityType) {
-    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
-      log.warn("NOTION_TOKEN not available. Cannot sync {} from Notion.", entityType);
+    SyncValidationService.ValidationResult result = syncServiceDependencies.validationService.validateSyncPrerequisites();
+    if (!result.isValid()) {
+      log.warn("Notion token validation failed for {}: {}", entityType, result.getErrors());
       return false;
     }
     return true;
@@ -428,7 +350,7 @@ public abstract class BaseSyncService {
                       CompletableFuture.supplyAsync(
                           () -> {
                             try {
-                              rateLimitService.acquirePermit();
+                              syncServiceDependencies.rateLimitService.acquirePermit();
                               return processor.apply(item);
                             } catch (InterruptedException e) {
                               Thread.currentThread().interrupt();
@@ -443,7 +365,7 @@ public abstract class BaseSyncService {
                               throw new RuntimeException("Processing failed", e);
                             }
                           },
-                          syncExecutorService))
+                          notionApiExecutor.syncExecutorService))
               .toList();
 
       // Wait for batch completion with timeout
@@ -468,7 +390,7 @@ public abstract class BaseSyncService {
         // Update progress
         int processedCount = Math.min(endIndex, items.size());
         double progressPercent = (double) processedCount / items.size() * 100;
-        progressTracker.updateProgress(
+        syncServiceDependencies.progressTracker.updateProgress(
             operationId,
             progressStep,
             String.format(
@@ -481,7 +403,7 @@ public abstract class BaseSyncService {
               CompletableFuture.runAsync(
                   () -> {},
                   CompletableFuture.delayedExecutor(
-                      500, TimeUnit.MILLISECONDS, syncExecutorService));
+                      500, TimeUnit.MILLISECONDS, notionApiExecutor.syncExecutorService));
           delay.get();
         }
 
@@ -497,11 +419,7 @@ public abstract class BaseSyncService {
     return allResults;
   }
 
-  /** Execute a Notion API call with proper rate limiting. */
-  protected <T> T executeWithRateLimit(@NonNull Supplier<T> apiCall) throws InterruptedException {
-    rateLimitService.acquirePermit();
-    return apiCall.get();
-  }
+
 
   /** Represents the result of a synchronization operation. */
   @Getter

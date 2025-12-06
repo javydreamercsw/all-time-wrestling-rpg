@@ -38,6 +38,8 @@ import org.springframework.stereotype.Service;
 public class SeasonSyncService extends BaseSyncService {
 
   @Autowired private SeasonService seasonService;
+  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
+  @Autowired private SyncSessionManager syncSessionManager;
 
   @Autowired
   public SeasonSyncService(
@@ -53,7 +55,7 @@ public class SeasonSyncService extends BaseSyncService {
    */
   public SyncResult syncSeasons(@NonNull String operationId) {
     // Check if already synced in current session
-    if (isAlreadySyncedInSession("seasons")) {
+    if (syncSessionManager.isAlreadySyncedInSession("seasons")) {
       return SyncResult.success("Seasons", 0, 0, 0);
     }
 
@@ -63,7 +65,7 @@ public class SeasonSyncService extends BaseSyncService {
     try {
       SyncResult result = performSeasonsSync(operationId, startTime);
       if (result.isSuccess()) {
-        markAsSyncedInSession("seasons");
+        syncSessionManager.markAsSyncedInSession("seasons");
       }
       return result;
     } catch (Exception e) {
@@ -152,14 +154,14 @@ public class SeasonSyncService extends BaseSyncService {
       SeasonDTO dto = new SeasonDTO();
 
       // Extract name from Notion page
-      String name = extractNameFromNotionPage(seasonPage);
+      String name = notionPageDataExtractor.extractNameFromNotionPage(seasonPage);
       dto.setName(name);
 
       // Set Notion ID for sync tracking
       dto.setNotionId(seasonPage.getId());
 
       // Extract description if available
-      String description = extractPropertyAsString(seasonPage.getRawProperties(), "Description");
+      String description = notionPageDataExtractor.extractPropertyAsString(seasonPage.getRawProperties(), "Description");
       if (description != null && !description.trim().isEmpty()) {
         dto.setDescription(description);
       } else {

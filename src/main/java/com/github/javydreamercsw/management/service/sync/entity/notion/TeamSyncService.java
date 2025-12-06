@@ -47,6 +47,7 @@ public class TeamSyncService extends BaseSyncService {
   @Autowired private TeamRepository teamRepository;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private FactionRepository factionRepository;
+  @Autowired private NotionPageDataExtractor notionPageDataExtractor;
 
   @Autowired
   public TeamSyncService(
@@ -156,9 +157,9 @@ public class TeamSyncService extends BaseSyncService {
       TeamDTO dto = new TeamDTO();
 
       // Extract basic properties using existing methods
-      dto.setName(extractNameFromNotionPage(teamPage));
+      dto.setName(notionPageDataExtractor.extractNameFromNotionPage(teamPage));
       dto.setExternalId(teamPage.getId());
-      dto.setDescription(extractDescriptionFromNotionPage(teamPage));
+      dto.setDescription(notionPageDataExtractor.extractDescriptionFromNotionPage(teamPage));
 
       // Log available properties for debugging
       log.debug(
@@ -223,13 +224,14 @@ public class TeamSyncService extends BaseSyncService {
           wrestler2Name);
 
       // Extract faction name if available
-      String factionName = extractFactionFromNotionPage(teamPage);
+      String factionName = notionPageDataExtractor.extractFactionFromNotionPage(teamPage);
       if (factionName != null && !factionName.trim().isEmpty()) {
         dto.setFactionName(factionName);
       }
 
       // Extract status
-      String statusStr = extractPropertyAsString(teamPage.getRawProperties(), "Status");
+      String statusStr =
+          notionPageDataExtractor.extractPropertyAsString(teamPage.getRawProperties(), "Status");
       if (statusStr != null && !statusStr.trim().isEmpty()) {
         try {
           dto.setStatus(TeamStatus.valueOf(statusStr.toUpperCase()));
@@ -593,83 +595,5 @@ public class TeamSyncService extends BaseSyncService {
       log.error("Failed to save team '{}': {}", dto.getName(), e.getMessage(), e);
       throw new RuntimeException("Failed to save team: " + dto.getName(), e);
     }
-  }
-
-  /** Extracts faction from a team page. */
-  private String extractFactionFromNotionPage(
-      @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page) {
-    if (page.getRawProperties() != null) {
-      // Try different possible property names for faction
-      Object faction = page.getRawProperties().get("Faction");
-      if (faction == null) {
-        faction = page.getRawProperties().get("faction");
-      }
-
-      if (faction != null && !faction.toString().trim().isEmpty()) {
-        String factionStr = faction.toString().trim();
-
-        // If it shows as "X relations", preserve existing faction data
-        if (factionStr.matches("\\d+ relations?")) {
-          log.debug(
-              "Faction shows as relationship count ({}), preserving existing faction", factionStr);
-          return null;
-        }
-
-        // If it looks like a relationship ID, don't use it
-        if (factionStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-          log.debug(
-              "Faction appears to be a relationship ID, preserving existing faction: {}",
-              factionStr);
-          return null;
-        }
-
-        // If it's a readable name, use it
-        log.debug("Found faction name: {}", factionStr);
-        return factionStr;
-      }
-    }
-    return null;
-  }
-
-  /** Extracts a string property from any NotionPage type using raw properties. */
-  private String extractStringPropertyFromNotionPage(
-      @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page,
-      @NonNull String propertyName) {
-    if (page.getRawProperties() != null) {
-      Object property = page.getRawProperties().get(propertyName);
-      if (property != null) {
-        String propertyStr = property.toString().trim();
-
-        // Handle relationship properties that show as "X items" or "X relations"
-        if (propertyStr.matches("\\d+ (items?|relations?)")) {
-          log.debug(
-              "Property '{}' shows as relationship count ({}), cannot resolve in sync mode",
-              propertyName,
-              propertyStr);
-          return null;
-        }
-
-        // Handle comma-separated values
-        if (propertyStr.contains(",")) {
-          String[] parts = propertyStr.split(",");
-          String firstPart = parts[0].trim();
-          if (!firstPart.isEmpty()) {
-            log.debug(
-                "Property '{}' contains multiple values, using first: '{}'",
-                propertyName,
-                firstPart);
-            return firstPart;
-          }
-        }
-
-        // Return the property value if it's not empty and not a UUID
-        if (!propertyStr.isEmpty()
-            && !propertyStr.matches(
-                "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-          return propertyStr;
-        }
-      }
-    }
-    return null;
   }
 }
