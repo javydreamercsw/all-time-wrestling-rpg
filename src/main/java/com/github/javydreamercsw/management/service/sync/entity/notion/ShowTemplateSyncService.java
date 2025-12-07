@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -38,29 +37,15 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ShowTemplateSyncService extends BaseSyncService {
 
-  @Autowired private ShowTemplateService showTemplateService;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository
-      showTypeRepository;
+  private final ShowTemplateService showTemplateService;
 
   @Autowired
   public ShowTemplateSyncService(
       ObjectMapper objectMapper,
-      NotionSyncProperties syncProperties,
-      SyncServiceDependencies syncServiceDependencies) {
-    super(objectMapper, syncProperties, syncServiceDependencies);
-  }
-
-  public ShowTemplateSyncService(
-      ObjectMapper objectMapper,
-      NotionSyncProperties syncProperties,
       SyncServiceDependencies syncServiceDependencies,
-      ShowTemplateService showTemplateService,
-      com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository showTypeRepository) {
-    super(objectMapper, syncProperties, syncServiceDependencies);
+      ShowTemplateService showTemplateService) {
+    super(objectMapper, syncServiceDependencies);
     this.showTemplateService = showTemplateService;
-    this.showTypeRepository = showTypeRepository;
   }
 
   /**
@@ -71,7 +56,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
    */
   public SyncResult syncShowTemplates(@NonNull String operationId) {
     // Check if already synced in current session
-    if (syncServiceDependencies.syncSessionManager.isAlreadySyncedInSession("templates")) {
+    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("templates")) {
       log.info("⏭️ Show templates already synced in current session, skipping");
       return SyncResult.success("Show Templates", 0, 0, 0);
     }
@@ -82,7 +67,7 @@ public class ShowTemplateSyncService extends BaseSyncService {
     try {
       SyncResult result = performShowTemplatesSync(operationId, startTime);
       if (result.isSuccess()) {
-        syncServiceDependencies.syncSessionManager.markAsSyncedInSession("Show Templates");
+        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("Show Templates");
       }
       return result;
     } catch (Exception e) {
@@ -94,15 +79,18 @@ public class ShowTemplateSyncService extends BaseSyncService {
   private SyncResult performShowTemplatesSync(@NonNull String operationId, long startTime) {
     try {
       // Check if entity is enabled
-      if (!syncProperties.isEntityEnabled("templates")) {
+      if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("templates")) {
         log.info("Show templates sync is disabled in configuration");
         return SyncResult.success("Show Templates", 0, 0, 0);
       }
 
       // Initialize progress tracking (3 steps: retrieve, convert, save to database)
-      syncServiceDependencies.progressTracker.startOperation(operationId, "Sync Show Templates", 3);
-      syncServiceDependencies.progressTracker.updateProgress(
-          operationId, 1, "Retrieving show templates from Notion...");
+      syncServiceDependencies
+          .getProgressTracker()
+          .startOperation(operationId, "Sync Show Templates", 3);
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 1, "Retrieving show templates from Notion...");
 
       // Retrieve show templates from Notion
       log.info("📥 Retrieving show templates from Notion...");
@@ -115,9 +103,10 @@ public class ShowTemplateSyncService extends BaseSyncService {
             "Show Templates", "NotionHandler is not available for sync operations");
       }
 
-      syncServiceDependencies.rateLimitService.acquirePermit();
+      syncServiceDependencies.getRateLimitService().acquirePermit();
       List<ShowTemplatePage> templatePages =
-          syncServiceDependencies.notionHandler.loadAllShowTemplates();
+          executeWithRateLimit(
+              () -> syncServiceDependencies.getNotionHandler().loadAllShowTemplates());
       log.info(
           "✅ Retrieved {} show templates in {}ms",
           templatePages.size(),
@@ -125,16 +114,19 @@ public class ShowTemplateSyncService extends BaseSyncService {
 
       if (templatePages.isEmpty()) {
         log.info("No show templates found in Notion database");
-        syncServiceDependencies.progressTracker.completeOperation(
-            operationId, true, "No show templates to sync", 0);
+        syncServiceDependencies
+            .getProgressTracker()
+            .completeOperation(operationId, true, "No show templates to sync", 0);
         return SyncResult.success("Show Templates", 0, 0, 0);
       }
 
       // Convert to DTOs
-      syncServiceDependencies.progressTracker.updateProgress(
-          operationId,
-          2,
-          String.format("Converting %d show templates to DTOs...", templatePages.size()));
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(
+              operationId,
+              2,
+              String.format("Converting %d show templates to DTOs...", templatePages.size()));
       log.info("🔄 Converting show templates to DTOs...");
       long convertStart = System.currentTimeMillis();
       List<ShowTemplateDTO> templateDTOs =
@@ -145,10 +137,12 @@ public class ShowTemplateSyncService extends BaseSyncService {
           System.currentTimeMillis() - convertStart);
 
       // Save show templates to database
-      syncServiceDependencies.progressTracker.updateProgress(
-          operationId,
-          3,
-          String.format("Saving %d show templates to database...", templateDTOs.size()));
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(
+              operationId,
+              3,
+              String.format("Saving %d show templates to database...", templateDTOs.size()));
       log.info("💾 Saving show templates to database...");
       long dbStart = System.currentTimeMillis();
       int savedCount = saveShowTemplatesToDatabase(templateDTOs);
@@ -160,14 +154,18 @@ public class ShowTemplateSyncService extends BaseSyncService {
           "🎉 Successfully synchronized {} show templates in {}ms total", savedCount, totalTime);
 
       // Complete progress tracking
-      syncServiceDependencies.progressTracker.completeOperation(
-          operationId,
-          true,
-          String.format("Successfully synced %d show templates", savedCount),
-          savedCount);
+      syncServiceDependencies
+          .getProgressTracker()
+          .completeOperation(
+              operationId,
+              true,
+              String.format("Successfully synced %d show templates", savedCount),
+              savedCount);
 
       // Record success in health monitor
-      syncServiceDependencies.healthMonitor.recordSuccess("Show Templates", totalTime, savedCount);
+      syncServiceDependencies
+          .getHealthMonitor()
+          .recordSuccess("Show Templates", totalTime, savedCount);
 
       return SyncResult.success("Show Templates", savedCount, 0, 0);
 
@@ -175,11 +173,12 @@ public class ShowTemplateSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize show templates from Notion after {}ms", totalTime, e);
 
-      syncServiceDependencies.progressTracker.failOperation(
-          operationId, "Sync failed: " + e.getMessage());
+      syncServiceDependencies
+          .getProgressTracker()
+          .failOperation(operationId, "Sync failed: " + e.getMessage());
 
       // Record failure in health monitor
-      syncServiceDependencies.healthMonitor.recordFailure("Show Templates", e.getMessage());
+      syncServiceDependencies.getHealthMonitor().recordFailure("Show Templates", e.getMessage());
 
       return SyncResult.failure("Show Templates", e.getMessage());
     }
@@ -200,13 +199,19 @@ public class ShowTemplateSyncService extends BaseSyncService {
   private ShowTemplateDTO convertShowTemplatePageToDTO(@NonNull ShowTemplatePage templatePage) {
     ShowTemplateDTO dto = new ShowTemplateDTO();
     dto.setName(
-        syncServiceDependencies.notionPageDataExtractor.extractNameFromNotionPage(templatePage));
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractNameFromNotionPage(templatePage));
     dto.setDescription(
-        syncServiceDependencies.notionPageDataExtractor.extractDescriptionFromNotionPage(
-            templatePage));
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractDescriptionFromNotionPage(templatePage));
 
     // Extract show type from Notion properties
-    String showType = extractShowTypeFromNotionPage(templatePage);
+    String showType =
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractShowTypeFromNotionPage(templatePage);
     dto.setShowType(showType);
     dto.setExternalId(templatePage.getId());
     return dto;
@@ -247,7 +252,8 @@ public class ShowTemplateSyncService extends BaseSyncService {
           template = new ShowTemplate();
         }
 
-        Optional<ShowType> showTypeOpt = showTypeRepository.findByName(dto.getShowType());
+        Optional<ShowType> showTypeOpt =
+            syncServiceDependencies.getShowTypeRepository().findByName(dto.getShowType());
         if (showTypeOpt.isEmpty()) {
           log.warn("Show type not found: {}", dto.getShowType());
           skippedCount++;

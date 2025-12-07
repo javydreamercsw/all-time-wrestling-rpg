@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.config;
 
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import org.springframework.context.annotation.Bean;

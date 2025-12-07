@@ -19,8 +19,6 @@ package com.github.javydreamercsw.management.service.sync.base;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import java.io.IOException;
@@ -58,8 +56,6 @@ public abstract class BaseSyncService {
     this.syncServiceDependencies = syncServiceDependencies;
   }
 
-
-
   /**
    * Helper method to check if NotionHandler is available for operations.
    *
@@ -68,6 +64,18 @@ public abstract class BaseSyncService {
   public boolean isNotionHandlerAvailable() {
     return syncServiceDependencies.getNotionHandler() != null
         && EnvironmentVariableUtil.isNotionTokenAvailable();
+  }
+
+  /**
+   * Executes an API call with rate limiting.
+   *
+   * @param apiCall The API call to execute.
+   * @return The result of the API call.
+   */
+  @SneakyThrows
+  protected <T> T executeWithRateLimit(@NonNull java.util.function.Supplier<T> apiCall) {
+    syncServiceDependencies.getRateLimitService().acquirePermit();
+    return apiCall.get();
   }
 
   /**
@@ -85,7 +93,8 @@ public abstract class BaseSyncService {
     }
 
     // Create backup directory
-    Path backupDir = Paths.get(syncServiceDependencies.getNotionSyncProperties().getBackup().getDirectory());
+    Path backupDir =
+        Paths.get(syncServiceDependencies.getNotionSyncProperties().getBackup().getDirectory());
     Files.createDirectories(backupDir);
 
     // Create backup file with timestamp
@@ -108,7 +117,8 @@ public abstract class BaseSyncService {
    */
   private void cleanupOldBackups(@NonNull String fileName) {
     try {
-      Path backupDir = Paths.get(syncServiceDependencies.getNotionSyncProperties().getBackup().getDirectory());
+      Path backupDir =
+          Paths.get(syncServiceDependencies.getNotionSyncProperties().getBackup().getDirectory());
       if (!Files.exists(backupDir)) {
         return;
       }
@@ -354,12 +364,14 @@ public abstract class BaseSyncService {
         // Update progress
         int processedCount = Math.min(endIndex, items.size());
         double progressPercent = (double) processedCount / items.size() * 100;
-        syncServiceDependencies.getProgressTracker().updateProgress(
-            operationId,
-            progressStep,
-            String.format(
-                "%s %d/%d items (%.1f%%)",
-                description, processedCount, items.size(), progressPercent));
+        syncServiceDependencies
+            .getProgressTracker()
+            .updateProgress(
+                operationId,
+                progressStep,
+                String.format(
+                    "%s %d/%d items (%.1f%%)",
+                    description, processedCount, items.size(), progressPercent));
 
         // Small delay between batches to be nice to the API
         if (endIndex < items.size()) {

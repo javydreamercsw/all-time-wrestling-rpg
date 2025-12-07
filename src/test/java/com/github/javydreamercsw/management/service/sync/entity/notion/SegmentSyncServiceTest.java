@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -25,7 +26,8 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -34,9 +36,9 @@ import com.github.javydreamercsw.management.dto.SegmentDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -46,9 +48,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,26 +66,26 @@ class SegmentSyncServiceTest {
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionRateLimitService rateLimitService;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private SegmentSyncService segmentSyncService;
 
   @BeforeEach
   void setUp() {
-    Mockito.lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    segmentSyncService = new SegmentSyncService(objectMapper, syncProperties, notionHandler);
-    injectMockDependencies();
-  }
-
-  private void injectMockDependencies() {
-    ReflectionTestUtils.setField(segmentSyncService, "segmentService", segmentService);
-    ReflectionTestUtils.setField(segmentSyncService, "showService", showService);
-    ReflectionTestUtils.setField(segmentSyncService, "wrestlerService", wrestlerService);
-    ReflectionTestUtils.setField(segmentSyncService, "segmentTypeService", segmentTypeService);
-    ReflectionTestUtils.setField(segmentSyncService, "showSyncService", showSyncService);
-    ReflectionTestUtils.setField(segmentSyncService, "notionHandler", notionHandler);
-    ReflectionTestUtils.setField(segmentSyncService, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(segmentSyncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(segmentSyncService, "rateLimitService", rateLimitService);
+    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    segmentSyncService =
+        new SegmentSyncService(
+            objectMapper,
+            syncServiceDependencies,
+            segmentService,
+            showService,
+            wrestlerService,
+            segmentTypeService,
+            showSyncService);
   }
 
   @Test

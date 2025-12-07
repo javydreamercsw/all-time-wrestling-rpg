@@ -18,13 +18,11 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.RivalryPage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,22 +39,18 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class RivalrySyncService extends BaseSyncService {
   private final RivalryService rivalryService;
-  private final WrestlerRepository wrestlerRepository;
 
   @Autowired
   public RivalrySyncService(
       ObjectMapper objectMapper,
-      NotionSyncProperties syncProperties,
       SyncServiceDependencies syncServiceDependencies,
-      RivalryService rivalryService,
-      WrestlerRepository wrestlerRepository) {
-    super(objectMapper, syncProperties, syncServiceDependencies);
+      RivalryService rivalryService) {
+    super(objectMapper, syncServiceDependencies);
     this.rivalryService = rivalryService;
-    this.wrestlerRepository = wrestlerRepository;
   }
 
   public SyncResult syncRivalries(@NonNull String operationId) {
-    if (syncServiceDependencies.syncSessionManager.isAlreadySyncedInSession("rivalries")) {
+    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("rivalries")) {
       log.info("⏭️ Rivalries already synced in current session, skipping");
       return SyncResult.success("Rivalries", 0, 0, 0);
     }
@@ -67,12 +61,12 @@ public class RivalrySyncService extends BaseSyncService {
     try {
       SyncResult result = performRivalriesSync(operationId);
       if (result.isSuccess()) {
-        syncServiceDependencies.syncSessionManager.markAsSyncedInSession("rivalries");
+        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("rivalries");
       }
       return result;
     } catch (Exception e) {
       log.error("Failed to sync rivalries", e);
-      syncServiceDependencies.healthMonitor.recordFailure("Rivalries", e.getMessage());
+      syncServiceDependencies.getHealthMonitor().recordFailure("Rivalries", e.getMessage());
       return SyncResult.failure("Rivalries", e.getMessage());
     }
   }
@@ -83,40 +77,55 @@ public class RivalrySyncService extends BaseSyncService {
       return SyncResult.failure("Rivalries", "NotionHandler is not available.");
     }
 
-    syncServiceDependencies.progressTracker.startOperation(operationId, "Sync Rivalries", 3);
+    syncServiceDependencies.getProgressTracker().startOperation(operationId, "Sync Rivalries", 3);
 
     // 1. Load all rivalry pages from Notion
-    syncServiceDependencies.progressTracker.updateProgress(
-        operationId, 1, "Retrieving rivalries from Notion...");
-    List<RivalryPage> rivalryPages = executeWithRateLimit(syncServiceDependencies.notionHandler::loadAllRivalries);
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 1, "Retrieving rivalries from Notion...");
+    List<RivalryPage> rivalryPages =
+        executeWithRateLimit(() -> syncServiceDependencies.getNotionHandler().loadAllRivalries());
     log.info("Found {} rivalries in Notion.", rivalryPages.size());
-    syncServiceDependencies.progressTracker.updateProgress(
-        operationId, 1, "Retrieved " + rivalryPages.size() + " rivalries.");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 1, "Retrieved " + rivalryPages.size() + " rivalries.");
 
     // 2. Convert pages to DTOs
-    syncServiceDependencies.progressTracker.updateProgress(
-        operationId, 2, "Processing rivalry data...");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 2, "Processing rivalry data...");
     List<RivalryDTO> dtos = rivalryPages.stream().map(this::toDto).collect(Collectors.toList());
-    syncServiceDependencies.progressTracker.updateProgress(
-        operationId, 2, "Processed " + dtos.size() + " rivalries.");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 2, "Processed " + dtos.size() + " rivalries.");
 
     // 3. Save to database
-    syncServiceDependencies.progressTracker.updateProgress(
-        operationId, 3, "Saving rivalries to database...");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 3, "Saving rivalries to database...");
     AtomicInteger createdCount = new AtomicInteger(0);
     AtomicInteger updatedCount = new AtomicInteger(0);
     saveRivalriesToDatabase(dtos, createdCount, updatedCount);
-    syncServiceDependencies.progressTracker.updateProgress(
-        operationId,
-        3,
-        "Saved to database. Created: " + createdCount.get() + ", Updated: " + updatedCount.get());
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(
+            operationId,
+            3,
+            "Saved to database. Created: "
+                + createdCount.get()
+                + ", Updated: "
+                + updatedCount.get());
 
-    syncServiceDependencies.progressTracker.completeOperation(
-        operationId, true, "Sync complete.", createdCount.get() + updatedCount.get());
-    syncServiceDependencies.healthMonitor.recordSuccess(
-        "Rivalries",
-        System.currentTimeMillis() - System.currentTimeMillis(),
-        createdCount.get() + updatedCount.get());
+    syncServiceDependencies
+        .getProgressTracker()
+        .completeOperation(
+            operationId, true, "Sync complete.", createdCount.get() + updatedCount.get());
+    syncServiceDependencies
+        .getHealthMonitor()
+        .recordSuccess(
+            "Rivalries",
+            System.currentTimeMillis() - System.currentTimeMillis(),
+            createdCount.get() + updatedCount.get());
 
     return SyncResult.success("Rivalries", createdCount.get(), updatedCount.get(), 0);
   }
@@ -127,11 +136,13 @@ public class RivalrySyncService extends BaseSyncService {
     dto.setExternalId(page.getId());
     try {
       dto.setWrestler1Name(
-          syncServiceDependencies.notionPageDataExtractor.extractPropertyAsString(
-              props, "Wrestler 1"));
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractPropertyAsString(props, "Wrestler 1"));
       dto.setWrestler2Name(
-          syncServiceDependencies.notionPageDataExtractor.extractPropertyAsString(
-              props, "Wrestler 2"));
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractPropertyAsString(props, "Wrestler 2"));
     } catch (ClassCastException e) {
       log.warn(
           "Failed to cast wrestler name for rivalry page {}: {}", page.getId(), e.getMessage());
@@ -160,8 +171,10 @@ public class RivalrySyncService extends BaseSyncService {
         continue;
       }
 
-      Optional<Wrestler> wrestler1Opt = wrestlerRepository.findByName(dto.getWrestler1Name());
-      Optional<Wrestler> wrestler2Opt = wrestlerRepository.findByName(dto.getWrestler2Name());
+      Optional<Wrestler> wrestler1Opt =
+          syncServiceDependencies.getWrestlerRepository().findByName(dto.getWrestler1Name());
+      Optional<Wrestler> wrestler2Opt =
+          syncServiceDependencies.getWrestlerRepository().findByName(dto.getWrestler2Name());
 
       if (wrestler1Opt.isEmpty() || wrestler2Opt.isEmpty()) {
         log.warn(

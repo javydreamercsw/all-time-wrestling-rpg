@@ -18,11 +18,8 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
-import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.TeamDTO;
@@ -43,16 +40,18 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class TeamSyncService extends BaseSyncService {
 
-  @Autowired private TeamService teamService;
-  @Autowired private TeamRepository teamRepository;
-  @Autowired private WrestlerService wrestlerService;
-  @Autowired private FactionRepository factionRepository;
+  private final TeamService teamService;
+  private final WrestlerService wrestlerService;
 
   @Autowired
   public TeamSyncService(
       ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies) {
+      SyncServiceDependencies syncServiceDependencies,
+      TeamService teamService,
+      WrestlerService wrestlerService) {
     super(objectMapper, syncServiceDependencies);
+    this.teamService = teamService;
+    this.wrestlerService = wrestlerService;
   }
 
   /**
@@ -67,18 +66,21 @@ public class TeamSyncService extends BaseSyncService {
     try {
       // Start progress tracking
       SyncProgressTracker.SyncProgress progress =
-          syncServiceDependencies.getProgressTracker().startOperation(
-              "Teams Sync", "Synchronizing teams from Notion", 0);
+          syncServiceDependencies
+              .getProgressTracker()
+              .startOperation("Teams Sync", "Synchronizing teams from Notion", 0);
       operationId = progress.getOperationId();
 
       // Load teams from Notion
-      syncServiceDependencies.getProgressTracker().addLogMessage(
-          operationId, "📥 Loading teams from Notion database...", "INFO");
+      syncServiceDependencies
+          .getProgressTracker()
+          .addLogMessage(operationId, "📥 Loading teams from Notion database...", "INFO");
 
       if (!isNotionHandlerAvailable()) {
         log.warn("NotionHandler not available. Cannot sync teams from Notion.");
-        syncServiceDependencies.getProgressTracker().failOperation(
-            operationId, "NotionHandler is not available for sync operations");
+        syncServiceDependencies
+            .getProgressTracker()
+            .failOperation(operationId, "NotionHandler is not available for sync operations");
         return SyncResult.failure("Teams", "NotionHandler is not available for sync operations");
       }
 
@@ -86,10 +88,12 @@ public class TeamSyncService extends BaseSyncService {
           executeWithRateLimit(syncServiceDependencies.getNotionHandler()::loadAllTeams);
 
       if (teamPages.isEmpty()) {
-        syncServiceDependencies.getProgressTracker().addLogMessage(
-            operationId, "⚠️ No teams found in Notion database", "WARN");
-        syncServiceDependencies.getProgressTracker().completeOperation(
-            operationId, true, "No teams to sync", 0);
+        syncServiceDependencies
+            .getProgressTracker()
+            .addLogMessage(operationId, "⚠️ No teams found in Notion database", "WARN");
+        syncServiceDependencies
+            .getProgressTracker()
+            .completeOperation(operationId, true, "No teams to sync", 0);
 
         // Record success in health monitor
         long totalTime = System.currentTimeMillis() - startTime;
@@ -98,8 +102,10 @@ public class TeamSyncService extends BaseSyncService {
         return SyncResult.success("Teams", 0, 0, 0);
       }
 
-      syncServiceDependencies.getProgressTracker().addLogMessage(
-          operationId, String.format("📋 Found %d teams in Notion", teamPages.size()), "INFO");
+      syncServiceDependencies
+          .getProgressTracker()
+          .addLogMessage(
+              operationId, String.format("📋 Found %d teams in Notion", teamPages.size()), "INFO");
 
       // Convert to DTOs
       List<TeamDTO> teamDTOs =
@@ -111,14 +117,17 @@ public class TeamSyncService extends BaseSyncService {
               2, // Progress step
               "Converted %d/%d teams");
 
-      syncServiceDependencies.getProgressTracker().addLogMessage(
-          operationId,
-          String.format("✅ Successfully converted %d teams to DTOs", teamDTOs.size()),
-          "INFO");
+      syncServiceDependencies
+          .getProgressTracker()
+          .addLogMessage(
+              operationId,
+              String.format("✅ Successfully converted %d teams to DTOs", teamDTOs.size()),
+              "INFO");
 
       // Save teams to database
-      syncServiceDependencies.getProgressTracker().addLogMessage(
-          operationId, "💾 Saving teams to database...", "INFO");
+      syncServiceDependencies
+          .getProgressTracker()
+          .addLogMessage(operationId, "💾 Saving teams to database...", "INFO");
       int savedCount =
           (int)
               processWithControlledParallelism(
@@ -133,8 +142,13 @@ public class TeamSyncService extends BaseSyncService {
                   .count();
 
       // Complete progress tracking
-      syncServiceDependencies.getProgressTracker().completeOperation(
-          operationId, true, String.format("Successfully synced %d teams", savedCount), savedCount);
+      syncServiceDependencies
+          .getProgressTracker()
+          .completeOperation(
+              operationId,
+              true,
+              String.format("Successfully synced %d teams", savedCount),
+              savedCount);
 
       // Record success in health monitor
       long totalTime = System.currentTimeMillis() - startTime;
@@ -146,10 +160,12 @@ public class TeamSyncService extends BaseSyncService {
       log.error("❌ Teams sync failed", e);
 
       // Fail progress tracking
-      syncServiceDependencies.getProgressTracker().addLogMessage(
-          operationId, "❌ Team sync failed: " + e.getMessage(), "ERROR");
-      syncServiceDependencies.getProgressTracker().failOperation(
-          operationId, "Sync failed: " + e.getMessage());
+      syncServiceDependencies
+          .getProgressTracker()
+          .addLogMessage(operationId, "❌ Team sync failed: " + e.getMessage(), "ERROR");
+      syncServiceDependencies
+          .getProgressTracker()
+          .failOperation(operationId, "Sync failed: " + e.getMessage());
 
       // Record failure in health monitor
       syncServiceDependencies.getHealthMonitor().recordFailure("Teams", e.getMessage());
@@ -168,8 +184,9 @@ public class TeamSyncService extends BaseSyncService {
           syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(teamPage));
       dto.setExternalId(teamPage.getId());
       dto.setDescription(
-          syncServiceDependencies.getNotionPageDataExtractor().extractDescriptionFromNotionPage(
-              teamPage));
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractDescriptionFromNotionPage(teamPage));
 
       // Log available properties for debugging
       log.debug(
@@ -235,15 +252,18 @@ public class TeamSyncService extends BaseSyncService {
 
       // Extract faction name if available
       String factionName =
-          syncServiceDependencies.getNotionPageDataExtractor().extractFactionFromNotionPage(teamPage);
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractFactionFromNotionPage(teamPage);
       if (factionName != null && !factionName.trim().isEmpty()) {
         dto.setFactionName(factionName);
       }
 
       // Extract status
       String statusStr =
-          syncServiceDependencies.getNotionPageDataExtractor().extractPropertyAsString(
-              teamPage.getRawProperties(), "Status");
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractPropertyAsString(teamPage.getRawProperties(), "Status");
       if (statusStr != null && !statusStr.trim().isEmpty()) {
         try {
           dto.setStatus(TeamStatus.valueOf(statusStr.toUpperCase()));
@@ -290,9 +310,6 @@ public class TeamSyncService extends BaseSyncService {
 
       // If we can't resolve it directly, return null to indicate it's unresolved for now
       return null;
-
-      // If we can't resolve it, return the count so we can detect this case later
-      return propertyStr;
     }
 
     // If it's a UUID, it's likely a relation ID that wasn't resolved
@@ -382,14 +399,18 @@ public class TeamSyncService extends BaseSyncService {
 
           // Find and set faction if specified
           if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
-            Faction faction = factionRepository.findByName(dto.getFactionName()).orElse(null);
+            Faction faction =
+                syncServiceDependencies
+                    .getFactionRepository()
+                    .findByName(dto.getFactionName())
+                    .orElse(null);
             existingTeam.setFaction(faction);
             if (faction == null) {
               log.warn("Faction '{}' not found for team '{}'", dto.getFactionName(), dto.getName());
             }
           }
 
-          teamRepository.saveAndFlush(existingTeam);
+          syncServiceDependencies.getTeamRepository().saveAndFlush(existingTeam);
           log.info("✅ Updated team metadata: {}", dto.getName());
           return existingTeam;
         } else {
@@ -449,14 +470,18 @@ public class TeamSyncService extends BaseSyncService {
 
           // Find and set faction if specified
           if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
-            Faction faction = factionRepository.findByName(dto.getFactionName()).orElse(null);
+            Faction faction =
+                syncServiceDependencies
+                    .getFactionRepository()
+                    .findByName(dto.getFactionName())
+                    .orElse(null);
             existingTeam.setFaction(faction);
             if (faction == null) {
               log.warn("Faction '{}' not found for team '{}'", dto.getFactionName(), dto.getName());
             }
           }
 
-          teamRepository.saveAndFlush(existingTeam);
+          syncServiceDependencies.getTeamRepository().saveAndFlush(existingTeam);
           log.info("✅ Updated team metadata: {}", dto.getName());
           return existingTeam;
         } else {
@@ -501,14 +526,18 @@ public class TeamSyncService extends BaseSyncService {
 
         // Find and set faction if specified
         if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
-          Faction faction = factionRepository.findByName(dto.getFactionName()).orElse(null);
+          Faction faction =
+              syncServiceDependencies
+                  .getFactionRepository()
+                  .findByName(dto.getFactionName())
+                  .orElse(null);
           existingTeam.setFaction(faction);
           if (faction == null) {
             log.warn("Faction '{}' not found for team '{}'", dto.getFactionName(), dto.getName());
           }
         }
 
-        teamRepository.saveAndFlush(existingTeam);
+        syncServiceDependencies.getTeamRepository().saveAndFlush(existingTeam);
         log.info("✅ Updated team: {}", dto.getName());
         return existingTeam;
 
@@ -522,7 +551,11 @@ public class TeamSyncService extends BaseSyncService {
 
         // Find faction ID if specified
         if (dto.getFactionName() != null && !dto.getFactionName().trim().isEmpty()) {
-          Faction faction = factionRepository.findByName(dto.getFactionName()).orElse(null);
+          Faction faction =
+              syncServiceDependencies
+                  .getFactionRepository()
+                  .findByName(dto.getFactionName())
+                  .orElse(null);
           if (faction != null) {
             factionId = faction.getId();
           } else {
@@ -558,7 +591,7 @@ public class TeamSyncService extends BaseSyncService {
               || dto.getStatus() != null
               || dto.getFormedDate() != null
               || dto.getDisbandedDate() != null) {
-            teamRepository.saveAndFlush(newTeam);
+            syncServiceDependencies.getTeamRepository().saveAndFlush(newTeam);
           }
 
           log.info("✅ Created new team: {}", dto.getName());

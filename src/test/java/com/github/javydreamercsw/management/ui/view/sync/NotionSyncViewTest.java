@@ -19,7 +19,7 @@ package com.github.javydreamercsw.management.ui.view.sync;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;

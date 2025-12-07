@@ -22,16 +22,19 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -66,6 +69,10 @@ class ShowTemplateSyncServiceTest {
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private NotionRateLimitService rateLimitService;
   @Mock private ShowTypeRepository showTypeRepository;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
+  @Mock private SyncSessionManager syncSessionManager;
+  @Mock private NotionPageDataExtractor notionPageDataExtractor;
+
   private ShowTemplateSyncService syncService;
 
   private MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
@@ -80,19 +87,20 @@ class ShowTemplateSyncServiceTest {
         .when(EnvironmentVariableUtil::getNotionToken)
         .thenReturn("test-token");
 
+    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    lenient().when(syncServiceDependencies.getShowTypeRepository()).thenReturn(showTypeRepository);
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient()
+        .when(syncServiceDependencies.getNotionPageDataExtractor())
+        .thenReturn(notionPageDataExtractor);
     syncService =
-        new ShowTemplateSyncService(
-            objectMapper, syncProperties, notionHandler, showTemplateService, showTypeRepository);
-
-    // Inject mocked dependencies using reflection
-    ReflectionTestUtils.setField(syncService, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(syncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(syncService, "rateLimitService", rateLimitService);
-
-    // Clear sync session before each test
-    syncService.clearSyncSession();
+        new ShowTemplateSyncService(objectMapper, syncServiceDependencies, showTemplateService);
 
     // Mock repository calls to simulate existing show types
     ShowType weekly = new ShowType();
@@ -135,7 +143,7 @@ class ShowTemplateSyncServiceTest {
   void shouldFailWhenNotionHandlerNotAvailable() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", null);
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(null);
 
     // When
     BaseSyncService.SyncResult result = syncService.syncShowTemplates("test-operation");
@@ -182,8 +190,8 @@ class ShowTemplateSyncServiceTest {
   @DisplayName("Should track progress during sync operation")
   void shouldTrackProgressDuringSyncOperation() {
     // Given
-    when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
+    lenient().when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
+    // ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler); // Redundant
     when(notionHandler.loadAllShowTemplates()).thenReturn(Arrays.asList());
 
     // When
@@ -203,7 +211,6 @@ class ShowTemplateSyncServiceTest {
   void shouldProcessTemplatesWithValidShowTypeMappings() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
 
     // Create a simple mock template page
     ShowTemplatePage templatePage = mock(ShowTemplatePage.class);
@@ -232,7 +239,6 @@ class ShowTemplateSyncServiceTest {
   void shouldSkipSyncWhenAlreadySyncedInCurrentSession() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
     when(notionHandler.loadAllShowTemplates()).thenReturn(List.of());
 
     // First sync
@@ -254,7 +260,6 @@ class ShowTemplateSyncServiceTest {
   void shouldCreateDTOsWithShowTypeIntelligence() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
 
     // Create mock templates that will trigger show type intelligence
     ShowTemplatePage weeklyTemplate = createSimpleMockPage("weekly-1", "RAW Template");
@@ -276,7 +281,6 @@ class ShowTemplateSyncServiceTest {
   void shouldSyncMixOfWeeklyAndPLEShowTemplatesWithCorrectTypeMapping() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
 
     // Create a realistic mix of show templates with show types from Notion
     ShowTemplatePage mondayNightRaw =
@@ -332,7 +336,6 @@ class ShowTemplateSyncServiceTest {
   void shouldHandleMixWithSomeUndeterminedShowTypes() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
 
     // Create a mix including some templates without show types (simulating missing Notion data)
     ShowTemplatePage weeklyTemplate =

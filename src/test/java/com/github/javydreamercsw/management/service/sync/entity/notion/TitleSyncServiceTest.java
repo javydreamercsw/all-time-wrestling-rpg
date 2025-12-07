@@ -22,8 +22,9 @@ import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.spy;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.ai.notion.TitlePage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -31,8 +32,8 @@ import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.Collections;
@@ -45,7 +46,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class TitleSyncServiceTest extends AbstractSyncTest {
@@ -57,8 +57,9 @@ class TitleSyncServiceTest extends AbstractSyncTest {
   @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private NotionRateLimitService rateLimitService;
-
   @Mock private TitleReignRepository titleReignRepository;
+  @Mock private TitleNotionSyncService titleNotionSyncService;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private TitleSyncService titleSyncService;
 
@@ -68,16 +69,19 @@ class TitleSyncServiceTest extends AbstractSyncTest {
     super.setUp();
     lenient().when(syncProperties.isEntityEnabled("titles")).thenReturn(true);
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    titleSyncService = new TitleSyncService(objectMapper, syncProperties, notionHandler);
 
-    // Manually inject the mocks using reflection
-    ReflectionTestUtils.setField(titleSyncService, "titleRepository", titleRepository);
-    ReflectionTestUtils.setField(titleSyncService, "wrestlerRepository", wrestlerRepository);
-    ReflectionTestUtils.setField(titleSyncService, "titleService", titleService);
-    ReflectionTestUtils.setField(titleSyncService, "titleReignRepository", titleReignRepository);
-    ReflectionTestUtils.setField(titleSyncService, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(titleSyncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(titleSyncService, "rateLimitService", rateLimitService);
+    when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    when(syncServiceDependencies.getTitleRepository()).thenReturn(titleRepository);
+    when(syncServiceDependencies.getWrestlerRepository()).thenReturn(wrestlerRepository);
+    when(syncServiceDependencies.getTitleReignRepository()).thenReturn(titleReignRepository);
+
+    titleSyncService =
+        new TitleSyncService(
+            objectMapper, syncServiceDependencies, titleService, titleNotionSyncService);
+
     lenient()
         .when(titleService.save(any(Title.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));

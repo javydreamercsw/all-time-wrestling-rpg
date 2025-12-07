@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
@@ -41,7 +40,6 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -52,16 +50,23 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class ShowSyncService extends BaseSyncService {
 
-  @Autowired private ShowService showService;
-  @Autowired private ShowTypeService showTypeService;
-  @Autowired private SeasonService seasonService;
-  @Autowired private ShowTemplateService showTemplateService;
+  private final ShowService showService;
+  private final ShowTypeService showTypeService;
+  private final SeasonService seasonService;
+  private final ShowTemplateService showTemplateService;
 
-  @Autowired
   public ShowSyncService(
       ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies) {
+      SyncServiceDependencies syncServiceDependencies,
+      ShowService showService,
+      ShowTypeService showTypeService,
+      SeasonService seasonService,
+      ShowTemplateService showTemplateService) {
     super(objectMapper, syncServiceDependencies);
+    this.showService = showService;
+    this.showTypeService = showTypeService;
+    this.seasonService = seasonService;
+    this.showTemplateService = showTemplateService;
   }
 
   /**
@@ -111,9 +116,13 @@ public class ShowSyncService extends BaseSyncService {
 
     // Check if NOTION_TOKEN is available before starting sync
     if (!validateNotionToken("shows")) {
-      syncServiceDependencies.getProgressTracker().failOperation(
-          operationId, "NOTION_TOKEN environment variable is required for Notion sync");
-      syncServiceDependencies.getHealthMonitor().recordFailure("shows", "NOTION_TOKEN not available");
+      syncServiceDependencies
+          .getProgressTracker()
+          .failOperation(
+              operationId, "NOTION_TOKEN environment variable is required for Notion sync");
+      syncServiceDependencies
+          .getHealthMonitor()
+          .recordFailure("shows", "NOTION_TOKEN not available");
       return SyncResult.failure(
           "shows", "NOTION_TOKEN environment variable is required for Notion sync");
     }
@@ -123,32 +132,39 @@ public class ShowSyncService extends BaseSyncService {
 
     // Initialize progress tracking
     syncServiceDependencies.getProgressTracker().startOperation(operationId, "Sync Shows", 10);
-    syncServiceDependencies.getProgressTracker().updateProgress(
-        operationId, 1, "Initializing sync operation...");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 1, "Initializing sync operation...");
 
     try {
       log.debug("🔧 Executing shows sync with circuit breaker and retry logic");
 
       // Execute with circuit breaker and retry logic
       SyncResult result =
-          syncServiceDependencies.getCircuitBreakerService().execute(
-              "shows",
-              () -> {
-                log.debug("🔄 Circuit breaker executing shows sync");
-                return syncServiceDependencies.getRetryService().executeWithRetry(
-                    "shows",
-                    (attemptNumber) -> {
-                      log.debug("🔄 Shows sync attempt {} starting", attemptNumber);
-                      syncServiceDependencies.getProgressTracker().updateProgress(
-                          operationId, 5, "Starting shows sync...");
-                      SyncResult attemptResult = performShowsSyncInternal(operationId, startTime);
-                      log.debug(
-                          "🔄 Shows sync attempt {} result: {}",
-                          attemptNumber,
-                          attemptResult != null ? attemptResult.isSuccess() : "NULL");
-                      return attemptResult;
-                    });
-              });
+          syncServiceDependencies
+              .getCircuitBreakerService()
+              .execute(
+                  "shows",
+                  () -> {
+                    log.debug("🔄 Circuit breaker executing shows sync");
+                    return syncServiceDependencies
+                        .getRetryService()
+                        .executeWithRetry(
+                            "shows",
+                            (attemptNumber) -> {
+                              log.debug("🔄 Shows sync attempt {} starting", attemptNumber);
+                              syncServiceDependencies
+                                  .getProgressTracker()
+                                  .updateProgress(operationId, 5, "Starting shows sync...");
+                              SyncResult attemptResult =
+                                  performShowsSyncInternal(operationId, startTime);
+                              log.debug(
+                                  "🔄 Shows sync attempt {} result: {}",
+                                  attemptNumber,
+                                  attemptResult != null ? attemptResult.isSuccess() : "NULL");
+                              return attemptResult;
+                            });
+                  });
 
       return result != null
           ? result
@@ -159,8 +175,9 @@ public class ShowSyncService extends BaseSyncService {
       log.error("❌ Failed to synchronize shows from Notion after {}ms", totalTime, e);
 
       // Fail progress tracking
-      syncServiceDependencies.getProgressTracker().failOperation(
-          operationId, "Sync failed: " + e.getMessage());
+      syncServiceDependencies
+          .getProgressTracker()
+          .failOperation(operationId, "Sync failed: " + e.getMessage());
       syncServiceDependencies.getHealthMonitor().recordFailure("shows", e.getMessage());
 
       return SyncResult.failure("shows", e.getMessage());
@@ -172,17 +189,20 @@ public class ShowSyncService extends BaseSyncService {
   private SyncResult performShowsSyncInternal(@NonNull String operationId, long startTime) {
     try {
       // Step 1: Get all local external IDs
-      syncServiceDependencies.getProgressTracker().updateProgress(
-          operationId, 1, "Fetching local show IDs");
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 1, "Fetching local show IDs");
       List<String> localExternalIds = showService.getAllExternalIds();
       log.info("Found {} shows in the local database.", localExternalIds.size());
 
       // Step 2: Get all Notion page IDs
-      syncServiceDependencies.getProgressTracker().updateProgress(
-          operationId, 2, "Fetching Notion show IDs");
-          List<String> notionShowIds =
-              super.executeWithRateLimit(
-                  () -> syncServiceDependencies.getNotionHandler().getDatabasePageIds("Shows"));      log.info("Found {} shows in Notion.", notionShowIds.size());
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 2, "Fetching Notion show IDs");
+      List<String> notionShowIds =
+          super.executeWithRateLimit(
+              () -> syncServiceDependencies.getNotionHandler().getDatabasePageIds("Shows"));
+      log.info("Found {} shows in Notion.", notionShowIds.size());
 
       // Step 3: Calculate the difference
       List<String> newShowIds =
@@ -192,15 +212,17 @@ public class ShowSyncService extends BaseSyncService {
 
       if (newShowIds.isEmpty()) {
         log.info("No new shows to sync from Notion.");
-        syncServiceDependencies.getProgressTracker().completeOperation(
-            operationId, true, "No new shows to sync.", 0);
+        syncServiceDependencies
+            .getProgressTracker()
+            .completeOperation(operationId, true, "No new shows to sync.", 0);
         return SyncResult.success("shows", 0, 0, 0);
       }
       log.info("Found {} new shows to sync from Notion.", newShowIds.size());
 
       // Step 4: Load only the new ShowPage objects in parallel
-      syncServiceDependencies.getProgressTracker().updateProgress(
-          operationId, 3, "Loading new show pages from Notion");
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 3, "Loading new show pages from Notion");
       List<ShowPage> showPages =
           processWithControlledParallelism(
               newShowIds,
@@ -223,13 +245,15 @@ public class ShowSyncService extends BaseSyncService {
               .collect(java.util.stream.Collectors.toList());
 
       // Step 5: Convert to DTOs
-      syncServiceDependencies.getProgressTracker().updateProgress(
-          operationId, 4, "Converting new shows to DTOs");
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 4, "Converting new shows to DTOs");
       List<ShowDTO> showDTOs = convertShowPagesToDTO(validShowPages, operationId);
 
       // Step 6: Save to database
-      syncServiceDependencies.getProgressTracker().updateProgress(
-          operationId, 5, "Saving new shows to database");
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 5, "Saving new shows to database");
       int savedCount = saveShowsToDatabase(showDTOs);
 
       int errorCount = newShowIds.size() - savedCount;
@@ -240,8 +264,9 @@ public class ShowSyncService extends BaseSyncService {
           success
               ? "Delta-sync for shows completed successfully."
               : "Delta-sync for shows completed with errors.";
-      syncServiceDependencies.getProgressTracker().completeOperation(
-          operationId, success, message, savedCount);
+      syncServiceDependencies
+          .getProgressTracker()
+          .completeOperation(operationId, success, message, savedCount);
 
       if (success) {
         return SyncResult.success("shows", savedCount, 0, errorCount);
@@ -273,16 +298,19 @@ public class ShowSyncService extends BaseSyncService {
           syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(showPage);
       dto.setName(showName);
       dto.setDescription(
-          syncServiceDependencies.getNotionPageDataExtractor().extractDescriptionFromNotionPage(
-              showPage));
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractDescriptionFromNotionPage(showPage));
       dto.setShowType(
-          syncServiceDependencies.getNotionPageDataExtractor().extractPropertyAsString(
-              showPage.getRawProperties(), "Show Type"));
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractPropertyAsString(showPage.getRawProperties(), "Show Type"));
       dto.setShowDate(extractShowDate(showPage));
       dto.setSeasonName(extractSeasonName(showPage));
       dto.setTemplateName(
-          syncServiceDependencies.getNotionPageDataExtractor().extractPropertyAsString(
-              showPage.getRawProperties(), "Template"));
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractPropertyAsString(showPage.getRawProperties(), "Template"));
       dto.setExternalId(showPage.getId());
 
       log.debug("Converted show: {} -> DTO", showName);
@@ -497,8 +525,9 @@ public class ShowSyncService extends BaseSyncService {
   // Property extraction methods
   private String extractShowDate(@NonNull ShowPage showPage) {
     String dateStr =
-        syncServiceDependencies.getNotionPageDataExtractor().extractPropertyAsString(
-            showPage.getRawProperties(), "Date");
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractPropertyAsString(showPage.getRawProperties(), "Date");
     if (dateStr != null) {
       if ("date".equals(dateStr) || dateStr.isEmpty()) {
         log.debug("Skipping placeholder date value: {}", dateStr);
@@ -533,6 +562,7 @@ public class ShowSyncService extends BaseSyncService {
         }
       }
     }
+    return null;
   }
 
   public List<String> getShowIds() {
@@ -557,8 +587,9 @@ public class ShowSyncService extends BaseSyncService {
       int savedCount = saveShowsToDatabase(showDTOs);
       String message = "Show sync completed successfully. Synced " + savedCount + " show.";
       log.info(message);
-      syncServiceDependencies.getProgressTracker().completeOperation(
-          operationId, true, message, savedCount);
+      syncServiceDependencies
+          .getProgressTracker()
+          .completeOperation(operationId, true, message, savedCount);
       return SyncResult.success("Show", savedCount, 0, 0);
     } catch (Exception e) {
       String errorMessage = "Failed to synchronize show from Notion: " + e.getMessage();

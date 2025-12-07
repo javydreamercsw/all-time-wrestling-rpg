@@ -18,7 +18,10 @@ package com.github.javydreamercsw.management.config;
 
 import static org.mockito.Mockito.mock;
 
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -32,5 +35,26 @@ public class TestNotionConfiguration {
   @Primary
   public NotionHandler testNotionHandler() {
     return mock(NotionHandler.class);
+  }
+
+  @Bean
+  @Primary
+  public NotionRateLimitService testNotionRateLimitService() {
+    return mock(NotionRateLimitService.class);
+  }
+
+  @Bean
+  @Primary
+  public NotionSyncProperties testNotionSyncProperties() {
+    return mock(NotionSyncProperties.class);
+  }
+
+  @Bean
+  @Primary
+  public NotionApiExecutor testNotionApiExecutor(
+      NotionHandler notionHandler,
+      NotionRateLimitService notionRateLimitService,
+      NotionSyncProperties notionSyncProperties) {
+    return new NotionApiExecutor(notionHandler, notionRateLimitService, notionSyncProperties);
   }
 }

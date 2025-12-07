@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +42,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class ShowTypeSyncServiceTest extends AbstractSyncTest {
 
   @Mock private ShowTypeService showTypeService;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private ShowTypeSyncService showTypeSyncService;
 
@@ -48,11 +50,13 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
   @Override
   protected void setUp() {
     super.setUp(); // Call parent setup first
-    showTypeSyncService = new ShowTypeSyncService(objectMapper, syncProperties, notionHandler);
-    ReflectionTestUtils.setField(showTypeSyncService, "showTypeService", showTypeService);
-    ReflectionTestUtils.setField(showTypeSyncService, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(showTypeSyncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(showTypeSyncService, "rateLimitService", rateLimitService);
+    when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    showTypeSyncService =
+        new ShowTypeSyncService(objectMapper, syncServiceDependencies, showTypeService);
   }
 
   @Test

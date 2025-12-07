@@ -19,8 +19,16 @@ package com.github.javydreamercsw.management.service.sync;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import lombok.Getter;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +51,13 @@ public class SyncServiceDependencies {
   private final NotionPageDataExtractor notionPageDataExtractor;
   private final SyncSessionManager syncSessionManager;
   private final NotionApiExecutor notionApiExecutor;
+  private final FactionRepository factionRepository;
+  private final WrestlerRepository wrestlerRepository;
+  private final InjuryTypeRepository injuryTypeRepository;
+  private final ShowTypeRepository showTypeRepository;
+  private final TeamRepository teamRepository;
+  private final TitleReignRepository titleReignRepository;
+  private final TitleRepository titleRepository;
 
   @Autowired
   public SyncServiceDependencies(
@@ -59,7 +74,14 @@ public class SyncServiceDependencies {
       @NonNull NotionHandler notionHandler,
       @NonNull NotionPageDataExtractor notionPageDataExtractor,
       @NonNull SyncSessionManager syncSessionManager,
-      @NonNull NotionApiExecutor notionApiExecutor) {
+      @NonNull NotionApiExecutor notionApiExecutor,
+      @NonNull FactionRepository factionRepository,
+      @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull InjuryTypeRepository injuryTypeRepository,
+      @NonNull ShowTypeRepository showTypeRepository,
+      @NonNull TeamRepository teamRepository,
+      @NonNull TitleReignRepository titleReignRepository,
+      @NonNull TitleRepository titleRepository) {
     this.progressTracker = progressTracker;
     this.healthMonitor = healthMonitor;
     this.retryService = retryService;
@@ -74,5 +96,12 @@ public class SyncServiceDependencies {
     this.notionPageDataExtractor = notionPageDataExtractor;
     this.syncSessionManager = syncSessionManager;
     this.notionApiExecutor = notionApiExecutor;
+    this.factionRepository = factionRepository;
+    this.wrestlerRepository = wrestlerRepository;
+    this.injuryTypeRepository = injuryTypeRepository;
+    this.showTypeRepository = showTypeRepository;
+    this.teamRepository = teamRepository;
+    this.titleReignRepository = titleReignRepository;
+    this.titleRepository = titleRepository;
   }
 }

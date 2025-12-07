@@ -23,11 +23,7 @@ import com.github.javydreamercsw.base.ai.notion.NpcPage;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
-import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
-import com.github.javydreamercsw.management.service.sync.DataIntegrityChecker;
-import com.github.javydreamercsw.management.service.sync.RetryService;
-import com.github.javydreamercsw.management.service.sync.SyncTransactionManager;
-import com.github.javydreamercsw.management.service.sync.SyncValidationService;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,16 +32,11 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.springframework.test.util.ReflectionTestUtils;
 
 class NpcSyncServiceTest extends AbstractSyncTest {
 
   @Mock private NpcService npcService;
-  @Mock private RetryService retryService;
-  @Mock private CircuitBreakerService circuitBreakerService;
-  @Mock private SyncValidationService validationService;
-  @Mock private SyncTransactionManager syncTransactionManager;
-  @Mock private DataIntegrityChecker integrityChecker;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private NpcSyncService npcSyncService;
 
@@ -53,16 +44,15 @@ class NpcSyncServiceTest extends AbstractSyncTest {
   @Override
   public void setUp() {
     super.setUp(); // Call parent setup first
-    npcSyncService = new NpcSyncService(objectMapper, syncProperties, notionHandler);
-
-    // Manually inject specific mocked dependencies using reflection
-    ReflectionTestUtils.setField(npcSyncService, "npcService", npcService);
-    ReflectionTestUtils.setField(npcSyncService, "retryService", retryService);
-    ReflectionTestUtils.setField(npcSyncService, "circuitBreakerService", circuitBreakerService);
-    ReflectionTestUtils.setField(npcSyncService, "validationService", validationService);
-    ReflectionTestUtils.setField(npcSyncService, "syncTransactionManager", syncTransactionManager);
-    ReflectionTestUtils.setField(npcSyncService, "integrityChecker", integrityChecker);
-    ReflectionTestUtils.setField(npcSyncService, "rateLimitService", rateLimitService);
+    when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient()
+        .when(syncServiceDependencies.getNotionPageDataExtractor())
+        .thenReturn(notionPageDataExtractor);
+    npcSyncService = new NpcSyncService(objectMapper, syncServiceDependencies, npcService);
   }
 
   @Test

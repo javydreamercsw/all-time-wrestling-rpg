@@ -21,14 +21,11 @@ import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.base.util.NotionBlocksRetriever;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,9 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -48,15 +43,15 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class WrestlerSyncService extends BaseSyncService {
 
-  @Autowired private WrestlerService wrestlerService;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
+  private final NotionSyncServiceDependencies notionSyncServiceDependencies;
 
   @Autowired
   public WrestlerSyncService(
       ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies) {
+      SyncServiceDependencies syncServiceDependencies,
+      NotionSyncServiceDependencies notionSyncServiceDependencies) {
     super(objectMapper, syncServiceDependencies);
+    this.notionSyncServiceDependencies = notionSyncServiceDependencies;
   }
 
   /**
@@ -97,8 +92,9 @@ public class WrestlerSyncService extends BaseSyncService {
 
       // Initialize progress tracking
       syncServiceDependencies.getProgressTracker().startOperation(operationId, "Sync Wrestlers", 3);
-      syncServiceDependencies.getProgressTracker().updateProgress(
-          operationId, 1, "Retrieving wrestlers from Notion...");
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 1, "Retrieving wrestlers from Notion...");
 
       // Retrieve wrestlers from Notion
       log.info("📥 Retrieving wrestlers from Notion...");
@@ -118,38 +114,50 @@ public class WrestlerSyncService extends BaseSyncService {
           System.currentTimeMillis() - retrieveStart);
 
       // Update progress with retrieval results
-      syncServiceDependencies.getProgressTracker().updateProgress(
-          operationId,
-          1,
-          String.format(
-              "✅ Retrieved %d wrestlers from Notion in %dms",
-              wrestlerPages.size(), System.currentTimeMillis() - retrieveStart));
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(
+              operationId,
+              1,
+              String.format(
+                  "✅ Retrieved %d wrestlers from Notion in %dms",
+                  wrestlerPages.size(), System.currentTimeMillis() - retrieveStart));
 
       // Convert to DTOs and merge with existing data
-      syncServiceDependencies.getProgressTracker().updateProgress(
-          operationId,
-          2,
-          String.format(
-              "Converting %d wrestlers to DTOs and merging with existing data...",
-              wrestlerPages.size()));
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(
+              operationId,
+              2,
+              String.format(
+                  "Converting %d wrestlers to DTOs and merging with existing data...",
+                  wrestlerPages.size()));
       log.info("🔄 Converting wrestlers to DTOs and merging with existing data...");
       long convertStart = System.currentTimeMillis();
-      List<WrestlerDTO> wrestlerDTOs = convertAndMergeWrestlerData(wrestlerPages);
+      List<Wrestler> wrestlers = convertAndMergeWrestlerData(wrestlerPages);
       log.info(
           "✅ Converted and merged {} wrestlers in {}ms",
-          wrestlerDTOs.size(),
+          wrestlers.size(),
           System.currentTimeMillis() - convertStart);
 
       // Update progress with conversion results
-      syncServiceDependencies.getProgressTracker().updateProgress(
-          operationId, 3, String.format("Saving %d wrestlers to database...", wrestlerDTOs.size()));
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(
+              operationId,
+              3,
+              String.format("Saving %d wrestlers to database...", wrestlers.size()));
 
       // Save wrestlers to database
-      syncServiceDependencies.getProgressTracker().updateProgress(
-          operationId, 3, String.format("Saving %d wrestlers to database...", wrestlerDTOs.size()));
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(
+              operationId,
+              3,
+              String.format("Saving %d wrestlers to database...", wrestlers.size()));
       log.info("🗄️ Saving wrestlers to database...");
       long dbStart = System.currentTimeMillis();
-      int savedCount = saveWrestlersToDatabase(wrestlerDTOs, operationId);
+      int savedCount = saveWrestlersToDatabase(wrestlers, operationId);
       log.info(
           "✅ Saved {} wrestlers to database in {}ms",
           savedCount,
@@ -158,28 +166,32 @@ public class WrestlerSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.info(
           "🎉 Successfully synchronized {} wrestlers (JSON + Database) in {}ms total",
-          wrestlerDTOs.size(),
+          wrestlers.size(),
           totalTime);
 
       // Complete progress tracking
-      syncServiceDependencies.getProgressTracker().completeOperation(
-          operationId,
-          true,
-          String.format("Successfully synced %d wrestlers", wrestlerDTOs.size()),
-          wrestlerDTOs.size());
+      syncServiceDependencies
+          .getProgressTracker()
+          .completeOperation(
+              operationId,
+              true,
+              String.format("Successfully synced %d wrestlers", wrestlers.size()),
+              wrestlers.size());
 
       // Record success in health monitor
-      syncServiceDependencies.getHealthMonitor().recordSuccess(
-          "Wrestlers", totalTime, wrestlerDTOs.size());
+      syncServiceDependencies
+          .getHealthMonitor()
+          .recordSuccess("Wrestlers", totalTime, wrestlers.size());
 
-      return SyncResult.success("Wrestlers", wrestlerDTOs.size(), 0, 0);
+      return SyncResult.success("Wrestlers", wrestlers.size(), 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize wrestlers from Notion after {}ms", totalTime, e);
 
-      syncServiceDependencies.getProgressTracker().failOperation(
-          operationId, "Sync failed: " + e.getMessage());
+      syncServiceDependencies
+          .getProgressTracker()
+          .failOperation(operationId, "Sync failed: " + e.getMessage());
 
       // Record failure in health monitor
       syncServiceDependencies.getHealthMonitor().recordFailure("Wrestlers", e.getMessage());
@@ -188,21 +200,21 @@ public class WrestlerSyncService extends BaseSyncService {
     }
   }
 
-  /** Converts WrestlerPage objects to WrestlerDTO objects and merges with existing JSON data. */
-  private List<WrestlerDTO> convertAndMergeWrestlerData(@NonNull List<WrestlerPage> wrestlerPages) {
-    Map<String, WrestlerDTO> existingWrestlers = new HashMap<>();
+  /** Converts WrestlerPage objects to Wrestler objects and merges with existing JSON data. */
+  private List<Wrestler> convertAndMergeWrestlerData(@NonNull List<WrestlerPage> wrestlerPages) {
+    Map<String, Wrestler> existingWrestlers = new HashMap<>();
     if (syncServiceDependencies.getNotionSyncProperties().isLoadFromJson()) {
       existingWrestlers = loadExistingWrestlersFromJson();
     }
 
     // Convert Notion pages to DTOs and merge with existing data
-    List<WrestlerDTO> mergedWrestlers = new ArrayList<>();
+    List<Wrestler> mergedWrestlers = new ArrayList<>();
 
     for (WrestlerPage wrestlerPage : wrestlerPages) {
-      WrestlerDTO notionDTO = convertWrestlerPageToDTO(wrestlerPage);
+      Wrestler notionDTO = convertWrestlerPageToDTO(wrestlerPage);
 
       // Try to find existing wrestler by external ID first, then by name
-      WrestlerDTO existingDTO = null;
+      Wrestler existingDTO = null;
       if (notionDTO.getExternalId() != null) {
         existingDTO =
             existingWrestlers.values().stream()
@@ -215,12 +227,12 @@ public class WrestlerSyncService extends BaseSyncService {
       }
 
       // Merge data: preserve existing game data, update Notion data
-      WrestlerDTO mergedDTO = mergeWrestlerData(existingDTO, notionDTO);
+      Wrestler mergedDTO = mergeWrestlerData(existingDTO, notionDTO);
       mergedWrestlers.add(mergedDTO);
     }
 
     // Add any existing wrestlers that weren't found in Notion (preserve local-only wrestlers)
-    for (WrestlerDTO existing : existingWrestlers.values()) {
+    for (Wrestler existing : existingWrestlers.values()) {
       boolean foundInNotion =
           mergedWrestlers.stream()
               .anyMatch(
@@ -239,11 +251,13 @@ public class WrestlerSyncService extends BaseSyncService {
     return mergedWrestlers;
   }
 
-  /** Converts a single WrestlerPage to WrestlerDTO. */
-  private WrestlerDTO convertWrestlerPageToDTO(@NonNull WrestlerPage wrestlerPage) {
-    WrestlerDTO dto = new WrestlerDTO();
-    dto.setName(
-        syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(wrestlerPage));
+  /** Converts a single WrestlerPage to Wrestler. */
+  private Wrestler convertWrestlerPageToDTO(@NonNull WrestlerPage wrestlerPage) {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setName(
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractNameFromNotionPage(wrestlerPage));
 
     // Extract and truncate description to fit database constraint (1000 chars)
     String description = extractDescriptionFromPageBody(wrestlerPage);
@@ -251,13 +265,12 @@ public class WrestlerSyncService extends BaseSyncService {
       description = description.substring(0, 997) + "...";
       log.debug(
           "Truncated description for wrestler '{}' from {} to 1000 characters",
-          dto.getName(),
+          wrestler.getName(),
           description.length() + 3);
     }
-    dto.setDescription(description);
+    wrestler.setDescription(description);
 
-    dto.setFaction(extractFactionFromWrestlerPage(wrestlerPage));
-    dto.setExternalId(wrestlerPage.getId());
+    wrestler.setExternalId(wrestlerPage.getId());
 
     Map<String, Object> rawProperties = wrestlerPage.getRawProperties();
     if (rawProperties != null) {
@@ -265,70 +278,73 @@ public class WrestlerSyncService extends BaseSyncService {
       Object fansObj = rawProperties.get("Fans");
       if (fansObj instanceof Number) {
         try {
-          dto.setFans(((Number) fansObj).longValue());
+          wrestler.setFans(((Number) fansObj).longValue());
         } catch (NumberFormatException e) {
-          log.warn("Invalid 'Fans' value for {}: {}", dto.getName(), fansObj);
+          log.warn("Invalid 'Fans' value for {}: {}", wrestler.getName(), fansObj);
         }
       }
 
       // Extract Gender
       Object genderObj = rawProperties.get("Gender");
       if (genderObj instanceof String) {
-        dto.setGender((String) genderObj);
+        try {
+          wrestler.setGender(Gender.valueOf((String) genderObj));
+        } catch (IllegalArgumentException e) {
+          log.warn("Invalid 'Gender' value for {}: {}", wrestler.getName(), genderObj);
+        }
       }
 
       // Extract Bumps
       Object bumpsObj = rawProperties.get("Bumps");
       if (bumpsObj instanceof Number) {
         try {
-          dto.setBumps(((Number) bumpsObj).intValue());
+          wrestler.setBumps(((Number) bumpsObj).intValue());
         } catch (NumberFormatException e) {
-          log.warn("Invalid 'Bumps' value for {}: {}", dto.getName(), bumpsObj);
+          log.warn("Invalid 'Bumps' value for {}: {}", wrestler.getName(), bumpsObj);
         }
       }
 
       // Extract IsPlayer
       Object isPlayerObj = rawProperties.get("Player");
-      dto.setIsPlayer(Boolean.TRUE.equals(isPlayerObj));
+      wrestler.setIsPlayer(Boolean.TRUE.equals(isPlayerObj));
 
-      // Extract CreationDate
-      Object creationDateObj = rawProperties.get("Created");
-      if (creationDateObj instanceof String) {
-        dto.setCreationDate((String) creationDateObj);
-      }
       // Extract Tier
       Object tierObj = rawProperties.get("Tier");
       if (tierObj instanceof String) {
-        dto.setTier((String) tierObj);
+        try {
+          wrestler.setTier(WrestlerTier.fromDisplayName((String) tierObj));
+        } catch (IllegalArgumentException e) {
+          log.warn("Invalid 'Tier' value for {}: {}", wrestler.getName(), tierObj);
+        }
       }
 
       // Extract Starting Health
       Object startingHealthObj = rawProperties.get("Starting Health");
       if (startingHealthObj instanceof Number) {
-        dto.setStartingHealth(((Number) startingHealthObj).intValue());
+        wrestler.setStartingHealth(((Number) startingHealthObj).intValue());
       }
       // Extract Low Health
       Object lowHealthObj = rawProperties.get("Low Health");
       if (lowHealthObj instanceof Number) {
-        dto.setLowHealth(((Number) lowHealthObj).intValue());
+        wrestler.setLowHealth(((Number) lowHealthObj).intValue());
       }
       // Extract Starting Stamina
       Object startingStaminaObj = rawProperties.get("Starting Stamina");
       if (startingStaminaObj instanceof Number) {
-        dto.setStartingStamina(((Number) startingStaminaObj).intValue());
+        wrestler.setStartingStamina(((Number) startingStaminaObj).intValue());
       }
       // Extract Low Stamina
       Object lowStaminaObj = rawProperties.get("Low Stamina");
       if (lowStaminaObj instanceof Number) {
-        dto.setLowStamina(((Number) lowStaminaObj).intValue());
+        wrestler.setLowStamina(((Number) lowStaminaObj).intValue());
       }
       // Extract Deck Size
       Object deckSizeObj = rawProperties.get("Deck Size");
       if (deckSizeObj instanceof Number) {
-        dto.setDeckSize(((Number) deckSizeObj).intValue());
+        wrestler.setDeckSize(((Number) deckSizeObj).intValue());
       }
     }
-    return dto;
+    return wrestler;
   }
 
   /** Extracts description from the page body/content using NotionBlocksRetriever. */
@@ -354,44 +370,9 @@ public class WrestlerSyncService extends BaseSyncService {
     return "";
   }
 
-  /** Extracts faction from a WrestlerPage. */
-  private String extractFactionFromWrestlerPage(@NonNull WrestlerPage wrestlerPage) {
-    if (wrestlerPage.getRawProperties() == null) {
-      return null;
-    }
-
-    // Try different possible property names for faction
-    Object factionProperty = wrestlerPage.getRawProperties().get("Faction");
-    if (factionProperty == null) {
-      factionProperty = wrestlerPage.getRawProperties().get("Team");
-    }
-    if (factionProperty == null) {
-      factionProperty = wrestlerPage.getRawProperties().get("faction");
-    }
-
-    if (factionProperty != null) {
-      String factionStr = factionProperty.toString().trim();
-
-      // If it shows as "X relations", we need to resolve the relationship
-      if (factionStr.matches("\\d+ relations?")) {
-        log.debug(
-            "Faction shows as relationship count ({}), preserving existing faction", factionStr);
-        return null;
-      }
-
-      // If it's already a readable name, use it
-      if (!factionStr.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-        log.debug("Found faction name: {}", factionStr);
-        return factionStr;
-      }
-    }
-
-    return null;
-  }
-
   /** Loads existing wrestlers from the wrestlers.json file. */
-  private Map<String, WrestlerDTO> loadExistingWrestlersFromJson() {
-    Map<String, WrestlerDTO> existingWrestlers = new HashMap<>();
+  private Map<String, Wrestler> loadExistingWrestlersFromJson() {
+    Map<String, Wrestler> existingWrestlers = new HashMap<>();
     Path wrestlersFile = Paths.get("src/main/resources/wrestlers.json");
 
     if (!Files.exists(wrestlersFile)) {
@@ -400,19 +381,15 @@ public class WrestlerSyncService extends BaseSyncService {
     }
 
     try {
-      List<WrestlerDTO> wrestlers =
+      List<Wrestler> wrestlers =
           objectMapper.readValue(
               wrestlersFile.toFile(),
-              objectMapper.getTypeFactory().constructCollectionType(List.class, WrestlerDTO.class));
+              objectMapper.getTypeFactory().constructCollectionType(List.class, Wrestler.class));
 
-      for (WrestlerDTO wrestler : wrestlers) {
+      for (Wrestler wrestler : wrestlers) {
         if (wrestler.getName() != null) {
           existingWrestlers.put(wrestler.getName(), wrestler);
-          log.debug(
-              "Loaded existing wrestler: {} with faction: {} and description: {}",
-              wrestler.getName(),
-              wrestler.getFaction(),
-              wrestler.getDescription());
+          log.debug("Loaded existing wrestler: {}", wrestler.getName());
         }
       }
 
@@ -425,12 +402,11 @@ public class WrestlerSyncService extends BaseSyncService {
   }
 
   /** Merges Notion data with existing wrestler data, preserving game-specific fields. */
-  private WrestlerDTO mergeWrestlerData(WrestlerDTO existing, @NonNull WrestlerDTO notion) {
-    WrestlerDTO merged = new WrestlerDTO();
+  private Wrestler mergeWrestlerData(Wrestler existing, @NonNull Wrestler notion) {
+    Wrestler merged = new Wrestler();
 
     log.debug("Merging wrestler data for: {}", notion.getName());
     if (existing != null) {
-      log.debug("  Existing faction: {}", existing.getFaction());
       log.debug("  Existing description: {}", existing.getDescription());
     } else {
       log.debug("  No existing data found for wrestler: {}", notion.getName());
@@ -447,15 +423,6 @@ public class WrestlerSyncService extends BaseSyncService {
       merged.setDescription(existing.getDescription());
     } else {
       merged.setDescription("Professional wrestler competing in All Time Wrestling");
-    }
-
-    // Smart faction handling: prefer Notion if available, otherwise preserve existing
-    if (notion.getFaction() != null && !notion.getFaction().trim().isEmpty()) {
-      merged.setFaction(notion.getFaction());
-    } else if (existing != null && existing.getFaction() != null) {
-      merged.setFaction(existing.getFaction());
-    } else {
-      merged.setFaction(null);
     }
 
     // Smart fans handling: prefer Notion if available, otherwise preserve existing
@@ -485,17 +452,8 @@ public class WrestlerSyncService extends BaseSyncService {
       merged.setBumps(0);
     }
 
-    // Smart creationDate handling: prefer Notion if available, otherwise preserve existing
-    if (notion.getCreationDate() != null && !notion.getCreationDate().trim().isEmpty()) {
-      merged.setCreationDate(notion.getCreationDate());
-    } else if (existing != null && existing.getCreationDate() != null) {
-      merged.setCreationDate(existing.getCreationDate());
-    } else {
-      merged.setCreationDate(null);
-    }
-
     // Smart gender handling: prefer Notion if available, otherwise preserve existing
-    if (notion.getGender() != null && !notion.getGender().trim().isEmpty()) {
+    if (notion.getGender() != null) {
       merged.setGender(notion.getGender());
     } else if (existing != null && existing.getGender() != null) {
       merged.setGender(existing.getGender());
@@ -504,7 +462,7 @@ public class WrestlerSyncService extends BaseSyncService {
     }
 
     // Smart tier handling: prefer Notion if available, otherwise preserve existing
-    if (notion.getTier() != null && !notion.getTier().trim().isEmpty()) {
+    if (notion.getTier() != null) {
       merged.setTier(notion.getTier());
     } else if (existing != null && existing.getTier() != null) {
       merged.setTier(existing.getTier());
@@ -563,146 +521,33 @@ public class WrestlerSyncService extends BaseSyncService {
 
   /** Saves wrestler DTOs to the database. */
   private int saveWrestlersToDatabase(
-      @NonNull List<WrestlerDTO> wrestlerDTOs, @NonNull String operationId) {
-    log.info("Starting database persistence for {} wrestlers", wrestlerDTOs.size());
+      @NonNull List<Wrestler> wrestlers, @NonNull String operationId) {
+    log.info("Starting database persistence for {} wrestlers", wrestlers.size());
 
     int savedCount = 0;
     int skippedCount = 0;
     int processedCount = 0;
 
-    for (WrestlerDTO dto : wrestlerDTOs) {
+    for (Wrestler dto : wrestlers) {
       processedCount++;
 
       // Update progress every 5 wrestlers
       if (processedCount % 5 == 0) {
-        syncServiceDependencies.getProgressTracker().updateProgress(
-            operationId,
-            4,
-            String.format(
-                "Saving wrestlers to database... (%d/%d processed)",
-                processedCount, wrestlerDTOs.size()));
+        syncServiceDependencies
+            .getProgressTracker()
+            .updateProgress(
+                operationId,
+                4,
+                String.format(
+                    "Saving wrestlers to database... (%d/%d processed)",
+                    processedCount, wrestlers.size()));
       }
 
       try {
-        // Smart duplicate handling - prefer external ID, fallback to name
-        Wrestler wrestler = null;
-        boolean isNewWrestler = false;
-
-        // 1. Try to find by external ID first (most reliable)
-        if (dto.getExternalId() != null && !dto.getExternalId().trim().isEmpty()) {
-          log.debug("Searching for existing wrestler with external ID: {}", dto.getExternalId());
-          wrestler = wrestlerService.findByExternalId(dto.getExternalId()).orElse(null);
-          if (wrestler != null) {
-            log.debug(
-                "Found existing wrestler by external ID: {} for wrestler: {}",
-                dto.getExternalId(),
-                dto.getName());
-          } else {
-            log.debug("No existing wrestler found with external ID: {}", dto.getExternalId());
-          }
-        }
-
-        // 2. Fallback to name matching if external ID didn't work
-        if (wrestler == null && dto.getName() != null && !dto.getName().trim().isEmpty()) {
-          log.debug("Searching for existing wrestler with name: {}", dto.getName());
-          wrestler = wrestlerService.findByName(dto.getName()).orElse(null);
-          if (wrestler != null) {
-            log.debug("Found existing wrestler by name: {}", dto.getName());
-          } else {
-            log.debug("No existing wrestler found with name: {}", dto.getName());
-          }
-        }
-
-        // 3. Create new wrestler if no segment found
-        if (wrestler == null) {
-          wrestler = Wrestler.builder().build();
-          isNewWrestler = true;
-          log.info(
-              "🆕 Creating new wrestler: {} with external ID: {}",
-              dto.getName(),
-              dto.getExternalId());
-        } else {
-          log.info(
-              "🔄 Updating existing wrestler: {} (ID: {}) with external ID: {}",
-              dto.getName(),
-              wrestler.getId(),
-              dto.getExternalId());
-        }
-
-        // Set basic properties (always update these)
-        wrestler.setName(dto.getName());
-        wrestler.setExternalId(dto.getExternalId());
-
-        if (dto.getGender() != null && !dto.getGender().isBlank()) {
-          try {
-            wrestler.setGender(Gender.valueOf(dto.getGender().toUpperCase()));
-          } catch (IllegalArgumentException e) {
-            log.warn("Invalid sex value '{}' for wrestler '{}'", dto.getGender(), dto.getName());
-          }
-        }
-
-        if (dto.getTier() != null && !dto.getTier().isBlank()) {
-          try {
-            wrestler.setTier(WrestlerTier.fromDisplayName(dto.getTier()));
-          } catch (IllegalArgumentException e) {
-            log.warn("Invalid tier value '{}' for wrestler '{}'", dto.getTier(), dto.getName());
-          }
-        }
-
-        // Update description if provided
-        if (dto.getDescription() != null && !dto.getDescription().trim().isEmpty()) {
-          wrestler.setDescription(dto.getDescription());
-          log.debug(
-              "Updated description for wrestler {}: {}",
-              dto.getName(),
-              dto.getDescription().substring(0, Math.min(50, dto.getDescription().length()))
-                  + "...");
-        }
-
-        // Set default values for required fields if this is a new wrestler
-        if (isNewWrestler) {
-          wrestler.setDeckSize(dto.getDeckSize() != null ? dto.getDeckSize() : 15);
-          wrestler.setStartingHealth(dto.getStartingHealth() != null ? dto.getStartingHealth() : 0);
-          wrestler.setLowHealth(dto.getLowHealth() != null ? dto.getLowHealth() : 0);
-          wrestler.setStartingStamina(
-              dto.getStartingStamina() != null ? dto.getStartingStamina() : 0);
-          wrestler.setLowStamina(dto.getLowStamina() != null ? dto.getLowStamina() : 0);
-          wrestler.setFans(dto.getFans() != null ? dto.getFans() : 0L);
-          wrestler.setIsPlayer(dto.getIsPlayer() != null ? dto.getIsPlayer() : false);
-          wrestler.setBumps(dto.getBumps() != null ? dto.getBumps() : 0);
-          wrestler.setCreationDate(java.time.Instant.now());
-        } else {
-          // For existing wrestlers, update game fields from DTO if they have values
-          if (dto.getDeckSize() != null) wrestler.setDeckSize(dto.getDeckSize());
-          if (dto.getStartingHealth() != null) wrestler.setStartingHealth(dto.getStartingHealth());
-          if (dto.getLowHealth() != null) wrestler.setLowHealth(dto.getLowHealth());
-          if (dto.getStartingStamina() != null)
-            wrestler.setStartingStamina(dto.getStartingStamina());
-          if (dto.getLowStamina() != null) wrestler.setLowStamina(dto.getLowStamina());
-          if (dto.getFans() != null) wrestler.setFans(dto.getFans());
-          if (dto.getIsPlayer() != null) wrestler.setIsPlayer(dto.getIsPlayer());
-          if (dto.getBumps() != null) wrestler.setBumps(dto.getBumps());
-        }
-
-        // Save the wrestler
-        log.info(
-            "💾 Saving wrestler to database: {} (ID: {}, isNew: {})",
-            wrestler.getName(),
-            wrestler.getId(),
-            isNewWrestler);
-
-        Wrestler savedWrestler;
-        if (isNewWrestler) {
-          savedWrestler = wrestlerService.save(wrestler);
-        } else {
-          savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
-        }
+        notionSyncServiceDependencies.getWrestlerRepository().saveAndFlush(dto);
         savedCount++;
 
-        log.info(
-            "✅ Wrestler saved successfully: {} (Final ID: {})",
-            savedWrestler.getName(),
-            savedWrestler.getId());
+        log.info("✅ Wrestler saved successfully: {} (Final ID: {})", dto.getName(), dto.getId());
 
       } catch (Exception e) {
         log.error("❌ Failed to save wrestler: {} - {}", dto.getName(), e.getMessage());
@@ -714,41 +559,15 @@ public class WrestlerSyncService extends BaseSyncService {
         "Database persistence completed: {} saved/updated, {} skipped", savedCount, skippedCount);
 
     // Final progress update
-    syncServiceDependencies.getProgressTracker().updateProgress(
-        operationId,
-        4,
-        String.format(
-            "✅ Completed database save: %d wrestlers saved/updated, %d skipped",
-            savedCount, skippedCount));
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(
+            operationId,
+            4,
+            String.format(
+                "✅ Completed database save: %d wrestlers saved/updated, %d skipped",
+                savedCount, skippedCount));
 
     return savedCount;
-  }
-
-  public SyncResult syncToNotion(@NonNull String operationId) {
-    return wrestlerNotionSyncService.syncToNotion(operationId);
-  }
-
-  /** DTO for Wrestler data from Notion. */
-  @Setter
-  @Getter
-  public static class WrestlerDTO {
-    // Getters and setters
-    private String name;
-    private String description;
-    private String externalId; // Notion page ID
-    private String gender;
-    private String tier;
-
-    // Game-specific fields (preserved from existing data)
-    private Integer deckSize;
-    private Integer startingHealth;
-    private Integer lowHealth;
-    private Integer startingStamina;
-    private Integer lowStamina;
-    private Long fans;
-    private Boolean isPlayer;
-    private Integer bumps;
-    private String faction;
-    private String creationDate;
   }
 }

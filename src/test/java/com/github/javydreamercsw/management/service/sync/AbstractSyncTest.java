@@ -21,8 +21,10 @@ import static org.mockito.Mockito.lenient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +43,9 @@ public abstract class AbstractSyncTest {
   @Mock protected SyncHealthMonitor healthMonitor;
   @Mock protected ObjectMapper objectMapper;
   @Mock protected NotionRateLimitService rateLimitService;
+  @Mock protected SyncSessionManager syncSessionManager;
+  @Mock protected SyncServiceDependencies syncServiceDependencies;
+  @Mock protected NotionPageDataExtractor notionPageDataExtractor;
 
   protected static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
@@ -64,5 +69,9 @@ public abstract class AbstractSyncTest {
   protected void setUp() {
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient()
+        .when(syncServiceDependencies.getNotionPageDataExtractor())
+        .thenReturn(notionPageDataExtractor);
   }
 }

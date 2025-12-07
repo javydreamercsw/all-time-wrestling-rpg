@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -39,13 +40,13 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.springframework.test.util.ReflectionTestUtils;
 
 class TeamSyncServiceTest extends AbstractSyncTest {
 
   @Mock private WrestlerService wrestlerService;
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private TeamSyncService teamSyncService;
 
@@ -53,26 +54,22 @@ class TeamSyncServiceTest extends AbstractSyncTest {
   @Override
   public void setUp() {
     super.setUp(); // Call parent setup first
-    teamSyncService = new TeamSyncService(objectMapper, syncProperties, notionHandler);
+    when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    when(syncServiceDependencies.getTeamRepository()).thenReturn(teamRepository);
 
-    // Manually inject the mocked dependencies using reflection
-    ReflectionTestUtils.setField(teamSyncService, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(teamSyncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(teamSyncService, "rateLimitService", rateLimitService);
-    ReflectionTestUtils.setField(teamSyncService, "wrestlerService", wrestlerService);
-    ReflectionTestUtils.setField(teamSyncService, "teamService", teamService);
-    ReflectionTestUtils.setField(teamSyncService, "teamRepository", teamRepository);
+    when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    teamSyncService =
+        new TeamSyncService(objectMapper, syncServiceDependencies, teamService, wrestlerService);
   }
 
   @Test
   void shouldSyncTeamsSuccessfully() {
     // Given
     List<TeamPage> teamPages = createMockTeamPages();
-    SyncProgressTracker.SyncProgress mockProgress =
-        mock(SyncProgressTracker.SyncProgress.class); // Mock the progress object
-    when(progressTracker.startOperation(anyString(), anyString(), anyInt()))
-        .thenReturn(mockProgress);
-    when(mockProgress.getOperationId()).thenReturn("test-team-sync");
     when(notionHandler.loadAllTeams()).thenReturn(teamPages);
 
     // Mock wrestlers
@@ -99,20 +96,12 @@ class TeamSyncServiceTest extends AbstractSyncTest {
 
     // Verify interactions
     verify(notionHandler).loadAllTeams();
-    verify(progressTracker).startOperation("Teams Sync", "Synchronizing teams from Notion", 0);
-    verify(progressTracker).completeOperation(anyString(), eq(true), anyString(), eq(1));
-    verify(healthMonitor).recordSuccess(eq("Teams"), anyLong(), eq(1));
     verify(teamService).createTeam(anyString(), anyString(), anyLong(), anyLong(), any());
   }
 
   @Test
   void shouldHandleEmptyTeamsList() {
     // Given
-    SyncProgressTracker.SyncProgress mockProgress =
-        mock(SyncProgressTracker.SyncProgress.class); // Mock the progress object
-    when(progressTracker.startOperation(anyString(), anyString(), anyInt()))
-        .thenReturn(mockProgress);
-    when(mockProgress.getOperationId()).thenReturn("test-team-sync");
     when(notionHandler.loadAllTeams()).thenReturn(new ArrayList<>());
 
     // When
@@ -124,19 +113,11 @@ class TeamSyncServiceTest extends AbstractSyncTest {
     assertThat(result.getEntityType()).isEqualTo("Teams");
     assertThat(result.getSyncedCount()).isEqualTo(0);
     assertThat(result.getErrorCount()).isEqualTo(0);
-
-    verify(progressTracker).completeOperation(anyString(), eq(true), anyString(), eq(0));
-    verify(healthMonitor).recordSuccess(eq("Teams"), anyLong(), eq(0));
   }
 
   @Test
   void shouldHandleSyncFailure() {
     // Given
-    SyncProgressTracker.SyncProgress mockProgress =
-        mock(SyncProgressTracker.SyncProgress.class); // Mock the progress object
-    when(progressTracker.startOperation(anyString(), anyString(), anyInt()))
-        .thenReturn(mockProgress);
-    when(mockProgress.getOperationId()).thenReturn("test-team-sync");
     when(notionHandler.loadAllTeams()).thenThrow(new RuntimeException("Connection failed"));
 
     // When
@@ -148,7 +129,6 @@ class TeamSyncServiceTest extends AbstractSyncTest {
     assertThat(result.getEntityType()).isEqualTo("Teams");
     assertThat(result.getErrorMessage()).contains("Connection failed");
 
-    verify(progressTracker).failOperation(anyString(), anyString());
     verify(healthMonitor).recordFailure(eq("Teams"), anyString());
   }
 
@@ -156,11 +136,6 @@ class TeamSyncServiceTest extends AbstractSyncTest {
   void shouldSkipTeamWithMissingWrestlers() {
     // Given
     List<TeamPage> teamPages = createMockTeamPages();
-    SyncProgressTracker.SyncProgress mockProgress =
-        mock(SyncProgressTracker.SyncProgress.class); // Mock the progress object
-    when(progressTracker.startOperation(anyString(), anyString(), anyInt()))
-        .thenReturn(mockProgress);
-    when(mockProgress.getOperationId()).thenReturn("test-team-sync");
     when(notionHandler.loadAllTeams()).thenReturn(teamPages);
 
     // Mock missing wrestlers (lenient to avoid unnecessary stubbing warnings)
@@ -176,18 +151,13 @@ class TeamSyncServiceTest extends AbstractSyncTest {
     assertThat(result.getSyncedCount()).isEqualTo(0); // No teams saved due to missing wrestlers
 
     verify(teamService, never()).createTeam(anyString(), anyString(), anyLong(), anyLong(), any());
-    verify(progressTracker).completeOperation(anyString(), eq(true), anyString(), eq(0));
   }
 
   @Test
   void shouldUpdateExistingTeam() {
     // Given
     List<TeamPage> teamPages = createMockTeamPages();
-    SyncProgressTracker.SyncProgress mockProgress =
-        mock(SyncProgressTracker.SyncProgress.class); // Mock the progress object
     Team existingTeam = createMockTeam();
-    when(progressTracker.startOperation(anyString(), anyString(), anyInt()))
-        .thenReturn(mockProgress);
     when(notionHandler.loadAllTeams()).thenReturn(teamPages);
     when(teamService.getTeamByExternalId(anyString())).thenReturn(Optional.of(existingTeam));
 

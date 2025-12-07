@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Unit tests for FactionSyncService covering faction synchronization scenarios including
@@ -50,23 +50,24 @@ class FactionSyncServiceTest extends AbstractSyncTest {
   @Mock private FactionRepository factionRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private FactionService factionService;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private FactionSyncService factionSyncService;
 
   @BeforeEach
   protected void setUp() {
     super.setUp();
+    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    lenient().when(syncServiceDependencies.getFactionRepository()).thenReturn(factionRepository);
+    lenient().when(syncServiceDependencies.getWrestlerRepository()).thenReturn(wrestlerRepository);
+
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
     factionSyncService =
-        new FactionSyncService(
-            objectMapper,
-            syncProperties,
-            notionHandler,
-            factionService,
-            factionRepository,
-            wrestlerRepository);
-    ReflectionTestUtils.setField(factionSyncService, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(factionSyncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(factionSyncService, "rateLimitService", rateLimitService);
+        new FactionSyncService(objectMapper, syncServiceDependencies, factionService);
   }
 
   @Test

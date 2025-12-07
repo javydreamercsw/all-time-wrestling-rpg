@@ -14,7 +14,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.sync;
+package com.github.javydreamercsw.base.ai.notion;
 
 import jakarta.annotation.PreDestroy;
 import java.util.concurrent.Executors;

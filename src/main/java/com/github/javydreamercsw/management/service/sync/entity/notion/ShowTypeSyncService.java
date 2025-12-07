@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
@@ -29,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /** Service responsible for synchronizing show types from Notion to the database. */
@@ -37,14 +35,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ShowTypeSyncService extends BaseSyncService {
 
-  @Autowired private ShowTypeService showTypeService;
+  private final ShowTypeService showTypeService;
 
-  @Autowired
   public ShowTypeSyncService(
       ObjectMapper objectMapper,
-      NotionSyncProperties syncProperties,
-      SyncServiceDependencies syncServiceDependencies) {
-    super(objectMapper, syncProperties, syncServiceDependencies);
+      SyncServiceDependencies syncServiceDependencies,
+      ShowTypeService showTypeService) {
+    super(objectMapper, syncServiceDependencies);
+    this.showTypeService = showTypeService;
   }
 
   /**
@@ -55,7 +53,7 @@ public class ShowTypeSyncService extends BaseSyncService {
    */
   public SyncResult syncShowTypes(@NonNull String operationId) {
     // Check if already synced in current session
-    if (syncServiceDependencies.syncSessionManager.isAlreadySyncedInSession("show-types")) {
+    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("show-types")) {
       log.info("⏭️ Show types already synced in current session, skipping");
       return SyncResult.success("Show Types", 0, 0, 0);
     }
@@ -66,7 +64,7 @@ public class ShowTypeSyncService extends BaseSyncService {
     try {
       SyncResult result = performShowTypesSync(operationId, startTime);
       if (result.isSuccess()) {
-        syncServiceDependencies.syncSessionManager.markAsSyncedInSession("show-types");
+        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("show-types");
       }
       return result;
     } catch (Exception e) {
@@ -81,9 +79,12 @@ public class ShowTypeSyncService extends BaseSyncService {
 
     try {
       // Initialize progress tracking for show types sync
-      syncServiceDependencies.progressTracker.startOperation(operationId, "Sync Show Types", 4);
-      syncServiceDependencies.progressTracker.updateProgress(
-          operationId, 2, "Extracting show types from Notion...");
+      syncServiceDependencies
+          .getProgressTracker()
+          .startOperation(operationId, "Sync Show Types", 4);
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 2, "Extracting show types from Notion...");
 
       // Extract show types from the Shows database in Notion
       Set<String> notionShowTypes = extractShowTypesFromNotionShows();
@@ -96,18 +97,21 @@ public class ShowTypeSyncService extends BaseSyncService {
         createdCount += defaultResult.getCreatedCount();
         updatedCount += defaultResult.getUpdatedCount();
 
-        syncServiceDependencies.progressTracker.completeOperation(
-            operationId,
-            defaultResult.isSuccess(),
-            defaultResult.isSuccess()
-                ? "Default show types ensured successfully"
-                : defaultResult.getErrorMessage(),
-            createdCount + updatedCount);
+        syncServiceDependencies
+            .getProgressTracker()
+            .completeOperation(
+                operationId,
+                defaultResult.isSuccess(),
+                defaultResult.isSuccess()
+                    ? "Default show types ensured successfully"
+                    : defaultResult.getErrorMessage(),
+                createdCount + updatedCount);
         return SyncResult.success("Show Types", createdCount, updatedCount, 0);
       }
 
-      syncServiceDependencies.progressTracker.updateProgress(
-          operationId, 3, "Processing Notion show types...");
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 3, "Processing Notion show types...");
 
       // Sync show types from Notion
       for (String showTypeName : notionShowTypes) {
@@ -143,22 +147,25 @@ public class ShowTypeSyncService extends BaseSyncService {
           createdCount,
           updatedCount);
 
-      syncServiceDependencies.progressTracker.completeOperation(
-          operationId,
-          true,
-          String.format(
-              "Successfully synced %d show types (%d created, %d updated)",
-              createdCount + updatedCount, createdCount, updatedCount),
-          createdCount + updatedCount);
+      syncServiceDependencies
+          .getProgressTracker()
+          .completeOperation(
+              operationId,
+              true,
+              String.format(
+                  "Successfully synced %d show types (%d created, %d updated)",
+                  createdCount + updatedCount, createdCount, updatedCount),
+              createdCount + updatedCount);
 
       return SyncResult.success("Show Types", createdCount, updatedCount, 0);
 
     } catch (Exception e) {
       log.error("Failed to sync show types: {}", e.getMessage(), e);
 
-      progressTracker.completeOperation(
-          operationId, false, "Failed to sync show types: " + e.getMessage(), 0);
-      syncServiceDependencies.healthMonitor.recordFailure("Show Types", e.getMessage());
+      syncServiceDependencies
+          .getProgressTracker()
+          .completeOperation(operationId, false, "Failed to sync show types: " + e.getMessage(), 0);
+      syncServiceDependencies.getHealthMonitor().recordFailure("Show Types", e.getMessage());
 
       return SyncResult.failure("Show Types", "Failed to sync show types: " + e.getMessage());
     }
@@ -175,10 +182,14 @@ public class ShowTypeSyncService extends BaseSyncService {
 
     log.info("Extracting show types from Notion Shows database...");
     List<ShowPage> allShows =
-        executeWithRateLimit(syncServiceDependencies.notionHandler::loadAllShowsForSync);
+        executeWithRateLimit(
+            () -> syncServiceDependencies.getNotionHandler().loadAllShowsForSync());
 
     for (ShowPage showPage : allShows) {
-      String showType = extractShowTypeFromNotionPage(showPage);
+      String showType =
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractShowTypeFromNotionPage(showPage);
       if (showType != null && !showType.trim().isEmpty() && !"N/A".equals(showType)) {
         showTypes.add(showType.trim());
       }
@@ -186,33 +197,6 @@ public class ShowTypeSyncService extends BaseSyncService {
 
     log.info("Found {} unique show types in Notion: {}", showTypes.size(), showTypes);
     return showTypes;
-  }
-
-  /** Extracts show type from any NotionPage type using raw properties. */
-  private String extractShowTypeFromNotionPage(
-      @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page) {
-    if (page.getRawProperties() != null) {
-      Object showType = page.getRawProperties().get("Show Type");
-      if (showType == null) {
-        showType = page.getRawProperties().get("ShowType");
-      }
-      if (showType == null) {
-        showType = page.getRawProperties().get("Type");
-      }
-
-      if (showType != null) {
-        // Handle different property types
-        String showTypeStr =
-            syncServiceDependencies.notionPageDataExtractor.extractTextFromProperty(showType);
-        if (showTypeStr != null && !showTypeStr.trim().isEmpty() && !"N/A".equals(showTypeStr)) {
-          return showTypeStr.trim();
-        }
-      }
-
-      log.debug("Show type not found or empty for page: {}", page.getId());
-      return null;
-    }
-    return null;
   }
 
   /** Generates a description for a show type based on its name. */

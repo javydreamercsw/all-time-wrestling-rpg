@@ -16,35 +16,32 @@
 */
 package com.github.javydreamercsw.base.ai.notion;
 
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServiceDependencies;
 import jakarta.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Getter;
+import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Getter // Added to generate getters for all fields
 public class NotionApiExecutor {
 
-  public final NotionHandler notionHandler;
+  private final NotionHandler notionHandler;
   private final NotionRateLimitService rateLimitService;
   private final NotionSyncProperties syncProperties;
   private final ExecutorService syncExecutorService;
 
+  @Autowired
   public NotionApiExecutor(
-      NotionHandler notionHandler,
-      NotionRateLimitService rateLimitService,
-      NotionSyncProperties syncProperties) {
-    this.notionHandler = notionHandler;
-    this.rateLimitService = rateLimitService;
-    this.syncProperties = syncProperties;
+      NotionSyncServiceDependencies notionSyncServiceDependencies) {
+    this.notionHandler = notionSyncServiceDependencies.getNotionHandler();
+    this.rateLimitService = notionSyncServiceDependencies.getNotionRateLimitService();
+    this.syncProperties = notionSyncServiceDependencies.getNotionSyncProperties();
     this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
   }
 
@@ -67,3 +64,4 @@ public class NotionApiExecutor {
     }
   }
 }
+

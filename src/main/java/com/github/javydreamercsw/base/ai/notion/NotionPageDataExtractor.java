@@ -170,4 +170,30 @@ public class NotionPageDataExtractor {
     }
     return null;
   }
+
+  /** Extracts show type from any NotionPage type using raw properties. */
+  public String extractShowTypeFromNotionPage(
+      @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page) {
+    if (page.getRawProperties() != null) {
+      Object showType = page.getRawProperties().get("Show Type");
+      if (showType == null) {
+        showType = page.getRawProperties().get("ShowType");
+      }
+      if (showType == null) {
+        showType = page.getRawProperties().get("Type");
+      }
+
+      if (showType != null) {
+        // Handle different property types
+        String showTypeStr = extractTextFromProperty(showType); // Use local extractTextFromProperty
+        if (showTypeStr != null && !showTypeStr.trim().isEmpty() && !"N/A".equals(showTypeStr)) {
+          return showTypeStr.trim();
+        }
+      }
+
+      log.debug("Show type not found or empty for page: {}", page.getId());
+      return null;
+    }
+    return null;
+  }
 }

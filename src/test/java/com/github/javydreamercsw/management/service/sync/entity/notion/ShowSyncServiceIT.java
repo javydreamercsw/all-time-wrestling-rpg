@@ -22,16 +22,17 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.RetryService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +41,6 @@ import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
@@ -58,21 +58,36 @@ class ShowSyncServiceIT {
   @Mock private NotionRateLimitService rateLimitService;
   @Mock private CircuitBreakerService circuitBreakerService;
   @Mock private RetryService retryService;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private ShowSyncService showSyncService;
 
   @BeforeEach
   @SneakyThrows
   void setUp() {
+    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
     lenient()
         .when(objectMapper.getTypeFactory())
         .thenReturn(com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance());
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    lenient()
+        .when(syncServiceDependencies.getCircuitBreakerService())
+        .thenReturn(circuitBreakerService);
+    lenient().when(syncServiceDependencies.getRetryService()).thenReturn(retryService);
 
-    showSyncService = new ShowSyncService(objectMapper, syncProperties, notionHandler);
-
-    injectMockDependencies();
+    showSyncService =
+        new ShowSyncService(
+            objectMapper,
+            syncServiceDependencies,
+            showService,
+            showTypeService,
+            seasonService,
+            showTemplateService);
 
     // Mock resilience services to execute immediately
     lenient()
@@ -99,19 +114,6 @@ class ShowSyncServiceIT {
                 throw new RuntimeException(e);
               }
             });
-  }
-
-  private void injectMockDependencies() {
-    ReflectionTestUtils.setField(showSyncService, "showService", showService);
-    ReflectionTestUtils.setField(showSyncService, "showTypeService", showTypeService);
-    ReflectionTestUtils.setField(showSyncService, "seasonService", seasonService);
-    ReflectionTestUtils.setField(showSyncService, "showTemplateService", showTemplateService);
-    ReflectionTestUtils.setField(showSyncService, "notionHandler", notionHandler);
-    ReflectionTestUtils.setField(showSyncService, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(showSyncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(showSyncService, "rateLimitService", rateLimitService);
-    ReflectionTestUtils.setField(showSyncService, "circuitBreakerService", circuitBreakerService);
-    ReflectionTestUtils.setField(showSyncService, "retryService", retryService);
   }
 
   @Test

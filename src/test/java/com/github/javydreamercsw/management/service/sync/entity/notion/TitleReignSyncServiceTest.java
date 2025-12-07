@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,13 +40,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.springframework.test.util.ReflectionTestUtils;
 
 class TitleReignSyncServiceTest extends AbstractSyncTest {
 
   @Mock private TitleReignRepository titleReignRepository;
   @Mock private TitleRepository titleRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private TitleReignSyncService service;
 
@@ -53,26 +54,28 @@ class TitleReignSyncServiceTest extends AbstractSyncTest {
   @Override
   protected void setUp() {
     super.setUp(); // Call parent setup first
-    service = new TitleReignSyncService(objectMapper, syncProperties, notionHandler);
+    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    lenient()
+        .when(syncServiceDependencies.getTitleReignRepository())
+        .thenReturn(titleReignRepository);
+    lenient().when(syncServiceDependencies.getTitleRepository()).thenReturn(titleRepository);
+    lenient().when(syncServiceDependencies.getWrestlerRepository()).thenReturn(wrestlerRepository);
 
-    // Manually inject mocks into the private fields of the base class
-    ReflectionTestUtils.setField(service, "titleReignRepository", titleReignRepository);
-    ReflectionTestUtils.setField(service, "titleRepository", titleRepository);
-    ReflectionTestUtils.setField(service, "wrestlerRepository", wrestlerRepository);
-    ReflectionTestUtils.setField(service, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(service, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(service, "rateLimitService", rateLimitService);
-
-    service.clearSyncSession();
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    service = new TitleReignSyncService(objectMapper, syncServiceDependencies);
   }
 
   @Test
   void syncTitleReigns_whenAlreadySynced_shouldSkip() {
     // Given: A sync has already run successfully in this session.
+    when(syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("titlereigns"))
+        .thenReturn(true);
     lenient().when(syncProperties.isEntityEnabled("titlereigns")).thenReturn(true);
     lenient().when(notionHandler.loadAllTitleReigns()).thenReturn(Collections.emptyList());
-    SyncResult firstResult = service.syncTitleReigns("first-op"); // First call
-    assertTrue(firstResult.isSuccess()); // Ensure the first sync completes
 
     // When: The sync is called a second time.
     SyncResult result = service.syncTitleReigns("second-op");
@@ -80,7 +83,7 @@ class TitleReignSyncServiceTest extends AbstractSyncTest {
     // Then: The sync should be skipped.
     assertTrue(result.isSuccess());
     // Notion should only have been called once.
-    verify(notionHandler, times(1)).loadAllTitleReigns();
+    verify(notionHandler, never()).loadAllTitleReigns();
   }
 
   @Test

@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.sync;
 
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

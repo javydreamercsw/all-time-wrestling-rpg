@@ -47,7 +47,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
   private final String apiKey;
-  private final GeminiConfigProperties geminiConfigProperties; // Inject configuration properties
+  private final GeminiConfigProperties geminiConfigProperties;
   private final Environment environment;
 
   @Autowired // Autowire the configuration properties
@@ -56,7 +56,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
     this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
     this.objectMapper = new ObjectMapper();
     this.apiKey = System.getenv("GEMINI_API_KEY");
-    this.geminiConfigProperties = geminiConfigProperties; // Assign injected properties
+    this.geminiConfigProperties = geminiConfigProperties;
     this.environment = environment;
   }
 

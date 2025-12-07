@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.io.File;
@@ -59,7 +60,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Unit tests for InjurySyncService covering all major functionality including error handling,
@@ -69,6 +69,7 @@ class InjurySyncServiceTest extends AbstractSyncTest {
 
   @Mock private InjuryTypeService injuryTypeService;
   @Mock private InjuryTypeRepository injuryTypeRepository;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private InjurySyncService injurySyncService;
   private ObjectMapper realObjectMapper;
@@ -76,15 +77,22 @@ class InjurySyncServiceTest extends AbstractSyncTest {
   @BeforeEach
   protected void setUp() {
     super.setUp();
-    injurySyncService =
-        new InjurySyncService(
-            objectMapper, syncProperties, notionHandler, injuryTypeService, injuryTypeRepository);
-    realObjectMapper = new ObjectMapper();
+    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    lenient()
+        .when(syncServiceDependencies.getInjuryTypeRepository())
+        .thenReturn(injuryTypeRepository);
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient()
+        .when(syncServiceDependencies.getNotionPageDataExtractor())
+        .thenReturn(notionPageDataExtractor);
 
-    // Use reflection to inject mocked dependencies (only for BaseSyncService's @Autowired fields)
-    ReflectionTestUtils.setField(injurySyncService, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(injurySyncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(injurySyncService, "rateLimitService", rateLimitService);
+    injurySyncService =
+        new InjurySyncService(objectMapper, syncServiceDependencies, injuryTypeService);
+    realObjectMapper = new ObjectMapper();
   }
 
   @Test
@@ -105,13 +113,8 @@ class InjurySyncServiceTest extends AbstractSyncTest {
   @Test
   void syncInjuryTypes_WhenAlreadySyncedInSession_ShouldSkip() {
     // Given - Use reflection to mark as already synced since the method is protected
-    try {
-      var method = BaseSyncService.class.getDeclaredMethod("markAsSyncedInSession", String.class);
-      method.setAccessible(true);
-      method.invoke(injurySyncService, "injury-types");
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to mark as synced", e);
-    }
+    when(syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("injury-types"))
+        .thenReturn(true);
 
     // When
     SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
