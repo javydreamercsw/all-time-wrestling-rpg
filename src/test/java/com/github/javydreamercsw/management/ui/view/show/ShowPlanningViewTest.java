@@ -49,9 +49,7 @@ import org.springframework.web.client.RestTemplate;
 class ShowPlanningViewTest {
 
   @Mock private ShowService showService;
-
   @Mock private RestTemplate restTemplate;
-
   @InjectMocks private ShowPlanningView showPlanningView;
 
   @BeforeEach
@@ -147,6 +145,7 @@ class ShowPlanningViewTest {
 
     // Call the method to be tested
     ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
+    ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments");
 
     // Verify the results
     TextArea contextArea = (TextArea) ReflectionTestUtils.getField(showPlanningView, "contextArea");
@@ -202,6 +201,7 @@ class ShowPlanningViewTest {
 
     // Call the method to be tested
     showPlanningView.setParameter(mock(BeforeEvent.class), showId);
+    ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments");
 
     // Verify the results
     @SuppressWarnings("unchecked")

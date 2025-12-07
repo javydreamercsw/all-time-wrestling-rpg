@@ -140,7 +140,7 @@ class MockMatchNarrationServiceTest {
                 new ObjectMapper()
                     .getTypeFactory()
                     .constructCollectionType(List.class, MockSegmentDTO.class));
-    assertThat(segments).anySatisfy(segment -> assertThat(segment.type()).contains("Match"));
+    assertThat(segments).anySatisfy(segment -> assertThat(segment.type()).isEqualTo("One on One"));
   }
 
   @Test
