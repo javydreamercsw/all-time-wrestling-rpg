@@ -21,11 +21,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.AiGeneratedSegmentDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -277,13 +279,14 @@ public class ShowPlanningAiService {
       prompt.append("- Summary: ").append(context.getNextPle().getSummary()).append("\n");
     }
 
-    List<String> segmentTypes =
-        segmentTypeService.findAll().stream()
-            .map(com.github.javydreamercsw.management.domain.show.segment.type.SegmentType::getName)
-            .collect(java.util.stream.Collectors.toList());
+    List<SegmentType> segmentTypes = segmentTypeService.findAll();
+    List<String> segmentTypeDescriptions =
+        segmentTypes.stream()
+            .map(type -> String.format("%s (%s)", type.getName(), type.getDescription()))
+            .collect(Collectors.toList());
     prompt
         .append("\nAvailable Segment Types: ")
-        .append(String.join(", ", segmentTypes))
+        .append(String.join(", ", segmentTypeDescriptions))
         .append("\n");
 
     prompt.append(
@@ -295,7 +298,14 @@ public class ShowPlanningAiService {
     prompt.append("```json\n");
     prompt.append("{\n");
     prompt.append("  \"segmentId\": \"string\",\n");
-    prompt.append("  \"type\": \"string\", // e.g., \"").append(segmentTypes.get(0)).append("\"\n");
+    if (!segmentTypes.isEmpty()) {
+      prompt
+          .append("  \"type\": \"string\", // e.g., \"")
+          .append(segmentTypes.get(0).getName())
+          .append("\"\n");
+    } else {
+      prompt.append("  \"type\": \"string\", // e.g., \"Match\"\n");
+    }
     prompt.append("  \"description\": \"string\",\n");
     prompt.append("  \"outcome\": \"string\",\n");
     prompt.append("  \"participants\": [\"string\"]\n");
