@@ -26,7 +26,9 @@ import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.AiGeneratedSegmentDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.util.HolidayUtils;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -127,6 +129,20 @@ public class ShowPlanningAiService {
           .append("\n");
     }
 
+    if (context.getShowDate() != null) {
+      Optional<String> holidayTheme = HolidayUtils.getHolidayTheme(context.getShowDate());
+      holidayTheme.ifPresent(
+          theme ->
+              prompt
+                  .append("\nHoliday Theme: ")
+                  .append(theme)
+                  .append(
+                      ". Please incorporate this theme into the show's segments where appropriate."
+                          + " Including, but not limited to, commentators mentioning them,"
+                          + " wrestlers, referencing them in promos and having matches with the"
+                          + " themes.\n"));
+    }
+
     if (context.getRecentSegments() != null && !context.getRecentSegments().isEmpty()) {
       prompt.append("Recent Segments:\n");
       context
@@ -192,15 +208,6 @@ public class ShowPlanningAiService {
           .append("Available Stipulation Matches: ")
           .append(String.join(", ", highHeatRules))
           .append("\n\n");
-      prompt.append("\n**Other considerations:**\n");
-      prompt.append(
-          "- Within the same calendar day, avoid having a wrestler in more than one match. They can"
-              + " participate in promos and any other capacity as long as it doesn't involve"
-              + " officially participating in the match.\n");
-      prompt.append(
-          "- Within the same calendar week, avoid having a wrestler in more than one match. Instead"
-              + " focus on giving all wrestlers a change to perform in a match every week. The"
-              + " exception is for Premium Live Event (PLE) where this is not avoidable.\n");
     }
 
     if (context.getWrestlerHeats() != null && !context.getWrestlerHeats().isEmpty()) {
@@ -277,7 +284,32 @@ public class ShowPlanningAiService {
       prompt.append("- Name: ").append(context.getNextPle().getPleName()).append("\n");
       prompt.append("- Date: ").append(context.getNextPle().getPleDate()).append("\n");
       prompt.append("- Summary: ").append(context.getNextPle().getSummary()).append("\n");
+      if (context.getNextPle().getMatches() != null
+          && !context.getNextPle().getMatches().isEmpty()) {
+        prompt.append("  Scheduled Matches:\n");
+        context
+            .getNextPle()
+            .getMatches()
+            .forEach(
+                match ->
+                    prompt
+                        .append("  - Name: ")
+                        .append(match.getName())
+                        .append(", Participants: ")
+                        .append(String.join(", ", match.getParticipants()))
+                        .append("\n"));
+      }
     }
+
+    prompt.append("\n**Other considerations:**\n");
+    prompt.append(
+        "- Within the same calendar day, avoid having a wrestler in more than one match. They can"
+            + " participate in promos and any other capacity as long as it doesn't involve"
+            + " officially participating in the match.\n");
+    prompt.append(
+        "- Within the same calendar week, avoid having a wrestler in more than one match. Instead"
+            + " focus on giving all wrestlers a change to perform in a match every week. The"
+            + " exception is for Premium Live Event (PLE) where this is not avoidable.\n");
 
     List<SegmentType> segmentTypes = segmentTypeService.findAll();
     List<String> segmentTypeDescriptions =

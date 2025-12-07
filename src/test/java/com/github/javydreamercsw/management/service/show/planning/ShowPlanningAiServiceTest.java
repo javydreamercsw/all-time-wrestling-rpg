@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.service.show.planning;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
@@ -26,9 +28,16 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningPleDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningSegmentDTO;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
 
 class ShowPlanningAiServiceTest {
 
@@ -64,6 +73,18 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(2);
     showTemplate.setExpectedPromos(1);
     context.setShowTemplate(showTemplate);
+    // Christmas time!
+    context.setShowDate(LocalDate.of(2025, 12, 25).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    ShowPlanningPleDTO ple = new ShowPlanningPleDTO();
+    ple.setPleName("WrestleMania");
+    ple.setPleDate(Instant.now());
+    ple.setSummary("The biggest event of the year!");
+    ShowPlanningSegmentDTO match = new ShowPlanningSegmentDTO();
+    match.setName("Championship Match");
+    match.setParticipants(List.of("Roman Reigns", "Cody Rhodes"));
+    ple.setMatches(List.of(match));
+    context.setNextPle(ple);
 
     // Mock AI response
     String aiResponseJson =
@@ -110,58 +131,86 @@ class ShowPlanningAiServiceTest {
         capturedPrompt.contains(
             "Available Segment Types: One on One (A standard wrestling match between two"
                 + " competitors.)"));
+    assertTrue(capturedPrompt.contains("Next PLE (Premium Live Event):"));
+    assertTrue(capturedPrompt.contains("- Name: WrestleMania"));
+    assertTrue(capturedPrompt.contains("  Scheduled Matches:"));
+    assertTrue(
+        capturedPrompt.contains(
+            "  - Name: Championship Match, Participants: Roman Reigns, Cody Rhodes"));
+    assertTrue(capturedPrompt.contains("Holiday Theme: Christmas Day"));
   }
 
   @Test
   void planShow_noAiServiceAvailable_returnsEmptyShow() {
-    // Given
-    when(narrationServiceFactory.getBestAvailableService()).thenReturn(null);
-    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
-    ShowTemplate showTemplate = new ShowTemplate();
-    showTemplate.setExpectedMatches(2);
-    showTemplate.setExpectedPromos(1);
-    context.setShowTemplate(showTemplate);
+    Logger logger = (Logger) LoggerFactory.getLogger(ShowPlanningAiService.class);
+    Level originalLevel = logger.getLevel();
+    logger.setLevel(Level.OFF);
+    try {
+      // Given
+      when(narrationServiceFactory.getBestAvailableService()).thenReturn(null);
+      ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+      ShowTemplate showTemplate = new ShowTemplate();
+      showTemplate.setExpectedMatches(2);
+      showTemplate.setExpectedPromos(1);
+      context.setShowTemplate(showTemplate);
 
-    // When
-    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+      // When
+      ProposedShow proposedShow = showPlanningAiService.planShow(context);
 
-    // Then
-    assertNotNull(proposedShow);
-    assertTrue(proposedShow.getSegments().isEmpty());
-    verify(segmentNarrationService, never()).generateText(anyString());
+      // Then
+      assertNotNull(proposedShow);
+      assertTrue(proposedShow.getSegments().isEmpty());
+      verify(segmentNarrationService, never()).generateText(anyString());
+    } finally {
+      logger.setLevel(originalLevel);
+    }
   }
 
   @Test
   void planShow_aiReturnsEmptyResponse_returnsEmptyShow() {
-    // Given
-    when(segmentNarrationService.generateText(anyString())).thenReturn("");
-    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
-    ShowTemplate showTemplate = new ShowTemplate();
-    showTemplate.setExpectedMatches(2);
-    showTemplate.setExpectedPromos(1);
-    context.setShowTemplate(showTemplate);
+    Logger logger = (Logger) LoggerFactory.getLogger(ShowPlanningAiService.class);
+    Level originalLevel = logger.getLevel();
+    logger.setLevel(Level.OFF);
+    try {
+      // Given
+      when(segmentNarrationService.generateText(anyString())).thenReturn("");
+      ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+      ShowTemplate showTemplate = new ShowTemplate();
+      showTemplate.setExpectedMatches(2);
+      showTemplate.setExpectedPromos(1);
+      context.setShowTemplate(showTemplate);
 
-    // When
-    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+      // When
+      ProposedShow proposedShow = showPlanningAiService.planShow(context);
 
-    // Then
-    assertNotNull(proposedShow);
-    assertTrue(proposedShow.getSegments().isEmpty());
-    verify(segmentNarrationService, times(1)).generateText(anyString());
+      // Then
+      assertNotNull(proposedShow);
+      assertTrue(proposedShow.getSegments().isEmpty());
+      verify(segmentNarrationService, times(1)).generateText(anyString());
+    } finally {
+      logger.setLevel(originalLevel);
+    }
   }
 
   @Test
   void planShow_aiReturnsInvalidJson_throwsException() {
-    // Given
-    when(segmentNarrationService.generateText(anyString())).thenReturn("invalid json");
-    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
-    ShowTemplate showTemplate = new ShowTemplate();
-    showTemplate.setExpectedMatches(2);
-    showTemplate.setExpectedPromos(1);
-    context.setShowTemplate(showTemplate);
+    Logger logger = (Logger) LoggerFactory.getLogger(ShowPlanningAiService.class);
+    Level originalLevel = logger.getLevel();
+    logger.setLevel(Level.OFF);
+    try {
+      // Given
+      when(segmentNarrationService.generateText(anyString())).thenReturn("invalid json");
+      ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+      ShowTemplate showTemplate = new ShowTemplate();
+      showTemplate.setExpectedMatches(2);
+      showTemplate.setExpectedPromos(1);
+      context.setShowTemplate(showTemplate);
 
-    // When & Then
-    assertThrows(ShowPlanningException.class, () -> showPlanningAiService.planShow(context));
-    verify(segmentNarrationService, times(1)).generateText(anyString());
+      // When & Then
+      assertThrows(ShowPlanningException.class, () -> showPlanningAiService.planShow(context));
+      verify(segmentNarrationService, times(1)).generateText(anyString());
+    } finally {
+      logger.setLevel(originalLevel);
+    }
   }
 }

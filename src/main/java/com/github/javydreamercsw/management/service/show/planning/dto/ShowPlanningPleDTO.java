@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
 import java.time.Instant;
+import java.util.List;
 import lombok.Data;
 
 @Data
@@ -24,4 +25,5 @@ public class ShowPlanningPleDTO {
   private String pleName;
   private Instant pleDate;
   private String summary;
+  private List<ShowPlanningSegmentDTO> matches;
 }
