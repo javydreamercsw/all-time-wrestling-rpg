@@ -137,10 +137,10 @@ public class ShowPlanningAiService {
                   .append("\nHoliday Theme: ")
                   .append(theme)
                   .append(
-                      ". Please incorporate this theme into the show's segments where appropriate."
-                          + " Including, but not limited to, commentators mentioning them,"
-                          + " wrestlers, referencing them in promos and having matches with the"
-                          + " themes.\n"));
+                      ". Please incorporate this theme into the show's segments where"
+                          + " appropriate. Including, but not limited to, commentators mentioning"
+                          + " them, wrestlers, referencing them in promos and having matches with"
+                          + " the themes.\n"));
     }
 
     if (context.getRecentSegments() != null && !context.getRecentSegments().isEmpty()) {
@@ -199,14 +199,15 @@ public class ShowPlanningAiService {
                       .append("\n"));
       prompt.append("\n**Rivalry Resolution Rules:**\n");
       prompt.append("- At 10 Heat: They must wrestle at the next PLE show\n");
-      prompt.append("- After match, both roll d20 → total >30 = rivalry ends\n");
-      prompt.append("- If not, continue to 20 Heat → repeat roll\n");
-      prompt.append("- At 30 Heat → forced into Stipulation Match (steel cage, hardcore, etc.)\n");
-      List<String> highHeatRules =
-          segmentRuleService.getHighHeatRules().stream().map(SegmentRule::getName).toList();
+      prompt.append("- At 30 Heat → forced into High Heat Rule Match\n");
+      List<SegmentRule> highHeatRules = segmentRuleService.getHighHeatRules();
+      List<String> highHeatRuleDescriptions =
+          highHeatRules.stream()
+              .map(rule -> String.format("%s (%s)", rule.getName(), rule.getDescription()))
+              .collect(Collectors.toList());
       prompt
           .append("Available Stipulation Matches: ")
-          .append(String.join(", ", highHeatRules))
+          .append(String.join(", ", highHeatRuleDescriptions))
           .append("\n\n");
     }
 

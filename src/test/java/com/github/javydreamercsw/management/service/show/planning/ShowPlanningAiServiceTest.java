@@ -24,11 +24,13 @@ import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningPleDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningSegmentDTO;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -44,12 +46,13 @@ class ShowPlanningAiServiceTest {
   private ShowPlanningAiService showPlanningAiService;
   private SegmentNarrationServiceFactory narrationServiceFactory;
   private SegmentNarrationService segmentNarrationService;
+  private SegmentRuleService segmentRuleService;
 
   @BeforeEach
   void setUp() {
     narrationServiceFactory = mock(SegmentNarrationServiceFactory.class);
     segmentNarrationService = mock(SegmentNarrationService.class);
-    SegmentRuleService segmentRuleService = mock(SegmentRuleService.class);
+    segmentRuleService = mock(SegmentRuleService.class);
     ObjectMapper objectMapper = new ObjectMapper(); // Use real ObjectMapper for JSON parsing
     SegmentTypeService segmentTypeService = mock(SegmentTypeService.class);
 
@@ -85,6 +88,17 @@ class ShowPlanningAiServiceTest {
     match.setParticipants(List.of("Roman Reigns", "Cody Rhodes"));
     ple.setMatches(List.of(match));
     context.setNextPle(ple);
+
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setName("Test Rivalry");
+    rivalry.setHeat(30);
+    rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
+    context.setCurrentRivalries(List.of(rivalry));
+
+    SegmentRule highHeatRule = new SegmentRule();
+    highHeatRule.setName("Steel Cage");
+    highHeatRule.setDescription("A match fought within a steel cage.");
+    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(highHeatRule));
 
     // Mock AI response
     String aiResponseJson =
@@ -138,6 +152,9 @@ class ShowPlanningAiServiceTest {
         capturedPrompt.contains(
             "  - Name: Championship Match, Participants: Roman Reigns, Cody Rhodes"));
     assertTrue(capturedPrompt.contains("Holiday Theme: Christmas Day"));
+    assertTrue(
+        capturedPrompt.contains(
+            "Available Stipulation Matches: Steel Cage (A match fought within a steel cage.)"));
   }
 
   @Test
