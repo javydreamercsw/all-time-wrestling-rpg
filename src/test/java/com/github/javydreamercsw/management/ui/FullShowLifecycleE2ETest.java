@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SHOW_TYPE_NAME = "Weekly";
   private static final String SEASON_NAME = "Test Season";
@@ -122,121 +124,156 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
 
   @Test
   public void testFullShowLifecycle() {
-    // Navigate to the Show List view
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
+    try {
+      // Navigate to the Show List view
+      log.info("Navigating to show list");
+      driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
 
-    final String showName = "My E2E Show";
+      final String showName = "My E2E Show";
 
-    // Click the "Create" button
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+      // Click the "Create" button
+      WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
-    // Fill in the form
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("vaadin-text-field")))
-        .sendKeys(showName);
-    List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
-    comboBoxes.get(0).sendKeys(SHOW_TYPE_NAME);
-    comboBoxes.get(1).sendKeys(SEASON_NAME);
-    comboBoxes.get(2).sendKeys(TEMPLATE_NAME);
-    driver
-        .findElement(By.id("show-date"))
-        .sendKeys(LocalDate.now().format(DateTimeFormatter.ofPattern("M/d/yyyy")));
+      // Fill in the form
+      log.info("Filling out new show form");
+      wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("vaadin-text-field")))
+          .sendKeys(showName);
+      List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
+      comboBoxes.get(0).sendKeys(SHOW_TYPE_NAME);
+      comboBoxes.get(1).sendKeys(SEASON_NAME);
+      comboBoxes.get(2).sendKeys(TEMPLATE_NAME);
+      driver
+          .findElement(By.id("show-date"))
+          .sendKeys(LocalDate.now().format(DateTimeFormatter.ofPattern("M/d/yyyy")));
 
-    // Click the "Create" button
-    WebElement createButton = driver.findElement(By.id("create-show-button"));
-    clickAndScrollIntoView(createButton);
+      // Click the "Create" button
+      log.info("Creating show");
+      WebElement createButton = driver.findElement(By.id("create-show-button"));
+      clickAndScrollIntoView(createButton);
 
-    wait.until(
-        ExpectedConditions.textToBePresentInElementLocated(By.tagName("vaadin-grid"), showName));
+      log.info("Waiting for show to appear in grid");
+      wait.until(
+          ExpectedConditions.textToBePresentInElementLocated(By.tagName("vaadin-grid"), showName));
 
-    List<Show> matchingShows = showService.findByName(showName);
-    Assertions.assertEquals(1, matchingShows.size());
-    Show show = matchingShows.get(0);
+      List<Show> matchingShows = showService.findByName(showName);
+      Assertions.assertEquals(1, matchingShows.size());
+      Show show = matchingShows.get(0);
 
-    // Click on the newly created show in the grid to navigate to its detail page
-    WebElement viewShowDetails =
-        wait.until(
-            ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
-    clickAndScrollIntoView(viewShowDetails);
+      // Click on the newly created show in the grid to navigate to its detail page
+      log.info("Navigating to show detail page");
+      WebElement viewShowDetails =
+          wait.until(
+              ExpectedConditions.elementToBeClickable(
+                  By.id("view-details-button-" + show.getId())));
+      clickAndScrollIntoView(viewShowDetails);
 
-    // Verify navigation to the show detail view (or planning view)
-    wait.until(ExpectedConditions.urlContains("/show-detail"));
+      // Verify navigation to the show detail view (or planning view)
+      log.info("Waiting for show detail URL");
+      wait.until(ExpectedConditions.urlContains("/show-detail"));
 
-    // Click the "Planning Show" button
-    WebElement planningShowButton =
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("plan-show-button")));
-    clickAndScrollIntoView(planningShowButton);
+      // Click the "Planning Show" button
+      log.info("Navigating to show planning view");
+      WebElement planningShowButton =
+          wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("plan-show-button")));
+      clickAndScrollIntoView(planningShowButton);
 
-    // Verify navigation to the show planning view
-    wait.until(ExpectedConditions.urlContains("/show-planning"));
+      // Verify navigation to the show planning view
+      log.info("Waiting for show planning URL");
+      wait.until(ExpectedConditions.urlContains("/show-planning"));
 
-    WebElement showPlanningContextArea =
-        wait.until(
-            ExpectedConditions.visibilityOfElementLocated(By.id("show-planning-context-area")));
-    Assertions.assertFalse(showPlanningContextArea.getText().isEmpty());
+      log.info("Waiting for show planning context area");
+      WebElement showPlanningContextArea =
+          wait.until(
+              ExpectedConditions.visibilityOfElementLocated(By.id("show-planning-context-area")));
+      Assertions.assertFalse(showPlanningContextArea.getText().isEmpty());
 
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("proposed-segments-grid")));
+      log.info("Waiting for proposed segments grid");
+      wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("proposed-segments-grid")));
 
-    // Approve segments
-    WebElement approveButton =
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("approve-segments-button")));
-    clickAndScrollIntoView(approveButton);
+      // Approve segments
+      log.info("Approving segments");
+      WebElement approveButton =
+          wait.until(
+              ExpectedConditions.visibilityOfElementLocated(By.id("approve-segments-button")));
+      clickAndScrollIntoView(approveButton);
 
-    // Wait for the notification that segments are approved to appear and disappear
-    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-notification")));
-    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-notification")));
+      // Wait for the notification that segments are approved to appear and disappear
+      log.info("Waiting for notification");
+      wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-notification")));
+      wait.until(
+          ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-notification")));
 
-    // Navigate directly back to the show detail view
-    driver.get(
-        "http://localhost:"
-            + serverPort
-            + getContextPath()
-            + "/show-detail/"
-            + showService.findByName(showName).get(0).getId());
+      // Navigate directly back to the show detail view
+      log.info("Navigating back to show detail view");
+      driver.get(
+          "http://localhost:"
+              + serverPort
+              + getContextPath()
+              + "/show-detail/"
+              + showService.findByName(showName).get(0).getId());
 
-    // Verify navigation to the show detail view
-    wait.until(ExpectedConditions.urlContains("/show-detail"));
+      // Verify navigation to the show detail view
+      log.info("Waiting for show detail URL again");
+      wait.until(ExpectedConditions.urlContains("/show-detail"));
 
-    wait.until(
-        driver -> {
-          List<WebElement> elements =
-              driver.findElements(
-                  By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)"));
-          return elements.size() > 60 ? elements : null;
-        });
-    // Click the edit button on the first row
-    WebElement editButton =
-        driver.findElement(
-            By.id("edit-segment-button-" + segmentService.getSegmentsByShow(show).get(0).getId()));
-    clickAndScrollIntoView(editButton);
+      log.info("Waiting for grid to populate");
+      wait.until(
+          driver -> {
+            List<WebElement> elements =
+                driver.findElements(
+                    By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)"));
+            return elements.size() > 60 ? elements : null;
+          });
 
-    // Wait for the dialog to appear
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+      // Click the edit button on the first row
+      log.info("Clicking edit segment button");
+      WebElement editButton =
+          driver.findElement(
+              By.id(
+                  "edit-segment-button-" + segmentService.getSegmentsByShow(show).get(0).getId()));
+      clickAndScrollIntoView(editButton);
 
-    // Edit the description
-    String newDescription = "This is the new description.";
-    WebElement summaryField =
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("edit-summary-text-area")));
-    summaryField.sendKeys(newDescription, Keys.TAB);
+      // Wait for the dialog to appear
+      log.info("Waiting for edit dialog");
+      wait.until(
+          ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
-    // Click the save button
-    WebElement saveButton = driver.findElement(By.id("edit-segment-save-button"));
-    clickAndScrollIntoView(saveButton);
+      // Edit the description
+      log.info("Editing summary");
+      String newDescription = "This is the new description.";
+      WebElement summaryField =
+          wait.until(
+              ExpectedConditions.visibilityOfElementLocated(By.id("edit-summary-text-area")));
+      summaryField.sendKeys(newDescription, Keys.TAB);
 
-    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("edit-segment-save-button")));
+      // Click the save button
+      log.info("Clicking save button");
+      WebElement saveButton = driver.findElement(By.id("edit-segment-save-button"));
+      clickAndScrollIntoView(saveButton);
 
-    // Navigate back to the list.
-    driver.get(
-        "http://localhost:"
-            + serverPort
-            + getContextPath()
-            + "/show-detail/"
-            + showService.findByName(showName).get(0).getId());
+      log.info("Waiting for save button to disappear");
+      wait.until(
+          ExpectedConditions.invisibilityOfElementLocated(By.id("edit-segment-save-button")));
 
-    // Verify the description has been updated
-    wait.until(
-        ExpectedConditions.textToBePresentInElementLocated(
-            By.xpath("//vaadin-grid-cell-content[contains(., '" + newDescription + "')]"),
-            newDescription));
+      // Navigate back to the list.
+      log.info("Navigating back to show detail view");
+      driver.get(
+          "http://localhost:"
+              + serverPort
+              + getContextPath()
+              + "/show-detail/"
+              + showService.findByName(showName).get(0).getId());
+
+      // Verify the description has been updated
+      log.info("Verifying description update");
+      wait.until(
+          ExpectedConditions.textToBePresentInElementLocated(
+              By.xpath("//vaadin-grid-cell-content[contains(., '" + newDescription + "')]"),
+              newDescription));
+    } catch (Exception e) {
+      log.error("Error during E2E test", e);
+      Assertions.fail(e);
+    }
   }
 
   @Test

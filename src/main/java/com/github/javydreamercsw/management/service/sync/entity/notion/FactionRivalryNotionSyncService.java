@@ -63,7 +63,7 @@ public class FactionRivalryNotionSyncService implements NotionSyncService {
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
       try (NotionClient client = clientOptional.get()) {
-        String databaseId = notionHandler.getDatabaseId("Faction Rivalries");
+        String databaseId = notionHandler.getDatabaseId("Faction Heat");
         if (databaseId != null) {
           int processedCount = 0;
           int created = 0;
@@ -100,16 +100,6 @@ public class FactionRivalryNotionSyncService implements NotionSyncService {
               properties.put(
                   "Heat",
                   NotionPropertyBuilder.createNumberProperty(entity.getHeat().doubleValue()));
-
-              // Active
-              properties.put(
-                  "Active", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
-
-              // Intensity
-              properties.put(
-                  "Intensity",
-                  NotionPropertyBuilder.createSelectProperty(
-                      entity.getIntensity().getDisplayName()));
 
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                 log.debug("Updating existing faction rivalry page: {}", entity.getDisplayName());

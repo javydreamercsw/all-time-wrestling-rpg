@@ -143,7 +143,7 @@ class ShowPlanningAiServiceTest {
   }
 
   @Test
-  void planShow_aiReturnsInvalidJson_returnsEmptyShow() {
+  void planShow_aiReturnsInvalidJson_throwsException() {
     // Given
     when(segmentNarrationService.generateText(anyString())).thenReturn("invalid json");
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
@@ -152,12 +152,8 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(1);
     context.setShowTemplate(showTemplate);
 
-    // When
-    ProposedShow proposedShow = showPlanningAiService.planShow(context);
-
-    // Then
-    assertNotNull(proposedShow);
-    assertTrue(proposedShow.getSegments().isEmpty());
+    // When & Then
+    assertThrows(ShowPlanningException.class, () -> showPlanningAiService.planShow(context));
     verify(segmentNarrationService, times(1)).generateText(anyString());
   }
 }

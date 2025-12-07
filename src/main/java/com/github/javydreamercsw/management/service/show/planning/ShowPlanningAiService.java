@@ -64,7 +64,8 @@ public class ShowPlanningAiService {
       String jsonString = extractJsonArray(aiResponse);
       if (jsonString == null) {
         log.error("Could not extract JSON array from AI response: {}", aiResponse);
-        return new ProposedShow();
+        throw new ShowPlanningException(
+            "Could not extract JSON array from AI response: " + aiResponse);
       }
 
       List<AiGeneratedSegmentDTO> aiSegments =
@@ -91,10 +92,10 @@ public class ShowPlanningAiService {
       return proposedShow;
     } catch (JsonProcessingException e) {
       log.error("Failed to parse AI response into ProposedShow object: {}", aiResponse, e);
-      return new ProposedShow();
+      throw new ShowPlanningException("Failed to parse AI response", e);
     } catch (Exception e) {
       log.error("An unexpected error occurred during show planning: {}", e.getMessage(), e);
-      return new ProposedShow();
+      throw new ShowPlanningException("An unexpected error occurred during show planning", e);
     }
   }
 
