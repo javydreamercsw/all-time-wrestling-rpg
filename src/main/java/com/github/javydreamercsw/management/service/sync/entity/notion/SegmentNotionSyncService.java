@@ -43,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class SegmentNotionSyncService implements NotionSyncService {
+public class SegmentNotionSyncService implements INotionSyncService {
 
   private final SegmentRepository segmentRepository;
   private final NotionHandler notionHandler;

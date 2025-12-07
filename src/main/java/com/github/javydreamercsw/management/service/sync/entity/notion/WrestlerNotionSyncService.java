@@ -41,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class WrestlerNotionSyncService implements NotionSyncService {
+public class WrestlerNotionSyncService implements INotionSyncService {
 
   private final WrestlerRepository wrestlerRepository;
   private final NotionHandler notionHandler;

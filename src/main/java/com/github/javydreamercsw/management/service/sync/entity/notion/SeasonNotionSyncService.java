@@ -45,7 +45,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class SeasonNotionSyncService implements NotionSyncService {
+public class SeasonNotionSyncService implements INotionSyncService {
 
   private final SeasonRepository seasonRepository;
   private final NotionHandler notionHandler;

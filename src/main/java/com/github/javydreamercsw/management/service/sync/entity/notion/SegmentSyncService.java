@@ -263,10 +263,6 @@ public class SegmentSyncService extends BaseSyncService {
     }
   }
 
-  private int saveSegmentsToDatabase(@NonNull List<SegmentDTO> segmentDTOs) {
-    return saveSegmentsToDatabase(segmentDTOs, (msg) -> {});
-  }
-
   private int saveSegmentsToDatabase(
       @NonNull List<SegmentDTO> segmentDTOs, Consumer<String> messageConsumer) {
     int savedCount = 0;

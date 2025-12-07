@@ -102,7 +102,7 @@ public class NotionSyncService extends BaseSyncService {
   @Autowired private ParallelSyncOrchestrator parallelSyncOrchestrator;
   @Autowired private EntitySyncConfiguration entitySyncConfiguration;
 
-  /** Constructor for NotionSyncService. */
+  /** Constructor for INotionSyncService. */
   @Autowired // Add @Autowired for constructor injection
   public NotionSyncService(
       ObjectMapper objectMapper,

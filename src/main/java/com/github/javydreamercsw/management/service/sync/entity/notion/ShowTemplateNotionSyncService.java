@@ -41,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class ShowTemplateNotionSyncService implements NotionSyncService {
+public class ShowTemplateNotionSyncService implements INotionSyncService {
 
   private final ShowTemplateRepository showTemplateRepository;
   private final NotionHandler notionHandler;

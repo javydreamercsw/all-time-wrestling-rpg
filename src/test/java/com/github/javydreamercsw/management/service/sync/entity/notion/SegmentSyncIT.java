@@ -17,8 +17,13 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPage;
+import com.github.javydreamercsw.base.ai.notion.SegmentPage;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -26,30 +31,48 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.LocalDate;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @DisplayName("Segment Sync Integration Tests")
 class SegmentSyncIT extends ManagementIntegrationTest {
 
-  @Autowired
-  private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
-
+  @Autowired private NotionSyncService notionSyncService;
+  @MockitoBean private NotionHandler notionHandler;
+  @MockitoBean private ShowSyncService showSyncService;
+  @Mock private SegmentPage newPage;
   @Autowired private SegmentRepository segmentRepository;
-  @Autowired private NotionHandler notionHandler;
 
   @BeforeEach
   void setUp() {
     clearAllRepositories();
+    // Mock NotionHandler to return external IDs for factions and rivalries
+    when(notionHandler.getDatabaseId("Segments")).thenReturn("test-db-id");
+    Mockito.when(notionHandler.loadAllFactionRivalries())
+        .thenAnswer(
+            invocation -> {
+              // Return a mock external ID for any page creation/update
+              return List.of(newPage);
+            });
+    ReflectionTestUtils.setField(notionSyncService, "showSyncService", showSyncService);
   }
 
   @Test
@@ -79,8 +102,31 @@ class SegmentSyncIT extends ManagementIntegrationTest {
     segmentTypeRepository.save(segmentType);
 
     // When
+    String newPageId = "segment-external-id";
+    List<String> mockSegmentIds = List.of(newPageId);
+    when(notionHandler.getDatabasePageIds("Segments")).thenReturn(mockSegmentIds);
+    when(notionHandler.loadSegmentById(newPageId)).thenReturn(Optional.of(newPage));
+    Map<String, Object> properties = new HashMap<>();
+    properties.put("Name", "Exciting segment");
+    properties.put("Participants", wrestler1.getName() + "," + wrestler2.getName());
+    properties.put("Winners", wrestler1.getName());
+    properties.put("Segment Type", segmentType.getName());
+    properties.put("Date", new Date());
+    SegmentPage.NotionProperties notionProperties = mock(SegmentPage.NotionProperties.class);
+    SegmentPage.Relation mockRelation = mock(SegmentPage.Relation.class);
+    NotionPage.Property mockShows = mock(NotionPage.Property.class);
+    when(mockShows.getRelation()).thenReturn(List.of(mockRelation));
+    when(mockRelation.getId()).thenReturn(show.getExternalId());
+    when(showSyncService.syncShow(show.getExternalId()))
+        .thenReturn(BaseSyncService.SyncResult.success("show", 0, 1, 0));
+
+    when(newPage.getId()).thenReturn(newPageId);
+    when(newPage.getRawProperties()).thenReturn(properties);
+    when(newPage.getProperties()).thenReturn(notionProperties);
+    when(notionProperties.getShows()).thenReturn(mockShows);
+    when(notionHandler.loadSegmentById(any())).thenReturn(Optional.of(newPage));
     BaseSyncService.SyncResult result =
-        notionSyncService.syncSegments("test-operation", SyncDirection.OUTBOUND);
+        notionSyncService.syncSegments("test-operation", SyncDirection.INBOUND);
 
     // Then
     assertThat(result).isNotNull();

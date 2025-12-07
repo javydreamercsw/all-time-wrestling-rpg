@@ -72,7 +72,7 @@ class NotionPropertyTest {
     // Configure mock behavior for NotionSyncProperties
     when(notionSyncProperties.getParallelThreads()).thenReturn(1);
 
-    // Manually instantiate NotionSyncService with mocked constructor dependencies
+    // Manually instantiate INotionSyncService with mocked constructor dependencies
     notionSyncService = new NotionSyncService(objectMapper, notionSyncProperties, notionHandler);
     ReflectionTestUtils.setField(notionSyncService, "segmentSyncService", segmentSyncService);
     ReflectionTestUtils.setField(
