@@ -182,7 +182,13 @@ public class FactionRivalrySyncService extends BaseSyncService {
       boolean newRivalry = false;
       if (existingRivalryOpt.isPresent()) {
         rivalry = existingRivalryOpt.get();
-        rivalry.setHeat(rivalry.getHeat() + dto.getHeat());
+        if (rivalry.getHeat() != dto.getHeat()) {
+          int heatChange = dto.getHeat() - rivalry.getHeat();
+          rivalry =
+              factionRivalryService
+                  .addHeat(rivalry.getId(), heatChange, "Notion Sync")
+                  .orElse(rivalry);
+        }
       } else {
         Optional<FactionRivalry> newRivalryOpt =
             factionRivalryService.createFactionRivalry(
@@ -197,11 +203,6 @@ public class FactionRivalrySyncService extends BaseSyncService {
       }
 
       rivalry.setExternalId(dto.getExternalId());
-
-      if (rivalry.getHeat() != dto.getHeat()) {
-        int heatChange = dto.getHeat() - rivalry.getHeat();
-        factionRivalryService.addHeat(rivalry.getId(), heatChange, "Notion Sync");
-      }
 
       factionRivalryService.save(rivalry);
 

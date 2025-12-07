@@ -32,14 +32,12 @@ import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.model.pages.Page;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -56,9 +54,7 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
   @BeforeEach
   void setUp() {
     clearAllRepositories();
-    // Mock NotionHandler to return external IDs for factions and rivalries
-    String newPageId = UUID.randomUUID().toString();
-    when(newPage.getId()).thenReturn(newPageId);
+    // Mock NotionHandler
     when(notionHandler.getDatabaseId("Faction Heat")).thenReturn("test-db-id");
     when(notionHandler.executeWithRetry(any()))
         .thenAnswer(
@@ -67,12 +63,6 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
                   java.util.function.Supplier<Page> supplier = invocation.getArgument(0);
                   return supplier.get();
                 });
-    Mockito.when(notionHandler.getDatabasePageIds("Segments"))
-        .thenAnswer(
-            invocation -> {
-              // Return a mock external ID for any page creation/update
-              return List.of(newPage);
-            });
   }
 
   @Test
@@ -109,8 +99,10 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
     Map<String, Object> properties = new HashMap<>();
     properties.put("Faction 1", f1.getName());
     properties.put("Faction 2", f2.getName());
-    properties.put("Heat", newRivalry.getHeat());
+    properties.put("Heat", 6);
     when(newPage.getRawProperties()).thenReturn(properties);
+    when(newPage.getId()).thenReturn(newRivalry.getExternalId());
+    when(notionHandler.loadAllFactionRivalries()).thenReturn(List.of(newPage));
 
     // When - Sync faction rivalries from real Notion database
     BaseSyncService.SyncResult result =
