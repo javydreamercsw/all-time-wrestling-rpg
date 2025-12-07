@@ -28,19 +28,19 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class ShowPlanningAiServiceTest {
 
   private ShowPlanningAiService showPlanningAiService;
   private SegmentNarrationServiceFactory narrationServiceFactory;
   private SegmentNarrationService segmentNarrationService;
-  private SegmentRuleService segmentRuleService;
 
   @BeforeEach
   void setUp() {
     narrationServiceFactory = mock(SegmentNarrationServiceFactory.class);
     segmentNarrationService = mock(SegmentNarrationService.class);
-    segmentRuleService = mock(SegmentRuleService.class);
+    SegmentRuleService segmentRuleService = mock(SegmentRuleService.class);
     ObjectMapper objectMapper = new ObjectMapper(); // Use real ObjectMapper for JSON parsing
     SegmentTypeService segmentTypeService = mock(SegmentTypeService.class);
 
@@ -48,6 +48,7 @@ class ShowPlanningAiServiceTest {
 
     SegmentType segmentType = new SegmentType();
     segmentType.setName("One on One");
+    segmentType.setDescription("A standard wrestling match between two competitors.");
     when(segmentTypeService.findAll()).thenReturn(java.util.List.of(segmentType));
 
     showPlanningAiService =
@@ -100,8 +101,15 @@ class ShowPlanningAiServiceTest {
     assertEquals("Promo", segment2.getType());
     assertEquals("CM Punk cuts a promo on the Authority", segment2.getDescription());
 
-    // Verify that the AI service was called
-    verify(segmentNarrationService, times(1)).generateText(anyString());
+    // Verify that the AI service was called and capture the prompt
+    ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+    verify(segmentNarrationService, times(1)).generateText(promptCaptor.capture());
+
+    String capturedPrompt = promptCaptor.getValue();
+    assertTrue(
+        capturedPrompt.contains(
+            "Available Segment Types: One on One (A standard wrestling match between two"
+                + " competitors.)"));
   }
 
   @Test
