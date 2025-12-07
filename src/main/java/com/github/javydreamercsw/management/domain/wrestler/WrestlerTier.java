@@ -1,6 +1,24 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.domain.wrestler;
 
+import java.util.Arrays;
 import lombok.Getter;
+import lombok.NonNull;
 
 /**
  * Represents the different tiers/ranks a wrestler can achieve based on their fan count. Each tier
@@ -114,6 +132,21 @@ public enum WrestlerTier {
 
     // Fallback to highest tier if fans exceed all ranges
     return ICON;
+  }
+
+  /**
+   * Finds a WrestlerTier enum from its display name.
+   *
+   * @param displayName The display name to find.
+   * @return The matching WrestlerTier.
+   * @throws IllegalArgumentException if no matching tier is found.
+   */
+  public static WrestlerTier fromDisplayName(@NonNull String displayName) {
+    return Arrays.stream(values())
+        .filter(tier -> tier.getDisplayName().equalsIgnoreCase(displayName))
+        .findFirst()
+        .orElseThrow(
+            () -> new IllegalArgumentException("Unknown tier display name: " + displayName));
   }
 
   /**

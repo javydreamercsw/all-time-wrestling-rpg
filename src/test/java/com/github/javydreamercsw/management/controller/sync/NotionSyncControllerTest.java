@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.controller.sync;
 
 import static org.mockito.Mockito.*;
@@ -9,6 +25,7 @@ import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -140,7 +157,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
   @DisplayName("Should sync shows successfully")
   void shouldSyncShowsSuccessfully() throws Exception {
     // Given
-    when(notionSyncService.syncShows())
+    when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
         .thenReturn(NotionSyncService.SyncResult.success("Shows", 12, 0, 0));
 
     // When & Then
@@ -157,7 +174,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
   @DisplayName("Should handle shows sync failure")
   void shouldHandleShowsSyncFailure() throws Exception {
     // Given
-    when(notionSyncService.syncShows())
+    when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
         .thenReturn(NotionSyncService.SyncResult.failure("Shows", "Database connection failed"));
 
     // When & Then

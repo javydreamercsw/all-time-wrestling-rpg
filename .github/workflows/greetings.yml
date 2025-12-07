@@ -12,5 +12,16 @@ jobs:
     - uses: actions/first-interaction@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        issue-message: "Message that will be displayed on users' first issue"
-        pr-message: "Message that will be displayed on users' first pull request"
+        issue-message: |
+          Hello and welcome to All Time Wrestling (ATW) RPG!  
+          Thank you for opening your first issue.  
+          Please make sure to provide as much detail as possible so we can assist you efficiently.  
+          Check out our [contribution guidelines](https://github.com/javydreamercsw/all-time-wrestling-rpg/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/javydreamercsw/all-time-wrestling-rpg/blob/main//CODE_OF_CONDUCT.md).  
+          We appreciate your input and look forward to collaborating!
+
+        pr-message: |
+          Hi there! Welcome to All Time Wrestling (ATW) RPG and thank you for submitting your first pull request.  
+          Please ensure your changes follow our [contribution guidelines](https://github.com/javydreamercsw/all-time-wrestling-rpg/blob/main/CONTRIBUTING.md).  
+          Our team will review your PR soon.  
+          If you have any questions, feel free to ask.  
+          Thanks for helping improve the project!

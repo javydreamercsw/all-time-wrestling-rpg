@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view;
 
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -38,8 +54,6 @@ public class MenuService {
 
     MenuItem contentGeneration = new MenuItem("Content Generation", VaadinIcon.AUTOMATION, null);
     contentGeneration.addChild(new MenuItem("Show Planning", VaadinIcon.CALENDAR, "show-planning"));
-    contentGeneration.addChild(
-        new MenuItem("Segment Narration", VaadinIcon.MICROPHONE, "segment-narration"));
 
     MenuItem cardGame = new MenuItem("Card Game", VaadinIcon.RECORDS, null);
     cardGame.addChild(new MenuItem("Cards", VaadinIcon.CREDIT_CARD, "card-list"));

@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
@@ -311,6 +327,7 @@ public class ShowDetailView extends Main
     detailsLayout.add(templateLayout);
 
     // Show ID
+    assert show.getId() != null;
     HorizontalLayout idLayout = createDetailRow("Show ID:", show.getId().toString());
     detailsLayout.add(idLayout);
 
@@ -490,7 +507,7 @@ public class ShowDetailView extends Main
 
     // Get segments for this show
     List<Segment> segments = segmentRepository.findByShow(show);
-    log.info("Found {} segments for show: {}", segments.size(), show.getName());
+    log.debug("Found {} segments for show: {}", segments.size(), show.getName());
 
     VerticalLayout segmentsLayout = new VerticalLayout();
     segmentsLayout.setSpacing(false);
@@ -947,7 +964,7 @@ public class ShowDetailView extends Main
         segment.getWrestlers().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
-    winnersCombo.setValue(segment.getWinners());
+    winnersCombo.setValue(new HashSet<>(segment.getWinners()));
     winnersCombo.setId("edit-winners-combo-box");
 
     // Update winner options when wrestlers change
@@ -1200,17 +1217,17 @@ public class ShowDetailView extends Main
                       .anyMatch(
                           component ->
                               component instanceof Span
-                                  && "no-segments-message".equals(component.getId())))
+                                  && "no-segments-message".equals(component.getId().get())))
           .findFirst()
-          .ifPresent(
+          .flatMap(
               layout ->
                   layout
                       .getChildren()
                       .filter(Span.class::isInstance)
                       .map(Span.class::cast)
-                      .filter(span -> "no-segments-message".equals(span.getId()))
-                      .findFirst()
-                      .ifPresent(span -> span.setVisible(!hasSegments)));
+                      .filter(span -> "no-segments-message".equals(span.getId().get()))
+                      .findFirst())
+          .ifPresent(span -> span.setVisible(!hasSegments));
       // Re-enable/disable adjudicate button based on new segment status
       boolean hasPendingSegments =
           updatedSegments.stream()
@@ -1238,21 +1255,21 @@ public class ShowDetailView extends Main
                                                   && "Adjudicate Fans"
                                                       .equals(((Button) btn).getText()))))
           .findFirst()
-          .ifPresent(
+          .flatMap(
               card ->
                   card.getChildren()
                       .filter(HorizontalLayout.class::isInstance)
                       .map(HorizontalLayout.class::cast)
-                      .findFirst()
-                      .ifPresent(
-                          header ->
-                              header
-                                  .getChildren()
-                                  .filter(Button.class::isInstance)
-                                  .map(Button.class::cast)
-                                  .filter(btn -> "Adjudicate Fans".equals(btn.getText()))
-                                  .findFirst()
-                                  .ifPresent(btn -> btn.setEnabled(hasPendingSegments))));
+                      .findFirst())
+          .flatMap(
+              header ->
+                  header
+                      .getChildren()
+                      .filter(Button.class::isInstance)
+                      .map(Button.class::cast)
+                      .filter(btn -> "Adjudicate Fans".equals(btn.getText()))
+                      .findFirst())
+          .ifPresent(btn -> btn.setEnabled(hasPendingSegments));
     }
   }
 

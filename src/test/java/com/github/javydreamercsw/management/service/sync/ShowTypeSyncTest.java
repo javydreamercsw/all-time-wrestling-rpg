@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -6,12 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.ShowTypeSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -20,69 +35,68 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Transactional;
 
 /** Unit tests for ShowTypeSyncService. */
-@ActiveProfiles("test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @Slf4j
 class ShowTypeSyncTest extends ManagementIntegrationTest {
 
   @Autowired private ShowTypeSyncService showTypeSyncService;
-
-  @Autowired private ShowTypeRepository showTypeRepository;
-  @Autowired private ShowTemplateRepository showTemplateRepository;
+  @Autowired private DataInitializer dataInitializer;
 
   @MockitoBean private NotionHandler notionHandler;
 
   private static final String TEST_OPERATION_ID = "unit-test-show-types";
 
   @BeforeEach
-  @Transactional
-  void cleanupData() {
+  void setUp() {
     log.debug("🧹 Cleaning up test data before test execution");
-    showTemplateRepository.deleteAll();
-    showTypeRepository.deleteAll();
+    clearAllRepositories();
     log.debug("✅ Test data cleanup completed");
+    log.debug("🌱 Initializing data");
+    dataInitializer.init();
+    log.debug("✅ Data initialization completed");
+    showTypeSyncService.clearSyncSession();
   }
 
   @Test
   @DisplayName("Should ensure default show types exist in database")
   void shouldEnsureDefaultShowTypesExist() {
     log.info("🎭 Testing default show types creation");
+    // Given - DataInitializer will have already created default show types.
+    // Verify they exist
+    Optional<ShowType> weeklyTypeBeforeSync = showTypeService.findByName("Weekly");
+    assertTrue(
+        weeklyTypeBeforeSync.isPresent(), "Weekly show type should exist from DataInitializer");
+    Optional<ShowType> pleTypeBeforeSync = showTypeService.findByName("Premium Live Event (PLE)");
+    assertTrue(
+        pleTypeBeforeSync.isPresent(),
+        "Premium Live Event (PLE) show type should exist from DataInitializer");
 
-    // Given - Initially empty database
-    when(notionHandler.getShowTypePages()).thenReturn(Collections.emptyList());
-    List<ShowType> initialShowTypes = showTypeService.findAll();
-    log.info("📋 Found {} initial show types", initialShowTypes.size());
-
-    // When - Sync show types (should create defaults when no Notion data available)
+    // When - Run sync (should find existing defaults and not create new ones)
     BaseSyncService.SyncResult result = showTypeSyncService.syncShowTypes(TEST_OPERATION_ID);
 
-    // Then - Should have created default show types
+    // Then - Should report no new creations
     assertNotNull(result, "Sync result should not be null");
     log.info("📊 Sync result: {}", result);
+    assertThat(result.isSuccess()).isTrue();
+    assertThat(result.getCreatedCount()).isEqualTo(0);
+    assertThat(result.getUpdatedCount()).isEqualTo(0);
 
-    List<ShowType> finalShowTypes = showTypeService.findAll();
-    log.info("📋 Found {} show types after sync", finalShowTypes.size());
+    // Verify default show types still exist and are unchanged
+    Optional<ShowType> weeklyTypeAfterSync = showTypeService.findByName("Weekly");
+    assertTrue(weeklyTypeAfterSync.isPresent(), "Weekly show type should still exist after sync");
+    Optional<ShowType> pleTypeAfterSync = showTypeService.findByName("Premium Live Event (PLE)");
+    assertTrue(
+        pleTypeAfterSync.isPresent(),
+        "Premium Live Event (PLE) show type should still exist after sync");
 
-    // Verify default show types exist
-    Optional<ShowType> weeklyType = showTypeService.findByName("Weekly");
-    Optional<ShowType> pleType = showTypeService.findByName("Premium Live Event (PLE)");
-
-    assertTrue(weeklyType.isPresent(), "Weekly show type should exist");
-    assertTrue(pleType.isPresent(), "Premium Live Event (PLE) show type should exist");
-
-    // Verify show type properties
-    ShowType weekly = weeklyType.get();
+    ShowType weekly = weeklyTypeAfterSync.get();
     assertThat(weekly.getName()).isEqualTo("Weekly");
     assertThat(weekly.getDescription()).isNotBlank();
     assertThat(weekly.getCreationDate()).isNotNull();
 
-    ShowType ple = pleType.get();
+    ShowType ple = pleTypeAfterSync.get();
     assertThat(ple.getName()).isEqualTo("Premium Live Event (PLE)");
     assertThat(ple.getDescription()).isNotBlank();
     assertThat(ple.getCreationDate()).isNotNull();
@@ -138,26 +152,39 @@ class ShowTypeSyncTest extends ManagementIntegrationTest {
     log.info("🎯 Testing sync with pre-existing show types");
     when(notionHandler.getShowTypePages()).thenReturn(Collections.emptyList());
 
-    // Given - Manually create a show type
-    ShowType existingType = new ShowType();
-    existingType.setName("Weekly");
-    existingType.setDescription("Pre-existing weekly show type");
-    ShowType saved = showTypeService.save(existingType);
-    assertNotNull(saved.getId());
-    log.info("📝 Created pre-existing show type: {}", saved.getName());
+    // Given - DataInitializer will have already created default show types.
+    // Verify they exist and are not null.
+    Optional<ShowType> weeklyTypeBeforeSync = showTypeService.findByName("Weekly");
+    assertTrue(
+        weeklyTypeBeforeSync.isPresent(), "Weekly show type should exist from DataInitializer");
+    ShowType initialWeekly = weeklyTypeBeforeSync.get();
+    log.info("📝 Found initial Weekly show type: {}", initialWeekly.getName());
 
     // When - Run sync
     BaseSyncService.SyncResult result = showTypeSyncService.syncShowTypes(TEST_OPERATION_ID);
 
-    // Then - Should not overwrite existing show type
+    // Then - Should not create duplicates and should report 0 created/updated
     assertNotNull(result, "Sync result should not be null");
+    log.info("📊 Sync result: {}", result);
 
-    Optional<ShowType> weeklyType = showTypeService.findByName("Weekly");
-    assertTrue(weeklyType.isPresent(), "Weekly show type should still exist");
+    assertThat(result.isSuccess()).isTrue();
+    assertThat(result.getCreatedCount()).isEqualTo(0);
+    assertThat(result.getUpdatedCount()).isEqualTo(0);
 
-    ShowType retrievedWeekly = weeklyType.get();
-    assertThat(retrievedWeekly.getId()).isEqualTo(saved.getId());
-    assertThat(retrievedWeekly.getDescription()).isEqualTo("Pre-existing weekly show type");
+    // Verify existing show type is still there and has not been overwritten or duplicated
+    Optional<ShowType> weeklyTypeAfterSync = showTypeService.findByName("Weekly");
+    assertTrue(weeklyTypeAfterSync.isPresent(), "Weekly show type should still exist after sync");
+    ShowType retrievedWeekly = weeklyTypeAfterSync.get();
+    assertThat(retrievedWeekly.getId()).isEqualTo(initialWeekly.getId());
+    assertThat(retrievedWeekly.getDescription())
+        .isEqualTo(
+            initialWeekly
+                .getDescription()); // Should retain original description from DataInitializer
+
+    // Ensure total count hasn't changed
+    List<ShowType> finalShowTypes = showTypeService.findAll();
+    assertThat(finalShowTypes)
+        .hasSize(2); // Assuming DataInitializer creates "Weekly" and "Premium Live Event (PLE)"
 
     log.info("✅ Pre-existing show types handling verified successfully");
   }
@@ -188,7 +215,7 @@ class ShowTypeSyncTest extends ManagementIntegrationTest {
     log.info("📊 Show types in database after sync attempt: {}", showTypes.size());
 
     // Should have at least the default show types
-    assertThat(showTypes.size()).isGreaterThanOrEqualTo(0);
+    assertThat(showTypes.size()).isGreaterThanOrEqualTo(2);
 
     log.info("✅ Failure handling verification completed successfully");
   }

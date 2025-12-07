@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.TestUtils;
@@ -20,7 +36,6 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.domain.storyline.StorylineBranchRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -41,12 +56,14 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Slf4j
 public abstract class ManagementIntegrationTest extends AbstractIntegrationTest {
   @Autowired protected DeckCardRepository deckCardRepository;
   @Autowired protected DramaEventRepository dramaEventRepository;
@@ -57,7 +74,6 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   @Autowired protected InjuryTypeRepository injuryTypeRepository;
   @Autowired protected SegmentRepository segmentRepository;
   @Autowired protected SegmentRuleRepository segmentRuleRepository;
-  @Autowired protected StorylineBranchRepository storylineBranchRepository;
   @Autowired protected NpcRepository npcRepository;
   @Autowired protected SeasonRepository seasonRepository;
   @Autowired protected SegmentRuleService segmentRuleService;
@@ -103,34 +119,57 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   }
 
   protected void clearAllRepositories() {
+    log.info("Clearing all repositories");
     deckCardRepository.deleteAllInBatch();
+    log.info("Cleared deckCardRepository");
     deckRepository.deleteAll();
-    deckRepository.deleteAll();
+    log.info("Cleared deckRepository");
     dramaEventRepository.deleteAll();
+    log.info("Cleared dramaEventRepository");
     factionRivalryRepository.deleteAll();
+    log.info("Cleared factionRivalryRepository");
     multiWrestlerFeudRepository.deleteAll();
+    log.info("Cleared multiWrestlerFeudRepository");
     rivalryRepository.deleteAll();
+    log.info("Cleared rivalryRepository");
     injuryRepository.deleteAll();
+    log.info("Cleared injuryRepository");
     injuryTypeRepository.deleteAll();
+    log.info("Cleared injuryTypeRepository");
     segmentRepository.deleteAll();
+    log.info("Cleared segmentRepository");
     segmentRuleRepository.deleteAll();
-    storylineBranchRepository.deleteAll();
+    log.info("Cleared segmentRuleRepository");
     teamRepository.deleteAll();
+    log.info("Cleared teamRepository");
     titleReignRepository.deleteAll();
+    log.info("Cleared titleReignRepository");
     titleRepository.deleteAll();
+    log.info("Cleared titleRepository");
     factionRepository.deleteAll();
+    log.info("Cleared factionRepository");
     npcRepository.deleteAll();
+    log.info("Cleared npcRepository");
     wrestlerRepository.deleteAll();
+    log.info("Cleared wrestlerRepository");
     cardRepository.deleteAll();
+    log.info("Cleared cardRepository");
     cardSetRepository.deleteAll();
+    log.info("Cleared cardSetRepository");
     seasonRepository.deleteAll();
+    log.info("Cleared seasonRepository");
     showRepository.deleteAll();
+    log.info("Cleared showRepository");
     showTemplateRepository.deleteAll();
+    log.info("Cleared showTemplateRepository");
     showTypeRepository.deleteAll();
+    log.info("Cleared showTypeRepository");
     segmentTypeRepository.deleteAll();
+    log.info("Cleared segmentTypeRepository");
+    log.info("Finished clearing all repositories");
   }
 
   protected Wrestler createTestWrestler(@NonNull String name) {
-    return TestUtils.createWrestler(wrestlerRepository, name);
+    return TestUtils.createWrestler(name);
   }
 }

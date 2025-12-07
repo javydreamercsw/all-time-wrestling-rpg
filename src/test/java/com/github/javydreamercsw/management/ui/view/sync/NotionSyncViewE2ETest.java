@@ -1,22 +1,36 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.javydreamercsw.AbstractE2ETest;
-import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.TestPropertySource;
 
-@EnabledIfEnvironmentVariable(named = "NOTION_TOKEN", matches = ".*")
+@EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
+@TestPropertySource(properties = "notion.sync.scheduler.enabled=true")
 public class NotionSyncViewE2ETest extends AbstractE2ETest {
-
-  @MockitoBean private NotionSyncScheduler notionSyncScheduler;
 
   @Test
   public void testControlAlignment() {
@@ -24,10 +38,7 @@ public class NotionSyncViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     WebElement controlSection =
-        wait.until(
-            ExpectedConditions.visibilityOfElementLocated(
-                By.xpath(
-                    "//vaadin-horizontal-layout[.//vaadin-button[text()='Sync All Entities']]")));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("control-section")));
 
     assertEquals("baseline", controlSection.getCssValue("align-items"));
   }

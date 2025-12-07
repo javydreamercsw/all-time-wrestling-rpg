@@ -1,8 +1,35 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.sync.parallel;
 
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
-import com.github.javydreamercsw.management.service.sync.entity.*;
+import com.github.javydreamercsw.management.service.sync.entity.notion.FactionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.InjurySyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.NpcSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTemplateSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TeamSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TitleReignSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TitleSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerSyncService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -183,7 +210,14 @@ public class ParallelSyncOrchestrator {
     if (entityConfig.isEntityEnabled("npcs")) {
       futures.add(
           executor.submit(
-              () -> syncEntity("npcs", () -> npcSyncService.syncNpcs(baseOperationId + "-npcs"))));
+              () ->
+                  syncEntity(
+                      "npcs",
+                      () ->
+                          npcSyncService.syncNpcs(
+                              baseOperationId + "-npcs",
+                              com.github.javydreamercsw.management.service.sync.base.SyncDirection
+                                  .INBOUND))));
     }
 
     if (entityConfig.isEntityEnabled("titles")) {

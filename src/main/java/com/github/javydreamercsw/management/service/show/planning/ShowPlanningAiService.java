@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.show.planning;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -5,11 +21,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.AiGeneratedSegmentDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.util.HolidayUtils;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,10 +53,10 @@ public class ShowPlanningAiService {
     }
 
     String prompt = buildShowPlanningPrompt(context);
-    log.info("Sending prompt to AI: {}", prompt);
+    log.debug("Sending prompt to AI: {}", prompt);
 
     String aiResponse = aiService.generateText(prompt);
-    log.info("Received response from AI: {}", aiResponse);
+    log.debug("Received response from AI: {}", aiResponse);
 
     if (aiResponse == null || aiResponse.trim().isEmpty()) {
       log.warn("AI returned an empty or null response for show planning.");
@@ -48,7 +68,8 @@ public class ShowPlanningAiService {
       String jsonString = extractJsonArray(aiResponse);
       if (jsonString == null) {
         log.error("Could not extract JSON array from AI response: {}", aiResponse);
-        return new ProposedShow();
+        throw new ShowPlanningException(
+            "Could not extract JSON array from AI response: " + aiResponse);
       }
 
       List<AiGeneratedSegmentDTO> aiSegments =
@@ -75,10 +96,10 @@ public class ShowPlanningAiService {
       return proposedShow;
     } catch (JsonProcessingException e) {
       log.error("Failed to parse AI response into ProposedShow object: {}", aiResponse, e);
-      return new ProposedShow();
+      throw new ShowPlanningException("Failed to parse AI response", e);
     } catch (Exception e) {
       log.error("An unexpected error occurred during show planning: {}", e.getMessage(), e);
-      return new ProposedShow();
+      throw new ShowPlanningException("An unexpected error occurred during show planning", e);
     }
   }
 
@@ -106,6 +127,20 @@ public class ShowPlanningAiService {
           .append("Expected Promos: ")
           .append(context.getShowTemplate().getExpectedPromos())
           .append("\n");
+    }
+
+    if (context.getShowDate() != null) {
+      Optional<String> holidayTheme = HolidayUtils.getHolidayTheme(context.getShowDate());
+      holidayTheme.ifPresent(
+          theme ->
+              prompt
+                  .append("\nHoliday Theme: ")
+                  .append(theme)
+                  .append(
+                      ". Please incorporate this theme into the show's segments where"
+                          + " appropriate. Including, but not limited to, commentators mentioning"
+                          + " them, wrestlers, referencing them in promos and having matches with"
+                          + " the themes.\n"));
     }
 
     if (context.getRecentSegments() != null && !context.getRecentSegments().isEmpty()) {
@@ -164,24 +199,16 @@ public class ShowPlanningAiService {
                       .append("\n"));
       prompt.append("\n**Rivalry Resolution Rules:**\n");
       prompt.append("- At 10 Heat: They must wrestle at the next PLE show\n");
-      prompt.append("- After match, both roll d20 → total >30 = rivalry ends\n");
-      prompt.append("- If not, continue to 20 Heat → repeat roll\n");
-      prompt.append("- At 30 Heat → forced into Stipulation Match (steel cage, hardcore, etc.)\n");
-      List<String> highHeatRules =
-          segmentRuleService.getHighHeatRules().stream().map(SegmentRule::getName).toList();
+      prompt.append("- At 30 Heat → forced into High Heat Rule Match\n");
+      List<SegmentRule> highHeatRules = segmentRuleService.getHighHeatRules();
+      List<String> highHeatRuleDescriptions =
+          highHeatRules.stream()
+              .map(rule -> String.format("%s (%s)", rule.getName(), rule.getDescription()))
+              .collect(Collectors.toList());
       prompt
           .append("Available Stipulation Matches: ")
-          .append(String.join(", ", highHeatRules))
+          .append(String.join(", ", highHeatRuleDescriptions))
           .append("\n\n");
-      prompt.append("\n**Other considerations:**\n");
-      prompt.append(
-          "- Within the same calendar day, avoid having a wrestler in more than one match. They can"
-              + " participate in promos and any other capacity as long as it doesn't involve"
-              + " officially participating in the match.\n");
-      prompt.append(
-          "- Within the same calendar week, avoid having a wrestler in more than one match. Instead"
-              + " focus on giving all wrestlers a change to perform in a match every week. The"
-              + " exception is for Premium Live Event (PLE) where this is not avoidable.\n");
     }
 
     if (context.getWrestlerHeats() != null && !context.getWrestlerHeats().isEmpty()) {
@@ -258,15 +285,41 @@ public class ShowPlanningAiService {
       prompt.append("- Name: ").append(context.getNextPle().getPleName()).append("\n");
       prompt.append("- Date: ").append(context.getNextPle().getPleDate()).append("\n");
       prompt.append("- Summary: ").append(context.getNextPle().getSummary()).append("\n");
+      if (context.getNextPle().getMatches() != null
+          && !context.getNextPle().getMatches().isEmpty()) {
+        prompt.append("  Scheduled Matches:\n");
+        context
+            .getNextPle()
+            .getMatches()
+            .forEach(
+                match ->
+                    prompt
+                        .append("  - Name: ")
+                        .append(match.getName())
+                        .append(", Participants: ")
+                        .append(String.join(", ", match.getParticipants()))
+                        .append("\n"));
+      }
     }
 
-    List<String> segmentTypes =
-        segmentTypeService.findAll().stream()
-            .map(com.github.javydreamercsw.management.domain.show.segment.type.SegmentType::getName)
-            .collect(java.util.stream.Collectors.toList());
+    prompt.append("\n**Other considerations:**\n");
+    prompt.append(
+        "- Within the same calendar day, avoid having a wrestler in more than one match. They can"
+            + " participate in promos and any other capacity as long as it doesn't involve"
+            + " officially participating in the match.\n");
+    prompt.append(
+        "- Within the same calendar week, avoid having a wrestler in more than one match. Instead"
+            + " focus on giving all wrestlers a change to perform in a match every week. The"
+            + " exception is for Premium Live Event (PLE) where this is not avoidable.\n");
+
+    List<SegmentType> segmentTypes = segmentTypeService.findAll();
+    List<String> segmentTypeDescriptions =
+        segmentTypes.stream()
+            .map(type -> String.format("%s (%s)", type.getName(), type.getDescription()))
+            .collect(Collectors.toList());
     prompt
         .append("\nAvailable Segment Types: ")
-        .append(String.join(", ", segmentTypes))
+        .append(String.join(", ", segmentTypeDescriptions))
         .append("\n");
 
     prompt.append(
@@ -278,7 +331,14 @@ public class ShowPlanningAiService {
     prompt.append("```json\n");
     prompt.append("{\n");
     prompt.append("  \"segmentId\": \"string\",\n");
-    prompt.append("  \"type\": \"string\", // e.g., \"").append(segmentTypes.get(0)).append("\"\n");
+    if (!segmentTypes.isEmpty()) {
+      prompt
+          .append("  \"type\": \"string\", // e.g., \"")
+          .append(segmentTypes.get(0).getName())
+          .append("\"\n");
+    } else {
+      prompt.append("  \"type\": \"string\", // e.g., \"Match\"\n");
+    }
     prompt.append("  \"description\": \"string\",\n");
     prompt.append("  \"outcome\": \"string\",\n");
     prompt.append("  \"participants\": [\"string\"]\n");

@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.base.ai.notion;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -8,7 +24,6 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -23,24 +38,21 @@ class NotionHandlerTeamsTest {
 
   @Test
   void shouldLoadAllTeamsSuccessfully() {
-    try (MockedStatic<NotionHandler> mocked = mockStatic(NotionHandler.class)) {
-      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
-      // Given
-      TeamPage teamPage = new TeamPage();
-      teamPage.setId("test-id");
-      when(notionHandler.loadAllTeams()).thenReturn(Collections.singletonList(teamPage));
+    // Given
+    TeamPage teamPage = new TeamPage();
+    teamPage.setId("test-id");
+    when(notionHandler.loadAllTeams()).thenReturn(Collections.singletonList(teamPage));
 
-      // When
-      List<TeamPage> teams = notionHandler.loadAllTeams();
+    // When
+    List<TeamPage> teams = notionHandler.loadAllTeams();
 
-      // Then
-      assertThat(teams).isNotNull();
-      teams.forEach(
-          team -> {
-            assertThat(team).isNotNull();
-            assertThat(team.getId()).isNotNull();
-          });
-    }
+    // Then
+    assertThat(teams).isNotNull();
+    teams.forEach(
+        team -> {
+          assertThat(team).isNotNull();
+          assertThat(team.getId()).isNotNull();
+        });
   }
 
   @Test
@@ -50,7 +62,7 @@ class NotionHandlerTeamsTest {
         mockStatic(EnvironmentVariableUtil.class)) {
       mockedUtil.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(false);
 
-      NotionHandler realHandler = new NotionHandler(true);
+      NotionHandler realHandler = new NotionHandler();
 
       // When & Then
       assertThatThrownBy(realHandler::loadAllTeams)
@@ -61,57 +73,48 @@ class NotionHandlerTeamsTest {
 
   @Test
   void shouldReturnEmptyListWhenTeamsDatabaseNotFound() {
-    try (MockedStatic<NotionHandler> mocked = mockStatic(NotionHandler.class)) {
-      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
-      // Given
-      when(notionHandler.loadAllTeams()).thenReturn(Collections.emptyList());
-      // When
-      List<TeamPage> teams = notionHandler.loadAllTeams();
+    // Given
+    when(notionHandler.loadAllTeams()).thenReturn(Collections.emptyList());
+    // When
+    List<TeamPage> teams = notionHandler.loadAllTeams();
 
-      // Then - Should not throw exception, might return empty list
-      assertThat(teams).isNotNull().isEmpty();
-    }
+    // Then - Should not throw exception, might return empty list
+    assertThat(teams).isNotNull().isEmpty();
   }
 
   @Test
   void shouldHandleNotionClientCreationFailure() {
-    try (MockedStatic<NotionHandler> mocked = mockStatic(NotionHandler.class)) {
-      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
-      // Given - Mock NOTION_TOKEN as available but invalid
-      when(notionHandler.loadAllTeams())
-          .thenThrow(new RuntimeException("Failed to load teams from Notion"));
+    // Given - Mock NOTION_TOKEN as available but invalid
+    when(notionHandler.loadAllTeams())
+        .thenThrow(new RuntimeException("Failed to load teams from Notion"));
 
-      // When & Then
-      assertThatThrownBy(() -> notionHandler.loadAllTeams())
-          .isInstanceOf(RuntimeException.class)
-          .hasMessage("Failed to load teams from Notion");
-    }
+    // When & Then
+    assertThatThrownBy(() -> notionHandler.loadAllTeams())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("Failed to load teams from Notion");
   }
 
   @Test
   void shouldLoadTeamsWithCorrectStructure() {
-    try (MockedStatic<NotionHandler> mocked = mockStatic(NotionHandler.class)) {
-      mocked.when(NotionHandler::getInstance).thenReturn(Optional.of(notionHandler));
-      // Given
-      TeamPage teamPage = new TeamPage();
-      teamPage.setId("test-id");
-      teamPage.setRawProperties(Collections.singletonMap("Name", "Test Team"));
-      TeamPage.NotionProperties properties = new TeamPage.NotionProperties();
-      teamPage.setProperties(properties);
-      when(notionHandler.loadAllTeams()).thenReturn(Collections.singletonList(teamPage));
-      // When
-      List<TeamPage> teams = notionHandler.loadAllTeams();
+    // Given
+    TeamPage teamPage = new TeamPage();
+    teamPage.setId("test-id");
+    teamPage.setRawProperties(Collections.singletonMap("Name", "Test Team"));
+    TeamPage.NotionProperties properties = new TeamPage.NotionProperties();
+    teamPage.setProperties(properties);
+    when(notionHandler.loadAllTeams()).thenReturn(Collections.singletonList(teamPage));
+    // When
+    List<TeamPage> teams = notionHandler.loadAllTeams();
 
-      // Then
-      assertThat(teams).isNotNull();
+    // Then
+    assertThat(teams).isNotNull();
 
-      // If teams exist, verify they have the expected structure
-      teams.forEach(
-          team -> {
-            assertThat(team.getId()).isNotNull().isNotEmpty();
-            // Verify team has properties (structure may vary based on Notion setup)
-            assertThat(team.getProperties()).isNotNull();
-          });
-    }
+    // If teams exist, verify they have the expected structure
+    teams.forEach(
+        team -> {
+          assertThat(team.getId()).isNotNull().isNotEmpty();
+          // Verify team has properties (structure may vary based on Notion setup)
+          assertThat(team.getProperties()).isNotNull();
+        });
   }
 }

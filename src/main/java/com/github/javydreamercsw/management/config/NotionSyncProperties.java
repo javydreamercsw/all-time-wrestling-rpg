@@ -1,5 +1,24 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.config;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -30,6 +49,9 @@ public class NotionSyncProperties {
 
   /** Whether to load existing data from JSON files during sync. */
   private boolean loadFromJson = true;
+
+  /** Map to store the last sync time for each entity. */
+  private final Map<String, LocalDateTime> lastSyncTimes = new ConcurrentHashMap<>();
 
   /** Scheduler-specific configuration properties. */
   @Data
@@ -95,5 +117,25 @@ public class NotionSyncProperties {
    */
   public boolean isBackupEnabled() {
     return backup.enabled;
+  }
+
+  /**
+   * Updates the last sync time for a specific entity.
+   *
+   * @param entityName The name of the entity.
+   * @param syncTime The time of synchronization.
+   */
+  public void setLastSyncTime(String entityName, LocalDateTime syncTime) {
+    lastSyncTimes.put(entityName, syncTime);
+  }
+
+  /**
+   * Retrieves the last sync time for a specific entity.
+   *
+   * @param entityName The name of the entity.
+   * @return The last sync time, or null if it has never been synced.
+   */
+  public LocalDateTime getLastSyncTime(String entityName) {
+    return lastSyncTimes.get(entityName);
   }
 }

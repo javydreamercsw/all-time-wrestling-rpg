@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.show;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +44,7 @@ import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -87,6 +104,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     proposeSegmentsButton = new Button("Propose Segments");
     proposeSegmentsButton.addClickListener(e -> proposeSegments());
+    proposeSegmentsButton.setId("propose-segments-button");
     proposeSegmentsButton.setEnabled(false);
 
     proposedSegmentsGrid = new Grid<>(ProposedSegment.class, false);
@@ -174,15 +192,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       } catch (Exception ex) {
         contextArea.setValue("Error displaying context: " + ex.getMessage());
       }
-
-      // Plan the show
-      ProposedShow proposedShow =
-          restTemplate.postForObject(
-              baseUrl + "/api/show-planning/plan", context, ProposedShow.class);
-      if (proposedShow != null) {
-        segments = new ArrayList<>(proposedShow.getSegments());
-        proposedSegmentsGrid.setItems(segments);
-      }
     }
   }
 
@@ -191,6 +200,12 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       String baseUrl = UrlUtil.getBaseUrl();
       ShowPlanningContextDTO context =
           objectMapper.readValue(contextArea.getValue(), ShowPlanningContextDTO.class);
+
+      // Ensure the showDate is preserved
+      Show selectedShow = showComboBox.getValue();
+      if (selectedShow != null && selectedShow.getShowDate() != null) {
+        context.setShowDate(selectedShow.getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant());
+      }
 
       // Log the request context
       log.debug(
@@ -232,7 +247,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       String baseUrl = UrlUtil.getBaseUrl();
       restTemplate.postForEntity(
           baseUrl + "/api/show-planning/approve/" + selectedShow.getId(), segments, Void.class);
-      log.info("Segments approved successfully, showing notification.");
       Notification.show("Segments approved successfully!", 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       proposedSegmentsGrid.setItems(new ArrayList<>());
