@@ -22,6 +22,8 @@ import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -35,6 +37,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
@@ -58,6 +61,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private TitleRepository titleRepository;
+  @Autowired private SegmentTypeRepository segmentTypeRepository;
 
   @BeforeEach
   @Transactional
@@ -87,6 +91,45 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     rivalryRepository.deleteAll();
     multiWrestlerFeudRepository.deleteAll();
     titleRepository.deleteAll();
+    segmentTypeRepository.deleteAll();
+
+    // Add segment types
+    if (segmentTypeRepository.findByName("One on One").isEmpty()) {
+      SegmentType st = new SegmentType();
+      st.setName("One on One");
+      st.setDescription("Traditional singles wrestling match between two competitors");
+      segmentTypeRepository.save(st);
+    }
+    if (segmentTypeRepository.findByName("Tag Team").isEmpty()) {
+      SegmentType st = new SegmentType();
+      st.setName("Tag Team");
+      st.setDescription("Team-based wrestling match with tag-in/tag-out mechanics");
+      segmentTypeRepository.save(st);
+    }
+    if (segmentTypeRepository.findByName("Free-for-All").isEmpty()) {
+      SegmentType st = new SegmentType();
+      st.setName("Free-for-All");
+      st.setDescription("Multi-person match where everyone fights at once");
+      segmentTypeRepository.save(st);
+    }
+    if (segmentTypeRepository.findByName("Abu Dhabi Rumble").isEmpty()) {
+      SegmentType st = new SegmentType();
+      st.setName("Abu Dhabi Rumble");
+      st.setDescription("Large-scale elimination match with timed entries");
+      segmentTypeRepository.save(st);
+    }
+    if (segmentTypeRepository.findByName("Promo").isEmpty()) {
+      SegmentType st = new SegmentType();
+      st.setName("Promo");
+      st.setDescription("Non-wrestling segment for storyline development and character work");
+      segmentTypeRepository.save(st);
+    }
+    if (segmentTypeRepository.findByName("Handicap Match").isEmpty()) {
+      SegmentType st = new SegmentType();
+      st.setName("Handicap Match");
+      st.setDescription("A match with uneven teams, where one side has a numerical disadvantage");
+      segmentTypeRepository.save(st);
+    }
 
     // Clear and insert required ShowType
     Optional<ShowType> st = showTypeRepository.findByName(SHOW_TYPE_NAME);
@@ -136,7 +179,10 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
 
       // Fill in the form
       log.info("Filling out new show form");
-      wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("vaadin-text-field")))
+      Objects.requireNonNull(
+              wait.until(
+                  ExpectedConditions.visibilityOfElementLocated(
+                      By.cssSelector("vaadin-text-field"))))
           .sendKeys(showName);
       List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
       comboBoxes.get(0).sendKeys(SHOW_TYPE_NAME);
@@ -185,10 +231,19 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebElement showPlanningContextArea =
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("show-planning-context-area")));
-      Assertions.assertFalse(showPlanningContextArea.getText().isEmpty());
+      wait.until(driver -> !showPlanningContextArea.getText().isEmpty());
+      Assertions.assertFalse(showPlanningContextArea.getText().contains("Error"));
+
+      // Click the "Propose Segments" button
+      log.info("Proposing segments");
+      WebElement proposeSegmentsButton =
+          wait.until(ExpectedConditions.elementToBeClickable(By.id("propose-segments-button")));
+      clickAndScrollIntoView(proposeSegmentsButton);
 
       log.info("Waiting for proposed segments grid");
-      wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("proposed-segments-grid")));
+      wait.until(
+          ExpectedConditions.presenceOfElementLocated(
+              By.cssSelector("vaadin-grid#proposed-segments-grid vaadin-grid-cell-content")));
 
       // Approve segments
       log.info("Approving segments");

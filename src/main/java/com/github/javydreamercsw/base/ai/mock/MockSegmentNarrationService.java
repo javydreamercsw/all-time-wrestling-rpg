@@ -151,11 +151,12 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
 
   private Object createMockSegment(
       List<String> segmentTypes, List<String> participants, String typeHint, String venue) {
-    String type =
-        segmentTypes.stream()
-            .filter(t -> t.toLowerCase().contains(typeHint.toLowerCase()))
-            .findAny()
-            .orElse(segmentTypes.get(random.nextInt(segmentTypes.size())));
+    String type;
+    if (typeHint.equalsIgnoreCase("Match")) {
+      type = "One on One";
+    } else {
+      type = "Promo";
+    }
 
     List<String> segmentParticipants = new ArrayList<>();
     if (!participants.isEmpty()) {

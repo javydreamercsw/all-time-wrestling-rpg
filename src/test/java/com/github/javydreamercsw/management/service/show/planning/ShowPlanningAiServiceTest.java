@@ -73,10 +73,10 @@ class ShowPlanningAiServiceTest {
     // Given
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
     ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setShowName("Test Show");
     showTemplate.setExpectedMatches(2);
     showTemplate.setExpectedPromos(1);
     context.setShowTemplate(showTemplate);
-    // Christmas time!
     context.setShowDate(LocalDate.of(2025, 12, 25).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     ShowPlanningPleDTO ple = new ShowPlanningPleDTO();

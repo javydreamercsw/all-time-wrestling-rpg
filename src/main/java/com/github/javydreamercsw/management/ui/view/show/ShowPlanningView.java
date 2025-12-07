@@ -44,6 +44,7 @@ import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -103,6 +104,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     proposeSegmentsButton = new Button("Propose Segments");
     proposeSegmentsButton.addClickListener(e -> proposeSegments());
+    proposeSegmentsButton.setId("propose-segments-button");
     proposeSegmentsButton.setEnabled(false);
 
     proposedSegmentsGrid = new Grid<>(ProposedSegment.class, false);
@@ -190,15 +192,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       } catch (Exception ex) {
         contextArea.setValue("Error displaying context: " + ex.getMessage());
       }
-
-      // Plan the show
-      ProposedShow proposedShow =
-          restTemplate.postForObject(
-              baseUrl + "/api/show-planning/plan", context, ProposedShow.class);
-      if (proposedShow != null) {
-        segments = new ArrayList<>(proposedShow.getSegments());
-        proposedSegmentsGrid.setItems(segments);
-      }
     }
   }
 
@@ -207,6 +200,12 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       String baseUrl = UrlUtil.getBaseUrl();
       ShowPlanningContextDTO context =
           objectMapper.readValue(contextArea.getValue(), ShowPlanningContextDTO.class);
+
+      // Ensure the showDate is preserved
+      Show selectedShow = showComboBox.getValue();
+      if (selectedShow != null && selectedShow.getShowDate() != null) {
+        context.setShowDate(selectedShow.getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant());
+      }
 
       // Log the request context
       log.debug(

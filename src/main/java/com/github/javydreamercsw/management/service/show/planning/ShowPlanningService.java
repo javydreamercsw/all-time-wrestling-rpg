@@ -71,6 +71,7 @@ public class ShowPlanningService {
 
     // Get segments from the last 7 days
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
+    context.setShowDate(showDate);
     Instant lastWeek = showDate.minus(7, ChronoUnit.DAYS);
     log.debug("Getting segments between {} and {}", lastWeek, showDate);
     List<Segment> lastWeekSegments = segmentRepository.findBySegmentDateBetween(lastWeek, showDate);
@@ -172,6 +173,7 @@ public class ShowPlanningService {
       log.debug("Processing segment: {}", proposedSegment);
       Segment segment = new Segment();
       segment.setShow(show);
+      segment.setSegmentType(segmentTypeService.findByName(proposedSegment.getType()).get());
       segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
       segment.setNarration(proposedSegment.getDescription());
       segment.setSegmentOrder(currentSegmentCount + i + 1);
