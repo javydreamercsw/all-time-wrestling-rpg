@@ -41,8 +41,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private static final Duration TIMEOUT = Duration.ofSeconds(60);
-
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
   private final String apiKey;
@@ -52,7 +50,10 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
   @Autowired
   public ClaudeSegmentNarrationService(
       ClaudeConfigProperties claudeConfigProperties, Environment environment) {
-    this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
+    this.httpClient =
+        HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(claudeConfigProperties.getTimeout()))
+            .build();
     this.objectMapper = new ObjectMapper();
     this.apiKey = System.getenv("ANTHROPIC_API_KEY");
     this.claudeConfigProperties = claudeConfigProperties;
@@ -106,7 +107,7 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
               .header("Content-Type", "application/json")
               .header("x-api-key", apiKey)
               .header("anthropic-version", "2023-06-01")
-              .timeout(TIMEOUT)
+              .timeout(Duration.ofSeconds(claudeConfigProperties.getTimeout()))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
 
@@ -125,6 +126,9 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
 
     } catch (Exception e) {
       log.error("Failed to call Claude API for segment narration", e);
+      if (e instanceof java.net.http.HttpTimeoutException) {
+        throw new AIServiceException(504, "Gateway Timeout", getProviderName(), e.getMessage(), e);
+      }
       throw new AIServiceException(
           500, "Internal Server Error", getProviderName(), e.getMessage(), e);
     }

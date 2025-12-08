@@ -370,6 +370,17 @@ public class ShowPlanningAiService {
    * @return The extracted JSON array string, or null if not found.
    */
   private String extractJsonArray(String input) {
+    String jsonMarker = "```json";
+    int jsonStart = input.indexOf(jsonMarker);
+    if (jsonStart != -1) {
+      int startIndex = input.indexOf('[', jsonStart + jsonMarker.length());
+      int endIndex = input.lastIndexOf(']');
+      if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+        return input.substring(startIndex, endIndex + 1);
+      }
+    }
+
+    // Fallback to original method
     int startIndex = input.indexOf('[');
     int endIndex = input.lastIndexOf(']');
 

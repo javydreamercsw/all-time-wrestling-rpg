@@ -14,21 +14,11 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.ai.openai;
+package com.github.javydreamercsw.base.ai;
 
-import com.github.javydreamercsw.base.ai.AiBaseProperties;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-@Component
-@ConfigurationProperties(prefix = "ai.openai")
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class OpenAIConfigProperties extends AiBaseProperties {
-  private String apiUrl;
-  private String defaultModel;
-  private String premiumModel;
-  private int maxTokens;
+public class AiBaseProperties {
+  private int timeout = 180;
 }
