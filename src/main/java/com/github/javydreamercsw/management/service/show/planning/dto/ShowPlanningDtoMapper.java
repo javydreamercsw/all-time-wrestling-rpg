@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.FactionDTO;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningContext;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningPle;
@@ -35,6 +36,11 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ShowPlanningDtoMapper {
+  private final ShowService showService;
+
+  public ShowPlanningDtoMapper(ShowService showService) {
+    this.showService = showService;
+  }
 
   public ShowPlanningContextDTO toDto(@NonNull ShowPlanningContext context) {
     ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
@@ -146,6 +152,10 @@ public class ShowPlanningDtoMapper {
     dto.setPleName(ple.getPle().getName());
     dto.setPleDate(ple.getPle().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
     dto.setSummary(ple.getPle().getDescription());
+    dto.setMatches(
+        showService.getSegments(ple.getPle()).stream()
+            .map(this::toDto)
+            .collect(Collectors.toList()));
     return dto;
   }
 
