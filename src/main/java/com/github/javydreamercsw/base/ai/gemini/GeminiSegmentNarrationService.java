@@ -41,9 +41,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class GeminiSegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private static final Duration TIMEOUT =
-      Duration.ofSeconds(60); // Longer timeout for segment narration
-
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
   private final String apiKey;
@@ -53,7 +50,10 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
   @Autowired // Autowire the configuration properties
   public GeminiSegmentNarrationService(
       GeminiConfigProperties geminiConfigProperties, Environment environment) {
-    this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
+    this.httpClient =
+        HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(geminiConfigProperties.getTimeout()))
+            .build();
     this.objectMapper = new ObjectMapper();
     this.apiKey = System.getenv("GEMINI_API_KEY");
     this.geminiConfigProperties = geminiConfigProperties; // Assign injected properties
@@ -143,7 +143,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
           HttpRequest.newBuilder()
               .uri(URI.create(url))
               .header("Content-Type", "application/json")
-              .timeout(TIMEOUT)
+              .timeout(Duration.ofSeconds(geminiConfigProperties.getTimeout()))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
 
@@ -164,6 +164,9 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
 
     } catch (Exception e) {
       log.error("Failed to call Gemini API for segment narration", e);
+      if (e instanceof java.net.http.HttpTimeoutException) {
+        throw new AIServiceException(504, "Gateway Timeout", getProviderName(), e.getMessage(), e);
+      }
       // Re-throw as custom exception
       throw new AIServiceException(
           500, "Internal Server Error", getProviderName(), e.getMessage(), e);

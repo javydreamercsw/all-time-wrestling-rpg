@@ -16,14 +16,17 @@
 */
 package com.github.javydreamercsw.base.ai.gemini;
 
+import com.github.javydreamercsw.base.ai.AiBaseProperties;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConfigurationProperties(prefix = "ai.gemini")
 @Data
-public class GeminiConfigProperties {
+@EqualsAndHashCode(callSuper = true)
+public class GeminiConfigProperties extends AiBaseProperties {
   private String modelName;
   private String apiUrl;
 }

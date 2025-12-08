@@ -147,7 +147,7 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
   protected boolean isRetryableException(@NonNull Exception exception) {
     // Check for custom AI service exception with retryable status codes
     if (exception instanceof AIServiceException aiException) {
-      return Arrays.asList(429, 502, 503).contains(aiException.getStatusCode());
+      return Arrays.asList(429, 502, 503, 504).contains(aiException.getStatusCode());
     }
 
     // Fallback to message-based checking for generic exceptions
