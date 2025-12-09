@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudServic
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
@@ -226,5 +227,25 @@ class SegmentAdjudicationServiceUnitTest {
             Objects.requireNonNull(eq(wrestler2.getId())),
             eq(1),
             eq("From segment: Match"));
+  }
+
+  @Test
+  void testAdjudicateMatch_LoserLosesFans() {
+    // Given a match segment with a winner and a loser
+    matchSegment.setWinners(List.of(wrestler1));
+
+    // Roll 10 on d20 for no match quality bonus
+    when(random.nextInt(20)).thenReturn(9);
+    // Roll 1 for loser fan calculation (1-4) * 1000 = -3000
+    // The winner rolls first, so the loser's roll is the second one.
+    when(random.nextInt(6)).thenReturn(5).thenReturn(0);
+
+    // When
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    // Then
+    // Winner's fan gain should be calculated, but we are interested in the loser.
+    // Loser should lose fans.
+    verify(wrestlerService, times(1)).awardFans(eq(2L), eq(-3000L));
   }
 }

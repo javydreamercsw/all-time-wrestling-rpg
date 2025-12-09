@@ -60,10 +60,9 @@ public class RankingService {
     Title title = titleOpt.get();
     WrestlerTier tier = title.getTier();
     long minFans = tier.getMinFans();
-    long maxFans = tier.getNextTier() != null ? tier.getNextTier().getMinFans() : Long.MAX_VALUE;
 
     List<Wrestler> contenders =
-        new ArrayList<>(wrestlerRepository.findByFansBetween(minFans, maxFans));
+        new ArrayList<>(wrestlerRepository.findByFansGreaterThanEqual(minFans));
 
     title.getCurrentReign().ifPresent(reign -> contenders.removeAll(reign.getChampions()));
 

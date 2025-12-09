@@ -126,13 +126,13 @@ public class SegmentAdjudicationService {
         }
       }
 
-      // Award fans from losers
+      // Award/deduct fans from losers
       for (Wrestler loser : losers) {
         Long id = loser.getId();
         if (id != null) {
           DiceBag ldb = new DiceBag(random, new int[] {6});
-          // for winners 1d6 + 3 + (quality bonus) fans
-          wrestlerService.awardFans(loser.getId(), (ldb.roll() + 3) * 1_000L + matchQualityBonus);
+          // for losers 1d6 - 4 + (quality bonus) fans. Can be negative
+          wrestlerService.awardFans(loser.getId(), (ldb.roll() - 4) * 1_000L + matchQualityBonus);
         }
       }
 
