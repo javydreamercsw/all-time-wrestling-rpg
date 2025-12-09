@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.sync;
 
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -47,6 +47,8 @@ public class NotionSyncScheduler {
   private final NotionSyncService notionSyncService;
   private final NotionSyncProperties syncProperties;
   private final EntityDependencyAnalyzer dependencyAnalyzer;
+  private final BackupService backupService;
+  private final SyncServiceDependencies syncServiceDependencies;
 
   /**
    * Gets the list of entities to sync using automatic dependency analysis. Analyzes entity
@@ -210,7 +212,7 @@ public class NotionSyncScheduler {
     log.info("=== MANUAL NOTION SYNC TRIGGERED ===");
 
     // Clear sync session at the start of batch operation
-    notionSyncService.clearSyncSession();
+    syncServiceDependencies.getSyncSessionManager().clearSyncSession();
 
     List<NotionSyncService.SyncResult> results = new ArrayList<>();
 
@@ -240,7 +242,7 @@ public class NotionSyncScheduler {
 
     } finally {
       // Clean up sync session thread local
-      notionSyncService.cleanupSyncSession();
+      syncServiceDependencies.getSyncSessionManager().cleanupSyncSession();
     }
 
     return results;

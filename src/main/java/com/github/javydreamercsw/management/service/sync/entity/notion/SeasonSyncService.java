@@ -17,13 +17,13 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.SeasonPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.dto.SeasonDTO;
 import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
 import lombok.NonNull;
@@ -39,10 +39,13 @@ public class SeasonSyncService extends BaseSyncService {
 
   @Autowired private SeasonService seasonService;
 
-  @Autowired
   public SeasonSyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      ObjectMapper objectMapper,
+      SyncServiceDependencies syncServiceDependencies,
+      SeasonService seasonService,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
+    this.seasonService = seasonService;
   }
 
   /**
@@ -53,7 +56,7 @@ public class SeasonSyncService extends BaseSyncService {
    */
   public SyncResult syncSeasons(@NonNull String operationId) {
     // Check if already synced in current session
-    if (isAlreadySyncedInSession("seasons")) {
+    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("seasons")) {
       return SyncResult.success("Seasons", 0, 0, 0);
     }
 
@@ -63,7 +66,7 @@ public class SeasonSyncService extends BaseSyncService {
     try {
       SyncResult result = performSeasonsSync(operationId, startTime);
       if (result.isSuccess()) {
-        markAsSyncedInSession("seasons");
+        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("seasons");
       }
       return result;
     } catch (Exception e) {
@@ -81,8 +84,10 @@ public class SeasonSyncService extends BaseSyncService {
       }
 
       // Initialize progress tracking if operation ID provided
-      progressTracker.startOperation(operationId, "Sync Seasons", 4);
-      progressTracker.updateProgress(operationId, 1, "Retrieving seasons from Notion...");
+      syncServiceDependencies.getProgressTracker().startOperation(operationId, "Sync Seasons", 4);
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 1, "Retrieving seasons from Notion...");
 
       // Retrieve seasons from Notion
       log.info("📥 Retrieving seasons from Notion...");
@@ -93,8 +98,9 @@ public class SeasonSyncService extends BaseSyncService {
         return createDefaultSeasonIfNeeded();
       }
 
-      rateLimitService.acquirePermit();
-      List<SeasonPage> seasonPages = notionHandler.loadAllSeasons();
+      syncServiceDependencies.getRateLimitService().acquirePermit();
+      List<SeasonPage> seasonPages =
+          executeWithRateLimit(() -> syncServiceDependencies.getNotionHandler().loadAllSeasons());
       log.info(
           "✅ Retrieved {} seasons in {}ms",
           seasonPages.size(),
@@ -106,21 +112,28 @@ public class SeasonSyncService extends BaseSyncService {
       }
 
       // Convert to DTOs
-      progressTracker.updateProgress(operationId, 2, "Converting seasons to DTOs...");
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 2, "Converting seasons to DTOs...");
       log.info("🔄 Converting seasons to DTOs...");
       List<SeasonDTO> seasonDTOs = convertSeasonPagesToDTO(seasonPages, operationId);
       log.info("✅ Converted {} seasons to DTOs", seasonDTOs.size());
 
       // Save to database
-      progressTracker.updateProgress(operationId, 3, "Saving seasons to database...");
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 3, "Saving seasons to database...");
       log.info("💾 Saving seasons to database...");
       int savedCount = saveSeasonsToDB(seasonDTOs);
       log.info("✅ Processed {} seasons ({} new seasons created)", seasonDTOs.size(), savedCount);
 
       // Complete progress tracking
-      progressTracker.updateProgress(operationId, 4, "Seasons sync completed");
-      progressTracker.completeOperation(
-          operationId, true, "Seasons sync completed successfully", savedCount);
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 4, "Seasons sync completed");
+      syncServiceDependencies
+          .getProgressTracker()
+          .completeOperation(operationId, true, "Seasons sync completed successfully", savedCount);
 
       long totalTime = System.currentTimeMillis() - startTime;
       log.info("🎉 Successfully synchronized {} seasons in {}ms total", savedCount, totalTime);
@@ -130,7 +143,9 @@ public class SeasonSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize seasons after {}ms", totalTime, e);
 
-      progressTracker.failOperation(operationId, "Seasons sync failed: " + e.getMessage());
+      syncServiceDependencies
+          .getProgressTracker()
+          .failOperation(operationId, "Seasons sync failed: " + e.getMessage());
 
       return SyncResult.failure("Seasons", e.getMessage());
     }
@@ -152,14 +167,20 @@ public class SeasonSyncService extends BaseSyncService {
       SeasonDTO dto = new SeasonDTO();
 
       // Extract name from Notion page
-      String name = extractNameFromNotionPage(seasonPage);
+      String name =
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractNameFromNotionPage(seasonPage);
       dto.setName(name);
 
       // Set Notion ID for sync tracking
       dto.setNotionId(seasonPage.getId());
 
       // Extract description if available
-      String description = extractPropertyAsString(seasonPage.getRawProperties(), "Description");
+      String description =
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractPropertyAsString(seasonPage.getRawProperties(), "Description");
       if (description != null && !description.trim().isEmpty()) {
         dto.setDescription(description);
       } else {

@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.sync;
 
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;

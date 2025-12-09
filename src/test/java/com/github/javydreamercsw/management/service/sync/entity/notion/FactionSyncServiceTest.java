@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Unit tests for FactionSyncService covering faction synchronization scenarios including
@@ -55,18 +54,11 @@ class FactionSyncServiceTest extends AbstractSyncTest {
 
   @BeforeEach
   protected void setUp() {
-    super.setUp();
+    super.setUp(); // Calls AbstractSyncTest's setUp which initializes syncServiceDependencies
+
     factionSyncService =
         new FactionSyncService(
-            objectMapper,
-            syncProperties,
-            notionHandler,
-            factionService,
-            factionRepository,
-            wrestlerRepository);
-    ReflectionTestUtils.setField(factionSyncService, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(factionSyncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(factionSyncService, "rateLimitService", rateLimitService);
+            objectMapper, syncServiceDependencies, factionService, notionApiExecutor);
   }
 
   @Test
@@ -89,8 +81,8 @@ class FactionSyncServiceTest extends AbstractSyncTest {
     List<FactionPage> mockPages = createMockFactionPages();
     when(notionHandler.loadAllFactions()).thenReturn(mockPages);
     when(factionService.findByExternalId(anyString())).thenReturn(Optional.empty());
-    when(factionService.getFactionByName(anyString())).thenReturn(Optional.empty());
-    when(factionService.save(any(Faction.class)))
+    lenient()
+        .when(factionService.save(any(Faction.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
@@ -158,8 +150,9 @@ class FactionSyncServiceTest extends AbstractSyncTest {
     List<FactionPage> mockPages = createMockFactionPages();
     when(notionHandler.loadAllFactions()).thenReturn(mockPages);
     when(factionService.findByExternalId(anyString())).thenReturn(Optional.empty());
-    when(factionService.getFactionByName(anyString())).thenReturn(Optional.empty());
-    when(factionService.save(any(Faction.class))).thenThrow(new RuntimeException("Database error"));
+    lenient()
+        .when(factionService.save(any(Faction.class)))
+        .thenThrow(new RuntimeException("Database error"));
 
     // When
     SyncResult result = factionSyncService.syncFactions("test-operation");

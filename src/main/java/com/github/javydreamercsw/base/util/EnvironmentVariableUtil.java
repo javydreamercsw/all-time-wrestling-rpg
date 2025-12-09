@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p>The retrieval order is:
  *
  * <ol>
- *   <li>System property (e.g., -Dnotion.token=value)
+ *   <li>System property (e.g., -DNOTION_TOKEN=value)
  *   <li>Environment variable (e.g., NOTION_TOKEN=value)
  *   <li>Default value (if provided)
  * </ol>

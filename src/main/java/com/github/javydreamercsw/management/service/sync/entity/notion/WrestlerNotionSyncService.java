@@ -16,162 +16,84 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import java.time.Instant;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import notion.api.v1.NotionClient;
-import notion.api.v1.model.pages.Page;
-import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
-import notion.api.v1.request.pages.CreatePageRequest;
-import notion.api.v1.request.pages.UpdatePageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Slf4j
-public class WrestlerNotionSyncService implements INotionSyncService {
+public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
+  @Autowired @Lazy private NotionSyncServicesManager notionSyncServicesManager;
 
-  private final WrestlerRepository wrestlerRepository;
-  private final NotionHandler notionHandler;
-
-  // Enhanced sync infrastructure services - autowired
-  @Autowired public SyncProgressTracker progressTracker;
-
-  @Autowired
   public WrestlerNotionSyncService(
-      WrestlerRepository wrestlerRepository, NotionHandler notionHandler) {
-    this.wrestlerRepository = wrestlerRepository;
-    this.notionHandler = notionHandler;
+      WrestlerRepository repository,
+      SyncServiceDependencies syncServiceDependencies,
+      NotionApiExecutor notionApiExecutor) {
+    super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  @Transactional
-  public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
-    Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
-    if (clientOptional.isPresent()) {
-      try (NotionClient client = clientOptional.get()) {
-        String databaseId = notionHandler.getDatabaseId("Wrestlers");
-        if (databaseId != null) {
-          int processedCount = 0;
-          int created = 0;
-          int updated = 0;
-          int errors = 0;
-          progressTracker.startOperation(operationId, "Sync Wrestlers", 1);
-          List<Wrestler> wrestlers = wrestlerRepository.findAll();
-          for (Wrestler entity : wrestlers) {
-            // Update progress every 5 entities
-            if (processedCount % 5 == 0) {
-              progressTracker.updateProgress(
-                  operationId,
-                  1,
-                  String.format(
-                      "Saving wrestlers to Notion... (%d/%d processedCount)",
-                      processedCount, wrestlers.size()));
-            }
-            try {
-              Map<String, PageProperty> properties = new HashMap<>();
-              properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
-              if (entity.getStartingStamina() != null) {
-                properties.put(
-                    "Starting Stamina",
-                    NotionPropertyBuilder.createNumberProperty(
-                        entity.getStartingStamina().doubleValue()));
-              }
-              if (entity.getStartingHealth() != null) {
-                properties.put(
-                    "Starting Health",
-                    NotionPropertyBuilder.createNumberProperty(
-                        entity.getStartingHealth().doubleValue()));
-              }
-              if (entity.getFans() != null) {
-                properties.put(
-                    "Fans",
-                    NotionPropertyBuilder.createNumberProperty(entity.getFans().doubleValue()));
-              }
-              if (entity.getTier() != null) {
-                properties.put(
-                    "Tier",
-                    NotionPropertyBuilder.createSelectProperty(entity.getTier().getDisplayName()));
-              }
-              if (entity.getGender() != null) {
-                properties.put(
-                    "Gender",
-                    NotionPropertyBuilder.createSelectProperty(entity.getGender().name()));
-              }
-              if (entity.getBumps() != null) {
-                properties.put(
-                    "Bumps",
-                    NotionPropertyBuilder.createNumberProperty(entity.getBumps().doubleValue()));
-              }
-              if (entity.getLowHealth() != null) {
-                properties.put(
-                    "Low Health",
-                    NotionPropertyBuilder.createNumberProperty(
-                        entity.getLowHealth().doubleValue()));
-              }
-              if (entity.getLowStamina() != null) {
-                properties.put(
-                    "Low Stamina",
-                    NotionPropertyBuilder.createNumberProperty(
-                        entity.getLowStamina().doubleValue()));
-              }
-              if (entity.getDeckSize() != null) {
-                properties.put(
-                    "Deck Size",
-                    NotionPropertyBuilder.createNumberProperty(entity.getDeckSize().doubleValue()));
-              }
-
-              if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
-                log.debug("Updating existing wrestler page: {}", entity.getName());
-                // Update existing page
-                UpdatePageRequest updatePageRequest =
-                    new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
-                notionHandler.executeWithRetry(() -> client.updatePage(updatePageRequest));
-                updated++;
-              } else {
-                log.debug("Creating a new wrestler page for: {}", entity.getName());
-                // Create new page
-                CreatePageRequest createPageRequest =
-                    new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
-                Page page =
-                    notionHandler.executeWithRetry(() -> client.createPage(createPageRequest));
-                entity.setExternalId(page.getId());
-                created++;
-              }
-              entity.setLastSync(Instant.now());
-              entity = wrestlerRepository.save(entity);
-              processedCount++;
-            } catch (Exception ex) {
-              errors++;
-              processedCount++;
-            }
-          }
-          // Final progress update
-          progressTracker.updateProgress(
-              operationId,
-              1,
-              String.format(
-                  "✅ Completed database save: %d wrestlers saved/updated, %d errors",
-                  created + updated, errors));
-          return errors > 0
-              ? BaseSyncService.SyncResult.failure("wrestlers", "Error syncing wrestlers!")
-              : BaseSyncService.SyncResult.success("wrestlers", created, updated, errors);
-        }
-      }
+  protected Map<String, PageProperty> getProperties(Wrestler entity) {
+    Map<String, PageProperty> properties = new HashMap<>();
+    properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
+    if (entity.getStartingStamina() != null) {
+      properties.put(
+          "Starting Stamina",
+          NotionPropertyBuilder.createNumberProperty(entity.getStartingStamina().doubleValue()));
     }
-    progressTracker.failOperation(operationId, "Error syncing wrestlers!");
-    return BaseSyncService.SyncResult.failure("wrestlers", "Error syncing wrestlers!");
+    if (entity.getStartingHealth() != null) {
+      properties.put(
+          "Starting Health",
+          NotionPropertyBuilder.createNumberProperty(entity.getStartingHealth().doubleValue()));
+    }
+    if (entity.getFans() != null) {
+      properties.put(
+          "Fans", NotionPropertyBuilder.createNumberProperty(entity.getFans().doubleValue()));
+    }
+    if (entity.getTier() != null) {
+      properties.put(
+          "Tier", NotionPropertyBuilder.createSelectProperty(entity.getTier().getDisplayName()));
+    }
+    if (entity.getGender() != null) {
+      properties.put(
+          "Gender", NotionPropertyBuilder.createSelectProperty(entity.getGender().name()));
+    }
+    if (entity.getBumps() != null) {
+      properties.put(
+          "Bumps", NotionPropertyBuilder.createNumberProperty(entity.getBumps().doubleValue()));
+    }
+    if (entity.getLowHealth() != null) {
+      properties.put(
+          "Low Health",
+          NotionPropertyBuilder.createNumberProperty(entity.getLowHealth().doubleValue()));
+    }
+    if (entity.getLowStamina() != null) {
+      properties.put(
+          "Low Stamina",
+          NotionPropertyBuilder.createNumberProperty(entity.getLowStamina().doubleValue()));
+    }
+    if (entity.getDeckSize() != null) {
+      properties.put(
+          "Deck Size",
+          NotionPropertyBuilder.createNumberProperty(entity.getDeckSize().doubleValue()));
+    }
+    return properties;
+  }
+
+  @Override
+  protected String getDatabaseId() {
+    return syncServiceDependencies.getNotionHandler().getDatabaseId("Wrestlers");
+  }
+
+  @Override
+  protected String getEntityName() {
+    return "Wrestler";
   }
 }

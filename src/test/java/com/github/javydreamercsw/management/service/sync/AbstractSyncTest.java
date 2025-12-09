@@ -20,9 +20,20 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +52,23 @@ public abstract class AbstractSyncTest {
   @Mock protected SyncHealthMonitor healthMonitor;
   @Mock protected ObjectMapper objectMapper;
   @Mock protected NotionRateLimitService rateLimitService;
+  @Mock protected SyncSessionManager syncSessionManager;
+  protected SyncServiceDependencies syncServiceDependencies;
+  @Mock protected NotionPageDataExtractor notionPageDataExtractor;
+  @Mock protected NotionApiExecutor notionApiExecutor;
+  @Mock protected RetryService retryService;
+  @Mock protected CircuitBreakerService circuitBreakerService;
+  @Mock protected SyncValidationService validationService;
+  @Mock protected SyncTransactionManager syncTransactionManager;
+  @Mock protected DataIntegrityChecker integrityChecker;
+  @Mock protected EntitySyncConfiguration entitySyncConfig;
+  @Mock protected FactionRepository factionRepository;
+  @Mock protected WrestlerRepository wrestlerRepository;
+  @Mock protected InjuryTypeRepository injuryTypeRepository;
+  @Mock protected ShowTypeRepository showTypeRepository;
+  @Mock protected TeamRepository teamRepository;
+  @Mock protected TitleReignRepository titleReignRepository;
+  @Mock protected TitleRepository titleRepository;
 
   protected static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
 
@@ -64,5 +92,31 @@ public abstract class AbstractSyncTest {
   protected void setUp() {
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+    lenient()
+        .when(notionApiExecutor.getSyncExecutorService())
+        .thenReturn(java.util.concurrent.Executors.newSingleThreadExecutor());
+
+    syncServiceDependencies =
+        new SyncServiceDependencies(
+            progressTracker,
+            healthMonitor,
+            retryService,
+            circuitBreakerService,
+            validationService,
+            syncTransactionManager,
+            integrityChecker,
+            rateLimitService,
+            entitySyncConfig,
+            syncProperties,
+            notionHandler,
+            notionPageDataExtractor,
+            syncSessionManager,
+            factionRepository,
+            wrestlerRepository,
+            injuryTypeRepository,
+            showTypeRepository,
+            teamRepository,
+            titleReignRepository,
+            titleRepository);
   }
 }

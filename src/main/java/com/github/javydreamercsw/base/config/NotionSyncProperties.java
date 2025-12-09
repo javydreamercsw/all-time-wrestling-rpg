@@ -14,7 +14,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.config;
+package com.github.javydreamercsw.base.config;
 
 import java.time.LocalDateTime;
 import java.util.Map;

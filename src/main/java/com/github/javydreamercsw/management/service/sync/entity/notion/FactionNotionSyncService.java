@@ -42,7 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class FactionNotionSyncService implements INotionSyncService {
+public class FactionNotionSyncService implements NotionSyncService {
 
   private final FactionRepository factionRepository;
   private final NotionHandler notionHandler;

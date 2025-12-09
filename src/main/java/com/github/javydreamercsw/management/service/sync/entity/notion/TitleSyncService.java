@@ -17,16 +17,13 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.TitlePage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.List;
@@ -40,21 +37,24 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class TitleSyncService extends BaseSyncService {
 
-  @Autowired protected TitleService titleService;
-  @Autowired protected TitleRepository titleRepository;
-  @Autowired protected WrestlerRepository wrestlerRepository;
-  @Autowired protected TitleReignRepository titleReignRepository;
-  @Autowired private TitleNotionSyncService titleNotionSyncService;
+  private final TitleService titleService;
+  private final TitleNotionSyncService titleNotionSyncService;
 
   @Autowired
   public TitleSyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      ObjectMapper objectMapper,
+      SyncServiceDependencies syncServiceDependencies,
+      TitleService titleService,
+      TitleNotionSyncService titleNotionSyncService,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
+    this.titleService = titleService;
+    this.titleNotionSyncService = titleNotionSyncService;
   }
 
   @Transactional
   public SyncResult syncTitles(@NonNull String operationId) {
-    if (isAlreadySyncedInSession("titles")) {
+    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("titles")) {
       return SyncResult.success("Titles", 0, 0, 0);
     }
 
@@ -64,7 +64,7 @@ public class TitleSyncService extends BaseSyncService {
     try {
       SyncResult result = performTitlesSync(operationId, startTime);
       if (result.isSuccess()) {
-        markAsSyncedInSession("titles");
+        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("titles");
       }
       return result;
     } catch (Exception e) {
@@ -74,7 +74,7 @@ public class TitleSyncService extends BaseSyncService {
   }
 
   private SyncResult performTitlesSync(@NonNull String operationId, long startTime) {
-    if (!syncProperties.isEntityEnabled("titles")) {
+    if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("titles")) {
       log.info("Titles sync is disabled in configuration");
       return SyncResult.success("Titles", 0, 0, 0);
     }
@@ -85,11 +85,15 @@ public class TitleSyncService extends BaseSyncService {
     }
 
     try {
-      List<TitlePage> titlePages = executeWithRateLimit(notionHandler::loadAllTitles);
+      List<TitlePage> titlePages =
+          executeWithRateLimit(() -> syncServiceDependencies.getNotionHandler().loadAllTitles());
       log.info("✅ Retrieved {} titles from Notion", titlePages.size());
 
       for (TitlePage titlePage : titlePages) {
-        String titleName = extractNameFromNotionPage(titlePage);
+        String titleName =
+            syncServiceDependencies
+                .getNotionPageDataExtractor()
+                .extractNameFromNotionPage(titlePage);
         Title title = null;
 
         // 1. Find by externalId
@@ -140,20 +144,22 @@ public class TitleSyncService extends BaseSyncService {
         title.setGender(Gender.valueOf(titlePage.getGender().toUpperCase()));
         title.setIsActive(true);
 
-        titleRepository.save(title);
+        syncServiceDependencies.getTitleRepository().save(title);
 
         updateTitleFromNotion(title, titlePage);
       }
 
       long totalTime = System.currentTimeMillis() - startTime;
       log.info("🎉 Successfully synchronized titles in {}ms total", totalTime);
-      healthMonitor.recordSuccess("Titles", totalTime, titlePages.size());
+      syncServiceDependencies
+          .getHealthMonitor()
+          .recordSuccess("Titles", totalTime, titlePages.size());
       return SyncResult.success("Titles", titlePages.size(), 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize titles from Notion after {}ms", totalTime, e);
-      healthMonitor.recordFailure("Titles", e.getMessage());
+      syncServiceDependencies.getHealthMonitor().recordFailure("Titles", e.getMessage());
       return SyncResult.failure("Titles", e.getMessage());
     }
   }
@@ -176,7 +182,8 @@ public class TitleSyncService extends BaseSyncService {
     if (championIds != null && !championIds.isEmpty()) {
       List<Wrestler> newChampions = new java.util.ArrayList<>();
       for (String championId : championIds) {
-        var wrestlerOpt = wrestlerRepository.findByExternalId(championId.trim());
+        var wrestlerOpt =
+            syncServiceDependencies.getWrestlerRepository().findByExternalId(championId.trim());
         if (wrestlerOpt.isPresent()) {
           Wrestler wrestler = wrestlerOpt.get();
           log.info(
@@ -187,7 +194,8 @@ public class TitleSyncService extends BaseSyncService {
           newChampions.add(wrestler);
         } else {
           // Try by name as fallback
-          var wrestlerByNameOpt = wrestlerRepository.findByName(championId.trim());
+          var wrestlerByNameOpt =
+              syncServiceDependencies.getWrestlerRepository().findByName(championId.trim());
           if (wrestlerByNameOpt.isPresent()) {
             Wrestler wrestler = wrestlerByNameOpt.get();
             log.info(
@@ -218,7 +226,7 @@ public class TitleSyncService extends BaseSyncService {
                 .map(Wrestler::getName)
                 .collect(java.util.stream.Collectors.joining(", ")));
         title.awardTitleTo(newChampions, java.time.Instant.now());
-        titleRepository.saveAndFlush(title);
+        syncServiceDependencies.getTitleRepository().saveAndFlush(title);
         // Ensure the reign is persisted
         title
             .getCurrentReign()
@@ -227,7 +235,7 @@ public class TitleSyncService extends BaseSyncService {
                   if (reign.getStartDate() == null) {
                     reign.setStartDate(java.time.Instant.now());
                   }
-                  titleReignRepository.saveAndFlush(reign);
+                  syncServiceDependencies.getTitleReignRepository().saveAndFlush(reign);
                 });
       } else {
         log.warn(
@@ -236,7 +244,7 @@ public class TitleSyncService extends BaseSyncService {
     } else if (!title.isVacant()) {
       log.info("Vacating title from Notion: {}", title.getName());
       title.vacateTitle();
-      titleRepository.save(title);
+      syncServiceDependencies.getTitleRepository().save(title);
     }
 
     // Sync Contender
@@ -244,7 +252,8 @@ public class TitleSyncService extends BaseSyncService {
     if (contenderIds != null && !contenderIds.isEmpty()) {
       List<Wrestler> newContenders = new java.util.ArrayList<>();
       for (String contenderId : contenderIds) {
-        var wrestlerOpt = wrestlerRepository.findByExternalId(contenderId.trim());
+        var wrestlerOpt =
+            syncServiceDependencies.getWrestlerRepository().findByExternalId(contenderId.trim());
         if (wrestlerOpt.isPresent()) {
           Wrestler wrestler = wrestlerOpt.get();
           log.info(
@@ -254,7 +263,8 @@ public class TitleSyncService extends BaseSyncService {
               wrestler.getExternalId());
           newContenders.add(wrestler);
         } else {
-          var wrestlerByNameOpt = wrestlerRepository.findByName(contenderId.trim());
+          var wrestlerByNameOpt =
+              syncServiceDependencies.getWrestlerRepository().findByName(contenderId.trim());
           if (wrestlerByNameOpt.isPresent()) {
             Wrestler wrestler = wrestlerByNameOpt.get();
             log.info(
@@ -286,13 +296,13 @@ public class TitleSyncService extends BaseSyncService {
                   .map(Wrestler::getName)
                   .collect(java.util.stream.Collectors.joining(", ")));
           title.setContender(newContenders);
-          titleRepository.saveAndFlush(title);
+          syncServiceDependencies.getTitleRepository().saveAndFlush(title);
         }
       }
     } else if (title.getContender() != null && !title.getContender().isEmpty()) {
       log.info("Removing contenders from title: {}", title.getName());
       title.setContender(new java.util.ArrayList<>());
-      titleRepository.saveAndFlush(title);
+      syncServiceDependencies.getTitleRepository().saveAndFlush(title);
     }
   }
 

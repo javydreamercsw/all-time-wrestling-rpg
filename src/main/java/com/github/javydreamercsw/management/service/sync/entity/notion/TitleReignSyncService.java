@@ -17,15 +17,12 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.TitleReignPage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -41,18 +38,16 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class TitleReignSyncService extends BaseSyncService {
 
-  @Autowired private TitleReignRepository titleReignRepository;
-  @Autowired private TitleRepository titleRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
-
   @Autowired
   public TitleReignSyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      ObjectMapper objectMapper,
+      SyncServiceDependencies syncServiceDependencies,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
   }
 
   public SyncResult syncTitleReigns(@NonNull String operationId) {
-    if (isAlreadySyncedInSession("titlereigns")) {
+    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("titlereigns")) {
       return SyncResult.success("TitleReigns", 0, 0, 0);
     }
 
@@ -62,7 +57,7 @@ public class TitleReignSyncService extends BaseSyncService {
     try {
       SyncResult result = performTitleReignsSync(operationId, startTime);
       if (result.isSuccess()) {
-        markAsSyncedInSession("titlereigns");
+        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("titlereigns");
       }
       return result;
     } catch (Exception e) {
@@ -72,7 +67,7 @@ public class TitleReignSyncService extends BaseSyncService {
   }
 
   private SyncResult performTitleReignsSync(@NonNull String operationId, long startTime) {
-    if (!syncProperties.isEntityEnabled("titlereigns")) {
+    if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("titlereigns")) {
       log.info("Title Reigns sync is disabled in configuration");
       return SyncResult.success("TitleReigns", 0, 0, 0);
     }
@@ -85,7 +80,8 @@ public class TitleReignSyncService extends BaseSyncService {
 
     try {
       List<TitleReignPage> titleReignPages =
-          executeWithRateLimit(notionHandler::loadAllTitleReigns);
+          executeWithRateLimit(
+              () -> syncServiceDependencies.getNotionHandler().loadAllTitleReigns());
       log.info("✅ Retrieved {} title reigns from Notion", titleReignPages.size());
       // Log each retrieved page
       titleReignPages.forEach(page -> log.info("Retrieved Title Reign Page: {}", page));
@@ -99,7 +95,8 @@ public class TitleReignSyncService extends BaseSyncService {
           continue;
         }
 
-        Optional<Title> titleOpt = titleRepository.findByExternalId(titleId);
+        Optional<Title> titleOpt =
+            syncServiceDependencies.getTitleRepository().findByExternalId(titleId);
 
         if (titleOpt.isEmpty()) {
           log.warn("Skipping title reign: Title with ID '{}' not found locally.", titleId);
@@ -110,7 +107,10 @@ public class TitleReignSyncService extends BaseSyncService {
         String[] championExtIds = championIds.split(",");
         List<Wrestler> champions = new java.util.ArrayList<>();
         for (String championExtId : championExtIds) {
-          wrestlerRepository.findByExternalId(championExtId.trim()).ifPresent(champions::add);
+          syncServiceDependencies
+              .getWrestlerRepository()
+              .findByExternalId(championExtId.trim())
+              .ifPresent(champions::add);
         }
 
         if (champions.isEmpty()) {
@@ -119,12 +119,15 @@ public class TitleReignSyncService extends BaseSyncService {
         }
 
         // Attempt to find existing reign by external ID first
-        Optional<TitleReign> existingReignOpt = titleReignRepository.findByExternalId(page.getId());
+        Optional<TitleReign> existingReignOpt =
+            syncServiceDependencies.getTitleReignRepository().findByExternalId(page.getId());
 
         if (existingReignOpt.isEmpty() && page.getReignNumber() != null) {
           // Fallback to title and reign number
           existingReignOpt =
-              titleReignRepository.findByTitleAndReignNumber(title, page.getReignNumber());
+              syncServiceDependencies
+                  .getTitleReignRepository()
+                  .findByTitleAndReignNumber(title, page.getReignNumber());
         }
 
         TitleReign reign = existingReignOpt.orElse(new TitleReign());
@@ -149,7 +152,7 @@ public class TitleReignSyncService extends BaseSyncService {
           log.warn("Failed to parse date for title reign {}: {}", page.getId(), e.getMessage());
         }
 
-        titleReignRepository.save(reign);
+        syncServiceDependencies.getTitleReignRepository().save(reign);
         log.info(
             "Saved title reign for {} - {} (Reign #{}): {} to {}",
             title.getName(),
@@ -166,13 +169,15 @@ public class TitleReignSyncService extends BaseSyncService {
           "🎉 Successfully synchronized {} title reigns in {}ms total",
           titleReignPages.size(),
           totalTime);
-      healthMonitor.recordSuccess("TitleReigns", totalTime, titleReignPages.size());
+      syncServiceDependencies
+          .getHealthMonitor()
+          .recordSuccess("TitleReigns", totalTime, titleReignPages.size());
       return SyncResult.success("TitleReigns", titleReignPages.size(), 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize title reigns from Notion after {}ms", totalTime, e);
-      healthMonitor.recordFailure("TitleReigns", e.getMessage());
+      syncServiceDependencies.getHealthMonitor().recordFailure("TitleReigns", e.getMessage());
       return SyncResult.failure("TitleReigns", e.getMessage());
     }
   }

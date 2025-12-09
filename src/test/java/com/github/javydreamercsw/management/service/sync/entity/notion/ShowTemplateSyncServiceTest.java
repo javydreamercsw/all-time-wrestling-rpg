@@ -21,23 +21,27 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,43 +70,66 @@ class ShowTemplateSyncServiceTest {
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private NotionRateLimitService rateLimitService;
   @Mock private ShowTypeRepository showTypeRepository;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
+  @Mock private SyncSessionManager syncSessionManager;
+  @Mock private NotionPageDataExtractor notionPageDataExtractor;
+  @Mock private NotionApiExecutor notionApiExecutor;
+
   private ShowTemplateSyncService syncService;
 
   private MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
+  private ExecutorService executorService;
 
   @BeforeEach
   void setUp() {
+    executorService = Executors.newSingleThreadExecutor();
     mockedEnvironmentVariableUtil = mockStatic(EnvironmentVariableUtil.class);
+
     mockedEnvironmentVariableUtil
         .when(EnvironmentVariableUtil::isNotionTokenAvailable)
         .thenReturn(true);
+
     mockedEnvironmentVariableUtil
         .when(EnvironmentVariableUtil::getNotionToken)
         .thenReturn("test-token");
 
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
+    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(syncServiceDependencies.getShowTypeRepository()).thenReturn(showTypeRepository);
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    lenient()
+        .when(syncServiceDependencies.getNotionPageDataExtractor())
+        .thenReturn(notionPageDataExtractor);
+    lenient().when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(notionApiExecutor.getSyncExecutorService()).thenReturn(executorService);
+
     syncService =
         new ShowTemplateSyncService(
-            objectMapper, syncProperties, notionHandler, showTemplateService, showTypeRepository);
-
-    // Inject mocked dependencies using reflection
-    ReflectionTestUtils.setField(syncService, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(syncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(syncService, "rateLimitService", rateLimitService);
-
-    // Clear sync session before each test
-    syncService.clearSyncSession();
+            objectMapper,
+            syncServiceDependencies,
+            notionApiExecutor,
+            showTemplateService,
+            showTypeRepository);
 
     // Mock repository calls to simulate existing show types
+
     ShowType weekly = new ShowType();
+
     ReflectionTestUtils.setField(weekly, "id", 1L);
+
     weekly.setName("Weekly");
+
     lenient().when(showTypeRepository.findByName("Weekly")).thenReturn(Optional.of(weekly));
 
     ShowType ple = new ShowType();
+
     ReflectionTestUtils.setField(ple, "id", 2L);
+
     ple.setName("Premium Live Event (PLE)");
+
     lenient()
         .when(showTypeRepository.findByName("Premium Live Event (PLE)"))
         .thenReturn(Optional.of(ple));
@@ -135,7 +162,7 @@ class ShowTemplateSyncServiceTest {
   void shouldFailWhenNotionHandlerNotAvailable() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", null);
+    doReturn(null).when(syncServiceDependencies).getNotionHandler();
 
     // When
     BaseSyncService.SyncResult result = syncService.syncShowTemplates("test-operation");
@@ -182,8 +209,8 @@ class ShowTemplateSyncServiceTest {
   @DisplayName("Should track progress during sync operation")
   void shouldTrackProgressDuringSyncOperation() {
     // Given
-    when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
+    lenient().when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
+    // ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler); // Redundant
     when(notionHandler.loadAllShowTemplates()).thenReturn(Arrays.asList());
 
     // When
@@ -203,17 +230,19 @@ class ShowTemplateSyncServiceTest {
   void shouldProcessTemplatesWithValidShowTypeMappings() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
 
     // Create a simple mock template page
     ShowTemplatePage templatePage = mock(ShowTemplatePage.class);
     when(templatePage.getId()).thenReturn("template-1");
 
-    // Create basic property map with simple string values
-    Map<String, Object> properties = new HashMap<>();
-    properties.put("Name", "Test Template");
-    properties.put("Description", "Test Description");
-    when(templatePage.getRawProperties()).thenReturn(properties);
+    // Specific stubs for notionPageDataExtractor for this test
+    doReturn("Test Template").when(notionPageDataExtractor).extractNameFromNotionPage(templatePage);
+    doReturn("Test Description")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(templatePage);
+    doReturn(null)
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(templatePage); // Assuming no show type for this test
 
     when(notionHandler.loadAllShowTemplates()).thenReturn(Arrays.asList(templatePage));
 
@@ -232,7 +261,6 @@ class ShowTemplateSyncServiceTest {
   void shouldSkipSyncWhenAlreadySyncedInCurrentSession() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
     when(notionHandler.loadAllShowTemplates()).thenReturn(List.of());
 
     // First sync
@@ -254,11 +282,29 @@ class ShowTemplateSyncServiceTest {
   void shouldCreateDTOsWithShowTypeIntelligence() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
 
     // Create mock templates that will trigger show type intelligence
     ShowTemplatePage weeklyTemplate = createSimpleMockPage("weekly-1", "RAW Template");
     ShowTemplatePage pleTemplate = createSimpleMockPage("ple-1", "WrestleMania Template");
+
+    // Specific stubs for notionPageDataExtractor for this test
+    doReturn("RAW Template")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(weeklyTemplate);
+    doReturn("Test description for RAW Template")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(weeklyTemplate);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(weeklyTemplate);
+
+    doReturn("WrestleMania Template")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(pleTemplate);
+    doReturn("Test description for WrestleMania Template")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(pleTemplate);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(pleTemplate);
 
     when(notionHandler.loadAllShowTemplates())
         .thenReturn(Arrays.asList(weeklyTemplate, pleTemplate));
@@ -276,7 +322,6 @@ class ShowTemplateSyncServiceTest {
   void shouldSyncMixOfWeeklyAndPLEShowTemplatesWithCorrectTypeMapping() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
 
     // Create a realistic mix of show templates with show types from Notion
     ShowTemplatePage mondayNightRaw =
@@ -306,6 +351,71 @@ class ShowTemplateSyncServiceTest {
             aewDynamite);
     when(notionHandler.loadAllShowTemplates()).thenReturn(mixedTemplates);
 
+    // Specific stubs for notionPageDataExtractor for each template
+    doReturn("Monday Night RAW")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(mondayNightRaw);
+    doReturn("Test description for Monday Night RAW")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(mondayNightRaw);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(mondayNightRaw);
+
+    doReturn("Friday Night SmackDown")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(fridaySmackdown);
+    doReturn("Test description for Friday Night SmackDown")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(fridaySmackdown);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(fridaySmackdown);
+
+    doReturn("NXT Weekly").when(notionPageDataExtractor).extractNameFromNotionPage(nxtShow);
+    doReturn("Test description for NXT Weekly")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(nxtShow);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(nxtShow);
+
+    doReturn("WrestleMania 40")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(wrestleMania);
+    doReturn("Test description for WrestleMania 40")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(wrestleMania);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(wrestleMania);
+
+    doReturn("SummerSlam").when(notionPageDataExtractor).extractNameFromNotionPage(summerSlam);
+    doReturn("Test description for SummerSlam")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(summerSlam);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(summerSlam);
+
+    doReturn("Royal Rumble").when(notionPageDataExtractor).extractNameFromNotionPage(royalRumble);
+    doReturn("Test description for Royal Rumble")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(royalRumble);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(royalRumble);
+
+    doReturn("AEW Revolution")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(aewRevolution);
+    doReturn("Test description for AEW Revolution")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(aewRevolution);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(aewRevolution);
+
+    doReturn("AEW Dynamite").when(notionPageDataExtractor).extractNameFromNotionPage(aewDynamite);
+    doReturn("Test description for AEW Dynamite")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(aewDynamite);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(aewDynamite);
+
     // Mock successful saves for both Weekly and PLE templates
     when(showTemplateService.save(any(ShowTemplate.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -332,7 +442,6 @@ class ShowTemplateSyncServiceTest {
   void shouldHandleMixWithSomeUndeterminedShowTypes() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    ReflectionTestUtils.setField(syncService, "notionHandler", notionHandler);
 
     // Create a mix including some templates without show types (simulating missing Notion data)
     ShowTemplatePage weeklyTemplate =
@@ -354,6 +463,53 @@ class ShowTemplateSyncServiceTest {
             noShowTypeTemplate2,
             anotherWeeklyTemplate);
     when(notionHandler.loadAllShowTemplates()).thenReturn(mixedTemplates);
+
+    // Specific stubs for notionPageDataExtractor for each template
+    doReturn("Monday Night RAW")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(weeklyTemplate);
+    doReturn("Test description for Monday Night RAW")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(weeklyTemplate);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(weeklyTemplate);
+
+    doReturn("WrestleMania").when(notionPageDataExtractor).extractNameFromNotionPage(pleTemplate);
+    doReturn("Test description for WrestleMania")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(pleTemplate);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(pleTemplate);
+
+    doReturn("Custom Event Template")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(noShowTypeTemplate1);
+    doReturn("Test description for Custom Event Template")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(noShowTypeTemplate1);
+    doReturn(null)
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(noShowTypeTemplate1); // No show type
+
+    doReturn("Generic Show Format")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(noShowTypeTemplate2);
+    doReturn("Test description for Generic Show Format")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(noShowTypeTemplate2);
+    doReturn(null)
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(noShowTypeTemplate2); // No show type
+
+    doReturn("SmackDown")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(anotherWeeklyTemplate);
+    doReturn("Test description for SmackDown")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(anotherWeeklyTemplate);
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(anotherWeeklyTemplate);
 
     // When
     BaseSyncService.SyncResult result = syncService.syncShowTemplates("test-operation");
@@ -377,25 +533,12 @@ class ShowTemplateSyncServiceTest {
   private ShowTemplatePage createSimpleMockPage(String id, String name) {
     ShowTemplatePage page = mock(ShowTemplatePage.class);
     when(page.getId()).thenReturn(id);
-
-    Map<String, Object> properties = new HashMap<>();
-    properties.put("Name", name);
-    properties.put("Description", "Test description for " + name);
-    when(page.getRawProperties()).thenReturn(properties);
-
     return page;
   }
 
   private ShowTemplatePage createMockPageWithShowType(String id, String name, String showType) {
     ShowTemplatePage page = mock(ShowTemplatePage.class);
     when(page.getId()).thenReturn(id);
-
-    Map<String, Object> properties = new HashMap<>();
-    properties.put("Name", name);
-    properties.put("Description", "Test description for " + name);
-    properties.put("Show Type", showType); // This is the key - providing the show type from Notion
-    when(page.getRawProperties()).thenReturn(properties);
-
     return page;
   }
 }

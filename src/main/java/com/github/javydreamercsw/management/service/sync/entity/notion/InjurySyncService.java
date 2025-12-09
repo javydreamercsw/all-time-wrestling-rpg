@@ -18,12 +18,11 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.InjuryPage;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
-import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.dto.InjuryDTO;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
 import java.util.List;
@@ -39,23 +38,15 @@ import org.springframework.stereotype.Service;
 public class InjurySyncService extends BaseSyncService {
 
   @Autowired private InjuryTypeService injuryTypeService;
-  @Autowired private InjuryTypeRepository injuryTypeRepository;
 
   @Autowired
   public InjurySyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
-  }
-
-  public InjurySyncService(
       ObjectMapper objectMapper,
-      NotionSyncProperties syncProperties,
-      NotionHandler notionHandler,
+      SyncServiceDependencies syncServiceDependencies,
       InjuryTypeService injuryTypeService,
-      InjuryTypeRepository injuryTypeRepository) {
-    super(objectMapper, syncProperties, notionHandler);
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.injuryTypeService = injuryTypeService;
-    this.injuryTypeRepository = injuryTypeRepository;
   }
 
   /**
@@ -66,12 +57,12 @@ public class InjurySyncService extends BaseSyncService {
    */
   public SyncResult syncInjuryTypes(@NonNull String operationId) {
     // Check if already synced in current session
-    if (isAlreadySyncedInSession("injury-types")) {
+    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("injury-types")) {
       log.info("⏭️ Injury types already synced in current session, skipping");
       return SyncResult.success("Injuries", 0, 0, 0);
     }
 
-    if (!syncProperties.isEntityEnabled("injuries")) {
+    if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("injuries")) {
       log.debug("Injuries synchronization is disabled in configuration");
       return SyncResult.success("Injuries", 0, 0, 0);
     }
@@ -79,7 +70,7 @@ public class InjurySyncService extends BaseSyncService {
     try {
       SyncResult result = performInjuryTypesSync(operationId);
       if (result.isSuccess()) {
-        markAsSyncedInSession("injury-types");
+        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("injury-types");
       }
       return result;
     } catch (Exception e) {
@@ -125,31 +116,42 @@ public class InjurySyncService extends BaseSyncService {
   private SyncResult performInjuriesSync(@NonNull String operationId, long startTime) {
     try {
       // Initialize progress tracking
-      progressTracker.startOperation(operationId, "Sync Injuries", 4);
-      progressTracker.updateProgress(operationId, 1, "Loading injuries from Notion...");
+      syncServiceDependencies.getProgressTracker().startOperation(operationId, "Sync Injuries", 4);
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 1, "Loading injuries from Notion...");
 
       // Load injuries from Notion
-      List<InjuryPage> injuryPages = executeWithRateLimit(notionHandler::loadAllInjuries);
+      List<InjuryPage> injuryPages =
+          executeWithRateLimit(() -> syncServiceDependencies.getNotionHandler().loadAllInjuries());
       log.info("📥 Loaded {} injuries from Notion", injuryPages.size());
 
       if (injuryPages.isEmpty()) {
         log.info("No injuries found in Notion database");
-        progressTracker.completeOperation(operationId, true, "No injuries to sync", 0);
+        syncServiceDependencies
+            .getProgressTracker()
+            .completeOperation(operationId, true, "No injuries to sync", 0);
         return SyncResult.success("Injuries", 0, 0, 0);
       }
 
       // Convert to DTOs with parallel processing
-      progressTracker.updateProgress(operationId, 2, "Converting injuries to DTOs...");
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 2, "Converting injuries to DTOs...");
       List<InjuryDTO> injuryDTOs = convertInjuriesToDTOs(injuryPages, operationId);
       log.info("🔄 Converted {} injuries to DTOs", injuryDTOs.size());
 
       // Save to database with parallel processing and caching
-      progressTracker.updateProgress(operationId, 3, "Saving injuries to database...");
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 3, "Saving injuries to database...");
       int syncedCount = saveInjuriesToDatabase(injuryDTOs, operationId);
       log.info("💾 Saved {} injuries to database", syncedCount);
 
       // Validate sync results
-      progressTracker.updateProgress(operationId, 4, "Validating injury sync results...");
+      syncServiceDependencies
+          .getProgressTracker()
+          .updateProgress(operationId, 4, "Validating injury sync results...");
       boolean validationPassed = validateInjurySyncResults(injuryDTOs, syncedCount);
 
       if (!validationPassed) {
@@ -159,18 +161,22 @@ public class InjurySyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.info("🎉 Injuries sync completed successfully in {}ms", totalTime);
 
-      progressTracker.completeOperation(
-          operationId, true, "Injuries sync completed successfully", syncedCount);
+      syncServiceDependencies
+          .getProgressTracker()
+          .completeOperation(
+              operationId, true, "Injuries sync completed successfully", syncedCount);
 
       // Record success in health monitor
-      healthMonitor.recordSuccess("Injuries", totalTime, syncedCount);
+      syncServiceDependencies.getHealthMonitor().recordSuccess("Injuries", totalTime, syncedCount);
 
       return SyncResult.success("Injuries", syncedCount, 0, 0);
 
     } catch (Exception e) {
       log.error("Failed to perform injuries sync", e);
-      progressTracker.failOperation(operationId, "Failed to sync injuries: " + e.getMessage());
-      healthMonitor.recordFailure("Injuries", e.getMessage());
+      syncServiceDependencies
+          .getProgressTracker()
+          .failOperation(operationId, "Failed to sync injuries: " + e.getMessage());
+      syncServiceDependencies.getHealthMonitor().recordFailure("Injuries", e.getMessage());
       return SyncResult.failure("Injuries", "Failed to sync injuries: " + e.getMessage());
     }
   }
@@ -189,7 +195,10 @@ public class InjurySyncService extends BaseSyncService {
     try {
       // Extract basic properties first
       String externalId = injuryPage.getId();
-      String injuryName = extractNameFromNotionPage(injuryPage);
+      String injuryName =
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractNameFromNotionPage(injuryPage);
 
       // Create DTO with required constructor parameters
       InjuryDTO dto = new InjuryDTO(externalId, injuryName);
@@ -238,7 +247,7 @@ public class InjurySyncService extends BaseSyncService {
     // 1. Try to find by external ID
     if (dto.getExternalId() != null && !dto.getExternalId().isBlank()) {
       Optional<InjuryType> byExternalId =
-          injuryTypeRepository.findByExternalId(dto.getExternalId());
+          syncServiceDependencies.getInjuryTypeRepository().findByExternalId(dto.getExternalId());
       if (byExternalId.isPresent()) {
         injuryType = byExternalId.get();
       }
@@ -246,7 +255,8 @@ public class InjurySyncService extends BaseSyncService {
 
     // 2. Try to find by name if not found by external ID
     if (injuryType == null) {
-      Optional<InjuryType> byName = injuryTypeRepository.findByInjuryName(dto.getInjuryName());
+      Optional<InjuryType> byName =
+          syncServiceDependencies.getInjuryTypeRepository().findByInjuryName(dto.getInjuryName());
       if (byName.isPresent()) {
         injuryType = byName.get();
       }

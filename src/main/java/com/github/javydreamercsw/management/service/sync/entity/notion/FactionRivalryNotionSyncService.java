@@ -41,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class FactionRivalryNotionSyncService implements INotionSyncService {
+public class FactionRivalryNotionSyncService implements NotionSyncService {
 
   private final FactionRivalryRepository factionRivalryRepository;
   private final NotionHandler notionHandler;
@@ -63,7 +63,7 @@ public class FactionRivalryNotionSyncService implements INotionSyncService {
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
       try (NotionClient client = clientOptional.get()) {
-        String databaseId = notionHandler.getDatabaseId("Faction Heat");
+        String databaseId = notionHandler.getDatabaseId("Faction Rivalries");
         if (databaseId != null) {
           int processedCount = 0;
           int created = 0;
@@ -100,6 +100,16 @@ public class FactionRivalryNotionSyncService implements INotionSyncService {
               properties.put(
                   "Heat",
                   NotionPropertyBuilder.createNumberProperty(entity.getHeat().doubleValue()));
+
+              // Active
+              properties.put(
+                  "Active", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
+
+              // Intensity
+              properties.put(
+                  "Intensity",
+                  NotionPropertyBuilder.createSelectProperty(
+                      entity.getIntensity().getDisplayName()));
 
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                 log.debug("Updating existing faction rivalry page: {}", entity.getDisplayName());

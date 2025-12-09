@@ -17,9 +17,8 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.SegmentPage;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -28,6 +27,7 @@ import com.github.javydreamercsw.management.dto.SegmentDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
@@ -36,7 +36,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,29 +44,40 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class SegmentSyncService extends BaseSyncService {
 
-  @Autowired private SegmentService segmentService;
-  @Autowired private ShowService showService;
-  @Autowired private WrestlerService wrestlerService;
-  @Autowired private SegmentTypeService segmentTypeService;
-  @Autowired private ShowSyncService showSyncService;
+  private final SegmentService segmentService;
+  private final ShowService showService;
+  private final WrestlerService wrestlerService;
+  private final SegmentTypeService segmentTypeService;
+  private final ShowSyncService showSyncService;
 
-  @Autowired
   public SegmentSyncService(
-      ObjectMapper objectMapper, NotionSyncProperties syncProperties, NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      ObjectMapper objectMapper,
+      SyncServiceDependencies syncServiceDependencies,
+      SegmentService segmentService,
+      ShowService showService,
+      WrestlerService wrestlerService,
+      SegmentTypeService segmentTypeService,
+      ShowSyncService showSyncService,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
+    this.segmentService = segmentService;
+    this.showService = showService;
+    this.wrestlerService = wrestlerService;
+    this.segmentTypeService = segmentTypeService;
+    this.showSyncService = showSyncService;
   }
 
   @Transactional
   public SyncResult syncSegments(@NonNull String operationId) {
     log.info("🤼 Starting segments synchronization from Notion with operation ID: {}", operationId);
-    progressTracker.startOperation(operationId, "Segments Sync", 4);
+    syncServiceDependencies.getProgressTracker().startOperation(operationId, "Segments Sync", 4);
 
     try {
       return performSegmentSyncInternal(operationId);
     } catch (Exception e) {
       String errorMessage = "Failed to synchronize segments from Notion: " + e.getMessage();
       log.error(errorMessage, e);
-      progressTracker.failOperation(operationId, errorMessage);
+      syncServiceDependencies.getProgressTracker().failOperation(operationId, errorMessage);
       return SyncResult.failure("Segments", errorMessage);
     }
   }
@@ -75,14 +85,19 @@ public class SegmentSyncService extends BaseSyncService {
   private SyncResult performSegmentSyncInternal(@NonNull String operationId) throws Exception {
     final List<String> messages = new java.util.concurrent.CopyOnWriteArrayList<>();
     // 1. Get all local external IDs
-    progressTracker.updateProgress(operationId, 1, "Fetching local segment IDs");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 1, "Fetching local segment IDs");
     List<String> localExternalIds = segmentService.getAllExternalIds();
     log.info("Found {} segments in the local database.", localExternalIds.size());
 
     // 2. Get all Notion page IDs
-    progressTracker.updateProgress(operationId, 2, "Fetching Notion segment IDs");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 2, "Fetching Notion segment IDs");
     List<String> notionSegmentIds =
-        executeWithRateLimit(() -> notionHandler.getDatabasePageIds("Segments"));
+        executeWithRateLimit(
+            () -> syncServiceDependencies.getNotionHandler().getDatabasePageIds("Segments"));
     log.info("Found {} segments in Notion.", notionSegmentIds.size());
 
     // 3. Calculate the difference
@@ -93,19 +108,23 @@ public class SegmentSyncService extends BaseSyncService {
 
     if (newSegmentIds.isEmpty()) {
       log.info("No new segments to sync from Notion.");
-      progressTracker.completeOperation(operationId, true, "No new segments to sync.", 0);
+      syncServiceDependencies
+          .getProgressTracker()
+          .completeOperation(operationId, true, "No new segments to sync.", 0);
       return SyncResult.success("Segments", 0, 0, 0);
     }
     log.info("Found {} new segments to sync from Notion.", newSegmentIds.size());
 
     // 4. Load only the new SegmentPage objects in parallel
-    progressTracker.updateProgress(operationId, 3, "Loading new segment pages from Notion");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 3, "Loading new segment pages from Notion");
     List<SegmentPage> segmentPages =
         processWithControlledParallelism(
             newSegmentIds,
             (id) -> {
               try {
-                return notionHandler.loadSegmentById(id).orElse(null);
+                return syncServiceDependencies.getNotionHandler().loadSegmentById(id).orElse(null);
               } catch (Exception e) {
                 String msg = "Failed to load segment page for id: " + id;
                 log.error(msg, e);
@@ -124,12 +143,16 @@ public class SegmentSyncService extends BaseSyncService {
             .collect(java.util.stream.Collectors.toList());
 
     // 5. Convert to DTOs
-    progressTracker.updateProgress(operationId, 4, "Converting new segments to DTOs");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 4, "Converting new segments to DTOs");
     List<SegmentDTO> segmentDTOs =
         convertSegmentsWithRateLimit(validSegmentPages, operationId, messages::add);
 
     // 6. Save to database
-    progressTracker.updateProgress(operationId, 5, "Saving new segments to database");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 5, "Saving new segments to database");
     int savedCount = saveSegmentsToDatabase(segmentDTOs, messages::add);
 
     int errorCount = newSegmentIds.size() - savedCount;
@@ -140,7 +163,9 @@ public class SegmentSyncService extends BaseSyncService {
         success
             ? "Delta-sync for segments completed successfully."
             : "Delta-sync for segments completed with errors.";
-    progressTracker.completeOperation(operationId, success, message, savedCount);
+    syncServiceDependencies
+        .getProgressTracker()
+        .completeOperation(operationId, success, message, savedCount);
 
     SyncResult result;
     if (success) {
@@ -184,7 +209,10 @@ public class SegmentSyncService extends BaseSyncService {
     try {
       SegmentDTO segmentDTO = new SegmentDTO();
       segmentDTO.setExternalId(segmentPage.getId());
-      segmentDTO.setName(extractNameFromNotionPage(segmentPage));
+      segmentDTO.setName(
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractNameFromNotionPage(segmentPage));
 
       if (segmentPage.getProperties().getShows() != null
           && !segmentPage.getProperties().getShows().getRelation().isEmpty()) {
@@ -249,7 +277,8 @@ public class SegmentSyncService extends BaseSyncService {
         }
       }
 
-      segmentDTO.setNarration(notionHandler.getPageContentPlainText(segmentPage.getId()));
+      segmentDTO.setNarration(
+          syncServiceDependencies.getNotionHandler().getPageContentPlainText(segmentPage.getId()));
 
       return segmentDTO;
     } catch (Exception e) {
@@ -396,22 +425,23 @@ public class SegmentSyncService extends BaseSyncService {
   }
 
   public List<String> getSegmentIds() {
-    return notionHandler.getDatabasePageIds("Segments");
+    return syncServiceDependencies.getNotionHandler().getDatabasePageIds("Segments");
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public SyncResult syncSegment(@NonNull String segmentId) {
     log.info("🤼 Starting segment synchronization from Notion for ID: {}", segmentId);
     String operationId = "segment-sync-" + segmentId;
-    progressTracker.startOperation(operationId, "Segment Sync", 4);
+    syncServiceDependencies.getProgressTracker().startOperation(operationId, "Segment Sync", 4);
     final List<String> messages = new CopyOnWriteArrayList<>();
 
     try {
-      Optional<SegmentPage> segmentPageOpt = notionHandler.loadSegmentById(segmentId);
+      Optional<SegmentPage> segmentPageOpt =
+          syncServiceDependencies.getNotionHandler().loadSegmentById(segmentId);
       if (segmentPageOpt.isEmpty()) {
         String errorMessage = "Segment with ID " + segmentId + " not found in Notion.";
         log.error(errorMessage);
-        progressTracker.failOperation(operationId, errorMessage);
+        syncServiceDependencies.getProgressTracker().failOperation(operationId, errorMessage);
         return SyncResult.failure("Segment", errorMessage);
       }
 
@@ -421,14 +451,16 @@ public class SegmentSyncService extends BaseSyncService {
       if (processSingleSegment(segmentDTO, messages::add)) {
         String message = "Segment sync completed successfully. Synced 1 segment.";
         log.info(message);
-        progressTracker.completeOperation(operationId, true, message, 1);
+        syncServiceDependencies
+            .getProgressTracker()
+            .completeOperation(operationId, true, message, 1);
         SyncResult result = SyncResult.success("Segment", 1, 0, 0);
         result.getMessages().addAll(messages);
         return result;
       } else {
         String errorMessage = "Failed to process segment with ID " + segmentId;
         log.error(errorMessage);
-        progressTracker.failOperation(operationId, errorMessage);
+        syncServiceDependencies.getProgressTracker().failOperation(operationId, errorMessage);
         SyncResult result = SyncResult.failure("Segment", errorMessage);
         result.getMessages().addAll(messages);
         return result;
@@ -436,7 +468,7 @@ public class SegmentSyncService extends BaseSyncService {
     } catch (Exception e) {
       String errorMessage = "Failed to synchronize segment from Notion: " + e.getMessage();
       log.error(errorMessage, e);
-      progressTracker.failOperation(operationId, errorMessage);
+      syncServiceDependencies.getProgressTracker().failOperation(operationId, errorMessage);
       SyncResult result = SyncResult.failure("Segment", errorMessage);
       result.getMessages().add(e.getMessage());
       return result;

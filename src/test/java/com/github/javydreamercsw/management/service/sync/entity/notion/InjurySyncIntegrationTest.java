@@ -137,7 +137,6 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
                 0,
                 "Special Effects",
                 "Cannot use headbutts. Dizzy."));
-    injurySyncService.clearSyncSession();
     BaseSyncService.SyncResult secondResult =
         notionSyncService.syncInjuryTypes("second-sync-operation", SyncDirection.INBOUND);
     assertThat(secondResult.isSuccess()).isTrue();

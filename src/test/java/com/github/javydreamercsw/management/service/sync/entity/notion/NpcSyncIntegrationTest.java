@@ -93,8 +93,6 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
     when(npcPage1.getRawProperties())
         .thenReturn(Map.of("Name", "Test NPC 1 Updated", "Role", "Announcer"));
     when(notionHandler.loadAllNpcs()).thenReturn(List.of(npcPage1));
-    npcSyncService.clearSyncSession();
-
     notionSyncService.syncNpcs("second-sync-operation", SyncDirection.INBOUND);
 
     assertEquals(1, npcService.findAll().size());

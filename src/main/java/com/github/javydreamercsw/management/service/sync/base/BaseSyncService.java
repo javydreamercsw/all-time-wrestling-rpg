@@ -17,18 +17,10 @@
 package com.github.javydreamercsw.management.service.sync.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
-import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
-import com.github.javydreamercsw.management.service.sync.DataIntegrityChecker;
-import com.github.javydreamercsw.management.service.sync.NotionRateLimitService;
-import com.github.javydreamercsw.management.service.sync.RetryService;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
-import com.github.javydreamercsw.management.service.sync.SyncTransactionManager;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,16 +28,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -60,79 +46,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 public abstract class BaseSyncService {
 
   protected final ObjectMapper objectMapper;
-  protected final NotionSyncProperties syncProperties;
 
-  @Autowired protected EntitySyncConfiguration entitySyncConfig;
+  @Autowired protected SyncServiceDependencies syncServiceDependencies;
 
-  // Session-based tracking to prevent duplicate syncing during batch operations
-  private final ThreadLocal<Set<String>> currentSyncSession = ThreadLocal.withInitial(HashSet::new);
-
-  // Controlled parallelism executor for all sync operations
-  private final ExecutorService syncExecutorService;
-
-  protected final NotionHandler notionHandler;
-
-  // Enhanced sync infrastructure services - autowired
-  @Autowired public SyncProgressTracker progressTracker;
-
-  @Autowired(required = false)
-  public SyncHealthMonitor healthMonitor; // Made optional in field injection
-
-  @Autowired public RetryService retryService;
-  @Autowired public CircuitBreakerService circuitBreakerService;
-  @Autowired public SyncValidationService validationService;
-  @Autowired public SyncTransactionManager syncTransactionManager;
-  @Autowired public DataIntegrityChecker integrityChecker;
-  @Autowired public NotionRateLimitService rateLimitService;
+  protected final NotionApiExecutor notionApiExecutor;
 
   protected BaseSyncService(
       @NonNull ObjectMapper objectMapper,
-      @NonNull NotionSyncProperties syncProperties,
-      @NonNull NotionHandler notionHandler) {
+      @NonNull SyncServiceDependencies syncServiceDependencies,
+      @NonNull NotionApiExecutor notionApiExecutor) {
     this.objectMapper = objectMapper;
-    this.syncProperties = syncProperties;
-    this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
-    this.notionHandler = notionHandler;
-  }
-
-  // Constructor injection for SyncHealthMonitor, made optional
-  @Autowired(required = false)
-  public BaseSyncService(
-      @NonNull ObjectMapper objectMapper,
-      @NonNull NotionSyncProperties syncProperties,
-      SyncHealthMonitor healthMonitor, // Made optional
-      SyncProgressTracker progressTracker,
-      RetryService retryService,
-      CircuitBreakerService circuitBreakerService,
-      SyncValidationService validationService,
-      SyncTransactionManager syncTransactionManager,
-      DataIntegrityChecker integrityChecker,
-      NotionRateLimitService rateLimitService,
-      EntitySyncConfiguration entitySyncConfig,
-      @NonNull NotionHandler notionHandler) {
-    this.objectMapper = objectMapper;
-    this.syncProperties = syncProperties;
-    this.healthMonitor = healthMonitor; // Assign optional healthMonitor
-    this.progressTracker = progressTracker;
-    this.retryService = retryService;
-    this.circuitBreakerService = circuitBreakerService;
-    this.validationService = validationService;
-    this.syncTransactionManager = syncTransactionManager;
-    this.integrityChecker = integrityChecker;
-    this.rateLimitService = rateLimitService;
-    this.entitySyncConfig = entitySyncConfig;
-    this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
-    this.notionHandler = notionHandler;
-  }
-
-  /**
-   * Gets the effective sync settings for a specific entity type.
-   *
-   * @param entityType The entity type (e.g., "rivalries")
-   * @return The effective sync settings for the entity.
-   */
-  protected EntitySyncConfiguration.EntitySyncSettings getSyncSettings(@NonNull String entityType) {
-    return entitySyncConfig.getEffectiveSettings(entityType);
+    this.syncServiceDependencies = syncServiceDependencies;
+    this.notionApiExecutor = notionApiExecutor;
   }
 
   /**
@@ -141,49 +66,20 @@ public abstract class BaseSyncService {
    * @return true if NotionHandler is available, false otherwise
    */
   public boolean isNotionHandlerAvailable() {
-    return notionHandler != null && EnvironmentVariableUtil.isNotionTokenAvailable();
+    return syncServiceDependencies.getNotionHandler() != null
+        && EnvironmentVariableUtil.isNotionTokenAvailable();
   }
 
   /**
-   * Checks if an entity has already been synced in the current session.
+   * Executes an API call with rate limiting.
    *
-   * @param entityName The name of the entity to check
-   * @return true if already synced, false otherwise
+   * @param apiCall The API call to execute.
+   * @return The result of the API call.
    */
-  protected boolean isAlreadySyncedInSession(@NonNull String entityName) {
-    return currentSyncSession.get().contains(entityName.toLowerCase());
-  }
-
-  /**
-   * Marks an entity as synced in the current session.
-   *
-   * @param entityName The name of the entity to mark as synced
-   */
-  protected void markAsSyncedInSession(@NonNull String entityName) {
-    currentSyncSession.get().add(entityName.toLowerCase());
-    log.debug("🏷️ Marked '{}' as synced in current session", entityName);
-  }
-
-  /** Clears the current sync session (should be called at the start of batch operations). */
-  public void clearSyncSession() {
-    currentSyncSession.get().clear();
-    log.debug("🧹 Cleared sync session");
-  }
-
-  /**
-   * Resets the sync status for a specific entity.
-   *
-   * @param entityName The name of the entity to reset
-   */
-  public void resetSyncStatus(@NonNull String entityName) {
-    currentSyncSession.get().remove(entityName.toLowerCase());
-    log.debug("🔄 Reset sync status for '{}'", entityName);
-  }
-
-  /** Cleans up the sync session thread local (should be called at the end of operations). */
-  public void cleanupSyncSession() {
-    currentSyncSession.remove();
-    log.debug("🗑️ Cleaned up sync session thread local");
+  @SneakyThrows
+  protected <T> T executeWithRateLimit(@NonNull java.util.function.Supplier<T> apiCall) {
+    syncServiceDependencies.getRateLimitService().acquirePermit();
+    return apiCall.get();
   }
 
   /**
@@ -201,7 +97,8 @@ public abstract class BaseSyncService {
     }
 
     // Create backup directory
-    Path backupDir = Paths.get(syncProperties.getBackup().getDirectory());
+    Path backupDir =
+        Paths.get(syncServiceDependencies.getNotionSyncProperties().getBackup().getDirectory());
     Files.createDirectories(backupDir);
 
     // Create backup file with timestamp
@@ -224,7 +121,8 @@ public abstract class BaseSyncService {
    */
   private void cleanupOldBackups(@NonNull String fileName) {
     try {
-      Path backupDir = Paths.get(syncProperties.getBackup().getDirectory());
+      Path backupDir =
+          Paths.get(syncServiceDependencies.getNotionSyncProperties().getBackup().getDirectory());
       if (!Files.exists(backupDir)) {
         return;
       }
@@ -240,7 +138,7 @@ public abstract class BaseSyncService {
                           .compareTo(p1.getFileName().toString())) // Newest first
               .toList();
 
-      int maxFiles = syncProperties.getBackup().getMaxFiles();
+      int maxFiles = syncServiceDependencies.getNotionSyncProperties().getBackup().getMaxFiles();
       if (backupFiles.size() > maxFiles) {
         List<Path> filesToDelete = backupFiles.subList(maxFiles, backupFiles.size());
         for (Path fileToDelete : filesToDelete) {
@@ -257,105 +155,14 @@ public abstract class BaseSyncService {
 
   /** Extracts name from any NotionPage type using raw properties. */
   protected String extractNameFromNotionPage(@NonNull NotionPage page) {
-    if (page.getRawProperties() != null) {
-      // Try different possible property names for name
-      Object name = page.getRawProperties().get("Name");
-      if (name == null) {
-        name = page.getRawProperties().get("Title"); // Alternative name property
-      }
-
-      if (name != null) {
-        String nameStr = extractTextFromProperty(name);
-        if (nameStr != null && !nameStr.trim().isEmpty() && !"N/A".equals(nameStr)) {
-          return nameStr.trim();
-        }
-      }
-
-      log.debug("Name property not found or empty for page: {}", page.getId());
-    }
-    return "Unknown";
+    return syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(page);
   }
 
   /** Extracts description from any NotionPage type using raw properties. */
   protected String extractDescriptionFromNotionPage(@NonNull NotionPage page) {
-    if (page.getRawProperties() != null) {
-      Object description = page.getRawProperties().get("Description");
-      return description != null ? description.toString() : "";
-    }
-    return "";
-  }
-
-  /** Extracts text content from a Notion property object. */
-  protected String extractTextFromProperty(Object property) {
-    if (property == null) {
-      return null;
-    }
-
-    // Handle Map objects that mimic Notion's structure
-    if (property instanceof Map) {
-      @SuppressWarnings("unchecked")
-      Map<String, Object> map = (Map<String, Object>) property;
-      if (map.containsKey("title")) {
-        Object titleObj = map.get("title");
-        if (titleObj instanceof List) {
-          @SuppressWarnings("unchecked")
-          List<Object> titleList = (List<Object>) titleObj;
-          if (!titleList.isEmpty() && titleList.get(0) instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> titleMap = (Map<String, Object>) titleList.get(0);
-            if (titleMap.containsKey("text") && titleMap.get("text") instanceof Map) {
-              @SuppressWarnings("unchecked")
-              Map<String, Object> textMap = (Map<String, Object>) titleMap.get("text");
-              if (textMap.containsKey("content")) {
-                return textMap.get("content").toString();
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Handle PageProperty objects (from Notion API)
-    if (property instanceof notion.api.v1.model.pages.PageProperty pageProperty) {
-
-      // Handle title properties
-      if (pageProperty.getTitle() != null && !pageProperty.getTitle().isEmpty()) {
-        return pageProperty.getTitle().get(0).getPlainText();
-      }
-
-      // Handle rich text properties
-      if (pageProperty.getRichText() != null && !pageProperty.getRichText().isEmpty()) {
-        return pageProperty.getRichText().get(0).getPlainText();
-      }
-
-      // Handle select properties
-      if (pageProperty.getSelect() != null) {
-        return pageProperty.getSelect().getName();
-      }
-
-      // Handle other property types as needed
-      log.debug("Unhandled PageProperty type: {}", pageProperty.getType());
-      return null;
-    }
-
-    // Handle simple string values
-    String str = property.toString().trim();
-
-    // Avoid returning the entire PageProperty string representation
-    if (str.startsWith("PageProperty(")) {
-      log.warn("Property extraction returned PageProperty object string - this indicates a bug");
-      return null;
-    }
-
-    return str.isEmpty() ? null : str;
-  }
-
-  /** Extracts a property value as a string from raw properties map. */
-  protected String extractPropertyAsString(
-      @NonNull java.util.Map<String, Object> rawProperties, @NonNull String propertyName) {
-
-    Object property = rawProperties.get(propertyName);
-    return extractTextFromProperty(property);
+    return syncServiceDependencies
+        .getNotionPageDataExtractor()
+        .extractDescriptionFromNotionPage(page);
   }
 
   /**
@@ -365,8 +172,10 @@ public abstract class BaseSyncService {
    * @return true if token is available, false otherwise
    */
   public boolean validateNotionToken(@NonNull String entityType) {
-    if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
-      log.warn("NOTION_TOKEN not available. Cannot sync {} from Notion.", entityType);
+    SyncValidationService.ValidationResult result =
+        syncServiceDependencies.getValidationService().validateSyncPrerequisites();
+    if (!result.isValid()) {
+      log.warn("Notion token validation failed for {}: {}", entityType, result.getErrors());
       return false;
     }
     return true;
@@ -428,7 +237,7 @@ public abstract class BaseSyncService {
                       CompletableFuture.supplyAsync(
                           () -> {
                             try {
-                              rateLimitService.acquirePermit();
+                              syncServiceDependencies.getRateLimitService().acquirePermit();
                               return processor.apply(item);
                             } catch (InterruptedException e) {
                               Thread.currentThread().interrupt();
@@ -443,7 +252,7 @@ public abstract class BaseSyncService {
                               throw new RuntimeException("Processing failed", e);
                             }
                           },
-                          syncExecutorService))
+                          notionApiExecutor.getSyncExecutorService()))
               .toList();
 
       // Wait for batch completion with timeout
@@ -468,12 +277,14 @@ public abstract class BaseSyncService {
         // Update progress
         int processedCount = Math.min(endIndex, items.size());
         double progressPercent = (double) processedCount / items.size() * 100;
-        progressTracker.updateProgress(
-            operationId,
-            progressStep,
-            String.format(
-                "%s %d/%d items (%.1f%%)",
-                description, processedCount, items.size(), progressPercent));
+        syncServiceDependencies
+            .getProgressTracker()
+            .updateProgress(
+                operationId,
+                progressStep,
+                String.format(
+                    "%s %d/%d items (%.1f%%)",
+                    description, processedCount, items.size(), progressPercent));
 
         // Small delay between batches to be nice to the API
         if (endIndex < items.size()) {
@@ -481,7 +292,7 @@ public abstract class BaseSyncService {
               CompletableFuture.runAsync(
                   () -> {},
                   CompletableFuture.delayedExecutor(
-                      500, TimeUnit.MILLISECONDS, syncExecutorService));
+                      500, TimeUnit.MILLISECONDS, notionApiExecutor.getSyncExecutorService()));
           delay.get();
         }
 
@@ -495,12 +306,6 @@ public abstract class BaseSyncService {
     }
 
     return allResults;
-  }
-
-  /** Execute a Notion API call with proper rate limiting. */
-  protected <T> T executeWithRateLimit(@NonNull Supplier<T> apiCall) throws InterruptedException {
-    rateLimitService.acquirePermit();
-    return apiCall.get();
   }
 
   /** Represents the result of a synchronization operation. */

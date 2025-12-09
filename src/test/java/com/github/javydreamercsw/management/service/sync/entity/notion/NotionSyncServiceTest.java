@@ -21,18 +21,38 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
+import com.github.javydreamercsw.management.service.sync.DataIntegrityChecker;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
+import com.github.javydreamercsw.management.service.sync.RetryService;
+import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
+import com.github.javydreamercsw.management.service.sync.SyncTransactionManager;
+import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
+import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * @author Javier Ortiz Bultron @date Oct 10, 2023
@@ -57,36 +77,92 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private FactionRivalryNotionSyncService factionRivalryNotionSyncService;
   @Mock private ShowTemplateNotionSyncService showTemplateNotionSyncService;
   @Mock private ObjectMapper objectMapper;
-  @Mock private NotionSyncProperties syncProperties;
   @Mock private NotionHandler notionHandler;
+  @Mock private NotionSyncProperties syncProperties;
+  @Mock private SyncProgressTracker progressTracker;
+  @Mock private SyncHealthMonitor healthMonitor;
+  @Mock private NotionRateLimitService rateLimitService;
+  @Mock private SyncSessionManager syncSessionManager;
+  private SyncServiceDependencies syncServiceDependencies; // No longer a mock
+  @Mock private RetryService retryService;
+  @Mock private CircuitBreakerService circuitBreakerService;
+  @Mock private SyncValidationService validationService;
+  @Mock private SyncTransactionManager syncTransactionManager;
+  @Mock private DataIntegrityChecker integrityChecker;
+  @Mock private EntitySyncConfiguration entitySyncConfig;
+  @Mock private FactionRepository factionRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private InjuryTypeRepository injuryTypeRepository;
+  @Mock private ShowTypeRepository showTypeRepository;
+  @Mock private TeamRepository teamRepository;
+  @Mock private TitleReignRepository titleReignRepository;
+  @Mock private TitleRepository titleRepository;
+  @Mock private NotionSyncServicesManager notionSyncServicesManager;
+  @Mock private NotionApiExecutor notionApiExecutor;
+  @Mock private NotionPageDataExtractor notionPageDataExtractor;
+  @Mock private ParallelSyncOrchestrator parallelSyncOrchestrator;
 
-  private NotionSyncService notionSyncService;
+  private NotionSyncService notionSyncService; // No longer a mock
 
   @BeforeEach
   public void setUp() {
     log.info("🧪 Setting up NotionSyncServiceTest");
+    // Initialize SyncServiceDependencies with all its mocked dependencies
+    syncServiceDependencies =
+        new SyncServiceDependencies(
+            progressTracker,
+            healthMonitor,
+            retryService,
+            circuitBreakerService,
+            validationService,
+            syncTransactionManager,
+            integrityChecker,
+            rateLimitService,
+            entitySyncConfig,
+            syncProperties,
+            notionHandler,
+            notionPageDataExtractor,
+            syncSessionManager,
+            factionRepository,
+            wrestlerRepository,
+            injuryTypeRepository,
+            showTypeRepository,
+            teamRepository,
+            titleReignRepository,
+            titleRepository);
     when(syncProperties.getParallelThreads()).thenReturn(1);
-    notionSyncService = new NotionSyncService(objectMapper, syncProperties, notionHandler);
-    ReflectionTestUtils.setField(notionSyncService, "showTypeSyncService", showTypeSyncService);
-    ReflectionTestUtils.setField(notionSyncService, "seasonSyncService", seasonSyncService);
-    ReflectionTestUtils.setField(
-        notionSyncService, "showTemplateSyncService", showTemplateSyncService);
-    ReflectionTestUtils.setField(notionSyncService, "showSyncService", showSyncService);
-    ReflectionTestUtils.setField(notionSyncService, "wrestlerSyncService", wrestlerSyncService);
-    ReflectionTestUtils.setField(notionSyncService, "factionSyncService", factionSyncService);
-    ReflectionTestUtils.setField(notionSyncService, "teamSyncService", teamSyncService);
-    ReflectionTestUtils.setField(notionSyncService, "titleSyncService", titleSyncService);
-    ReflectionTestUtils.setField(notionSyncService, "titleReignSyncService", titleReignSyncService);
-    ReflectionTestUtils.setField(notionSyncService, "injurySyncService", injurySyncService);
-    ReflectionTestUtils.setField(notionSyncService, "npcSyncService", npcSyncService);
-    ReflectionTestUtils.setField(notionSyncService, "segmentSyncService", segmentSyncService);
-    ReflectionTestUtils.setField(notionSyncService, "rivalrySyncService", rivalrySyncService);
-    ReflectionTestUtils.setField(
-        notionSyncService, "factionRivalrySyncService", factionRivalrySyncService);
-    ReflectionTestUtils.setField(
-        notionSyncService, "factionRivalryNotionSyncService", factionRivalryNotionSyncService);
-    ReflectionTestUtils.setField(
-        notionSyncService, "showTemplateNotionSyncService", showTemplateNotionSyncService);
+    when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
+
+    // Mock NotionSyncServicesManager to return specific sync services
+    when(notionSyncServicesManager.getShowTypeSyncService()).thenReturn(showTypeSyncService);
+    when(notionSyncServicesManager.getSeasonSyncService()).thenReturn(seasonSyncService);
+    when(notionSyncServicesManager.getShowTemplateSyncService())
+        .thenReturn(showTemplateSyncService);
+    when(notionSyncServicesManager.getShowSyncService()).thenReturn(showSyncService);
+    when(notionSyncServicesManager.getWrestlerSyncService()).thenReturn(wrestlerSyncService);
+    when(notionSyncServicesManager.getFactionSyncService()).thenReturn(factionSyncService);
+    when(notionSyncServicesManager.getTeamSyncService()).thenReturn(teamSyncService);
+    when(notionSyncServicesManager.getTitleSyncService()).thenReturn(titleSyncService);
+    when(notionSyncServicesManager.getTitleReignSyncService()).thenReturn(titleReignSyncService);
+    when(notionSyncServicesManager.getInjurySyncService()).thenReturn(injurySyncService);
+    when(notionSyncServicesManager.getNpcSyncService()).thenReturn(npcSyncService);
+    when(notionSyncServicesManager.getSegmentSyncService()).thenReturn(segmentSyncService);
+    when(notionSyncServicesManager.getRivalrySyncService()).thenReturn(rivalrySyncService);
+    when(notionSyncServicesManager.getFactionRivalrySyncService())
+        .thenReturn(factionRivalrySyncService);
+    when(notionSyncServicesManager.getFactionRivalryNotionSyncService())
+        .thenReturn(factionRivalryNotionSyncService);
+    when(notionSyncServicesManager.getShowTemplateNotionSyncService())
+        .thenReturn(showTemplateNotionSyncService);
+
+    // Instantiate NotionSyncService with its dependencies
+    notionSyncService =
+        new NotionSyncService(
+            objectMapper,
+            syncServiceDependencies,
+            notionSyncServicesManager,
+            notionApiExecutor,
+            parallelSyncOrchestrator);
   }
 
   @Test

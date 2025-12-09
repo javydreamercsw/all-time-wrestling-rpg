@@ -18,12 +18,12 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionRivalryPage;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
 import java.util.Map;
@@ -47,17 +47,19 @@ public class FactionRivalrySyncService extends BaseSyncService {
   @Autowired
   public FactionRivalrySyncService(
       ObjectMapper objectMapper,
-      NotionSyncProperties syncProperties,
+      SyncServiceDependencies syncServiceDependencies,
       FactionRivalryService factionRivalryService,
       FactionRepository factionRepository,
-      NotionHandler notionHandler) {
-    super(objectMapper, syncProperties, notionHandler);
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.factionRivalryService = factionRivalryService;
     this.factionRepository = factionRepository;
   }
 
   public SyncResult syncFactionRivalries(@NonNull String operationId) {
-    if (isAlreadySyncedInSession("faction-rivalries")) {
+    if (syncServiceDependencies
+        .getSyncSessionManager()
+        .isAlreadySyncedInSession("faction-rivalries")) {
       log.info("⏭️ Faction Rivalries already synced in current session, skipping");
       return SyncResult.success("Faction Rivalries", 0, 0, 0);
     }
@@ -67,12 +69,12 @@ public class FactionRivalrySyncService extends BaseSyncService {
     try {
       SyncResult result = performFactionRivalriesSync(operationId);
       if (result.isSuccess()) {
-        markAsSyncedInSession("faction-rivalries");
+        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("faction-rivalries");
       }
       return result;
     } catch (Exception e) {
       log.error("Failed to sync faction rivalries", e);
-      healthMonitor.recordFailure("Faction Rivalries", e.getMessage());
+      syncServiceDependencies.getHealthMonitor().recordFailure("Faction Rivalries", e.getMessage());
       return SyncResult.failure("Faction Rivalries", e.getMessage());
     }
   }
@@ -83,37 +85,57 @@ public class FactionRivalrySyncService extends BaseSyncService {
       return SyncResult.failure("Faction Rivalries", "NotionHandler is not available.");
     }
 
-    progressTracker.startOperation(operationId, "Sync Faction Rivalries", 3);
+    syncServiceDependencies
+        .getProgressTracker()
+        .startOperation(operationId, "Sync Faction Rivalries", 3);
 
     // 1. Load all rivalry pages from Notion
-    progressTracker.updateProgress(operationId, 1, "Retrieving faction rivalries from Notion...");
-    List<FactionRivalryPage> pages = executeWithRateLimit(notionHandler::loadAllFactionRivalries);
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 1, "Retrieving faction rivalries from Notion...");
+    List<FactionRivalryPage> pages =
+        executeWithRateLimit(notionApiExecutor.getNotionHandler()::loadAllFactionRivalries);
     log.info("Found {} faction rivalries in Notion.", pages.size());
-    progressTracker.updateProgress(
-        operationId, 1, "Retrieved " + pages.size() + " faction rivalries.");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 1, "Retrieved " + pages.size() + " faction rivalries.");
 
     // 2. Convert pages to DTOs
-    progressTracker.updateProgress(operationId, 2, "Processing faction rivalry data...");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 2, "Processing faction rivalry data...");
     List<FactionRivalryDTO> dtos = pages.stream().map(this::toDto).collect(Collectors.toList());
-    progressTracker.updateProgress(
-        operationId, 2, "Processed " + dtos.size() + " faction rivalries.");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 2, "Processed " + dtos.size() + " faction rivalries.");
 
     // 3. Save to database
-    progressTracker.updateProgress(operationId, 3, "Saving faction rivalries to database...");
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(operationId, 3, "Saving faction rivalries to database...");
     AtomicInteger createdCount = new AtomicInteger(0);
     AtomicInteger updatedCount = new AtomicInteger(0);
     saveFactionRivalriesToDatabase(dtos, createdCount, updatedCount);
-    progressTracker.updateProgress(
-        operationId,
-        3,
-        "Saved to database. Created: " + createdCount.get() + ", Updated: " + updatedCount.get());
+    syncServiceDependencies
+        .getProgressTracker()
+        .updateProgress(
+            operationId,
+            3,
+            "Saved to database. Created: "
+                + createdCount.get()
+                + ", Updated: "
+                + updatedCount.get());
 
-    progressTracker.completeOperation(
-        operationId, true, "Sync complete.", createdCount.get() + updatedCount.get());
-    healthMonitor.recordSuccess(
-        "Faction Rivalries",
-        System.currentTimeMillis() - System.currentTimeMillis(),
-        createdCount.get() + updatedCount.get());
+    syncServiceDependencies
+        .getProgressTracker()
+        .completeOperation(
+            operationId, true, "Sync complete.", createdCount.get() + updatedCount.get());
+    syncServiceDependencies
+        .getHealthMonitor()
+        .recordSuccess(
+            "Faction Rivalries",
+            System.currentTimeMillis() - System.currentTimeMillis(),
+            createdCount.get() + updatedCount.get());
 
     return SyncResult.success("Faction Rivalries", createdCount.get(), updatedCount.get(), 0);
   }

@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.InjurySyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServicesManager;
 import com.github.javydreamercsw.management.service.sync.entity.notion.NpcSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentSyncService;
@@ -38,7 +39,6 @@ import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOr
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -62,8 +62,9 @@ class ParallelSyncOrchestratorTest {
   @Mock private NpcSyncService npcSyncService;
   @Mock private TitleSyncService titleSyncService;
   @Mock private TitleReignSyncService titleReignSyncService;
+  @Mock private NotionSyncServicesManager notionSyncServicesManager;
 
-  @InjectMocks private ParallelSyncOrchestrator orchestrator;
+  private ParallelSyncOrchestrator orchestrator;
 
   @BeforeEach
   void setUp() {
@@ -73,11 +74,43 @@ class ParallelSyncOrchestratorTest {
     defaults.setMaxThreads(4);
     defaults.setTimeoutSeconds(300);
     when(entityConfig.getDefaults()).thenReturn(defaults);
+
+    // Manually instantiate orchestrator with mocked NotionSyncServicesManager
+    orchestrator = new ParallelSyncOrchestrator(notionSyncServicesManager, entityConfig);
+  }
+
+  private void setupAllSyncServices() {
+    // Configure NotionSyncServicesManager to return mocked services
+    lenient().when(notionSyncServicesManager.getShowSyncService()).thenReturn(showSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getWrestlerSyncService())
+        .thenReturn(wrestlerSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getFactionSyncService())
+        .thenReturn(factionSyncService);
+    lenient().when(notionSyncServicesManager.getTeamSyncService()).thenReturn(teamSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getSegmentSyncService())
+        .thenReturn(segmentSyncService);
+    lenient().when(notionSyncServicesManager.getSeasonSyncService()).thenReturn(seasonSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getShowTypeSyncService())
+        .thenReturn(showTypeSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getShowTemplateSyncService())
+        .thenReturn(showTemplateSyncService);
+    lenient().when(notionSyncServicesManager.getInjurySyncService()).thenReturn(injurySyncService);
+    lenient().when(notionSyncServicesManager.getNpcSyncService()).thenReturn(npcSyncService);
+    lenient().when(notionSyncServicesManager.getTitleSyncService()).thenReturn(titleSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getTitleReignSyncService())
+        .thenReturn(titleReignSyncService);
   }
 
   @Test
   void executeParallelSync_WhenAllEntitiesEnabled_ShouldExecuteAllSyncs() {
     // Given
+    setupAllSyncServices();
     setupAllEntitiesEnabled();
     setupSuccessfulSyncResults();
 
@@ -108,10 +141,12 @@ class ParallelSyncOrchestratorTest {
   @Test
   void executeParallelSync_WhenSomeEntitiesDisabled_ShouldOnlyExecuteEnabled() {
     // Given
-    lenient().when(entityConfig.isEntityEnabled(anyString())).thenReturn(false);
-    lenient().when(entityConfig.isEntityEnabled("shows")).thenReturn(true);
-    lenient().when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
-    lenient().when(entityConfig.isEntityEnabled("showtypes")).thenReturn(true);
+    setupAllSyncServices();
+    when(entityConfig.isEntityEnabled(anyString())).thenReturn(false); // Default to false
+    when(entityConfig.isEntityEnabled("shows")).thenReturn(true);
+    when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
+    when(entityConfig.isEntityEnabled("showtypes")).thenReturn(true);
+
     when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0, 0));
     when(wrestlerSyncService.syncWrestlers(anyString()))
         .thenReturn(SyncResult.success("Wrestlers", 10, 0, 0));
@@ -141,6 +176,7 @@ class ParallelSyncOrchestratorTest {
   @Test
   void executeParallelSync_WhenSomeEntitiesFail_ShouldContinueWithOthers() {
     // Given
+    setupAllSyncServices();
     setupAllEntitiesEnabled();
 
     when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0, 0));
@@ -193,6 +229,7 @@ class ParallelSyncOrchestratorTest {
   @Test
   void executeParallelSync_WhenExecutorFails_ShouldReturnFailure() {
     // Given
+    setupAllSyncServices();
     setupAllEntitiesEnabled();
 
     // Setup service to throw exception

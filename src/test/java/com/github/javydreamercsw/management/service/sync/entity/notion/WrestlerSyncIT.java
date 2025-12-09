@@ -84,7 +84,6 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     // Test update
     when(wrestlerPage.getRawProperties())
         .thenReturn(Map.of("Name", "Test Wrestler Updated", "Fans", 120000L));
-    wrestlerSyncService.clearSyncSession();
 
     wrestlerSyncService.syncWrestlers("wrestler-sync-test-2");
 

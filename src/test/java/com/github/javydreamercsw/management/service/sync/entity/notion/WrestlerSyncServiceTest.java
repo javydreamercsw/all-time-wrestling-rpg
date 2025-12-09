@@ -20,10 +20,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
@@ -31,11 +33,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Unit tests for WrestlerSyncService covering wrestler synchronization including stats,
@@ -43,34 +43,54 @@ import org.springframework.test.util.ReflectionTestUtils;
  */
 class WrestlerSyncServiceTest extends AbstractSyncTest {
 
-  @Mock private WrestlerRepository wrestlerRepository;
-
-  @Mock private WrestlerService wrestlerService;
-
   private WrestlerSyncService wrestlerSyncService;
+  @Mock private NotionHandler notionHandler;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
+  @Mock private SyncSessionManager syncSessionManager;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerNotionSyncService wrestlerNotionSyncService;
 
   @BeforeEach
   @Override
   protected void setUp() {
     super.setUp(); // Call parent setup first
-    wrestlerSyncService = new WrestlerSyncService(objectMapper, syncProperties, notionHandler);
-    ReflectionTestUtils.setField(wrestlerSyncService, "wrestlerRepository", wrestlerRepository);
-    ReflectionTestUtils.setField(wrestlerSyncService, "wrestlerService", wrestlerService);
-    ReflectionTestUtils.setField(wrestlerSyncService, "progressTracker", progressTracker);
-    ReflectionTestUtils.setField(wrestlerSyncService, "healthMonitor", healthMonitor);
-    ReflectionTestUtils.setField(wrestlerSyncService, "rateLimitService", rateLimitService);
+    lenient().when(notionApiExecutor.getSyncProperties()).thenReturn(syncProperties);
+    lenient().when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
+    lenient()
+        .when(notionApiExecutor.executeWithRateLimit(any()))
+        .thenAnswer(
+            invocation -> invocation.getArgument(0, java.util.function.Supplier.class).get());
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    lenient()
+        .when(syncServiceDependencies.getNotionPageDataExtractor())
+        .thenReturn(notionPageDataExtractor);
+    lenient().when(syncProperties.isEntityEnabled("wrestlers")).thenReturn(true);
+    lenient()
+        .when(wrestlerService.save(any(Wrestler.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    lenient()
+        .when(wrestlerRepository.saveAndFlush(any(Wrestler.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    wrestlerSyncService =
+        new WrestlerSyncService(
+            objectMapper,
+            syncServiceDependencies,
+            notionApiExecutor,
+            wrestlerService,
+            wrestlerRepository,
+            wrestlerNotionSyncService);
   }
 
   @Test
   void syncWrestlers_WhenSuccessful_ShouldReturnCorrectResult() {
     // Given
     List<WrestlerPage> mockPages = createMockWrestlerPages();
-    lenient().when(notionHandler.loadAllWrestlers()).thenReturn(mockPages);
-    lenient().when(wrestlerService.findByExternalId(anyString())).thenReturn(Optional.empty());
-    lenient().when(wrestlerService.findByName(anyString())).thenReturn(Optional.empty());
-    lenient()
-        .when(wrestlerService.save(any(Wrestler.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(notionHandler.loadAllWrestlers()).thenReturn(mockPages);
 
     // When
     SyncResult result = wrestlerSyncService.syncWrestlers("test-operation");
@@ -85,7 +105,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   @Test
   void syncWrestlers_WhenDisabled_ShouldSkipSync() {
     // Given
-    lenient().when(syncProperties.isEntityEnabled("wrestlers")).thenReturn(false);
+    when(syncProperties.isEntityEnabled("wrestlers")).thenReturn(false);
 
     // When
     SyncResult result = wrestlerSyncService.syncWrestlers("test-operation");
@@ -98,7 +118,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   @Test
   void syncWrestlers_WhenNoWrestlersFound_ShouldReturnSuccess() {
     // Given
-    lenient().when(notionHandler.loadAllWrestlers()).thenReturn(Collections.emptyList());
+    when(notionHandler.loadAllWrestlers()).thenReturn(Collections.emptyList());
 
     // When
     SyncResult result = wrestlerSyncService.syncWrestlers("test-operation");
@@ -117,14 +137,14 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   private WrestlerPage createMockWrestlerPage(
       String id, String name, int health, int stamina, int charisma) {
     WrestlerPage page = mock(WrestlerPage.class);
-    when(page.getId()).thenReturn(id);
+    lenient().when(page.getId()).thenReturn(id);
 
     Map<String, Object> properties = new HashMap<>();
     properties.put("Name", Map.of("title", List.of(Map.of("text", Map.of("content", name)))));
     properties.put("Health", health);
     properties.put("Stamina", stamina);
     properties.put("Charisma", charisma);
-    when(page.getRawProperties()).thenReturn(properties);
+    lenient().when(page.getRawProperties()).thenReturn(properties);
 
     return page;
   }

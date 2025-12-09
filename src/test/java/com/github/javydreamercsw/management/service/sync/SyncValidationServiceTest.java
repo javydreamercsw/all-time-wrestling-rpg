@@ -19,8 +19,8 @@ package com.github.javydreamercsw.management.service.sync;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.AfterEach;

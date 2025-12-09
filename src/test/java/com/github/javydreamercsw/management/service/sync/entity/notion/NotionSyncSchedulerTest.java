@@ -20,11 +20,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.test.BaseTest;
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.LocalDateTime;
@@ -42,13 +44,17 @@ class NotionSyncSchedulerTest extends BaseTest {
   @Mock private NotionSyncService notionSyncService;
   @Mock private NotionSyncProperties syncProperties;
   @Mock private EntityDependencyAnalyzer dependencyAnalyzer;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
+  @Mock private SyncSessionManager syncSessionManager;
 
   private NotionSyncScheduler notionSyncScheduler;
 
   @BeforeEach
   void setUp() {
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
     notionSyncScheduler =
-        new NotionSyncScheduler(notionSyncService, syncProperties, dependencyAnalyzer);
+        new NotionSyncScheduler(
+            notionSyncService, syncProperties, dependencyAnalyzer, null, syncServiceDependencies);
   }
 
   @Test

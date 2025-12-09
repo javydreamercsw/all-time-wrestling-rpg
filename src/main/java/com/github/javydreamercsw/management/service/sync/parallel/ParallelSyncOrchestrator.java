@@ -18,24 +18,12 @@ package com.github.javydreamercsw.management.service.sync.parallel;
 
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
-import com.github.javydreamercsw.management.service.sync.entity.notion.FactionSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.InjurySyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.NpcSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.ShowSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTemplateSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.TeamSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.TitleReignSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.TitleSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServicesManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -46,22 +34,17 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class ParallelSyncOrchestrator {
 
-  @Autowired private ShowSyncService showSyncService;
-  @Autowired private WrestlerSyncService wrestlerSyncService;
-  @Autowired private FactionSyncService factionSyncService;
-  @Autowired private TeamSyncService teamSyncService;
-  @Autowired private SegmentSyncService segmentSyncService;
-  @Autowired private SeasonSyncService seasonSyncService;
-  @Autowired private ShowTypeSyncService showTypeSyncService;
-  @Autowired private ShowTemplateSyncService showTemplateSyncService;
-  @Autowired private InjurySyncService injurySyncService;
-  @Autowired private NpcSyncService npcSyncService;
-  @Autowired private TitleSyncService titleSyncService;
-  @Autowired private TitleReignSyncService titleReignSyncService;
-  @Autowired private EntitySyncConfiguration entityConfig;
+  private final NotionSyncServicesManager notionSyncServicesManager;
+  private final EntitySyncConfiguration entityConfig;
+
+  @Autowired
+  public ParallelSyncOrchestrator(
+      NotionSyncServicesManager notionSyncServicesManager, EntitySyncConfiguration entityConfig) {
+    this.notionSyncServicesManager = notionSyncServicesManager;
+    this.entityConfig = entityConfig;
+  }
 
   /**
    * Executes parallel synchronization of all enabled entities.
@@ -131,7 +114,11 @@ public class ParallelSyncOrchestrator {
           executor.submit(
               () ->
                   syncEntity(
-                      "shows", () -> showSyncService.syncShows(baseOperationId + "-shows"))));
+                      "shows",
+                      () ->
+                          notionSyncServicesManager
+                              .getShowSyncService()
+                              .syncShows(baseOperationId + "-shows"))));
     }
 
     if (entityConfig.isEntityEnabled("wrestlers")) {
@@ -140,7 +127,10 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "wrestlers",
-                      () -> wrestlerSyncService.syncWrestlers(baseOperationId + "-wrestlers"))));
+                      () ->
+                          notionSyncServicesManager
+                              .getWrestlerSyncService()
+                              .syncWrestlers(baseOperationId + "-wrestlers"))));
     }
 
     if (entityConfig.isEntityEnabled("factions")) {
@@ -149,7 +139,10 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "factions",
-                      () -> factionSyncService.syncFactions(baseOperationId + "-factions"))));
+                      () ->
+                          notionSyncServicesManager
+                              .getFactionSyncService()
+                              .syncFactions(baseOperationId + "-factions"))));
     }
 
     if (entityConfig.isEntityEnabled("teams")) {
@@ -157,7 +150,11 @@ public class ParallelSyncOrchestrator {
           executor.submit(
               () ->
                   syncEntity(
-                      "teams", () -> teamSyncService.syncTeams(baseOperationId + "-teams"))));
+                      "teams",
+                      () ->
+                          notionSyncServicesManager
+                              .getTeamSyncService()
+                              .syncTeams(baseOperationId + "-teams"))));
     }
 
     if (entityConfig.isEntityEnabled("segments")) {
@@ -166,7 +163,10 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "segments",
-                      () -> segmentSyncService.syncSegments(baseOperationId + "-segments"))));
+                      () ->
+                          notionSyncServicesManager
+                              .getSegmentSyncService()
+                              .syncSegments(baseOperationId + "-segments"))));
     }
 
     if (entityConfig.isEntityEnabled("seasons")) {
@@ -175,7 +175,10 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "seasons",
-                      () -> seasonSyncService.syncSeasons(baseOperationId + "-seasons"))));
+                      () ->
+                          notionSyncServicesManager
+                              .getSeasonSyncService()
+                              .syncSeasons(baseOperationId + "-seasons"))));
     }
 
     if (entityConfig.isEntityEnabled("showtypes")) {
@@ -184,7 +187,10 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "showtypes",
-                      () -> showTypeSyncService.syncShowTypes(baseOperationId + "-showtypes"))));
+                      () ->
+                          notionSyncServicesManager
+                              .getShowTypeSyncService()
+                              .syncShowTypes(baseOperationId + "-showtypes"))));
     }
 
     if (entityConfig.isEntityEnabled("showtemplates")) {
@@ -194,8 +200,9 @@ public class ParallelSyncOrchestrator {
                   syncEntity(
                       "showtemplates",
                       () ->
-                          showTemplateSyncService.syncShowTemplates(
-                              baseOperationId + "-showtemplates"))));
+                          notionSyncServicesManager
+                              .getShowTemplateSyncService()
+                              .syncShowTemplates(baseOperationId + "-showtemplates"))));
     }
 
     if (entityConfig.isEntityEnabled("injuries")) {
@@ -204,7 +211,10 @@ public class ParallelSyncOrchestrator {
               () ->
                   syncEntity(
                       "injuries",
-                      () -> injurySyncService.syncInjuryTypes(baseOperationId + "-injuries"))));
+                      () ->
+                          notionSyncServicesManager
+                              .getInjurySyncService()
+                              .syncInjuryTypes(baseOperationId + "-injuries"))));
     }
 
     if (entityConfig.isEntityEnabled("npcs")) {
@@ -214,10 +224,12 @@ public class ParallelSyncOrchestrator {
                   syncEntity(
                       "npcs",
                       () ->
-                          npcSyncService.syncNpcs(
-                              baseOperationId + "-npcs",
-                              com.github.javydreamercsw.management.service.sync.base.SyncDirection
-                                  .INBOUND))));
+                          notionSyncServicesManager
+                              .getNpcSyncService()
+                              .syncNpcs(
+                                  baseOperationId + "-npcs",
+                                  com.github.javydreamercsw.management.service.sync.base
+                                      .SyncDirection.INBOUND))));
     }
 
     if (entityConfig.isEntityEnabled("titles")) {
@@ -225,7 +237,11 @@ public class ParallelSyncOrchestrator {
           executor.submit(
               () ->
                   syncEntity(
-                      "titles", () -> titleSyncService.syncTitles(baseOperationId + "-titles"))));
+                      "titles",
+                      () ->
+                          notionSyncServicesManager
+                              .getTitleSyncService()
+                              .syncTitles(baseOperationId + "-titles"))));
     }
 
     if (entityConfig.isEntityEnabled("titlereigns")) {
@@ -235,8 +251,9 @@ public class ParallelSyncOrchestrator {
                   syncEntity(
                       "titlereigns",
                       () ->
-                          titleReignSyncService.syncTitleReigns(
-                              baseOperationId + "-titlereigns"))));
+                          notionSyncServicesManager
+                              .getTitleReignSyncService()
+                              .syncTitleReigns(baseOperationId + "-titlereigns"))));
     }
 
     return futures;
