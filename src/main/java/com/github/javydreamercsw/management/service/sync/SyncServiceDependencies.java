@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 @Getter
 public class SyncServiceDependencies {
   private final SyncProgressTracker progressTracker;
-  private final SyncHealthMonitor healthMonitor;
+  private final ISyncHealthMonitor healthMonitor;
   private final RetryService retryService;
   private final CircuitBreakerService circuitBreakerService;
   private final SyncValidationService validationService;
@@ -60,7 +60,7 @@ public class SyncServiceDependencies {
   @Autowired
   public SyncServiceDependencies(
       @NonNull SyncProgressTracker progressTracker,
-      @NonNull SyncHealthMonitor healthMonitor,
+      @NonNull ISyncHealthMonitor healthMonitor,
       @NonNull RetryService retryService,
       @NonNull CircuitBreakerService circuitBreakerService,
       @NonNull SyncValidationService validationService,
