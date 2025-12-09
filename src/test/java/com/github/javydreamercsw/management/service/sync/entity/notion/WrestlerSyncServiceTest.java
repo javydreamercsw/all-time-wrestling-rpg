@@ -52,9 +52,16 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   protected void setUp() {
     super.setUp(); // Call parent setup first
     lenient().when(notionApiExecutor.getSyncProperties()).thenReturn(syncProperties);
+    lenient().when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
+    lenient()
+        .when(notionApiExecutor.executeWithRateLimit(any()))
+        .thenAnswer(
+            invocation -> invocation.getArgument(0, java.util.function.Supplier.class).get());
     lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
     lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
     lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
+    lenient().when(syncProperties.isEntityEnabled("wrestlers")).thenReturn(true);
     wrestlerSyncService =
         new WrestlerSyncService(
             objectMapper,
@@ -68,9 +75,8 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   void syncWrestlers_WhenSuccessful_ShouldReturnCorrectResult() {
     // Given
     List<WrestlerPage> mockPages = createMockWrestlerPages();
-    lenient().when(notionHandler.loadAllWrestlers()).thenReturn(mockPages);
-    lenient()
-        .when(wrestlerRepository.saveAndFlush(any(Wrestler.class)))
+    when(notionHandler.loadAllWrestlers()).thenReturn(mockPages);
+    when(wrestlerRepository.saveAndFlush(any(Wrestler.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
@@ -86,7 +92,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   @Test
   void syncWrestlers_WhenDisabled_ShouldSkipSync() {
     // Given
-    lenient().when(syncProperties.isEntityEnabled("wrestlers")).thenReturn(false);
+    when(syncProperties.isEntityEnabled("wrestlers")).thenReturn(false);
 
     // When
     SyncResult result = wrestlerSyncService.syncWrestlers("test-operation");
@@ -99,7 +105,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   @Test
   void syncWrestlers_WhenNoWrestlersFound_ShouldReturnSuccess() {
     // Given
-    lenient().when(notionHandler.loadAllWrestlers()).thenReturn(Collections.emptyList());
+    when(notionHandler.loadAllWrestlers()).thenReturn(Collections.emptyList());
 
     // When
     SyncResult result = wrestlerSyncService.syncWrestlers("test-operation");
@@ -118,14 +124,14 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   private WrestlerPage createMockWrestlerPage(
       String id, String name, int health, int stamina, int charisma) {
     WrestlerPage page = mock(WrestlerPage.class);
-    when(page.getId()).thenReturn(id);
+    lenient().when(page.getId()).thenReturn(id);
 
     Map<String, Object> properties = new HashMap<>();
     properties.put("Name", Map.of("title", List.of(Map.of("text", Map.of("content", name)))));
     properties.put("Health", health);
     properties.put("Stamina", stamina);
     properties.put("Charisma", charisma);
-    when(page.getRawProperties()).thenReturn(properties);
+    lenient().when(page.getRawProperties()).thenReturn(properties);
 
     return page;
   }
