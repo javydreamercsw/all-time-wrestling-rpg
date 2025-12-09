@@ -35,13 +35,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @DisplayName("Show Type Sync Service Tests")
 class ShowTypeSyncServiceTest extends AbstractSyncTest {
 
   @Mock private ShowTypeService showTypeService;
-
   private ShowTypeSyncService showTypeSyncService;
 
   @BeforeEach
@@ -63,10 +61,15 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
     lenient()
         .when(showTypeService.findByName("Premium Live Event (PLE)"))
         .thenReturn(Optional.empty());
-    lenient().when(showTypeService.findAll()).thenReturn(List.of());
-    lenient()
-        .when(showTypeService.save(any(ShowType.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(0)));
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(1)));
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(2)));
 
     // When
     BaseSyncService.SyncResult result = showTypeSyncService.syncShowTypes("test-operation-id");
@@ -104,23 +107,27 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
   private List<ShowPage> createMockShowPages() {
     List<ShowPage> showPages = new ArrayList<>();
 
-    ShowPage weeklyShow = new ShowPage();
-    Map<String, Object> weeklyProps = new HashMap<>();
-    weeklyProps.put("Show Type", "Weekly");
-    ReflectionTestUtils.setField(weeklyShow, "rawProperties", weeklyProps);
-    showPages.add(weeklyShow);
+    // Weekly Show 1
+    ShowPage weeklyShow1 = mock(ShowPage.class);
+    Map<String, Object> weeklyProps1 = new HashMap<>();
+    weeklyProps1.put("Show Type", "Weekly");
+    lenient().when(weeklyShow1.getRawProperties()).thenReturn(weeklyProps1);
+    showPages.add(weeklyShow1);
 
-    ShowPage pleShow = new ShowPage();
+    // PLE Show
+    ShowPage pleShow = mock(ShowPage.class);
     Map<String, Object> pleProps = new HashMap<>();
     pleProps.put("Show Type", "Premium Live Event (PLE)");
-    ReflectionTestUtils.setField(pleShow, "rawProperties", pleProps);
+    lenient().when(pleShow.getRawProperties()).thenReturn(pleProps);
     showPages.add(pleShow);
 
-    ShowPage anotherWeeklyShow = new ShowPage();
-    Map<String, Object> anotherWeeklyProps = new HashMap<>();
-    anotherWeeklyProps.put("Show Type", "Weekly");
-    ReflectionTestUtils.setField(anotherWeeklyShow, "rawProperties", anotherWeeklyProps);
-    showPages.add(anotherWeeklyShow);
+    // Weekly Show 2
+    ShowPage weeklyShow2 = mock(ShowPage.class);
+    Map<String, Object> weeklyProps2 = new HashMap<>();
+    weeklyProps2.put("Show Type", "Weekly");
+    lenient().when(weeklyShow2.getRawProperties()).thenReturn(weeklyProps2);
+    showPages.add(weeklyShow2);
+
     return showPages;
   }
 
@@ -141,8 +148,10 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
   void shouldNotDuplicateShowTypesOnSubsequentSyncs() {
     // Given - Initial state with some show types
     List<ShowType> initialShowTypes = createMockShowTypes();
+    List<ShowPage> mockShowPages = createMockShowPages();
+
     lenient().when(showTypeService.findAll()).thenReturn(initialShowTypes);
-    lenient().when(notionHandler.loadAllShowsForSync()).thenReturn(createMockShowPages());
+    lenient().when(notionHandler.loadAllShowsForSync()).thenReturn(mockShowPages);
     lenient()
         .when(showTypeService.findByName("Weekly"))
         .thenReturn(Optional.of(initialShowTypes.get(0)));
@@ -152,6 +161,27 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
     lenient()
         .when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // Specific stubs for notionPageDataExtractor - use any() to avoid calling methods on mocks
+    // during stubbing
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(0)));
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(1)));
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(2)));
+
+    doAnswer(
+            invocation -> {
+              // Mark as synced for "show-types" after the first successful sync
+              when(syncSessionManager.isAlreadySyncedInSession("show-types")).thenReturn(true);
+              return null;
+            })
+        .when(syncSessionManager)
+        .markAsSyncedInSession("show-types");
 
     // When - Run first sync
     BaseSyncService.SyncResult firstResult =
@@ -183,17 +213,29 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
     ShowType existingType = new ShowType();
     existingType.setName("Weekly");
     existingType.setDescription("Pre-existing weekly show type");
+    List<ShowPage> mockShowPages = createMockShowPages();
+
     lenient()
         .when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
     lenient().when(showTypeService.findByName("Weekly")).thenReturn(Optional.of(existingType));
     lenient()
         .when(showTypeService.findByName("Premium Live Event (PLE)"))
-        .thenReturn(Optional.empty());
+        .thenReturn(Optional.of(createMockShowTypes().get(1))); // Assume PLE exists
     lenient()
         .when(showTypeService.findAll())
         .thenReturn(List.of(existingType)); // Mock findAll to prevent default saves
-    lenient().when(notionHandler.loadAllShowsForSync()).thenReturn(createMockShowPages());
+    lenient().when(notionHandler.loadAllShowsForSync()).thenReturn(mockShowPages);
+
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(0)));
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(1)));
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(2)));
 
     // When - Run sync
     BaseSyncService.SyncResult result = showTypeSyncService.syncShowTypes("test-operation-id");
@@ -267,6 +309,19 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
         .when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
+    // Specific stubbing for extractShowTypeFromNotionPage
+    // Assuming createMockShowPages creates 3 pages, 2 with "Weekly", 1 with "Premium Live Event
+    // (PLE)"
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(0)));
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(1)));
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(2)));
+
     // When - Run sync with operation ID for progress tracking
     BaseSyncService.SyncResult result = showTypeSyncService.syncShowTypes(operationId);
 
@@ -303,6 +358,16 @@ class ShowTypeSyncServiceTest extends AbstractSyncTest {
     lenient()
         .when(showTypeService.save(any(ShowType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
+
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(0)));
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(1)));
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(eq(mockShowPages.get(2)));
 
     // When - Sync with mocked Notion connection
     BaseSyncService.SyncResult result =

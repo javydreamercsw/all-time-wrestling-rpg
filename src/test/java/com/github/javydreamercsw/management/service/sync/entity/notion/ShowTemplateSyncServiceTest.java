@@ -38,9 +38,7 @@ import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -232,11 +230,14 @@ class ShowTemplateSyncServiceTest {
     ShowTemplatePage templatePage = mock(ShowTemplatePage.class);
     when(templatePage.getId()).thenReturn("template-1");
 
-    // Create basic property map with simple string values
-    Map<String, Object> properties = new HashMap<>();
-    properties.put("Name", "Test Template");
-    properties.put("Description", "Test Description");
-    when(templatePage.getRawProperties()).thenReturn(properties);
+    // Specific stubs for notionPageDataExtractor for this test
+    doReturn("Test Template").when(notionPageDataExtractor).extractNameFromNotionPage(templatePage);
+    doReturn("Test Description")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(templatePage);
+    doReturn(null)
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(templatePage); // Assuming no show type for this test
 
     when(notionHandler.loadAllShowTemplates()).thenReturn(Arrays.asList(templatePage));
 
@@ -280,6 +281,25 @@ class ShowTemplateSyncServiceTest {
     // Create mock templates that will trigger show type intelligence
     ShowTemplatePage weeklyTemplate = createSimpleMockPage("weekly-1", "RAW Template");
     ShowTemplatePage pleTemplate = createSimpleMockPage("ple-1", "WrestleMania Template");
+
+    // Specific stubs for notionPageDataExtractor for this test
+    doReturn("RAW Template")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(weeklyTemplate);
+    doReturn("Test description for RAW Template")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(weeklyTemplate);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(weeklyTemplate);
+
+    doReturn("WrestleMania Template")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(pleTemplate);
+    doReturn("Test description for WrestleMania Template")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(pleTemplate);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(pleTemplate);
 
     when(notionHandler.loadAllShowTemplates())
         .thenReturn(Arrays.asList(weeklyTemplate, pleTemplate));
@@ -325,6 +345,71 @@ class ShowTemplateSyncServiceTest {
             aewRevolution,
             aewDynamite);
     when(notionHandler.loadAllShowTemplates()).thenReturn(mixedTemplates);
+
+    // Specific stubs for notionPageDataExtractor for each template
+    doReturn("Monday Night RAW")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(mondayNightRaw);
+    doReturn("Test description for Monday Night RAW")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(mondayNightRaw);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(mondayNightRaw);
+
+    doReturn("Friday Night SmackDown")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(fridaySmackdown);
+    doReturn("Test description for Friday Night SmackDown")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(fridaySmackdown);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(fridaySmackdown);
+
+    doReturn("NXT Weekly").when(notionPageDataExtractor).extractNameFromNotionPage(nxtShow);
+    doReturn("Test description for NXT Weekly")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(nxtShow);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(nxtShow);
+
+    doReturn("WrestleMania 40")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(wrestleMania);
+    doReturn("Test description for WrestleMania 40")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(wrestleMania);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(wrestleMania);
+
+    doReturn("SummerSlam").when(notionPageDataExtractor).extractNameFromNotionPage(summerSlam);
+    doReturn("Test description for SummerSlam")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(summerSlam);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(summerSlam);
+
+    doReturn("Royal Rumble").when(notionPageDataExtractor).extractNameFromNotionPage(royalRumble);
+    doReturn("Test description for Royal Rumble")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(royalRumble);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(royalRumble);
+
+    doReturn("AEW Revolution")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(aewRevolution);
+    doReturn("Test description for AEW Revolution")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(aewRevolution);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(aewRevolution);
+
+    doReturn("AEW Dynamite").when(notionPageDataExtractor).extractNameFromNotionPage(aewDynamite);
+    doReturn("Test description for AEW Dynamite")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(aewDynamite);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(aewDynamite);
 
     // Mock successful saves for both Weekly and PLE templates
     when(showTemplateService.save(any(ShowTemplate.class)))
@@ -374,6 +459,53 @@ class ShowTemplateSyncServiceTest {
             anotherWeeklyTemplate);
     when(notionHandler.loadAllShowTemplates()).thenReturn(mixedTemplates);
 
+    // Specific stubs for notionPageDataExtractor for each template
+    doReturn("Monday Night RAW")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(weeklyTemplate);
+    doReturn("Test description for Monday Night RAW")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(weeklyTemplate);
+    doReturn("Weekly").when(notionPageDataExtractor).extractShowTypeFromNotionPage(weeklyTemplate);
+
+    doReturn("WrestleMania").when(notionPageDataExtractor).extractNameFromNotionPage(pleTemplate);
+    doReturn("Test description for WrestleMania")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(pleTemplate);
+    doReturn("Premium Live Event (PLE)")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(pleTemplate);
+
+    doReturn("Custom Event Template")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(noShowTypeTemplate1);
+    doReturn("Test description for Custom Event Template")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(noShowTypeTemplate1);
+    doReturn(null)
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(noShowTypeTemplate1); // No show type
+
+    doReturn("Generic Show Format")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(noShowTypeTemplate2);
+    doReturn("Test description for Generic Show Format")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(noShowTypeTemplate2);
+    doReturn(null)
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(noShowTypeTemplate2); // No show type
+
+    doReturn("SmackDown")
+        .when(notionPageDataExtractor)
+        .extractNameFromNotionPage(anotherWeeklyTemplate);
+    doReturn("Test description for SmackDown")
+        .when(notionPageDataExtractor)
+        .extractDescriptionFromNotionPage(anotherWeeklyTemplate);
+    doReturn("Weekly")
+        .when(notionPageDataExtractor)
+        .extractShowTypeFromNotionPage(anotherWeeklyTemplate);
+
     // When
     BaseSyncService.SyncResult result = syncService.syncShowTemplates("test-operation");
 
@@ -396,25 +528,12 @@ class ShowTemplateSyncServiceTest {
   private ShowTemplatePage createSimpleMockPage(String id, String name) {
     ShowTemplatePage page = mock(ShowTemplatePage.class);
     when(page.getId()).thenReturn(id);
-
-    Map<String, Object> properties = new HashMap<>();
-    properties.put("Name", name);
-    properties.put("Description", "Test description for " + name);
-    when(page.getRawProperties()).thenReturn(properties);
-
     return page;
   }
 
   private ShowTemplatePage createMockPageWithShowType(String id, String name, String showType) {
     ShowTemplatePage page = mock(ShowTemplatePage.class);
     when(page.getId()).thenReturn(id);
-
-    Map<String, Object> properties = new HashMap<>();
-    properties.put("Name", name);
-    properties.put("Description", "Test description for " + name);
-    properties.put("Show Type", showType); // This is the key - providing the show type from Notion
-    when(page.getRawProperties()).thenReturn(properties);
-
     return page;
   }
 }
