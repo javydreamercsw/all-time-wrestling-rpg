@@ -21,19 +21,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.spy;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.ai.notion.TitlePage;
-import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
-import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.Collections;
@@ -50,16 +42,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TitleSyncServiceTest extends AbstractSyncTest {
 
-  @Mock private TitleRepository titleRepository;
-  @Mock private WrestlerRepository wrestlerRepository;
   @Mock private TitleService titleService;
-  @Mock private NotionHandler notionHandler;
-  @Mock private NotionSyncProperties syncProperties;
-  @Mock private SyncHealthMonitor healthMonitor;
-  @Mock private NotionRateLimitService rateLimitService;
-  @Mock private TitleReignRepository titleReignRepository;
   @Mock private TitleNotionSyncService titleNotionSyncService;
-  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private TitleSyncService titleSyncService;
 
@@ -67,20 +51,14 @@ class TitleSyncServiceTest extends AbstractSyncTest {
   @Override
   protected void setUp() {
     super.setUp();
-    lenient().when(syncProperties.isEntityEnabled("titles")).thenReturn(true);
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-
-    when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
-    when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
-    when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
-    when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
-    when(syncServiceDependencies.getTitleRepository()).thenReturn(titleRepository);
-    when(syncServiceDependencies.getWrestlerRepository()).thenReturn(wrestlerRepository);
-    when(syncServiceDependencies.getTitleReignRepository()).thenReturn(titleReignRepository);
 
     titleSyncService =
         new TitleSyncService(
-            objectMapper, syncServiceDependencies, titleService, titleNotionSyncService);
+            objectMapper,
+            syncServiceDependencies,
+            titleService,
+            titleNotionSyncService,
+            notionApiExecutor);
 
     lenient()
         .when(titleService.save(any(Title.class)))
@@ -110,7 +88,6 @@ class TitleSyncServiceTest extends AbstractSyncTest {
         .thenReturn(Collections.singletonList("contender-ext-id"));
     Map<String, Object> rawProps = new HashMap<>();
     rawProps.put("Name", "ATW World");
-    when(titlePage.getRawProperties()).thenReturn(rawProps);
     when(titlePage.getGender()).thenReturn("MALE");
 
     when(syncProperties.isEntityEnabled("titles")).thenReturn(true);
@@ -130,7 +107,7 @@ class TitleSyncServiceTest extends AbstractSyncTest {
     assertThat(result.isSuccess()).isTrue();
 
     ArgumentCaptor<Title> titleCaptor = ArgumentCaptor.forClass(Title.class);
-    verify(titleRepository, atLeastOnce()).saveAndFlush(titleCaptor.capture());
+    verify(super.titleRepository, atLeastOnce()).saveAndFlush(titleCaptor.capture());
 
     Title finalSave = titleCaptor.getValue();
     assertFalse(finalSave.isVacant());

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
@@ -40,8 +41,9 @@ public class ShowTypeSyncService extends BaseSyncService {
   public ShowTypeSyncService(
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
-      ShowTypeService showTypeService) {
-    super(objectMapper, syncServiceDependencies);
+      ShowTypeService showTypeService,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.showTypeService = showTypeService;
   }
 

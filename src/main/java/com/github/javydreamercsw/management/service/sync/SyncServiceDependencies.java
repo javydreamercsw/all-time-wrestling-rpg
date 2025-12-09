@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.sync;
 
-import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
@@ -50,7 +49,6 @@ public class SyncServiceDependencies {
   private final NotionHandler notionHandler;
   private final NotionPageDataExtractor notionPageDataExtractor;
   private final SyncSessionManager syncSessionManager;
-  private final NotionApiExecutor notionApiExecutor;
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
   private final InjuryTypeRepository injuryTypeRepository;
@@ -74,7 +72,6 @@ public class SyncServiceDependencies {
       @NonNull NotionHandler notionHandler,
       @NonNull NotionPageDataExtractor notionPageDataExtractor,
       @NonNull SyncSessionManager syncSessionManager,
-      @NonNull NotionApiExecutor notionApiExecutor,
       @NonNull FactionRepository factionRepository,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull InjuryTypeRepository injuryTypeRepository,
@@ -95,7 +92,6 @@ public class SyncServiceDependencies {
     this.notionHandler = notionHandler;
     this.notionPageDataExtractor = notionPageDataExtractor;
     this.syncSessionManager = syncSessionManager;
-    this.notionApiExecutor = notionApiExecutor;
     this.factionRepository = factionRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.injuryTypeRepository = injuryTypeRepository;

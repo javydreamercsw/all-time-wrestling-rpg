@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -42,8 +43,9 @@ public class FactionSyncService extends BaseSyncService {
   public FactionSyncService(
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
-      FactionService factionService) {
-    super(objectMapper, syncServiceDependencies);
+      FactionService factionService,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.factionService = factionService;
   }
 

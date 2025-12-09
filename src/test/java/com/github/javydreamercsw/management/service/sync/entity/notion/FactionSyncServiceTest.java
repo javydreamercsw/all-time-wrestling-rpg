@@ -26,7 +26,6 @@ import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
-import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,24 +49,16 @@ class FactionSyncServiceTest extends AbstractSyncTest {
   @Mock private FactionRepository factionRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private FactionService factionService;
-  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private FactionSyncService factionSyncService;
 
   @BeforeEach
   protected void setUp() {
-    super.setUp();
-    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
-    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
-    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
-    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
-    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
-    lenient().when(syncServiceDependencies.getFactionRepository()).thenReturn(factionRepository);
-    lenient().when(syncServiceDependencies.getWrestlerRepository()).thenReturn(wrestlerRepository);
+    super.setUp(); // Calls AbstractSyncTest's setUp which initializes syncServiceDependencies
 
-    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
     factionSyncService =
-        new FactionSyncService(objectMapper, syncServiceDependencies, factionService);
+        new FactionSyncService(
+            objectMapper, syncServiceDependencies, factionService, notionApiExecutor);
   }
 
   @Test
@@ -90,8 +81,8 @@ class FactionSyncServiceTest extends AbstractSyncTest {
     List<FactionPage> mockPages = createMockFactionPages();
     when(notionHandler.loadAllFactions()).thenReturn(mockPages);
     when(factionService.findByExternalId(anyString())).thenReturn(Optional.empty());
-    when(factionService.getFactionByName(anyString())).thenReturn(Optional.empty());
-    when(factionService.save(any(Faction.class)))
+    lenient()
+        .when(factionService.save(any(Faction.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
@@ -159,8 +150,9 @@ class FactionSyncServiceTest extends AbstractSyncTest {
     List<FactionPage> mockPages = createMockFactionPages();
     when(notionHandler.loadAllFactions()).thenReturn(mockPages);
     when(factionService.findByExternalId(anyString())).thenReturn(Optional.empty());
-    when(factionService.getFactionByName(anyString())).thenReturn(Optional.empty());
-    when(factionService.save(any(Faction.class))).thenThrow(new RuntimeException("Database error"));
+    lenient()
+        .when(factionService.save(any(Faction.class)))
+        .thenThrow(new RuntimeException("Database error"));
 
     // When
     SyncResult result = factionSyncService.syncFactions("test-operation");

@@ -51,7 +51,10 @@ public class NotionSyncService extends BaseSyncService {
       NotionSyncServicesManager notionSyncServicesManager,
       NotionApiExecutor notionApiExecutor,
       ParallelSyncOrchestrator parallelSyncOrchestrator) { // Add SyncServiceDependencies here
-    super(objectMapper, syncServiceDependencies); // Pass it to super, remove syncProperties
+    super(
+        objectMapper,
+        syncServiceDependencies,
+        notionApiExecutor); // Pass it to super, remove syncProperties
     this.notionSyncServicesManager = notionSyncServicesManager;
     this.notionApiExecutor = notionApiExecutor;
     this.parallelSyncOrchestrator = parallelSyncOrchestrator;
@@ -179,9 +182,7 @@ public class NotionSyncService extends BaseSyncService {
       @NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getShowTemplateSyncService().syncShowTemplates(operationId)
-        : notionSyncServicesManager
-            .getShowTemplateNotionSyncService()
-            .syncToNotion(operationId);
+        : notionSyncServicesManager.getShowTemplateNotionSyncService().syncToNotion(operationId);
   }
 
   /**
@@ -276,12 +277,8 @@ public class NotionSyncService extends BaseSyncService {
   public SyncResult syncFactionRivalries(
       @NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager
-            .getFactionRivalrySyncService()
-            .syncFactionRivalries(operationId)
-        : notionSyncServicesManager
-            .getFactionRivalryNotionSyncService()
-            .syncToNotion(operationId);
+        ? notionSyncServicesManager.getFactionRivalrySyncService().syncFactionRivalries(operationId)
+        : notionSyncServicesManager.getFactionRivalryNotionSyncService().syncToNotion(operationId);
   }
 
   /**
@@ -293,9 +290,7 @@ public class NotionSyncService extends BaseSyncService {
    */
   public SyncResult syncSegments(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager
-            .getSegmentSyncService()
-            .syncSegments(operationId + "-segments")
+        ? notionSyncServicesManager.getSegmentSyncService().syncSegments(operationId + "-segments")
         : notionSyncServicesManager.getSegmentNotionSyncService().syncToNotion(operationId);
   }
 }

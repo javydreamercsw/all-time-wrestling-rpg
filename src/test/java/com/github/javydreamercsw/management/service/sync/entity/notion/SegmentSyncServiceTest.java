@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
@@ -61,6 +62,7 @@ class SegmentSyncServiceTest {
   @Mock private SegmentTypeService segmentTypeService;
   @Mock private ShowSyncService showSyncService;
   @Mock private NotionHandler notionHandler;
+  @Mock private NotionApiExecutor notionApiExecutor;
   @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncHealthMonitor healthMonitor;
@@ -85,7 +87,8 @@ class SegmentSyncServiceTest {
             showService,
             wrestlerService,
             segmentTypeService,
-            showSyncService);
+            showSyncService,
+            notionApiExecutor);
   }
 
   @Test

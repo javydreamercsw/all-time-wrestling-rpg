@@ -21,11 +21,30 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
+import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
+import com.github.javydreamercsw.management.service.sync.DataIntegrityChecker;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
+import com.github.javydreamercsw.management.service.sync.RetryService;
+import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
+import com.github.javydreamercsw.management.service.sync.SyncTransactionManager;
+import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
@@ -58,40 +77,92 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private FactionRivalryNotionSyncService factionRivalryNotionSyncService;
   @Mock private ShowTemplateNotionSyncService showTemplateNotionSyncService;
   @Mock private ObjectMapper objectMapper;
-  @Mock private NotionSyncProperties syncProperties;
   @Mock private NotionHandler notionHandler;
-  @Mock private SyncServiceDependencies syncServiceDependencies;
-  @Mock private NotionSyncServiceDependencies notionSyncServiceDependencies;
+  @Mock private NotionSyncProperties syncProperties;
+  @Mock private SyncProgressTracker progressTracker;
+  @Mock private SyncHealthMonitor healthMonitor;
+  @Mock private NotionRateLimitService rateLimitService;
+  @Mock private SyncSessionManager syncSessionManager;
+  private SyncServiceDependencies syncServiceDependencies; // No longer a mock
+  @Mock private RetryService retryService;
+  @Mock private CircuitBreakerService circuitBreakerService;
+  @Mock private SyncValidationService validationService;
+  @Mock private SyncTransactionManager syncTransactionManager;
+  @Mock private DataIntegrityChecker integrityChecker;
+  @Mock private EntitySyncConfiguration entitySyncConfig;
+  @Mock private FactionRepository factionRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private InjuryTypeRepository injuryTypeRepository;
+  @Mock private ShowTypeRepository showTypeRepository;
+  @Mock private TeamRepository teamRepository;
+  @Mock private TitleReignRepository titleReignRepository;
+  @Mock private TitleRepository titleRepository;
+  @Mock private NotionSyncServicesManager notionSyncServicesManager;
+  @Mock private NotionApiExecutor notionApiExecutor;
+  @Mock private NotionPageDataExtractor notionPageDataExtractor;
   @Mock private ParallelSyncOrchestrator parallelSyncOrchestrator;
 
-  @Mock private NotionSyncService notionSyncService;
+  private NotionSyncService notionSyncService; // No longer a mock
 
   @BeforeEach
   public void setUp() {
     log.info("🧪 Setting up NotionSyncServiceTest");
-    when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
+    // Initialize SyncServiceDependencies with all its mocked dependencies
+    syncServiceDependencies =
+        new SyncServiceDependencies(
+            progressTracker,
+            healthMonitor,
+            retryService,
+            circuitBreakerService,
+            validationService,
+            syncTransactionManager,
+            integrityChecker,
+            rateLimitService,
+            entitySyncConfig,
+            syncProperties,
+            notionHandler,
+            notionPageDataExtractor,
+            syncSessionManager,
+            factionRepository,
+            wrestlerRepository,
+            injuryTypeRepository,
+            showTypeRepository,
+            teamRepository,
+            titleReignRepository,
+            titleRepository);
     when(syncProperties.getParallelThreads()).thenReturn(1);
-    when(notionSyncServiceDependencies.getShowTypeSyncService()).thenReturn(showTypeSyncService);
-    when(notionSyncServiceDependencies.getSeasonSyncService()).thenReturn(seasonSyncService);
-    when(notionSyncServiceDependencies.getShowTemplateSyncService())
+    when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
+
+    // Mock NotionSyncServicesManager to return specific sync services
+    when(notionSyncServicesManager.getShowTypeSyncService()).thenReturn(showTypeSyncService);
+    when(notionSyncServicesManager.getSeasonSyncService()).thenReturn(seasonSyncService);
+    when(notionSyncServicesManager.getShowTemplateSyncService())
         .thenReturn(showTemplateSyncService);
-    when(notionSyncServiceDependencies.getShowSyncService()).thenReturn(showSyncService);
-    when(notionSyncServiceDependencies.getWrestlerSyncService()).thenReturn(wrestlerSyncService);
-    when(notionSyncServiceDependencies.getFactionSyncService()).thenReturn(factionSyncService);
-    when(notionSyncServiceDependencies.getTeamSyncService()).thenReturn(teamSyncService);
-    when(notionSyncServiceDependencies.getTitleSyncService()).thenReturn(titleSyncService);
-    when(notionSyncServiceDependencies.getTitleReignSyncService())
-        .thenReturn(titleReignSyncService);
-    when(notionSyncServiceDependencies.getInjurySyncService()).thenReturn(injurySyncService);
-    when(notionSyncServiceDependencies.getNpcSyncService()).thenReturn(npcSyncService);
-    when(notionSyncServiceDependencies.getSegmentSyncService()).thenReturn(segmentSyncService);
-    when(notionSyncServiceDependencies.getRivalrySyncService()).thenReturn(rivalrySyncService);
-    when(notionSyncServiceDependencies.getFactionRivalrySyncService())
+    when(notionSyncServicesManager.getShowSyncService()).thenReturn(showSyncService);
+    when(notionSyncServicesManager.getWrestlerSyncService()).thenReturn(wrestlerSyncService);
+    when(notionSyncServicesManager.getFactionSyncService()).thenReturn(factionSyncService);
+    when(notionSyncServicesManager.getTeamSyncService()).thenReturn(teamSyncService);
+    when(notionSyncServicesManager.getTitleSyncService()).thenReturn(titleSyncService);
+    when(notionSyncServicesManager.getTitleReignSyncService()).thenReturn(titleReignSyncService);
+    when(notionSyncServicesManager.getInjurySyncService()).thenReturn(injurySyncService);
+    when(notionSyncServicesManager.getNpcSyncService()).thenReturn(npcSyncService);
+    when(notionSyncServicesManager.getSegmentSyncService()).thenReturn(segmentSyncService);
+    when(notionSyncServicesManager.getRivalrySyncService()).thenReturn(rivalrySyncService);
+    when(notionSyncServicesManager.getFactionRivalrySyncService())
         .thenReturn(factionRivalrySyncService);
-    when(notionSyncServiceDependencies.getFactionRivalryNotionSyncService())
+    when(notionSyncServicesManager.getFactionRivalryNotionSyncService())
         .thenReturn(factionRivalryNotionSyncService);
-    when(notionSyncServiceDependencies.getShowTemplateNotionSyncService())
+    when(notionSyncServicesManager.getShowTemplateNotionSyncService())
         .thenReturn(showTemplateNotionSyncService);
+
+    // Instantiate NotionSyncService with its dependencies
+    notionSyncService =
+        new NotionSyncService(
+            objectMapper,
+            syncServiceDependencies,
+            notionSyncServicesManager,
+            notionApiExecutor,
+            parallelSyncOrchestrator);
   }
 
   @Test
@@ -102,8 +173,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Show Types", 1, 0, 0);
-    when(notionSyncService.syncShowTypes(anyString(), any(SyncDirection.class)))
-        .thenReturn(expectedResult);
+    when(showTypeSyncService.syncShowTypes(anyString())).thenReturn(expectedResult);
 
     // When - Sync show types from Notion
     BaseSyncService.SyncResult result =
@@ -123,8 +193,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Wrestlers", 1, 0, 0);
-    when(notionSyncService.syncWrestlers(anyString(), any(SyncDirection.class)))
-        .thenReturn(expectedResult);
+    when(wrestlerSyncService.syncWrestlers(anyString())).thenReturn(expectedResult);
 
     // When - Sync wrestlers from Notion
     BaseSyncService.SyncResult result =
@@ -144,8 +213,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Seasons", 1, 0, 0);
-    when(notionSyncService.syncSeasons(anyString(), any(SyncDirection.class)))
-        .thenReturn(expectedResult);
+    when(seasonSyncService.syncSeasons(anyString())).thenReturn(expectedResult);
 
     // When - Sync seasons from Notion
     BaseSyncService.SyncResult result =
@@ -165,8 +233,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Show Templates", 1, 0, 0);
-    when(notionSyncService.syncShowTemplates(anyString(), any(SyncDirection.class)))
-        .thenReturn(expectedResult);
+    when(showTemplateNotionSyncService.syncToNotion(anyString())).thenReturn(expectedResult);
 
     // When - Sync show templates to Notion
     BaseSyncService.SyncResult result =
@@ -186,8 +253,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Factions", 1, 0, 0);
-    when(notionSyncService.syncFactions(anyString(), any(SyncDirection.class)))
-        .thenReturn(expectedResult);
+    when(factionSyncService.syncFactions(anyString())).thenReturn(expectedResult);
 
     // When - Sync factions from Notion
     BaseSyncService.SyncResult result =
@@ -207,8 +273,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Shows", 1, 0, 0);
-    when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
-        .thenReturn(expectedResult);
+    when(showSyncService.syncShows(anyString())).thenReturn(expectedResult);
 
     // When - Sync shows from Notion
     BaseSyncService.SyncResult result =
@@ -228,8 +293,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Injury Types", 1, 0, 0);
-    when(notionSyncService.syncInjuryTypes(anyString(), any(SyncDirection.class)))
-        .thenReturn(expectedResult);
+    when(injurySyncService.syncInjuryTypes(anyString())).thenReturn(expectedResult);
 
     // When - Sync injury types from Notion
     BaseSyncService.SyncResult result =
@@ -248,8 +312,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult = BaseSyncService.SyncResult.success("NPCs", 1, 0, 0);
-    when(notionSyncService.syncNpcs(anyString(), any(SyncDirection.class)))
-        .thenReturn(expectedResult);
+    when(npcSyncService.syncNpcs(anyString(), any(SyncDirection.class))).thenReturn(expectedResult);
 
     // When - Sync NPCs from Notion
     BaseSyncService.SyncResult result =
@@ -269,8 +332,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Titles", 1, 0, 0);
-    when(notionSyncService.syncTitles(anyString(), any(SyncDirection.class)))
-        .thenReturn(expectedResult);
+    when(titleSyncService.syncTitles(anyString())).thenReturn(expectedResult);
 
     // When - Sync titles from Notion
     BaseSyncService.SyncResult result =
@@ -290,7 +352,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Title Reigns", 1, 0, 0);
-    when(notionSyncService.syncTitleReigns(anyString())).thenReturn(expectedResult);
+    when(titleReignSyncService.syncTitleReigns(anyString())).thenReturn(expectedResult);
 
     // When - Sync title reigns from Notion
     BaseSyncService.SyncResult result =
@@ -310,8 +372,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Rivalries", 1, 0, 0);
-    when(notionSyncService.syncRivalries(anyString(), any(SyncDirection.class)))
-        .thenReturn(expectedResult);
+    when(rivalrySyncService.syncRivalries(anyString())).thenReturn(expectedResult);
 
     // When - Sync rivalries from Notion
     BaseSyncService.SyncResult result =
@@ -331,8 +392,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     // Given
     BaseSyncService.SyncResult expectedResult =
         BaseSyncService.SyncResult.success("Faction Rivalries", 1, 0, 0);
-    when(notionSyncService.syncFactionRivalries(anyString(), any(SyncDirection.class)))
-        .thenReturn(expectedResult);
+    when(factionRivalryNotionSyncService.syncToNotion(anyString())).thenReturn(expectedResult);
 
     // When - Sync faction rivalries from Notion
     BaseSyncService.SyncResult result =

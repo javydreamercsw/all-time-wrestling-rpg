@@ -42,14 +42,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.InjuryPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
-import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
-import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.io.File;
-import java.time.Instant;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -68,31 +66,35 @@ import org.mockito.Mock;
 class InjurySyncServiceTest extends AbstractSyncTest {
 
   @Mock private InjuryTypeService injuryTypeService;
-  @Mock private InjuryTypeRepository injuryTypeRepository;
-  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private InjurySyncService injurySyncService;
   private ObjectMapper realObjectMapper;
+  private InjuryPage notionPage1;
+  private InjuryPage notionPage2;
+  private InjuryPage notionPage3;
 
   @BeforeEach
   protected void setUp() {
     super.setUp();
-    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
-    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
-    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
-    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
-    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
-    lenient()
-        .when(syncServiceDependencies.getInjuryTypeRepository())
-        .thenReturn(injuryTypeRepository);
-    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
-    lenient()
-        .when(syncServiceDependencies.getNotionPageDataExtractor())
-        .thenReturn(notionPageDataExtractor);
-
     injurySyncService =
-        new InjurySyncService(objectMapper, syncServiceDependencies, injuryTypeService);
+        new InjurySyncService(
+            objectMapper, syncServiceDependencies, injuryTypeService, notionApiExecutor);
     realObjectMapper = new ObjectMapper();
+    loadNotionPages();
+  }
+
+  private void loadNotionPages() {
+    File samplesDir = new File("src/test/resources/notion-samples");
+    try {
+      notionPage1 =
+          realObjectMapper.readValue(new File(samplesDir, "real-injury-1.json"), InjuryPage.class);
+      notionPage2 =
+          realObjectMapper.readValue(new File(samplesDir, "real-injury-2.json"), InjuryPage.class);
+      notionPage3 =
+          realObjectMapper.readValue(new File(samplesDir, "real-injury-3.json"), InjuryPage.class);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to load Notion sample injury pages", e);
+    }
   }
 
   @Test
@@ -130,7 +132,31 @@ class InjurySyncServiceTest extends AbstractSyncTest {
   void shouldSyncInjuryTypesFromNotionSampleDataSuccessfully() throws Exception {
     List<InjuryPage> sampleInjuries = loadSampleInjuries();
     when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
-    when(notionHandler.loadAllInjuries()).thenReturn(sampleInjuries);
+    when(syncServiceDependencies.getNotionHandler().loadAllInjuries()).thenReturn(sampleInjuries);
+
+    when(notionPageDataExtractor.extractNameFromNotionPage(any(InjuryPage.class)))
+        .thenAnswer(
+            invocation -> {
+              InjuryPage page = invocation.getArgument(0);
+              Map<String, Object> props = page.getRawProperties();
+              if (props != null && props.containsKey("Name")) {
+                Map<String, Object> nameProp = (Map<String, Object>) props.get("Name");
+                if (nameProp != null && nameProp.containsKey("title")) {
+                  List<Map<String, Object>> titleList =
+                      (List<Map<String, Object>>) nameProp.get("title");
+                  if (titleList != null && !titleList.isEmpty()) {
+                    Map<String, Object> titleMap = titleList.get(0);
+                    if (titleMap != null && titleMap.containsKey("text")) {
+                      Map<String, Object> textMap = (Map<String, Object>) titleMap.get("text");
+                      if (textMap != null && textMap.containsKey("content")) {
+                        return textMap.get("content").toString();
+                      }
+                    }
+                  }
+                }
+              }
+              return "Default Name"; // Fallback
+            });
     when(injuryTypeRepository.findByExternalId(anyString())).thenReturn(Optional.empty());
     when(injuryTypeService.createInjuryType(anyString(), anyInt(), anyInt(), anyInt(), anyString()))
         .thenAnswer(
@@ -190,7 +216,14 @@ class InjurySyncServiceTest extends AbstractSyncTest {
     when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
 
     List<InjuryPage> mockPages = createMockInjuryPages();
+
     when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
+
+    when(notionPageDataExtractor.extractNameFromNotionPage(mockPages.get(0)))
+        .thenReturn("Head Injury");
+
+    when(notionPageDataExtractor.extractNameFromNotionPage(mockPages.get(1)))
+        .thenReturn("Back Injury");
 
     // Correctly mock repository behavior
     com.github.javydreamercsw.management.domain.injury.InjuryType existingInjury =
@@ -244,7 +277,14 @@ class InjurySyncServiceTest extends AbstractSyncTest {
     when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
 
     List<InjuryPage> mockPages = createMockInjuryPages();
+
     lenient().when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
+
+    when(notionPageDataExtractor.extractNameFromNotionPage(mockPages.get(0)))
+        .thenReturn("Head Injury");
+
+    when(notionPageDataExtractor.extractNameFromNotionPage(mockPages.get(1)))
+        .thenReturn("Back Injury");
     when(injuryTypeService.createInjuryType(
             eq("Head Injury"), anyInt(), anyInt(), anyInt(), anyString()))
         .thenThrow(new RuntimeException("Database error"));
@@ -268,13 +308,6 @@ class InjurySyncServiceTest extends AbstractSyncTest {
 
     List<InjuryPage> mockPages = createMockInjuryPages();
     when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
-    // Only one injury will be created, causing low success rate
-    when(injuryTypeService.createInjuryType(
-            eq("Head Injury"), anyInt(), anyInt(), anyInt(), anyString()))
-        .thenReturn(null); // Simulate creation failure
-    when(injuryTypeService.createInjuryType(
-            eq("Back Injury"), anyInt(), anyInt(), anyInt(), anyString()))
-        .thenReturn(null); // Simulate creation failure
 
     // When
     SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
@@ -318,8 +351,6 @@ class InjurySyncServiceTest extends AbstractSyncTest {
       String id, String name, int health, int stamina, int card, String special) {
     InjuryPage page = mock(InjuryPage.class);
     when(page.getId()).thenReturn(id);
-    when(page.getCreated_time()).thenReturn(Instant.now().toString());
-    when(page.getLast_edited_time()).thenReturn(Instant.now().toString());
 
     // Mock raw properties with correct structure for name extraction
     Map<String, Object> properties = new HashMap<>();
@@ -331,12 +362,24 @@ class InjurySyncServiceTest extends AbstractSyncTest {
             return name;
           }
         };
-    properties.put("Name", nameProperty);
+    lenient().when(page.getRawProperties()).thenReturn(properties);
+
+    // Create a Notion-like title property structure
+    Map<String, Object> textContent = new HashMap<>();
+    textContent.put("content", name);
+    Map<String, Object> textMap = new HashMap<>();
+    textMap.put("text", textContent);
+    textMap.put("type", "text"); // Mimic Notion's type for text object
+    List<Map<String, Object>> titleList = Collections.singletonList(textMap);
+    Map<String, Object> titleProperty = new HashMap<>();
+    titleProperty.put("title", titleList);
+    titleProperty.put("type", "title"); // Mimic Notion's type for title property
+
+    properties.put("Name", titleProperty);
     properties.put("Health Effect", health);
     properties.put("Stamina Effect", stamina);
     properties.put("Card Effect", card);
     properties.put("Special Effects", special);
-    when(page.getRawProperties()).thenReturn(properties);
 
     return page;
   }
@@ -349,14 +392,7 @@ class InjurySyncServiceTest extends AbstractSyncTest {
     return injuryType;
   }
 
-  private List<InjuryPage> loadSampleInjuries() throws Exception {
-    File samplesDir = new File("src/test/resources/notion-samples");
-    InjuryPage injury1 =
-        realObjectMapper.readValue(new File(samplesDir, "real-injury-1.json"), InjuryPage.class);
-    InjuryPage injury2 =
-        realObjectMapper.readValue(new File(samplesDir, "real-injury-2.json"), InjuryPage.class);
-    InjuryPage injury3 =
-        realObjectMapper.readValue(new File(samplesDir, "real-injury-3.json"), InjuryPage.class);
-    return Arrays.asList(injury1, injury2, injury3);
+  private List<InjuryPage> loadSampleInjuries() {
+    return Arrays.asList(notionPage1, notionPage2, notionPage3);
   }
 }

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.RivalryPage;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -44,8 +45,9 @@ public class RivalrySyncService extends BaseSyncService {
   public RivalrySyncService(
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
-      RivalryService rivalryService) {
-    super(objectMapper, syncServiceDependencies);
+      RivalryService rivalryService,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.rivalryService = rivalryService;
   }
 

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -61,8 +62,9 @@ public class ShowSyncService extends BaseSyncService {
       ShowService showService,
       ShowTypeService showTypeService,
       SeasonService seasonService,
-      ShowTemplateService showTemplateService) {
-    super(objectMapper, syncServiceDependencies);
+      ShowTemplateService showTemplateService,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.showService = showService;
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;

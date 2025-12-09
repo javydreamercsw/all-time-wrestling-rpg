@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.TitlePage;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
@@ -44,8 +45,9 @@ public class TitleSyncService extends BaseSyncService {
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
       TitleService titleService,
-      TitleNotionSyncService titleNotionSyncService) {
-    super(objectMapper, syncServiceDependencies);
+      TitleNotionSyncService titleNotionSyncService,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.titleService = titleService;
     this.titleNotionSyncService = titleNotionSyncService;
   }

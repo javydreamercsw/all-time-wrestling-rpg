@@ -1,102 +1,59 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 @Component
 @Getter
 public class NotionSyncServicesManager {
   // Entity-specific sync services
-  private final ShowSyncService showSyncService;
-  private final WrestlerSyncService wrestlerSyncService;
-  private final FactionSyncService factionSyncService;
-  private final TeamSyncService teamSyncService;
-  private final SegmentSyncService segmentSyncService;
-  private final SeasonSyncService seasonSyncService;
-  private final ShowTypeSyncService showTypeSyncService;
-  private final ShowTemplateSyncService showTemplateSyncService;
-  private final InjurySyncService injurySyncService;
-  private final NpcSyncService npcSyncService;
-  private final TitleSyncService titleSyncService;
-  private final TitleReignSyncService titleReignSyncService;
-  private final RivalrySyncService rivalrySyncService;
-  private final FactionRivalrySyncService factionRivalrySyncService;
+  @Autowired private ShowSyncService showSyncService;
+  @Autowired private WrestlerSyncService wrestlerSyncService;
+  @Autowired private FactionSyncService factionSyncService;
+  @Autowired private TeamSyncService teamSyncService;
+  @Autowired private SegmentSyncService segmentSyncService;
+  @Autowired private SeasonSyncService seasonSyncService;
+  @Autowired private ShowTypeSyncService showTypeSyncService;
+  @Autowired private ShowTemplateSyncService showTemplateSyncService;
+  @Autowired private InjurySyncService injurySyncService;
+  @Autowired private NpcSyncService npcSyncService;
+  @Autowired private TitleSyncService titleSyncService;
+  @Autowired private TitleReignSyncService titleReignSyncService;
+  @Autowired private RivalrySyncService rivalrySyncService;
+  @Autowired private FactionRivalrySyncService factionRivalrySyncService;
 
   // Outbound to Notion sync services
-  private final WrestlerNotionSyncService wrestlerNotionSyncService;
-  private final TitleNotionSyncService titleNotionSyncService;
-  private final NpcNotionSyncService npcNotionSyncService;
-  private final RivalryNotionSyncService rivalryNotionSyncService;
-  private final SeasonNotionSyncService seasonNotionSyncService;
-  private final ShowNotionSyncService showNotionSyncService;
-  private final FactionNotionSyncService factionNotionSyncService;
-  private final TeamNotionSyncService teamNotionSyncService;
-  private final FactionRivalryNotionSyncService factionRivalryNotionSyncService;
-  private final SegmentNotionSyncService segmentNotionSyncService;
-  private final ShowTemplateNotionSyncService showTemplateNotionSyncService;
-  private final ShowTypeNotionSyncService showTypeNotionSyncService;
-  private final InjuryNotionSyncService injuryNotionSyncService;
-  private final WrestlerRepository wrestlerRepository;
-
-  @Autowired
-  public NotionSyncServicesManager(
-      ShowSyncService showSyncService,
-      WrestlerSyncService wrestlerSyncService,
-      FactionSyncService factionSyncService,
-      TeamSyncService teamSyncService,
-      SegmentSyncService segmentSyncService,
-      SeasonSyncService seasonSyncService,
-      ShowTypeSyncService showTypeSyncService,
-      ShowTemplateSyncService showTemplateSyncService,
-      InjurySyncService injurySyncService,
-      NpcSyncService npcSyncService,
-      TitleSyncService titleSyncService,
-      TitleReignSyncService titleReignSyncService,
-      RivalrySyncService rivalrySyncService,
-      FactionRivalrySyncService factionRivalrySyncService,
-      WrestlerNotionSyncService wrestlerNotionSyncService,
-      TitleNotionSyncService titleNotionSyncService,
-      NpcNotionSyncService npcNotionSyncService,
-      RivalryNotionSyncService rivalryNotionSyncService,
-      SeasonNotionSyncService seasonNotionSyncService,
-      ShowNotionSyncService showNotionSyncService,
-      FactionNotionSyncService factionNotionSyncService,
-      TeamNotionSyncService teamNotionSyncService,
-      FactionRivalryNotionSyncService factionRivalryNotionSyncService,
-      SegmentNotionSyncService segmentNotionSyncService,
-      ShowTemplateNotionSyncService showTemplateNotionSyncService,
-      ShowTypeNotionSyncService showTypeNotionSyncService,
-      WrestlerRepository wrestlerRepository,
-      InjuryNotionSyncService injuryNotionSyncService) {
-    this.showSyncService = showSyncService;
-    this.wrestlerSyncService = wrestlerSyncService;
-    this.factionSyncService = factionSyncService;
-    this.teamSyncService = teamSyncService;
-    this.segmentSyncService = segmentSyncService;
-    this.seasonSyncService = seasonSyncService;
-    this.showTypeSyncService = showTypeSyncService;
-    this.showTemplateSyncService = showTemplateSyncService;
-    this.injurySyncService = injurySyncService;
-    this.npcSyncService = npcSyncService;
-    this.titleSyncService = titleSyncService;
-    this.titleReignSyncService = titleReignSyncService;
-    this.rivalrySyncService = rivalrySyncService;
-    this.factionRivalrySyncService = factionRivalrySyncService;
-    this.wrestlerNotionSyncService = wrestlerNotionSyncService;
-    this.titleNotionSyncService = titleNotionSyncService;
-    this.npcNotionSyncService = npcNotionSyncService;
-    this.rivalryNotionSyncService = rivalryNotionSyncService;
-    this.seasonNotionSyncService = seasonNotionSyncService;
-    this.showNotionSyncService = showNotionSyncService;
-    this.factionNotionSyncService = factionNotionSyncService;
-    this.teamNotionSyncService = teamNotionSyncService;
-    this.factionRivalryNotionSyncService = factionRivalryNotionSyncService;
-    this.segmentNotionSyncService = segmentNotionSyncService;
-    this.showTemplateNotionSyncService = showTemplateNotionSyncService;
-    this.showTypeNotionSyncService = showTypeNotionSyncService;
-    this.wrestlerRepository = wrestlerRepository;
-    this.injuryNotionSyncService = injuryNotionSyncService;
-  }
+  @Autowired @Lazy private WrestlerNotionSyncService wrestlerNotionSyncService;
+  @Autowired private TitleNotionSyncService titleNotionSyncService;
+  @Autowired private NpcNotionSyncService npcNotionSyncService;
+  @Autowired private RivalryNotionSyncService rivalryNotionSyncService;
+  @Autowired private SeasonNotionSyncService seasonNotionSyncService;
+  @Autowired private ShowNotionSyncService showNotionSyncService;
+  @Autowired private FactionNotionSyncService factionNotionSyncService;
+  @Autowired private TeamNotionSyncService teamNotionSyncService;
+  @Autowired private FactionRivalryNotionSyncService factionRivalryNotionSyncService;
+  @Autowired private SegmentNotionSyncService segmentNotionSyncService;
+  @Autowired private ShowTemplateNotionSyncService showTemplateNotionSyncService;
+  @Autowired private ShowTypeNotionSyncService showTypeNotionSyncService;
+  @Autowired private InjuryNotionSyncService injuryNotionSyncService;
+  @Autowired private WrestlerRepository wrestlerRepository;
 }

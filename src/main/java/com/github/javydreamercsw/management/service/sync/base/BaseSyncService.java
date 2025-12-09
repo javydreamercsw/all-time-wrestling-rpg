@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
@@ -49,11 +50,18 @@ public abstract class BaseSyncService {
 
   @Autowired protected SyncServiceDependencies syncServiceDependencies;
 
+  protected final NotionApiExecutor notionApiExecutor;
+
   protected BaseSyncService(
       @NonNull ObjectMapper objectMapper,
-      @NonNull SyncServiceDependencies syncServiceDependencies) {
+      @NonNull SyncServiceDependencies syncServiceDependencies,
+      @NonNull NotionApiExecutor notionApiExecutor) {
+
     this.objectMapper = objectMapper;
+
     this.syncServiceDependencies = syncServiceDependencies;
+
+    this.notionApiExecutor = notionApiExecutor;
   }
 
   /**
@@ -62,6 +70,7 @@ public abstract class BaseSyncService {
    * @return true if NotionHandler is available, false otherwise
    */
   public boolean isNotionHandlerAvailable() {
+
     return syncServiceDependencies.getNotionHandler() != null
         && EnvironmentVariableUtil.isNotionTokenAvailable();
   }
@@ -339,7 +348,7 @@ public abstract class BaseSyncService {
                               throw new RuntimeException("Processing failed", e);
                             }
                           },
-                          syncServiceDependencies.getNotionApiExecutor().getSyncExecutorService()))
+                          notionApiExecutor.getSyncExecutorService()))
               .toList();
 
       // Wait for batch completion with timeout
@@ -379,9 +388,7 @@ public abstract class BaseSyncService {
               CompletableFuture.runAsync(
                   () -> {},
                   CompletableFuture.delayedExecutor(
-                      500,
-                      TimeUnit.MILLISECONDS,
-                      syncServiceDependencies.getNotionApiExecutor().getSyncExecutorService()));
+                      500, TimeUnit.MILLISECONDS, notionApiExecutor.getSyncExecutorService()));
           delay.get();
         }
 

@@ -17,11 +17,13 @@
 package com.github.javydreamercsw.management.config;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServiceDependencies;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -46,7 +48,22 @@ public class TestNotionConfiguration {
   @Bean
   @Primary
   public NotionSyncProperties testNotionSyncProperties() {
-    return mock(NotionSyncProperties.class);
+    NotionSyncProperties mockProperties = mock(NotionSyncProperties.class);
+    when(mockProperties.getParallelThreads()).thenReturn(1);
+    return mockProperties;
+  }
+
+  @Bean
+  @Primary
+  public NotionSyncServiceDependencies testNotionSyncServiceDependencies(
+      NotionHandler notionHandler,
+      NotionRateLimitService notionRateLimitService,
+      NotionSyncProperties notionSyncProperties) {
+    NotionSyncServiceDependencies mockDependencies = mock(NotionSyncServiceDependencies.class);
+    when(mockDependencies.getNotionHandler()).thenReturn(notionHandler);
+    when(mockDependencies.getNotionRateLimitService()).thenReturn(notionRateLimitService);
+    when(mockDependencies.getNotionSyncProperties()).thenReturn(notionSyncProperties);
+    return mockDependencies;
   }
 
   @Bean

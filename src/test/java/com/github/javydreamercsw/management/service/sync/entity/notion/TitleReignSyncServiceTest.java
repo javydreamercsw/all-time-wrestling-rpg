@@ -24,12 +24,8 @@ import static org.mockito.Mockito.*;
 import com.github.javydreamercsw.base.ai.notion.TitleReignPage;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
-import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,14 +35,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
 
 class TitleReignSyncServiceTest extends AbstractSyncTest {
-
-  @Mock private TitleReignRepository titleReignRepository;
-  @Mock private TitleRepository titleRepository;
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private SyncServiceDependencies syncServiceDependencies;
 
   private TitleReignSyncService service;
 
@@ -54,19 +44,7 @@ class TitleReignSyncServiceTest extends AbstractSyncTest {
   @Override
   protected void setUp() {
     super.setUp(); // Call parent setup first
-    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
-    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
-    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
-    lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
-    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
-    lenient()
-        .when(syncServiceDependencies.getTitleReignRepository())
-        .thenReturn(titleReignRepository);
-    lenient().when(syncServiceDependencies.getTitleRepository()).thenReturn(titleRepository);
-    lenient().when(syncServiceDependencies.getWrestlerRepository()).thenReturn(wrestlerRepository);
-
-    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
-    service = new TitleReignSyncService(objectMapper, syncServiceDependencies);
+    service = new TitleReignSyncService(objectMapper, syncServiceDependencies, notionApiExecutor);
   }
 
   @Test

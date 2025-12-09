@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.SegmentPage;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -56,8 +57,9 @@ public class SegmentSyncService extends BaseSyncService {
       ShowService showService,
       WrestlerService wrestlerService,
       SegmentTypeService segmentTypeService,
-      ShowSyncService showSyncService) {
-    super(objectMapper, syncServiceDependencies);
+      ShowSyncService showSyncService,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.segmentService = segmentService;
     this.showService = showService;
     this.wrestlerService = wrestlerService;
@@ -444,6 +446,7 @@ public class SegmentSyncService extends BaseSyncService {
         String errorMessage = "Segment with ID " + segmentId + " not found in Notion.";
         log.error(errorMessage);
         syncServiceDependencies.getProgressTracker().failOperation(operationId, errorMessage);
+        return SyncResult.failure("Segment", errorMessage);
       }
 
       SegmentPage segmentPage = segmentPageOpt.get();

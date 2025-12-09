@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
@@ -56,6 +57,7 @@ class ShowSyncServiceIT {
   @Mock private SyncHealthMonitor healthMonitor;
   @Mock private ObjectMapper objectMapper;
   @Mock private NotionRateLimitService rateLimitService;
+  @Mock private NotionApiExecutor notionApiExecutor;
   @Mock private CircuitBreakerService circuitBreakerService;
   @Mock private RetryService retryService;
   @Mock private SyncServiceDependencies syncServiceDependencies;
@@ -87,7 +89,8 @@ class ShowSyncServiceIT {
             showService,
             showTypeService,
             seasonService,
-            showTemplateService);
+            showTemplateService,
+            notionApiExecutor);
 
     // Mock resilience services to execute immediately
     lenient()

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.TitleReignPage;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
@@ -39,8 +40,10 @@ public class TitleReignSyncService extends BaseSyncService {
 
   @Autowired
   public TitleReignSyncService(
-      ObjectMapper objectMapper, SyncServiceDependencies syncServiceDependencies) {
-    super(objectMapper, syncServiceDependencies);
+      ObjectMapper objectMapper,
+      SyncServiceDependencies syncServiceDependencies,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
   }
 
   public SyncResult syncTitleReigns(@NonNull String operationId) {

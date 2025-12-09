@@ -41,17 +41,14 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity> implements
   protected final JpaRepository<T, Long> repository;
   protected final SyncServiceDependencies syncServiceDependencies;
   protected final NotionApiExecutor notionApiExecutor;
-  protected final NotionSyncServicesManager notionSyncServicesManager;
 
   protected BaseNotionSyncService(
       JpaRepository<T, Long> repository,
       SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor,
-      NotionSyncServicesManager notionSyncServicesManager) {
+      NotionApiExecutor notionApiExecutor) {
     this.repository = repository;
     this.syncServiceDependencies = syncServiceDependencies;
     this.notionApiExecutor = notionApiExecutor;
-    this.notionSyncServicesManager = notionSyncServicesManager;
   }
 
   @Override
@@ -89,7 +86,10 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity> implements
                 UpdatePageRequest updatePageRequest =
                     new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
                 notionApiExecutor.executeWithRateLimit(
-                    () -> notionApiExecutor.getNotionHandler().executeWithRetry(() -> client.updatePage(updatePageRequest)));
+                    () ->
+                        notionApiExecutor
+                            .getNotionHandler()
+                            .executeWithRetry(() -> client.updatePage(updatePageRequest)));
                 updated++;
               } else {
                 log.debug("Creating a new page for: {}", getEntityName());
@@ -97,7 +97,10 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity> implements
                     new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
                 Page page =
                     notionApiExecutor.executeWithRateLimit(
-                        () -> notionApiExecutor.getNotionHandler().executeWithRetry(() -> client.createPage(createPageRequest)));
+                        () ->
+                            notionApiExecutor
+                                .getNotionHandler()
+                                .executeWithRetry(() -> client.createPage(createPageRequest)));
                 entity.setExternalId(page.getId());
                 created++;
               }
@@ -123,9 +126,10 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity> implements
                   getEntityName(), "Error syncing " + getEntityName() + "!")
               : BaseSyncService.SyncResult.success(getEntityName(), created, updated, errors);
         }
-      } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException(e);
+      } catch (Exception e) {
+        log.error("Error during Notion sync: {}", e.getMessage(), e);
+        return BaseSyncService.SyncResult.failure(
+            getEntityName(), "Error during Notion sync: " + e.getMessage() + "!");
       }
     }
     syncServiceDependencies

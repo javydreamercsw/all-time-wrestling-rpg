@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -43,8 +44,9 @@ public class ShowTemplateSyncService extends BaseSyncService {
   public ShowTemplateSyncService(
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
-      ShowTemplateService showTemplateService) {
-    super(objectMapper, syncServiceDependencies);
+      ShowTemplateService showTemplateService,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.showTemplateService = showTemplateService;
   }
 

@@ -20,12 +20,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
+import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,27 +42,26 @@ import org.mockito.Mock;
  */
 class WrestlerSyncServiceTest extends AbstractSyncTest {
 
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private WrestlerService wrestlerService;
-  @Mock private NotionSyncServiceDependencies notionSyncServiceDependencies;
-
   private WrestlerSyncService wrestlerSyncService;
+  @Mock private NotionHandler notionHandler;
+  @Mock private SyncServiceDependencies syncServiceDependencies;
+  @Mock private SyncSessionManager syncSessionManager;
 
   @BeforeEach
   @Override
   protected void setUp() {
     super.setUp(); // Call parent setup first
-    when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
-    when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
-    when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
-    when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
-    when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
-    when(notionSyncServiceDependencies.getWrestlerRepository()).thenReturn(wrestlerRepository);
-    when(syncServiceDependencies.getSyncSessionManager()).thenReturn(super.syncSessionManager);
-
+    lenient().when(notionApiExecutor.getSyncProperties()).thenReturn(syncProperties);
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
     wrestlerSyncService =
         new WrestlerSyncService(
-            objectMapper, syncServiceDependencies, notionSyncServiceDependencies);
+            objectMapper,
+            syncServiceDependencies,
+            wrestlerRepository,
+            notionApiExecutor,
+            notionPageDataExtractor);
   }
 
   @Test
@@ -70,8 +70,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
     List<WrestlerPage> mockPages = createMockWrestlerPages();
     lenient().when(notionHandler.loadAllWrestlers()).thenReturn(mockPages);
     lenient()
-        .when(
-            notionSyncServiceDependencies.getWrestlerRepository().saveAndFlush(any(Wrestler.class)))
+        .when(wrestlerRepository.saveAndFlush(any(Wrestler.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
@@ -80,8 +79,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
     // Then
     assertTrue(result.isSuccess());
     assertEquals("Wrestlers", result.getEntityType());
-    verify(notionSyncServiceDependencies.getWrestlerRepository(), times(2))
-        .saveAndFlush(any(Wrestler.class));
+    verify(wrestlerRepository, times(2)).saveAndFlush(any(Wrestler.class));
     verify(healthMonitor).recordSuccess(eq("Wrestlers"), anyLong(), anyInt());
   }
 

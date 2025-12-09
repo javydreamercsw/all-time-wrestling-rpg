@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -23,17 +24,19 @@ import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies
 import java.util.HashMap;
 import java.util.Map;
 import notion.api.v1.model.pages.PageProperty;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 @Service
 public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
+  @Autowired @Lazy private NotionSyncServicesManager notionSyncServicesManager;
 
   public WrestlerNotionSyncService(
       WrestlerRepository repository,
       SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor,
-      NotionSyncServicesManager notionSyncServicesManager) {
-    super(repository, syncServiceDependencies, notionApiExecutor, notionSyncServicesManager);
+      NotionApiExecutor notionApiExecutor) {
+    super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override

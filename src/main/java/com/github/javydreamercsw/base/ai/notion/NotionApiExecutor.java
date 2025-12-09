@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai.notion;
 
-import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServiceDependencies;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import jakarta.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,22 +33,30 @@ public class NotionApiExecutor {
 
   private final NotionHandler notionHandler;
   private final NotionRateLimitService rateLimitService;
-  private final NotionSyncProperties syncProperties;
+  private final NotionSyncProperties syncProperties; // Keep this field to use in newFixedThreadPool
   private final ExecutorService syncExecutorService;
 
   @Autowired
   public NotionApiExecutor(
-      NotionSyncServiceDependencies notionSyncServiceDependencies) {
-    this.notionHandler = notionSyncServiceDependencies.getNotionHandler();
-    this.rateLimitService = notionSyncServiceDependencies.getNotionRateLimitService();
-    this.syncProperties = notionSyncServiceDependencies.getNotionSyncProperties();
-    this.syncExecutorService = Executors.newFixedThreadPool(syncProperties.getParallelThreads());
+      @NonNull NotionHandler notionHandler,
+      @NonNull NotionRateLimitService rateLimitService,
+      @NonNull NotionSyncProperties syncProperties) {
+    this.notionHandler = notionHandler;
+    this.rateLimitService = rateLimitService;
+    this.syncProperties = syncProperties;
+    this.syncExecutorService =
+        Executors.newFixedThreadPool(this.syncProperties.getParallelThreads());
   }
 
   /** Execute a Notion API call with proper rate limiting. */
-  public <T> T executeWithRateLimit(@NonNull Supplier<T> apiCall) throws InterruptedException {
-    rateLimitService.acquirePermit();
-    return apiCall.get();
+  public <T> T executeWithRateLimit(@NonNull Supplier<T> apiCall) {
+    try {
+      rateLimitService.acquirePermit();
+      return apiCall.get();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Rate limit service interrupted", e);
+    }
   }
 
   @PreDestroy
@@ -64,4 +72,3 @@ public class NotionApiExecutor {
     }
   }
 }
-

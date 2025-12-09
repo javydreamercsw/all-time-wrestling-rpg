@@ -16,14 +16,23 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
 import com.github.javydreamercsw.base.ai.notion.NpcPage;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +45,10 @@ import org.mockito.Mock;
 class NpcSyncServiceTest extends AbstractSyncTest {
 
   @Mock private NpcService npcService;
+  @Mock private NotionHandler notionHandler;
   @Mock private SyncServiceDependencies syncServiceDependencies;
+  @Mock private SyncSessionManager syncSessionManager;
+  @Mock private NotionPageDataExtractor notionPageDataExtractor;
 
   private NpcSyncService npcSyncService;
 
@@ -44,15 +56,15 @@ class NpcSyncServiceTest extends AbstractSyncTest {
   @Override
   public void setUp() {
     super.setUp(); // Call parent setup first
-    when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
-    when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
-    when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
     lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
-    lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
+    lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
     lenient()
         .when(syncServiceDependencies.getNotionPageDataExtractor())
         .thenReturn(notionPageDataExtractor);
-    npcSyncService = new NpcSyncService(objectMapper, syncServiceDependencies, npcService);
+    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    npcSyncService =
+        new NpcSyncService(objectMapper, syncServiceDependencies, npcService, notionApiExecutor);
   }
 
   @Test
@@ -70,6 +82,8 @@ class NpcSyncServiceTest extends AbstractSyncTest {
     npcPages.add(npcPage);
 
     when(notionHandler.loadAllNpcs()).thenReturn(npcPages);
+    when(notionPageDataExtractor.extractNameFromNotionPage(any(NpcPage.class)))
+        .thenReturn("Test NPC");
 
     when(npcService.findByExternalId("test-id")).thenReturn(null);
     when(npcService.findByName("Test NPC")).thenReturn(null);

@@ -17,12 +17,15 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
+import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.base.util.NotionBlocksRetriever;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -42,16 +45,21 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class WrestlerSyncService extends BaseSyncService {
-
-  private final NotionSyncServiceDependencies notionSyncServiceDependencies;
+  private final WrestlerRepository wrestlerRepository;
+  private final NotionApiExecutor notionApiExecutor;
+  private final NotionPageDataExtractor notionPageDataExtractor;
 
   @Autowired
   public WrestlerSyncService(
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
-      NotionSyncServiceDependencies notionSyncServiceDependencies) {
-    super(objectMapper, syncServiceDependencies);
-    this.notionSyncServiceDependencies = notionSyncServiceDependencies;
+      WrestlerRepository wrestlerRepository,
+      NotionApiExecutor notionApiExecutor,
+      NotionPageDataExtractor notionPageDataExtractor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
+    this.wrestlerRepository = wrestlerRepository;
+    this.notionApiExecutor = notionApiExecutor;
+    this.notionPageDataExtractor = notionPageDataExtractor;
   }
 
   /**
@@ -85,7 +93,7 @@ public class WrestlerSyncService extends BaseSyncService {
   private SyncResult performWrestlersSync(@NonNull String operationId, long startTime) {
     try {
       // Check if entity is enabled
-      if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("wrestlers")) {
+      if (!notionApiExecutor.getSyncProperties().isEntityEnabled("wrestlers")) {
         log.info("Wrestlers sync is disabled in configuration");
         return SyncResult.success("Wrestlers", 0, 0, 0);
       }
@@ -107,7 +115,8 @@ public class WrestlerSyncService extends BaseSyncService {
       }
 
       List<WrestlerPage> wrestlerPages =
-          super.executeWithRateLimit(syncServiceDependencies.getNotionHandler()::loadAllWrestlers);
+          notionApiExecutor.executeWithRateLimit(
+              notionApiExecutor.getNotionHandler()::loadAllWrestlers);
       log.info(
           "✅ Retrieved {} wrestlers in {}ms",
           wrestlerPages.size(),
@@ -203,7 +212,7 @@ public class WrestlerSyncService extends BaseSyncService {
   /** Converts WrestlerPage objects to Wrestler objects and merges with existing JSON data. */
   private List<Wrestler> convertAndMergeWrestlerData(@NonNull List<WrestlerPage> wrestlerPages) {
     Map<String, Wrestler> existingWrestlers = new HashMap<>();
-    if (syncServiceDependencies.getNotionSyncProperties().isLoadFromJson()) {
+    if (notionApiExecutor.getSyncProperties().isLoadFromJson()) {
       existingWrestlers = loadExistingWrestlersFromJson();
     }
 
@@ -254,10 +263,7 @@ public class WrestlerSyncService extends BaseSyncService {
   /** Converts a single WrestlerPage to Wrestler. */
   private Wrestler convertWrestlerPageToDTO(@NonNull WrestlerPage wrestlerPage) {
     Wrestler wrestler = new Wrestler();
-    wrestler.setName(
-        syncServiceDependencies
-            .getNotionPageDataExtractor()
-            .extractNameFromNotionPage(wrestlerPage));
+    wrestler.setName(notionPageDataExtractor.extractNameFromNotionPage(wrestlerPage));
 
     // Extract and truncate description to fit database constraint (1000 chars)
     String description = extractDescriptionFromPageBody(wrestlerPage);
@@ -544,7 +550,7 @@ public class WrestlerSyncService extends BaseSyncService {
       }
 
       try {
-        notionSyncServiceDependencies.getWrestlerRepository().saveAndFlush(dto);
+        wrestlerRepository.saveAndFlush(dto);
         savedCount++;
 
         log.info("✅ Wrestler saved successfully: {} (Final ID: {})", dto.getName(), dto.getId());

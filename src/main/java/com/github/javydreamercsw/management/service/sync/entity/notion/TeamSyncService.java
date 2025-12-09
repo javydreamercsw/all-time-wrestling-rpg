@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
@@ -48,8 +49,9 @@ public class TeamSyncService extends BaseSyncService {
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
       TeamService teamService,
-      WrestlerService wrestlerService) {
-    super(objectMapper, syncServiceDependencies);
+      WrestlerService wrestlerService,
+      NotionApiExecutor notionApiExecutor) {
+    super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.teamService = teamService;
     this.wrestlerService = wrestlerService;
   }
@@ -294,12 +296,15 @@ public class TeamSyncService extends BaseSyncService {
       return null;
     }
 
-    Object property = teamPage.getRawProperties().get(propertyName);
-    if (property == null) {
+    // Use NotionPageDataExtractor to get the property string
+    String propertyStr =
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractPropertyAsString(teamPage.getRawProperties(), propertyName);
+
+    if (propertyStr == null || propertyStr.isEmpty()) {
       return null;
     }
-
-    String propertyStr = property.toString().trim();
 
     // If it shows as "X items" or "X relations", this means the relation isn't resolved
     if (propertyStr.matches("\\d+ (items?|relations?)")) {

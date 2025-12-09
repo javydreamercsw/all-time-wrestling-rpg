@@ -20,6 +20,7 @@ import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
@@ -50,7 +51,8 @@ class NotionPropertyTest {
   @Mock private NotionSyncProperties notionSyncProperties;
   @Mock private NotionHandler notionHandler;
   @Mock private SyncServiceDependencies syncServiceDependencies;
-  @Mock private NotionSyncServiceDependencies notionSyncServiceDependencies;
+  @Mock private NotionSyncServicesManager notionSyncServicesManager;
+  @Mock private NotionApiExecutor notionApiExecutor;
 
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
@@ -69,47 +71,49 @@ class NotionPropertyTest {
     // Configure mock behavior for NotionSyncProperties
     when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(notionSyncProperties);
     when(notionSyncProperties.getParallelThreads()).thenReturn(1);
-    when(notionSyncServiceDependencies.getSegmentSyncService()).thenReturn(segmentSyncService);
-    when(notionSyncServiceDependencies.getSegmentNotionSyncService())
+    when(notionApiExecutor.getNotionHandler()).thenReturn(notionHandler);
+
+    // Mock NotionSyncServicesManager to return specific sync services
+    when(notionSyncServicesManager.getSegmentSyncService()).thenReturn(segmentSyncService);
+    when(notionSyncServicesManager.getSegmentNotionSyncService())
         .thenReturn(segmentNotionSyncService);
 
     notionSyncService =
         new NotionSyncService(
             objectMapper,
             syncServiceDependencies,
-            notionSyncServiceDependencies,
+            notionSyncServicesManager,
+            notionApiExecutor,
             parallelSyncOrchestrator) {
           @Override
           public BaseSyncService.SyncResult syncShow(@NonNull String showId) {
-            return notionSyncServiceDependencies.getShowSyncService().syncShow(showId);
+            return notionSyncServicesManager.getShowSyncService().syncShow(showId);
           }
 
           @Override
           public List<String> getAllShowIds() {
-            return notionSyncServiceDependencies.getShowSyncService().getShowIds();
+            return notionSyncServicesManager.getShowSyncService().getShowIds();
           }
 
           @Override
           public BaseSyncService.SyncResult syncSegment(@NonNull String segmentId) {
-            return notionSyncServiceDependencies.getSegmentSyncService().syncSegment(segmentId);
+            return notionSyncServicesManager.getSegmentSyncService().syncSegment(segmentId);
           }
 
           @Override
           public BaseSyncService.SyncResult syncShows(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies.getShowSyncService().syncShows(operationId)
-                : notionSyncServiceDependencies
-                    .getShowNotionSyncService()
-                    .syncToNotion(operationId);
+                ? notionSyncServicesManager.getShowSyncService().syncShows(operationId)
+                : notionSyncServicesManager.getShowNotionSyncService().syncToNotion(operationId);
           }
 
           @Override
           public BaseSyncService.SyncResult syncWrestlers(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies.getWrestlerSyncService().syncWrestlers(operationId)
-                : notionSyncServiceDependencies
+                ? notionSyncServicesManager.getWrestlerSyncService().syncWrestlers(operationId)
+                : notionSyncServicesManager
                     .getWrestlerNotionSyncService()
                     .syncToNotion(operationId);
           }
@@ -118,30 +122,26 @@ class NotionPropertyTest {
           public BaseSyncService.SyncResult syncFactions(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies.getFactionSyncService().syncFactions(operationId)
-                : notionSyncServiceDependencies
-                    .getFactionNotionSyncService()
-                    .syncToNotion(operationId);
+                ? notionSyncServicesManager.getFactionSyncService().syncFactions(operationId)
+                : notionSyncServicesManager.getFactionNotionSyncService().syncToNotion(operationId);
           }
 
           @Override
           public BaseSyncService.SyncResult syncTeams(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies.getTeamSyncService().syncTeams(operationId)
-                : notionSyncServiceDependencies
-                    .getTeamNotionSyncService()
-                    .syncToNotion(operationId);
+                ? notionSyncServicesManager.getTeamSyncService().syncTeams(operationId)
+                : notionSyncServicesManager.getTeamNotionSyncService().syncToNotion(operationId);
           }
 
           @Override
           public BaseSyncService.SyncResult syncShowTemplates(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies
+                ? notionSyncServicesManager
                     .getShowTemplateSyncService()
                     .syncShowTemplates(operationId)
-                : notionSyncServiceDependencies
+                : notionSyncServicesManager
                     .getShowTemplateNotionSyncService()
                     .syncToNotion(operationId);
           }
@@ -150,18 +150,16 @@ class NotionPropertyTest {
           public BaseSyncService.SyncResult syncSeasons(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies.getSeasonSyncService().syncSeasons(operationId)
-                : notionSyncServiceDependencies
-                    .getSeasonNotionSyncService()
-                    .syncToNotion(operationId);
+                ? notionSyncServicesManager.getSeasonSyncService().syncSeasons(operationId)
+                : notionSyncServicesManager.getSeasonNotionSyncService().syncToNotion(operationId);
           }
 
           @Override
           public BaseSyncService.SyncResult syncShowTypes(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies.getShowTypeSyncService().syncShowTypes(operationId)
-                : notionSyncServiceDependencies
+                ? notionSyncServicesManager.getShowTypeSyncService().syncShowTypes(operationId)
+                : notionSyncServicesManager
                     .getShowTypeNotionSyncService()
                     .syncToNotion(operationId);
           }
@@ -170,33 +168,29 @@ class NotionPropertyTest {
           public BaseSyncService.SyncResult syncInjuryTypes(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies.getInjurySyncService().syncInjuryTypes(operationId)
-                : notionSyncServiceDependencies
-                    .getInjuryNotionSyncService()
-                    .syncToNotion(operationId);
+                ? notionSyncServicesManager.getInjurySyncService().syncInjuryTypes(operationId)
+                : notionSyncServicesManager.getInjuryNotionSyncService().syncToNotion(operationId);
           }
 
           @Override
           public BaseSyncService.SyncResult syncNpcs(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies.getNpcSyncService().syncNpcs(operationId, direction)
-                : notionSyncServiceDependencies.getNpcNotionSyncService().syncToNotion(operationId);
+                ? notionSyncServicesManager.getNpcSyncService().syncNpcs(operationId, direction)
+                : notionSyncServicesManager.getNpcNotionSyncService().syncToNotion(operationId);
           }
 
           @Override
           public BaseSyncService.SyncResult syncTitles(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies.getTitleSyncService().syncTitles(operationId)
-                : notionSyncServiceDependencies
-                    .getTitleNotionSyncService()
-                    .syncToNotion(operationId);
+                ? notionSyncServicesManager.getTitleSyncService().syncTitles(operationId)
+                : notionSyncServicesManager.getTitleNotionSyncService().syncToNotion(operationId);
           }
 
           @Override
           public BaseSyncService.SyncResult syncTitleReigns(@NonNull String operationId) {
-            return notionSyncServiceDependencies
+            return notionSyncServicesManager
                 .getTitleReignSyncService()
                 .syncTitleReigns(operationId);
           }
@@ -205,20 +199,18 @@ class NotionPropertyTest {
           public BaseSyncService.SyncResult syncRivalries(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies.getRivalrySyncService().syncRivalries(operationId)
-                : notionSyncServiceDependencies
-                    .getRivalryNotionSyncService()
-                    .syncToNotion(operationId);
+                ? notionSyncServicesManager.getRivalrySyncService().syncRivalries(operationId)
+                : notionSyncServicesManager.getRivalryNotionSyncService().syncToNotion(operationId);
           }
 
           @Override
           public BaseSyncService.SyncResult syncFactionRivalries(
               @NonNull String operationId, @NonNull SyncDirection direction) {
             return direction.equals(SyncDirection.INBOUND)
-                ? notionSyncServiceDependencies
+                ? notionSyncServicesManager
                     .getFactionRivalrySyncService()
                     .syncFactionRivalries(operationId)
-                : notionSyncServiceDependencies
+                : notionSyncServicesManager
                     .getFactionRivalryNotionSyncService()
                     .syncToNotion(operationId);
           }
@@ -226,7 +218,7 @@ class NotionPropertyTest {
           @Override
           public BaseSyncService.SyncResult syncSegments(
               @NonNull String operationId, @NonNull SyncDirection direction) {
-            return notionSyncServiceDependencies
+            return notionSyncServicesManager
                 .getSegmentNotionSyncService()
                 .syncToNotion(operationId);
           }

@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
@@ -41,6 +42,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,45 +75,58 @@ class ShowTemplateSyncServiceTest {
   @Mock private SyncServiceDependencies syncServiceDependencies;
   @Mock private SyncSessionManager syncSessionManager;
   @Mock private NotionPageDataExtractor notionPageDataExtractor;
+  @Mock private NotionApiExecutor notionApiExecutor;
 
   private ShowTemplateSyncService syncService;
 
   private MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
+  private ExecutorService executorService;
 
   @BeforeEach
   void setUp() {
+    executorService = Executors.newSingleThreadExecutor();
     mockedEnvironmentVariableUtil = mockStatic(EnvironmentVariableUtil.class);
+
     mockedEnvironmentVariableUtil
         .when(EnvironmentVariableUtil::isNotionTokenAvailable)
         .thenReturn(true);
+
     mockedEnvironmentVariableUtil
         .when(EnvironmentVariableUtil::getNotionToken)
         .thenReturn("test-token");
 
     lenient().when(syncServiceDependencies.getNotionSyncProperties()).thenReturn(syncProperties);
-    lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
-    lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
-    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
     lenient().when(syncServiceDependencies.getProgressTracker()).thenReturn(progressTracker);
     lenient().when(syncServiceDependencies.getHealthMonitor()).thenReturn(healthMonitor);
-    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
+    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(notionHandler);
     lenient().when(syncServiceDependencies.getShowTypeRepository()).thenReturn(showTypeRepository);
     lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient().when(syncServiceDependencies.getRateLimitService()).thenReturn(rateLimitService);
     lenient()
         .when(syncServiceDependencies.getNotionPageDataExtractor())
         .thenReturn(notionPageDataExtractor);
+    lenient().when(notionApiExecutor.getSyncExecutorService()).thenReturn(executorService);
+
     syncService =
-        new ShowTemplateSyncService(objectMapper, syncServiceDependencies, showTemplateService);
+        new ShowTemplateSyncService(
+            objectMapper, syncServiceDependencies, showTemplateService, notionApiExecutor);
 
     // Mock repository calls to simulate existing show types
+
     ShowType weekly = new ShowType();
+
     ReflectionTestUtils.setField(weekly, "id", 1L);
+
     weekly.setName("Weekly");
+
     lenient().when(showTypeRepository.findByName("Weekly")).thenReturn(Optional.of(weekly));
 
     ShowType ple = new ShowType();
+
     ReflectionTestUtils.setField(ple, "id", 2L);
+
     ple.setName("Premium Live Event (PLE)");
+
     lenient()
         .when(showTypeRepository.findByName("Premium Live Event (PLE)"))
         .thenReturn(Optional.of(ple));
@@ -143,7 +159,7 @@ class ShowTemplateSyncServiceTest {
   void shouldFailWhenNotionHandlerNotAvailable() {
     // Given
     when(syncProperties.isEntityEnabled("templates")).thenReturn(true);
-    lenient().when(syncServiceDependencies.getNotionHandler()).thenReturn(null);
+    doReturn(null).when(syncServiceDependencies).getNotionHandler();
 
     // When
     BaseSyncService.SyncResult result = syncService.syncShowTemplates("test-operation");
