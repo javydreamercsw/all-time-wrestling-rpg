@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.SegmentPage;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -39,10 +40,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,11 +60,32 @@ class SegmentSyncIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentRepository segmentRepository;
   @MockitoBean private NotionHandler notionHandler;
-  @Mock private SegmentPage segmentPage;
+  private SegmentPage segmentPage;
+
+  private static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
+
+  @BeforeAll
+  static void beforeAll() {
+    mockedEnvironmentVariableUtil = Mockito.mockStatic(EnvironmentVariableUtil.class);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::isNotionTokenAvailable)
+        .thenReturn(true);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::getNotionToken)
+        .thenReturn("test-token");
+  }
+
+  @AfterAll
+  static void afterAll() {
+    if (mockedEnvironmentVariableUtil != null) {
+      mockedEnvironmentVariableUtil.close();
+    }
+  }
 
   @BeforeEach
   void setUp() {
     clearAllRepositories();
+    segmentPage = Mockito.mock(SegmentPage.class);
   }
 
   @Test
@@ -122,7 +147,7 @@ class SegmentSyncIT extends ManagementIntegrationTest {
 
     // When
     BaseSyncService.SyncResult result =
-        notionSyncService.syncSegments("test-operation", SyncDirection.OUTBOUND);
+        notionSyncService.syncSegments("test-operation", SyncDirection.INBOUND);
 
     // Then
     assertThat(result).isNotNull();

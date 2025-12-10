@@ -14,29 +14,30 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.config;
+package com.github.javydreamercsw.management.service.sync;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
-import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile("test")
-public class SyncHealthMonitorConfiguration {
+@RequiredArgsConstructor
+public class SyncHealthConfiguration {
+
+  private final NotionSyncProperties syncProperties;
+  private final SyncProgressTracker progressTracker;
 
   @Bean
-  public SyncProgressTracker syncProgressTracker() {
-    return new SyncProgressTracker();
+  @ConditionalOnProperty(name = "notion.sync.enabled", havingValue = "true")
+  public ISyncHealthMonitor syncHealthMonitor() {
+    return new SyncHealthMonitor(syncProperties, progressTracker);
   }
 
   @Bean
-  @Primary
-  public SyncHealthMonitor syncHealthMonitor(
-      NotionSyncProperties syncProperties, SyncProgressTracker progressTracker) {
-    return new SyncHealthMonitor(syncProperties, progressTracker);
+  @ConditionalOnProperty(name = "notion.sync.enabled", havingValue = "false", matchIfMissing = true)
+  public ISyncHealthMonitor noOpSyncHealthMonitor() {
+    return new NoOpSyncHealthMonitor();
   }
 }

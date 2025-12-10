@@ -64,6 +64,18 @@ You can now reorder segments within a show and designate one segment as the main
 
 The AI narration service is aware of the segment order and which segment is the main event. It also has access to the results and narration of previous segments. This allows the AI to generate more context-aware and compelling narrations that build on events from earlier in the show.
 
+### Ranking System
+
+The ranking system has been updated to provide a more dynamic and inclusive contender pool. Wrestlers are primarily ranked based on their fan count, with higher fan counts generally indicating higher ranks.
+
+Crucially, wrestlers who have surpassed the typical fan cap for a given title's tier are no longer excluded from its rankings. This means a top-tier wrestler (e.g., a Main Eventer) can still appear in the contender list for a mid-card title if they meet the minimum fan requirements for that title, allowing for more diverse and strategic championship pursuits.
+
+#### Fan Adjudication
+
+Fan acquisition and loss mechanics have been refined to ensure a more balanced and realistic progression for wrestlers:
+*   **Gaining Fans:** Wrestlers gain fans by winning matches and delivering successful promos. The amount of fans gained can be influenced by the wrestler's current tier, with higher tiers potentially experiencing diminishing returns to prevent runaway fan inflation.
+*   **Losing Fans:** A significant change is the introduction of fan loss for match losers. Previously, all participants would gain fans. Now, wrestlers who lose a match may experience a decrease in their fan count, or at best a minimal gain, depending on the match quality and their performance. This adds a layer of consequence to match outcomes and helps to naturally regulate fan numbers across the roster.
+
 ### Segment Rules
 
 #### Bump Addition

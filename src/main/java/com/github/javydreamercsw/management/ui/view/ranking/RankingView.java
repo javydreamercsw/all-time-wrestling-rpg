@@ -38,12 +38,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 @Route(value = "championship-rankings", layout = MainLayout.class)
 @PageTitle("Championship Rankings")
 @PermitAll
 @Transactional(readOnly = true)
+@Slf4j
 public class RankingView extends Main {
 
   private final RankingService rankingService;
@@ -51,12 +53,11 @@ public class RankingView extends Main {
   private final Image championshipImage = new Image();
   private final VerticalLayout championLayout = new VerticalLayout();
   private final Grid<RankedWrestlerDTO> contendersGrid = new Grid<>();
-  private final ComboBox<ChampionshipDTO> championshipComboBox;
 
   public RankingView(@NonNull RankingService rankingService) {
     this.rankingService = rankingService;
 
-    championshipComboBox = new ComboBox<>("Championship");
+    ComboBox<ChampionshipDTO> championshipComboBox = new ComboBox<>("Championship");
     championshipComboBox.setItems(
         rankingService.getChampionships().stream()
             .sorted(Comparator.comparing(ChampionshipDTO::getName))
@@ -66,8 +67,7 @@ public class RankingView extends Main {
 
     // Select the first championship by default
     rankingService.getChampionships().stream()
-        .sorted(Comparator.comparing(ChampionshipDTO::getName))
-        .findFirst()
+        .min(Comparator.comparing(ChampionshipDTO::getName))
         .ifPresent(championshipComboBox::setValue);
 
     contendersGrid
@@ -86,6 +86,8 @@ public class RankingView extends Main {
 
     championshipImage.setId("championship-image");
     championshipImage.setMaxHeight("300px");
+    championshipImage.setWidth("auto");
+    championshipImage.getStyle().set("object-fit", "contain");
 
     HorizontalLayout topLayout = new HorizontalLayout(championshipComboBox);
     topLayout.setAlignItems(Alignment.CENTER);
@@ -105,9 +107,16 @@ public class RankingView extends Main {
     championLayout.setVisible(true);
     contendersGrid.setVisible(true);
 
-    // Update championship image
-    String imagePath = "images/championships/" + championship.getImageName();
-    championshipImage.setSrc(imagePath);
+    // Update championship image using static resource URL
+    // Resources in META-INF/resources are served relative to the context path
+    String imageName = championship.getImageName();
+    // Use relative path (no leading slash) so Vaadin automatically includes context path
+    String imageUrl = "images/championships/" + imageName;
+
+    log.info("Loading championship image for '{}' at URL: {}", championship.getName(), imageUrl);
+
+    championshipImage.setSrc(imageUrl);
+    championshipImage.setAlt(championship.getName() + " Championship");
 
     // Update champion
     championLayout.removeAll();

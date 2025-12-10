@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,7 +65,9 @@ class RankingServiceTest {
     champion.setFans(1000L);
 
     TitleReign reign = new TitleReign();
-    reign.setChampions(List.of(champion));
+    List<Wrestler> champions = new ArrayList<>();
+    champions.add(champion);
+    reign.setChampions(champions);
     reign.setStartDate(Instant.now());
     title.getTitleReigns().add(reign);
 
@@ -78,7 +81,10 @@ class RankingServiceTest {
     contender2.setName("Contender 2");
     contender2.setFans(700L);
 
-    title.setContender(List.of(contender1, contender2));
+    List<Wrestler> contenders = new ArrayList<>();
+    contenders.add(contender1);
+    contenders.add(contender2);
+    title.setContender(contenders);
   }
 
   @Test
@@ -95,10 +101,13 @@ class RankingServiceTest {
   @Test
   void testGetRankedContenders() {
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    when(wrestlerRepository.findByFansBetween(
-            WrestlerTier.MAIN_EVENTER.getMinFans(),
-            WrestlerTier.MAIN_EVENTER.getNextTier().getMinFans()))
-        .thenReturn(List.of(champion, contender1, contender2));
+    when(wrestlerRepository.findByFansGreaterThanEqual(WrestlerTier.MAIN_EVENTER.getMinFans()))
+        .thenReturn(
+            new ArrayList<>(
+                List.of(
+                    champion,
+                    contender1,
+                    contender2))); // Use mutable list to avoid issues if other tests modify it
 
     List<RankedWrestlerDTO> contenders = rankingService.getRankedContenders(1L);
 
@@ -107,6 +116,29 @@ class RankingServiceTest {
     assertEquals(1, contenders.get(0).getRank());
     assertEquals("Contender 1", contenders.get(1).getName());
     assertEquals(2, contenders.get(1).getRank());
+  }
+
+  @Test
+  void testGetRankedContendersWithHigherTierWrestler() {
+    Wrestler icon = new Wrestler();
+    icon.setId(4L);
+    icon.setName("Icon");
+    icon.setFans(WrestlerTier.ICON.getMinFans() + 1000); // Above Main Eventer
+    title.getContender().add(icon);
+
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findByFansGreaterThanEqual(WrestlerTier.MAIN_EVENTER.getMinFans()))
+        .thenReturn(new ArrayList<>(List.of(champion, contender1, contender2, icon)));
+
+    List<RankedWrestlerDTO> contenders = rankingService.getRankedContenders(1L);
+
+    assertEquals(3, contenders.size());
+    assertEquals("Icon", contenders.get(0).getName());
+    assertEquals(1, contenders.get(0).getRank());
+    assertEquals("Contender 2", contenders.get(1).getName());
+    assertEquals(2, contenders.get(1).getRank());
+    assertEquals("Contender 1", contenders.get(2).getName());
+    assertEquals(3, contenders.get(2).getRank());
   }
 
   @Test

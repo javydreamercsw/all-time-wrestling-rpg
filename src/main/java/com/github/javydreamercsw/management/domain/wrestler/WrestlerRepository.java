@@ -40,4 +40,6 @@ public interface WrestlerRepository
   Optional<Wrestler> findByExternalId(String externalId);
 
   List<Wrestler> findByFansBetween(long minFans, long maxFans);
+
+  List<Wrestler> findByFansGreaterThanEqual(long minFans);
 }
