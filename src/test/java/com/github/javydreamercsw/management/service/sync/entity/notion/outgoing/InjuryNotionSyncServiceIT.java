@@ -105,7 +105,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
     wrestler.setLowHealth(4);
     wrestler.setDeckSize(15);
     wrestler.setTier(WrestlerTier.MIDCARDER);
-    wrestler.setCreationDate(Instant.now());
+    wrestler.setCreationDate(Instant.parse("2025-12-09T10:00:00Z"));
     wrestler.setFaction(faction);
     wrestler.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
     wrestlerRepository.save(wrestler);
@@ -118,7 +118,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
     injury.setSeverity(InjurySeverity.MINOR);
     injury.setHealthPenalty(5);
     injury.setIsActive(true);
-    injury.setInjuryDate(Instant.now());
+    injury.setInjuryDate(Instant.parse("2025-12-09T10:00:00Z"));
     injury.setHealingCost(5000L);
     injury.setInjuryNotes("Wrestler landed awkwardly during a match.");
     injuryRepository.save(injury);
@@ -159,7 +159,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
         capturedRequest.getProperties().get("Health Penalty").getNumber());
     assertEquals(injury.getIsActive(), capturedRequest.getProperties().get("Active").getCheckbox());
     assertEquals(
-        injury.getInjuryDate().truncatedTo(java.time.temporal.ChronoUnit.MICROS).toString(),
+        "2025-12-09T10:00:00Z",
         capturedRequest.getProperties().get("Injury Date").getDate().getStart());
     assertEquals(
         injury.getHealingCost().doubleValue(),
@@ -175,7 +175,8 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
             .getContent());
 
     // Sync to Notion again
-    updatedInjury.heal(); // Mark as healed
+    updatedInjury.setHealedDate(Instant.parse("2025-12-10T10:00:00Z"));
+    updatedInjury.setIsActive(false);
     updatedInjury.setInjuryNotes("Updated notes " + UUID.randomUUID());
     injuryRepository.save(updatedInjury);
     injuryNotionSyncService.syncToNotion("test-op-2");
@@ -189,7 +190,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
         updatedInjury2.getIsActive(),
         capturedUpdateRequest.getProperties().get("Active").getCheckbox());
     assertEquals(
-        updatedInjury2.getHealedDate().truncatedTo(java.time.temporal.ChronoUnit.MICROS).toString(),
+        "2025-12-10T10:00:00Z",
         capturedUpdateRequest.getProperties().get("Healed Date").getDate().getStart());
     assertEquals(
         updatedInjury2.getInjuryNotes(),

@@ -145,7 +145,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     wrestler.setLowHealth(4);
     wrestler.setDeckSize(15);
     wrestler.setTier(WrestlerTier.MIDCARDER);
-    wrestler.setCreationDate(Instant.now());
+    wrestler.setCreationDate(Instant.parse("2025-12-09T10:00:00Z"));
     wrestler.setFaction(faction);
     wrestler.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
     wrestlerRepository.save(wrestler);
@@ -154,7 +154,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     Segment segment = new Segment();
     segment.setShow(show);
     segment.setSegmentType(segmentType);
-    segment.setSegmentDate(Instant.now()); // Reverted reflection hack
+    segment.setSegmentDate(Instant.parse("2025-12-09T10:00:00Z"));
     segment.setStatus(SegmentStatus.BOOKED);
     segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
     segment.addSegmentRule(segmentRule);
@@ -190,8 +190,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
         segment.getSegmentType().getExternalId(),
         capturedRequest.getProperties().get("Segment Type").getRelation().get(0).getId());
     assertEquals(
-        segment.getSegmentDate().truncatedTo(java.time.temporal.ChronoUnit.MICROS).toString(),
-        capturedRequest.getProperties().get("Date").getDate().getStart());
+        "2025-12-09T10:00:00Z", capturedRequest.getProperties().get("Date").getDate().getStart());
     assertEquals(
         segment.getStatus().name(),
         capturedRequest.getProperties().get("Status").getSelect().getName());
