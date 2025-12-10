@@ -17,9 +17,13 @@
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Main;
@@ -35,24 +39,33 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 @Route("wrestler-rankings")
 @PageTitle("Wrestler Rankings")
 @Menu(order = 4, icon = "vaadin:trophy", title = "Wrestler Rankings")
 @PermitAll
+@Slf4j
 public class WrestlerRankingsView extends Main {
 
   private final WrestlerService wrestlerService;
   private final TitleService titleService;
+  private final TierBoundaryService tierBoundaryService;
   private final Grid<Wrestler> grid = new Grid<>(Wrestler.class, false);
   private Set<Long> championIds = new HashSet<>();
 
-  public WrestlerRankingsView(WrestlerService wrestlerService, TitleService titleService) {
+  public WrestlerRankingsView(
+      WrestlerService wrestlerService,
+      TitleService titleService,
+      TierBoundaryService tierBoundaryService) {
     this.wrestlerService = wrestlerService;
     this.titleService = titleService;
+    this.tierBoundaryService = tierBoundaryService;
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
@@ -61,7 +74,7 @@ public class WrestlerRankingsView extends Main {
         LumoUtility.Gap.MEDIUM);
     setHeightFull();
 
-    add(new ViewToolbar("Wrestler Rankings"));
+    add(createToolbar());
     configureGrid();
     VerticalLayout content = new VerticalLayout(grid);
     content.setSizeFull();
@@ -69,6 +82,41 @@ public class WrestlerRankingsView extends Main {
     content.setFlexGrow(1); // Make the VerticalLayout itself grow
     add(content);
     updateList();
+  }
+
+  private ViewToolbar createToolbar() {
+    Button showTierBoundariesButton = new Button("Show Tier Boundaries");
+    showTierBoundariesButton.addClickListener(event -> showTierBoundariesDialog());
+
+    return new ViewToolbar("Wrestler Rankings", ViewToolbar.group(showTierBoundariesButton));
+  }
+
+  private void showTierBoundariesDialog() {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Tier Boundaries");
+    dialog.setWidth("40em");
+
+    Grid<TierBoundary> tierGrid = new Grid<>(TierBoundary.class, false);
+    tierGrid.addColumn(tb -> tb.getTier().getDisplayWithEmoji()).setHeader("Tier");
+    tierGrid
+        .addColumn(tb -> String.format("%,d - %,d", tb.getMinFans(), tb.getMaxFans()))
+        .setHeader("Fan Range");
+    tierGrid
+        .addColumn(tb -> String.format("%,d", tb.getChallengeCost()))
+        .setHeader("Challenge Cost");
+    tierGrid
+        .addColumn(tb -> String.format("%,d", tb.getContenderEntryFee()))
+        .setHeader("Contender Entry Fee");
+
+    List<TierBoundary> tierBoundaries =
+        tierBoundaryService.findAll().stream()
+            .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
+            .collect(Collectors.toList());
+    log.info("Found {} tier boundaries to display.", tierBoundaries.size());
+    tierGrid.setItems(tierBoundaries);
+
+    dialog.add(tierGrid);
+    dialog.open();
   }
 
   private void configureGrid() {

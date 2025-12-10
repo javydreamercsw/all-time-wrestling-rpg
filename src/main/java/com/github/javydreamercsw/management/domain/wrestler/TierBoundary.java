@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.domain.wrestler;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -34,7 +33,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "tier_boundary", uniqueConstraints = @UniqueConstraint(columnNames = {"tier"}))
 @Getter
 @Setter
-public class TierBoundary extends AbstractEntity<Long> {
+public class TierBoundary {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,7 +55,6 @@ public class TierBoundary extends AbstractEntity<Long> {
   @Column(name = "contender_entry_fee", nullable = false)
   private Long contenderEntryFee;
 
-  @Override
   public @Nullable Long getId() {
     return id;
   }

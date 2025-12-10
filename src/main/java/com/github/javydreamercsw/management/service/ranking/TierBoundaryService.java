@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.ranking;
 import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,5 +36,9 @@ public class TierBoundaryService {
 
   public TierBoundary save(TierBoundary tierBoundary) {
     return tierBoundaryRepository.save(tierBoundary);
+  }
+
+  public List<TierBoundary> findAll() {
+    return (List<TierBoundary>) tierBoundaryRepository.findAll();
   }
 }

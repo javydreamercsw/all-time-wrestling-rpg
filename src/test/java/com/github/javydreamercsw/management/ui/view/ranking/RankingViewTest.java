@@ -26,8 +26,11 @@ import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
+import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.data.provider.Query;
@@ -41,6 +44,7 @@ import org.mockito.MockitoAnnotations;
 class RankingViewTest extends ManagementIntegrationTest {
 
   @Mock private RankingService rankingService;
+  @Mock private TierBoundaryService tierBoundaryService;
 
   private ChampionshipDTO championshipDTO;
 
@@ -60,7 +64,7 @@ class RankingViewTest extends ManagementIntegrationTest {
 
   @Test
   void testViewLoadsAndPopulates() {
-    RankingView view = new RankingView(rankingService);
+    RankingView view = new RankingView(rankingService, tierBoundaryService);
     assertNotNull(view);
 
     ComboBox<ChampionshipDTO> comboBox = _get(view, ComboBox.class);
@@ -78,5 +82,14 @@ class RankingViewTest extends ManagementIntegrationTest {
     assertEquals(2, items.size());
     assertEquals("Contender 2", items.get(0).getName());
     assertEquals("Contender 1", items.get(1).getName());
+  }
+
+  @Test
+  void testShowTierBoundariesButton() {
+    RankingView view = new RankingView(rankingService, tierBoundaryService);
+    Button button = _get(view, Button.class, spec -> spec.withText("Show Tier Boundaries"));
+    assertNotNull(button);
+    button.click();
+    assertNotNull(_get(Dialog.class));
   }
 }

@@ -66,30 +66,28 @@ public class RankingService {
     Optional<TierBoundary> tierBoundaryOpt = tierBoundaryService.findByTier(tier);
 
     long minFans;
-    long maxFans;
 
     if (tierBoundaryOpt.isPresent()) {
       TierBoundary tierBoundary = tierBoundaryOpt.get();
       minFans = tierBoundary.getMinFans();
-      maxFans = tierBoundary.getMaxFans();
     } else {
       // Fallback to static values if dynamic boundaries are not yet calculated
       minFans = tier.getMinFans();
-      maxFans = tier.getMaxFans();
     }
 
-    List<Wrestler> contenders;
-    if (title.isTopTier()) {
-      contenders = new ArrayList<>(wrestlerRepository.findByFansGreaterThanEqual(minFans));
-    } else {
-      contenders = new ArrayList<>(wrestlerRepository.findByFansBetween(minFans, maxFans));
-    }
+    List<Wrestler> contenders =
+        new ArrayList<>(wrestlerRepository.findByFansGreaterThanEqual(minFans));
 
+    // Remove champions from the contender list
     title.getCurrentReign().ifPresent(reign -> contenders.removeAll(reign.getChampions()));
+
+    // TODO: Make this percentage configurable
+    int contenderCount = (int) (contenders.size() * 0.05);
 
     AtomicInteger rank = new AtomicInteger(1);
     return contenders.stream()
         .sorted(Comparator.comparing(Wrestler::getFans).reversed())
+        .limit(contenderCount > 0 ? contenderCount : 1) // At least one contender
         .map(w -> toRankedWrestlerDTO(w, rank.getAndIncrement()))
         .collect(Collectors.toList());
   }

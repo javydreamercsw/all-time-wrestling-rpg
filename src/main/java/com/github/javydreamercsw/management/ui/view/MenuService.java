@@ -62,6 +62,7 @@ public class MenuService {
 
     MenuItem configuration = new MenuItem("Configuration", VaadinIcon.COG, null);
     configuration.addChild(new MenuItem("Sync Dashboard", VaadinIcon.REFRESH, "notion-sync"));
+    configuration.addChild(new MenuItem("Admin", VaadinIcon.TOOLS, "admin"));
 
     menuItems.add(dashboards);
     menuItems.add(entities);
