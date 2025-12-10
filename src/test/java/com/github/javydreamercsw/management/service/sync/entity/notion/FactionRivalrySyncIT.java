@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.FactionRivalryPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
@@ -31,10 +32,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,11 +52,32 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
 
   @MockitoBean private NotionHandler notionHandler;
 
-  @Mock private FactionRivalryPage factionRivalryPage;
+  private FactionRivalryPage factionRivalryPage;
+
+  private static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
+
+  @BeforeAll
+  static void beforeAll() {
+    mockedEnvironmentVariableUtil = Mockito.mockStatic(EnvironmentVariableUtil.class);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::isNotionTokenAvailable)
+        .thenReturn(true);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::getNotionToken)
+        .thenReturn("test-token");
+  }
+
+  @AfterAll
+  static void afterAll() {
+    if (mockedEnvironmentVariableUtil != null) {
+      mockedEnvironmentVariableUtil.close();
+    }
+  }
 
   @BeforeEach
   void setUp() {
     clearAllRepositories();
+    factionRivalryPage = Mockito.mock(FactionRivalryPage.class);
   }
 
   @Test
@@ -83,10 +108,10 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
         .thenReturn(Map.of("Faction 1", faction1Name, "Faction 2", faction2Name, "Heat", "10"));
     when(notionHandler.loadAllFactionRivalries()).thenReturn(List.of(factionRivalryPage));
 
-    // When - Sync faction rivalries from real Notion database
+    // When - Sync faction rivalries from Notion database
     BaseSyncService.SyncResult result =
         notionSyncService.syncFactionRivalries(
-            "test-operation-faction-rivalry-123", SyncDirection.OUTBOUND);
+            "test-operation-faction-rivalry-123", SyncDirection.INBOUND);
 
     // Then - Verify sync completed successfully
     assertThat(result).isNotNull();
