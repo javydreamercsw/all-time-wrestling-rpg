@@ -54,24 +54,18 @@ public class TierRecalculationService {
     tierDistribution.put(WrestlerTier.MIDCARDER, 0.25); // Next 25%
     tierDistribution.put(WrestlerTier.CONTENDER, 0.25); // Next 25%
     tierDistribution.put(WrestlerTier.RISER, 0.20); // Next 20%
-    tierDistribution.put(WrestlerTier.ROOKIE, 0.10); // Bottom 10%
-
-    // Ensure distribution sums to 1.0 (or close enough due to double precision)
-    double sum = tierDistribution.values().stream().mapToDouble(Double::doubleValue).sum();
-
-    if (Math.abs(sum - 1.0) > 0.001) {
-      log.warn("Tier distribution percentages do not sum to 1.0. Adjusting for ROOKIE tier.");
-      tierDistribution.put(
-          WrestlerTier.ROOKIE, 1.0 - (sum - tierDistribution.get(WrestlerTier.ROOKIE)));
-    }
+    // The rest are rookies
+    tierDistribution.put(
+        WrestlerTier.ROOKIE,
+        1.0
+            - tierDistribution.values().stream()
+                .mapToDouble(Double::doubleValue)
+                .sum()); // Remaining
 
     // Determine fan count thresholds for each tier based on percentiles
-    // Iterate from highest tier (ICON) to lowest tier (ROOKIE) since wrestlers are sorted
-    // descending
-    Map<WrestlerTier, Long> minFanThresholds = new EnumMap<>(WrestlerTier.class);
     int currentWrestlerIndex = 0;
+    long maxFansForNextLowerTier = Long.MAX_VALUE;
 
-    // Process tiers from highest to lowest (ICON to ROOKIE)
     WrestlerTier[] tiersHighToLow =
         new WrestlerTier[] {
           WrestlerTier.ICON,
@@ -83,92 +77,51 @@ public class TierRecalculationService {
         };
 
     for (WrestlerTier tier : tiersHighToLow) {
-      if (!tierDistribution.containsKey(tier)) continue;
-      int numWrestlersInTier = (int) (totalWrestlers * tierDistribution.get(tier));
-      if (numWrestlersInTier == 0 && tier != WrestlerTier.ROOKIE) {
-        // If a tier gets 0 wrestlers, try to assign at least one if possible from next group
-        numWrestlersInTier = 1;
-      }
+      int numWrestlersInTier;
+      long minFans;
 
-      if (currentWrestlerIndex + numWrestlersInTier > totalWrestlers) {
+      if (tier == WrestlerTier.ROOKIE) {
         numWrestlersInTier = totalWrestlers - currentWrestlerIndex;
-      }
-
-      if (numWrestlersInTier > 0) {
-        // Calculate minFans based on comparison semantics
-        int endIndex = currentWrestlerIndex + numWrestlersInTier - 1;
-        if (tier == WrestlerTier.ROOKIE) {
-          // ROOKIE uses >=, so minFans is the actual minimum fans of wrestlers in the tier
-          minFanThresholds.put(tier, wrestlers.get(endIndex).getFans());
-        } else {
-          // Other tiers use >, so minFans should be one less than minimum fans in the tier
-          // The minimum fans in the tier is the last wrestler's fans (endIndex)
-          minFanThresholds.put(tier, wrestlers.get(endIndex).getFans() - 1);
-        }
+        minFans = 0; // Rookies start at 0
       } else {
-        // Handle cases where no wrestlers fall into this tier initially
-        minFanThresholds.put(tier, 0L);
-      }
-      currentWrestlerIndex += numWrestlersInTier;
-    }
+        numWrestlersInTier = (int) Math.round(totalWrestlers * tierDistribution.get(tier));
+        if (currentWrestlerIndex + numWrestlersInTier > totalWrestlers) {
+          numWrestlersInTier = totalWrestlers - currentWrestlerIndex;
+        }
 
-    // Create/Update TierBoundary objects from highest tier to lowest
-    Map<WrestlerTier, TierBoundary> newBoundaries = new EnumMap<>(WrestlerTier.class);
-    long maxFansForNextLowerTier = Long.MAX_VALUE;
-    for (int i = WrestlerTier.values().length - 1; i >= 0; i--) {
-      WrestlerTier tier = WrestlerTier.values()[i];
-      long minFans = minFanThresholds.getOrDefault(tier, 0L);
+        if (numWrestlersInTier > 0 && currentWrestlerIndex < totalWrestlers) {
+          int boundaryIndex = currentWrestlerIndex + numWrestlersInTier - 1;
+          if (boundaryIndex >= totalWrestlers) {
+            boundaryIndex = totalWrestlers - 1;
+          }
+          minFans = wrestlers.get(boundaryIndex).getFans() + 1;
+        } else {
+          // If no wrestlers in this tier, set minFans based on the next lower tier's max
+          minFans = maxFansForNextLowerTier > 0 ? maxFansForNextLowerTier + 1 : 0;
+        }
+      }
+
       TierBoundary boundary = tierBoundaryService.findByTier(tier).orElse(new TierBoundary());
       boundary.setTier(tier);
       boundary.setMinFans(minFans);
-      boundary.setMaxFans(maxFansForNextLowerTier); // Set maxFans for current tier
-
-      // Calculate fees (1% of minFans for challenge, 0.5% for contender entry)
+      boundary.setMaxFans(maxFansForNextLowerTier);
       boundary.setChallengeCost(Math.max(0, minFans / 100));
       boundary.setContenderEntryFee(Math.max(0, minFans / 200));
       tierBoundaryService.save(boundary);
-      newBoundaries.put(tier, boundary);
 
-      // Set maxFans for the next lower tier
-      if (tier == WrestlerTier.RISER) {
-        // RISER uses > for minFans, so ROOKIE can include wrestlers with exactly RISER.minFans
-        maxFansForNextLowerTier = minFans;
-      } else {
-        // Other tiers: subtract 1 to avoid overlap
-        maxFansForNextLowerTier = minFans - 1;
-      }
+      maxFansForNextLowerTier = minFans - 1;
+      currentWrestlerIndex += numWrestlersInTier;
     }
 
     // Update wrestler tiers based on new boundaries
     for (Wrestler wrestler : wrestlers) {
-      WrestlerTier oldTier = wrestler.getTier();
-      WrestlerTier newTier = null;
-      for (WrestlerTier tier : WrestlerTier.values()) {
-        TierBoundary boundary = newBoundaries.get(tier);
-        boolean matches;
-        if (tier == WrestlerTier.ROOKIE) {
-          // ROOKIE is the lowest tier, use >= for minFans
-          matches =
-              wrestler.getFans() >= boundary.getMinFans()
-                  && wrestler.getFans() <= boundary.getMaxFans();
-        } else {
-          // Other tiers use > for minFans (exclusive lower bound)
-          matches =
-              wrestler.getFans() > boundary.getMinFans()
-                  && wrestler.getFans() <= boundary.getMaxFans();
-        }
-        if (matches) {
-          newTier = tier;
-          break;
-        }
-      }
-
+      WrestlerTier newTier = tierBoundaryService.findTierForFans(wrestler.getFans());
       if (newTier != null) {
-        wrestler.setTier(newTier);
-        wrestlerRepository.save(wrestler);
-        if (oldTier != newTier) {
+        if (wrestler.getTier() != newTier) {
           log.info(
-              "Wrestler {}'s tier changed from {} to {}", wrestler.getName(), oldTier, newTier);
+              "Updating {}'s tier from {} to {}", wrestler.getName(), wrestler.getTier(), newTier);
+          wrestler.setTier(newTier);
+          wrestlerRepository.save(wrestler);
         }
       } else {
         log.warn(

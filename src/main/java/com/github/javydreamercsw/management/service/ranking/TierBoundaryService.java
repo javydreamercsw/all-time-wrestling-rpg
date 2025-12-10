@@ -41,4 +41,16 @@ public class TierBoundaryService {
   public List<TierBoundary> findAll() {
     return (List<TierBoundary>) tierBoundaryRepository.findAll();
   }
+
+  public WrestlerTier findTierForFans(long fans) {
+    List<TierBoundary> boundaries =
+        findAll().stream().sorted((b1, b2) -> b2.getMinFans().compareTo(b1.getMinFans())).toList();
+
+    for (TierBoundary boundary : boundaries) {
+      if (fans >= boundary.getMinFans() && fans <= boundary.getMaxFans()) {
+        return boundary.getTier();
+      }
+    }
+    return null; // Or throw an exception if a tier should always be found
+  }
 }
