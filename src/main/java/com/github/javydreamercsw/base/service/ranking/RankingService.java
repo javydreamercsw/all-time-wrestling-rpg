@@ -14,22 +14,11 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw;
+package com.github.javydreamercsw.base.service.ranking;
 
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.context.annotation.Bean;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.utility.DockerImageName;
+import com.github.javydreamercsw.base.domain.WrestlerData;
+import java.util.List;
 
-@TestConfiguration(proxyBeanMethods = false)
-public class TestcontainersConfiguration {
-
-  @Bean
-  @ServiceConnection
-  MySQLContainer<?> mysqlContainer() {
-    return new MySQLContainer<>(DockerImageName.parse("mysql:latest"))
-        .withUsername("test")
-        .withPassword("test");
-  }
+public interface RankingService {
+  void recalculateRanking(List<WrestlerData> wrestlers);
 }

@@ -21,12 +21,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.test.BaseControllerTest;
 import com.github.javydreamercsw.management.controller.title.TitleController.CreateTitleRequest;
 import com.github.javydreamercsw.management.controller.title.TitleController.UpdateTitleRequest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
@@ -68,6 +69,8 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
   @MockitoBean
   private com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
       wrestlerRepository;
+
+  @MockitoBean private RankingService rankingService;
 
   @BeforeEach
   void setup() {

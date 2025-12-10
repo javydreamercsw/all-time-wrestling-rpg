@@ -16,12 +16,12 @@
 */
 package com.github.javydreamercsw.management.service.ranking;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
@@ -78,11 +78,20 @@ public class RankingService {
       maxFans = tier.getMaxFans();
     }
 
-    List<Wrestler> contenders =
-        new ArrayList<>(wrestlerRepository.findByFansBetween(minFans, maxFans));
+    List<Wrestler> contenders;
+    if (tier.equals(WrestlerTier.MAIN_EVENTER)) {
+      contenders = new ArrayList<>(wrestlerRepository.findByFansGreaterThanEqual(minFans));
+    } else {
+      contenders = new ArrayList<>(wrestlerRepository.findByFansBetween(minFans, maxFans));
+    }
 
     // Remove champions from the contender list
     title.getCurrentReign().ifPresent(reign -> contenders.removeAll(reign.getChampions()));
+
+    // Filter by gender if the title has a specific gender
+    if (title.getGender() != null) {
+      contenders.removeIf(wrestler -> wrestler.getGender() != title.getGender());
+    }
 
     AtomicInteger rank = new AtomicInteger(1);
     return contenders.stream()

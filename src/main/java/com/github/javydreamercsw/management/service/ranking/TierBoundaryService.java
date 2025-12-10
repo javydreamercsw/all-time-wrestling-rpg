@@ -16,9 +16,9 @@
 */
 package com.github.javydreamercsw.management.service.ranking;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.domain.wrestler.TierBoundaryRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

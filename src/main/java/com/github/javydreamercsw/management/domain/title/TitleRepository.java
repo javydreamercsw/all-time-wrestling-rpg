@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management.domain.title;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;

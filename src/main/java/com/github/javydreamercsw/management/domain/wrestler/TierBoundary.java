@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.wrestler;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

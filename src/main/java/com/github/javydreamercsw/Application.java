@@ -16,7 +16,8 @@
 */
 package com.github.javydreamercsw;
 
-import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Clock;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
@@ -49,10 +51,12 @@ public class Application extends SpringBootServletInitializer {
   }
 
   @Bean
-  public CommandLineRunner recalculateTiers(TierRecalculationService tierRecalculationService) {
+  @Profile("!test")
+  public CommandLineRunner recalculateRanking(
+      RankingService rankingService, WrestlerRepository wrestlerRepository) {
     return args -> {
       log.info("Recalculating tiers on startup...");
-      tierRecalculationService.recalculateTiers();
+      rankingService.recalculateRanking(new java.util.ArrayList<>(wrestlerRepository.findAll()));
       log.info("Tier recalculation complete.");
     };
   }

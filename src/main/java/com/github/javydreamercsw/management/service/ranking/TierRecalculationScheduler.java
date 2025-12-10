@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.ranking;
 
+import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -24,11 +26,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TierRecalculationScheduler {
 
-  private final TierRecalculationService tierRecalculationService;
+  private final RankingService rankingService;
+  private final WrestlerRepository wrestlerRepository;
 
   // Run every week on Sunday at midnight
   @Scheduled(cron = "0 0 0 * * SUN")
   public void recalculateTiers() {
-    tierRecalculationService.recalculateTiers();
+    rankingService.recalculateRanking(new java.util.ArrayList<>(wrestlerRepository.findAll()));
   }
 }

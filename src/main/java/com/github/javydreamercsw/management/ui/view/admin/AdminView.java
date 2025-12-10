@@ -16,8 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view.admin;
 
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
-import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Main;
@@ -36,10 +37,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AdminView extends Main {
 
-  private final TierRecalculationService tierRecalculationService;
+  private final RankingService rankingService;
+  private final WrestlerRepository wrestlerRepository;
 
-  public AdminView(TierRecalculationService tierRecalculationService) {
-    this.tierRecalculationService = tierRecalculationService;
+  public AdminView(RankingService rankingService, WrestlerRepository wrestlerRepository) {
+    this.rankingService = rankingService;
+    this.wrestlerRepository = wrestlerRepository;
     initializeUI();
   }
 
@@ -65,7 +68,8 @@ public class AdminView extends Main {
     recalculateTiersButton.addClickListener(
         event -> {
           try {
-            tierRecalculationService.recalculateTiers();
+            rankingService.recalculateRanking(
+                new java.util.ArrayList<>(wrestlerRepository.findAll()));
             Notification.show(
                     "Wrestler tiers recalculated successfully!",
                     3000,

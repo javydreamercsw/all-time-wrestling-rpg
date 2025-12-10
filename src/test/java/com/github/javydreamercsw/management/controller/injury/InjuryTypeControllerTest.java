@@ -26,6 +26,8 @@ import com.github.javydreamercsw.base.test.BaseControllerTest;
 import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.CreateInjuryTypeRequest;
 import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.UpdateInjuryTypeRequest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.mapper.InjuryTypeMapper;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +59,8 @@ class InjuryTypeControllerTest extends BaseControllerTest {
   @Autowired private ObjectMapper objectMapper;
 
   @MockitoBean private InjuryTypeService injuryTypeService;
+  @MockitoBean private InjuryTypeMapper injuryTypeMapper;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @DisplayName("Should get all injury types with pagination")

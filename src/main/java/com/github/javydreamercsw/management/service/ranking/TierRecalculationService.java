@@ -16,10 +16,12 @@
 */
 package com.github.javydreamercsw.management.service.ranking;
 
+import com.github.javydreamercsw.base.domain.WrestlerData;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -32,16 +34,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @Slf4j
 @RequiredArgsConstructor
-public class TierRecalculationService {
+public class TierRecalculationService implements RankingService {
 
   private final WrestlerRepository wrestlerRepository;
   private final TierBoundaryService tierBoundaryService;
 
-  public void recalculateTiers() {
+  @Override
+  public void recalculateRanking(List<WrestlerData> wrestlersData) {
     log.info("Starting tier recalculation...");
-    List<Wrestler> wrestlers = wrestlerRepository.findAll();
-    wrestlers.sort((w1, w2) -> w2.getFans().compareTo(w1.getFans()));
-    int totalWrestlers = wrestlers.size();
+    wrestlersData.sort((w1, w2) -> w2.getFans().compareTo(w1.getFans()));
+    int totalWrestlers = wrestlersData.size();
     if (totalWrestlers == 0) {
       log.info("No wrestlers found to recalculate tiers.");
       return;
@@ -95,9 +97,9 @@ public class TierRecalculationService {
             boundaryIndex = totalWrestlers - 1;
           }
           if (tier == WrestlerTier.ICON) {
-            minFans = wrestlers.get(boundaryIndex).getFans();
+            minFans = wrestlersData.get(boundaryIndex).getFans();
           } else {
-            minFans = wrestlers.get(boundaryIndex).getFans() + 1;
+            minFans = wrestlersData.get(boundaryIndex).getFans() + 1;
           }
         } else {
           // If no wrestlers in this tier, set minFans based on the next lower tier's max
@@ -118,20 +120,23 @@ public class TierRecalculationService {
     }
 
     // Update wrestler tiers based on new boundaries
-    for (Wrestler wrestler : wrestlers) {
-      WrestlerTier newTier = tierBoundaryService.findTierForFans(wrestler.getFans());
+    for (WrestlerData wrestlerData : wrestlersData) {
+      WrestlerTier newTier = tierBoundaryService.findTierForFans(wrestlerData.getFans());
       if (newTier != null) {
-        if (wrestler.getTier() != newTier) {
+        if (wrestlerData.getTier() != newTier) {
           log.info(
-              "Updating {}'s tier from {} to {}", wrestler.getName(), wrestler.getTier(), newTier);
-          wrestler.setTier(newTier);
-          wrestlerRepository.save(wrestler);
+              "Updating {}'s tier from {} to {}",
+              wrestlerData.getName(),
+              wrestlerData.getTier(),
+              newTier);
+          wrestlerData.setTier(newTier);
+          wrestlerRepository.save((Wrestler) wrestlerData); // Cast back to Wrestler for repository
         }
       } else {
         log.warn(
             "Wrestler {} with {} fans does not match any tier!",
-            wrestler.getName(),
-            wrestler.getFans());
+            wrestlerData.getName(),
+            wrestlerData.getFans());
       }
     }
     log.info("Tier recalculation finished.");

@@ -14,14 +14,12 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.wrestler;
+package com.github.javydreamercsw.management.mapper;
 
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import java.util.Optional;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.stereotype.Repository;
+import com.github.javydreamercsw.management.domain.injury.InjuryType;
+import org.mapstruct.Mapper;
 
-@Repository
-public interface TierBoundaryRepository extends CrudRepository<TierBoundary, Long> {
-  Optional<TierBoundary> findByTier(WrestlerTier tier);
+@Mapper(componentModel = "spring")
+public interface InjuryTypeMapper {
+  InjuryType toInjuryType(InjuryType injuryType); // Placeholder, will adjust if DTOs are found
 }
