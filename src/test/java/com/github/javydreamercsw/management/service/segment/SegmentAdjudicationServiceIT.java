@@ -133,10 +133,10 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
     org.assertj.core.api.Assertions.assertThat(updatedWinner.get().getFans())
         .isBetween(initialFans + 5_000, initialFans + 25_000);
 
-    // Loser fan gain: (1d6 + 3) * 1000 + matchQualityBonus
-    // Min: (1+3)*1000 + 0 = 4000. Max: (6+3)*1000 + 10000 = 19000
+    // Loser fan gain: (1d6 - 4) * 1000 + matchQualityBonus
+    // Min: (1-4)*1000 + 0 = -3000. Max: (6-4)*1000 + 10000 = 12000
     org.assertj.core.api.Assertions.assertThat(updatedLoser.get().getFans())
-        .isBetween(initialFans + 4_000, initialFans + 19_000);
+        .isBetween(initialFans - 3_000, initialFans + 12_000);
 
     assertEquals(0, updatedWinner.get().getBumps());
     assertEquals(1, updatedLoser.get().getBumps());
