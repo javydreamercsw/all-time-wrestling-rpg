@@ -94,7 +94,11 @@ public class TierRecalculationService {
           if (boundaryIndex >= totalWrestlers) {
             boundaryIndex = totalWrestlers - 1;
           }
-          minFans = wrestlers.get(boundaryIndex).getFans() + 1;
+          if (tier == WrestlerTier.ICON) {
+            minFans = wrestlers.get(boundaryIndex).getFans();
+          } else {
+            minFans = wrestlers.get(boundaryIndex).getFans() + 1;
+          }
         } else {
           // If no wrestlers in this tier, set minFans based on the next lower tier's max
           minFans = maxFansForNextLowerTier > 0 ? maxFansForNextLowerTier + 1 : 0;
