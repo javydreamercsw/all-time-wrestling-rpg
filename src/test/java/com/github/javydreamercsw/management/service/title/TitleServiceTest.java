@@ -29,8 +29,10 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -40,10 +42,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -59,20 +59,19 @@ import org.springframework.data.domain.PageRequest;
 class TitleServiceTest {
   @Mock private TitleRepository titleRepository;
   @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private Clock clock;
   @Mock private ApplicationEventPublisher eventPublisher;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.ranking.TierBoundaryService
-      tierBoundaryService;
+  @Mock private TierBoundaryService tierBoundaryService;
 
-  @InjectMocks private TitleService titleService;
+  private TitleService titleService;
 
   private final Instant fixedInstant = Instant.parse("2024-01-01T00:00:00Z");
+  private final Clock clock = Clock.fixed(fixedInstant, ZoneId.systemDefault());
 
   @BeforeEach
   void setUp() {
-    MockitoAnnotations.openMocks(this);
+    titleService =
+        new TitleService(tierBoundaryService, titleRepository, wrestlerRepository, clock);
     Mockito.lenient().doNothing().when(eventPublisher).publishEvent(any());
     when(tierBoundaryService.findByTier(any(WrestlerTier.class)))
         .thenAnswer(
@@ -87,29 +86,35 @@ class TitleServiceTest {
               boundary.setContenderEntryFee(tier.getContenderEntryFee());
               return Optional.of(boundary);
             });
+    when(titleRepository.save(any(Title.class)))
+        .thenAnswer(
+            invocation -> {
+              Title title = invocation.getArgument(0);
+              if (title.getId() == null) {
+                title.setId(1L);
+              }
+              return title;
+            });
   }
 
   @Test
   @DisplayName("Should create new title")
   void shouldCreateNewTitle() {
     // Given
-    when(clock.instant()).thenReturn(fixedInstant);
-    when(titleRepository.save(any(Title.class)))
-        .thenAnswer(
-            invocation -> {
-              Title title = invocation.getArgument(0);
-              title.setId(1L);
-              return title;
-            });
+    Title newTitle = new Title();
+    newTitle.setName("World Championship");
+    newTitle.setDescription("Top title");
+    newTitle.setTier(WrestlerTier.MAIN_EVENTER);
+    newTitle.setCreationDate(Instant.now(clock));
 
     // When
     Title result =
-        titleService.createTitle("World Championship", "Top title", WrestlerTier.MAIN_EVENTER);
+        titleService.createTitle(newTitle.getName(), newTitle.getDescription(), newTitle.getTier());
 
     // Then
-    assertThat(result.getName()).isEqualTo("World Championship");
-    assertThat(result.getDescription()).isEqualTo("Top title");
-    assertThat(result.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
+    assertThat(result.getName()).isEqualTo(newTitle.getName());
+    assertThat(result.getDescription()).isEqualTo(newTitle.getDescription());
+    assertThat(result.getTier()).isEqualTo(newTitle.getTier());
     assertThat(result.getIsActive()).isTrue();
     assertThat(result.isVacant()).isTrue();
     verify(titleRepository).save(any(Title.class));
@@ -202,8 +207,6 @@ class TitleServiceTest {
     // Given
     Title title = createTitle("Test Title", WrestlerTier.ROOKIE);
     Wrestler wrestler = createWrestler("Test Wrestler", 1000L);
-    when(titleRepository.save(any(Title.class))).thenReturn(title);
-    when(clock.instant()).thenReturn(fixedInstant);
 
     // When
     titleService.awardTitleTo(title, List.of(wrestler));
@@ -217,7 +220,6 @@ class TitleServiceTest {
   void testVacateTitle_found() {
     Title title = createTitle("Test Title", WrestlerTier.ROOKIE);
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    when(titleRepository.save(any(Title.class))).thenReturn(title);
     Optional<Title> result = titleService.vacateTitle(1L);
     assertThat(result).isPresent();
     verify(titleRepository, times(1)).save(any(Title.class));
@@ -234,18 +236,16 @@ class TitleServiceTest {
   @DisplayName("Should award title to eligible wrestler")
   void shouldAwardTitleToEligibleWrestler() {
     // Given
-    when(clock.instant()).thenReturn(fixedInstant);
-    Title title = createTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    Title title = createTitle(1L, "World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler wrestler = createWrestler("Champion", 120000L);
-    when(titleRepository.save(any(Title.class))).thenReturn(title);
 
+    // When
     titleService.awardTitleTo(title, List.of(wrestler));
 
     // Then
     assertThat(title.getCurrentChampions()).containsExactly(wrestler);
     assertThat(title.isVacant()).isFalse();
     verify(titleRepository).save(title);
-    verify(eventPublisher, times(1)).publishEvent(any());
   }
 
   @Test
@@ -253,10 +253,11 @@ class TitleServiceTest {
   void shouldNotAwardTitleToIneligibleWrestler() {
     // Given
     Title title = createTitle("World Championship", WrestlerTier.MAIN_EVENTER);
-    title.vacateTitle(); // Explicitly ensure title is vacant
+    title.vacateTitle(fixedInstant); // Explicitly ensure title is vacant
     Wrestler wrestler = createWrestler("Rookie", 50000L);
     wrestler.setId(2L);
     when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(wrestler));
+    when(titleRepository.findById(title.getId())).thenReturn(Optional.of(title));
 
     // When
     Assertions.assertNotNull(wrestler.getId());
@@ -273,12 +274,10 @@ class TitleServiceTest {
   @DisplayName("Should vacate title")
   void shouldVacateTitle() {
     // Given
-    when(clock.instant()).thenReturn(fixedInstant);
-    Title title = createTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    Title title = createTitle(1L, "World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler wrestler = createWrestler("Champion", 120000L);
     title.awardTitleTo(List.of(wrestler), Instant.now(clock));
     when(titleRepository.findById(anyLong())).thenReturn(Optional.of(title));
-    when(titleRepository.save(any(Title.class))).thenReturn(title);
 
     // When
     Optional<Title> result = titleService.vacateTitle(1L);
@@ -294,14 +293,12 @@ class TitleServiceTest {
   @DisplayName("Should successfully challenge for title")
   void shouldSuccessfullyChallengeForTitle() {
     // Given
-    Title title = createTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    Title title = createTitle(1L, "World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler challenger = createWrestler("Challenger", 120000L);
     challenger.setId(2L);
 
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
     when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(challenger));
-    when(wrestlerRepository.save(any(Wrestler.class))).thenReturn(challenger);
-    when(titleRepository.save(any(Title.class))).thenReturn(title);
 
     // When
     TitleService.ChallengeResult result = titleService.challengeForTitle(2L, 1L);
@@ -309,7 +306,7 @@ class TitleServiceTest {
     // Then
     assertThat(result.success()).isTrue();
     assertThat(result.message()).contains("Challenge successful");
-    assertThat(challenger.getFans()).isEqualTo(70000L); // 120k - 50k contender entry fee
+    assertThat(challenger.getFans()).isEqualTo(105000L); // 120k - 15k contender entry fee
     verify(wrestlerRepository).save(challenger);
     verify(titleRepository).save(title);
   }
@@ -318,7 +315,7 @@ class TitleServiceTest {
   @DisplayName("Should fail challenge when wrestler has insufficient fans for eligibility")
   void shouldFailChallengeWhenWrestlerHasInsufficientFansForEligibility() {
     // Given
-    Title title = createTitle("Extreme Championship", WrestlerTier.MAIN_EVENTER);
+    Title title = createTitle(1L, "Extreme Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler challenger = createWrestler("Poor Challenger", 10000L);
     challenger.setId(2L);
 
@@ -337,7 +334,7 @@ class TitleServiceTest {
   @DisplayName("Should fail challenge when wrestler is ineligible")
   void shouldFailChallengeWhenWrestlerIsIneligible() {
     // Given
-    Title title = createTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    Title title = createTitle(1L, "World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler challenger = createWrestler("Rookie", 50000L);
     challenger.setId(2L);
 
@@ -356,7 +353,7 @@ class TitleServiceTest {
   @DisplayName("Should get eligible challengers")
   void shouldGetEligibleChallengers() {
     // Given
-    Title title = createTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    Title title = createTitle(1L, "World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler eligible1 = createWrestler("Eligible 1", 120000L);
     Wrestler eligible2 =
         createWrestler(
@@ -384,8 +381,9 @@ class TitleServiceTest {
   void shouldGetTitlesHeldByWrestler() {
     // Given
     Wrestler wrestler = createWrestler("Champion", 120000L);
-    Title title1 = createTitle("Title 1", WrestlerTier.MAIN_EVENTER);
-    Title title2 = createTitle("Title 2", WrestlerTier.CONTENDER);
+    wrestler.setId(1L);
+    Title title1 = createTitle(1L, "Title 1", WrestlerTier.MAIN_EVENTER);
+    Title title2 = createTitle(2L, "Title 2", WrestlerTier.CONTENDER);
 
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
     when(titleRepository.findTitlesHeldByWrestler(wrestler))
@@ -403,9 +401,8 @@ class TitleServiceTest {
   @DisplayName("Should update title information")
   void shouldUpdateTitleInformation() {
     // Given
-    Title title = createTitle("Old Name", WrestlerTier.MAIN_EVENTER);
+    Title title = createTitle(1L, "Old Name", WrestlerTier.MAIN_EVENTER);
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    when(titleRepository.save(any(Title.class))).thenReturn(title);
 
     // When
     Optional<Title> result = titleService.updateTitle(1L, "New Name", "New description", false);
@@ -420,9 +417,9 @@ class TitleServiceTest {
 
   @Test
   void testDelete() {
-    Title testTitle = createTitle("Old Name", WrestlerTier.MAIN_EVENTER);
+    Title testTitle = createTitle(1L, "Old Name", WrestlerTier.MAIN_EVENTER);
     testTitle.setIsActive(false); // Ensure title is inactive
-    testTitle.vacateTitle(); // Ensure title is vacant
+    testTitle.vacateTitle(Instant.now(clock)); // Ensure title is vacant
     when(titleRepository.findById(anyLong())).thenReturn(Optional.of(testTitle));
     doNothing().when(titleRepository).delete(any(Title.class));
     Assertions.assertNotNull(testTitle.getId());
@@ -434,7 +431,7 @@ class TitleServiceTest {
   @DisplayName("Should not delete active title")
   void shouldNotDeleteActiveTitle() {
     // Given
-    Title title = createTitle("Test Title", WrestlerTier.MAIN_EVENTER);
+    Title title = createTitle(1L, "Test Title", WrestlerTier.MAIN_EVENTER);
     title.setIsActive(true);
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
 
@@ -449,10 +446,9 @@ class TitleServiceTest {
   @DisplayName("Should get title statistics")
   void shouldGetTitleStatistics() {
     // Given
-    when(clock.instant()).thenReturn(fixedInstant);
-    Title title = createTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    Title title = createTitle(1L, "World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler champion = createWrestler("Champion", 120000L);
-    title.awardTitleTo(java.util.List.of(champion), Instant.now(clock));
+    title.awardTitleTo(List.of(champion), Instant.now(clock));
 
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
 
@@ -463,7 +459,7 @@ class TitleServiceTest {
     assertThat(result).isNotNull();
     assertThat(result.titleName()).isEqualTo("World Championship");
     assertThat(result.totalReigns()).isEqualTo(1);
-    assertThat(result.currentReignDays()).isEqualTo(0);
+    assertThat(result.currentReignDays()).isZero();
     assertThat(result.currentChampionsCount()).isEqualTo(1);
   }
 

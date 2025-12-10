@@ -289,7 +289,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     awardedTitle.awardTitleTo(List.of(wrestler), Instant.now());
 
     Title vacatedTitle = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
-    vacatedTitle.vacateTitle();
+    vacatedTitle.vacateTitle(Instant.now());
 
     when(titleService.getTitleById(awardedTitle.getId())).thenReturn(Optional.of(awardedTitle));
     when(titleService.vacateTitle(awardedTitle.getId())).thenReturn(Optional.of(vacatedTitle));
@@ -436,11 +436,10 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     mockMvc
         .perform(get("/api/titles/{id}/stats", title.getId()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.titleId").value(title.getId()))
-        .andExpect(jsonPath("$.name").value("Test Championship"))
-        .andExpect(jsonPath("$.tier").value("MAIN_EVENTER"))
-        .andExpect(jsonPath("$.isVacant").value(true))
-        .andExpect(jsonPath("$.isActive").value(true));
+        .andExpect(jsonPath("$.titleName").value("Test Championship"))
+        .andExpect(jsonPath("$.totalReigns").value(0))
+        .andExpect(jsonPath("$.currentReignDays").value(0))
+        .andExpect(jsonPath("$.currentChampionsCount").value(0));
   }
 
   private Title createTestTitle(String name, WrestlerTier tier) {

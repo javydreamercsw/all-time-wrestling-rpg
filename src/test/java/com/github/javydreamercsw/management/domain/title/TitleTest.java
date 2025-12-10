@@ -22,7 +22,9 @@ import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +42,8 @@ class TitleTest {
   private Title title;
   private Wrestler wrestler1;
   private Wrestler wrestler2;
+  private final Instant fixedInstant = Instant.parse("2024-01-01T00:00:00Z");
+  private final Clock clock = Clock.fixed(fixedInstant, ZoneId.systemDefault());
 
   @BeforeEach
   void setUp() {
@@ -118,7 +122,7 @@ class TitleTest {
     TitleReign reign = title.getCurrentReign().orElseThrow();
 
     // Vacate title
-    title.vacateTitle();
+    title.vacateTitle(fixedInstant);
 
     // Title should be vacant
     assertThat(title.isVacant()).isTrue();
@@ -133,14 +137,14 @@ class TitleTest {
   @DisplayName("Should calculate current reign days")
   void shouldCalculateCurrentReignDays() {
     // Vacant title
-    assertThat(title.getCurrentReignDays()).isEqualTo(0);
+    assertThat(title.getCurrentReignDays(fixedInstant)).isEqualTo(0);
 
     // Award title
-    Instant awardTime = Instant.now().minus(1, ChronoUnit.DAYS);
+    Instant awardTime = fixedInstant.minus(1, ChronoUnit.DAYS);
     title.awardTitleTo(List.of(wrestler1), awardTime);
 
     // Should be 1 day
-    assertThat(title.getCurrentReignDays()).isEqualTo(1);
+    assertThat(title.getCurrentReignDays(fixedInstant)).isEqualTo(1);
   }
 
   @Test
@@ -154,7 +158,7 @@ class TitleTest {
     title.awardTitleTo(List.of(wrestler2), Instant.now());
     assertThat(title.getTotalReigns()).isEqualTo(2);
 
-    title.vacateTitle();
+    title.vacateTitle(fixedInstant);
     assertThat(title.getTotalReigns()).isEqualTo(2); // Vacating doesn't add a new reign
   }
 
@@ -216,7 +220,7 @@ class TitleTest {
     assertThat(title.isVacant()).isTrue();
 
     // Vacating vacant title should not cause issues
-    title.vacateTitle();
+    title.vacateTitle(fixedInstant);
 
     assertThat(title.isVacant()).isTrue();
     assertThat(title.getCurrentChampions()).isEmpty();

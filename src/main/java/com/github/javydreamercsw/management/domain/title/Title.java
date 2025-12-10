@@ -106,8 +106,8 @@ public class Title extends AbstractEntity<Long> {
     this.champion = new ArrayList<>(newChampions); // Ensure champion field is updated
   }
 
-  public void vacateTitle() {
-    getCurrentReign().ifPresent(reign -> reign.endReign(Instant.now()));
+  public void vacateTitle(Instant now) {
+    getCurrentReign().ifPresent(reign -> reign.endReign(now));
     this.champion.clear();
   }
 
@@ -121,8 +121,8 @@ public class Title extends AbstractEntity<Long> {
     return champion;
   }
 
-  public long getCurrentReignDays() {
-    return getCurrentReign().map(TitleReign::getReignLengthDays).orElse(0L);
+  public long getCurrentReignDays(Instant now) {
+    return getCurrentReign().map(reign -> reign.getReignLengthDays(now)).orElse(0L);
   }
 
   public int getTotalReigns() {

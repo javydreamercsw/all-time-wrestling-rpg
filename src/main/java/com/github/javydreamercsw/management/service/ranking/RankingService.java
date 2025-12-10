@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -107,7 +108,7 @@ public class RankingService {
                                 .id(champion.getId())
                                 .name(champion.getName())
                                 .fans(champion.getFans())
-                                .reignDays(reign.getReignLengthDays())
+                                .reignDays(reign.getReignLengthDays(Instant.now()))
                                 .build())
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());

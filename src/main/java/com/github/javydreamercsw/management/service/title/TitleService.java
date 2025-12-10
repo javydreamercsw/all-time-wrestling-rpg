@@ -23,11 +23,11 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -41,6 +41,7 @@ public class TitleService {
   private final TierBoundaryService tierBoundaryService;
   private final TitleRepository titleRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final Clock clock;
 
   private boolean isWrestlerEligible(@NonNull Wrestler wrestler, @NonNull Title title) {
     // A wrestler is eligible if their current fan count falls within the title's tier boundary
@@ -89,12 +90,13 @@ public class TitleService {
     return titleRepository.findByName(name).isPresent();
   }
 
-  public Title createTitle(@NonNull String name, @NonNull String description, @NonNull WrestlerTier tier) {
+  public Title createTitle(
+      @NonNull String name, @NonNull String description, @NonNull WrestlerTier tier) {
     Title title = new Title();
     title.setName(name);
     title.setDescription(description);
     title.setTier(tier);
-    title.setCreationDate(Instant.now());
+    title.setCreationDate(Instant.now(clock));
     return titleRepository.save(title);
   }
 
@@ -144,53 +146,68 @@ public class TitleService {
             "Wrestler " + champion.getName() + " is not eligible for title " + title.getName());
       }
     }
-    title.awardTitleTo(newChampions, Instant.now());
+    title.awardTitleTo(newChampions, Instant.now(clock));
     titleRepository.save(title);
   }
 
   public Optional<Title> vacateTitle(@NonNull Long titleId) {
+
     return titleRepository
         .findById(titleId)
         .map(
             title -> {
-              title.vacateTitle();
+              title.vacateTitle(Instant.now(clock));
+
               return titleRepository.save(title);
             });
   }
 
-  public Optional<Title> updateTitle(@NonNull Long id, String name, String description, Boolean isActive) {
+  public Optional<Title> updateTitle(
+      @NonNull Long id, String name, String description, Boolean isActive) {
+
     return titleRepository
         .findById(id)
         .map(
             title -> {
               if (name != null && !name.isBlank()) {
+
                 title.setName(name);
               }
+
               if (description != null) {
+
                 title.setDescription(description);
               }
+
               if (isActive != null) {
+
                 title.setIsActive(isActive);
               }
+
               return titleRepository.save(title);
             });
   }
 
   public boolean deleteTitle(@NonNull Long id) {
+
     return titleRepository
         .findById(id)
         .map(
             title -> {
               if (!title.getIsActive() && title.isVacant()) {
+
                 titleRepository.delete(title);
+
                 return true;
               }
+
               return false;
             })
         .orElse(false);
   }
 
   public Long getChallengeCost(@NonNull Title title) {
+
     return tierBoundaryService
         .findByTier(title.getTier())
         .map(TierBoundary::getChallengeCost)
@@ -198,6 +215,7 @@ public class TitleService {
   }
 
   public Long getContenderEntryFee(@NonNull Title title) {
+
     return tierBoundaryService
         .findByTier(title.getTier())
         .map(TierBoundary::getContenderEntryFee)
@@ -205,42 +223,60 @@ public class TitleService {
   }
 
   public List<Title> findTitlesByChampion(@NonNull Wrestler wrestler) {
+
     return titleRepository.findTitlesHeldByWrestler(wrestler);
   }
 
   public ChallengeResult challengeForTitle(@NonNull Long wrestlerId, @NonNull Long titleId) {
+
     Optional<Wrestler> challengerOpt = wrestlerRepository.findById(wrestlerId);
+
     Optional<Title> titleOpt = titleRepository.findById(titleId);
 
     if (challengerOpt.isEmpty()) {
+
       return new ChallengeResult(false, "Challenger not found.");
     }
+
     if (titleOpt.isEmpty()) {
+
       return new ChallengeResult(false, "Title not found.");
     }
 
     Wrestler challenger = challengerOpt.get();
+
     Title title = titleOpt.get();
 
     if (!title.getIsActive()) {
+
       return new ChallengeResult(false, "Title is not active.");
     }
+
     if (title.getCurrentChampions().contains(challenger)) {
+
       return new ChallengeResult(false, "Wrestler is already a champion of this title.");
     }
+
     if (!this.isWrestlerEligible(challenger, title)) {
+
       return new ChallengeResult(false, "Wrestler is not eligible for this title based on tier.");
     }
 
     Long entryFee = getContenderEntryFee(title);
+
     if (!challenger.canAfford(entryFee)) {
+
       return new ChallengeResult(false, "Wrestler cannot afford the contender entry fee.");
     }
 
     // All checks pass, set as contender and deduct fee
+
     challenger.spendFans(entryFee);
+
     wrestlerRepository.save(challenger);
+
     title.setNumberOneContender(challenger);
+
     titleRepository.save(title);
 
     return new ChallengeResult(
@@ -253,18 +289,25 @@ public class TitleService {
   }
 
   public List<Wrestler> getEligibleChallengers(@NonNull Long titleId) {
+
     Optional<Title> titleOpt = titleRepository.findById(titleId);
+
     if (titleOpt.isEmpty()) {
+
       return List.of();
     }
+
     Title title = titleOpt.get();
+
     return wrestlerRepository.findAll().stream()
         .filter(wrestler -> this.isWrestlerEligible(wrestler, title))
         .collect(Collectors.toList());
   }
 
   public TitleStats getTitleStats(@NonNull Long id) {
+
     // Basic implementation for now, can be expanded later
+
     return titleRepository
         .findById(id)
         .map(
@@ -272,13 +315,15 @@ public class TitleService {
                 new TitleStats(
                     title.getName(),
                     title.getTotalReigns(),
-                    title.getCurrentReignDays(),
+                    title.getCurrentReignDays(Instant.now(clock)),
                     title.getCurrentChampions().size()))
         .orElse(null);
   }
 
   public Optional<Title> updateNumberOneContender(@NonNull Long titleId, @NonNull Long wrestlerId) {
+
     Optional<Title> titleOpt = titleRepository.findById(titleId);
+
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
     if (titleOpt.isEmpty() || wrestlerOpt.isEmpty()) {

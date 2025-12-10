@@ -84,14 +84,14 @@ public class TitleReign extends AbstractEntity<Long> {
   }
 
   /** Get the length of this reign in days. */
-  public long getReignLengthDays() {
-    Instant end = endDate != null ? endDate : Instant.now();
+  public long getReignLengthDays(Instant now) {
+    Instant end = endDate != null ? endDate : now;
     return java.time.Duration.between(startDate, end).toDays();
   }
 
   /** Get the length of this reign in a human-readable format. */
-  public String getReignLengthDisplay() {
-    long days = getReignLengthDays();
+  public String getReignLengthDisplay(Instant now) {
+    long days = getReignLengthDays(now);
 
     if (days == 0) {
       return "Less than 1 day";
@@ -130,7 +130,8 @@ public class TitleReign extends AbstractEntity<Long> {
   public String getDisplayString() {
     String status = isCurrentReign() ? " (Current)" : "";
     return String.format(
-        "%s - Reign #%d (%s)%s", getChampionNames(), reignNumber, getReignLengthDisplay(), status);
+        "%s - Reign #%d (%s)%s",
+        getChampionNames(), reignNumber, getReignLengthDisplay(Instant.now()), status);
   }
 
   /**

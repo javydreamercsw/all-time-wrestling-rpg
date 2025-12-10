@@ -176,7 +176,7 @@ class TitleListViewTest extends ManagementIntegrationTest {
     deletableTitle.setName("Deletable Title");
     deletableTitle.setTier(WrestlerTier.MAIN_EVENTER);
     deletableTitle.setIsActive(false);
-    deletableTitle.vacateTitle(); // Ensure it's vacant
+    deletableTitle.vacateTitle(java.time.Instant.now()); // Ensure it's vacant
 
     when(titleService.findByName("Deletable Title")).thenReturn(Optional.of(deletableTitle));
     assertNotNull(deletableTitle.getId());

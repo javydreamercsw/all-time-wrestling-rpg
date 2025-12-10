@@ -243,7 +243,7 @@ public class TitleSyncService extends BaseSyncService {
       }
     } else if (!title.isVacant()) {
       log.info("Vacating title from Notion: {}", title.getName());
-      title.vacateTitle();
+      title.vacateTitle(java.time.Instant.now());
       syncServiceDependencies.getTitleRepository().save(title);
     }
 
