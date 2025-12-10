@@ -308,8 +308,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Wrestler challenger = createTestWrestler("Challenger", 120000L); // Has enough fans
 
     when(titleService.challengeForTitle(challenger.getId(), title.getId()))
-        .thenReturn(
-            new TitleService.ChallengeResult(true, "Challenge accepted", title, challenger));
+        .thenReturn(new TitleService.ChallengeResult(true, "Challenge accepted"));
 
     mockMvc
         .perform(
@@ -326,8 +325,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Wrestler challenger = createTestWrestler("Poor Challenger", 50000L); // Not eligible
 
     when(titleService.challengeForTitle(challenger.getId(), title.getId()))
-        .thenReturn(
-            new TitleService.ChallengeResult(false, "Wrestler not eligible", title, challenger));
+        .thenReturn(new TitleService.ChallengeResult(false, "Wrestler not eligible"));
 
     mockMvc
         .perform(
@@ -431,16 +429,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
   void shouldGetTitleStatistics() throws Exception {
     Title title = createTestTitle("Test Championship", WrestlerTier.MAIN_EVENTER);
 
-    TitleService.TitleStats stats =
-        new TitleService.TitleStats(
-            title.getId(),
-            title.getName(),
-            title.getTier(),
-            title.isVacant(),
-            null, // currentChampion (assuming vacant for this test setup)
-            0L, // currentReignDays
-            0, // totalReigns
-            title.getIsActive());
+    TitleService.TitleStats stats = new TitleService.TitleStats(title.getName(), 0, 0L, 0);
 
     when(titleService.getTitleStats(title.getId())).thenReturn(stats);
 
@@ -478,7 +467,6 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     wrestler.setDeckSize(40); // Set required deck size
     wrestler.setBumps(0);
     wrestler.setIsPlayer(true);
-    wrestler.updateTier();
     when(wrestlerService.save(any(Wrestler.class))).thenReturn(wrestler);
     return wrestler;
   }

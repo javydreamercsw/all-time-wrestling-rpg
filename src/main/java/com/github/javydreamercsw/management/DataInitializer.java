@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckCardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
@@ -361,6 +362,7 @@ public class DataInitializer {
             wrestlerService.save(existingWrestler);
             log.debug("Updated existing wrestler: {}", existingWrestler.getName());
           } else {
+            w.setTier(WrestlerTier.ROOKIE);
             wrestlerService.save(w);
             log.debug("Saved new wrestler: {}", w.getName());
           }

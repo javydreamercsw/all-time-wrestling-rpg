@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Random;
@@ -54,6 +55,7 @@ class SegmentAdjudicationServiceTest {
   @Mock private Wrestler loser;
   @Mock private SegmentType segmentType;
   @Mock private Show show;
+  @Mock private TitleService titleService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -61,7 +63,12 @@ class SegmentAdjudicationServiceTest {
   void setUp() {
     segmentAdjudicationService =
         new SegmentAdjudicationService(
-            rivalryService, wrestlerService, feudResolutionService, feudService, random);
+            rivalryService,
+            wrestlerService,
+            feudResolutionService,
+            feudService,
+            titleService,
+            random);
     when(segment.getWinners()).thenReturn(List.of(winner));
     when(segment.getLosers()).thenReturn(List.of(loser));
     when(segment.getWrestlers()).thenReturn(List.of(winner, loser));

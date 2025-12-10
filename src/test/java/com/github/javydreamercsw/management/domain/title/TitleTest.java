@@ -159,34 +159,6 @@ class TitleTest {
   }
 
   @Test
-  @DisplayName("Should check wrestler eligibility")
-  void shouldCheckWrestlerEligibility() {
-    title.setTier(WrestlerTier.MAIN_EVENTER); // Requires 100k fans
-
-    Wrestler eligibleWrestler =
-        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Eligible"));
-    eligibleWrestler.setFans(120000L);
-    Wrestler ineligibleWrestler =
-        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Ineligible"));
-    ineligibleWrestler.setFans(50000L);
-
-    assertThat(title.isWrestlerEligible(eligibleWrestler)).isTrue();
-    assertThat(title.isWrestlerEligible(ineligibleWrestler)).isFalse();
-  }
-
-  @Test
-  @DisplayName("Should get challenge costs from tier")
-  void shouldGetChallengeCostsFromTier() {
-    title.setTier(WrestlerTier.CONTENDER);
-    assertThat(title.getChallengeCost()).isEqualTo(40000L);
-    assertThat(title.getContenderEntryFee()).isEqualTo(15000L);
-
-    title.setTier(WrestlerTier.MAIN_EVENTER);
-    assertThat(title.getChallengeCost()).isEqualTo(100000L);
-    assertThat(title.getContenderEntryFee()).isEqualTo(15000L);
-  }
-
-  @Test
   @DisplayName("Should create display names")
   void shouldCreateDisplayNames() {
     // Vacant title

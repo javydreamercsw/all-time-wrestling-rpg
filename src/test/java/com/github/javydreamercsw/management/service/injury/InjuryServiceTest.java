@@ -316,7 +316,7 @@ class InjuryServiceTest {
     wrestler.setFans(fans);
     wrestler.setStartingHealth(15);
     wrestler.setIsPlayer(true);
-    wrestler.updateTier();
+    wrestler.setTier(WrestlerTier.fromFanCount(fans));
     return wrestler;
   }
 

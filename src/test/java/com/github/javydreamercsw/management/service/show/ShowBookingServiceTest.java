@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
@@ -78,7 +79,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
     segmentTypeService.createOrUpdateSegmentType("Promo", "A promotional segment");
 
     for (int i = 0; i < 10; i++) {
-      wrestlerService.createWrestler("Wrestler " + i, true, null);
+      wrestlerService.createWrestler("Wrestler " + i, true, null, WrestlerTier.ROOKIE);
     }
   }
 

@@ -129,16 +129,8 @@ public class Title extends AbstractEntity<Long> {
     return titleReigns.size();
   }
 
-  public boolean isWrestlerEligible(Wrestler wrestler) {
-    return wrestler.isEligibleForTitle(tier);
-  }
-
-  public Long getChallengeCost() {
-    return tier.getChallengeCost();
-  }
-
-  public Long getContenderEntryFee() {
-    return tier.getContenderEntryFee();
+  public boolean isTopTier() {
+    return getTier() == WrestlerTier.MAIN_EVENTER;
   }
 
   public String getDisplayName() {

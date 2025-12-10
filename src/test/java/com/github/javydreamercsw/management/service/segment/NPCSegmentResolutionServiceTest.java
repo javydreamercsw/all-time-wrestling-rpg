@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRep
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
@@ -94,9 +95,9 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
     }
 
     // Create test wrestlers with different tiers
-    rookie1 = wrestlerService.createWrestler("Rookie One", true, null);
-    rookie2 = wrestlerService.createWrestler("Rookie Two", true, null);
-    contender = wrestlerService.createWrestler("The Contender", true, null);
+    rookie1 = wrestlerService.createWrestler("Rookie One", true, null, WrestlerTier.ROOKIE);
+    rookie2 = wrestlerService.createWrestler("Rookie Two", true, null, WrestlerTier.ROOKIE);
+    contender = wrestlerService.createWrestler("The Contender", true, null, WrestlerTier.CONTENDER);
 
     // Award fans to create tier differences
     Assertions.assertNotNull(contender.getId());

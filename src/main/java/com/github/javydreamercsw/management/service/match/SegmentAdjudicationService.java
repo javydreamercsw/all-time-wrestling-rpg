@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
@@ -47,14 +48,22 @@ public class SegmentAdjudicationService {
   private final FeudResolutionService feudResolutionService;
   private final MultiWrestlerFeudService feudService;
   private final Random random;
+  private final TitleService titleService;
 
   @Autowired
   public SegmentAdjudicationService(
       WrestlerService wrestlerService,
       RivalryService rivalryService,
       FeudResolutionService feudResolutionService,
-      MultiWrestlerFeudService feudService) {
-    this(rivalryService, wrestlerService, feudResolutionService, feudService, new Random());
+      MultiWrestlerFeudService feudService,
+      TitleService titleService) {
+    this(
+        rivalryService,
+        wrestlerService,
+        feudResolutionService,
+        feudService,
+        titleService,
+        new Random());
   }
 
   public SegmentAdjudicationService(
@@ -62,11 +71,13 @@ public class SegmentAdjudicationService {
       WrestlerService wrestlerService,
       FeudResolutionService feudResolutionService,
       MultiWrestlerFeudService feudService,
+      TitleService titleService,
       Random random) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.feudResolutionService = feudResolutionService;
     this.feudService = feudService;
+    this.titleService = titleService;
     this.random = random;
   }
 
@@ -93,7 +104,7 @@ public class SegmentAdjudicationService {
       if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
         for (Title title : segment.getTitles()) {
           List<Wrestler> currentChampions = title.getCurrentChampions();
-          Long contenderEntryFee = title.getContenderEntryFee();
+          Long contenderEntryFee = titleService.getContenderEntryFee(title);
 
           for (Wrestler participant : segment.getWrestlers()) {
             // If a participant is not a current champion for this title, they are a challenger

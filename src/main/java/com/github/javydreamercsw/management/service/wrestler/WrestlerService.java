@@ -61,7 +61,7 @@ public class WrestlerService {
   @Autowired private TitleService titleService; // Autowire TitleService
 
   public void createWrestler(@NonNull String name) {
-    createWrestler(name, false, "");
+    createWrestler(name, false, "", WrestlerTier.ROOKIE);
   }
 
   public List<Wrestler> list(@NonNull Pageable pageable) {
@@ -259,7 +259,7 @@ public class WrestlerService {
    */
   public List<Wrestler> getEligibleWrestlers(@NonNull WrestlerTier titleTier) {
     return wrestlerRepository.findAll().stream()
-        .filter(wrestler -> wrestler.isEligibleForTitle(titleTier))
+        .filter(wrestler -> titleService.isWrestlerEligible(wrestler, titleTier))
         .toList();
   }
 
@@ -315,6 +315,20 @@ public class WrestlerService {
    * @return The created wrestler
    */
   public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
+    return createWrestler(name, isPlayer, description, WrestlerTier.ROOKIE);
+  }
+
+  /**
+   * Create a new wrestler with ATW RPG defaults.
+   *
+   * @param name Wrestler name
+   * @param isPlayer Whether this is a player-controlled wrestler
+   * @param description Character description
+   * @param tier The tier of the wrestler
+   * @return The created wrestler
+   */
+  public Wrestler createWrestler(
+      @NonNull String name, boolean isPlayer, String description, @NonNull WrestlerTier tier) {
     Wrestler wrestler =
         Wrestler.builder()
             .name(name)
@@ -328,6 +342,7 @@ public class WrestlerService {
             .gender(Gender.MALE)
             .isPlayer(isPlayer)
             .bumps(0)
+            .tier(tier)
             .build();
 
     return save(wrestler);

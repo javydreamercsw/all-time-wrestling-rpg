@@ -157,17 +157,8 @@ public class Wrestler extends AbstractEntity<Long> {
     return Math.max(1, effective); // Never go below 1
   }
 
-  public boolean isEligibleForTitle(WrestlerTier titleTier) {
-    return titleTier.isEligible(fans);
-  }
-
-  public void updateTier() {
-    this.tier = WrestlerTier.fromFanCount(fans);
-  }
-
   public void addFans(long fanGain) {
     this.fans = Math.max(0, this.fans + fanGain);
-    updateTier();
   }
 
   public boolean addBump() {
@@ -191,7 +182,6 @@ public class Wrestler extends AbstractEntity<Long> {
   public boolean spendFans(Long cost) {
     if (canAfford(cost)) {
       fans -= cost;
-      updateTier();
       return true;
     }
     return false;
@@ -265,7 +255,6 @@ public class Wrestler extends AbstractEntity<Long> {
     if (gender == null) {
       gender = Gender.MALE;
     }
-    updateTier();
   }
 
   @PreUpdate
@@ -276,6 +265,5 @@ public class Wrestler extends AbstractEntity<Long> {
     if (bumps == null) {
       bumps = 0;
     }
-    updateTier();
   }
 }

@@ -220,15 +220,12 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     wrestlerService.awardFans(mainEventer.getId(), 120_000L); // Main Eventer tier
 
     // When
-    List<Wrestler> extremeEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE);
-    List<Wrestler> worldEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER);
+    List<Wrestler> extremeEligible = wrestlerService.getWrestlersByTier(WrestlerTier.ROOKIE);
+    List<Wrestler> worldEligible = wrestlerService.getWrestlersByTier(WrestlerTier.MAIN_EVENTER);
 
     // Then
-    assertThat(extremeEligible)
-        .hasSize(initialEligibleRookieWrestlers + 4); // Rookie, Riser, Contender, Main Eventer
-    assertThat(extremeEligible)
-        .extracting(Wrestler::getName)
-        .contains("Rookie", "Riser", "Contender", "Main Eventer");
+    assertThat(extremeEligible).hasSize(initialEligibleRookieWrestlers + 1);
+    assertThat(extremeEligible).extracting(Wrestler::getName).contains("Rookie");
 
     assertThat(worldEligible).hasSize(initialEligibleMainEventerWrestlers + 1); // Only Main Eventer
     assertThat(worldEligible).extracting(Wrestler::getName).contains("Main Eventer");
@@ -316,8 +313,7 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     // Calculate expected health manually to avoid lazy loading issues
     int expectedHealth = finalWrestler.getStartingHealth() - finalWrestler.getBumps();
     assertThat(expectedHealth).isEqualTo(13); // 15 - 2 bumps
-    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.RISER)).isTrue();
-    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.MIDCARDER)).isFalse();
+    assertThat(finalWrestler.getTier()).isEqualTo(WrestlerTier.CONTENDER);
     assertThat(finalWrestler.getDescription()).isEqualTo("Test wrestler for complex operations");
   }
 

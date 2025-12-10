@@ -263,7 +263,6 @@ class RivalryControllerIntegrationTest extends AbstractIntegrationTest {
     wrestler.setDeckSize(40);
     wrestler.setBumps(0);
     wrestler.setIsPlayer(true);
-    wrestler.updateTier();
     return wrestlerRepository.save(wrestler);
   }
 
