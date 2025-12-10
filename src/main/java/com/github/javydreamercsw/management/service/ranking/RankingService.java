@@ -82,12 +82,12 @@ public class RankingService {
     title.getCurrentReign().ifPresent(reign -> contenders.removeAll(reign.getChampions()));
 
     // TODO: Make this percentage configurable
-    int contenderCount = (int) (contenders.size() * 0.05);
+    int contenderCount = (int) Math.ceil(contenders.size() * 0.05);
 
     AtomicInteger rank = new AtomicInteger(1);
     return contenders.stream()
         .sorted(Comparator.comparing(Wrestler::getFans).reversed())
-        .limit(contenderCount > 0 ? contenderCount : 1) // At least one contender
+        .limit(contenderCount)
         .map(w -> toRankedWrestlerDTO(w, rank.getAndIncrement()))
         .collect(Collectors.toList());
   }
