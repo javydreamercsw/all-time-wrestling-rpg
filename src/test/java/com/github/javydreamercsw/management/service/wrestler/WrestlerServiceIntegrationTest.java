@@ -336,7 +336,7 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     long initialInboxItemCount = inboxRepository.count();
 
     // When
-    wrestlerService.awardFans(wrestler.getId(), 1000L);
+    wrestlerService.awardFans(wrestler.getId(), 1_000L);
 
     // Then
     assertThat(inboxRepository.count()).isEqualTo(initialInboxItemCount + 1);
