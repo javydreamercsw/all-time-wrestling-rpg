@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.ShowTemplatePage;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -30,10 +31,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -47,6 +52,26 @@ class ShowTemplateSyncIT extends ManagementIntegrationTest {
   @MockitoBean private NotionHandler notionHandler;
 
   @Mock private ShowTemplatePage showTemplatePage;
+
+  private static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
+
+  @BeforeAll
+  static void beforeAll() {
+    mockedEnvironmentVariableUtil = Mockito.mockStatic(EnvironmentVariableUtil.class);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::isNotionTokenAvailable)
+        .thenReturn(true);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::getNotionToken)
+        .thenReturn("test-token");
+  }
+
+  @AfterAll
+  static void afterAll() {
+    if (mockedEnvironmentVariableUtil != null) {
+      mockedEnvironmentVariableUtil.close();
+    }
+  }
 
   @BeforeEach
   void setUp() {

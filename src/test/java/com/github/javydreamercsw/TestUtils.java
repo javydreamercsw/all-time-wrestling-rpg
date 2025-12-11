@@ -28,6 +28,18 @@ public class TestUtils {
    * @param name Desired wrestler's name.
    * @return Created wrestler.
    */
+  public static Wrestler createWrestler(@NonNull String name, long fans) {
+    Wrestler wrestler = createWrestler(name);
+    wrestler.setFans(fans);
+    return wrestler;
+  }
+
+  /**
+   * Create a wrestler with default values. Stil needs to be persisted in the database.
+   *
+   * @param name Desired wrestler's name.
+   * @return Created wrestler.
+   */
   public static Wrestler createWrestler(@NonNull String name) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
@@ -39,6 +51,7 @@ public class TestUtils {
     wrestler.setLowStamina(2);
     wrestler.setTier(WrestlerTier.ROOKIE);
     wrestler.setCreationDate(Instant.now());
+    wrestler.setFans(10_00L); // Default fan count
     return wrestler;
   }
 }

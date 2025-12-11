@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -84,12 +86,14 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     wrestlerPage = Mockito.mock(WrestlerPage.class);
 
     // Create some wrestlers to establish tiers
-    wrestlerRepository.save(Wrestler.builder().name("W1").fans(200000L).deckSize(15).build());
-    wrestlerRepository.save(Wrestler.builder().name("W2").fans(120000L).deckSize(15).build());
-    wrestlerRepository.save(Wrestler.builder().name("W3").fans(80000L).deckSize(15).build());
-    wrestlerRepository.save(Wrestler.builder().name("W4").fans(50000L).deckSize(15).build());
-    wrestlerRepository.save(Wrestler.builder().name("W5").fans(30000L).deckSize(15).build());
-    wrestlerRepository.save(Wrestler.builder().name("W6").fans(10000L).deckSize(15).build());
+    Stream.of(
+            TestUtils.createWrestler("W1", 200000L),
+            TestUtils.createWrestler("W2", 120000L),
+            TestUtils.createWrestler("W3", 80000L),
+            TestUtils.createWrestler("W4", 50000L),
+            TestUtils.createWrestler("W5", 30000L),
+            TestUtils.createWrestler("W6", 10000L))
+        .forEach(wrestlerRepository::save);
 
     tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerRepository.findAll()));
   }
@@ -128,7 +132,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
 
     wrestlerSyncService.syncWrestlers("wrestler-sync-test-2");
 
-    assertThat(wrestlerRepository.findAll()).hasSize(1);
+    assertThat(wrestlerRepository.findAll()).hasSize(7);
     Optional<Wrestler> updatedWrestlerOpt = wrestlerRepository.findByExternalId(wrestlerId);
     assertThat(updatedWrestlerOpt).isPresent();
     Wrestler updatedWrestler = updatedWrestlerOpt.get();
