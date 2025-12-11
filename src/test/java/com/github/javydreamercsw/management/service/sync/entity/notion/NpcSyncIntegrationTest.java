@@ -21,19 +21,24 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NpcPage;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -45,14 +50,37 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private NpcService npcService;
   @Autowired private NpcSyncService npcSyncService;
+  @Autowired private SyncSessionManager syncSessionManager;
   @MockitoBean private NotionHandler notionHandler;
 
-  @Mock private NpcPage npcPage1;
-  @Mock private NpcPage npcPage2;
+  private NpcPage npcPage1;
+  private NpcPage npcPage2;
+
+  private static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
+
+  @BeforeAll
+  static void beforeAll() {
+    mockedEnvironmentVariableUtil = Mockito.mockStatic(EnvironmentVariableUtil.class);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::isNotionTokenAvailable)
+        .thenReturn(true);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::getNotionToken)
+        .thenReturn("test-token");
+  }
+
+  @AfterAll
+  static void afterAll() {
+    if (mockedEnvironmentVariableUtil != null) {
+      mockedEnvironmentVariableUtil.close();
+    }
+  }
 
   @BeforeEach
   void setUp() {
     clearAllRepositories();
+    npcPage1 = Mockito.mock(NpcPage.class);
+    npcPage2 = Mockito.mock(NpcPage.class);
   }
 
   @Test
@@ -90,6 +118,7 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
     assertEquals("Interviewer", npc1.getNpcType());
 
     // Run sync again to test updates and no duplicates
+    syncSessionManager.clearSyncSession(); // Reset session to allow second sync
     when(npcPage1.getRawProperties())
         .thenReturn(Map.of("Name", "Test NPC 1 Updated", "Role", "Announcer"));
     when(notionHandler.loadAllNpcs()).thenReturn(List.of(npcPage1));

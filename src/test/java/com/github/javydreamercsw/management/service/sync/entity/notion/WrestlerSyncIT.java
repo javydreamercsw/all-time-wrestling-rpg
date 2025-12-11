@@ -21,19 +21,24 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -44,14 +49,36 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerSyncService wrestlerSyncService;
+  @Autowired private SyncSessionManager syncSessionManager;
 
   @MockitoBean private NotionHandler notionHandler;
 
-  @Mock private WrestlerPage wrestlerPage;
+  private WrestlerPage wrestlerPage;
+
+  private static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
+
+  @BeforeAll
+  static void beforeAll() {
+    mockedEnvironmentVariableUtil = Mockito.mockStatic(EnvironmentVariableUtil.class);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::isNotionTokenAvailable)
+        .thenReturn(true);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::getNotionToken)
+        .thenReturn("test-token");
+  }
+
+  @AfterAll
+  static void afterAll() {
+    if (mockedEnvironmentVariableUtil != null) {
+      mockedEnvironmentVariableUtil.close();
+    }
+  }
 
   @BeforeEach
   void setUp() {
     clearAllRepositories();
+    wrestlerPage = Mockito.mock(WrestlerPage.class);
   }
 
   @Test
@@ -82,6 +109,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     assertThat(wrestler.getFans()).isEqualTo(100000L);
 
     // Test update
+    syncSessionManager.clearSyncSession(); // Reset session to allow second sync
     when(wrestlerPage.getRawProperties())
         .thenReturn(Map.of("Name", "Test Wrestler Updated", "Fans", 120000L));
 

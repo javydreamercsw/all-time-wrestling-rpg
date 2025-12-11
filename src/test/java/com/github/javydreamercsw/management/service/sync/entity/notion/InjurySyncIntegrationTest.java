@@ -21,19 +21,24 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.InjuryPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -46,14 +51,37 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired private InjuryTypeRepository injuryTypeRepository;
   @Autowired private InjurySyncService injurySyncService;
+  @Autowired private SyncSessionManager syncSessionManager;
   @MockitoBean private NotionHandler notionHandler;
 
-  @Mock private InjuryPage injuryPage1;
-  @Mock private InjuryPage injuryPage2;
+  private InjuryPage injuryPage1;
+  private InjuryPage injuryPage2;
+
+  private static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
+
+  @BeforeAll
+  static void beforeAll() {
+    mockedEnvironmentVariableUtil = Mockito.mockStatic(EnvironmentVariableUtil.class);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::isNotionTokenAvailable)
+        .thenReturn(true);
+    mockedEnvironmentVariableUtil
+        .when(EnvironmentVariableUtil::getNotionToken)
+        .thenReturn("test-token");
+  }
+
+  @AfterAll
+  static void afterAll() {
+    if (mockedEnvironmentVariableUtil != null) {
+      mockedEnvironmentVariableUtil.close();
+    }
+  }
 
   @BeforeEach
   void setUp() {
     clearAllRepositories();
+    injuryPage1 = Mockito.mock(InjuryPage.class);
+    injuryPage2 = Mockito.mock(InjuryPage.class);
   }
 
   @Test
@@ -124,6 +152,7 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
     assertThat(headInjury.getSpecialEffects()).isEqualTo("Cannot use headbutts.");
 
     // Run sync again to test updates and no duplicates
+    syncSessionManager.clearSyncSession(); // Reset session to allow second sync
     when(injuryPage1.getRawProperties())
         .thenReturn(
             Map.of(
