@@ -25,8 +25,10 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,6 +52,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerSyncService wrestlerSyncService;
   @Autowired private SyncSessionManager syncSessionManager;
+  @Autowired private TierRecalculationService tierRecalculationService;
 
   @MockitoBean private NotionHandler notionHandler;
 
@@ -79,6 +82,16 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
   void setUp() {
     clearAllRepositories();
     wrestlerPage = Mockito.mock(WrestlerPage.class);
+
+    // Create some wrestlers to establish tiers
+    wrestlerRepository.save(Wrestler.builder().name("W1").fans(200000L).build());
+    wrestlerRepository.save(Wrestler.builder().name("W2").fans(120000L).build());
+    wrestlerRepository.save(Wrestler.builder().name("W3").fans(80000L).build());
+    wrestlerRepository.save(Wrestler.builder().name("W4").fans(50000L).build());
+    wrestlerRepository.save(Wrestler.builder().name("W5").fans(30000L).build());
+    wrestlerRepository.save(Wrestler.builder().name("W6").fans(10000L).build());
+
+    tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerRepository.findAll()));
   }
 
   @Test
@@ -106,12 +119,12 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     assertThat(wrestlerOpt).isPresent();
     Wrestler wrestler = wrestlerOpt.get();
     assertThat(wrestler.getName()).isEqualTo("Test Wrestler");
-    assertThat(wrestler.getFans()).isEqualTo(100000L);
+    assertThat(wrestler.getFans()).isEqualTo(100_000L);
 
     // Test update
     syncSessionManager.clearSyncSession(); // Reset session to allow second sync
     when(wrestlerPage.getRawProperties())
-        .thenReturn(Map.of("Name", "Test Wrestler Updated", "Fans", 120000L));
+        .thenReturn(Map.of("Name", "Test Wrestler Updated", "Fans", 120_000L));
 
     wrestlerSyncService.syncWrestlers("wrestler-sync-test-2");
 
@@ -120,6 +133,6 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     assertThat(updatedWrestlerOpt).isPresent();
     Wrestler updatedWrestler = updatedWrestlerOpt.get();
     assertThat(updatedWrestler.getName()).isEqualTo("Test Wrestler Updated");
-    assertThat(updatedWrestler.getFans()).isEqualTo(120000L);
+    assertThat(updatedWrestler.getFans()).isEqualTo(120_000L);
   }
 }
