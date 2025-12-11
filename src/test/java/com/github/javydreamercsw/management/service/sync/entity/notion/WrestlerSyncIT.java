@@ -84,12 +84,12 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     wrestlerPage = Mockito.mock(WrestlerPage.class);
 
     // Create some wrestlers to establish tiers
-    wrestlerRepository.save(Wrestler.builder().name("W1").fans(200000L).build());
-    wrestlerRepository.save(Wrestler.builder().name("W2").fans(120000L).build());
-    wrestlerRepository.save(Wrestler.builder().name("W3").fans(80000L).build());
-    wrestlerRepository.save(Wrestler.builder().name("W4").fans(50000L).build());
-    wrestlerRepository.save(Wrestler.builder().name("W5").fans(30000L).build());
-    wrestlerRepository.save(Wrestler.builder().name("W6").fans(10000L).build());
+    wrestlerRepository.save(Wrestler.builder().name("W1").fans(200000L).deckSize(15).build());
+    wrestlerRepository.save(Wrestler.builder().name("W2").fans(120000L).deckSize(15).build());
+    wrestlerRepository.save(Wrestler.builder().name("W3").fans(80000L).deckSize(15).build());
+    wrestlerRepository.save(Wrestler.builder().name("W4").fans(50000L).deckSize(15).build());
+    wrestlerRepository.save(Wrestler.builder().name("W5").fans(30000L).deckSize(15).build());
+    wrestlerRepository.save(Wrestler.builder().name("W6").fans(10000L).deckSize(15).build());
 
     tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerRepository.findAll()));
   }
