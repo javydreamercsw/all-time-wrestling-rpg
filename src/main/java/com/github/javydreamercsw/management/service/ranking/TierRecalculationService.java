@@ -141,4 +141,26 @@ public class TierRecalculationService implements RankingService {
     }
     log.info("Tier recalculation finished.");
   }
+
+  @Transactional
+  public void recalculateTier(Wrestler wrestler) {
+    WrestlerTier newTier = calculateTier(wrestler.getFans());
+    if (wrestler.getTier() != newTier) {
+      log.info("Updating {}'s tier from {} to {}", wrestler.getName(), wrestler.getTier(), newTier);
+      wrestler.setTier(newTier);
+    }
+  }
+
+  private WrestlerTier calculateTier(long fans) {
+    return tierBoundaryService.findAll().stream()
+        .filter(boundary -> fans >= boundary.getMinFans() && fans <= boundary.getMaxFans())
+        .map(TierBoundary::getTier)
+        .findFirst()
+        .orElseGet(
+            () ->
+                java.util.Arrays.stream(WrestlerTier.values())
+                    .filter(tier -> fans >= tier.getMinFans() && fans <= tier.getMaxFans())
+                    .findFirst()
+                    .orElse(WrestlerTier.ROOKIE));
+  }
 }

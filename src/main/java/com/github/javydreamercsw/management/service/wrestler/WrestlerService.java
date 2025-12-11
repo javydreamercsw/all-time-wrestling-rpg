@@ -127,15 +127,16 @@ public class WrestlerService {
 
   // ==================== ATW RPG METHODS ====================
 
-  /**
-   * Award fans to a wrestler and update their tier.
-   *
-   * @param wrestlerId The wrestler's ID
-   * @param fanGain The number of fans to award (can be negative for losses)
-   * @return The updated wrestler
-   */
-  public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fanGain) {
-    return updateFans(wrestlerId, fanGain);
+  @Transactional
+  public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fans) {
+    return wrestlerRepository
+        .findById(wrestlerId)
+        .map(
+            wrestler -> {
+              wrestler.setFans(wrestler.getFans() + fans);
+              tierRecalculationService.recalculateTier(wrestler);
+              return wrestlerRepository.save(wrestler);
+            });
   }
 
   private Optional<Wrestler> updateFans(@NonNull Long wrestlerId, @NonNull Long fanChange) {

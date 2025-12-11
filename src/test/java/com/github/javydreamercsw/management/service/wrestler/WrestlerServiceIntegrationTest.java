@@ -60,6 +60,15 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private InboxService inboxService;
   @Autowired private InboxRepository inboxRepository;
 
+  @Autowired
+  private com.github.javydreamercsw.management.domain.wrestler.TierBoundaryRepository
+      tierBoundaryRepository;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUp() {
+    tierBoundaryRepository.deleteAll();
+  }
+
   @Test
   @DisplayName("Should get wrestler stats")
   @Transactional
