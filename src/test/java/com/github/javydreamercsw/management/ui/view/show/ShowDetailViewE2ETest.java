@@ -22,7 +22,6 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 import java.time.Duration;
@@ -57,25 +56,8 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     testShow.setDescription("Test Description");
     showRepository.save(testShow);
 
-    Wrestler wrestler1 = new Wrestler();
-    wrestler1.setName("Wrestler 1");
-    wrestler1.setDeckSize(10);
-    wrestler1.setLowHealth(0);
-    wrestler1.setStartingHealth(100);
-    wrestler1.setCurrentHealth(100);
-    wrestler1.setStartingStamina(100);
-    wrestler1.setLowStamina(0);
-    wrestlerRepository.save(wrestler1);
-
-    Wrestler wrestler2 = new Wrestler();
-    wrestler2.setName("Wrestler 2");
-    wrestler2.setDeckSize(10);
-    wrestler2.setLowHealth(0);
-    wrestler2.setStartingHealth(100);
-    wrestler2.setCurrentHealth(100);
-    wrestler2.setStartingStamina(100);
-    wrestler2.setLowStamina(0);
-    wrestlerRepository.save(wrestler2);
+    wrestlerRepository.save(createTestWrestler("Wrestler 1"));
+    wrestlerRepository.save(createTestWrestler("Wrestler 2"));
 
     SegmentType segmentType = new SegmentType();
     segmentType.setName("Singles Match");

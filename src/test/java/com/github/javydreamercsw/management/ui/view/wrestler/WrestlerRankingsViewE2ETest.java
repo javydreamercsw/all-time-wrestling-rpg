@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.time.Duration;
@@ -82,12 +83,15 @@ public class WrestlerRankingsViewE2ETest extends AbstractE2ETest {
     List<Title> titles = titleRepository.findAll();
     if (!titles.isEmpty()) {
       Title title = titles.get(0);
-      titleService.awardTitleTo(
-          title,
-          Arrays.asList(
-              wrestlerRepository
-                  .findAll()
-                  .get(new Random().nextInt(wrestlerRepository.findAll().size()))));
+      List<Wrestler> eligible = titleService.getEligibleChallengers(title.getId());
+      if (!eligible.isEmpty()) {
+        titleService.awardTitleTo(
+            title,
+            Arrays.asList(
+                wrestlerRepository
+                    .findAll()
+                    .get(new Random().nextInt(wrestlerRepository.findAll().size()))));
+      }
     }
   }
 }
