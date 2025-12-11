@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
+import com.github.javydreamercsw.base.domain.WrestlerData;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
@@ -30,12 +31,14 @@ import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +62,7 @@ public class WrestlerService {
   @Autowired private ApplicationEventPublisher eventPublisher;
   @Autowired private SegmentService segmentService; // Autowire SegmentService
   @Autowired private TitleService titleService; // Autowire TitleService
+  @Autowired private TierRecalculationService tierRecalculationService;
 
   public void createWrestler(@NonNull String name) {
     createWrestler(name, false, "", WrestlerTier.ROOKIE);
@@ -155,7 +159,14 @@ public class WrestlerService {
               wrestler.addFans(tempFans);
               Wrestler savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
               eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, tempFans));
-              return savedWrestler;
+
+              // Recalculate tiers for all wrestlers
+              tierRecalculationService.recalculateRanking(
+                  wrestlerRepository.findAll().stream()
+                      .map(w -> (WrestlerData) w)
+                      .collect(Collectors.toList()));
+
+              return wrestlerRepository.findById(savedWrestler.getId()).get();
             });
   }
 

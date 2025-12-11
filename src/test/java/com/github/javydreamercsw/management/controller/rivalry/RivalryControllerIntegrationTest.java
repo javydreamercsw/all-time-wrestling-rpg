@@ -20,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.controller.rivalry.RivalryController.AddHeatRequest;
 import com.github.javydreamercsw.management.controller.rivalry.RivalryController.CreateRivalryRequest;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
@@ -263,6 +264,7 @@ class RivalryControllerIntegrationTest extends AbstractIntegrationTest {
     wrestler.setDeckSize(40);
     wrestler.setBumps(0);
     wrestler.setIsPlayer(true);
+    wrestler.setTier(WrestlerTier.ROOKIE);
     return wrestlerRepository.save(wrestler);
   }
 
