@@ -87,12 +87,12 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
 
     // Create some wrestlers to establish tiers
     Stream.of(
-            TestUtils.createWrestler("W1", 200000L),
-            TestUtils.createWrestler("W2", 120000L),
-            TestUtils.createWrestler("W3", 80000L),
-            TestUtils.createWrestler("W4", 50000L),
-            TestUtils.createWrestler("W5", 30000L),
-            TestUtils.createWrestler("W6", 10000L))
+            TestUtils.createWrestler("W1", 200_000L),
+            TestUtils.createWrestler("W2", 120_000L),
+            TestUtils.createWrestler("W3", 80_000L),
+            TestUtils.createWrestler("W4", 50_000L),
+            TestUtils.createWrestler("W5", 30_000L),
+            TestUtils.createWrestler("W6", 10_000L))
         .forEach(wrestlerRepository::save);
 
     tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerRepository.findAll()));
@@ -107,7 +107,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     String wrestlerId = UUID.randomUUID().toString();
     when(wrestlerPage.getId()).thenReturn(wrestlerId);
     when(wrestlerPage.getRawProperties())
-        .thenReturn(Map.of("Name", "Test Wrestler", "Fans", 100000L));
+        .thenReturn(Map.of("Name", "Test Wrestler", "Fans", 100_000L));
 
     when(notionHandler.loadAllWrestlers()).thenReturn(List.of(wrestlerPage));
 
