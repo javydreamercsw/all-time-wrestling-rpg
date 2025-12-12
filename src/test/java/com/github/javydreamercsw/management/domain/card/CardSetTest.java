@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -35,6 +36,11 @@ class CardSetTest {
   @Autowired private TestEntityManager entityManager;
 
   @Autowired private CardSetRepository repository;
+
+  @AfterEach
+  void tearDown() {
+    entityManager.clear();
+  }
 
   @Test
   void testGettersAndSetters() {

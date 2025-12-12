@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.wrestler;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.card.Card;
 import java.util.ArrayList;
 import java.util.List;

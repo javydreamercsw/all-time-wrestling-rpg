@@ -19,9 +19,9 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
-import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -248,18 +248,6 @@ public class WrestlerService {
 
   public Optional<Wrestler> healChance(@NonNull Long wrestlerId) {
     return healChance(wrestlerId, new DiceBag(6));
-  }
-
-  /**
-   * Get all wrestlers eligible for a specific title.
-   *
-   * @param titleTier The title tier to check eligibility for
-   * @return List of eligible wrestlers
-   */
-  public List<Wrestler> getEligibleWrestlers(@NonNull WrestlerTier titleTier) {
-    return wrestlerRepository.findAll().stream()
-        .filter(wrestler -> titleService.isWrestlerEligible(wrestler, titleTier))
-        .toList();
   }
 
   /**

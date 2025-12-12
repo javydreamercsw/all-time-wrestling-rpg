@@ -205,42 +205,6 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
   }
 
   @Test
-  @DisplayName("Should filter wrestlers by eligibility")
-  @Transactional
-  void shouldFilterWrestlersByEligibility() {
-    int initialEligibleRookieWrestlers =
-        wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE).size();
-    int initialEligibleMainEventerWrestlers =
-        wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER).size();
-    // Given - Create wrestlers with different fan levels
-    wrestlerService.createWrestler("Rookie", true, null);
-    // rookie has 0 fans (Rookie tier)
-
-    Wrestler riser = wrestlerService.createWrestler("Riser", true, null);
-    Assertions.assertNotNull(riser.getId());
-    wrestlerService.awardFans(riser.getId(), 30_000L); // Riser tier
-
-    Wrestler contender = wrestlerService.createWrestler("Contender", true, null);
-    Assertions.assertNotNull(contender.getId());
-    wrestlerService.awardFans(contender.getId(), 45_000L); // Contender tier
-
-    Wrestler mainEventer = wrestlerService.createWrestler("Main Eventer", true, null);
-    Assertions.assertNotNull(mainEventer.getId());
-    wrestlerService.awardFans(mainEventer.getId(), 120_000L); // Main Eventer tier
-
-    // When
-    List<Wrestler> extremeEligible = wrestlerService.getWrestlersByTier(WrestlerTier.ROOKIE);
-    List<Wrestler> worldEligible = wrestlerService.getWrestlersByTier(WrestlerTier.MAIN_EVENTER);
-
-    // Then
-    assertThat(extremeEligible).hasSize(initialEligibleRookieWrestlers + 1);
-    assertThat(extremeEligible).extracting(Wrestler::getName).contains("Rookie");
-
-    assertThat(worldEligible).hasSize(initialEligibleMainEventerWrestlers + 1); // Only Main Eventer
-    assertThat(worldEligible).extracting(Wrestler::getName).contains("Main Eventer");
-  }
-
-  @Test
   @DisplayName("Should filter wrestlers by tier")
   @Transactional
   void shouldFilterWrestlersByTier() {

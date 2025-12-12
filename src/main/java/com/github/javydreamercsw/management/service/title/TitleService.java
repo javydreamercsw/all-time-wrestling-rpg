@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.title;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -44,9 +45,13 @@ public class TitleService {
   private final Clock clock;
 
   private boolean isWrestlerEligible(@NonNull Wrestler wrestler, @NonNull Title title) {
+    if (title.getGender() != null && title.getGender() != wrestler.getGender()) {
+      return false;
+    }
     // A wrestler is eligible if their current fan count falls within the title's tier boundary
     // OR if the tier boundary is not yet defined, use the static enum values.
-    Optional<TierBoundary> boundary = tierBoundaryService.findByTier(title.getTier());
+    Optional<TierBoundary> boundary =
+        tierBoundaryService.findByTierAndGender(title.getTier(), wrestler.getGender());
 
     // Fallback to static eligibility if dynamic boundaries are not set
     return boundary
@@ -64,26 +69,6 @@ public class TitleService {
             () ->
                 wrestler.getFans() >= title.getTier().getMinFans()
                     && wrestler.getFans() <= title.getTier().getMaxFans());
-  }
-
-  public boolean isWrestlerEligible(@NonNull Wrestler wrestler, @NonNull WrestlerTier titleTier) {
-    Optional<TierBoundary> boundary = tierBoundaryService.findByTier(titleTier);
-
-    return boundary
-        .map(
-            tierBoundary -> {
-              boolean meetsMin;
-              if (titleTier == WrestlerTier.ROOKIE) {
-                meetsMin = wrestler.getFans() >= tierBoundary.getMinFans();
-              } else {
-                meetsMin = wrestler.getFans() > tierBoundary.getMinFans();
-              }
-              return meetsMin && wrestler.getFans() <= tierBoundary.getMaxFans();
-            })
-        .orElseGet(
-            () ->
-                wrestler.getFans() >= titleTier.getMinFans()
-                    && wrestler.getFans() <= titleTier.getMaxFans());
   }
 
   public boolean titleNameExists(@NonNull String name) {
@@ -207,17 +192,17 @@ public class TitleService {
   }
 
   public Long getChallengeCost(@NonNull Title title) {
-
+    Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
     return tierBoundaryService
-        .findByTier(title.getTier())
+        .findByTierAndGender(title.getTier(), gender)
         .map(TierBoundary::getChallengeCost)
         .orElse(title.getTier().getChallengeCost()); // Fallback to static
   }
 
   public Long getContenderEntryFee(@NonNull Title title) {
-
+    Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
     return tierBoundaryService
-        .findByTier(title.getTier())
+        .findByTierAndGender(title.getTier(), gender)
         .map(TierBoundary::getContenderEntryFee)
         .orElse(title.getTier().getContenderEntryFee()); // Fallback to static
   }

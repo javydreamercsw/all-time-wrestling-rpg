@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.wrestler;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,7 +32,9 @@ import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
-@Table(name = "tier_boundary", uniqueConstraints = @UniqueConstraint(columnNames = {"tier"}))
+@Table(
+    name = "tier_boundary",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"tier", "gender"}))
 @Getter
 @Setter
 public class TierBoundary {
@@ -43,6 +46,10 @@ public class TierBoundary {
   @Column(name = "tier", nullable = false)
   @Enumerated(EnumType.STRING)
   private WrestlerTier tier;
+
+  @Column(name = "gender", nullable = false)
+  @Enumerated(EnumType.STRING)
+  private Gender gender;
 
   @Column(name = "min_fans", nullable = false)
   private Long minFans;

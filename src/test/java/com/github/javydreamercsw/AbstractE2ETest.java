@@ -176,6 +176,32 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /**
+   * Selects an item from a Vaadin ComboBox by clicking it and selecting the item from the overlay.
+   *
+   * @param comboBox the Vaadin ComboBox WebElement
+   * @param itemText the text of the item to select
+   */
+  protected void selectFromVaadinComboBox(@NonNull WebElement comboBox, @NonNull String itemText) {
+    // Click the combo box to open it
+    comboBox.click();
+
+    // Wait for the overlay to appear and the item to be clickable
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebElement item =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.xpath(
+                    "//vaadin-combo-box-overlay//vaadin-combo-box-item[normalize-space(.)='"
+                        + itemText
+                        + "']")));
+
+    // Click the item (item is guaranteed to be non-null by wait.until)
+    if (item != null) {
+      item.click();
+    }
+  }
+
+  /**
    * Returns all the data from a specific column in a Vaadin grid.
    *
    * @param grid the Vaadin grid WebElement

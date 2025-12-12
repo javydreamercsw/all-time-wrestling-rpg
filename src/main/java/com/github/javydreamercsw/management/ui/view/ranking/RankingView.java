@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.ranking;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
@@ -123,14 +124,34 @@ public class RankingView extends Main {
         .addColumn(tb -> String.format("%,d", tb.getContenderEntryFee()))
         .setHeader("Contender Entry Fee");
 
-    List<TierBoundary> tierBoundaries =
-        tierBoundaryService.findAll().stream()
+    ComboBox<Gender> genderComboBox = new ComboBox<>("Gender");
+    genderComboBox.setItems(Gender.values());
+    genderComboBox.setId("gender-selection");
+    genderComboBox.setItemLabelGenerator(Gender::name);
+    genderComboBox.setValue(Gender.MALE); // Default to male
+
+    genderComboBox.addValueChangeListener(
+        event -> {
+          List<TierBoundary> tierBoundaries =
+              tierBoundaryService.findAllByGender(event.getValue()).stream()
+                  .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
+                  .collect(Collectors.toList());
+          log.info(
+              "Found {} tier boundaries for {} to display.",
+              tierBoundaries.size(),
+              event.getValue());
+          tierGrid.setItems(tierBoundaries);
+        });
+
+    // Initial load
+    List<TierBoundary> initialBoundaries =
+        tierBoundaryService.findAllByGender(Gender.MALE).stream()
             .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
             .collect(Collectors.toList());
-    log.info("Found {} tier boundaries to display.", tierBoundaries.size());
-    tierGrid.setItems(tierBoundaries);
+    log.info("Found {} tier boundaries for MALE to display.", initialBoundaries.size());
+    tierGrid.setItems(initialBoundaries);
 
-    dialog.add(tierGrid);
+    dialog.add(genderComboBox, tierGrid);
     dialog.open();
   }
 

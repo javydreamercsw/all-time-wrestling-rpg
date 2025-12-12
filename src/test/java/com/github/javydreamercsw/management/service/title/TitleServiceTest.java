@@ -24,6 +24,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -73,7 +74,7 @@ class TitleServiceTest {
     titleService =
         new TitleService(tierBoundaryService, titleRepository, wrestlerRepository, clock);
     Mockito.lenient().doNothing().when(eventPublisher).publishEvent(any());
-    when(tierBoundaryService.findByTier(any(WrestlerTier.class)))
+    when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
         .thenAnswer(
             invocation -> {
               WrestlerTier tier = invocation.getArgument(0);

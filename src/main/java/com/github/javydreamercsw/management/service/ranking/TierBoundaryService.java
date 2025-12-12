@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.ranking;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.domain.wrestler.TierBoundaryRepository;
@@ -30,8 +31,8 @@ public class TierBoundaryService {
 
   private final TierBoundaryRepository tierBoundaryRepository;
 
-  public Optional<TierBoundary> findByTier(WrestlerTier tier) {
-    return tierBoundaryRepository.findByTier(tier);
+  public Optional<TierBoundary> findByTierAndGender(WrestlerTier tier, Gender gender) {
+    return tierBoundaryRepository.findByTierAndGender(tier, gender);
   }
 
   public TierBoundary save(TierBoundary tierBoundary) {
@@ -42,9 +43,15 @@ public class TierBoundaryService {
     return (List<TierBoundary>) tierBoundaryRepository.findAll();
   }
 
-  public WrestlerTier findTierForFans(long fans) {
+  public List<TierBoundary> findAllByGender(Gender gender) {
+    return tierBoundaryRepository.findAllByGender(gender);
+  }
+
+  public WrestlerTier findTierForFans(long fans, Gender gender) {
     List<TierBoundary> boundaries =
-        findAll().stream().sorted((b1, b2) -> b2.getMinFans().compareTo(b1.getMinFans())).toList();
+        findAllByGender(gender).stream()
+            .sorted((b1, b2) -> b2.getMinFans().compareTo(b1.getMinFans()))
+            .toList();
 
     for (TierBoundary boundary : boundaries) {
       if (fans >= boundary.getMinFans() && fans <= boundary.getMaxFans()) {
