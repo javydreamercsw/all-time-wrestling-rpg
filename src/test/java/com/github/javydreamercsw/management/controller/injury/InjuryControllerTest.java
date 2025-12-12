@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -45,6 +46,7 @@ class InjuryControllerTest {
   @MockitoBean private InjuryService injuryService;
 
   @MockitoBean private WrestlerRepository wrestlerRepository;
+  @MockitoBean private RankingService rankingService;
 
   @Autowired private ObjectMapper objectMapper;
 

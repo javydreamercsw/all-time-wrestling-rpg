@@ -25,7 +25,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,8 @@ class ShowControllerTest {
 
   @Autowired private MockMvc mockMvc;
   @MockitoBean private ShowService showService;
+  @MockitoBean private RankingService rankingService;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
   @Autowired private ObjectMapper objectMapper;
 
   @Test

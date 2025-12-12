@@ -60,12 +60,8 @@ class InjurySystemIntegrationTest extends AbstractIntegrationTest {
 
   @org.junit.jupiter.api.BeforeEach
   void setUp() {
-    wrestler1 = new Wrestler();
-    wrestler1.setName("Test Wrestler 1");
+    wrestler1 = createTestWrestler("Test Wrestler 1");
     wrestler1.setFans(10000L);
-    wrestler1.setStartingHealth(100);
-    wrestler1.setStartingStamina(100);
-    wrestler1.setDeckSize(30);
     wrestler1 = wrestlerRepository.save(wrestler1);
   }
 

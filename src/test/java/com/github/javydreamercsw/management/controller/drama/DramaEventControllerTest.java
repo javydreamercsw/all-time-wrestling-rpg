@@ -23,9 +23,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,8 @@ class DramaEventControllerTest {
   @Autowired private MockMvc mockMvc;
 
   @MockitoBean private DramaEventService dramaEventService;
+  @MockitoBean private RankingService rankingService;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Autowired private ObjectMapper objectMapper;
 

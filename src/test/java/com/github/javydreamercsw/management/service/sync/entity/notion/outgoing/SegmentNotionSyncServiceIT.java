@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -40,7 +41,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentNotionSyncService;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -145,7 +145,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     wrestler.setLowHealth(4);
     wrestler.setDeckSize(15);
     wrestler.setTier(WrestlerTier.MIDCARDER);
-    wrestler.setCreationDate(Instant.parse("2025-12-09T10:00:00Z"));
+    wrestler.setCreationDate(Instant.now());
     wrestler.setFaction(faction);
     wrestler.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
     wrestlerRepository.save(wrestler);
@@ -154,7 +154,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     Segment segment = new Segment();
     segment.setShow(show);
     segment.setSegmentType(segmentType);
-    segment.setSegmentDate(Instant.parse("2025-12-09T10:00:00Z"));
+    segment.setSegmentDate(Instant.now()); // Reverted reflection hack
     segment.setStatus(SegmentStatus.BOOKED);
     segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
     segment.addSegmentRule(segmentRule);
@@ -190,7 +190,9 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
         segment.getSegmentType().getExternalId(),
         capturedRequest.getProperties().get("Segment Type").getRelation().get(0).getId());
     assertEquals(
-        "2025-12-09T10:00:00Z", capturedRequest.getProperties().get("Date").getDate().getStart());
+        segment.getSegmentDate().truncatedTo(java.time.temporal.ChronoUnit.MILLIS),
+        Instant.parse(capturedRequest.getProperties().get("Date").getDate().getStart())
+            .truncatedTo(java.time.temporal.ChronoUnit.MILLIS));
     assertEquals(
         segment.getStatus().name(),
         capturedRequest.getProperties().get("Status").getSelect().getName());

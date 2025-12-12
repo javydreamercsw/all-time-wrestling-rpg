@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management;
 
-import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
@@ -39,7 +38,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
@@ -55,7 +53,6 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
-import lombok.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -141,9 +138,5 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
     showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
     segmentTypeRepository.deleteAll();
-  }
-
-  protected Wrestler createTestWrestler(@NonNull String name) {
-    return TestUtils.createWrestler(name);
   }
 }

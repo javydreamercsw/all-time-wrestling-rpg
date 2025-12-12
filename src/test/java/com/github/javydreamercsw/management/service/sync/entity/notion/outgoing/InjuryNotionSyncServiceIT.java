@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -32,9 +33,9 @@ import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.entity.notion.InjuryNotionSyncService;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
@@ -105,7 +106,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
     wrestler.setLowHealth(4);
     wrestler.setDeckSize(15);
     wrestler.setTier(WrestlerTier.MIDCARDER);
-    wrestler.setCreationDate(Instant.parse("2025-12-09T10:00:00Z"));
+    wrestler.setCreationDate(Instant.now());
     wrestler.setFaction(faction);
     wrestler.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
     wrestlerRepository.save(wrestler);
@@ -118,7 +119,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
     injury.setSeverity(InjurySeverity.MINOR);
     injury.setHealthPenalty(5);
     injury.setIsActive(true);
-    injury.setInjuryDate(Instant.parse("2025-12-09T10:00:00Z"));
+    injury.setInjuryDate(Instant.now());
     injury.setHealingCost(5000L);
     injury.setInjuryNotes("Wrestler landed awkwardly during a match.");
     injuryRepository.save(injury);
@@ -159,8 +160,9 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
         capturedRequest.getProperties().get("Health Penalty").getNumber());
     assertEquals(injury.getIsActive(), capturedRequest.getProperties().get("Active").getCheckbox());
     assertEquals(
-        "2025-12-09T10:00:00Z",
-        capturedRequest.getProperties().get("Injury Date").getDate().getStart());
+        injury.getInjuryDate().truncatedTo(ChronoUnit.SECONDS),
+        Instant.parse(capturedRequest.getProperties().get("Injury Date").getDate().getStart())
+            .truncatedTo(ChronoUnit.SECONDS));
     assertEquals(
         injury.getHealingCost().doubleValue(),
         capturedRequest.getProperties().get("Healing Cost").getNumber());
@@ -175,8 +177,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
             .getContent());
 
     // Sync to Notion again
-    updatedInjury.setHealedDate(Instant.parse("2025-12-10T10:00:00Z"));
-    updatedInjury.setIsActive(false);
+    updatedInjury.heal(); // Mark as healed
     updatedInjury.setInjuryNotes("Updated notes " + UUID.randomUUID());
     injuryRepository.save(updatedInjury);
     injuryNotionSyncService.syncToNotion("test-op-2");
@@ -190,8 +191,9 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
         updatedInjury2.getIsActive(),
         capturedUpdateRequest.getProperties().get("Active").getCheckbox());
     assertEquals(
-        "2025-12-10T10:00:00Z",
-        capturedUpdateRequest.getProperties().get("Healed Date").getDate().getStart());
+        updatedInjury2.getHealedDate().truncatedTo(ChronoUnit.SECONDS),
+        Instant.parse(capturedUpdateRequest.getProperties().get("Healed Date").getDate().getStart())
+            .truncatedTo(ChronoUnit.SECONDS));
     assertEquals(
         updatedInjury2.getInjuryNotes(),
         capturedUpdateRequest

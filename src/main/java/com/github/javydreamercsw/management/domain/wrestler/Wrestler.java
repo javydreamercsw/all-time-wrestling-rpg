@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.domain.wrestler;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.WrestlerData;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -44,7 +46,7 @@ import org.jspecify.annotations.Nullable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Wrestler extends AbstractEntity<Long> {
+public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "wrestler_id")
@@ -157,17 +159,8 @@ public class Wrestler extends AbstractEntity<Long> {
     return Math.max(1, effective); // Never go below 1
   }
 
-  public boolean isEligibleForTitle(WrestlerTier titleTier) {
-    return titleTier.isEligible(fans);
-  }
-
-  public void updateTier() {
-    this.tier = WrestlerTier.fromFanCount(fans);
-  }
-
   public void addFans(long fanGain) {
     this.fans = Math.max(0, this.fans + fanGain);
-    updateTier();
   }
 
   public boolean addBump() {
@@ -191,7 +184,6 @@ public class Wrestler extends AbstractEntity<Long> {
   public boolean spendFans(Long cost) {
     if (canAfford(cost)) {
       fans -= cost;
-      updateTier();
       return true;
     }
     return false;
@@ -265,7 +257,6 @@ public class Wrestler extends AbstractEntity<Long> {
     if (gender == null) {
       gender = Gender.MALE;
     }
-    updateTier();
   }
 
   @PreUpdate
@@ -276,6 +267,5 @@ public class Wrestler extends AbstractEntity<Long> {
     if (bumps == null) {
       bumps = 0;
     }
-    updateTier();
   }
 }

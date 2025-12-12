@@ -19,10 +19,10 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.TitlePage;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -243,7 +243,7 @@ public class TitleSyncService extends BaseSyncService {
       }
     } else if (!title.isVacant()) {
       log.info("Vacating title from Notion: {}", title.getName());
-      title.vacateTitle();
+      title.vacateTitle(java.time.Instant.now());
       syncServiceDependencies.getTitleRepository().save(title);
     }
 

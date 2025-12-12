@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.base.test.BaseControllerTest;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,7 @@ class SegmentNarrationControllerTest extends BaseControllerTest {
   @Autowired private MockMvc mockMvc;
   @MockitoBean private SegmentNarrationServiceFactory serviceFactory;
   @MockitoBean private SegmentOutcomeProvider matchOutcomeService;
+  @MockitoBean private RankingService rankingService;
 
   @Test
   void testNarrateMatch() throws Exception {

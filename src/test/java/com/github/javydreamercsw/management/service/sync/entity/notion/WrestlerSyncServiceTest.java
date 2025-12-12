@@ -23,6 +23,7 @@ import static org.mockito.Mockito.*;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
@@ -49,6 +50,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   @Mock private SyncSessionManager syncSessionManager;
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerNotionSyncService wrestlerNotionSyncService;
+  @Mock private TierRecalculationService tierRecalculationService;
 
   @BeforeEach
   @Override
@@ -83,7 +85,8 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
             notionApiExecutor,
             wrestlerService,
             wrestlerRepository,
-            wrestlerNotionSyncService);
+            wrestlerNotionSyncService,
+            tierRecalculationService);
   }
 
   @Test

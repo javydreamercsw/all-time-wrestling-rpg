@@ -20,10 +20,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
@@ -106,8 +106,8 @@ public class Title extends AbstractEntity<Long> {
     this.champion = new ArrayList<>(newChampions); // Ensure champion field is updated
   }
 
-  public void vacateTitle() {
-    getCurrentReign().ifPresent(reign -> reign.endReign(Instant.now()));
+  public void vacateTitle(Instant now) {
+    getCurrentReign().ifPresent(reign -> reign.endReign(now));
     this.champion.clear();
   }
 
@@ -121,24 +121,16 @@ public class Title extends AbstractEntity<Long> {
     return champion;
   }
 
-  public long getCurrentReignDays() {
-    return getCurrentReign().map(TitleReign::getReignLengthDays).orElse(0L);
+  public long getCurrentReignDays(Instant now) {
+    return getCurrentReign().map(reign -> reign.getReignLengthDays(now)).orElse(0L);
   }
 
   public int getTotalReigns() {
     return titleReigns.size();
   }
 
-  public boolean isWrestlerEligible(Wrestler wrestler) {
-    return wrestler.isEligibleForTitle(tier);
-  }
-
-  public Long getChallengeCost() {
-    return tier.getChallengeCost();
-  }
-
-  public Long getContenderEntryFee() {
-    return tier.getContenderEntryFee();
+  public boolean isTopTier() {
+    return getTier() == WrestlerTier.MAIN_EVENTER;
   }
 
   public String getDisplayName() {

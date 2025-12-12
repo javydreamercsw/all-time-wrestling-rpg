@@ -19,17 +19,18 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.utils.DiceBag;
@@ -57,11 +58,12 @@ public class WrestlerService {
   @Autowired private Clock clock;
   @Autowired private InjuryService injuryService;
   @Autowired private ApplicationEventPublisher eventPublisher;
-  @Autowired private SegmentService segmentService; // Autowire SegmentService
-  @Autowired private TitleService titleService; // Autowire TitleService
+  @Autowired private SegmentService segmentService;
+  @Autowired private TitleService titleService;
+  @Autowired private TierRecalculationService tierRecalculationService;
 
   public void createWrestler(@NonNull String name) {
-    createWrestler(name, false, "");
+    createWrestler(name, false, "", WrestlerTier.ROOKIE);
   }
 
   public List<Wrestler> list(@NonNull Pageable pageable) {
@@ -123,17 +125,12 @@ public class WrestlerService {
 
   // ==================== ATW RPG METHODS ====================
 
-  /**
-   * Award fans to a wrestler and update their tier.
-   *
-   * @param wrestlerId The wrestler's ID
-   * @param fanGain The number of fans to award (can be negative for losses)
-   * @return The updated wrestler
-   */
-  public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fanGain) {
-    return updateFans(wrestlerId, fanGain);
+  @Transactional
+  public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fans) {
+    return updateFans(wrestlerId, fans);
   }
 
+  @Transactional
   private Optional<Wrestler> updateFans(@NonNull Long wrestlerId, @NonNull Long fanChange) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -153,9 +150,11 @@ public class WrestlerService {
                 tempFans = Math.round(tempFans / 1000.0) * 1000;
               }
               wrestler.addFans(tempFans);
+              tierRecalculationService.recalculateTier(wrestler);
               Wrestler savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
               eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, tempFans));
-              return savedWrestler;
+
+              return wrestlerRepository.findById(savedWrestler.getId()).get();
             });
   }
 
@@ -259,7 +258,7 @@ public class WrestlerService {
    */
   public List<Wrestler> getEligibleWrestlers(@NonNull WrestlerTier titleTier) {
     return wrestlerRepository.findAll().stream()
-        .filter(wrestler -> wrestler.isEligibleForTitle(titleTier))
+        .filter(wrestler -> titleService.isWrestlerEligible(wrestler, titleTier))
         .toList();
   }
 
@@ -315,6 +314,20 @@ public class WrestlerService {
    * @return The created wrestler
    */
   public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
+    return createWrestler(name, isPlayer, description, WrestlerTier.ROOKIE);
+  }
+
+  /**
+   * Create a new wrestler with ATW RPG defaults.
+   *
+   * @param name Wrestler name
+   * @param isPlayer Whether this is a player-controlled wrestler
+   * @param description Character description
+   * @param tier The tier of the wrestler
+   * @return The created wrestler
+   */
+  public Wrestler createWrestler(
+      @NonNull String name, boolean isPlayer, String description, @NonNull WrestlerTier tier) {
     Wrestler wrestler =
         Wrestler.builder()
             .name(name)
@@ -328,6 +341,7 @@ public class WrestlerService {
             .gender(Gender.MALE)
             .isPlayer(isPlayer)
             .bumps(0)
+            .tier(tier)
             .build();
 
     return save(wrestler);

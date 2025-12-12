@@ -20,12 +20,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.base.util.NotionBlocksRetriever;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -47,9 +48,10 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class WrestlerSyncService extends BaseSyncService {
 
-  private WrestlerService wrestlerService;
-  private WrestlerRepository wrestlerRepository;
-  private WrestlerNotionSyncService wrestlerNotionSyncService;
+  private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
+  private final WrestlerNotionSyncService wrestlerNotionSyncService;
+  private final TierRecalculationService tierRecalculationService;
 
   public WrestlerSyncService(
       ObjectMapper objectMapper,
@@ -57,11 +59,13 @@ public class WrestlerSyncService extends BaseSyncService {
       NotionApiExecutor notionApiExecutor,
       WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
-      WrestlerNotionSyncService wrestlerNotionSyncService) {
+      WrestlerNotionSyncService wrestlerNotionSyncService,
+      TierRecalculationService tierRecalculationService) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerNotionSyncService = wrestlerNotionSyncService;
+    this.tierRecalculationService = tierRecalculationService;
   }
 
   /**
@@ -708,6 +712,7 @@ public class WrestlerSyncService extends BaseSyncService {
           if (dto.getIsPlayer() != null) wrestler.setIsPlayer(dto.getIsPlayer());
           if (dto.getBumps() != null) wrestler.setBumps(dto.getBumps());
         }
+        tierRecalculationService.recalculateTier(wrestler);
 
         // Save the wrestler
         log.info(

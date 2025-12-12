@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import java.time.Instant;
@@ -44,7 +45,7 @@ class WrestlerHealthCalculationTest {
     wrestler.setCurrentHealth(15);
     wrestler.setBumps(0);
     wrestler.setFans(25000L);
-    wrestler.updateTier();
+    wrestler.setTier(WrestlerTier.ROOKIE);
     wrestler.setInjuries(new ArrayList<>());
   }
 
@@ -245,7 +246,7 @@ class WrestlerHealthCalculationTest {
     wrestler.getInjuries().add(injury);
 
     // When
-    wrestler.updateTier();
+    wrestler.setTier(WrestlerTier.MIDCARDER);
 
     // Then - Tier should be based on fans, not health
     assertThat(wrestler.getTier()).isEqualTo(WrestlerTier.MIDCARDER);

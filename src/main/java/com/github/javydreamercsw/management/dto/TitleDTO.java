@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management.dto;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import lombok.Data;
 
 @Data

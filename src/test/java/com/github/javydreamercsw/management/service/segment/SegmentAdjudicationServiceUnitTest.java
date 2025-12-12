@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Objects;
@@ -50,6 +51,7 @@ class SegmentAdjudicationServiceUnitTest {
   @Mock private MultiWrestlerFeudService feudService;
 
   @Mock private Random random;
+  @Mock private TitleService titleService;
 
   @InjectMocks private SegmentAdjudicationService adjudicationService;
 
@@ -62,7 +64,12 @@ class SegmentAdjudicationServiceUnitTest {
   void setUp() {
     adjudicationService =
         new SegmentAdjudicationService(
-            rivalryService, wrestlerService, feudResolutionService, feudService, random);
+            rivalryService,
+            wrestlerService,
+            feudResolutionService,
+            feudService,
+            titleService,
+            random);
 
     wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);

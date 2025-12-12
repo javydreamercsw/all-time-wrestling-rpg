@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -361,6 +362,7 @@ public class DataInitializer {
             wrestlerService.save(existingWrestler);
             log.debug("Updated existing wrestler: {}", existingWrestler.getName());
           } else {
+            w.setTier(WrestlerTier.ROOKIE);
             wrestlerService.save(w);
             log.debug("Saved new wrestler: {}", w.getName());
           }

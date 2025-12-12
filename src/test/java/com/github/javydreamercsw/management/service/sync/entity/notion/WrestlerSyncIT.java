@@ -19,18 +19,22 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -50,6 +54,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerSyncService wrestlerSyncService;
   @Autowired private SyncSessionManager syncSessionManager;
+  @Autowired private TierRecalculationService tierRecalculationService;
 
   @MockitoBean private NotionHandler notionHandler;
 
@@ -79,6 +84,18 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
   void setUp() {
     clearAllRepositories();
     wrestlerPage = Mockito.mock(WrestlerPage.class);
+
+    // Create some wrestlers to establish tiers
+    Stream.of(
+            TestUtils.createWrestler("W1", 200_000L),
+            TestUtils.createWrestler("W2", 120_000L),
+            TestUtils.createWrestler("W3", 80_000L),
+            TestUtils.createWrestler("W4", 50_000L),
+            TestUtils.createWrestler("W5", 30_000L),
+            TestUtils.createWrestler("W6", 10_000L))
+        .forEach(wrestlerRepository::save);
+
+    tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerRepository.findAll()));
   }
 
   @Test
@@ -90,7 +107,7 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     String wrestlerId = UUID.randomUUID().toString();
     when(wrestlerPage.getId()).thenReturn(wrestlerId);
     when(wrestlerPage.getRawProperties())
-        .thenReturn(Map.of("Name", "Test Wrestler", "Fans", 100000L));
+        .thenReturn(Map.of("Name", "Test Wrestler", "Fans", 100_000L));
 
     when(notionHandler.loadAllWrestlers()).thenReturn(List.of(wrestlerPage));
 
@@ -106,20 +123,20 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     assertThat(wrestlerOpt).isPresent();
     Wrestler wrestler = wrestlerOpt.get();
     assertThat(wrestler.getName()).isEqualTo("Test Wrestler");
-    assertThat(wrestler.getFans()).isEqualTo(100000L);
+    assertThat(wrestler.getFans()).isEqualTo(100_000L);
 
     // Test update
     syncSessionManager.clearSyncSession(); // Reset session to allow second sync
     when(wrestlerPage.getRawProperties())
-        .thenReturn(Map.of("Name", "Test Wrestler Updated", "Fans", 120000L));
+        .thenReturn(Map.of("Name", "Test Wrestler Updated", "Fans", 120_000L));
 
     wrestlerSyncService.syncWrestlers("wrestler-sync-test-2");
 
-    assertThat(wrestlerRepository.findAll()).hasSize(1);
+    assertThat(wrestlerRepository.findAll()).hasSize(7);
     Optional<Wrestler> updatedWrestlerOpt = wrestlerRepository.findByExternalId(wrestlerId);
     assertThat(updatedWrestlerOpt).isPresent();
     Wrestler updatedWrestler = updatedWrestlerOpt.get();
     assertThat(updatedWrestler.getName()).isEqualTo("Test Wrestler Updated");
-    assertThat(updatedWrestler.getFans()).isEqualTo(120000L);
+    assertThat(updatedWrestler.getFans()).isEqualTo(120_000L);
   }
 }

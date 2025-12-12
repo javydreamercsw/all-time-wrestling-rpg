@@ -102,15 +102,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testEditWrestler() {
     // Create a wrestler to edit
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName("Wrestler to Edit");
-    wrestler.setDeckSize(10);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingHealth(100);
-    wrestler.setCurrentHealth(100);
-    wrestler.setStartingStamina(100);
-    wrestler.setLowStamina(0);
-    wrestlerRepository.save(wrestler);
+    Wrestler wrestler = wrestlerRepository.save(createTestWrestler("Wrestler to Edit"));
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     // Find the menu for the wrestler and click it
@@ -166,16 +158,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testDeleteWrestler() {
     // Create a wrestler to delete
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName("Wrestler to Delete");
-    wrestler.setDeckSize(10);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingHealth(100);
-    wrestler.setCurrentHealth(100);
-    wrestler.setStartingStamina(100);
-    wrestler.setLowStamina(0);
-
-    wrestlerRepository.save(wrestler);
+    Wrestler wrestler = wrestlerRepository.save(createTestWrestler("Wrestler to Delete"));
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));

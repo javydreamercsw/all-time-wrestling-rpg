@@ -178,16 +178,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
   void testAddWrestlerToFaction() {
     // Create a faction and a wrestler
     Faction faction = factionService.save(Faction.builder().name("Faction with Wrestler").build());
-    Wrestler wrestler =
-        wrestlerService.save(
-            Wrestler.builder()
-                .name("Faction Wrestler")
-                .deckSize(30)
-                .startingHealth(100)
-                .lowHealth(10)
-                .startingStamina(100)
-                .lowStamina(10)
-                .build());
+    Wrestler wrestler = wrestlerService.save(createTestWrestler("Faction Wrestler"));
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
     waitForVaadinClientToLoad();
@@ -236,16 +227,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
   void testRemoveWrestlerFromFaction() {
     // Create a faction and a wrestler, and add the wrestler to the faction
     Faction faction = factionService.save(Faction.builder().name("Faction to Remove From").build());
-    Wrestler wrestler =
-        wrestlerService.save(
-            Wrestler.builder()
-                .name("Wrestler to Remove")
-                .deckSize(30)
-                .startingHealth(100)
-                .lowHealth(10)
-                .startingStamina(100)
-                .lowStamina(10)
-                .build());
+    Wrestler wrestler = wrestlerService.save(createTestWrestler("Wrestler to Remove"));
     Assertions.assertNotNull(faction.getId());
     Assertions.assertNotNull(wrestler.getId());
     factionService.addMemberToFaction(faction.getId(), wrestler.getId());

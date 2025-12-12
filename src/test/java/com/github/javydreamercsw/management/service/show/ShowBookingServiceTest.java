@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
 
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
@@ -78,7 +79,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
     segmentTypeService.createOrUpdateSegmentType("Promo", "A promotional segment");
 
     for (int i = 0; i < 10; i++) {
-      wrestlerService.createWrestler("Wrestler " + i, true, null);
+      wrestlerService.createWrestler("Wrestler " + i, true, null, WrestlerTier.ROOKIE);
     }
   }
 

@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto.wrestler;
 
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import java.io.Serializable;
 import lombok.Data;
 

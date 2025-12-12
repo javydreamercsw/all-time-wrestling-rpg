@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

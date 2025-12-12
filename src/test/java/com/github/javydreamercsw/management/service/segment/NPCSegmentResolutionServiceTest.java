@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.Injury;
@@ -94,9 +95,9 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
     }
 
     // Create test wrestlers with different tiers
-    rookie1 = wrestlerService.createWrestler("Rookie One", true, null);
-    rookie2 = wrestlerService.createWrestler("Rookie Two", true, null);
-    contender = wrestlerService.createWrestler("The Contender", true, null);
+    rookie1 = wrestlerService.createWrestler("Rookie One", true, null, WrestlerTier.ROOKIE);
+    rookie2 = wrestlerService.createWrestler("Rookie Two", true, null, WrestlerTier.ROOKIE);
+    contender = wrestlerService.createWrestler("The Contender", true, null, WrestlerTier.CONTENDER);
 
     // Award fans to create tier differences
     Assertions.assertNotNull(contender.getId());

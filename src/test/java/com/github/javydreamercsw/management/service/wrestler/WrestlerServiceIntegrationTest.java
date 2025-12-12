@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
@@ -29,7 +30,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -59,6 +59,15 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private ShowTypeService showTypeService;
   @Autowired private InboxService inboxService;
   @Autowired private InboxRepository inboxRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.wrestler.TierBoundaryRepository
+      tierBoundaryRepository;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUp() {
+    tierBoundaryRepository.deleteAll();
+  }
 
   @Test
   @DisplayName("Should get wrestler stats")
@@ -220,15 +229,12 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     wrestlerService.awardFans(mainEventer.getId(), 120_000L); // Main Eventer tier
 
     // When
-    List<Wrestler> extremeEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE);
-    List<Wrestler> worldEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER);
+    List<Wrestler> extremeEligible = wrestlerService.getWrestlersByTier(WrestlerTier.ROOKIE);
+    List<Wrestler> worldEligible = wrestlerService.getWrestlersByTier(WrestlerTier.MAIN_EVENTER);
 
     // Then
-    assertThat(extremeEligible)
-        .hasSize(initialEligibleRookieWrestlers + 4); // Rookie, Riser, Contender, Main Eventer
-    assertThat(extremeEligible)
-        .extracting(Wrestler::getName)
-        .contains("Rookie", "Riser", "Contender", "Main Eventer");
+    assertThat(extremeEligible).hasSize(initialEligibleRookieWrestlers + 1);
+    assertThat(extremeEligible).extracting(Wrestler::getName).contains("Rookie");
 
     assertThat(worldEligible).hasSize(initialEligibleMainEventerWrestlers + 1); // Only Main Eventer
     assertThat(worldEligible).extracting(Wrestler::getName).contains("Main Eventer");
@@ -316,8 +322,7 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     // Calculate expected health manually to avoid lazy loading issues
     int expectedHealth = finalWrestler.getStartingHealth() - finalWrestler.getBumps();
     assertThat(expectedHealth).isEqualTo(13); // 15 - 2 bumps
-    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.RISER)).isTrue();
-    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.MIDCARDER)).isFalse();
+    assertThat(finalWrestler.getTier()).isEqualTo(WrestlerTier.CONTENDER);
     assertThat(finalWrestler.getDescription()).isEqualTo("Test wrestler for complex operations");
   }
 
@@ -331,7 +336,7 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     long initialInboxItemCount = inboxRepository.count();
 
     // When
-    wrestlerService.awardFans(wrestler.getId(), 1000L);
+    wrestlerService.awardFans(wrestler.getId(), 1_000L);
 
     // Then
     assertThat(inboxRepository.count()).isEqualTo(initialInboxItemCount + 1);

@@ -16,12 +16,16 @@
 */
 package com.github.javydreamercsw.management.ui.view.ranking;
 
+import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
+import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
@@ -49,13 +53,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class RankingView extends Main {
 
   private final RankingService rankingService;
+  private final TierBoundaryService tierBoundaryService;
 
   private final Image championshipImage = new Image();
   private final VerticalLayout championLayout = new VerticalLayout();
   private final Grid<RankedWrestlerDTO> contendersGrid = new Grid<>();
 
-  public RankingView(@NonNull RankingService rankingService) {
+  public RankingView(
+      @NonNull RankingService rankingService, @NonNull TierBoundaryService tierBoundaryService) {
     this.rankingService = rankingService;
+    this.tierBoundaryService = tierBoundaryService;
 
     ComboBox<ChampionshipDTO> championshipComboBox = new ComboBox<>("Championship");
     championshipComboBox.setItems(
@@ -89,10 +96,42 @@ public class RankingView extends Main {
     championshipImage.setWidth("auto");
     championshipImage.getStyle().set("object-fit", "contain");
 
-    HorizontalLayout topLayout = new HorizontalLayout(championshipComboBox);
+    Button showTierBoundariesButton = new Button("Show Tier Boundaries");
+    showTierBoundariesButton.addClickListener(event -> showTierBoundariesDialog());
+
+    HorizontalLayout topLayout =
+        new HorizontalLayout(championshipComboBox, showTierBoundariesButton);
     topLayout.setAlignItems(Alignment.CENTER);
 
     add(topLayout, championLayout, championshipImage, contendersGrid);
+  }
+
+  private void showTierBoundariesDialog() {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Tier Boundaries");
+    dialog.setWidth("40em");
+
+    Grid<TierBoundary> tierGrid = new Grid<>(TierBoundary.class, false);
+    tierGrid.addColumn(tb -> tb.getTier().getDisplayWithEmoji()).setHeader("Tier");
+    tierGrid
+        .addColumn(tb -> String.format("%,d - %,d", tb.getMinFans(), tb.getMaxFans()))
+        .setHeader("Fan Range");
+    tierGrid
+        .addColumn(tb -> String.format("%,d", tb.getChallengeCost()))
+        .setHeader("Challenge Cost");
+    tierGrid
+        .addColumn(tb -> String.format("%,d", tb.getContenderEntryFee()))
+        .setHeader("Contender Entry Fee");
+
+    List<TierBoundary> tierBoundaries =
+        tierBoundaryService.findAll().stream()
+            .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
+            .collect(Collectors.toList());
+    log.info("Found {} tier boundaries to display.", tierBoundaries.size());
+    tierGrid.setItems(tierBoundaries);
+
+    dialog.add(tierGrid);
+    dialog.open();
   }
 
   private void updateView(ChampionshipDTO championship) {
@@ -113,7 +152,7 @@ public class RankingView extends Main {
     // Use relative path (no leading slash) so Vaadin automatically includes context path
     String imageUrl = "images/championships/" + imageName;
 
-    log.info("Loading championship image for '{}' at URL: {}", championship.getName(), imageUrl);
+    log.debug("Loading championship image for '{}' at URL: {}", championship.getName(), imageUrl);
 
     championshipImage.setSrc(imageUrl);
     championshipImage.setAlt(championship.getName() + " Championship");
