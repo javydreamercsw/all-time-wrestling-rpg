@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.InjuryNotionSyncService;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
@@ -159,7 +160,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
         capturedRequest.getProperties().get("Health Penalty").getNumber());
     assertEquals(injury.getIsActive(), capturedRequest.getProperties().get("Active").getCheckbox());
     assertEquals(
-        injury.getInjuryDate().toString(),
+        injury.getInjuryDate().truncatedTo(ChronoUnit.SECONDS).toString(),
         capturedRequest.getProperties().get("Injury Date").getDate().getStart());
     assertEquals(
         injury.getHealingCost().doubleValue(),
@@ -189,7 +190,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
         updatedInjury2.getIsActive(),
         capturedUpdateRequest.getProperties().get("Active").getCheckbox());
     assertEquals(
-        updatedInjury2.getHealedDate().toString(),
+        updatedInjury2.getHealedDate().truncatedTo(ChronoUnit.SECONDS).toString(),
         capturedUpdateRequest.getProperties().get("Healed Date").getDate().getStart());
     assertEquals(
         updatedInjury2.getInjuryNotes(),
