@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -54,6 +55,7 @@ public class WrestlerDialog extends Dialog {
         .isPlayer(false)
         .bumps(0)
         .gender(Gender.MALE)
+        .tier(WrestlerTier.ROOKIE)
         .build();
   }
 
@@ -138,7 +140,6 @@ public class WrestlerDialog extends Dialog {
     cancelButton.setId("wrestler-dialog-cancel-button");
 
     getFooter().add(new HorizontalLayout(saveButton, cancelButton));
-
     add(formLayout);
   }
 }
