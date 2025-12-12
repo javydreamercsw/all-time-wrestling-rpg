@@ -160,8 +160,9 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
         capturedRequest.getProperties().get("Health Penalty").getNumber());
     assertEquals(injury.getIsActive(), capturedRequest.getProperties().get("Active").getCheckbox());
     assertEquals(
-        injury.getInjuryDate().truncatedTo(ChronoUnit.SECONDS).toString(),
-        capturedRequest.getProperties().get("Injury Date").getDate().getStart());
+        injury.getInjuryDate().truncatedTo(ChronoUnit.SECONDS),
+        Instant.parse(capturedRequest.getProperties().get("Injury Date").getDate().getStart())
+            .truncatedTo(ChronoUnit.SECONDS));
     assertEquals(
         injury.getHealingCost().doubleValue(),
         capturedRequest.getProperties().get("Healing Cost").getNumber());
@@ -190,8 +191,9 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
         updatedInjury2.getIsActive(),
         capturedUpdateRequest.getProperties().get("Active").getCheckbox());
     assertEquals(
-        updatedInjury2.getHealedDate().truncatedTo(ChronoUnit.SECONDS).toString(),
-        capturedUpdateRequest.getProperties().get("Healed Date").getDate().getStart());
+        updatedInjury2.getHealedDate().truncatedTo(ChronoUnit.SECONDS),
+        Instant.parse(capturedUpdateRequest.getProperties().get("Healed Date").getDate().getStart())
+            .truncatedTo(ChronoUnit.SECONDS));
     assertEquals(
         updatedInjury2.getInjuryNotes(),
         capturedUpdateRequest
