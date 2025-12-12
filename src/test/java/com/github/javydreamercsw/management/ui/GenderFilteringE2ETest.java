@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -44,6 +45,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private TitleRepository titleRepository;
+  @Autowired private SegmentRepository segmentRepository;
 
   private Wrestler maleWrestler;
   private Wrestler femaleWrestler;
@@ -52,6 +54,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   @BeforeEach
   @Transactional
   public void setupTestData() {
+    segmentRepository.deleteAll();
     wrestlerRepository.deleteAll();
     titleRepository.deleteAll();
 
