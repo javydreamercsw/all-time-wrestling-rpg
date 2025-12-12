@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.wrestler;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.WrestlerData;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -145,6 +146,11 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @JoinColumn(name = "faction_id")
   @com.fasterxml.jackson.annotation.JsonIgnore
   private Faction faction;
+
+  @Override
+  public Gender getGender() {
+    return this.gender;
+  }
 
   // ==================== ATW RPG METHODS ====================
 

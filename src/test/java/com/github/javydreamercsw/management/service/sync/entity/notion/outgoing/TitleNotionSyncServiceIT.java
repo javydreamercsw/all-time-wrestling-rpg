@@ -75,7 +75,7 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       title.setName("World Championship " + UUID.randomUUID());
       title.setDescription("The most prestigious title");
       title.setTier(WrestlerTier.MAIN_EVENTER);
-      title.setGender(com.github.javydreamercsw.management.domain.wrestler.Gender.MALE);
+      title.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
       title.setIsActive(true);
       title.setChampion(List.of(testChampion));
       title.setContender(List.of(testContender));
@@ -109,7 +109,7 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
           WrestlerTier.MAIN_EVENTER.getDisplayName(),
           Objects.requireNonNull(props.get("Tier").getSelect()).getName());
       assertEquals(
-          com.github.javydreamercsw.management.domain.wrestler.Gender.MALE.name(),
+          com.github.javydreamercsw.base.domain.wrestler.Gender.MALE.name(),
           Objects.requireNonNull(props.get("Gender").getSelect()).getName());
       assertTrue(Objects.requireNonNull(props.get("Active").getCheckbox()));
       assertNotNull(props.get("Champion").getRelation());
@@ -125,7 +125,7 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       updatedTitle.setName("Unified World Championship " + UUID.randomUUID());
       updatedTitle.setDescription("The undisputed title");
       updatedTitle.setTier(WrestlerTier.ICON);
-      updatedTitle.setGender(com.github.javydreamercsw.management.domain.wrestler.Gender.FEMALE);
+      updatedTitle.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.FEMALE);
       updatedTitle.setIsActive(false);
       updatedTitle.setChampion(Collections.emptyList()); // Vacate title
       titleRepository.save(updatedTitle);
@@ -152,7 +152,7 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
           WrestlerTier.ICON.getDisplayName(),
           Objects.requireNonNull(props.get("Tier").getSelect()).getName());
       assertEquals(
-          com.github.javydreamercsw.management.domain.wrestler.Gender.FEMALE.name(),
+          com.github.javydreamercsw.base.domain.wrestler.Gender.FEMALE.name(),
           Objects.requireNonNull(props.get("Gender").getSelect()).getName());
       assertFalse(Objects.requireNonNull(props.get("Active").getCheckbox()));
       // Champion relation should be empty if vacated

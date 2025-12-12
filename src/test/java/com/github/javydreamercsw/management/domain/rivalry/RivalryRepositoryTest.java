@@ -24,15 +24,23 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 @DataJpaTest
 class RivalryRepositoryTest {
 
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private TestEntityManager entityManager;
+
+  @AfterEach
+  void tearDown() {
+    entityManager.clear();
+  }
 
   @Test
   void findActiveRivalriesBetween() {

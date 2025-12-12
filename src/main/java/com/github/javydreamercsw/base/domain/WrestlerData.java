@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.domain;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 
 public interface WrestlerData {
@@ -26,4 +27,6 @@ public interface WrestlerData {
   void setTier(WrestlerTier tier);
 
   String getName(); // Added to support logging in TierRecalculationService
+
+  Gender getGender();
 }

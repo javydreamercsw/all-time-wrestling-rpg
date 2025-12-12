@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.ranking;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -63,7 +64,8 @@ public class RankingService {
     Title title = titleOpt.get();
     WrestlerTier tier = title.getTier();
 
-    Optional<TierBoundary> tierBoundaryOpt = tierBoundaryService.findByTier(tier);
+    Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
+    Optional<TierBoundary> tierBoundaryOpt = tierBoundaryService.findByTierAndGender(tier, gender);
 
     long minFans;
     long maxFans;
@@ -88,10 +90,8 @@ public class RankingService {
     // Remove champions from the contender list
     title.getCurrentReign().ifPresent(reign -> contenders.removeAll(reign.getChampions()));
 
-    // Filter by gender if the title has a specific gender
-    if (title.getGender() != null) {
-      contenders.removeIf(wrestler -> wrestler.getGender() != title.getGender());
-    }
+    // Filter by gender
+    contenders.removeIf(wrestler -> wrestler.getGender() != gender);
 
     AtomicInteger rank = new AtomicInteger(1);
     return contenders.stream()

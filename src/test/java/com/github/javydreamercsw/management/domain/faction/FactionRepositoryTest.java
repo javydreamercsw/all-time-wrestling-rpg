@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,11 @@ class FactionRepositoryTest {
   @Autowired private FactionRepository factionRepository;
 
   private Faction testFaction;
+
+  @AfterEach
+  void tearDown() {
+    entityManager.clear();
+  }
 
   @BeforeEach
   void setUp() {

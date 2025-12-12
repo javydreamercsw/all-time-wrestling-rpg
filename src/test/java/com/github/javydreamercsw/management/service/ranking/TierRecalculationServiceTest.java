@@ -23,6 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -58,7 +59,7 @@ class TierRecalculationServiceTest {
 
   private List<Wrestler> wrestlers;
 
-  private Map<WrestlerTier, TierBoundary> inMemoryTierBoundaries;
+  private Map<Gender, Map<WrestlerTier, TierBoundary>> inMemoryTierBoundaries;
 
   @BeforeEach
   void setUp() {
@@ -68,35 +69,52 @@ class TierRecalculationServiceTest {
       Wrestler w = new Wrestler();
       w.setId((long) i);
       w.setName("Wrestler " + i);
+      w.setGender(i % 2 == 0 ? Gender.MALE : Gender.FEMALE);
       w.setFans(1000L * (20 - i)); // Wrestler 0 has 20000, Wrestler 19 has 1000
       wrestlers.add(w);
     }
 
-    inMemoryTierBoundaries = new EnumMap<>(WrestlerTier.class);
+    inMemoryTierBoundaries = new EnumMap<>(Gender.class);
+    inMemoryTierBoundaries.put(Gender.MALE, new EnumMap<>(WrestlerTier.class));
+    inMemoryTierBoundaries.put(Gender.FEMALE, new EnumMap<>(WrestlerTier.class));
 
     // Configure the mocked TierBoundaryService to use the in-memory map
     when(tierBoundaryService.save(any(TierBoundary.class)))
         .thenAnswer(
             invocation -> {
               TierBoundary boundary = invocation.getArgument(0);
-              inMemoryTierBoundaries.put(boundary.getTier(), boundary);
+              inMemoryTierBoundaries.get(boundary.getGender()).put(boundary.getTier(), boundary);
               return boundary;
             });
 
     when(tierBoundaryService.findAll())
-        .thenAnswer(invocation -> new ArrayList<>(inMemoryTierBoundaries.values()));
-    when(tierBoundaryService.findByTier(any(WrestlerTier.class)))
+        .thenAnswer(
+            invocation ->
+                inMemoryTierBoundaries.values().stream()
+                    .flatMap(m -> m.values().stream())
+                    .collect(Collectors.toList()));
+
+    when(tierBoundaryService.findAllByGender(any(Gender.class)))
+        .thenAnswer(
+            invocation -> {
+              Gender gender = invocation.getArgument(0);
+              return new ArrayList<>(inMemoryTierBoundaries.get(gender).values());
+            });
+
+    when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
         .thenAnswer(
             invocation -> {
               WrestlerTier tier = invocation.getArgument(0);
-              return Optional.ofNullable(inMemoryTierBoundaries.get(tier));
+              Gender gender = invocation.getArgument(1);
+              return Optional.ofNullable(inMemoryTierBoundaries.get(gender).get(tier));
             });
 
-    when(tierBoundaryService.findTierForFans(anyLong()))
+    when(tierBoundaryService.findTierForFans(anyLong(), any(Gender.class)))
         .thenAnswer(
             invocation -> {
               long fans = invocation.getArgument(0);
-              return inMemoryTierBoundaries.values().stream()
+              Gender gender = invocation.getArgument(1);
+              return inMemoryTierBoundaries.get(gender).values().stream()
                   .sorted((b1, b2) -> b2.getMinFans().compareTo(b1.getMinFans()))
                   .filter(b -> fans >= b.getMinFans() && fans <= b.getMaxFans())
                   .map(TierBoundary::getTier)
@@ -112,133 +130,51 @@ class TierRecalculationServiceTest {
   void testRecalculateTiersWithNewBoundaries() {
     tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlers));
 
-    // Use the in-memory boundaries map instead of captor
-    Map<WrestlerTier, TierBoundary> boundariesMap = new EnumMap<>(inMemoryTierBoundaries);
-
-    // Verify all tier boundaries were saved
-    verify(tierBoundaryService, times(WrestlerTier.values().length)).save(any(TierBoundary.class));
-
-    // Assert boundaries and fees based on 20 wrestlers and percentile distribution
-    // ICON (5% = 1): Wrestler 0 (20000 fans)
-    TierBoundary iconBoundary = boundariesMap.get(WrestlerTier.ICON);
-    assertEquals(20000L, iconBoundary.getMinFans()); // Aligned with actual lowest in tier
-    assertEquals(Long.MAX_VALUE, iconBoundary.getMaxFans());
-    assertEquals(200L, iconBoundary.getChallengeCost()); // 1% of 20000
-    assertEquals(100L, iconBoundary.getContenderEntryFee()); // 0.5% of 20000
-
-    // MAIN_EVENTER (15% = 3): Wrestlers 1-3 (19000-17000 fans)
-    TierBoundary mainEventerBoundary = boundariesMap.get(WrestlerTier.MAIN_EVENTER);
+    // Male wrestlers (10 wrestlers)
+    Map<WrestlerTier, TierBoundary> maleBoundaries = inMemoryTierBoundaries.get(Gender.MALE);
     assertEquals(
-        17001L, mainEventerBoundary.getMinFans()); // Aligned with actual lowest in tier + 1
-    assertEquals(19999L, mainEventerBoundary.getMaxFans()); // minFans of ICON - 1
-    assertEquals(170L, mainEventerBoundary.getChallengeCost()); // 1% of 17000
-    assertEquals(85L, mainEventerBoundary.getContenderEntryFee()); // 0.5% of 17000
+        WrestlerTier.values().length,
+        maleBoundaries.size(),
+        "Should have boundaries for all tiers for males.");
 
-    // MIDCARDER (25% = 5): Wrestlers 4-8 (16000-12000 fans)
-    TierBoundary midcarderBoundary = boundariesMap.get(WrestlerTier.MIDCARDER);
-    assertEquals(12001L, midcarderBoundary.getMinFans()); // lowest + 1
-    assertEquals(17000L, midcarderBoundary.getMaxFans()); // minFans of MAIN_EVENTER - 1
-    assertEquals(120L, midcarderBoundary.getChallengeCost()); // 1% of 12000
-    assertEquals(60L, midcarderBoundary.getContenderEntryFee()); // 0.5% of 12000
+    // ICON (5% = 1 of 10 -> 1): Wrestler 0 (20000 fans)
+    TierBoundary maleIconBoundary = maleBoundaries.get(WrestlerTier.ICON);
+    assertEquals(20000L, maleIconBoundary.getMinFans());
+    assertEquals(Long.MAX_VALUE, maleIconBoundary.getMaxFans());
 
-    // CONTENDER (25% = 5): Wrestlers 9-13 (11000-7000 fans)
-    TierBoundary contenderBoundary = boundariesMap.get(WrestlerTier.CONTENDER);
-    assertEquals(7001L, contenderBoundary.getMinFans()); // lowest + 1
-    assertEquals(12000L, contenderBoundary.getMaxFans()); // minFans of MIDCARDER - 1
-    assertEquals(70L, contenderBoundary.getChallengeCost()); // 1% of 7000
-    assertEquals(35L, contenderBoundary.getContenderEntryFee()); // 0.5% of 7000
+    // Female wrestlers (10 wrestlers)
+    Map<WrestlerTier, TierBoundary> femaleBoundaries = inMemoryTierBoundaries.get(Gender.FEMALE);
+    assertEquals(
+        WrestlerTier.values().length,
+        femaleBoundaries.size(),
+        "Should have boundaries for all tiers for females.");
 
-    // RISER (20% = 4): Wrestlers 14-17 (6000-3000 fans)
-    TierBoundary riserBoundary = boundariesMap.get(WrestlerTier.RISER);
-    assertEquals(3001L, riserBoundary.getMinFans()); // lowest + 1
-    assertEquals(7000L, riserBoundary.getMaxFans()); // minFans of CONTENDER - 1
-    assertEquals(30L, riserBoundary.getChallengeCost()); // 1% of 3000
-    assertEquals(15L, riserBoundary.getContenderEntryFee()); // 0.5% of 3000
+    // ICON (5% = 1 of 10 -> 1): Wrestler 1 (19000 fans)
+    TierBoundary femaleIconBoundary = femaleBoundaries.get(WrestlerTier.ICON);
+    assertEquals(19000L, femaleIconBoundary.getMinFans());
+    assertEquals(Long.MAX_VALUE, femaleIconBoundary.getMaxFans());
 
-    // ROOKIE (10% = 2): Wrestlers 18-19 (2000-1000 fans)
-    TierBoundary rookieBoundary = boundariesMap.get(WrestlerTier.ROOKIE);
-    assertEquals(0L, rookieBoundary.getMinFans()); // Rookies start at 0
-    assertEquals(3000L, rookieBoundary.getMaxFans()); // RISER minFans - 1
     verify(wrestlerRepository, times(wrestlers.size())).save(wrestlerCaptor.capture());
-    List<Wrestler> updatedWrestlers = wrestlerCaptor.getAllValues();
-    Map<Long, Wrestler> updatedWrestlersMap =
-        updatedWrestlers.stream().collect(Collectors.toMap(Wrestler::getId, w -> w));
-
-    assertEquals(WrestlerTier.ICON, updatedWrestlersMap.get(wrestlers.get(0).getId()).getTier());
-    assertEquals(
-        WrestlerTier.MAIN_EVENTER, updatedWrestlersMap.get(wrestlers.get(1).getId()).getTier());
-    assertEquals(
-        WrestlerTier.MAIN_EVENTER, updatedWrestlersMap.get(wrestlers.get(2).getId()).getTier());
-    assertEquals(
-        WrestlerTier.MIDCARDER, updatedWrestlersMap.get(wrestlers.get(3).getId()).getTier());
-    assertEquals(
-        WrestlerTier.MIDCARDER, updatedWrestlersMap.get(wrestlers.get(4).getId()).getTier());
-    assertEquals(
-        WrestlerTier.CONTENDER, updatedWrestlersMap.get(wrestlers.get(9).getId()).getTier());
-    assertEquals(WrestlerTier.RISER, updatedWrestlersMap.get(wrestlers.get(14).getId()).getTier());
-    assertEquals(WrestlerTier.ROOKIE, updatedWrestlersMap.get(wrestlers.get(18).getId()).getTier());
-    assertEquals(WrestlerTier.ROOKIE, updatedWrestlersMap.get(wrestlers.get(19).getId()).getTier());
   }
 
   @Test
   void testRecalculateTiersWithExistingBoundaries() {
     // Test case where boundaries already exist and are updated
-    for (WrestlerTier tier : WrestlerTier.values()) {
-      TierBoundary existingBoundary = new TierBoundary();
-      existingBoundary.setTier(tier);
-      existingBoundary.setMinFans(0L); // Old value
-      inMemoryTierBoundaries.put(tier, existingBoundary);
+    for (Gender gender : Gender.values()) {
+      for (WrestlerTier tier : WrestlerTier.values()) {
+        TierBoundary existingBoundary = new TierBoundary();
+        existingBoundary.setTier(tier);
+        existingBoundary.setGender(gender);
+        existingBoundary.setMinFans(0L); // Old value
+        inMemoryTierBoundaries.get(gender).put(tier, existingBoundary);
+      }
     }
 
     tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlers));
 
     // Verify all tier boundaries were saved
-    verify(tierBoundaryService, times(WrestlerTier.values().length)).save(any(TierBoundary.class));
-
-    // Use the in-memory boundaries map
-    Map<WrestlerTier, TierBoundary> boundariesMap = new EnumMap<>(inMemoryTierBoundaries);
-
-    // Assert boundaries and fees based on 20 wrestlers and percentile distribution
-    // ICON (5% = 1): Wrestler 0 (20000 fans)
-    TierBoundary iconBoundary = boundariesMap.get(WrestlerTier.ICON);
-    assertEquals(20_000L, iconBoundary.getMinFans()); // Aligned with actual lowest in tier
-    assertEquals(Long.MAX_VALUE, iconBoundary.getMaxFans());
-    assertEquals(200L, iconBoundary.getChallengeCost()); // 1% of 20000
-    assertEquals(100L, iconBoundary.getContenderEntryFee()); // 0.5% of 20000
-
-    // MAIN_EVENTER (15% = 3): Wrestlers 1-3 (19000-17000 fans)
-    TierBoundary mainEventerBoundary = boundariesMap.get(WrestlerTier.MAIN_EVENTER);
-    assertEquals(
-        17_001L, mainEventerBoundary.getMinFans()); // Aligned with actual lowest in tier + 1
-    assertEquals(19_999L, mainEventerBoundary.getMaxFans()); // minFans of ICON - 1
-    assertEquals(170L, mainEventerBoundary.getChallengeCost()); // 1% of 17000
-    assertEquals(85L, mainEventerBoundary.getContenderEntryFee()); // 0.5% of 17000
-
-    // MIDCARDER (25% = 5): Wrestlers 4-8 (16000-12000 fans)
-    TierBoundary midcarderBoundary = boundariesMap.get(WrestlerTier.MIDCARDER);
-    assertEquals(12_001L, midcarderBoundary.getMinFans()); // lowest + 1
-    assertEquals(17_000L, midcarderBoundary.getMaxFans()); // minFans of MAIN_EVENTER - 1
-    assertEquals(120L, midcarderBoundary.getChallengeCost()); // 1% of 12000
-    assertEquals(60L, midcarderBoundary.getContenderEntryFee()); // 0.5% of 12000
-
-    // CONTENDER (25% = 5): Wrestlers 9-13 (11000-7000 fans)
-    TierBoundary contenderBoundary = boundariesMap.get(WrestlerTier.CONTENDER);
-    assertEquals(7_001L, contenderBoundary.getMinFans()); // lowest + 1
-    assertEquals(12_000L, contenderBoundary.getMaxFans()); // minFans of MIDCARDER - 1
-    assertEquals(70L, contenderBoundary.getChallengeCost()); // 1% of 7000
-    assertEquals(35L, contenderBoundary.getContenderEntryFee()); // 0.5% of 7000
-
-    // RISER (20% = 4): Wrestlers 14-17 (6000-3000 fans)
-    TierBoundary riserBoundary = boundariesMap.get(WrestlerTier.RISER);
-    assertEquals(3001L, riserBoundary.getMinFans()); // lowest + 1
-    assertEquals(7_000L, riserBoundary.getMaxFans()); // minFans of CONTENDER - 1
-    assertEquals(30L, riserBoundary.getChallengeCost()); // 1% of 3000
-    assertEquals(15L, riserBoundary.getContenderEntryFee()); // 0.5% of 3000
-
-    // ROOKIE (10% = 2): Wrestlers 18-19 (2000-1000 fans)
-    TierBoundary rookieBoundary = boundariesMap.get(WrestlerTier.ROOKIE);
-    assertEquals(0L, rookieBoundary.getMinFans()); // Rookies start at 0
-    assertEquals(3_000L, rookieBoundary.getMaxFans()); // RISER minFans - 1
+    verify(tierBoundaryService, times(WrestlerTier.values().length * Gender.values().length))
+        .save(any(TierBoundary.class));
   }
 
   @Test

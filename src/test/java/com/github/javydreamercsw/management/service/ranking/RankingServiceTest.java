@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
@@ -60,11 +61,13 @@ class RankingServiceTest {
     title.setId(1L);
     title.setName("World Heavyweight Championship");
     title.setTier(WrestlerTier.MAIN_EVENTER);
+    title.setGender(Gender.MALE);
 
     champion = new Wrestler();
     champion.setId(1L);
     champion.setName("Champion");
     champion.setFans(1000L);
+    champion.setGender(Gender.MALE);
     champion.setTier(WrestlerTier.fromFanCount(champion.getFans()));
 
     TitleReign reign = new TitleReign();
@@ -78,12 +81,14 @@ class RankingServiceTest {
     contender1.setId(2L);
     contender1.setName("Contender 1");
     contender1.setFans(500L);
+    contender1.setGender(Gender.MALE);
     contender1.setTier(WrestlerTier.fromFanCount(contender1.getFans()));
 
     contender2 = new Wrestler();
     contender2.setId(3L);
     contender2.setName("Contender 2");
     contender2.setFans(700L);
+    contender2.setGender(Gender.MALE);
     contender2.setTier(WrestlerTier.fromFanCount(contender2.getFans()));
 
     List<Wrestler> contenders = new ArrayList<>();
@@ -112,7 +117,8 @@ class RankingServiceTest {
     boundary.setTier(WrestlerTier.MIDCARDER);
     boundary.setMinFans(WrestlerTier.MIDCARDER.getMinFans());
     boundary.setMaxFans(WrestlerTier.MIDCARDER.getMaxFans());
-    when(tierBoundaryService.findByTier(any(WrestlerTier.class))).thenReturn(Optional.of(boundary));
+    when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
+        .thenReturn(Optional.of(boundary));
     when(wrestlerRepository.findByFansBetween(
             WrestlerTier.MIDCARDER.getMinFans(), WrestlerTier.MIDCARDER.getMaxFans()))
         .thenReturn(new ArrayList<>(List.of(contender1, contender2)));
@@ -131,6 +137,7 @@ class RankingServiceTest {
     Wrestler icon = new Wrestler();
     icon.setId(4L);
     icon.setName("Icon");
+    icon.setGender(Gender.MALE);
     icon.setFans(WrestlerTier.ICON.getMinFans() + 1000); // Above Main Eventer
     icon.setTier(WrestlerTier.fromFanCount(icon.getFans()));
     title.getContender().add(icon);
@@ -141,7 +148,8 @@ class RankingServiceTest {
     boundary.setTier(WrestlerTier.MAIN_EVENTER);
     boundary.setMinFans(WrestlerTier.MAIN_EVENTER.getMinFans());
     boundary.setMaxFans(WrestlerTier.MAIN_EVENTER.getMaxFans());
-    when(tierBoundaryService.findByTier(any(WrestlerTier.class))).thenReturn(Optional.of(boundary));
+    when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
+        .thenReturn(Optional.of(boundary));
     when(wrestlerRepository.findByFansGreaterThanEqual(WrestlerTier.MAIN_EVENTER.getMinFans()))
         .thenReturn(new ArrayList<>(List.of(champion, contender1, contender2, icon)));
 

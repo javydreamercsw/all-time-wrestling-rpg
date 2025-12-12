@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -23,6 +24,7 @@ import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -58,6 +60,7 @@ public class WrestlerRankingsView extends Main {
   private final TierBoundaryService tierBoundaryService;
   private final Grid<Wrestler> grid = new Grid<>(Wrestler.class, false);
   private Set<Long> championIds = new HashSet<>();
+  private ComboBox<Gender> genderComboBox;
 
   public WrestlerRankingsView(
       WrestlerService wrestlerService,
@@ -88,7 +91,15 @@ public class WrestlerRankingsView extends Main {
     Button showTierBoundariesButton = new Button("Show Tier Boundaries");
     showTierBoundariesButton.addClickListener(event -> showTierBoundariesDialog());
 
-    return new ViewToolbar("Wrestler Rankings", ViewToolbar.group(showTierBoundariesButton));
+    genderComboBox = new ComboBox<>("Gender");
+    genderComboBox.setId("gender-selection");
+    genderComboBox.setItems(Gender.values());
+    genderComboBox.setItemLabelGenerator(Gender::name);
+    genderComboBox.setClearButtonVisible(true);
+    genderComboBox.addValueChangeListener(event -> updateList());
+
+    return new ViewToolbar(
+        "Wrestler Rankings", ViewToolbar.group(genderComboBox, showTierBoundariesButton));
   }
 
   private void showTierBoundariesDialog() {
@@ -108,14 +119,30 @@ public class WrestlerRankingsView extends Main {
         .addColumn(tb -> String.format("%,d", tb.getContenderEntryFee()))
         .setHeader("Contender Entry Fee");
 
+    ComboBox<Gender> genderDialogComboBox = new ComboBox<>("Gender");
+    genderDialogComboBox.setItems(Gender.values());
+    genderDialogComboBox.setValue(Gender.MALE);
+    genderDialogComboBox.addValueChangeListener(
+        event -> {
+          List<TierBoundary> tierBoundaries =
+              tierBoundaryService.findAllByGender(event.getValue()).stream()
+                  .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
+                  .collect(Collectors.toList());
+          log.info(
+              "Found {} tier boundaries to display for {}",
+              tierBoundaries.size(),
+              event.getValue());
+          tierGrid.setItems(tierBoundaries);
+        });
+
     List<TierBoundary> tierBoundaries =
-        tierBoundaryService.findAll().stream()
+        tierBoundaryService.findAllByGender(Gender.MALE).stream()
             .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
             .collect(Collectors.toList());
-    log.info("Found {} tier boundaries to display.", tierBoundaries.size());
+    log.info("Found {} tier boundaries to display for MALE", tierBoundaries.size());
     tierGrid.setItems(tierBoundaries);
 
-    dialog.add(tierGrid);
+    dialog.add(genderDialogComboBox, tierGrid);
     dialog.open();
   }
 
@@ -169,6 +196,15 @@ public class WrestlerRankingsView extends Main {
             .flatMap(title -> title.getChampion().stream())
             .map(Wrestler::getId)
             .collect(Collectors.toSet());
-    grid.setItems(wrestlerService.findAll());
+
+    Gender selectedGender = genderComboBox.getValue();
+    List<Wrestler> wrestlers = wrestlerService.findAll();
+    if (selectedGender != null) {
+      wrestlers =
+          wrestlers.stream()
+              .filter(w -> w.getGender() == selectedGender)
+              .collect(Collectors.toList());
+    }
+    grid.setItems(wrestlers);
   }
 }
