@@ -183,4 +183,45 @@ class TierRecalculationServiceTest {
     verify(tierBoundaryService, times(0)).save(any(TierBoundary.class));
     verify(wrestlerRepository, times(0)).save(any(Wrestler.class));
   }
+
+  @Test
+  void testRecalculateTiersWithZeroFans() {
+    List<Wrestler> zeroFanWrestlers = new ArrayList<>();
+    for (int i = 0; i < 5; i++) {
+      Wrestler w = new Wrestler();
+      w.setId((long) i);
+      w.setName("Wrestler " + i);
+      w.setGender(i % 2 == 0 ? Gender.MALE : Gender.FEMALE);
+      w.setFans(0L);
+      zeroFanWrestlers.add(w);
+    }
+
+    tierRecalculationService.recalculateRanking(new ArrayList<>(zeroFanWrestlers));
+
+    Map<WrestlerTier, TierBoundary> maleBoundaries = inMemoryTierBoundaries.get(Gender.MALE);
+    assertEquals(
+        WrestlerTier.values().length,
+        maleBoundaries.size(),
+        "Should have boundaries for all tiers for males.");
+
+    for (WrestlerTier tier : WrestlerTier.values()) {
+      assertEquals(
+          tier.getMinFans(),
+          maleBoundaries.get(tier).getMinFans(),
+          "Min fans for " + tier + " should be the default value.");
+    }
+
+    Map<WrestlerTier, TierBoundary> femaleBoundaries = inMemoryTierBoundaries.get(Gender.FEMALE);
+    assertEquals(
+        WrestlerTier.values().length,
+        femaleBoundaries.size(),
+        "Should have boundaries for all tiers for males.");
+
+    for (WrestlerTier tier : WrestlerTier.values()) {
+      assertEquals(
+          tier.getMinFans(),
+          femaleBoundaries.get(tier).getMinFans(),
+          "Min fans for " + tier + " should be the default value.");
+    }
+  }
 }

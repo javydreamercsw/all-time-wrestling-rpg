@@ -51,83 +51,100 @@ public class TierRecalculationService implements RankingService {
     for (Map.Entry<Gender, List<WrestlerData>> entry : wrestlersByGender.entrySet()) {
       Gender gender = entry.getKey();
       List<WrestlerData> genderWrestlers = entry.getValue();
-      genderWrestlers.sort((w1, w2) -> w2.getFans().compareTo(w1.getFans()));
-      int totalWrestlers = genderWrestlers.size();
-      if (totalWrestlers == 0) {
-        log.info("No wrestlers found for gender {} to recalculate tiers.", gender);
-        continue;
-      }
+      long totalFans = genderWrestlers.stream().mapToLong(WrestlerData::getFans).sum();
 
-      // Define percentile distribution for tiers
-      Map<WrestlerTier, Double> tierDistribution = new EnumMap<>(WrestlerTier.class);
-      tierDistribution.put(WrestlerTier.ICON, 0.05); // Top 5%
-      tierDistribution.put(WrestlerTier.MAIN_EVENTER, 0.15); // Next 15%
-      tierDistribution.put(WrestlerTier.MIDCARDER, 0.25); // Next 25%
-      tierDistribution.put(WrestlerTier.CONTENDER, 0.25); // Next 25%
-      tierDistribution.put(WrestlerTier.RISER, 0.20); // Next 20%
-      // The rest are rookies
-      tierDistribution.put(
-          WrestlerTier.ROOKIE,
-          1.0
-              - tierDistribution.values().stream()
-                  .mapToDouble(Double::doubleValue)
-                  .sum()); // Remaining
-
-      // Determine fan count thresholds for each tier based on percentiles
-      int currentWrestlerIndex = 0;
-      long maxFansForNextLowerTier = Long.MAX_VALUE;
-
-      WrestlerTier[] tiersHighToLow =
-          new WrestlerTier[] {
-            WrestlerTier.ICON,
-            WrestlerTier.MAIN_EVENTER,
-            WrestlerTier.MIDCARDER,
-            WrestlerTier.CONTENDER,
-            WrestlerTier.RISER,
-            WrestlerTier.ROOKIE
-          };
-
-      for (WrestlerTier tier : tiersHighToLow) {
-        int numWrestlersInTier;
-        long minFans;
-
-        if (tier == WrestlerTier.ROOKIE) {
-          numWrestlersInTier = totalWrestlers - currentWrestlerIndex;
-          minFans = 0; // Rookies start at 0
-        } else {
-          numWrestlersInTier = (int) Math.round(totalWrestlers * tierDistribution.get(tier));
-          if (currentWrestlerIndex + numWrestlersInTier > totalWrestlers) {
-            numWrestlersInTier = totalWrestlers - currentWrestlerIndex;
-          }
-
-          if (numWrestlersInTier > 0 && currentWrestlerIndex < totalWrestlers) {
-            int boundaryIndex = currentWrestlerIndex + numWrestlersInTier - 1;
-            if (boundaryIndex >= totalWrestlers) {
-              boundaryIndex = totalWrestlers - 1;
-            }
-            if (tier == WrestlerTier.ICON) {
-              minFans = genderWrestlers.get(boundaryIndex).getFans();
-            } else {
-              minFans = genderWrestlers.get(boundaryIndex).getFans() + 1;
-            }
-          } else {
-            // If no wrestlers in this tier, set minFans based on the next lower tier's max
-            minFans = maxFansForNextLowerTier > 0 ? maxFansForNextLowerTier + 1 : 0;
-          }
+      if (totalFans == 0) {
+        // All wrestlers have 0 fans, so use default tier boundaries
+        for (WrestlerTier tier : WrestlerTier.values()) {
+          TierBoundary boundary =
+              tierBoundaryService.findByTierAndGender(tier, gender).orElse(new TierBoundary());
+          boundary.setTier(tier);
+          boundary.setGender(gender);
+          boundary.setMinFans(tier.getMinFans());
+          boundary.setMaxFans(tier.getMaxFans());
+          boundary.setChallengeCost(tier.getChallengeCost());
+          boundary.setContenderEntryFee(tier.getContenderEntryFee());
+          tierBoundaryService.save(boundary);
+        }
+      } else {
+        genderWrestlers.sort((w1, w2) -> w2.getFans().compareTo(w1.getFans()));
+        int totalWrestlers = genderWrestlers.size();
+        if (totalWrestlers == 0) {
+          log.info("No wrestlers found for gender {} to recalculate tiers.", gender);
+          continue;
         }
 
-        TierBoundary boundary =
-            tierBoundaryService.findByTierAndGender(tier, gender).orElse(new TierBoundary());
-        boundary.setTier(tier);
-        boundary.setGender(gender);
-        boundary.setMinFans(minFans);
-        boundary.setMaxFans(maxFansForNextLowerTier);
-        boundary.setChallengeCost(Math.max(0, minFans / 100));
-        boundary.setContenderEntryFee(Math.max(0, minFans / 200));
-        tierBoundaryService.save(boundary);
+        // Define percentile distribution for tiers
+        Map<WrestlerTier, Double> tierDistribution = new EnumMap<>(WrestlerTier.class);
+        tierDistribution.put(WrestlerTier.ICON, 0.05); // Top 5%
+        tierDistribution.put(WrestlerTier.MAIN_EVENTER, 0.15); // Next 15%
+        tierDistribution.put(WrestlerTier.MIDCARDER, 0.25); // Next 25%
+        tierDistribution.put(WrestlerTier.CONTENDER, 0.25); // Next 25%
+        tierDistribution.put(WrestlerTier.RISER, 0.20); // Next 20%
+        // The rest are rookies
+        tierDistribution.put(
+            WrestlerTier.ROOKIE,
+            1.0
+                - tierDistribution.values().stream()
+                    .mapToDouble(Double::doubleValue)
+                    .sum()); // Remaining
 
-        maxFansForNextLowerTier = minFans - 1;
-        currentWrestlerIndex += numWrestlersInTier;
+        // Determine fan count thresholds for each tier based on percentiles
+        int currentWrestlerIndex = 0;
+        long maxFansForNextLowerTier = Long.MAX_VALUE;
+
+        WrestlerTier[] tiersHighToLow =
+            new WrestlerTier[] {
+              WrestlerTier.ICON,
+              WrestlerTier.MAIN_EVENTER,
+              WrestlerTier.MIDCARDER,
+              WrestlerTier.CONTENDER,
+              WrestlerTier.RISER,
+              WrestlerTier.ROOKIE
+            };
+
+        for (WrestlerTier tier : tiersHighToLow) {
+          int numWrestlersInTier;
+          long minFans;
+
+          if (tier == WrestlerTier.ROOKIE) {
+            numWrestlersInTier = totalWrestlers - currentWrestlerIndex;
+            minFans = 0; // Rookies start at 0
+          } else {
+            numWrestlersInTier = (int) Math.round(totalWrestlers * tierDistribution.get(tier));
+            if (currentWrestlerIndex + numWrestlersInTier > totalWrestlers) {
+              numWrestlersInTier = totalWrestlers - currentWrestlerIndex;
+            }
+
+            if (numWrestlersInTier > 0 && currentWrestlerIndex < totalWrestlers) {
+              int boundaryIndex = currentWrestlerIndex + numWrestlersInTier - 1;
+              if (boundaryIndex >= totalWrestlers) {
+                boundaryIndex = totalWrestlers - 1;
+              }
+              if (tier == WrestlerTier.ICON) {
+                minFans = genderWrestlers.get(boundaryIndex).getFans();
+              } else {
+                minFans = genderWrestlers.get(boundaryIndex).getFans() + 1;
+              }
+            } else {
+              // If no wrestlers in this tier, set minFans based on the next lower tier's max
+              minFans = maxFansForNextLowerTier > 0 ? maxFansForNextLowerTier + 1 : 0;
+            }
+          }
+
+          TierBoundary boundary =
+              tierBoundaryService.findByTierAndGender(tier, gender).orElse(new TierBoundary());
+          boundary.setTier(tier);
+          boundary.setGender(gender);
+          boundary.setMinFans(minFans);
+          boundary.setMaxFans(maxFansForNextLowerTier);
+          boundary.setChallengeCost(Math.max(0, minFans / 100));
+          boundary.setContenderEntryFee(Math.max(0, minFans / 200));
+          tierBoundaryService.save(boundary);
+
+          maxFansForNextLowerTier = minFans - 1;
+          currentWrestlerIndex += numWrestlersInTier;
+        }
       }
 
       // Update wrestler tiers based on new boundaries
