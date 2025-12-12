@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.base.ai.claude;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,8 +41,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private static final Duration TIMEOUT = Duration.ofSeconds(60);
-
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
   private final String apiKey;
@@ -36,7 +50,10 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
   @Autowired
   public ClaudeSegmentNarrationService(
       ClaudeConfigProperties claudeConfigProperties, Environment environment) {
-    this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
+    this.httpClient =
+        HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(claudeConfigProperties.getTimeout()))
+            .build();
     this.objectMapper = new ObjectMapper();
     this.apiKey = System.getenv("ANTHROPIC_API_KEY");
     this.claudeConfigProperties = claudeConfigProperties;
@@ -90,7 +107,7 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
               .header("Content-Type", "application/json")
               .header("x-api-key", apiKey)
               .header("anthropic-version", "2023-06-01")
-              .timeout(TIMEOUT)
+              .timeout(Duration.ofSeconds(claudeConfigProperties.getTimeout()))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
 
@@ -109,6 +126,9 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
 
     } catch (Exception e) {
       log.error("Failed to call Claude API for segment narration", e);
+      if (e instanceof java.net.http.HttpTimeoutException) {
+        throw new AIServiceException(504, "Gateway Timeout", getProviderName(), e.getMessage(), e);
+      }
       throw new AIServiceException(
           500, "Internal Server Error", getProviderName(), e.getMessage(), e);
     }

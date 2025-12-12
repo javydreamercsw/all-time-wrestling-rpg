@@ -1,7 +1,24 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
@@ -13,7 +30,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -43,6 +59,15 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private ShowTypeService showTypeService;
   @Autowired private InboxService inboxService;
   @Autowired private InboxRepository inboxRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.wrestler.TierBoundaryRepository
+      tierBoundaryRepository;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUp() {
+    tierBoundaryRepository.deleteAll();
+  }
 
   @Test
   @DisplayName("Should get wrestler stats")
@@ -180,45 +205,6 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
   }
 
   @Test
-  @DisplayName("Should filter wrestlers by eligibility")
-  @Transactional
-  void shouldFilterWrestlersByEligibility() {
-    int initialEligibleRookieWrestlers =
-        wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE).size();
-    int initialEligibleMainEventerWrestlers =
-        wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER).size();
-    // Given - Create wrestlers with different fan levels
-    wrestlerService.createWrestler("Rookie", true, null);
-    // rookie has 0 fans (Rookie tier)
-
-    Wrestler riser = wrestlerService.createWrestler("Riser", true, null);
-    Assertions.assertNotNull(riser.getId());
-    wrestlerService.awardFans(riser.getId(), 30_000L); // Riser tier
-
-    Wrestler contender = wrestlerService.createWrestler("Contender", true, null);
-    Assertions.assertNotNull(contender.getId());
-    wrestlerService.awardFans(contender.getId(), 45_000L); // Contender tier
-
-    Wrestler mainEventer = wrestlerService.createWrestler("Main Eventer", true, null);
-    Assertions.assertNotNull(mainEventer.getId());
-    wrestlerService.awardFans(mainEventer.getId(), 120_000L); // Main Eventer tier
-
-    // When
-    List<Wrestler> extremeEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.ROOKIE);
-    List<Wrestler> worldEligible = wrestlerService.getEligibleWrestlers(WrestlerTier.MAIN_EVENTER);
-
-    // Then
-    assertThat(extremeEligible)
-        .hasSize(initialEligibleRookieWrestlers + 4); // Rookie, Riser, Contender, Main Eventer
-    assertThat(extremeEligible)
-        .extracting(Wrestler::getName)
-        .contains("Rookie", "Riser", "Contender", "Main Eventer");
-
-    assertThat(worldEligible).hasSize(initialEligibleMainEventerWrestlers + 1); // Only Main Eventer
-    assertThat(worldEligible).extracting(Wrestler::getName).contains("Main Eventer");
-  }
-
-  @Test
   @DisplayName("Should filter wrestlers by tier")
   @Transactional
   void shouldFilterWrestlersByTier() {
@@ -300,8 +286,7 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     // Calculate expected health manually to avoid lazy loading issues
     int expectedHealth = finalWrestler.getStartingHealth() - finalWrestler.getBumps();
     assertThat(expectedHealth).isEqualTo(13); // 15 - 2 bumps
-    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.RISER)).isTrue();
-    assertThat(finalWrestler.isEligibleForTitle(WrestlerTier.MIDCARDER)).isFalse();
+    assertThat(finalWrestler.getTier()).isEqualTo(WrestlerTier.CONTENDER);
     assertThat(finalWrestler.getDescription()).isEqualTo("Test wrestler for complex operations");
   }
 
@@ -315,7 +300,7 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     long initialInboxItemCount = inboxRepository.count();
 
     // When
-    wrestlerService.awardFans(wrestler.getId(), 1000L);
+    wrestlerService.awardFans(wrestler.getId(), 1_000L);
 
     // Then
     assertThat(inboxRepository.count()).isEqualTo(initialInboxItemCount + 1);

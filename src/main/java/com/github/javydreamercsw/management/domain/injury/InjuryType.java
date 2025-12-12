@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.domain.injury;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
@@ -40,9 +56,6 @@ public class InjuryType extends AbstractEntity<Long> {
   @Lob
   @Column(name = "special_effects")
   private String specialEffects; // Text description of special game effects
-
-  @Column(name = "external_id", unique = true)
-  @Size(max = 255) private String externalId; // External system ID (e.g., Notion page ID)
 
   // ==================== HELPER METHODS ====================
 

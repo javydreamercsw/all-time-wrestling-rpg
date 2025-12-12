@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.base.ai.gemini;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,22 +41,22 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class GeminiSegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private static final Duration TIMEOUT =
-      Duration.ofSeconds(60); // Longer timeout for segment narration
-
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
   private final String apiKey;
-  private final GeminiConfigProperties geminiConfigProperties; // Inject configuration properties
+  private final GeminiConfigProperties geminiConfigProperties;
   private final Environment environment;
 
   @Autowired // Autowire the configuration properties
   public GeminiSegmentNarrationService(
       GeminiConfigProperties geminiConfigProperties, Environment environment) {
-    this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
+    this.httpClient =
+        HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(geminiConfigProperties.getTimeout()))
+            .build();
     this.objectMapper = new ObjectMapper();
     this.apiKey = System.getenv("GEMINI_API_KEY");
-    this.geminiConfigProperties = geminiConfigProperties; // Assign injected properties
+    this.geminiConfigProperties = geminiConfigProperties;
     this.environment = environment;
   }
 
@@ -127,7 +143,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
           HttpRequest.newBuilder()
               .uri(URI.create(url))
               .header("Content-Type", "application/json")
-              .timeout(TIMEOUT)
+              .timeout(Duration.ofSeconds(geminiConfigProperties.getTimeout()))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
 
@@ -148,6 +164,9 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
 
     } catch (Exception e) {
       log.error("Failed to call Gemini API for segment narration", e);
+      if (e instanceof java.net.http.HttpTimeoutException) {
+        throw new AIServiceException(504, "Gateway Timeout", getProviderName(), e.getMessage(), e);
+      }
       // Re-throw as custom exception
       throw new AIServiceException(
           500, "Internal Server Error", getProviderName(), e.getMessage(), e);

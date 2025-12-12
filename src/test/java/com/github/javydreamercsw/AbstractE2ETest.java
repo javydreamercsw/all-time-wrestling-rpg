@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw;
 
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
@@ -157,6 +173,32 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    */
   protected void scrollIntoView(@NonNull WebElement element) {
     ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
+  }
+
+  /**
+   * Selects an item from a Vaadin ComboBox by clicking it and selecting the item from the overlay.
+   *
+   * @param comboBox the Vaadin ComboBox WebElement
+   * @param itemText the text of the item to select
+   */
+  protected void selectFromVaadinComboBox(@NonNull WebElement comboBox, @NonNull String itemText) {
+    // Click the combo box to open it
+    comboBox.click();
+
+    // Wait for the overlay to appear and the item to be clickable
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebElement item =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.xpath(
+                    "//vaadin-combo-box-overlay//vaadin-combo-box-item[normalize-space(.)='"
+                        + itemText
+                        + "']")));
+
+    // Click the item (item is guaranteed to be non-null by wait.until)
+    if (item != null) {
+      item.click();
+    }
   }
 
   /**

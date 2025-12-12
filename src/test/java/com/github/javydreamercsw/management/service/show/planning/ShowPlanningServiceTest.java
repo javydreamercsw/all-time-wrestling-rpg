@@ -1,8 +1,25 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.show.planning;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -30,32 +47,34 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ShowPlanningServiceTest {
 
-  @Mock private SegmentRepository segmentRepository;
-  @Mock private RivalryService rivalryService;
-  @Mock private TitleService titleService;
-  @Mock private ShowService showService;
-  @Mock private SegmentService segmentService;
-  @Mock private SegmentTypeRepository segmentTypeRepository;
-  @Mock private WrestlerService wrestlerService;
-  @Mock private FactionService factionService;
+  @MockitoBean private SegmentRepository segmentRepository;
+  @MockitoBean private RivalryService rivalryService;
+  @MockitoBean private TitleService titleService;
+  @MockitoBean private ShowService showService;
+  @MockitoBean private SegmentService segmentService;
+  @MockitoBean private SegmentTypeRepository segmentTypeRepository;
+  @MockitoBean private WrestlerService wrestlerService;
+  @MockitoBean private FactionService factionService;
+  @MockitoBean private DataInitializer dataInitializer; // IDE shows no usages, but it is needed.
 
-  @Spy private ShowPlanningDtoMapper mapper; // Shows as not used but it is needed.
-  @Spy private Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
+  @MockitoSpyBean
+  private ShowPlanningDtoMapper showPlanningDtoMapper; // IDE shows no usages, but it is needed.
 
-  @Mock private PromoBookingService promoBookingService;
-  @InjectMocks private ShowPlanningService showPlanningService;
+  @MockitoSpyBean private Clock clock;
+
+  @MockitoBean private PromoBookingService promoBookingService;
+  @Autowired private ShowPlanningService showPlanningService;
 
   @Test
   void getShowPlanningContext() {
@@ -101,9 +120,7 @@ class ShowPlanningServiceTest {
 
     when(segmentRepository.findBySegmentDateBetween(any(), any()))
         .thenReturn(Arrays.asList(match, promo));
-
     when(segmentTypeRepository.findByName("Promo")).thenReturn(Optional.of(promoSegmentType));
-
     when(promoBookingService.isPromoSegment(any(Segment.class)))
         .thenAnswer(
             invocation -> {
@@ -112,9 +129,7 @@ class ShowPlanningServiceTest {
             });
 
     when(segmentTypeRepository.findByName("Promo")).thenReturn(Optional.of(promoSegmentType));
-
     when(segmentTypeRepository.findByName("Promo")).thenReturn(Optional.of(promoSegmentType));
-
     when(segmentTypeRepository.findByName("Promo")).thenReturn(Optional.of(promoSegmentType));
 
     Rivalry rivalry = new Rivalry();
@@ -341,10 +356,8 @@ class ShowPlanningServiceTest {
     title.setContender(Collections.singletonList(numberOneContender));
 
     when(titleService.getActiveTitles()).thenReturn(Collections.singletonList(title));
-
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(numberOneContender));
-
     when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 

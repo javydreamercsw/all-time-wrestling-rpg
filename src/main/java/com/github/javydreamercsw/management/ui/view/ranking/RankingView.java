@@ -1,11 +1,32 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.ranking;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
+import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
@@ -22,25 +43,29 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 @Route(value = "championship-rankings", layout = MainLayout.class)
 @PageTitle("Championship Rankings")
 @PermitAll
 @Transactional(readOnly = true)
+@Slf4j
 public class RankingView extends Main {
 
   private final RankingService rankingService;
+  private final TierBoundaryService tierBoundaryService;
 
   private final Image championshipImage = new Image();
   private final VerticalLayout championLayout = new VerticalLayout();
   private final Grid<RankedWrestlerDTO> contendersGrid = new Grid<>();
-  private final ComboBox<ChampionshipDTO> championshipComboBox;
 
-  public RankingView(@NonNull RankingService rankingService) {
+  public RankingView(
+      @NonNull RankingService rankingService, @NonNull TierBoundaryService tierBoundaryService) {
     this.rankingService = rankingService;
+    this.tierBoundaryService = tierBoundaryService;
 
-    championshipComboBox = new ComboBox<>("Championship");
+    ComboBox<ChampionshipDTO> championshipComboBox = new ComboBox<>("Championship");
     championshipComboBox.setItems(
         rankingService.getChampionships().stream()
             .sorted(Comparator.comparing(ChampionshipDTO::getName))
@@ -50,8 +75,7 @@ public class RankingView extends Main {
 
     // Select the first championship by default
     rankingService.getChampionships().stream()
-        .sorted(Comparator.comparing(ChampionshipDTO::getName))
-        .findFirst()
+        .min(Comparator.comparing(ChampionshipDTO::getName))
         .ifPresent(championshipComboBox::setValue);
 
     contendersGrid
@@ -70,11 +94,65 @@ public class RankingView extends Main {
 
     championshipImage.setId("championship-image");
     championshipImage.setMaxHeight("300px");
+    championshipImage.setWidth("auto");
+    championshipImage.getStyle().set("object-fit", "contain");
 
-    HorizontalLayout topLayout = new HorizontalLayout(championshipComboBox);
+    Button showTierBoundariesButton = new Button("Show Tier Boundaries");
+    showTierBoundariesButton.addClickListener(event -> showTierBoundariesDialog());
+
+    HorizontalLayout topLayout =
+        new HorizontalLayout(championshipComboBox, showTierBoundariesButton);
     topLayout.setAlignItems(Alignment.CENTER);
 
     add(topLayout, championLayout, championshipImage, contendersGrid);
+  }
+
+  private void showTierBoundariesDialog() {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Tier Boundaries");
+    dialog.setWidth("40em");
+
+    Grid<TierBoundary> tierGrid = new Grid<>(TierBoundary.class, false);
+    tierGrid.addColumn(tb -> tb.getTier().getDisplayWithEmoji()).setHeader("Tier");
+    tierGrid
+        .addColumn(tb -> String.format("%,d - %,d", tb.getMinFans(), tb.getMaxFans()))
+        .setHeader("Fan Range");
+    tierGrid
+        .addColumn(tb -> String.format("%,d", tb.getChallengeCost()))
+        .setHeader("Challenge Cost");
+    tierGrid
+        .addColumn(tb -> String.format("%,d", tb.getContenderEntryFee()))
+        .setHeader("Contender Entry Fee");
+
+    ComboBox<Gender> genderComboBox = new ComboBox<>("Gender");
+    genderComboBox.setItems(Gender.values());
+    genderComboBox.setId("gender-selection");
+    genderComboBox.setItemLabelGenerator(Gender::name);
+    genderComboBox.setValue(Gender.MALE); // Default to male
+
+    genderComboBox.addValueChangeListener(
+        event -> {
+          List<TierBoundary> tierBoundaries =
+              tierBoundaryService.findAllByGender(event.getValue()).stream()
+                  .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
+                  .collect(Collectors.toList());
+          log.info(
+              "Found {} tier boundaries for {} to display.",
+              tierBoundaries.size(),
+              event.getValue());
+          tierGrid.setItems(tierBoundaries);
+        });
+
+    // Initial load
+    List<TierBoundary> initialBoundaries =
+        tierBoundaryService.findAllByGender(Gender.MALE).stream()
+            .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
+            .collect(Collectors.toList());
+    log.info("Found {} tier boundaries for MALE to display.", initialBoundaries.size());
+    tierGrid.setItems(initialBoundaries);
+
+    dialog.add(genderComboBox, tierGrid);
+    dialog.open();
   }
 
   private void updateView(ChampionshipDTO championship) {
@@ -89,9 +167,16 @@ public class RankingView extends Main {
     championLayout.setVisible(true);
     contendersGrid.setVisible(true);
 
-    // Update championship image
-    String imagePath = "images/championships/" + championship.getImageName();
-    championshipImage.setSrc(imagePath);
+    // Update championship image using static resource URL
+    // Resources in META-INF/resources are served relative to the context path
+    String imageName = championship.getImageName();
+    // Use relative path (no leading slash) so Vaadin automatically includes context path
+    String imageUrl = "images/championships/" + imageName;
+
+    log.debug("Loading championship image for '{}' at URL: {}", championship.getName(), imageUrl);
+
+    championshipImage.setSrc(imageUrl);
+    championshipImage.setAlt(championship.getName() + " Championship");
 
     // Update champion
     championLayout.removeAll();

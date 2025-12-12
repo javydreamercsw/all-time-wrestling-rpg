@@ -1,13 +1,32 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.ranking;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -27,6 +46,7 @@ public class RankingService {
 
   private final TitleRepository titleRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final TierBoundaryService tierBoundaryService;
 
   @Transactional(readOnly = true)
   public List<ChampionshipDTO> getChampionships() {
@@ -43,13 +63,35 @@ public class RankingService {
     }
     Title title = titleOpt.get();
     WrestlerTier tier = title.getTier();
-    long minFans = tier.getMinFans();
-    long maxFans = tier.getNextTier() != null ? tier.getNextTier().getMinFans() : Long.MAX_VALUE;
 
-    List<Wrestler> contenders =
-        new ArrayList<>(wrestlerRepository.findByFansBetween(minFans, maxFans));
+    Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
+    Optional<TierBoundary> tierBoundaryOpt = tierBoundaryService.findByTierAndGender(tier, gender);
 
+    long minFans;
+    long maxFans;
+
+    if (tierBoundaryOpt.isPresent()) {
+      TierBoundary tierBoundary = tierBoundaryOpt.get();
+      minFans = tierBoundary.getMinFans();
+      maxFans = tierBoundary.getMaxFans();
+    } else {
+      // Fallback to static values if dynamic boundaries are not yet calculated
+      minFans = tier.getMinFans();
+      maxFans = tier.getMaxFans();
+    }
+
+    List<Wrestler> contenders;
+    if (tier.equals(WrestlerTier.MAIN_EVENTER)) {
+      contenders = new ArrayList<>(wrestlerRepository.findByFansGreaterThanEqual(minFans));
+    } else {
+      contenders = new ArrayList<>(wrestlerRepository.findByFansBetween(minFans, maxFans));
+    }
+
+    // Remove champions from the contender list
     title.getCurrentReign().ifPresent(reign -> contenders.removeAll(reign.getChampions()));
+
+    // Filter by gender
+    contenders.removeIf(wrestler -> wrestler.getGender() != gender);
 
     AtomicInteger rank = new AtomicInteger(1);
     return contenders.stream()
@@ -72,7 +114,7 @@ public class RankingService {
                                 .id(champion.getId())
                                 .name(champion.getName())
                                 .fans(champion.getFans())
-                                .reignDays(reign.getReignLengthDays())
+                                .reignDays(reign.getReignLengthDays(Instant.now()))
                                 .build())
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());

@@ -1,6 +1,21 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management;
 
-import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
@@ -20,11 +35,9 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.domain.storyline.StorylineBranchRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
@@ -40,7 +53,6 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
-import lombok.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +69,6 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
   @Autowired protected InjuryTypeRepository injuryTypeRepository;
   @Autowired protected SegmentRepository segmentRepository;
   @Autowired protected SegmentRuleRepository segmentRuleRepository;
-  @Autowired protected StorylineBranchRepository storylineBranchRepository;
   @Autowired protected NpcRepository npcRepository;
   @Autowired protected SeasonRepository seasonRepository;
   @Autowired protected SegmentRuleService segmentRuleService;
@@ -114,7 +125,6 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
     injuryTypeRepository.deleteAll();
     segmentRepository.deleteAll();
     segmentRuleRepository.deleteAll();
-    storylineBranchRepository.deleteAll();
     teamRepository.deleteAll();
     titleReignRepository.deleteAll();
     titleRepository.deleteAll();
@@ -128,9 +138,5 @@ public abstract class ManagementIntegrationTest extends AbstractIntegrationTest 
     showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
     segmentTypeRepository.deleteAll();
-  }
-
-  protected Wrestler createTestWrestler(@NonNull String name) {
-    return TestUtils.createWrestler(wrestlerRepository, name);
   }
 }

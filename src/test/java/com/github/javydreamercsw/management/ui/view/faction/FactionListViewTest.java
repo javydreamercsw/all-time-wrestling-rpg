@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.faction;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -11,7 +27,9 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.grid.Grid;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -180,7 +198,7 @@ class FactionListViewTest {
     evolution.setDisbandedDate(Instant.now().minusSeconds(180 * 24 * 60 * 60)); // 6 months ago
 
     // Add members to Evolution (this is what was missing!)
-    List<Wrestler> evolutionMembers = new ArrayList<>();
+    Set<Wrestler> evolutionMembers = new HashSet<>();
     evolutionMembers.add(testWrestlers.get(0)); // Triple H
     evolutionMembers.add(testWrestlers.get(2)); // Randy Orton
     evolution.setMembers(evolutionMembers);
@@ -195,7 +213,7 @@ class FactionListViewTest {
     dx.setFormedDate(Instant.now().minusSeconds(200 * 24 * 60 * 60)); // ~7 months ago
 
     // Add members to DX
-    List<Wrestler> dxMembers = new ArrayList<>();
+    Set<Wrestler> dxMembers = new HashSet<>();
     dxMembers.add(testWrestlers.get(1)); // Shawn Michaels
     dx.setMembers(dxMembers);
 

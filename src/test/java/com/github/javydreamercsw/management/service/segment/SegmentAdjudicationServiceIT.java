@@ -1,7 +1,24 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.segment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -15,7 +32,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.time.LocalDate;
@@ -117,10 +133,10 @@ class SegmentAdjudicationServiceIT extends AbstractIntegrationTest {
     org.assertj.core.api.Assertions.assertThat(updatedWinner.get().getFans())
         .isBetween(initialFans + 5_000, initialFans + 25_000);
 
-    // Loser fan gain: (1d6 + 3) * 1000 + matchQualityBonus
-    // Min: (1+3)*1000 + 0 = 4000. Max: (6+3)*1000 + 10000 = 19000
+    // Loser fan gain: (1d6 - 4) * 1000 + matchQualityBonus
+    // Min: (1-4)*1000 + 0 = -3000. Max: (6-4)*1000 + 10000 = 12000
     org.assertj.core.api.Assertions.assertThat(updatedLoser.get().getFans())
-        .isBetween(initialFans + 4_000, initialFans + 19_000);
+        .isBetween(initialFans - 3_000, initialFans + 12_000);
 
     assertEquals(0, updatedWinner.get().getBumps());
     assertEquals(1, updatedLoser.get().getBumps());

@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.controller.injury;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -10,6 +26,8 @@ import com.github.javydreamercsw.base.test.BaseControllerTest;
 import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.CreateInjuryTypeRequest;
 import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.UpdateInjuryTypeRequest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.mapper.InjuryTypeMapper;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +59,8 @@ class InjuryTypeControllerTest extends BaseControllerTest {
   @Autowired private ObjectMapper objectMapper;
 
   @MockitoBean private InjuryTypeService injuryTypeService;
+  @MockitoBean private InjuryTypeMapper injuryTypeMapper;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @DisplayName("Should get all injury types with pagination")

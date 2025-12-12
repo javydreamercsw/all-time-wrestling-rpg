@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -55,6 +71,7 @@ public class ShowPlanningService {
 
     // Get segments from the last 7 days
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
+    context.setShowDate(showDate);
     Instant lastWeek = showDate.minus(7, ChronoUnit.DAYS);
     log.debug("Getting segments between {} and {}", lastWeek, showDate);
     List<Segment> lastWeekSegments = segmentRepository.findBySegmentDateBetween(lastWeek, showDate);
@@ -153,9 +170,10 @@ public class ShowPlanningService {
     int currentSegmentCount = segmentRepository.findByShow(show).size();
     for (int i = 0; i < proposedSegments.size(); i++) {
       ProposedSegment proposedSegment = proposedSegments.get(i);
-      log.info("Processing segment: {}", proposedSegment);
+      log.debug("Processing segment: {}", proposedSegment);
       Segment segment = new Segment();
       segment.setShow(show);
+      segment.setSegmentType(segmentTypeService.findByName(proposedSegment.getType()).get());
       segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
       segment.setNarration(proposedSegment.getDescription());
       segment.setSegmentOrder(currentSegmentCount + i + 1);

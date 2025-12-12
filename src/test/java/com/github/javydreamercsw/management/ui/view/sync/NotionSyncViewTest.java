@@ -1,9 +1,25 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.sync;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.github.javydreamercsw.management.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
@@ -146,13 +162,19 @@ class NotionSyncViewTest {
         (ComboBox<String>)
             notionSyncView
                 .getChildren()
-                .filter(c -> c instanceof HorizontalLayout)
+                .filter(c -> c instanceof HorizontalLayout) // Find the control section
                 .findFirst()
-                .get()
+                .orElseThrow(() -> new AssertionError("Control section not found"))
                 .getChildren()
-                .filter(c -> c instanceof ComboBox)
+                .filter(c -> c instanceof ComboBox) // Find all ComboBoxes in the section
+                .skip(1) // Skip the first ComboBox (syncDirection)
+                .map(c -> (ComboBox<String>) c) // Cast to ComboBox<String>
+                .filter(
+                    comboBox ->
+                        "Select Entity to Sync"
+                            .equals(comboBox.getLabel())) // Further filter by label if needed
                 .findFirst()
-                .get();
+                .orElseThrow(() -> new AssertionError("Entity selection combo box not found"));
 
     List<String> dropdownItems = new ArrayList<>();
     entitySelectionCombo.getDataProvider().fetch(new Query<>()).forEach(dropdownItems::add);

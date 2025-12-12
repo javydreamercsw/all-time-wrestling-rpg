@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.show;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -6,7 +22,6 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 import java.time.Duration;
@@ -41,25 +56,8 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     testShow.setDescription("Test Description");
     showRepository.save(testShow);
 
-    Wrestler wrestler1 = new Wrestler();
-    wrestler1.setName("Wrestler 1");
-    wrestler1.setDeckSize(10);
-    wrestler1.setLowHealth(0);
-    wrestler1.setStartingHealth(100);
-    wrestler1.setCurrentHealth(100);
-    wrestler1.setStartingStamina(100);
-    wrestler1.setLowStamina(0);
-    wrestlerRepository.save(wrestler1);
-
-    Wrestler wrestler2 = new Wrestler();
-    wrestler2.setName("Wrestler 2");
-    wrestler2.setDeckSize(10);
-    wrestler2.setLowHealth(0);
-    wrestler2.setStartingHealth(100);
-    wrestler2.setCurrentHealth(100);
-    wrestler2.setStartingStamina(100);
-    wrestler2.setLowStamina(0);
-    wrestlerRepository.save(wrestler2);
+    wrestlerRepository.save(createTestWrestler("Wrestler 1"));
+    wrestlerRepository.save(createTestWrestler("Wrestler 2"));
 
     SegmentType segmentType = new SegmentType();
     segmentType.setName("Singles Match");

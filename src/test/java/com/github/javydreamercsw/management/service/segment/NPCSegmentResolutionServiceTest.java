@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.segment;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,6 +25,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.Injury;
@@ -78,9 +95,9 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
     }
 
     // Create test wrestlers with different tiers
-    rookie1 = wrestlerService.createWrestler("Rookie One", true, null);
-    rookie2 = wrestlerService.createWrestler("Rookie Two", true, null);
-    contender = wrestlerService.createWrestler("The Contender", true, null);
+    rookie1 = wrestlerService.createWrestler("Rookie One", true, null, WrestlerTier.ROOKIE);
+    rookie2 = wrestlerService.createWrestler("Rookie Two", true, null, WrestlerTier.ROOKIE);
+    contender = wrestlerService.createWrestler("The Contender", true, null, WrestlerTier.CONTENDER);
 
     // Award fans to create tier differences
     Assertions.assertNotNull(contender.getId());

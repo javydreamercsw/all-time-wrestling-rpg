@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.sync.parallel;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -6,12 +22,23 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
-import com.github.javydreamercsw.management.service.sync.entity.*;
+import com.github.javydreamercsw.management.service.sync.entity.notion.FactionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.InjurySyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServicesManager;
+import com.github.javydreamercsw.management.service.sync.entity.notion.NpcSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTemplateSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TeamSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TitleReignSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.TitleSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerSyncService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator.ParallelSyncResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -35,8 +62,9 @@ class ParallelSyncOrchestratorTest {
   @Mock private NpcSyncService npcSyncService;
   @Mock private TitleSyncService titleSyncService;
   @Mock private TitleReignSyncService titleReignSyncService;
+  @Mock private NotionSyncServicesManager notionSyncServicesManager;
 
-  @InjectMocks private ParallelSyncOrchestrator orchestrator;
+  private ParallelSyncOrchestrator orchestrator;
 
   @BeforeEach
   void setUp() {
@@ -46,11 +74,43 @@ class ParallelSyncOrchestratorTest {
     defaults.setMaxThreads(4);
     defaults.setTimeoutSeconds(300);
     when(entityConfig.getDefaults()).thenReturn(defaults);
+
+    // Manually instantiate orchestrator with mocked NotionSyncServicesManager
+    orchestrator = new ParallelSyncOrchestrator(notionSyncServicesManager, entityConfig);
+  }
+
+  private void setupAllSyncServices() {
+    // Configure NotionSyncServicesManager to return mocked services
+    lenient().when(notionSyncServicesManager.getShowSyncService()).thenReturn(showSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getWrestlerSyncService())
+        .thenReturn(wrestlerSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getFactionSyncService())
+        .thenReturn(factionSyncService);
+    lenient().when(notionSyncServicesManager.getTeamSyncService()).thenReturn(teamSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getSegmentSyncService())
+        .thenReturn(segmentSyncService);
+    lenient().when(notionSyncServicesManager.getSeasonSyncService()).thenReturn(seasonSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getShowTypeSyncService())
+        .thenReturn(showTypeSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getShowTemplateSyncService())
+        .thenReturn(showTemplateSyncService);
+    lenient().when(notionSyncServicesManager.getInjurySyncService()).thenReturn(injurySyncService);
+    lenient().when(notionSyncServicesManager.getNpcSyncService()).thenReturn(npcSyncService);
+    lenient().when(notionSyncServicesManager.getTitleSyncService()).thenReturn(titleSyncService);
+    lenient()
+        .when(notionSyncServicesManager.getTitleReignSyncService())
+        .thenReturn(titleReignSyncService);
   }
 
   @Test
   void executeParallelSync_WhenAllEntitiesEnabled_ShouldExecuteAllSyncs() {
     // Given
+    setupAllSyncServices();
     setupAllEntitiesEnabled();
     setupSuccessfulSyncResults();
 
@@ -73,7 +133,7 @@ class ParallelSyncOrchestratorTest {
     verify(showTypeSyncService).syncShowTypes(anyString());
     verify(showTemplateSyncService).syncShowTemplates(anyString());
     verify(injurySyncService).syncInjuryTypes(anyString());
-    verify(npcSyncService).syncNpcs(anyString());
+    verify(npcSyncService).syncNpcs(anyString(), any());
     verify(titleSyncService).syncTitles(anyString());
     verify(titleReignSyncService).syncTitleReigns(anyString());
   }
@@ -81,10 +141,12 @@ class ParallelSyncOrchestratorTest {
   @Test
   void executeParallelSync_WhenSomeEntitiesDisabled_ShouldOnlyExecuteEnabled() {
     // Given
-    lenient().when(entityConfig.isEntityEnabled(anyString())).thenReturn(false);
-    lenient().when(entityConfig.isEntityEnabled("shows")).thenReturn(true);
-    lenient().when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
-    lenient().when(entityConfig.isEntityEnabled("showtypes")).thenReturn(true);
+    setupAllSyncServices();
+    when(entityConfig.isEntityEnabled(anyString())).thenReturn(false); // Default to false
+    when(entityConfig.isEntityEnabled("shows")).thenReturn(true);
+    when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
+    when(entityConfig.isEntityEnabled("showtypes")).thenReturn(true);
+
     when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0, 0));
     when(wrestlerSyncService.syncWrestlers(anyString()))
         .thenReturn(SyncResult.success("Wrestlers", 10, 0, 0));
@@ -114,6 +176,7 @@ class ParallelSyncOrchestratorTest {
   @Test
   void executeParallelSync_WhenSomeEntitiesFail_ShouldContinueWithOthers() {
     // Given
+    setupAllSyncServices();
     setupAllEntitiesEnabled();
 
     when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0, 0));
@@ -133,7 +196,8 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTemplates", 6, 0, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
-    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0, 0));
+    when(npcSyncService.syncNpcs(anyString(), any()))
+        .thenReturn(SyncResult.success("NPCs", 5, 0, 0));
     when(titleSyncService.syncTitles(anyString()))
         .thenReturn(SyncResult.success("Titles", 5, 0, 0));
     when(titleReignSyncService.syncTitleReigns(anyString()))
@@ -165,6 +229,7 @@ class ParallelSyncOrchestratorTest {
   @Test
   void executeParallelSync_WhenExecutorFails_ShouldReturnFailure() {
     // Given
+    setupAllSyncServices();
     setupAllEntitiesEnabled();
 
     // Setup service to throw exception
@@ -185,7 +250,8 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTemplates", 1, 0, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
-    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 1, 0, 0));
+    when(npcSyncService.syncNpcs(anyString(), any()))
+        .thenReturn(SyncResult.success("NPCs", 1, 0, 0));
     when(titleSyncService.syncTitles(anyString()))
         .thenReturn(SyncResult.success("Titles", 1, 0, 0));
     when(titleReignSyncService.syncTitleReigns(anyString()))
@@ -232,7 +298,8 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTemplates", 6, 0, 0));
     when(injurySyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
-    when(npcSyncService.syncNpcs(anyString())).thenReturn(SyncResult.success("NPCs", 5, 0, 0));
+    when(npcSyncService.syncNpcs(anyString(), any()))
+        .thenReturn(SyncResult.success("NPCs", 5, 0, 0));
     when(titleSyncService.syncTitles(anyString()))
         .thenReturn(SyncResult.success("Titles", 5, 0, 0));
     when(titleReignSyncService.syncTitleReigns(anyString()))

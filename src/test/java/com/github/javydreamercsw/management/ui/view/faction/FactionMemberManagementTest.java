@@ -1,7 +1,22 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.faction;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -10,29 +25,34 @@ import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 /**
  * Tests for Faction member management functionality. Focuses on testing member addition, removal,
  * and relationship management.
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class FactionMemberManagementTest {
 
   @Mock private FactionService factionService;
   @Mock private WrestlerService wrestlerService;
 
-  private FactionListView factionListView;
   private Faction testFaction;
-  private List<Wrestler> availableWrestlers;
-  private List<Wrestler> factionMembers;
+  private Set<Wrestler> availableWrestlers;
+  private Set<Wrestler> factionMembers;
 
   @BeforeEach
   void setUp() {
@@ -44,16 +64,17 @@ class FactionMemberManagementTest {
     // Note: Service methods are only mocked when needed in specific tests
     when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
     when(wrestlerService.findAll()).thenReturn(new ArrayList<>());
-    factionListView = new FactionListView(factionService, wrestlerService);
   }
 
   @Test
   @DisplayName("Should add new member to faction")
   void shouldAddNewMemberToFaction() {
     // Given
-    Wrestler newMember = availableWrestlers.get(0); // Wrestler not in faction
+    Wrestler newMember = new ArrayList<>(availableWrestlers).get(0); // Wrestler not in faction
     Faction updatedFaction = createUpdatedFactionWithNewMember(newMember);
 
+    assertNotNull(testFaction.getId());
+    assertNotNull(newMember.getId());
     when(factionService.addMemberToFaction(testFaction.getId(), newMember.getId()))
         .thenReturn(Optional.of(updatedFaction));
 
@@ -73,9 +94,11 @@ class FactionMemberManagementTest {
   @DisplayName("Should remove member from faction")
   void shouldRemoveMemberFromFaction() {
     // Given
-    Wrestler memberToRemove = factionMembers.get(0);
+    Wrestler memberToRemove = new ArrayList<>(factionMembers).get(0);
     Faction updatedFaction = createUpdatedFactionWithRemovedMember(memberToRemove);
 
+    assertNotNull(testFaction.getId());
+    assertNotNull(memberToRemove.getId());
     when(factionService.removeMemberFromFaction(
             testFaction.getId(), memberToRemove.getId(), "Removed via UI"))
         .thenReturn(Optional.of(updatedFaction));
@@ -100,12 +123,14 @@ class FactionMemberManagementTest {
 
     // When - Filter wrestlers not in faction
     List<Wrestler> availableForSelection =
-        allWrestlers.stream().filter(wrestler -> !testFaction.hasMember(wrestler)).toList();
+        allWrestlers.stream()
+            .filter(wrestler -> !testFaction.hasMember(wrestler))
+            .collect(Collectors.toList());
 
     // Then
     assertNotNull(availableForSelection);
     // Should only contain wrestlers not already in the faction
-    assertTrue(availableForSelection.size() > 0);
+    assertFalse(availableForSelection.isEmpty());
 
     // Verify no current faction members are in the available list
     for (Wrestler member : factionMembers) {
@@ -120,7 +145,7 @@ class FactionMemberManagementTest {
     int initialMemberCount = testFaction.getMemberCount();
 
     // When - Add a member (simulated)
-    Wrestler newMember = availableWrestlers.get(0);
+    Wrestler newMember = new ArrayList<>(availableWrestlers).get(0);
     Faction updatedFaction = createUpdatedFactionWithNewMember(newMember);
 
     // Then - Member count should increase
@@ -136,7 +161,7 @@ class FactionMemberManagementTest {
     emptyFaction.setName("Empty Faction");
     emptyFaction.setIsActive(true);
     emptyFaction.setCreationDate(Instant.now());
-    emptyFaction.setMembers(new ArrayList<>());
+    emptyFaction.setMembers(new HashSet<>());
 
     // When/Then
     assertEquals(0, emptyFaction.getMemberCount());
@@ -147,8 +172,10 @@ class FactionMemberManagementTest {
   @DisplayName("Should handle member addition errors")
   void shouldHandleMemberAdditionErrors() {
     // Given
-    Wrestler newMember = availableWrestlers.get(0);
+    Wrestler newMember = new ArrayList<>(availableWrestlers).get(0);
 
+    assertNotNull(testFaction.getId());
+    assertNotNull(newMember.getId());
     when(factionService.addMemberToFaction(testFaction.getId(), newMember.getId()))
         .thenThrow(new RuntimeException("Member already in another faction"));
 
@@ -159,6 +186,8 @@ class FactionMemberManagementTest {
           factionService.addMemberToFaction(testFaction.getId(), newMember.getId());
         });
 
+    assertNotNull(testFaction.getId());
+    assertNotNull(newMember.getId());
     verify(factionService).addMemberToFaction(testFaction.getId(), newMember.getId());
   }
 
@@ -166,8 +195,10 @@ class FactionMemberManagementTest {
   @DisplayName("Should handle member removal errors")
   void shouldHandleMemberRemovalErrors() {
     // Given
-    Wrestler memberToRemove = factionMembers.get(0);
+    Wrestler memberToRemove = new ArrayList<>(factionMembers).get(0);
 
+    assertNotNull(testFaction.getId());
+    assertNotNull(memberToRemove.getId());
     when(factionService.removeMemberFromFaction(
             testFaction.getId(), memberToRemove.getId(), "Removed via UI"))
         .thenThrow(new RuntimeException("Member not found in faction"));
@@ -180,6 +211,8 @@ class FactionMemberManagementTest {
               testFaction.getId(), memberToRemove.getId(), "Removed via UI");
         });
 
+    assertNotNull(testFaction.getId());
+    assertNotNull(memberToRemove.getId());
     verify(factionService)
         .removeMemberFromFaction(testFaction.getId(), memberToRemove.getId(), "Removed via UI");
   }
@@ -204,7 +237,7 @@ class FactionMemberManagementTest {
   @DisplayName("Should handle leader as member relationship")
   void shouldHandleLeaderAsMemberRelationship() {
     // Given - Faction with leader who is also a member
-    Wrestler leader = factionMembers.get(0);
+    Wrestler leader = new ArrayList<>(factionMembers).get(0);
     testFaction.setLeader(leader);
 
     // When/Then
@@ -220,7 +253,7 @@ class FactionMemberManagementTest {
     int initialMemberCount = testFaction.getMemberCount();
 
     // When - Simulate member addition and refresh
-    Wrestler newMember = availableWrestlers.get(0);
+    Wrestler newMember = new ArrayList<>(availableWrestlers).get(0);
     Faction updatedFaction = createUpdatedFactionWithNewMember(newMember);
 
     when(factionService.getFactionById(testFaction.getId()))
@@ -241,15 +274,15 @@ class FactionMemberManagementTest {
     faction.setDescription("A faction for testing member management");
     faction.setIsActive(true);
     faction.setCreationDate(Instant.now());
-    faction.setMembers(new ArrayList<>(factionMembers));
-    faction.setLeader(factionMembers.get(0)); // First member is leader
+    faction.setMembers(new HashSet<>(factionMembers));
+    faction.setLeader(new ArrayList<>(factionMembers).get(0)); // First member is leader
 
     return faction;
   }
 
   /** Helper method to create faction members. */
-  private List<Wrestler> createFactionMembers() {
-    List<Wrestler> members = new ArrayList<>();
+  private Set<Wrestler> createFactionMembers() {
+    Set<Wrestler> members = new HashSet<>();
 
     Wrestler member1 = Wrestler.builder().build();
     member1.setId(10L);
@@ -268,8 +301,8 @@ class FactionMemberManagementTest {
   }
 
   /** Helper method to create available wrestlers (not in faction). */
-  private List<Wrestler> createAvailableWrestlers() {
-    List<Wrestler> wrestlers = new ArrayList<>();
+  private Set<Wrestler> createAvailableWrestlers() {
+    Set<Wrestler> wrestlers = new HashSet<>();
 
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(20L);
@@ -290,7 +323,7 @@ class FactionMemberManagementTest {
   /** Helper method to create updated faction with new member. */
   private Faction createUpdatedFactionWithNewMember(Wrestler newMember) {
     Faction updated = createTestFactionWithMembers();
-    List<Wrestler> updatedMembers = new ArrayList<>(updated.getMembers());
+    Set<Wrestler> updatedMembers = new HashSet<>(updated.getMembers());
     updatedMembers.add(newMember);
     updated.setMembers(updatedMembers);
 
@@ -300,7 +333,7 @@ class FactionMemberManagementTest {
   /** Helper method to create updated faction with removed member. */
   private Faction createUpdatedFactionWithRemovedMember(Wrestler removedMember) {
     Faction updated = createTestFactionWithMembers();
-    List<Wrestler> updatedMembers = new ArrayList<>(updated.getMembers());
+    Set<Wrestler> updatedMembers = new HashSet<>(updated.getMembers());
     updatedMembers.remove(removedMember);
     updated.setMembers(updatedMembers);
 

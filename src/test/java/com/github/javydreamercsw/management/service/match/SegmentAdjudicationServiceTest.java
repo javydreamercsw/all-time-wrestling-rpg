@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.match;
 
 import static org.mockito.Mockito.times;
@@ -13,6 +29,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Random;
@@ -38,6 +55,7 @@ class SegmentAdjudicationServiceTest {
   @Mock private Wrestler loser;
   @Mock private SegmentType segmentType;
   @Mock private Show show;
+  @Mock private TitleService titleService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
@@ -45,7 +63,12 @@ class SegmentAdjudicationServiceTest {
   void setUp() {
     segmentAdjudicationService =
         new SegmentAdjudicationService(
-            rivalryService, wrestlerService, feudResolutionService, feudService, random);
+            rivalryService,
+            wrestlerService,
+            feudResolutionService,
+            feudService,
+            titleService,
+            random);
     when(segment.getWinners()).thenReturn(List.of(winner));
     when(segment.getLosers()).thenReturn(List.of(loser));
     when(segment.getWrestlers()).thenReturn(List.of(winner, loser));

@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +49,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     wrestlerRepository.deleteAll();
     // Create some wrestlers for the tests
     for (int i = 0; i < 4; i++) {
-      TestUtils.createWrestler(wrestlerRepository, "Wrestler " + i);
+      wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler " + i));
     }
   }
 
@@ -86,15 +102,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testEditWrestler() {
     // Create a wrestler to edit
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName("Wrestler to Edit");
-    wrestler.setDeckSize(10);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingHealth(100);
-    wrestler.setCurrentHealth(100);
-    wrestler.setStartingStamina(100);
-    wrestler.setLowStamina(0);
-    wrestlerRepository.save(wrestler);
+    Wrestler wrestler = wrestlerRepository.save(createTestWrestler("Wrestler to Edit"));
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     // Find the menu for the wrestler and click it
@@ -150,16 +158,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testDeleteWrestler() {
     // Create a wrestler to delete
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName("Wrestler to Delete");
-    wrestler.setDeckSize(10);
-    wrestler.setLowHealth(0);
-    wrestler.setStartingHealth(100);
-    wrestler.setCurrentHealth(100);
-    wrestler.setStartingStamina(100);
-    wrestler.setLowStamina(0);
-
-    wrestlerRepository.save(wrestler);
+    Wrestler wrestler = wrestlerRepository.save(createTestWrestler("Wrestler to Delete"));
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -197,7 +196,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testAddBump() {
     // Create a wrestler
-    Wrestler wrestler = TestUtils.createWrestler(wrestlerRepository, "Wrestler for Bump");
+    Wrestler wrestler =
+        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler for Bump"));
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
@@ -232,7 +232,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testHealBump() {
     // Create a wrestler with a bump
-    Wrestler wrestler = TestUtils.createWrestler(wrestlerRepository, "Wrestler to Heal Bump");
+    Wrestler wrestler =
+        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler to Heal Bump"));
     wrestler.addBump();
     wrestlerRepository.save(wrestler);
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
@@ -269,7 +270,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testManageInjuries() {
     // Create a wrestler
-    Wrestler wrestler = TestUtils.createWrestler(wrestlerRepository, "Wrestler for Injuries");
+    Wrestler wrestler =
+        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler for Injuries"));
     // Create a couple of injuries for the wrestler
     injuryService.createInjury(
         wrestler.getId(),

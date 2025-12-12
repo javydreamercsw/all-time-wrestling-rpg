@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.ui.view.ranking;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
@@ -10,8 +26,11 @@ import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
+import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.data.provider.Query;
@@ -25,6 +44,7 @@ import org.mockito.MockitoAnnotations;
 class RankingViewTest extends ManagementIntegrationTest {
 
   @Mock private RankingService rankingService;
+  @Mock private TierBoundaryService tierBoundaryService;
 
   private ChampionshipDTO championshipDTO;
 
@@ -44,7 +64,7 @@ class RankingViewTest extends ManagementIntegrationTest {
 
   @Test
   void testViewLoadsAndPopulates() {
-    RankingView view = new RankingView(rankingService);
+    RankingView view = new RankingView(rankingService, tierBoundaryService);
     assertNotNull(view);
 
     ComboBox<ChampionshipDTO> comboBox = _get(view, ComboBox.class);
@@ -62,5 +82,14 @@ class RankingViewTest extends ManagementIntegrationTest {
     assertEquals(2, items.size());
     assertEquals("Contender 2", items.get(0).getName());
     assertEquals("Contender 1", items.get(1).getName());
+  }
+
+  @Test
+  void testShowTierBoundariesButton() {
+    RankingView view = new RankingView(rankingService, tierBoundaryService);
+    Button button = _get(view, Button.class, spec -> spec.withText("Show Tier Boundaries"));
+    assertNotNull(button);
+    button.click();
+    assertNotNull(_get(Dialog.class));
   }
 }

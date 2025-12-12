@@ -1,7 +1,24 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -100,7 +117,7 @@ public class DataInitializer {
   private void loadSegmentRulesFromFile() {
     ClassPathResource resource = new ClassPathResource("segment_rules.json");
     if (resource.exists()) {
-      log.info("Loading segment rules from file: {}", resource.getPath());
+      log.debug("Loading segment rules from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         var segmentRulesFromFile =
@@ -345,6 +362,7 @@ public class DataInitializer {
             wrestlerService.save(existingWrestler);
             log.debug("Updated existing wrestler: {}", existingWrestler.getName());
           } else {
+            w.setTier(WrestlerTier.ROOKIE);
             wrestlerService.save(w);
             log.debug("Saved new wrestler: {}", w.getName());
           }

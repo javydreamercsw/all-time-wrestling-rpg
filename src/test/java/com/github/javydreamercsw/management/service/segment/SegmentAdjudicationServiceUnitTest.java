@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.service.segment;
 
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,7 +30,9 @@ import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +51,7 @@ class SegmentAdjudicationServiceUnitTest {
   @Mock private MultiWrestlerFeudService feudService;
 
   @Mock private Random random;
+  @Mock private TitleService titleService;
 
   @InjectMocks private SegmentAdjudicationService adjudicationService;
 
@@ -45,7 +64,12 @@ class SegmentAdjudicationServiceUnitTest {
   void setUp() {
     adjudicationService =
         new SegmentAdjudicationService(
-            rivalryService, wrestlerService, feudResolutionService, feudService, random);
+            rivalryService,
+            wrestlerService,
+            feudResolutionService,
+            feudService,
+            titleService,
+            random);
 
     wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
@@ -210,5 +234,25 @@ class SegmentAdjudicationServiceUnitTest {
             Objects.requireNonNull(eq(wrestler2.getId())),
             eq(1),
             eq("From segment: Match"));
+  }
+
+  @Test
+  void testAdjudicateMatch_LoserLosesFans() {
+    // Given a match segment with a winner and a loser
+    matchSegment.setWinners(List.of(wrestler1));
+
+    // Roll 10 on d20 for no match quality bonus
+    when(random.nextInt(20)).thenReturn(9);
+    // Roll 1 for loser fan calculation (1-4) * 1000 = -3000
+    // The winner rolls first, so the loser's roll is the second one.
+    when(random.nextInt(6)).thenReturn(5).thenReturn(0);
+
+    // When
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    // Then
+    // Winner's fan gain should be calculated, but we are interested in the loser.
+    // Loser should lose fans.
+    verify(wrestlerService, times(1)).awardFans(eq(2L), eq(-3000L));
   }
 }

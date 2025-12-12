@@ -1,9 +1,25 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.domain.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -58,55 +74,55 @@ class TitleReignTest {
   @DisplayName("Should calculate reign length in days")
   void shouldCalculateReignLengthInDays() {
     // Same day reign
-    assertThat(titleReign.getReignLengthDays()).isEqualTo(0);
+    assertThat(titleReign.getReignLengthDays(Instant.now())).isEqualTo(0);
 
     // Simulate reign started 5 days ago
     titleReign.setStartDate(Instant.now().minusSeconds(5 * 24 * 60 * 60));
-    assertThat(titleReign.getReignLengthDays()).isEqualTo(5);
+    assertThat(titleReign.getReignLengthDays(Instant.now())).isEqualTo(5);
 
     // End the reign 2 days later (7 days total)
     Instant endDate = titleReign.getStartDate().plusSeconds(7 * 24 * 60 * 60);
     titleReign.endReign(endDate);
-    assertThat(titleReign.getReignLengthDays()).isEqualTo(7);
+    assertThat(titleReign.getReignLengthDays(Instant.now())).isEqualTo(7);
   }
 
   @Test
   @DisplayName("Should format reign length display correctly")
   void shouldFormatReignLengthDisplayCorrectly() {
     // Less than 1 day
-    assertThat(titleReign.getReignLengthDisplay()).isEqualTo("Less than 1 day");
+    assertThat(titleReign.getReignLengthDisplay(Instant.now())).isEqualTo("Less than 1 day");
 
     // Exactly 1 day
     titleReign.setStartDate(Instant.now().minusSeconds(24 * 60 * 60));
-    assertThat(titleReign.getReignLengthDisplay()).isEqualTo("1 day");
+    assertThat(titleReign.getReignLengthDisplay(Instant.now())).isEqualTo("1 day");
 
     // Multiple days (less than a week)
     titleReign.setStartDate(Instant.now().minusSeconds(3 * 24 * 60 * 60));
-    assertThat(titleReign.getReignLengthDisplay()).isEqualTo("3 days");
+    assertThat(titleReign.getReignLengthDisplay(Instant.now())).isEqualTo("3 days");
 
     // Exactly 1 week
     titleReign.setStartDate(Instant.now().minusSeconds(7 * 24 * 60 * 60));
-    assertThat(titleReign.getReignLengthDisplay()).isEqualTo("1 week");
+    assertThat(titleReign.getReignLengthDisplay(Instant.now())).isEqualTo("1 week");
 
     // Multiple weeks
     titleReign.setStartDate(Instant.now().minusSeconds(14 * 24 * 60 * 60));
-    assertThat(titleReign.getReignLengthDisplay()).isEqualTo("2 weeks");
+    assertThat(titleReign.getReignLengthDisplay(Instant.now())).isEqualTo("2 weeks");
 
     // Weeks and days
     titleReign.setStartDate(Instant.now().minusSeconds(10 * 24 * 60 * 60));
-    assertThat(titleReign.getReignLengthDisplay()).isEqualTo("1 week and 3 days");
+    assertThat(titleReign.getReignLengthDisplay(Instant.now())).isEqualTo("1 week and 3 days");
 
     // Exactly 1 month (30 days)
     titleReign.setStartDate(Instant.now().minusSeconds(30 * 24 * 60 * 60));
-    assertThat(titleReign.getReignLengthDisplay()).isEqualTo("1 month");
+    assertThat(titleReign.getReignLengthDisplay(Instant.now())).isEqualTo("1 month");
 
     // Multiple months
     titleReign.setStartDate(Instant.now().minusSeconds(60 * 24 * 60 * 60));
-    assertThat(titleReign.getReignLengthDisplay()).isEqualTo("2 months");
+    assertThat(titleReign.getReignLengthDisplay(Instant.now())).isEqualTo("2 months");
 
     // Months and days
     titleReign.setStartDate(Instant.now().minusSeconds(35 * 24 * 60 * 60));
-    assertThat(titleReign.getReignLengthDisplay()).isEqualTo("1 month and 5 days");
+    assertThat(titleReign.getReignLengthDisplay(Instant.now())).isEqualTo("1 month and 5 days");
   }
 
   @Test
@@ -172,8 +188,8 @@ class TitleReignTest {
     titleReign.setStartDate(start);
     titleReign.endReign(Instant.now());
 
-    assertThat(titleReign.getReignLengthDays()).isEqualTo(0);
-    assertThat(titleReign.getReignLengthDisplay()).isEqualTo("Less than 1 day");
+    assertThat(titleReign.getReignLengthDays(Instant.now())).isEqualTo(0);
+    assertThat(titleReign.getReignLengthDisplay(Instant.now())).isEqualTo("Less than 1 day");
   }
 
   @Test
@@ -182,9 +198,9 @@ class TitleReignTest {
     // Reign that lasts over a year
     titleReign.setStartDate(Instant.now().minusSeconds(400 * 24 * 60 * 60)); // 400 days ago
 
-    assertThat(titleReign.getReignLengthDays()).isEqualTo(400);
+    assertThat(titleReign.getReignLengthDays(Instant.now())).isEqualTo(400);
 
-    String display = titleReign.getReignLengthDisplay();
+    String display = titleReign.getReignLengthDisplay(Instant.now());
     assertThat(display).contains("month"); // Should show in months
   }
 
@@ -196,7 +212,7 @@ class TitleReignTest {
     titleReign.setStartDate(sameTime);
     titleReign.endReign(sameTime);
 
-    assertThat(titleReign.getReignLengthDays()).isEqualTo(0);
-    assertThat(titleReign.getReignLengthDisplay()).isEqualTo("Less than 1 day");
+    assertThat(titleReign.getReignLengthDays(Instant.now())).isEqualTo(0);
+    assertThat(titleReign.getReignLengthDisplay(Instant.now())).isEqualTo("Less than 1 day");
   }
 }

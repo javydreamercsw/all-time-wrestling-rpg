@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.controller.title;
 
 import static org.mockito.Mockito.*;
@@ -5,12 +21,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.test.BaseControllerTest;
 import com.github.javydreamercsw.management.controller.title.TitleController.CreateTitleRequest;
 import com.github.javydreamercsw.management.controller.title.TitleController.UpdateTitleRequest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
@@ -52,6 +69,8 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
   @MockitoBean
   private com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
       wrestlerRepository;
+
+  @MockitoBean private RankingService rankingService;
 
   @BeforeEach
   void setup() {
@@ -273,7 +292,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     awardedTitle.awardTitleTo(List.of(wrestler), Instant.now());
 
     Title vacatedTitle = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
-    vacatedTitle.vacateTitle();
+    vacatedTitle.vacateTitle(Instant.now());
 
     when(titleService.getTitleById(awardedTitle.getId())).thenReturn(Optional.of(awardedTitle));
     when(titleService.vacateTitle(awardedTitle.getId())).thenReturn(Optional.of(vacatedTitle));
@@ -292,8 +311,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Wrestler challenger = createTestWrestler("Challenger", 120000L); // Has enough fans
 
     when(titleService.challengeForTitle(challenger.getId(), title.getId()))
-        .thenReturn(
-            new TitleService.ChallengeResult(true, "Challenge accepted", title, challenger));
+        .thenReturn(new TitleService.ChallengeResult(true, "Challenge accepted"));
 
     mockMvc
         .perform(
@@ -310,8 +328,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Wrestler challenger = createTestWrestler("Poor Challenger", 50000L); // Not eligible
 
     when(titleService.challengeForTitle(challenger.getId(), title.getId()))
-        .thenReturn(
-            new TitleService.ChallengeResult(false, "Wrestler not eligible", title, challenger));
+        .thenReturn(new TitleService.ChallengeResult(false, "Wrestler not eligible"));
 
     mockMvc
         .perform(
@@ -415,27 +432,17 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
   void shouldGetTitleStatistics() throws Exception {
     Title title = createTestTitle("Test Championship", WrestlerTier.MAIN_EVENTER);
 
-    TitleService.TitleStats stats =
-        new TitleService.TitleStats(
-            title.getId(),
-            title.getName(),
-            title.getTier(),
-            title.isVacant(),
-            null, // currentChampion (assuming vacant for this test setup)
-            0L, // currentReignDays
-            0, // totalReigns
-            title.getIsActive());
+    TitleService.TitleStats stats = new TitleService.TitleStats(title.getName(), 0, 0L, 0);
 
     when(titleService.getTitleStats(title.getId())).thenReturn(stats);
 
     mockMvc
         .perform(get("/api/titles/{id}/stats", title.getId()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.titleId").value(title.getId()))
-        .andExpect(jsonPath("$.name").value("Test Championship"))
-        .andExpect(jsonPath("$.tier").value("MAIN_EVENTER"))
-        .andExpect(jsonPath("$.isVacant").value(true))
-        .andExpect(jsonPath("$.isActive").value(true));
+        .andExpect(jsonPath("$.titleName").value("Test Championship"))
+        .andExpect(jsonPath("$.totalReigns").value(0))
+        .andExpect(jsonPath("$.currentReignDays").value(0))
+        .andExpect(jsonPath("$.currentChampionsCount").value(0));
   }
 
   private Title createTestTitle(String name, WrestlerTier tier) {
@@ -462,7 +469,6 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     wrestler.setDeckSize(40); // Set required deck size
     wrestler.setBumps(0);
     wrestler.setIsPlayer(true);
-    wrestler.updateTier();
     when(wrestlerService.save(any(Wrestler.class))).thenReturn(wrestler);
     return wrestler;
   }

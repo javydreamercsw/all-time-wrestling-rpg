@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.base.ai.openai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,9 +46,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class OpenAISegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private static final Duration TIMEOUT =
-      Duration.ofSeconds(90); // Longer timeout for segment narration
-
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
   private final String apiKey;
@@ -43,7 +56,10 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   @Autowired
   public OpenAISegmentNarrationService(
       OpenAIConfigProperties openAIConfigProperties, Environment environment) {
-    this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
+    this.httpClient =
+        HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(openAIConfigProperties.getTimeout()))
+            .build();
     this.objectMapper = new ObjectMapper();
     this.apiKey = System.getenv("OPENAI_API_KEY");
     this.environment = environment;
@@ -123,7 +139,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
               .uri(URI.create(openAIConfigProperties.getApiUrl())) // Use configured API URL
               .header("Content-Type", "application/json")
               .header("Authorization", "Bearer " + apiKey)
-              .timeout(TIMEOUT)
+              .timeout(Duration.ofSeconds(openAIConfigProperties.getTimeout()))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
 
@@ -143,6 +159,10 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
 
     } catch (Exception e) {
       log.error("Failed to call OpenAI API for segment narration", e);
+      if (e instanceof java.net.http.HttpTimeoutException) {
+        throw new com.github.javydreamercsw.base.ai.AIServiceException(
+            504, "Gateway Timeout", getProviderName(), e.getMessage(), e);
+      }
       throw new com.github.javydreamercsw.base.ai.AIServiceException(
           500, "Internal Server Error", getProviderName(), e.getMessage(), e);
     }

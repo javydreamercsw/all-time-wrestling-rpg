@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.domain.title;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
@@ -68,14 +84,14 @@ public class TitleReign extends AbstractEntity<Long> {
   }
 
   /** Get the length of this reign in days. */
-  public long getReignLengthDays() {
-    Instant end = endDate != null ? endDate : Instant.now();
+  public long getReignLengthDays(Instant now) {
+    Instant end = endDate != null ? endDate : now;
     return java.time.Duration.between(startDate, end).toDays();
   }
 
   /** Get the length of this reign in a human-readable format. */
-  public String getReignLengthDisplay() {
-    long days = getReignLengthDays();
+  public String getReignLengthDisplay(Instant now) {
+    long days = getReignLengthDays(now);
 
     if (days == 0) {
       return "Less than 1 day";
@@ -114,7 +130,8 @@ public class TitleReign extends AbstractEntity<Long> {
   public String getDisplayString() {
     String status = isCurrentReign() ? " (Current)" : "";
     return String.format(
-        "%s - Reign #%d (%s)%s", getChampionNames(), reignNumber, getReignLengthDisplay(), status);
+        "%s - Reign #%d (%s)%s",
+        getChampionNames(), reignNumber, getReignLengthDisplay(Instant.now()), status);
   }
 
   /**

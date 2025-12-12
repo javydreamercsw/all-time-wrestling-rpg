@@ -1,3 +1,19 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
 package com.github.javydreamercsw.management.domain.faction;
 
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -28,8 +44,21 @@ public interface FactionRepository
   /** Find active factions. */
   List<Faction> findByIsActiveTrue();
 
+  /** Find active or inactive factions. */
+  List<Faction> findByIsActive(boolean active);
+
   /** Find disbanded factions. */
   List<Faction> findByIsActiveFalse();
+
+  /** Find all factions with members and teams eagerly loaded for UI display. */
+  @Query(
+      """
+      SELECT DISTINCT f FROM Faction f
+      LEFT JOIN FETCH f.members m
+      LEFT JOIN FETCH f.teams t
+      ORDER BY f.name
+      """)
+  List<Faction> findAllWithMembersAndTeams();
 
   /** Find factions led by a specific wrestler. */
   List<Faction> findByLeader(Wrestler leader);
