@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -33,8 +34,12 @@ class InboxServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private InboxService inboxService;
   @Autowired private InboxRepository inboxRepository;
   @Autowired private InboxEventTypeRegistry eventTypeRegistry;
-
   @Autowired private WrestlerService wrestlerService;
+
+  @BeforeEach
+  public void setUp() {
+    inboxRepository.deleteAll();
+  }
 
   @Test
   void testSearch() {
