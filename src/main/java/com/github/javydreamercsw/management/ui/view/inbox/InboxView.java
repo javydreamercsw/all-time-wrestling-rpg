@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
@@ -50,6 +51,7 @@ public class InboxView extends VerticalLayout {
   private final InboxEventTypeRegistry eventTypeRegistry;
   private final Grid<InboxItem> grid = new Grid<>(InboxItem.class);
   private final TextField filterText = new TextField();
+  private final TextField targetFilter = new TextField();
   private final ComboBox<String> readStatusFilter = new ComboBox<>("Read Status");
   private final ComboBox<String> eventTypeFilter = new ComboBox<>("Event Type");
   private final Div detailsView = new Div();
@@ -82,6 +84,11 @@ public class InboxView extends VerticalLayout {
     filterText.setClearButtonVisible(true);
     filterText.setValueChangeMode(ValueChangeMode.LAZY);
     filterText.addValueChangeListener(e -> updateList());
+
+    targetFilter.setPlaceholder("Filter by target...");
+    targetFilter.setClearButtonVisible(true);
+    targetFilter.setValueChangeMode(ValueChangeMode.LAZY);
+    targetFilter.addValueChangeListener(e -> updateList());
 
     readStatusFilter.setItems("All", "Read", "Unread");
     readStatusFilter.setValue("All");
@@ -155,6 +162,7 @@ public class InboxView extends VerticalLayout {
     HorizontalLayout toolbar =
         new HorizontalLayout(
             filterText,
+            targetFilter,
             readStatusFilter,
             eventTypeFilter,
             hideReadCheckbox,
@@ -180,6 +188,12 @@ public class InboxView extends VerticalLayout {
     grid.addClassName("inbox-grid");
     grid.setSizeFull();
     grid.setColumns("eventType", "description", "eventTimestamp");
+    grid.addColumn(
+            item ->
+                item.getTargets().stream()
+                    .map(InboxItemTarget::getTargetId)
+                    .collect(Collectors.joining(", ")))
+        .setHeader("Targets");
     grid.addComponentColumn(this::createReadToggleButton).setHeader("Mark as Read/Unread");
     grid.getColumns().forEach(col -> col.setAutoWidth(true));
     grid.setSelectionMode(Grid.SelectionMode.MULTI);
@@ -217,6 +231,7 @@ public class InboxView extends VerticalLayout {
     grid.setItems(
         inboxService.search(
             filterText.getValue(),
+            targetFilter.getValue(),
             readStatusFilter.getValue(),
             eventTypeFilter.getValue(),
             hideReadCheckbox.getValue()));

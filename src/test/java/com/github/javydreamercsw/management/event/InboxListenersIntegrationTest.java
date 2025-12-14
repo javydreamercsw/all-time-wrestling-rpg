@@ -73,7 +73,7 @@ public class InboxListenersIntegrationTest {
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<List<String>> referenceIdCaptor = ArgumentCaptor.forClass(List.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
@@ -86,7 +86,7 @@ public class InboxListenersIntegrationTest {
             wrestler1.getName(), fanChange, wrestler1.getFans());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(wrestler1.getId());
-    assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue().get(0));
   }
 
   @Test
@@ -105,7 +105,7 @@ public class InboxListenersIntegrationTest {
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<List<String>> referenceIdCaptor = ArgumentCaptor.forClass(List.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
@@ -122,6 +122,8 @@ public class InboxListenersIntegrationTest {
             reason); // Use heatChange here
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(rivalry.getId());
-    assertEquals(rivalry.getId().toString(), referenceIdCaptor.getValue());
+    assertEquals(rivalry.getId().toString(), referenceIdCaptor.getValue().get(0));
+    assertEquals(wrestler1.getId().toString(), referenceIdCaptor.getValue().get(1));
+    assertEquals(wrestler2.getId().toString(), referenceIdCaptor.getValue().get(2));
   }
 }

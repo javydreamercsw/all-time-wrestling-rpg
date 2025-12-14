@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.event.inbox;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -42,7 +43,7 @@ public class WrestlerInjuryHealedInboxListener {
             "%s's injury (%s) has been healed!",
             event.getWrestler().getName(), event.getInjury().getName());
     inboxService.createInboxItem(
-        wrestlerInjuryHealed, message, event.getWrestler().getId().toString());
+        wrestlerInjuryHealed, message, List.of(event.getWrestler().getId().toString()));
     log.info("Inbox item created for WrestlerInjuryHealedEvent: {}", message);
   }
 }

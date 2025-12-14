@@ -65,7 +65,7 @@ class InboxServiceIntegrationTest {
     inboxRepository.save(unreadItem);
 
     // When
-    List<InboxItem> result = inboxService.search("", "All", "All", true);
+    List<InboxItem> result = inboxService.search("", null, "All", "All", true);
 
     // Then
     assertEquals(1, result.size());
@@ -90,8 +90,8 @@ class InboxServiceIntegrationTest {
     inboxRepository.save(unreadItem);
 
     // When
-    List<InboxItem> readResult = inboxService.search("", "Read", "All", false);
-    List<InboxItem> unreadResult = inboxService.search("", "Unread", "All", false);
+    List<InboxItem> readResult = inboxService.search("", null, "Read", "All", false);
+    List<InboxItem> unreadResult = inboxService.search("", null, "Unread", "All", false);
 
     // Then
     assertEquals(1, readResult.size());
@@ -124,13 +124,14 @@ class InboxServiceIntegrationTest {
   }
 
   @Test
-  void testReferenceIdPersistence() {
+  void testTargetPersistence() {
     // Given
     InboxItem item = new InboxItem();
-    item.setDescription("Item with reference ID");
+    item.setDescription("Item with targets");
     item.setEventTimestamp(Instant.now());
     item.setEventType(fanAdjudication);
-    item.setReferenceId("test-reference-id");
+    item.addTarget("target1");
+    item.addTarget("target2");
     inboxRepository.save(item);
 
     // When
@@ -138,6 +139,39 @@ class InboxServiceIntegrationTest {
 
     // Then
     assertEquals(1, foundItems.size());
-    assertEquals("test-reference-id", foundItems.get(0).getReferenceId());
+    assertEquals(2, foundItems.get(0).getTargets().size());
+    assertTrue(
+        foundItems.get(0).getTargets().stream()
+            .anyMatch(target -> target.getTargetId().equals("target1")));
+    assertTrue(
+        foundItems.get(0).getTargets().stream()
+            .anyMatch(target -> target.getTargetId().equals("target2")));
+  }
+
+  @Test
+  void testSearchWithTargetFilter() {
+    // Given
+    InboxItem item1 = new InboxItem();
+    item1.setRead(true);
+    item1.setDescription("read");
+    item1.setEventTimestamp(Instant.now());
+    item1.setEventType(fanAdjudication);
+    item1.addTarget("target1");
+    inboxRepository.save(item1);
+
+    InboxItem item2 = new InboxItem();
+    item2.setRead(false);
+    item2.setDescription("unread");
+    item2.setEventTimestamp(Instant.now());
+    item2.setEventType(fanAdjudication);
+    item2.addTarget("target2");
+    inboxRepository.save(item2);
+
+    // When
+    List<InboxItem> result = inboxService.search("", "target1", "All", "All", false);
+
+    // Then
+    assertEquals(1, result.size());
+    assertEquals("target1", result.get(0).getTargets().get(0).getTargetId());
   }
 }

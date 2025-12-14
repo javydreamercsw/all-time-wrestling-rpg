@@ -20,6 +20,8 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -47,8 +49,8 @@ public class InboxItem extends AbstractEntity<Long> {
   @Column(name = "is_read", nullable = false)
   private boolean isRead = false;
 
-  @Column(name = "reference_id")
-  private String referenceId;
+  @OneToMany(mappedBy = "inboxItem", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<InboxItemTarget> targets = new ArrayList<>();
 
   @Override
   public Long getId() {
@@ -60,5 +62,12 @@ public class InboxItem extends AbstractEntity<Long> {
     if (eventTimestamp == null) {
       eventTimestamp = Instant.now();
     }
+  }
+
+  public void addTarget(String targetId) {
+    InboxItemTarget target = new InboxItemTarget();
+    target.setInboxItem(this);
+    target.setTargetId(targetId);
+    targets.add(target);
   }
 }

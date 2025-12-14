@@ -41,10 +41,17 @@ public class InboxService {
 
   public InboxItem createInboxItem(
       @NonNull InboxEventType eventType, @NonNull String message, @NonNull String referenceId) {
+    return createInboxItem(eventType, message, List.of(referenceId));
+  }
+
+  public InboxItem createInboxItem(
+      @NonNull InboxEventType eventType,
+      @NonNull String message,
+      @NonNull List<String> referenceIds) {
     InboxItem inboxItem = new InboxItem();
     inboxItem.setDescription(message);
     inboxItem.setEventType(eventType);
-    inboxItem.setReferenceId(referenceId);
+    referenceIds.forEach(inboxItem::addTarget);
     return inboxRepository.save(inboxItem);
   }
 
@@ -72,7 +79,7 @@ public class InboxService {
   }
 
   public List<InboxItem> search(
-      String filter, String readStatus, String eventType, Boolean hideRead) {
+      String filter, String targetFilter, String readStatus, String eventType, Boolean hideRead) {
     Specification<InboxItem> spec =
         (root, query, cb) -> {
           Predicate predicate = cb.conjunction();
@@ -91,6 +98,15 @@ public class InboxService {
                 cb.and(
                     predicate,
                     cb.like(cb.lower(root.get("description")), "%" + filter.toLowerCase() + "%"));
+          }
+
+          if (targetFilter != null && !targetFilter.isEmpty()) {
+            predicate =
+                cb.and(
+                    predicate,
+                    cb.like(
+                        cb.lower(root.join("targets").get("targetId")),
+                        "%" + targetFilter.toLowerCase() + "%"));
           }
 
           if (eventType != null && !eventType.equalsIgnoreCase("All")) {

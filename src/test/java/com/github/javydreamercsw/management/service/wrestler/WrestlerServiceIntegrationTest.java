@@ -306,6 +306,7 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     assertThat(inboxRepository.count()).isEqualTo(initialInboxItemCount + 1);
     InboxItem inboxItem = inboxRepository.findAll().get(0);
     assertThat(inboxItem.getDescription()).contains("Inbox Test Wrestler gained 1000 fans");
-    assertThat(inboxItem.getReferenceId()).isEqualTo(wrestler.getId().toString());
+    assertThat(inboxItem.getTargets()).hasSize(1);
+    assertThat(inboxItem.getTargets().get(0).getTargetId()).isEqualTo(wrestler.getId().toString());
   }
 }
