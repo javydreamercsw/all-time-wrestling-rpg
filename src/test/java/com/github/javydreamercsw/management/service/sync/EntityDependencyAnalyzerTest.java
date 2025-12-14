@@ -17,7 +17,13 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,5 +36,47 @@ class EntityDependencyAnalyzerTest extends ManagementIntegrationTest {
   void testGetAutomaticSyncOrder() {
     List<String> automaticSyncOrder = entityDependencyAnalyzer.getAutomaticSyncOrder();
     Assertions.assertFalse(automaticSyncOrder.isEmpty());
+  }
+
+  @Test
+  void testDetermineSyncOrder() {
+    Set<Class<?>> entities =
+        new HashSet<>(Arrays.asList(EntityA.class, EntityB.class, EntityC.class, EntityD.class));
+
+    List<String> syncOrder = entityDependencyAnalyzer.determineSyncOrder(entities);
+
+    Assertions.assertEquals(4, syncOrder.size());
+    Assertions.assertEquals("entityd", syncOrder.get(0));
+    Assertions.assertEquals("entityb", syncOrder.get(1));
+    Assertions.assertEquals("entityc", syncOrder.get(2));
+    Assertions.assertEquals("entitya", syncOrder.get(3));
+  }
+
+  @Entity
+  private static class EntityA {
+    @Id private Long id;
+
+    @ManyToOne private EntityB b;
+
+    @ManyToOne private EntityC c;
+  }
+
+  @Entity
+  private static class EntityB {
+    @Id private Long id;
+
+    @ManyToOne private EntityD d;
+  }
+
+  @Entity
+  private static class EntityC {
+    @Id private Long id;
+
+    @ManyToOne private EntityD d;
+  }
+
+  @Entity
+  private static class EntityD {
+    @Id private Long id;
   }
 }
