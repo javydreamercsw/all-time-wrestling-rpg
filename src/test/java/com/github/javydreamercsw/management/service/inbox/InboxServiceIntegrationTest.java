@@ -41,11 +41,8 @@ import org.springframework.test.context.ActiveProfiles;
 class InboxServiceIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private InboxService inboxService;
-
   @Autowired private InboxRepository inboxRepository;
-
   @Autowired private WrestlerRepository wrestlerRepository;
-
   @Autowired private InboxEventType fanAdjudication;
 
   @BeforeEach

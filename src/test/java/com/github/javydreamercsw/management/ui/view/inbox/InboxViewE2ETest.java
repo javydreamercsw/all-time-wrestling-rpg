@@ -19,6 +19,10 @@ package com.github.javydreamercsw.management.ui.view.inbox;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -40,12 +44,22 @@ class InboxViewE2ETest extends AbstractE2ETest {
 
   @Autowired private InboxEventType fanAdjudication;
   @Autowired private InboxEventType rivalryHeatChange;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerService wrestlerService;
+
+  private Wrestler w1;
+  private Wrestler w2;
 
   @BeforeEach
   public void setUp() throws IOException {
     super.setup();
     // Clear any existing inbox items to ensure a clean state for each test
     inboxRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+    w1 = createTestWrestler("Test Wrestler 1");
+    wrestlerService.save(w1);
+    w2 = createTestWrestler("Test Wrestler 2");
+    wrestlerService.save(w2);
   }
 
   @Test
@@ -70,6 +84,9 @@ class InboxViewE2ETest extends AbstractE2ETest {
     item1.setDescription("Filter Me Item");
     item1.setEventType(fanAdjudication);
     item1.setRead(false);
+    InboxItemTarget target1 = new InboxItemTarget();
+    target1.setTargetId(w1.getId().toString());
+    item1.setTargets(List.of(target1));
     inboxRepository.save(item1);
 
     InboxItem item2 = new InboxItem();
@@ -82,6 +99,9 @@ class InboxViewE2ETest extends AbstractE2ETest {
     item3.setDescription("Filter Me Too");
     item3.setEventType(fanAdjudication);
     item3.setRead(true);
+    InboxItemTarget target3 = new InboxItemTarget();
+    target3.setTargetId(w1.getId().toString());
+    item3.setTargets(List.of(target3));
     inboxRepository.save(item3);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
@@ -104,7 +124,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.presenceOfAllElementsLocatedBy(
                 By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
 
-    Assertions.assertEquals(20, cells.size()); // 5 header cells + (3 rows * 5 columns) = 20 cells
+    Assertions.assertEquals(24, cells.size());
 
     // Explicitly set "Read Status" to "All" (this should already be the default, but we'll keep it
     // for robustness)
@@ -141,13 +161,12 @@ class InboxViewE2ETest extends AbstractE2ETest {
                     + " contains(text(), 'Mark as Unread')]"),
             3));
 
-    // Apply filter
     WebElement filterField =
-        driver.findElement(
-            By.cssSelector("vaadin-text-field[placeholder='Filter by description...']"));
-    filterField.sendKeys("Filter Me");
+        wait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.cssSelector("vaadin-multi-select-combo-box")));
+    super.selectFromVaadinMultiSelectComboBox(filterField, w1.getName());
     waitForVaadinToLoad(driver); // Wait for Vaadin to load after applying text filter
-
     // Verify filtered item appears
     List<WebElement> filteredDescriptionCells =
         wait.until(
