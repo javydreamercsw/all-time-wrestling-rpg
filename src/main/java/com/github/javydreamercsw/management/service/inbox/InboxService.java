@@ -97,7 +97,7 @@ public class InboxService {
           }
 
           if (targets != null && !targets.isEmpty()) {
-            Join<Object, Object> join = root.join("targets", JoinType.LEFT);
+            Join<Object, Object> join = root.join("targets", JoinType.INNER);
             predicate =
                 cb.and(
                     predicate,
