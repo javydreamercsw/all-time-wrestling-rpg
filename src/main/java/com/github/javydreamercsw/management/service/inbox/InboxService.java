@@ -17,14 +17,17 @@
 package com.github.javydreamercsw.management.service.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import lombok.NonNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -33,16 +36,25 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class InboxService {
 
-  @Autowired private InboxRepository inboxRepository;
+  private final InboxRepository inboxRepository;
+  private final InboxEventTypeRegistry eventTypeRegistry;
 
   public InboxItem createInboxItem(
       @NonNull InboxEventType eventType, @NonNull String message, @NonNull String referenceId) {
+    return createInboxItem(eventType, message, List.of(referenceId));
+  }
+
+  public InboxItem createInboxItem(
+      @NonNull InboxEventType eventType,
+      @NonNull String message,
+      @NonNull List<String> referenceIds) {
     InboxItem inboxItem = new InboxItem();
     inboxItem.setDescription(message);
     inboxItem.setEventType(eventType);
-    inboxItem.setReferenceId(referenceId);
+    referenceIds.forEach(inboxItem::addTarget);
     return inboxRepository.save(inboxItem);
   }
 
@@ -70,7 +82,7 @@ public class InboxService {
   }
 
   public List<InboxItem> search(
-      String filter, String readStatus, String eventType, Boolean hideRead) {
+      Set<Wrestler> targets, String readStatus, String eventType, Boolean hideRead) {
     Specification<InboxItem> spec =
         (root, query, cb) -> {
           Predicate predicate = cb.conjunction();
@@ -84,17 +96,22 @@ public class InboxService {
             predicate = cb.and(predicate, cb.equal(root.get("isRead"), isRead));
           }
 
-          if (filter != null && !filter.isEmpty()) {
+          if (targets != null && !targets.isEmpty()) {
+            Join<Object, Object> join = root.join("targets", JoinType.INNER);
             predicate =
                 cb.and(
                     predicate,
-                    cb.like(cb.lower(root.get("description")), "%" + filter.toLowerCase() + "%"));
+                    join.get("targetId")
+                        .in(
+                            targets.stream()
+                                .map(wrestler -> wrestler.getId().toString())
+                                .toList()));
           }
 
           if (eventType != null && !eventType.equalsIgnoreCase("All")) {
             // Find the enum by its friendly name
             InboxEventType foundEventType =
-                Arrays.stream(InboxEventType.values())
+                eventTypeRegistry.getEventTypes().stream()
                     .filter(e -> e.getFriendlyName().equalsIgnoreCase(eventType))
                     .findFirst()
                     .orElse(null);

@@ -306,9 +306,17 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebElement saveButton = driver.findElement(By.id("edit-segment-save-button"));
       clickAndScrollIntoView(saveButton);
 
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+
       log.info("Waiting for save button to disappear");
+      wait.withTimeout(Duration.ofSeconds(30));
       wait.until(
           ExpectedConditions.invisibilityOfElementLocated(By.id("edit-segment-save-button")));
+      wait.withTimeout(Duration.ofSeconds(20));
 
       // Navigate back to the list.
       log.info("Navigating back to show detail view");
@@ -546,7 +554,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.urlContains("/show-detail"));
 
     // Click the main event checkbox on the last row
-    WebElement mainEventCheckbox = driver.findElement(By.id("main-event-checkbox"));
+    WebElement mainEventCheckbox =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("main-event-checkbox")));
     clickAndScrollIntoView(mainEventCheckbox);
     scrollIntoView(mainEventCheckbox);
   }

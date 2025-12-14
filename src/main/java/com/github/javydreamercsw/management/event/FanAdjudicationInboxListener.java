@@ -27,9 +27,12 @@ import org.springframework.stereotype.Component;
 public class FanAdjudicationInboxListener implements ApplicationListener<FanAwardedEvent> {
 
   private final InboxService inboxService;
+  private final InboxEventType fanAdjudication;
 
-  public FanAdjudicationInboxListener(@NonNull InboxService inboxService) {
+  public FanAdjudicationInboxListener(
+      @NonNull InboxService inboxService, @NonNull InboxEventType fanAdjudication) {
     this.inboxService = inboxService;
+    this.fanAdjudication = fanAdjudication;
   }
 
   @Override
@@ -42,7 +45,6 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
             Math.abs(event.getFanChange()),
             event.getWrestler().getFans());
 
-    inboxService.createInboxItem(
-        InboxEventType.FAN_ADJUDICATION, message, event.getWrestler().getId().toString());
+    inboxService.createInboxItem(fanAdjudication, message, event.getWrestler().getId().toString());
   }
 }

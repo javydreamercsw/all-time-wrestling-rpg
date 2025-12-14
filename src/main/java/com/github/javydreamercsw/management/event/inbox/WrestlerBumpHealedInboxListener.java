@@ -30,16 +30,19 @@ public class WrestlerBumpHealedInboxListener
     implements ApplicationListener<WrestlerBumpHealedEvent> {
 
   private final InboxService inboxService;
+  private final InboxEventType wrestlerBumpHealed;
 
-  public WrestlerBumpHealedInboxListener(InboxService inboxService) {
+  public WrestlerBumpHealedInboxListener(
+      @NonNull InboxService inboxService, @NonNull InboxEventType wrestlerBumpHealed) {
     this.inboxService = inboxService;
+    this.wrestlerBumpHealed = wrestlerBumpHealed;
   }
 
   @Override
   public void onApplicationEvent(@NonNull WrestlerBumpHealedEvent event) {
     log.info("Received WrestlerBumpHealedEvent for wrestler: {}", event.getWrestler().getName());
     inboxService.createInboxItem(
-        InboxEventType.WRESTLER_BUMP_HEALED,
+        wrestlerBumpHealed,
         String.format(
             "Wrestler %s healed a bump. Total bumps: %d",
             event.getWrestler().getName(), event.getWrestler().getBumps()),

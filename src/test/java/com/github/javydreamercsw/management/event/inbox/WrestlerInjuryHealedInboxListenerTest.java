@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WrestlerInjuryHealedInboxListenerTest {
 
   @Mock private InboxService inboxService;
+
+  private final InboxEventType wrestlerInjuryHealed =
+      new InboxEventType("WRESTLER_INJURY_HEALED", "Wrestler Injury Healed");
 
   @InjectMocks private WrestlerInjuryHealedInboxListener listener;
 
@@ -50,6 +54,8 @@ class WrestlerInjuryHealedInboxListenerTest {
     injury = new Injury();
     injury.setId(1L);
     injury.setName("Test Injury");
+
+    listener = new WrestlerInjuryHealedInboxListener(inboxService, wrestlerInjuryHealed);
   }
 
   @Test
@@ -63,7 +69,7 @@ class WrestlerInjuryHealedInboxListenerTest {
     // Then
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<List<String>> referenceIdCaptor = ArgumentCaptor.forClass(List.class);
     verify(inboxService)
         .createInboxItem(
             eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
@@ -71,8 +77,8 @@ class WrestlerInjuryHealedInboxListenerTest {
     String expectedMessage = "Test Wrestler's injury (Test Injury) has been healed!";
     String expectedReferenceId = "1";
 
-    assert (eventTypeCaptor.getValue().equals(InboxEventType.WRESTLER_INJURY_HEALED));
+    assert (eventTypeCaptor.getValue().equals(wrestlerInjuryHealed));
     assert (messageCaptor.getValue().equals(expectedMessage));
-    assert (referenceIdCaptor.getValue().equals(expectedReferenceId));
+    assert (referenceIdCaptor.getValue().get(0).equals(expectedReferenceId));
   }
 }

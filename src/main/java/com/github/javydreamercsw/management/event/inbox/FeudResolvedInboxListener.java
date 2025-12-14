@@ -17,9 +17,8 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
+import com.github.javydreamercsw.management.event.FeudResolvedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -30,20 +29,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class WrestlerInjuryHealedInboxListener {
+public class FeudResolvedInboxListener {
 
   private final InboxService inboxService;
-  private final InboxEventType wrestlerInjuryHealed;
+  private final InboxEventType feudResolved;
 
   @EventListener
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void handleWrestlerInjuryHealedEvent(WrestlerInjuryHealedEvent event) {
-    String message =
-        String.format(
-            "%s's injury (%s) has been healed!",
-            event.getWrestler().getName(), event.getInjury().getName());
-    inboxService.createInboxItem(
-        wrestlerInjuryHealed, message, List.of(event.getWrestler().getId().toString()));
-    log.info("Inbox item created for WrestlerInjuryHealedEvent: {}", message);
+  public void handleFeudResolvedEvent(FeudResolvedEvent event) {
+    String message = String.format("Feud '%s' has been resolved!", event.getFeud().getName());
+    inboxService.createInboxItem(feudResolved, message, event.getFeud().getId().toString());
+    log.info("Inbox item created for FeudResolvedEvent: {}", message);
   }
 }

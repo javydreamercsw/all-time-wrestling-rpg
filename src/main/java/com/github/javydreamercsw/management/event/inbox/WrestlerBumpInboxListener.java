@@ -29,16 +29,19 @@ import org.springframework.stereotype.Component;
 public class WrestlerBumpInboxListener implements ApplicationListener<WrestlerBumpEvent> {
 
   private final InboxService inboxService;
+  private final InboxEventType wrestlerBump;
 
-  public WrestlerBumpInboxListener(InboxService inboxService) {
+  public WrestlerBumpInboxListener(
+      @NonNull InboxService inboxService, @NonNull InboxEventType wrestlerBump) {
     this.inboxService = inboxService;
+    this.wrestlerBump = wrestlerBump;
   }
 
   @Override
   public void onApplicationEvent(@NonNull WrestlerBumpEvent event) {
     log.info("Received WrestlerBumpEvent for wrestler: {}", event.getWrestler().getName());
     inboxService.createInboxItem(
-        InboxEventType.WRESTLER_BUMP,
+        wrestlerBump,
         String.format(
             "Wrestler %s received a bump. Total bumps: %d",
             event.getWrestler().getName(), event.getWrestler().getBumps()),
