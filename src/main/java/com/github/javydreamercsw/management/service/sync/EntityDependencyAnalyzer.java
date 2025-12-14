@@ -22,7 +22,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Component;
 
 /**
@@ -35,50 +38,20 @@ public class EntityDependencyAnalyzer {
 
   @Autowired private ApplicationContext applicationContext;
 
+  private List<String> syncOrderCache;
+
   /**
-   * Automatically determines sync order based on known entity relationships. Uses hardcoded
-   * knowledge of entity dependencies for now, but can be enhanced with full reflection-based
-   * analysis later.
+   * Automatically determines sync order based on JPA entity relationships. Caches the result to
+   * avoid re-calculating on every call.
    *
    * @return List of sync method names in dependency order
    */
   public List<String> getAutomaticSyncOrder() {
-    // For now, use known dependency relationships
-    // TODO: Enhance with full reflection-based analysis
-    return getKnownDependencyOrder();
-  }
-
-  /**
-   * Returns the known dependency order based on current entity relationships. This is a simplified
-   * version that can be enhanced with full reflection later.
-   */
-  private List<String> getKnownDependencyOrder() {
-    // TODO replace with smart code, not hardcoded
-    List<String> order = new ArrayList<>();
-
-    // Base entities with no dependencies
-    order.add("npcs"); // NPCs (no dependencies)
-    order.add("templates"); // ShowTemplate (no dependencies)
-    order.add("seasons"); // Season (no dependencies)
-    order.add("injuries"); // InjuryType (no dependencies, reference data)
-
-    // Entities that depend on base entities
-    order.add("show-types");
-    order.add("shows"); // Show (depends on ShowTemplate, Season)
-    order.add("wrestlers"); // Wrestler (may depend on Faction, but can be synced independently)
-    order.add("titles");
-
-    // Entities that depend on wrestlers
-    order.add("rivalries");
-    order.add("factions"); // Faction (depends on Wrestler for leader and members)
-    order.add("faction-rivalries");
-    order.add("teams"); // Team (depends on Wrestler for members)
-
-    // Complex entities that depend on multiple others
-    order.add("segments"); // Segment (depends on Show, Wrestler, Team, Faction)
-
-    log.info("🎯 Using known dependency order: {}", order);
-    return order;
+    if (syncOrderCache == null) {
+      Set<Class<?>> entityClasses = discoverEntityClasses();
+      syncOrderCache = determineSyncOrder(entityClasses);
+    }
+    return syncOrderCache;
   }
 
   /** Discovers all JPA entity classes in the application. */
@@ -113,24 +86,20 @@ public class EntityDependencyAnalyzer {
   /** Scans domain packages for entity classes. */
   private Set<Class<?>> scanDomainPackages() {
     Set<Class<?>> entities = new HashSet<>();
+    ClassPathScanningCandidateComponentProvider scanner =
+        new ClassPathScanningCandidateComponentProvider(false);
+    scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
 
     // List of known domain packages to scan
-    String[] domainPackages = {
-      "com.github.javydreamercsw.management.domain.show",
-      "com.github.javydreamercsw.management.domain.wrestler",
-      "com.github.javydreamercsw.management.domain.faction",
-      "com.github.javydreamercsw.management.domain.team",
-      "com.github.javydreamercsw.management.domain.segment",
-      "com.github.javydreamercsw.management.domain.season"
-    };
+    String[] domainPackages = {"com.github.javydreamercsw.management.domain"};
 
     for (String packageName : domainPackages) {
-      try {
-        // This is a simplified approach - in a real implementation you might use
-        // ClassPathScanningCandidateComponentProvider or similar
-        log.debug("Scanning package: {}", packageName);
-      } catch (Exception e) {
-        log.debug("Error scanning package {}: {}", packageName, e.getMessage());
+      for (BeanDefinition bd : scanner.findCandidateComponents(packageName)) {
+        try {
+          entities.add(Class.forName(bd.getBeanClassName()));
+        } catch (ClassNotFoundException e) {
+          log.debug("Error loading class {}: {}", bd.getBeanClassName(), e.getMessage());
+        }
       }
     }
 
@@ -185,6 +154,10 @@ public class EntityDependencyAnalyzer {
   /** Analyzes a field for foreign key relationships that create dependencies. */
   private void analyzeForeignKeyDependencies(
       Field field, Set<String> dependencies, Map<String, Class<?>> entityNameToClass) {
+    if (field.getDeclaringClass().getSimpleName().equals("Faction")
+        && field.getName().equals("leader")) {
+      return;
+    }
     // @ManyToOne - this entity depends on the referenced entity
     if (field.isAnnotationPresent(ManyToOne.class)) {
       String referencedEntity = getEntityNameFromFieldType(field, entityNameToClass);
@@ -281,8 +254,7 @@ public class EntityDependencyAnalyzer {
       Set<String> visiting,
       List<String> result) {
     if (visiting.contains(entity)) {
-      log.warn("⚠️ Circular dependency detected involving entity: {}", entity);
-      return;
+      throw new RuntimeException("Circular dependency detected involving entity: " + entity);
     }
 
     if (visited.contains(entity)) {
