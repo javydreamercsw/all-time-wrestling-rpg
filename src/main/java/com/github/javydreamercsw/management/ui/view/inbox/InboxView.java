@@ -91,6 +91,7 @@ public class InboxView extends VerticalLayout {
     targetFilter.setItems(wrestlerRepository.findAll(Sort.by(Sort.Direction.ASC, "name")));
     targetFilter.setItemLabelGenerator(Wrestler::getName);
     targetFilter.addValueChangeListener(e -> updateList());
+    targetFilter.setId("inbox-target-filter");
 
     readStatusFilter.setItems("All", "Read", "Unread");
     readStatusFilter.setValue("All");
