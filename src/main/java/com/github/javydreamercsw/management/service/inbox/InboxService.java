@@ -20,6 +20,9 @@ import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import java.util.List;
 import java.util.Set;
@@ -79,7 +82,7 @@ public class InboxService {
   }
 
   public List<InboxItem> search(
-      String filter, String targetFilter, String readStatus, String eventType, Boolean hideRead) {
+      Set<Wrestler> targets, String readStatus, String eventType, Boolean hideRead) {
     Specification<InboxItem> spec =
         (root, query, cb) -> {
           Predicate predicate = cb.conjunction();
@@ -93,20 +96,16 @@ public class InboxService {
             predicate = cb.and(predicate, cb.equal(root.get("isRead"), isRead));
           }
 
-          if (filter != null && !filter.isEmpty()) {
+          if (targets != null && !targets.isEmpty()) {
+            Join<Object, Object> join = root.join("targets", JoinType.LEFT);
             predicate =
                 cb.and(
                     predicate,
-                    cb.like(cb.lower(root.get("description")), "%" + filter.toLowerCase() + "%"));
-          }
-
-          if (targetFilter != null && !targetFilter.isEmpty()) {
-            predicate =
-                cb.and(
-                    predicate,
-                    cb.like(
-                        cb.lower(root.join("targets").get("targetId")),
-                        "%" + targetFilter.toLowerCase() + "%"));
+                    join.get("targetId")
+                        .in(
+                            targets.stream()
+                                .map(wrestler -> wrestler.getId().toString())
+                                .toList()));
           }
 
           if (eventType != null && !eventType.equalsIgnoreCase("All")) {

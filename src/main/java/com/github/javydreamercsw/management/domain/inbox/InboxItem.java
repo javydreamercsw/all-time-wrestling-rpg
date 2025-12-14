@@ -49,7 +49,11 @@ public class InboxItem extends AbstractEntity<Long> {
   @Column(name = "is_read", nullable = false)
   private boolean isRead = false;
 
-  @OneToMany(mappedBy = "inboxItem", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(
+      mappedBy = "inboxItem",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.EAGER)
   private List<InboxItemTarget> targets = new ArrayList<>();
 
   @Override
