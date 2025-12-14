@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +38,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class InboxServiceIntegrationTest {
+class InboxServiceIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private InboxService inboxService;
 
@@ -157,9 +158,8 @@ class InboxServiceIntegrationTest {
   @Test
   void testSearchWithTargetFilter() {
     // Given
-    Wrestler wrestler = new Wrestler();
-    wrestler.setName("wrestler1");
-    wrestler = wrestlerRepository.save(wrestler);
+    Wrestler wrestler = createTestWrestler("wrestler1");
+    wrestlerRepository.save(wrestler);
 
     InboxItem item1 = new InboxItem();
     item1.setRead(true);
