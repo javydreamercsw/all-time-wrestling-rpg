@@ -17,14 +17,14 @@
 package com.github.javydreamercsw.management.service.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import jakarta.persistence.criteria.Predicate;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import lombok.NonNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -33,9 +33,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class InboxService {
 
-  @Autowired private InboxRepository inboxRepository;
+  private final InboxRepository inboxRepository;
+  private final InboxEventTypeRegistry eventTypeRegistry;
 
   public InboxItem createInboxItem(
       @NonNull InboxEventType eventType, @NonNull String message, @NonNull String referenceId) {
@@ -94,7 +96,7 @@ public class InboxService {
           if (eventType != null && !eventType.equalsIgnoreCase("All")) {
             // Find the enum by its friendly name
             InboxEventType foundEventType =
-                Arrays.stream(InboxEventType.values())
+                eventTypeRegistry.getEventTypes().stream()
                     .filter(e -> e.getFriendlyName().equalsIgnoreCase(eventType))
                     .findFirst()
                     .orElse(null);

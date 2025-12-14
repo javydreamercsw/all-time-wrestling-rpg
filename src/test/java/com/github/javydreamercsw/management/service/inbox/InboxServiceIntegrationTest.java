@@ -40,6 +40,8 @@ class InboxServiceIntegrationTest {
 
   @Autowired private InboxRepository inboxRepository;
 
+  @Autowired private InboxEventType fanAdjudication;
+
   @BeforeEach
   void setUp() {
     inboxRepository.deleteAll();
@@ -52,14 +54,14 @@ class InboxServiceIntegrationTest {
     readItem.setRead(true);
     readItem.setDescription("read");
     readItem.setEventTimestamp(Instant.now());
-    readItem.setEventType(InboxEventType.FAN_ADJUDICATION);
+    readItem.setEventType(fanAdjudication);
     inboxRepository.save(readItem);
 
     InboxItem unreadItem = new InboxItem();
     unreadItem.setRead(false);
     unreadItem.setDescription("unread");
     unreadItem.setEventTimestamp(Instant.now());
-    unreadItem.setEventType(InboxEventType.FAN_ADJUDICATION);
+    unreadItem.setEventType(fanAdjudication);
     inboxRepository.save(unreadItem);
 
     // When
@@ -77,14 +79,14 @@ class InboxServiceIntegrationTest {
     readItem.setRead(true);
     readItem.setDescription("read");
     readItem.setEventTimestamp(Instant.now());
-    readItem.setEventType(InboxEventType.FAN_ADJUDICATION);
+    readItem.setEventType(fanAdjudication);
     inboxRepository.save(readItem);
 
     InboxItem unreadItem = new InboxItem();
     unreadItem.setRead(false);
     unreadItem.setDescription("unread");
     unreadItem.setEventTimestamp(Instant.now());
-    unreadItem.setEventType(InboxEventType.FAN_ADJUDICATION);
+    unreadItem.setEventType(fanAdjudication);
     inboxRepository.save(unreadItem);
 
     // When
@@ -104,13 +106,13 @@ class InboxServiceIntegrationTest {
     InboxItem item1 = new InboxItem();
     item1.setDescription("item1");
     item1.setEventTimestamp(Instant.now());
-    item1.setEventType(InboxEventType.FAN_ADJUDICATION);
+    item1.setEventType(fanAdjudication);
     inboxRepository.save(item1);
 
     InboxItem item2 = new InboxItem();
     item2.setDescription("item2");
     item2.setEventTimestamp(Instant.now());
-    item2.setEventType(InboxEventType.FAN_ADJUDICATION);
+    item2.setEventType(fanAdjudication);
     inboxRepository.save(item2);
 
     // When
@@ -127,7 +129,7 @@ class InboxServiceIntegrationTest {
     InboxItem item = new InboxItem();
     item.setDescription("Item with reference ID");
     item.setEventTimestamp(Instant.now());
-    item.setEventType(InboxEventType.FAN_ADJUDICATION);
+    item.setEventType(fanAdjudication);
     item.setReferenceId("test-reference-id");
     inboxRepository.save(item);
 

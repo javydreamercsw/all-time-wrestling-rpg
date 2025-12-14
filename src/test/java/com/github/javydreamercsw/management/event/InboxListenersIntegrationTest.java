@@ -41,6 +41,9 @@ public class InboxListenersIntegrationTest {
 
   @Autowired private ApplicationEventPublisher eventPublisher;
 
+  @Autowired private InboxEventType fanAdjudication;
+  @Autowired private InboxEventType rivalryHeatChange;
+
   @MockitoBean private InboxService inboxService;
 
   private Wrestler wrestler1;
@@ -76,7 +79,7 @@ public class InboxListenersIntegrationTest {
         .createInboxItem(
             eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
 
-    assertEquals(InboxEventType.FAN_ADJUDICATION, eventTypeCaptor.getValue());
+    assertEquals(fanAdjudication, eventTypeCaptor.getValue());
     String expectedMessage =
         String.format(
             "Wrestler %s gained %d fans. New total: %d",
@@ -108,7 +111,7 @@ public class InboxListenersIntegrationTest {
         .createInboxItem(
             eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
 
-    assertEquals(InboxEventType.RIVALRY_HEAT_CHANGE, eventTypeCaptor.getValue());
+    assertEquals(rivalryHeatChange, eventTypeCaptor.getValue());
     String expectedMessage =
         String.format(
             "Rivalry between %s and %s gained %d heat. New total: %d. Reason: %s",

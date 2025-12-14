@@ -30,12 +30,16 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class InboxViewE2ETest extends AbstractE2ETest {
+
+  @Autowired private InboxEventType fanAdjudication;
+  @Autowired private InboxEventType rivalryHeatChange;
 
   @BeforeEach
   public void setUp() throws IOException {
@@ -64,19 +68,19 @@ class InboxViewE2ETest extends AbstractE2ETest {
     // Given
     InboxItem item1 = new InboxItem();
     item1.setDescription("Filter Me Item");
-    item1.setEventType(InboxEventType.FAN_ADJUDICATION);
+    item1.setEventType(fanAdjudication);
     item1.setRead(false);
     inboxRepository.save(item1);
 
     InboxItem item2 = new InboxItem();
     item2.setDescription("Do Not Filter");
-    item2.setEventType(InboxEventType.RIVALRY_HEAT_CHANGE);
+    item2.setEventType(rivalryHeatChange);
     item2.setRead(false);
     inboxRepository.save(item2);
 
     InboxItem item3 = new InboxItem();
     item3.setDescription("Filter Me Too");
-    item3.setEventType(InboxEventType.FAN_ADJUDICATION);
+    item3.setEventType(fanAdjudication);
     item3.setRead(true);
     inboxRepository.save(item3);
 
@@ -173,12 +177,12 @@ class InboxViewE2ETest extends AbstractE2ETest {
     // Given
     InboxItem item1 = new InboxItem();
     item1.setDescription("Item 1");
-    item1.setEventType(InboxEventType.FAN_ADJUDICATION);
+    item1.setEventType(fanAdjudication);
     inboxRepository.save(item1);
 
     InboxItem item2 = new InboxItem();
     item2.setDescription("Item 2");
-    item2.setEventType(InboxEventType.FAN_ADJUDICATION);
+    item2.setEventType(fanAdjudication);
     inboxRepository.save(item2);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/inbox");
@@ -221,7 +225,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
     // Given
     InboxItem unreadItem = new InboxItem();
     unreadItem.setDescription("Unread Item");
-    unreadItem.setEventType(InboxEventType.FAN_ADJUDICATION);
+    unreadItem.setEventType(fanAdjudication);
     unreadItem.setRead(false);
     inboxRepository.save(unreadItem);
 

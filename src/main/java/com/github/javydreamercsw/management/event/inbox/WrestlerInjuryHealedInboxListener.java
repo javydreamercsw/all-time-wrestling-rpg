@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WrestlerInjuryHealedInboxListener {
 
   private final InboxService inboxService;
+  private final InboxEventType wrestlerInjuryHealed;
 
   @EventListener
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -41,7 +42,7 @@ public class WrestlerInjuryHealedInboxListener {
             "%s's injury (%s) has been healed!",
             event.getWrestler().getName(), event.getInjury().getName());
     inboxService.createInboxItem(
-        InboxEventType.WRESTLER_INJURY_HEALED, message, event.getWrestler().getId().toString());
+        wrestlerInjuryHealed, message, event.getWrestler().getId().toString());
     log.info("Inbox item created for WrestlerInjuryHealedEvent: {}", message);
   }
 }

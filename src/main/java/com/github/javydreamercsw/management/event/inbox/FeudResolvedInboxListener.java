@@ -17,34 +17,28 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
+import com.github.javydreamercsw.management.event.FeudResolvedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
-import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
-public class WrestlerBumpInboxListener implements ApplicationListener<WrestlerBumpEvent> {
+public class FeudResolvedInboxListener {
 
   private final InboxService inboxService;
-  private final InboxEventType wrestlerBump;
+  private final InboxEventType feudResolved;
 
-  public WrestlerBumpInboxListener(
-      @NonNull InboxService inboxService, @NonNull InboxEventType wrestlerBump) {
-    this.inboxService = inboxService;
-    this.wrestlerBump = wrestlerBump;
-  }
-
-  @Override
-  public void onApplicationEvent(@NonNull WrestlerBumpEvent event) {
-    log.info("Received WrestlerBumpEvent for wrestler: {}", event.getWrestler().getName());
-    inboxService.createInboxItem(
-        wrestlerBump,
-        String.format(
-            "Wrestler %s received a bump. Total bumps: %d",
-            event.getWrestler().getName(), event.getWrestler().getBumps()),
-        event.getWrestler().getId().toString());
+  @EventListener
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void handleFeudResolvedEvent(FeudResolvedEvent event) {
+    String message = String.format("Feud '%s' has been resolved!", event.getFeud().getName());
+    inboxService.createInboxItem(feudResolved, message, event.getFeud().getId().toString());
+    log.info("Inbox item created for FeudResolvedEvent: {}", message);
   }
 }

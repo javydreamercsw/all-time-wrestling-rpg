@@ -34,7 +34,7 @@ public class InboxItem extends AbstractEntity<Long> {
   @Column(name = "inbox_item_id")
   private Long id;
 
-  @Enumerated(EnumType.STRING)
+  @Convert(converter = InboxEventTypeConverter.class)
   @Column(name = "event_type", nullable = false)
   private InboxEventType eventType;
 

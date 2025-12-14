@@ -26,9 +26,12 @@ import org.springframework.stereotype.Component;
 public class HeatChangeInboxListener implements ApplicationListener<HeatChangeEvent> {
 
   private final InboxService inboxService;
+  private final InboxEventType rivalryHeatChange;
 
-  public HeatChangeInboxListener(@NonNull InboxService inboxService) {
+  public HeatChangeInboxListener(
+      @NonNull InboxService inboxService, @NonNull InboxEventType rivalryHeatChange) {
     this.inboxService = inboxService;
+    this.rivalryHeatChange = rivalryHeatChange;
   }
 
   @Override
@@ -44,7 +47,6 @@ public class HeatChangeInboxListener implements ApplicationListener<HeatChangeEv
             event.getReason());
 
     // Assuming the rivalry ID is the relevant reference for the inbox item
-    inboxService.createInboxItem(
-        InboxEventType.RIVALRY_HEAT_CHANGE, message, event.getRivalryId().toString());
+    inboxService.createInboxItem(rivalryHeatChange, message, event.getRivalryId().toString());
   }
 }

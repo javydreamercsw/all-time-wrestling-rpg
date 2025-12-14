@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.inbox;
 
-import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -37,7 +37,6 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -48,6 +47,7 @@ import java.util.stream.Collectors;
 public class InboxView extends VerticalLayout {
 
   private final InboxService inboxService;
+  private final InboxEventTypeRegistry eventTypeRegistry;
   private final Grid<InboxItem> grid = new Grid<>(InboxItem.class);
   private final TextField filterText = new TextField();
   private final ComboBox<String> readStatusFilter = new ComboBox<>("Read Status");
@@ -60,8 +60,9 @@ public class InboxView extends VerticalLayout {
   private final Button deleteSelectedButton = new Button("Delete Selected");
   private final Set<InboxItem> selectedItems = new HashSet<>();
 
-  public InboxView(InboxService inboxService) {
+  public InboxView(InboxService inboxService, InboxEventTypeRegistry eventTypeRegistry) {
     this.inboxService = inboxService;
+    this.eventTypeRegistry = eventTypeRegistry;
 
     addClassName("inbox-view");
     setSizeFull();
@@ -90,8 +91,8 @@ public class InboxView extends VerticalLayout {
 
     List<String> eventTypes =
         new ArrayList<>(
-            Arrays.stream(InboxEventType.values())
-                .map(InboxEventType::getFriendlyName)
+            eventTypeRegistry.getEventTypes().stream()
+                .map(Object::toString)
                 .sorted()
                 .collect(Collectors.toList()));
     eventTypes.add(0, "All");

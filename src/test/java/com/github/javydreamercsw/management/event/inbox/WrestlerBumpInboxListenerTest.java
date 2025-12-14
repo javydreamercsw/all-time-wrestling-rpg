@@ -34,11 +34,13 @@ class WrestlerBumpInboxListenerTest {
   @Mock private InboxService inboxService;
   @Mock private Wrestler wrestler;
 
+  private final InboxEventType wrestlerBump = new InboxEventType("WRESTLER_BUMP", "Wrestler Bump");
+
   private WrestlerBumpInboxListener listener;
 
   @BeforeEach
   void setUp() {
-    listener = new WrestlerBumpInboxListener(inboxService);
+    listener = new WrestlerBumpInboxListener(inboxService, wrestlerBump);
   }
 
   @Test
@@ -60,7 +62,7 @@ class WrestlerBumpInboxListenerTest {
     // Then
     verify(inboxService)
         .createInboxItem(
-            InboxEventType.WRESTLER_BUMP,
+            wrestlerBump,
             String.format("Wrestler %s received a bump. Total bumps: %d", wrestlerName, bumps),
             wrestlerId.toString());
   }

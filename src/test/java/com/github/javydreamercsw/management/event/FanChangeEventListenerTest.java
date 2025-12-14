@@ -28,12 +28,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 @ActiveProfiles("test")
 class FanChangeEventListenerTest {
 
   @Autowired private ApplicationEventPublisher publisher;
+  @MockitoBean private FanAdjudicationInboxListener listener;
 
   @Test
   void testOnApplicationEvent() {

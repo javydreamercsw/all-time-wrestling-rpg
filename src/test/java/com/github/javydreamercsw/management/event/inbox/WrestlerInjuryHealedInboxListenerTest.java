@@ -36,6 +36,9 @@ class WrestlerInjuryHealedInboxListenerTest {
 
   @Mock private InboxService inboxService;
 
+  private final InboxEventType wrestlerInjuryHealed =
+      new InboxEventType("WRESTLER_INJURY_HEALED", "Wrestler Injury Healed");
+
   @InjectMocks private WrestlerInjuryHealedInboxListener listener;
 
   private Wrestler wrestler;
@@ -50,6 +53,8 @@ class WrestlerInjuryHealedInboxListenerTest {
     injury = new Injury();
     injury.setId(1L);
     injury.setName("Test Injury");
+
+    listener = new WrestlerInjuryHealedInboxListener(inboxService, wrestlerInjuryHealed);
   }
 
   @Test
@@ -71,7 +76,7 @@ class WrestlerInjuryHealedInboxListenerTest {
     String expectedMessage = "Test Wrestler's injury (Test Injury) has been healed!";
     String expectedReferenceId = "1";
 
-    assert (eventTypeCaptor.getValue().equals(InboxEventType.WRESTLER_INJURY_HEALED));
+    assert (eventTypeCaptor.getValue().equals(wrestlerInjuryHealed));
     assert (messageCaptor.getValue().equals(expectedMessage));
     assert (referenceIdCaptor.getValue().equals(expectedReferenceId));
   }
