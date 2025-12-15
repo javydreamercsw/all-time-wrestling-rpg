@@ -38,20 +38,44 @@ public class EntityDependencyAnalyzer {
 
   @Autowired private ApplicationContext applicationContext;
 
-  private List<String> syncOrderCache;
+  private List<SyncEntityType> syncOrderCache;
 
   /**
    * Automatically determines sync order based on JPA entity relationships. Caches the result to
    * avoid re-calculating on every call.
    *
-   * @return List of sync method names in dependency order
+   * @return List of SyncEntityType in dependency order
    */
-  public List<String> getAutomaticSyncOrder() {
+  public List<SyncEntityType> getAutomaticSyncOrder() {
     if (syncOrderCache == null) {
       Set<Class<?>> entityClasses = discoverEntityClasses();
-      syncOrderCache = determineSyncOrder(entityClasses);
+      List<String> entityNames = determineSyncOrder(entityClasses);
+      syncOrderCache = convertToSyncEntityTypes(entityNames);
     }
     return syncOrderCache;
+  }
+
+  /**
+   * Converts a list of entity names to SyncEntityType list. Logs a warning for any entity names
+   * that don't match a SyncEntityType.
+   *
+   * @param entityNames List of entity names
+   * @return List of SyncEntityType objects
+   */
+  private List<SyncEntityType> convertToSyncEntityTypes(List<String> entityNames) {
+    return entityNames.stream()
+        .map(
+            name -> {
+              Optional<SyncEntityType> entityType = SyncEntityType.fromEntityClassName(name);
+              if (entityType.isEmpty()) {
+                log.warn(
+                    "Entity '{}' does not have a corresponding SyncEntityType enum value", name);
+              }
+              return entityType;
+            })
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(java.util.stream.Collectors.toList());
   }
 
   /** Discovers all JPA entity classes in the application. */

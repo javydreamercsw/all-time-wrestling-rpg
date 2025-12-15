@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker.SyncProgress;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
@@ -169,8 +170,11 @@ public class NotionSyncView extends Main {
     syncAllButton.addClickListener(e -> triggerFullSync());
 
     entitySelectionCombo = new ComboBox<>("Select Entity to Sync");
-    List<String> entities = dependencyAnalyzer.getAutomaticSyncOrder();
-    java.util.Collections.sort(entities);
+    List<String> entities =
+        dependencyAnalyzer.getAutomaticSyncOrder().stream()
+            .map(SyncEntityType::getKey)
+            .sorted()
+            .collect(java.util.stream.Collectors.toList());
     entitySelectionCombo.setItems(entities);
     entitySelectionCombo.addValueChangeListener(
         event -> {
@@ -255,7 +259,11 @@ public class NotionSyncView extends Main {
         createConfigItem("Scheduler Enabled", String.valueOf(syncProperties.isSchedulerEnabled())),
         createConfigItem(
             "Sync Interval", formatInterval(syncProperties.getScheduler().getInterval())),
-        createConfigItem("Entities", String.join(", ", dependencyAnalyzer.getAutomaticSyncOrder())),
+        createConfigItem(
+            "Entities",
+            dependencyAnalyzer.getAutomaticSyncOrder().stream()
+                .map(SyncEntityType::getKey)
+                .collect(java.util.stream.Collectors.joining(", "))),
         createConfigItem("Backup Enabled", String.valueOf(syncProperties.isBackupEnabled())));
 
     if (syncProperties.isBackupEnabled()) {
@@ -343,7 +351,7 @@ public class NotionSyncView extends Main {
         () -> {
           try {
             NotionSyncService.SyncResult result =
-                notionSyncScheduler.syncEntity(entityName, operationId, direction);
+                notionSyncScheduler.syncEntity(entityName, direction);
             return new SyncOperationResult(
                 result.isSuccess(),
                 1,

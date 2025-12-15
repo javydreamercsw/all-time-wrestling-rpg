@@ -23,12 +23,12 @@ import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.provider.Query;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -82,7 +82,7 @@ class NotionSyncViewTest {
 
     // Just verify the view was created successfully - CSS class names may vary
     // The important thing is that it doesn't throw exceptions during initialization
-    assertTrue(notionSyncView.getElement() != null);
+    assertNotNull(notionSyncView.getElement());
   }
 
   @Test
@@ -116,7 +116,6 @@ class NotionSyncViewTest {
   @DisplayName("Should handle empty entities list")
   void shouldHandleEmptyEntitiesList() {
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(new ArrayList<>());
-    // Remove deprecated getEntities() call - entities are now automatically determined
 
     NotionSyncView emptyEntitiesView =
         new NotionSyncView(
@@ -149,7 +148,8 @@ class NotionSyncViewTest {
   @DisplayName("Should sort entities alphabetically in the dropdown")
   void shouldSortEntitiesAlphabetically() {
     // Given
-    List<String> unsortedEntities = List.of("wrestlers", "shows", "factions");
+    List<SyncEntityType> unsortedEntities =
+        List.of(SyncEntityType.WRESTLERS, SyncEntityType.SHOWS, SyncEntityType.FACTIONS);
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(new ArrayList<>(unsortedEntities));
 
     // When
@@ -179,9 +179,10 @@ class NotionSyncViewTest {
     List<String> dropdownItems = new ArrayList<>();
     entitySelectionCombo.getDataProvider().fetch(new Query<>()).forEach(dropdownItems::add);
 
-    List<String> sortedEntities = new ArrayList<>(unsortedEntities);
-    Collections.sort(sortedEntities);
+    // Convert SyncEntityType to keys and sort them
+    List<String> expectedEntities =
+        unsortedEntities.stream().map(SyncEntityType::getKey).sorted().toList();
 
-    assertEquals(sortedEntities, dropdownItems);
+    assertEquals(expectedEntities, dropdownItems);
   }
 }

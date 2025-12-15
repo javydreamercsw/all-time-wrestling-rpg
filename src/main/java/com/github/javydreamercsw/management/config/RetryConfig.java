@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.config;
 
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -130,21 +131,21 @@ public class RetryConfig {
 
   /** Get entity-specific configuration. */
   private EntityConfig getEntityConfig(String entityType) {
-    switch (entityType.toLowerCase()) {
-      case "shows":
-        return entities.getShows();
-      case "wrestlers":
-        return entities.getWrestlers();
-      case "factions":
-        return entities.getFactions();
-      case "teams":
-        return entities.getTeams();
-      case "segments":
-        return entities.getSegments();
-      case "templates":
-        return entities.getTemplates();
-      default:
-        return new EntityConfig(); // Default config
-    }
+    return SyncEntityType.fromKey(entityType)
+        .map(this::getEntityConfig)
+        .orElseGet(EntityConfig::new);
+  }
+
+  /** Get entity-specific configuration using SyncEntityType enum. */
+  private EntityConfig getEntityConfig(SyncEntityType entityType) {
+    return switch (entityType) {
+      case SHOWS -> entities.getShows();
+      case WRESTLERS -> entities.getWrestlers();
+      case FACTIONS -> entities.getFactions();
+      case TEAMS -> entities.getTeams();
+      case SEGMENTS -> entities.getSegments();
+      case TEMPLATES -> entities.getTemplates();
+      default -> new EntityConfig(); // Default config
+    };
   }
 }

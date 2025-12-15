@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -63,7 +64,8 @@ class NotionSyncControllerTest extends BaseControllerTest {
     when(syncProperties.isEnabled()).thenReturn(true);
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(syncProperties.isBackupEnabled()).thenReturn(true);
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder())
+        .thenReturn(List.of(SyncEntityType.SHOWS, SyncEntityType.WRESTLERS));
     when(syncProperties.getScheduler()).thenReturn(createMockScheduler());
     when(syncProperties.getBackup()).thenReturn(createMockBackup());
     when(notionSyncScheduler.getSyncStatus()).thenReturn("Mock status");
@@ -126,7 +128,8 @@ class NotionSyncControllerTest extends BaseControllerTest {
   @DisplayName("Should trigger entity sync successfully")
   void shouldTriggerEntitySyncSuccessfully() throws Exception {
     // Given
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder())
+        .thenReturn(List.of(SyncEntityType.SHOWS, SyncEntityType.WRESTLERS));
     when(notionSyncScheduler.triggerEntitySync("shows"))
         .thenReturn(NotionSyncService.SyncResult.success("Shows", 8, 0, 0));
 
@@ -145,7 +148,11 @@ class NotionSyncControllerTest extends BaseControllerTest {
   @DisplayName("Should reject invalid entity name")
   void shouldRejectInvalidEntityName() throws Exception {
     // Given
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder())
+        .thenReturn(
+            List.of(
+                com.github.javydreamercsw.management.service.sync.SyncEntityType.SHOWS,
+                com.github.javydreamercsw.management.service.sync.SyncEntityType.WRESTLERS));
 
     // When & Then
     mockMvc
@@ -194,7 +201,11 @@ class NotionSyncControllerTest extends BaseControllerTest {
   @DisplayName("Should return supported entities")
   void shouldReturnSupportedEntities() throws Exception {
     // Given
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder())
+        .thenReturn(
+            List.of(
+                com.github.javydreamercsw.management.service.sync.SyncEntityType.SHOWS,
+                com.github.javydreamercsw.management.service.sync.SyncEntityType.WRESTLERS));
 
     // When & Then
     mockMvc
