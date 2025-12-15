@@ -34,7 +34,7 @@ class EntityDependencyAnalyzerTest extends ManagementIntegrationTest {
 
   @Test
   void testGetAutomaticSyncOrder() {
-    List<String> automaticSyncOrder = entityDependencyAnalyzer.getAutomaticSyncOrder();
+    List<SyncEntityType> automaticSyncOrder = entityDependencyAnalyzer.getAutomaticSyncOrder();
     Assertions.assertFalse(automaticSyncOrder.isEmpty());
   }
 

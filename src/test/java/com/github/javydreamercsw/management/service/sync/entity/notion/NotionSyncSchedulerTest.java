@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.test.BaseTest;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -76,7 +77,8 @@ class NotionSyncSchedulerTest extends BaseTest {
   void shouldPerformSyncForAllConfiguredEntities() {
     // Given
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder())
+        .thenReturn(List.of(SyncEntityType.SHOWS, SyncEntityType.WRESTLERS));
     when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
         .thenReturn(BaseSyncService.SyncResult.success("Shows", 5, 0, 0));
     when(notionSyncService.syncWrestlers(anyString(), any(SyncDirection.class)))
@@ -97,7 +99,7 @@ class NotionSyncSchedulerTest extends BaseTest {
   void shouldHandleSyncFailuresGracefully() {
     // Given
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of(SyncEntityType.SHOWS));
     when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
         .thenReturn(BaseSyncService.SyncResult.failure("Shows", "Connection failed"));
 
@@ -112,7 +114,9 @@ class NotionSyncSchedulerTest extends BaseTest {
   @DisplayName("Should trigger manual sync for all entities")
   void shouldTriggerManualSyncForAllEntities() {
     // Given
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder())
+        .thenReturn(
+            List.of(com.github.javydreamercsw.management.service.sync.SyncEntityType.SHOWS));
     when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
         .thenReturn(BaseSyncService.SyncResult.success("Shows", 10, 0, 0));
 
@@ -199,7 +203,11 @@ class NotionSyncSchedulerTest extends BaseTest {
     when(syncProperties.isEnabled()).thenReturn(true);
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(syncProperties.getScheduler()).thenReturn(createMockScheduler());
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder())
+        .thenReturn(
+            List.of(
+                com.github.javydreamercsw.management.service.sync.SyncEntityType.SHOWS,
+                com.github.javydreamercsw.management.service.sync.SyncEntityType.WRESTLERS));
     when(syncProperties.isBackupEnabled()).thenReturn(true);
     when(syncProperties.getBackup()).thenReturn(createMockBackup());
 
