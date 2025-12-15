@@ -43,7 +43,6 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -98,7 +97,6 @@ public class DataInitializer {
     this.deckService = deckService;
   }
 
-  @PostConstruct
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void init() {
     if (enabled) {

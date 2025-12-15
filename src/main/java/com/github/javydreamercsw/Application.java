@@ -16,9 +16,13 @@
 */
 package com.github.javydreamercsw;
 
+import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
+
 import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Clock;
+import java.util.List;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -29,6 +33,9 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @SpringBootApplication
 @EnableScheduling
@@ -48,6 +55,26 @@ public class Application extends SpringBootServletInitializer {
   @Bean
   public Random random() {
     return new Random();
+  }
+
+  @Bean
+  @Profile("!test")
+  public CommandLineRunner initData(DataInitializer dataInitializer) {
+    return args -> {
+      log.info("Initializing data on startup...");
+      // Create a system authentication context
+      var auth =
+          new UsernamePasswordAuthenticationToken(
+              "system", null, List.of(new SimpleGrantedAuthority("ROLE_" + ADMIN_ROLE)));
+      SecurityContextHolder.getContext().setAuthentication(auth);
+      try {
+        dataInitializer.init();
+      } finally {
+        // Clear the context
+        SecurityContextHolder.clearContext();
+      }
+      log.info("Data initialization complete.");
+    };
   }
 
   @Bean
