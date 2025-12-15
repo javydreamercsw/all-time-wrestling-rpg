@@ -16,19 +16,26 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.account.RoleName;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class MenuService {
+
+  private final SecurityUtils securityUtils;
 
   public List<MenuItem> getMenuItems() {
     List<MenuItem> menuItems = new ArrayList<>();
 
-    // Manually define the menu structure
+    // Manually define the menu structure with role requirements
     MenuItem dashboards = new MenuItem("Dashboards", VaadinIcon.DASHBOARD, null);
     dashboards.addChild(new MenuItem("Inbox", VaadinIcon.INBOX, "inbox"));
     dashboards.addChild(new MenuItem("Show Calendar", VaadinIcon.CALENDAR, "show-calendar"));
@@ -36,7 +43,24 @@ public class MenuService {
     dashboards.addChild(
         new MenuItem("Championship Rankings", VaadinIcon.TROPHY, "championship-rankings"));
 
-    MenuItem entities = new MenuItem("Entities", VaadinIcon.DATABASE, null);
+    // Booker Dashboard: Only BOOKER and ADMIN
+    MenuItem bookerDashboard =
+        new MenuItem(
+            "Booker Dashboard", VaadinIcon.NOTEBOOK, "booker", RoleName.ADMIN, RoleName.BOOKER);
+
+    // Player Dashboard: Only PLAYER, BOOKER, and ADMIN
+    MenuItem playerDashboard =
+        new MenuItem(
+            "Player Dashboard",
+            VaadinIcon.USER_CARD,
+            "player",
+            RoleName.ADMIN,
+            RoleName.BOOKER,
+            RoleName.PLAYER);
+
+    // Entities menu: Only ADMIN can access
+    // BOOKER, PLAYER, and VIEWER have their own dedicated views
+    MenuItem entities = new MenuItem("Entities", VaadinIcon.DATABASE, null, RoleName.ADMIN);
     entities.addChild(new MenuItem("Faction Rivalries", VaadinIcon.GROUP, "faction-rivalry-list"));
     entities.addChild(new MenuItem("Factions", VaadinIcon.GROUP, "faction-list"));
     entities.addChild(new MenuItem("Injury Types", VaadinIcon.PLUS_CIRCLE, "injury-types"));
@@ -52,31 +76,101 @@ public class MenuService {
     entities.addChild(new MenuItem("Titles", VaadinIcon.TROPHY, "title-list"));
     entities.addChild(new MenuItem("Wrestlers", VaadinIcon.USER, "wrestler-list"));
 
-    MenuItem contentGeneration = new MenuItem("Content Generation", VaadinIcon.AUTOMATION, null);
-    contentGeneration.addChild(new MenuItem("Show Planning", VaadinIcon.CALENDAR, "show-planning"));
+    // Content Generation: Only ADMIN and BOOKER
+    MenuItem contentGeneration =
+        new MenuItem(
+            "Content Generation", VaadinIcon.AUTOMATION, null, RoleName.ADMIN, RoleName.BOOKER);
+    contentGeneration.addChild(
+        new MenuItem(
+            "Show Planning",
+            VaadinIcon.CALENDAR,
+            "show-planning",
+            RoleName.ADMIN,
+            RoleName.BOOKER));
 
     MenuItem cardGame = new MenuItem("Card Game", VaadinIcon.RECORDS, null);
     cardGame.addChild(new MenuItem("Cards", VaadinIcon.CREDIT_CARD, "card-list"));
-    // Removed Card Sets
     cardGame.addChild(new MenuItem("Decks", VaadinIcon.RECORDS, "deck-list"));
 
-    MenuItem configuration = new MenuItem("Configuration", VaadinIcon.COG, null);
-    configuration.addChild(new MenuItem("Sync Dashboard", VaadinIcon.REFRESH, "notion-sync"));
-    configuration.addChild(new MenuItem("Admin", VaadinIcon.TOOLS, "admin"));
+    // Configuration: Only ADMIN
+    MenuItem configuration = new MenuItem("Configuration", VaadinIcon.COG, null, RoleName.ADMIN);
+    configuration.addChild(
+        new MenuItem("Sync Dashboard", VaadinIcon.REFRESH, "notion-sync", RoleName.ADMIN));
+    configuration.addChild(new MenuItem("Admin", VaadinIcon.TOOLS, "admin", RoleName.ADMIN));
 
     menuItems.add(dashboards);
+    menuItems.add(bookerDashboard);
+    menuItems.add(playerDashboard);
     menuItems.add(entities);
     menuItems.add(contentGeneration);
     menuItems.add(cardGame);
     menuItems.add(configuration);
 
+    // Filter menu items based on user roles
+    List<MenuItem> filteredMenuItems = filterMenuItems(menuItems);
+
     // Sort top-level menu items
-    menuItems.sort(Comparator.comparing(MenuItem::getTitle));
+    filteredMenuItems.sort(Comparator.comparing(MenuItem::getTitle));
 
     // Recursively sort sub-menus
-    menuItems.forEach(this::sortSubMenus);
+    filteredMenuItems.forEach(this::sortSubMenus);
 
-    return menuItems;
+    return filteredMenuItems;
+  }
+
+  /**
+   * Filter menu items based on current user's roles. Removes items the user doesn't have permission
+   * to access.
+   */
+  private List<MenuItem> filterMenuItems(List<MenuItem> menuItems) {
+    return menuItems.stream()
+        .map(this::filterMenuItem)
+        .filter(menuItem -> menuItem != null)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Filter a single menu item and its children based on user roles. Returns null if the user
+   * doesn't have access and the item has no accessible children.
+   */
+  private MenuItem filterMenuItem(MenuItem menuItem) {
+    // Check if user has required role for this item FIRST
+    boolean hasAccess =
+        !menuItem.hasRequiredRoles()
+            || menuItem.getRequiredRoles().stream().anyMatch(securityUtils::hasRole);
+
+    // If user doesn't have access to this item at all, return null immediately
+    if (!hasAccess) {
+      return null;
+    }
+
+    // User has access - now filter children and remove nulls
+    List<MenuItem> filteredChildren =
+        menuItem.getChildren().stream()
+            .map(this::filterMenuItem)
+            .filter(child -> child != null)
+            .toList();
+
+    // For parent menus (no path), only show if they have accessible children
+    // For leaf items (with path), show if user has access
+    boolean shouldShow = false;
+    if (menuItem.getPath() == null) {
+      // Parent menu - show only if it has accessible children
+      shouldShow = !filteredChildren.isEmpty();
+    } else {
+      // Leaf item - show if user has access (which we already verified)
+      shouldShow = true;
+    }
+
+    if (shouldShow) {
+      MenuItem filtered = new MenuItem(menuItem.getTitle(), menuItem.getIcon(), menuItem.getPath());
+      filtered.setRequiredRoles(menuItem.getRequiredRoles());
+      filteredChildren.forEach(filtered::addChild);
+      return filtered;
+    }
+
+    // No accessible children for parent menu
+    return null;
   }
 
   private void sortSubMenus(MenuItem menuItem) {

@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.admin;
 
+import static com.github.javydreamercsw.management.domain.account.RoleName.ADMIN_ROLE;
+
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -35,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 @Route("admin")
 @PageTitle("Admin")
 @Menu(order = 11, icon = "vaadin:tools", title = "Admin")
-@RolesAllowed("ADMIN")
+@RolesAllowed(ADMIN_ROLE)
 @Slf4j
 public class AdminView extends Main {
 

@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import static com.github.javydreamercsw.management.domain.account.RoleName.ADMIN_ROLE;
+import static com.github.javydreamercsw.management.domain.account.RoleName.BOOKER_ROLE;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -55,7 +58,7 @@ import org.springframework.web.client.RestTemplate;
 @Route("show-planning")
 @PageTitle("Show Planning")
 @Menu(order = 6, icon = "vaadin:calendar", title = "Show Planning")
-@RolesAllowed({"ADMIN", "BOOKER"})
+@RolesAllowed({ADMIN_ROLE, BOOKER_ROLE})
 @Slf4j
 public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 

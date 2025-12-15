@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.sync;
 
+import static com.github.javydreamercsw.management.domain.account.RoleName.ADMIN_ROLE;
+
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
@@ -67,7 +69,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 @Route("notion-sync")
 @PageTitle("Notion Sync")
 @Menu(order = 10, icon = "vaadin:refresh", title = "Notion Sync")
-@RolesAllowed("ADMIN")
+@RolesAllowed(ADMIN_ROLE)
 @ConditionalOnProperty(name = "notion.sync.enabled", havingValue = "true", matchIfMissing = false)
 @Slf4j
 public class NotionSyncView extends Main {
