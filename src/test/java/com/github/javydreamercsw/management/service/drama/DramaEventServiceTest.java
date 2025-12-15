@@ -29,14 +29,14 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @DisplayName("DramaEventService Integration Tests")
 @Transactional
 class DramaEventServiceTest extends ManagementIntegrationTest {
 
-  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
+  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;

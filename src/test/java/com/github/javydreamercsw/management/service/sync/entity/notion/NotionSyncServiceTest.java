@@ -54,7 +54,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * @author Javier Ortiz Bultron @date Oct 10, 2023
@@ -105,7 +105,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private ParallelSyncOrchestrator parallelSyncOrchestrator;
 
   private NotionSyncService notionSyncService; // No longer a mock
-  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
+  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   @BeforeEach
   public void setUp() {

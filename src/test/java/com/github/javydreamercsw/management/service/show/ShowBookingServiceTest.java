@@ -44,8 +44,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -58,8 +58,8 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   @Autowired DeckRepository deckRepository;
   @Autowired DeckCardRepository deckCardRepository;
   @Autowired SegmentTypeRepository segmentTypeRepository;
-  @MockBean private OpenAISegmentNarrationService openAIService;
-  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
+  @MockitoBean private OpenAISegmentNarrationService openAIService;
+  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   private Season testSeason;
   private ShowType weeklyShowType;

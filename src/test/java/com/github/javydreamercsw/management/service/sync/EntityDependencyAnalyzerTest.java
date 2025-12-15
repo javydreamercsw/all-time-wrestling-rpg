@@ -28,12 +28,12 @@ import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class EntityDependencyAnalyzerTest extends ManagementIntegrationTest {
 
   @Autowired private EntityDependencyAnalyzer entityDependencyAnalyzer;
-  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
+  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   @Test
   void testGetAutomaticSyncOrder() {

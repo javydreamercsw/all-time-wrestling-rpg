@@ -24,14 +24,14 @@ import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 class CardSetServiceTest extends ManagementIntegrationTest {
   @Autowired CardSetService cardSetService;
   @Autowired CardSetRepository cardSetRepository;
-  @MockBean private DataInitializer dataInitializer;
+  @MockitoBean private DataInitializer dataInitializer;
 
   @Test
   void testCreateCardSetSet() {

@@ -38,15 +38,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @DisplayName("Team Match Resolution Integration Tests")
 @Transactional
 class TeamMatchResolutionTest extends ManagementIntegrationTest {
   @Autowired private NPCSegmentResolutionService npcSegmentResolutionService;
-  @MockBean private OpenAISegmentNarrationService openAIService;
-  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
+  @MockitoBean private OpenAISegmentNarrationService openAIService;
+  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   private Wrestler rookie1;
   private Wrestler rookie2;

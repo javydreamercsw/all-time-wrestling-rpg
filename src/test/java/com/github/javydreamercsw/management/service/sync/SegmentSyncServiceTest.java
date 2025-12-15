@@ -29,15 +29,15 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DisplayName("SegmentSyncService Unit Tests")
 class SegmentSyncServiceTest extends ManagementIntegrationTest {
 
   @Autowired private SegmentSyncService segmentSyncService;
 
-  @MockBean private NotionHandler notionHandler;
-  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
+  @MockitoBean private NotionHandler notionHandler;
+  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   @Test
   @DisplayName("Should return failure for non-existent segment ID")

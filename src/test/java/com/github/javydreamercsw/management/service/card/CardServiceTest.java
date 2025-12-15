@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -39,7 +39,7 @@ class CardServiceTest extends ManagementIntegrationTest {
   @Autowired CardRepository cardRepository;
   @Autowired CardSetRepository cardSetRepository;
   @Autowired CardService cardService; // Autowire CardService
-  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
+  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   @BeforeEach
   public void setUp() {

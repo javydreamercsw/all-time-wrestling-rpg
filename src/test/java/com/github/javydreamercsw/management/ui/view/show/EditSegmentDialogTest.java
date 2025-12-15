@@ -35,13 +35,13 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class EditSegmentDialogTest extends ManagementIntegrationTest {
 
-  @MockBean private WrestlerService wrestlerService;
-  @MockBean private TitleService titleService;
-  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
+  @MockitoBean private WrestlerService wrestlerService;
+  @MockitoBean private TitleService titleService;
+  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
   private ProposedSegment segment;
   private Runnable onSave;
 

@@ -30,9 +30,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * Integration tests for TeamService. Tests the complete service layer with real database
@@ -45,7 +45,7 @@ class TeamServiceTest extends ManagementIntegrationTest {
   private Wrestler wrestler2;
   private Wrestler wrestler3;
   private Faction faction;
-  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
+  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   @BeforeEach
   public void setUp() {
