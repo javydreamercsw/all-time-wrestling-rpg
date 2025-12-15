@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.drama;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
@@ -28,11 +29,14 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @DisplayName("DramaEventService Integration Tests")
 @Transactional
 class DramaEventServiceTest extends ManagementIntegrationTest {
+
+  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;

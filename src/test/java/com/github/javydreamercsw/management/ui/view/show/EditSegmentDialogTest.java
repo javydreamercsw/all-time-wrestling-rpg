@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -34,20 +35,18 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 class EditSegmentDialogTest extends ManagementIntegrationTest {
 
-  @Mock private WrestlerService wrestlerService;
-  @Mock private TitleService titleService;
+  @MockBean private WrestlerService wrestlerService;
+  @MockBean private TitleService titleService;
+  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
   private ProposedSegment segment;
   private Runnable onSave;
 
   @BeforeEach
   void setUp() {
-    MockitoAnnotations.openMocks(this);
-
     segment = new ProposedSegment();
     segment.setDescription("Old Description");
     segment.setParticipants(new ArrayList<>(List.of("Wrestler 1")));
@@ -79,7 +78,7 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
   @Test
   void testSave() {
     EditSegmentDialog dialog =
-        new EditSegmentDialog(segment, wrestlerService, titleService, onSave); // Pass titleService
+        new EditSegmentDialog(segment, wrestlerService, titleService, onSave);
     dialog.open();
 
     // Simulate user input
@@ -101,8 +100,6 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
 
     // Verify onSave is called and dialog is closed
     verify(onSave).run();
-    // Note: Directly checking dialog.isOpened() might not work as expected in a unit test
-    // without a full Vaadin UI environment. We rely on the onSave callback being triggered.
   }
 
   @Test

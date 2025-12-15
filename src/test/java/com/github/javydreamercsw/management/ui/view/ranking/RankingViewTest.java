@@ -21,13 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
-import com.github.mvysny.kaributesting.v10.MockVaadin;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -39,19 +39,20 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-class RankingViewTest extends ManagementIntegrationTest {
+@WithMockUser(roles = "ADMIN")
+class RankingViewTest extends AbstractViewTest {
 
   @Mock private RankingService rankingService;
   @Mock private TierBoundaryService tierBoundaryService;
+  @MockitoBean private DataInitializer dataInitializer;
 
   private ChampionshipDTO championshipDTO;
 
   @BeforeEach
   void setUp() {
-    MockitoAnnotations.openMocks(this);
-    MockVaadin.setup();
     championshipDTO = new ChampionshipDTO(1L, "Test Title", "test.png");
     when(rankingService.getChampionships()).thenReturn(List.of(championshipDTO));
     when(rankingService.getCurrentChampions(championshipDTO.getId()))

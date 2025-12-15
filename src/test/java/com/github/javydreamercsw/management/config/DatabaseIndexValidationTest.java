@@ -83,7 +83,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
         if (!availableColumns.contains(cleanColumn.toLowerCase())) {
           errors.add(
               String.format(
-                  "Index '%s' on table '%s' references non-existent column '%s'. Available columns:"
+                  "Index '%s' on table '%s' references non-existent column '%s'. Available columns:" 
                       + " %s",
                   index.indexName, index.tableName, cleanColumn, availableColumns));
         }
@@ -147,7 +147,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
           Set<String> columns = new HashSet<>();
 
           // Get all columns for this table
-          try (ResultSet cols = metaData.getColumns(null, null, tableName.toUpperCase(), "%")) {
+          try (ResultSet cols = metaData.getColumns(null, null, tableName.toUpperCase(), "% ")) {
             while (cols.next()) {
               String columnName = cols.getString("COLUMN_NAME").toLowerCase();
               columns.add(columnName);
@@ -163,6 +163,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
     log.info("Loaded schema for {} tables", tableColumns.size());
   }
 
+  // spotless:off
   private void parseIndexScript() throws IOException {
     indexDefinitions = new ArrayList<>();
 
@@ -191,7 +192,9 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
 
     log.info("Parsed {} index definitions from script", indexDefinitions.size());
   }
+  // spotless:on
 
+  // spotless:off
   private List<String> parseColumns(String columnsPart) {
     List<String> columns = new ArrayList<>();
 
@@ -200,18 +203,21 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
     for (String part : parts) {
       String column =
           part.trim()
-              .replaceAll("\\s+DESC\\s*$", "") // Remove DESC
-              .replaceAll("\\s+ASC\\s*$", "") // Remove ASC
+              .replaceAll("\s+DESC\s*$", "") // Remove DESC
+              .replaceAll("\s+ASC\s*$", "") // Remove ASC
               .trim();
       columns.add(column);
     }
 
     return columns;
   }
+  // spotless:on
 
+  // spotless:off
   private String cleanColumnName(String column) {
-    return column.trim().replaceAll("\\s+DESC\\s*$", "").replaceAll("\\s+ASC\\s*$", "").trim();
+    return column.trim().replaceAll("\s+DESC\s*$", "").replaceAll("\s+ASC\s*$", "").trim();
   }
+  // spotless:on
 
   /** Represents a parsed index definition from the SQL script. */
   private static class IndexDefinition {

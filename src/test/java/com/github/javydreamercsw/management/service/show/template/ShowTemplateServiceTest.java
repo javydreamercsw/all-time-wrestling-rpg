@@ -20,15 +20,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Pageable;
 
 @SpringBootTest
@@ -36,6 +39,19 @@ class ShowTemplateServiceTest {
   @Autowired private ShowTemplateRepository repository;
   @Autowired private ShowTemplateService service;
   @Autowired private ShowTypeService showTypeService;
+  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
+
+  @BeforeEach
+  void setUp() {
+    // Manually create the "Weekly" ShowType for tests, but only if it doesn't already exist
+    Optional<ShowType> existingType = showTypeService.findByName("Weekly");
+    if (existingType.isEmpty()) {
+      ShowType weeklyShowType = new ShowType();
+      weeklyShowType.setName("Weekly");
+      weeklyShowType.setDescription("Weekly Show Type");
+      showTypeService.save(weeklyShowType); // Save it using the service
+    }
+  }
 
   /** Test of list method, of class ShowTemplateService. */
   @Test

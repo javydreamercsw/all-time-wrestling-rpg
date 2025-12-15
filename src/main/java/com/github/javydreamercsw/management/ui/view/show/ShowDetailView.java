@@ -82,7 +82,6 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.web.client.RestTemplate;
@@ -98,19 +97,19 @@ import org.springframework.web.client.RestTemplate;
 public class ShowDetailView extends Main
     implements HasUrlParameter<Long>, ApplicationListener<ApplicationEvent> {
 
-  @Autowired private ShowService showService;
-  @Autowired private SegmentService segmentService;
-  @Autowired private SegmentRepository segmentRepository;
-  @Autowired private SegmentTypeRepository segmentTypeRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private NpcService npcService;
-  @Autowired private WrestlerService wrestlerService;
-  @Autowired private TitleService titleService;
-  @Autowired private SegmentRuleRepository segmentRuleRepository;
-  @Autowired private ShowTypeService showTypeService;
-  @Autowired private SeasonService seasonService;
-  @Autowired private ShowTemplateService showTemplateService;
-  @Autowired private RivalryService rivalryService;
+  private final ShowService showService;
+  private final SegmentService segmentService;
+  private final SegmentRepository segmentRepository;
+  private final SegmentTypeRepository segmentTypeRepository;
+  private final WrestlerRepository wrestlerRepository;
+  private final NpcService npcService;
+  private final WrestlerService wrestlerService;
+  private final TitleService titleService;
+  private final SegmentRuleRepository segmentRuleRepository;
+  private final ShowTypeService showTypeService;
+  private final SeasonService seasonService;
+  private final ShowTemplateService showTemplateService;
+  private final RivalryService rivalryService;
   private String referrer = "shows"; // Default referrer
 
   private H2 showTitle;
@@ -119,7 +118,33 @@ public class ShowDetailView extends Main
   private Show currentShow; // Store the current show object
   private Grid<Segment> segmentsGrid; // Declare segmentsGrid as a class member
 
-  public ShowDetailView() {
+  public ShowDetailView(
+      ShowService showService,
+      SegmentService segmentService,
+      SegmentRepository segmentRepository,
+      SegmentTypeRepository segmentTypeRepository,
+      WrestlerRepository wrestlerRepository,
+      NpcService npcService,
+      WrestlerService wrestlerService,
+      TitleService titleService,
+      SegmentRuleRepository segmentRuleRepository,
+      ShowTypeService showTypeService,
+      SeasonService seasonService,
+      ShowTemplateService showTemplateService,
+      RivalryService rivalryService) {
+    this.showService = showService;
+    this.segmentService = segmentService;
+    this.segmentRepository = segmentRepository;
+    this.segmentTypeRepository = segmentTypeRepository;
+    this.wrestlerRepository = wrestlerRepository;
+    this.npcService = npcService;
+    this.wrestlerService = wrestlerService;
+    this.titleService = titleService;
+    this.segmentRuleRepository = segmentRuleRepository;
+    this.showTypeService = showTypeService;
+    this.seasonService = seasonService;
+    this.showTemplateService = showTemplateService;
+    this.rivalryService = rivalryService;
     initializeComponents();
   }
 

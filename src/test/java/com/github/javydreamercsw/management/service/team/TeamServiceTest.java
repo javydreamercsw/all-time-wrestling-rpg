@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.team;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
@@ -43,6 +45,7 @@ class TeamServiceTest extends ManagementIntegrationTest {
   private Wrestler wrestler2;
   private Wrestler wrestler3;
   private Faction faction;
+  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   @BeforeEach
   public void setUp() {

@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -53,6 +54,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 /**
  * @author Javier Ortiz Bultron @date Oct 10, 2023
@@ -103,6 +105,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
   @Mock private ParallelSyncOrchestrator parallelSyncOrchestrator;
 
   private NotionSyncService notionSyncService; // No longer a mock
+  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   @BeforeEach
   public void setUp() {

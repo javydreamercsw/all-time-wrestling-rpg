@@ -16,16 +16,23 @@
 */
 package com.github.javydreamercsw.management.ui.view.title;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.data.provider.Query;
@@ -37,9 +44,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-class TitleListViewTest extends ManagementIntegrationTest {
+class TitleListViewTest extends AbstractViewTest {
 
   @Mock private TitleService titleService;
   @Mock private WrestlerService wrestlerService;
@@ -47,13 +54,13 @@ class TitleListViewTest extends ManagementIntegrationTest {
   @Mock
   private TeamRepository teamRepository; // Mocked as it's injected but not used in the test setup
 
+  @MockitoBean private DataInitializer dataInitializer;
+
   private TitleListView titleListView;
   private Title testTitle;
 
   @BeforeEach
   void setUp() {
-    MockitoAnnotations.openMocks(this);
-
     // Mock WrestlerService
     Wrestler testWrestler = new Wrestler();
     testWrestler.setId(1L);

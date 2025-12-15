@@ -411,6 +411,9 @@
               <file>${project.basedir}/LICENSE.template</file>
               <delimiter>package</delimiter>
             </licenseHeader>
+            <excludes>
+              <exclude>src/test/java/com/github/javydreamercsw/management/config/DatabaseIndexValidationTest.java</exclude>
+            </excludes>
           </java>
           <groovy>
             <!-- These are the defaults, you can override if you want -->

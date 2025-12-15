@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mockStatic;
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
@@ -43,8 +44,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -57,7 +58,8 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   @Autowired DeckRepository deckRepository;
   @Autowired DeckCardRepository deckCardRepository;
   @Autowired SegmentTypeRepository segmentTypeRepository;
-  @MockitoBean private OpenAISegmentNarrationService openAIService;
+  @MockBean private OpenAISegmentNarrationService openAIService;
+  @MockBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   private Season testSeason;
   private ShowType weeklyShowType;
