@@ -22,8 +22,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
@@ -31,24 +31,20 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(DramaEventController.class)
-class DramaEventControllerTest {
-
-  @Autowired private MockMvc mockMvc;
+class DramaEventControllerTest extends AbstractControllerTest {
 
   @MockitoBean private DramaEventService dramaEventService;
   @MockitoBean private RankingService rankingService;
   @MockitoBean private WrestlerRepository wrestlerRepository;
 
-  @Autowired private ObjectMapper objectMapper;
-
   @Test
+  @WithMockUser(roles = "BOOKER")
   void createDramaEvent() throws Exception {
     DramaEvent event = new DramaEvent();
     event.setId(1L);

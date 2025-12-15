@@ -22,30 +22,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(SeasonController.class)
-class SeasonControllerTest {
-
-  @Autowired private MockMvc mockMvc;
+class SeasonControllerTest extends AbstractControllerTest {
 
   @MockitoBean private SeasonService seasonService;
   @MockitoBean private RankingService rankingService;
   @MockitoBean private WrestlerRepository wrestlerRepository;
 
-  @Autowired private ObjectMapper objectMapper;
-
   @Test
+  @WithMockUser(roles = "BOOKER")
   void createSeason() throws Exception {
     Season season = new Season();
     season.setId(1L);

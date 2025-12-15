@@ -13,6 +13,11 @@ spring:
       ddl-auto: create-drop
   flyway:
     enabled: true
+  security:
+    # Disable method security for tests to avoid authentication errors during bean initialization
+    enabled: true
+  main:
+    allow-bean-definition-overriding: true
 
 # Match narration configuration for testing
 match-narration:

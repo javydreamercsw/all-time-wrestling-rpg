@@ -22,8 +22,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -32,25 +32,21 @@ import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(InjuryController.class)
-class InjuryControllerTest {
-
-  @Autowired private MockMvc mockMvc;
+class InjuryControllerTest extends AbstractControllerTest {
 
   @MockitoBean private InjuryService injuryService;
 
   @MockitoBean private WrestlerRepository wrestlerRepository;
   @MockitoBean private RankingService rankingService;
 
-  @Autowired private ObjectMapper objectMapper;
-
   @Test
+  @WithMockUser(roles = "BOOKER")
   void createInjury() throws Exception {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(1L);

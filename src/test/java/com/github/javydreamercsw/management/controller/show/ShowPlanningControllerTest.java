@@ -21,8 +21,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -32,27 +32,16 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningSe
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(
-    controllers = ShowPlanningController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
-@TestPropertySource(properties = "spring.flyway.enabled=false")
-class ShowPlanningControllerTest {
+@WebMvcTest(ShowPlanningController.class)
+class ShowPlanningControllerTest extends AbstractControllerTest {
 
   @MockitoBean private CommandLineRunner commandLineRunner;
-
-  @Autowired private MockMvc mockMvc;
-
-  @Autowired private ObjectMapper objectMapper;
 
   @MockitoBean private ShowPlanningService showPlanningService;
 
@@ -63,6 +52,7 @@ class ShowPlanningControllerTest {
   @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
+  @WithMockUser(roles = {"ADMIN", "BOOKER"})
   void getShowPlanningContext() throws Exception {
     // Given
     Show show = new Show();
@@ -75,6 +65,7 @@ class ShowPlanningControllerTest {
   }
 
   @Test
+  @WithMockUser(roles = {"ADMIN", "BOOKER"})
   void planShow() throws Exception {
     // Given
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();

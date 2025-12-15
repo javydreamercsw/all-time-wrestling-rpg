@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.config.TestMethodSecurityConfig;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -45,12 +46,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@WithMockUser(roles = "ADMIN")
+@Import(TestMethodSecurityConfig.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DataInitializerTest {
 

@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.base.test.BaseControllerTest;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
@@ -32,23 +32,16 @@ import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(
-    controllers = NotionSyncController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
-class NotionSyncControllerTest extends BaseControllerTest {
+@WebMvcTest(NotionSyncController.class)
+class NotionSyncControllerTest extends AbstractControllerTest {
 
   @MockitoBean private CommandLineRunner commandLineRunner;
-
-  @Autowired private MockMvc mockMvc;
 
   @MockitoBean private NotionSyncService notionSyncService;
   @MockitoBean private NotionSyncScheduler notionSyncScheduler;
@@ -59,6 +52,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should return sync status")
+  @WithMockUser(roles = "ADMIN")
   void shouldReturnSyncStatus() throws Exception {
     // Given
     when(syncProperties.isEnabled()).thenReturn(true);
@@ -84,6 +78,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should trigger manual sync successfully")
+  @WithMockUser(roles = "ADMIN")
   void shouldTriggerManualSyncSuccessfully() throws Exception {
     // Given
     List<NotionSyncService.SyncResult> results =
@@ -104,6 +99,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should handle manual sync failures")
+  @WithMockUser(roles = "ADMIN")
   void shouldHandleManualSyncFailures() throws Exception {
     // Given
     List<NotionSyncService.SyncResult> results =
@@ -126,6 +122,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should trigger entity sync successfully")
+  @WithMockUser(roles = "ADMIN")
   void shouldTriggerEntitySyncSuccessfully() throws Exception {
     // Given
     when(dependencyAnalyzer.getAutomaticSyncOrder())
@@ -146,6 +143,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should reject invalid entity name")
+  @WithMockUser(roles = "ADMIN")
   void shouldRejectInvalidEntityName() throws Exception {
     // Given
     when(dependencyAnalyzer.getAutomaticSyncOrder())
@@ -166,6 +164,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should sync shows successfully")
+  @WithMockUser(roles = "ADMIN")
   void shouldSyncShowsSuccessfully() throws Exception {
     // Given
     when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
@@ -183,6 +182,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should handle shows sync failure")
+  @WithMockUser(roles = "ADMIN")
   void shouldHandleShowsSyncFailure() throws Exception {
     // Given
     when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
@@ -199,6 +199,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should return supported entities")
+  @WithMockUser(roles = "ADMIN")
   void shouldReturnSupportedEntities() throws Exception {
     // Given
     when(dependencyAnalyzer.getAutomaticSyncOrder())
@@ -220,6 +221,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should return health status")
+  @WithMockUser(roles = "ADMIN")
   void shouldReturnHealthStatus() throws Exception {
     // Given
     when(syncProperties.isEnabled()).thenReturn(true);

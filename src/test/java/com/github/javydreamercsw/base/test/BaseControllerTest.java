@@ -16,9 +16,10 @@
 */
 package com.github.javydreamercsw.base.test;
 
-import org.springframework.security.test.context.support.WithMockUser;
+import com.github.javydreamercsw.base.config.TestSecurityConfig;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
-@WithMockUser(roles = "ADMIN")
+@Import(TestSecurityConfig.class)
 public abstract class BaseControllerTest {}

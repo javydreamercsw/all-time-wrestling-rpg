@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw.base.security;
 
-import com.github.javydreamercsw.base.ui.view.LoginView;
-import com.vaadin.flow.spring.security.VaadinWebSecurity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +24,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /** Security configuration for the application. */
@@ -33,12 +32,12 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @RequiredArgsConstructor
-public class SecurityConfig extends VaadinWebSecurity {
+public class SecurityConfig {
 
   private final CustomUserDetailsService userDetailsService;
 
-  @Override
-  protected void configure(HttpSecurity http) throws Exception {
+  @Bean
+  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     // Configure remember-me functionality
     http.rememberMe(
         rememberMe ->
@@ -59,18 +58,20 @@ public class SecurityConfig extends VaadinWebSecurity {
 
     // Public access to static resources
     http.authorizeHttpRequests(
-        auth ->
-            auth.requestMatchers(
-                    new AntPathRequestMatcher("/images/**"),
-                    new AntPathRequestMatcher("/icons/**"),
-                    new AntPathRequestMatcher("/VAADIN/**"))
-                .permitAll());
-
-    // Call parent configuration
-    super.configure(http);
+            auth ->
+                auth.requestMatchers(
+                        new AntPathRequestMatcher("/images/**"),
+                        new AntPathRequestMatcher("/icons/**"),
+                        new AntPathRequestMatcher("/VAADIN/**"))
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+        .csrf(csrf -> csrf.disable());
 
     // Set the login view
-    setLoginView(http, LoginView.class);
+    http.formLogin(form -> form.loginPage("/login").permitAll());
+
+    return http.build();
   }
 
   /**

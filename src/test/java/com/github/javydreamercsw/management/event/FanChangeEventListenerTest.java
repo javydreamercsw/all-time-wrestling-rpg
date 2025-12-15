@@ -16,10 +16,12 @@
 */
 package com.github.javydreamercsw.management.event;
 
+import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import com.github.javydreamercsw.base.config.TestMethodSecurityConfig;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import java.util.function.Consumer;
@@ -27,11 +29,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@WithMockUser(roles = ADMIN_ROLE)
+@Import(TestMethodSecurityConfig.class)
 class FanChangeEventListenerTest {
 
   @Autowired private ApplicationEventPublisher publisher;
