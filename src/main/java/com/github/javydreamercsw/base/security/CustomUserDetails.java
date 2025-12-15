@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.base.security;
 
-import com.github.javydreamercsw.management.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.Account;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import lombok.Getter;

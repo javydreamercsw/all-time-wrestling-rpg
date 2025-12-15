@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.base.security;
 
-import com.github.javydreamercsw.management.domain.account.RoleName;
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

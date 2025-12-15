@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.sync;
 
-import static com.github.javydreamercsw.management.domain.account.RoleName.ADMIN_ROLE;
+import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;

@@ -14,29 +14,25 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.account;
+package com.github.javydreamercsw.base.domain.account;
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+/** Enumeration of available system roles. */
+public enum RoleName {
+  /** Full system access - can manage accounts and all content */
+  ADMIN,
 
-/** Repository for Role entity. */
-@Repository
-public interface RoleRepository extends JpaRepository<Role, Long> {
+  /** Can manage shows, wrestlers, and content but not system administration */
+  BOOKER,
 
-  /**
-   * Find a role by its name.
-   *
-   * @param name the role name
-   * @return the role if found
-   */
-  Optional<Role> findByName(RoleName name);
+  /** Can manage own content and view most data */
+  PLAYER,
 
-  /**
-   * Check if a role exists by name.
-   *
-   * @param name the role name
-   * @return true if the role exists
-   */
-  boolean existsByName(RoleName name);
+  /** Read-only access to content */
+  VIEWER;
+
+  // String constants for use in @RolesAllowed annotations
+  public static final String ADMIN_ROLE = "ADMIN";
+  public static final String BOOKER_ROLE = "BOOKER";
+  public static final String PLAYER_ROLE = "PLAYER";
+  public static final String VIEWER_ROLE = "VIEWER";
 }

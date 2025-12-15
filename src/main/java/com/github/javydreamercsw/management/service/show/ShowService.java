@@ -46,6 +46,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -94,11 +95,13 @@ public class ShowService {
     return showRepository.count();
   }
 
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Show save(@NonNull Show show) {
     show.setCreationDate(clock.instant());
     return showRepository.saveAndFlush(show);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Show> findAll() {
     return showRepository.findAll();
   }
@@ -330,6 +333,7 @@ public class ShowService {
    * @param id Show ID
    * @return true if deleted, false if not found
    */
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public boolean deleteShow(Long id) {
     if (showRepository.existsById(id)) {
       showRepository.deleteById(id);

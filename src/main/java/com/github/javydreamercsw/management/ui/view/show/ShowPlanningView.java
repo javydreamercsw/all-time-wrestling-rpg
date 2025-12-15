@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
-import static com.github.javydreamercsw.management.domain.account.RoleName.ADMIN_ROLE;
-import static com.github.javydreamercsw.management.domain.account.RoleName.BOOKER_ROLE;
+import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
+import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.Show;

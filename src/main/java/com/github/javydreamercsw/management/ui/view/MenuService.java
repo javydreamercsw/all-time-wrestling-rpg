@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.security.SecurityUtils;
-import com.github.javydreamercsw.management.domain.account.RoleName;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import java.util.ArrayList;
 import java.util.Comparator;

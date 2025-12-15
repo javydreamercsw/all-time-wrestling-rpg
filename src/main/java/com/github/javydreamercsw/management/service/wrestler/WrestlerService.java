@@ -45,6 +45,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,12 +78,14 @@ public class WrestlerService {
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Wrestler save(@NonNull Wrestler wrestler) {
     wrestler.setCreationDate(clock.instant());
     return wrestlerRepository.saveAndFlush(wrestler);
   }
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void delete(@NonNull Wrestler wrestler) {
     dramaEventRepository.deleteByPrimaryWrestlerOrSecondaryWrestler(wrestler, wrestler);
     wrestlerRepository.delete(wrestler);
@@ -90,11 +93,13 @@ public class WrestlerService {
   }
 
   // @Cacheable(value = WRESTLERS_CACHE, key = "'all'")
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAll() {
     return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans"));
   }
 
   /** Get wrestler by ID. */
+  @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> getWrestlerById(Long id) {
     return wrestlerRepository.findById(id);
   }

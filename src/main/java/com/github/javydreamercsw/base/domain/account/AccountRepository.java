@@ -14,7 +14,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.account;
+package com.github.javydreamercsw.base.domain.account;
 
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

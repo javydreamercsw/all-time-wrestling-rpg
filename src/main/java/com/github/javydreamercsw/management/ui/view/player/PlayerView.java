@@ -16,9 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view.player;
 
-import static com.github.javydreamercsw.management.domain.account.RoleName.ADMIN_ROLE;
-import static com.github.javydreamercsw.management.domain.account.RoleName.BOOKER_ROLE;
-import static com.github.javydreamercsw.management.domain.account.RoleName.PLAYER_ROLE;
+import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
+import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE;
+import static com.github.javydreamercsw.base.domain.account.RoleName.PLAYER_ROLE;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.ui.view.MainLayout;

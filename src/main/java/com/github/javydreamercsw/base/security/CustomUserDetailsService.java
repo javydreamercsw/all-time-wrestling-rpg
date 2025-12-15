@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.base.security;
 
-import com.github.javydreamercsw.management.domain.account.Account;
-import com.github.javydreamercsw.management.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
