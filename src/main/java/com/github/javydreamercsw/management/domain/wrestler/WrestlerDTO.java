@@ -29,6 +29,7 @@ import lombok.NonNull;
 @Data
 @NoArgsConstructor
 public class WrestlerDTO {
+  private Long id; // Add id field
   private String name;
   private String description;
   private String gender;
@@ -36,6 +37,7 @@ public class WrestlerDTO {
   private MoveSet moveSet; // Add MoveSet field
 
   public WrestlerDTO(@NonNull Wrestler wrestler) {
+    this.id = wrestler.getId(); // Initialize id
     this.name = wrestler.getName();
     this.description = wrestler.getDescription();
     this.gender = wrestler.getGender() != null ? wrestler.getGender().name() : Gender.MALE.name();

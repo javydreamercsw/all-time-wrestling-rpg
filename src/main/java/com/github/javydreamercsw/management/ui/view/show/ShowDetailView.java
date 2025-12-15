@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -109,6 +110,7 @@ public class ShowDetailView extends Main
   @Autowired private ShowTypeService showTypeService;
   @Autowired private SeasonService seasonService;
   @Autowired private ShowTemplateService showTemplateService;
+  @Autowired private RivalryService rivalryService;
   private String referrer = "shows"; // Default referrer
 
   private H2 showTitle;
@@ -715,7 +717,8 @@ public class ShowDetailView extends Main
                   wrestlerService,
                   titleService,
                   showService,
-                  updatedSegment -> refreshSegmentsGrid()); // Call refreshSegmentsGrid
+                  updatedSegment -> refreshSegmentsGrid(),
+                  rivalryService); // Call refreshSegmentsGrid
           dialog.open();
         });
 

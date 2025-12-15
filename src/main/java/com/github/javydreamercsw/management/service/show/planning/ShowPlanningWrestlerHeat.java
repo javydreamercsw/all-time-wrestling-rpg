@@ -16,24 +16,15 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
-import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import java.time.Instant;
-import java.util.List;
 import lombok.Data;
 
+/**
+ * Represents the heat (rivalry intensity) between two wrestlers. This is used to inform the AI
+ * about ongoing feuds when planning shows.
+ */
 @Data
-public class ShowPlanningContext {
-  private List<Segment> recentSegments;
-  private List<Rivalry> currentRivalries;
-  private List<Segment> recentPromos;
-  private ShowTemplate showTemplate;
-  private List<ShowPlanningChampionship> championships;
-  private ShowPlanningPle nextPle;
-  private List<Wrestler> fullRoster;
-  private List<ShowPlanningWrestlerHeat> wrestlerHeats;
-  private List<Faction> factions;
-  private Instant showDate;
+public class ShowPlanningWrestlerHeat {
+  private String wrestlerName;
+  private String opponentName;
+  private int heat;
 }

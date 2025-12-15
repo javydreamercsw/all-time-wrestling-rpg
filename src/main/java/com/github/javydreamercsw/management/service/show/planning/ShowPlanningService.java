@@ -144,6 +144,10 @@ public class ShowPlanningService {
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);
 
+    // Build wrestler heat map based on rivalries
+    List<ShowPlanningWrestlerHeat> wrestlerHeats = buildWrestlerHeats(allWrestlers);
+    context.setWrestlerHeats(wrestlerHeats);
+
     // Get all factions
     List<com.github.javydreamercsw.management.domain.faction.Faction> allFactions =
         factionService.findAll();
@@ -189,5 +193,28 @@ public class ShowPlanningService {
     segmentRepository.saveAll(segmentsToSave);
     log.info("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
+  }
+
+  /**
+   * Builds wrestler heat information based on their active rivalries. For each wrestler, this
+   * creates entries for each opponent they're feuding with and the heat level of that feud.
+   */
+  private List<ShowPlanningWrestlerHeat> buildWrestlerHeats(@NonNull List<Wrestler> wrestlers) {
+    List<ShowPlanningWrestlerHeat> wrestlerHeats = new ArrayList<>();
+
+    for (Wrestler wrestler : wrestlers) {
+      List<Rivalry> rivalries = rivalryService.getRivalriesForWrestler(wrestler.getId());
+      for (Rivalry rivalry : rivalries) {
+        Wrestler opponent = rivalry.getOpponent(wrestler);
+        ShowPlanningWrestlerHeat heat = new ShowPlanningWrestlerHeat();
+        heat.setWrestlerName(wrestler.getName());
+        heat.setOpponentName(opponent.getName());
+        heat.setHeat(rivalry.getHeat());
+        wrestlerHeats.add(heat);
+      }
+    }
+
+    log.debug("Built {} wrestler heat entries from rivalries", wrestlerHeats.size());
+    return wrestlerHeats;
   }
 }

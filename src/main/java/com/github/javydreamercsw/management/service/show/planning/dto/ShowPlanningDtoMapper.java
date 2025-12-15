@@ -65,9 +65,14 @@ public class ShowPlanningDtoMapper {
               .peek(wrestlerDto -> wrestlerDto.setMoveSet(null))
               .collect(Collectors.toList()));
     }
+    if (context.getWrestlerHeats() != null) {
+      dto.setWrestlerHeats(
+          context.getWrestlerHeats().stream().map(this::toDto).collect(Collectors.toList()));
+    }
     if (context.getFactions() != null) {
       dto.setFactions(context.getFactions().stream().map(this::toDto).collect(Collectors.toList()));
     }
+    dto.setShowDate(context.getShowDate());
     return dto;
   }
 
@@ -176,6 +181,16 @@ public class ShowPlanningDtoMapper {
       dto.setDisbandedDate(faction.getDisbandedDate().toString());
     }
     dto.setExternalId(faction.getExternalId());
+    return dto;
+  }
+
+  public ShowPlanningWrestlerHeatDTO toDto(
+      @NonNull com.github.javydreamercsw.management.service.show.planning.ShowPlanningWrestlerHeat
+              heat) {
+    ShowPlanningWrestlerHeatDTO dto = new ShowPlanningWrestlerHeatDTO();
+    dto.setWrestlerName(heat.getWrestlerName());
+    dto.setOpponentName(heat.getOpponentName());
+    dto.setHeat(heat.getHeat());
     return dto;
   }
 }

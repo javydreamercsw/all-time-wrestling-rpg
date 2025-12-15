@@ -20,11 +20,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -64,9 +67,11 @@ public class NarrationDialog extends Dialog {
   private final ObjectMapper objectMapper;
   private final WrestlerService wrestlerService;
   private final ShowService showService;
+  private final RivalryService rivalryService; // New field
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
+
   private final Button generateButton;
   private final Button saveButton;
   private final Button regenerateButton;
@@ -85,13 +90,15 @@ public class NarrationDialog extends Dialog {
       WrestlerService wrestlerService,
       TitleService titleService,
       ShowService showService,
-      Consumer<Segment> onSaveCallback) { // Modified constructor
+      Consumer<Segment> onSaveCallback,
+      RivalryService rivalryService) { // Modified constructor
     this.segment = segment;
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
     this.showService = showService;
     this.onSaveCallback = onSaveCallback; // Assign callback
+    this.rivalryService = rivalryService;
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
     setWidth("800px");
@@ -432,6 +439,20 @@ public class NarrationDialog extends Dialog {
         wc.setGender(wrestler.getGender()); // Set gender
         wc.setTier(wrestler.getTier()); // Set tier
         wc.setMoveSet(wrestler.getMoveSet()); // Add this line
+        List<String> feuds = new ArrayList<>();
+        // This is a WrestlerDTO, needs to be converted to a Wrestler
+        wrestlerService
+            .findByName(wrestler.getName())
+            .ifPresent(
+                w -> {
+                  for (Rivalry rivalry : rivalryService.getRivalriesForWrestler(w.getId())) {
+                    Wrestler opponent = rivalry.getOpponent(w);
+                    feuds.add(
+                        String.format(
+                            "Feuding with %s (Heat: %d)", opponent.getName(), rivalry.getHeat()));
+                  }
+                });
+        wc.setFeudsAndHeat(feuds);
         wrestlerContexts.add(wc);
       }
     }
@@ -516,6 +537,19 @@ public class NarrationDialog extends Dialog {
       wc.setGender(wrestler.getGender()); // Set gender
       wc.setTier(wrestler.getTier()); // Set tier
       wc.setMoveSet(wrestler.getMoveSet()); // Add this line
+      List<String> feuds = new ArrayList<>();
+      wrestlerService
+          .findByName(wrestler.getName())
+          .ifPresent(
+              w -> {
+                for (Rivalry rivalry : rivalryService.getRivalriesForWrestler(w.getId())) {
+                  Wrestler opponent = rivalry.getOpponent(w);
+                  feuds.add(
+                      String.format(
+                          "Feuding with %s (Heat: %d)", opponent.getName(), rivalry.getHeat()));
+                }
+              });
+      wc.setFeudsAndHeat(feuds);
       wrestlerContexts.add(wc);
     }
     context.setWrestlers(wrestlerContexts);
