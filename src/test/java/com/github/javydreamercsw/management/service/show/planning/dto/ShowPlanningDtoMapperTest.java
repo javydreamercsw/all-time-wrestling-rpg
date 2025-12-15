@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningWrestlerHeat;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -162,5 +164,59 @@ class ShowPlanningDtoMapperTest {
     assertEquals("Standard Match Rules", dto.getName());
     assertTrue(dto.getWinners().isEmpty());
     assertEquals("Match summary", dto.getSummary());
+  }
+
+  @Test
+  void toDto_wrestlerHeat_mapsCorrectly() {
+    // Given
+    ShowPlanningWrestlerHeat heat = new ShowPlanningWrestlerHeat();
+    heat.setWrestlerName("Wrestler One");
+    heat.setOpponentName("Wrestler Two");
+    heat.setHeat(75);
+
+    // When
+    ShowPlanningWrestlerHeatDTO dto = mapper.toDto(heat);
+
+    // Then
+    assertNotNull(dto);
+    assertEquals("Wrestler One", dto.getWrestlerName());
+    assertEquals("Wrestler Two", dto.getOpponentName());
+    assertEquals(75, dto.getHeat());
+  }
+
+  @Test
+  void toDto_wrestlerHeatWithZeroHeat_mapsCorrectly() {
+    // Given
+    ShowPlanningWrestlerHeat heat = new ShowPlanningWrestlerHeat();
+    heat.setWrestlerName("Wrestler One");
+    heat.setOpponentName("Wrestler Two");
+    heat.setHeat(0);
+
+    // When
+    ShowPlanningWrestlerHeatDTO dto = mapper.toDto(heat);
+
+    // Then
+    assertNotNull(dto);
+    assertEquals("Wrestler One", dto.getWrestlerName());
+    assertEquals("Wrestler Two", dto.getOpponentName());
+    assertEquals(0, dto.getHeat());
+  }
+
+  @Test
+  void toDto_wrestlerHeatWithHighHeat_mapsCorrectly() {
+    // Given
+    ShowPlanningWrestlerHeat heat = new ShowPlanningWrestlerHeat();
+    heat.setWrestlerName("Main Eventer");
+    heat.setOpponentName("Top Heel");
+    heat.setHeat(100);
+
+    // When
+    ShowPlanningWrestlerHeatDTO dto = mapper.toDto(heat);
+
+    // Then
+    assertNotNull(dto);
+    assertEquals("Main Eventer", dto.getWrestlerName());
+    assertEquals("Top Heel", dto.getOpponentName());
+    assertEquals(100, dto.getHeat());
   }
 }

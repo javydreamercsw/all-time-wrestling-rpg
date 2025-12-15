@@ -372,4 +372,150 @@ class ShowPlanningServiceTest {
     assertEquals("Champion", championship.getChampionName());
     assertEquals("Number One Contender", championship.getContenderName());
   }
+
+  @Test
+  void getShowPlanningContext_shouldIncludeWrestlerHeats() {
+    // Given
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("Test Show");
+    when(show.getShowDate()).thenReturn(LocalDate.now());
+    when(show.getId()).thenReturn(1L);
+    ShowType showType = new ShowType();
+    showType.setName("Regular Show Type");
+    showType.setExpectedMatches(5);
+    showType.setExpectedPromos(3);
+    when(show.getType()).thenReturn(showType);
+
+    // Create wrestlers with rivalries
+    Wrestler wrestler1 = Wrestler.builder().build();
+    wrestler1.setId(1L);
+    wrestler1.setName("Wrestler 1");
+    wrestler1.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
+
+    Wrestler wrestler2 = Wrestler.builder().build();
+    wrestler2.setId(2L);
+    wrestler2.setName("Wrestler 2");
+    wrestler2.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
+
+    Wrestler wrestler3 = Wrestler.builder().build();
+    wrestler3.setId(3L);
+    wrestler3.setName("Wrestler 3");
+    wrestler3.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MIDCARDER);
+
+    // Create rivalries
+    Rivalry rivalry1 = new Rivalry();
+    rivalry1.setId(1L);
+    rivalry1.setWrestler1(wrestler1);
+    rivalry1.setWrestler2(wrestler2);
+    rivalry1.setHeat(75);
+
+    Rivalry rivalry2 = new Rivalry();
+    rivalry2.setId(2L);
+    rivalry2.setWrestler1(wrestler1);
+    rivalry2.setWrestler2(wrestler3);
+    rivalry2.setHeat(50);
+
+    // Mock the wrestler service to return our wrestlers
+    when(wrestlerService.findAll()).thenReturn(Arrays.asList(wrestler1, wrestler2, wrestler3));
+
+    // Mock the rivalry service to return appropriate rivalries for each wrestler
+    when(rivalryService.getRivalriesForWrestler(1L)).thenReturn(Arrays.asList(rivalry1, rivalry2));
+    when(rivalryService.getRivalriesForWrestler(2L))
+        .thenReturn(Collections.singletonList(rivalry1));
+    when(rivalryService.getRivalriesForWrestler(3L))
+        .thenReturn(Collections.singletonList(rivalry2));
+
+    // Mock other dependencies
+    when(segmentRepository.findBySegmentDateBetween(any(), any()))
+        .thenReturn(Collections.emptyList());
+    when(rivalryService.getActiveRivalriesBetween(any(), any()))
+        .thenReturn(Collections.emptyList());
+    when(promoBookingService.isPromoSegment(any())).thenReturn(false);
+    when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
+    when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
+    when(factionService.findAll()).thenReturn(Collections.emptyList());
+
+    // Act
+    ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
+
+    // Assert
+    assertNotNull(context);
+    assertNotNull(context.getWrestlerHeats(), "Wrestler heats should not be null");
+    assertFalse(context.getWrestlerHeats().isEmpty(), "Wrestler heats should not be empty");
+
+    // Should have 4 heat entries total (2 for wrestler1, 1 for wrestler2, 1 for wrestler3)
+    assertEquals(4, context.getWrestlerHeats().size(), "Should have 4 wrestler heat entries");
+
+    // Verify wrestler1's heats
+    long wrestler1Heats =
+        context.getWrestlerHeats().stream()
+            .filter(h -> "Wrestler 1".equals(h.getWrestlerName()))
+            .count();
+    assertEquals(2, wrestler1Heats, "Wrestler 1 should have 2 feuds");
+
+    // Verify specific heat values
+    assertTrue(
+        context.getWrestlerHeats().stream()
+            .anyMatch(
+                h ->
+                    "Wrestler 1".equals(h.getWrestlerName())
+                        && "Wrestler 2".equals(h.getOpponentName())
+                        && h.getHeat() == 75),
+        "Should have heat entry for Wrestler 1 vs Wrestler 2 with heat 75");
+
+    assertTrue(
+        context.getWrestlerHeats().stream()
+            .anyMatch(
+                h ->
+                    "Wrestler 1".equals(h.getWrestlerName())
+                        && "Wrestler 3".equals(h.getOpponentName())
+                        && h.getHeat() == 50),
+        "Should have heat entry for Wrestler 1 vs Wrestler 3 with heat 50");
+  }
+
+  @Test
+  void getShowPlanningContext_shouldHandleWrestlersWithNoRivalries() {
+    // Given
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("Test Show");
+    when(show.getShowDate()).thenReturn(LocalDate.now());
+    when(show.getId()).thenReturn(1L);
+    ShowType showType = new ShowType();
+    showType.setName("Regular Show Type");
+    showType.setExpectedMatches(5);
+    showType.setExpectedPromos(3);
+    when(show.getType()).thenReturn(showType);
+
+    // Create wrestlers with no rivalries
+    Wrestler wrestler1 = Wrestler.builder().build();
+    wrestler1.setId(1L);
+    wrestler1.setName("Wrestler 1");
+    wrestler1.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
+
+    // Mock the wrestler service to return our wrestler
+    when(wrestlerService.findAll()).thenReturn(Collections.singletonList(wrestler1));
+
+    // Mock the rivalry service to return empty list (no rivalries)
+    when(rivalryService.getRivalriesForWrestler(1L)).thenReturn(Collections.emptyList());
+
+    // Mock other dependencies
+    when(segmentRepository.findBySegmentDateBetween(any(), any()))
+        .thenReturn(Collections.emptyList());
+    when(rivalryService.getActiveRivalriesBetween(any(), any()))
+        .thenReturn(Collections.emptyList());
+    when(promoBookingService.isPromoSegment(any())).thenReturn(false);
+    when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
+    when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
+    when(factionService.findAll()).thenReturn(Collections.emptyList());
+
+    // Act
+    ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
+
+    // Assert
+    assertNotNull(context);
+    assertNotNull(context.getWrestlerHeats(), "Wrestler heats should not be null");
+    assertTrue(
+        context.getWrestlerHeats().isEmpty(),
+        "Wrestler heats should be empty when no rivalries exist");
+  }
 }
