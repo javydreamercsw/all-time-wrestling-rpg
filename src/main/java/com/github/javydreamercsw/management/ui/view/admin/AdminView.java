@@ -29,11 +29,13 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import jakarta.annotation.security.RolesAllowed;
 import lombok.extern.slf4j.Slf4j;
 
 @Route("admin")
 @PageTitle("Admin")
 @Menu(order = 11, icon = "vaadin:tools", title = "Admin")
+@RolesAllowed("ADMIN")
 @Slf4j
 public class AdminView extends Main {
 

@@ -244,6 +244,23 @@ mvn spotless:apply
 
 This project includes several security measures:
 
+#### Authentication & Authorization
+- **Spring Security**: Full authentication and role-based access control
+- **Default Test Accounts**:
+- Admin: `admin` / `admin123` (Full system access)
+- Booker: `booker` / `booker123` (Content management)
+- Player: `player` / `player123` (Limited access)
+- Viewer: `viewer` / `viewer123` (Read-only)
+- **Account Lockout**: Automatic lockout after 5 failed login attempts (15 minutes)
+- **Remember Me**: Optional 7-day authentication persistence
+- **Password Security**: BCrypt encryption with 10 rounds
+
+⚠️ **Important**: Change default passwords in production!
+
+For detailed security implementation information, see:
+- `SECURITY_PHASE1_COMPLETE.md` - Setup guide
+- `SPRING_SECURITY_IMPLEMENTATION.md` - Full implementation plan
+
 #### Dependency Security
 - **OWASP Dependency Check**: Automated vulnerability scanning of dependencies
 - **GitHub Dependency Review**: PR-based dependency vulnerability detection (public repositories only)

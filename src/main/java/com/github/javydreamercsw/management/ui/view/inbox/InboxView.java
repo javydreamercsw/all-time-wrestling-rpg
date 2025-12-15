@@ -37,6 +37,7 @@ import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import jakarta.annotation.security.PermitAll;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -49,6 +50,7 @@ import org.springframework.data.domain.Sort;
 
 @Route(value = "inbox", layout = MainLayout.class)
 @PageTitle("Inbox")
+@PermitAll
 public class InboxView extends VerticalLayout {
 
   private final InboxService inboxService;

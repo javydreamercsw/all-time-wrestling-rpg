@@ -43,7 +43,7 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -55,7 +55,7 @@ import org.springframework.web.client.RestTemplate;
 @Route("show-planning")
 @PageTitle("Show Planning")
 @Menu(order = 6, icon = "vaadin:calendar", title = "Show Planning")
-@PermitAll
+@RolesAllowed({"ADMIN", "BOOKER"})
 @Slf4j
 public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 

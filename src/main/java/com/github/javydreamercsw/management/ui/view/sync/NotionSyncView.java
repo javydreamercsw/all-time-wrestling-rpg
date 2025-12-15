@@ -48,7 +48,7 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -67,7 +67,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 @Route("notion-sync")
 @PageTitle("Notion Sync")
 @Menu(order = 10, icon = "vaadin:refresh", title = "Notion Sync")
-@PermitAll
+@RolesAllowed("ADMIN")
 @ConditionalOnProperty(name = "notion.sync.enabled", havingValue = "true", matchIfMissing = false)
 @Slf4j
 public class NotionSyncView extends Main {
