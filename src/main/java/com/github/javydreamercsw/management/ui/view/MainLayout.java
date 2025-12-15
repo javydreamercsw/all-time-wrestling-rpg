@@ -158,10 +158,7 @@ public class MainLayout extends AppLayout {
       // Logout button
       Button logoutButton = new Button("Logout", VaadinIcon.SIGN_OUT.create());
       logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
-      logoutButton.addClickListener(
-          e -> {
-            UI.getCurrent().getPage().setLocation("/logout");
-          });
+      logoutButton.addClickListener(e -> securityUtils.logout());
 
       navbar.add(avatar, usernameLabel, logoutButton);
     }

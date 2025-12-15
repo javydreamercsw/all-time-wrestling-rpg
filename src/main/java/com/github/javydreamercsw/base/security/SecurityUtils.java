@@ -181,4 +181,9 @@ public class SecurityUtils {
   public static Optional<Authentication> getAuthentication() {
     return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication());
   }
+
+  /** Logs the user out. */
+  public void logout() {
+    authenticationContext.logout();
+  }
 }
