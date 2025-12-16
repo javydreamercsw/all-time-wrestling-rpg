@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.base.security;
 
-import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.base.Initializable;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.security.access.ConfigAttribute;
@@ -31,7 +31,7 @@ public class RunAsManagerImpl implements RunAsManager {
   @Override
   public Authentication buildRunAs(
       Authentication authentication, Object object, Collection<ConfigAttribute> attributes) {
-    if (object instanceof DataInitializer) {
+    if (object instanceof Initializable) {
       List<GrantedAuthority> newAuthorities = List.of(new SimpleGrantedAuthority("ADMIN"));
       return new UsernamePasswordAuthenticationToken(
           authentication.getPrincipal(), authentication.getCredentials(), newAuthorities);

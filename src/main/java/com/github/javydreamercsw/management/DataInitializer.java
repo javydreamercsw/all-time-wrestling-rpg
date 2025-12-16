@@ -60,7 +60,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
-public class DataInitializer {
+public class DataInitializer implements com.github.javydreamercsw.base.Initializable {
 
   private final boolean enabled;
   private final ShowTemplateService showTemplateService;

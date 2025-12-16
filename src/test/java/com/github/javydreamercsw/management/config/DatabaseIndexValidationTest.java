@@ -147,7 +147,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
           Set<String> columns = new HashSet<>();
 
           // Get all columns for this table
-          try (ResultSet cols = metaData.getColumns(null, null, tableName.toUpperCase(), "% ")) {
+          try (ResultSet cols = metaData.getColumns(null, null, tableName.toUpperCase(), "%")) {
             while (cols.next()) {
               String columnName = cols.getString("COLUMN_NAME").toLowerCase();
               columns.add(columnName);
