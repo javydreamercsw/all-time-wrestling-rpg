@@ -17,8 +17,8 @@
 package com.github.javydreamercsw.management.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.config.TestMethodSecurityConfig;
 import com.github.javydreamercsw.base.security.CustomUserDetailsService;
-import com.github.javydreamercsw.base.security.SecurityConfig;
 import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,17 +29,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest
-@Import(SecurityConfig.class)
+@Import(TestMethodSecurityConfig.class)
 @ActiveProfiles("test")
 public abstract class AbstractControllerTest {
 
   @Autowired protected MockMvc mockMvc;
-
   @MockitoBean protected CustomUserDetailsService customUserDetailsService;
-
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
-
   @MockitoBean protected RequestUtil requestUtil;
-
   @Autowired protected ObjectMapper objectMapper;
 }

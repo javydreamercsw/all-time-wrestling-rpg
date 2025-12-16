@@ -24,24 +24,24 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
+import com.github.javydreamercsw.management.controller.rivalry.RivalryController;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@AutoConfigureWebMvc
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@WithMockUser(username = "testuser", roles = "ADMIN")
-class SegmentSummaryControllerTest {
+@WebMvcTest(RivalryController.class)
+class SegmentSummaryControllerTest extends AbstractControllerTest {
 
   @Autowired private MockMvc mockMvc;
   @MockitoBean private SegmentSummaryService segmentSummaryService;

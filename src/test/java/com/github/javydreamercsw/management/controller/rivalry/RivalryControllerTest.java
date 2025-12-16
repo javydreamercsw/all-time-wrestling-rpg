@@ -43,7 +43,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class RivalryControllerTest extends AbstractControllerTest {
 
   @MockitoBean private RivalryService rivalryService;
-
   @MockitoBean private RivalryMapper rivalryMapper;
   @MockitoBean private RankingService rankingService;
   @MockitoBean private WrestlerRepository wrestlerRepository;
