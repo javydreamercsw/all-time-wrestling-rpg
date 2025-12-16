@@ -14,16 +14,25 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.wrestler;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 
+@DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
 public class WrestlerDTOIntegrationTest extends ManagementIntegrationTest {
+
+  @Autowired private DataInitializer dataInitializer;
+
+  @BeforeEach
+  void setUp() {
+    dataInitializer.init();
+  }
 
   @Test
   void robVanDamMoveSetShouldBePopulatedCorrectly() {
