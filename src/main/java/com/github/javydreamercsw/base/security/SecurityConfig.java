@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.base.security;
 
-import com.vaadin.flow.spring.security.VaadinWebSecurity;
+import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,32 +25,25 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.SecurityFilterChain;
 
 /** Security configuration for the application. */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @RequiredArgsConstructor
-public class SecurityConfig extends VaadinWebSecurity {
+public class SecurityConfig {
 
   private final CustomUserDetailsService userDetailsService;
 
-  @Override
-  protected void configure(HttpSecurity http) throws Exception {
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     // Public access to static resources
     http.authorizeHttpRequests(
-        auth ->
-            auth.requestMatchers(
-                    new AntPathRequestMatcher("/images/**"),
-                    new AntPathRequestMatcher("/icons/**"),
-                    new AntPathRequestMatcher("/public/**"))
-                .permitAll());
+        auth -> auth.requestMatchers("/images/**", "/icons/**", "/public/**").permitAll());
 
-    super.configure(http);
-
-    // Set the login view
-    setLoginView(http, "/login");
+    // Apply Vaadin security configurer and set the login view
+    http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
 
     // Configure remember-me functionality
     http.rememberMe(
@@ -69,6 +62,8 @@ public class SecurityConfig extends VaadinWebSecurity {
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID", "remember-me")
                 .permitAll());
+
+    return http.build();
   }
 
   /**
