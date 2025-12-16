@@ -20,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.DatabaseCleaner;
 import com.github.javydreamercsw.management.controller.season.SeasonController.CreateSeasonRequest;
 import com.github.javydreamercsw.management.controller.season.SeasonController.UpdateSeasonRequest;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -43,7 +44,7 @@ class SeasonControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
-  @Autowired private com.github.javydreamercsw.management.DatabaseCleaner databaseCleaner;
+  @Autowired private DatabaseCleaner databaseCleaner;
 
   @org.junit.jupiter.api.BeforeEach
   void setUp() {

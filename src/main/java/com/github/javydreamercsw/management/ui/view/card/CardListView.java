@@ -43,11 +43,9 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import lombok.NonNull;
 
 @Route("card-list")
@@ -111,9 +109,7 @@ public class CardListView extends Main {
     Checkbox pinField = new Checkbox();
     ComboBox<String> typeField = new ComboBox<>();
     typeField.setItems(
-        Stream.of("Strike", "Grapple", "Aerial", "Throw")
-            .sorted()
-            .collect(Collectors.toList()));
+        Stream.of("Strike", "Grapple", "Aerial", "Throw").sorted().collect(Collectors.toList()));
     typeField.setPlaceholder("Select type");
 
     ComboBox<CardSet> setField = new ComboBox<>();

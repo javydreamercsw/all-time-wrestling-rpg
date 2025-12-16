@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -49,6 +50,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.visibilityOfElementLocated(
                 By.cssSelector(
                     "vaadin-text-field[placeholder='What do you want the card name to be?']")));
+    Assertions.assertNotNull(nameField);
     nameField.sendKeys("New E2E Card");
 
     WebElement createButton = driver.findElement(By.xpath("//vaadin-button[text()='Create']"));
