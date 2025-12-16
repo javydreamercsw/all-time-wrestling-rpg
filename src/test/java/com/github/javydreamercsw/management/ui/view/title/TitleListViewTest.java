@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -50,6 +51,7 @@ class TitleListViewTest extends AbstractViewTest {
 
   @Mock private TitleService titleService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private SecurityUtils securityUtils;
 
   @Mock
   private TeamRepository teamRepository; // Mocked as it's injected but not used in the test setup
@@ -90,7 +92,12 @@ class TitleListViewTest extends AbstractViewTest {
     when(titleService.findByName("Test Title")).thenReturn(Optional.of(testTitle));
     when(titleService.deleteTitle(anyLong())).thenReturn(true); // Mock delete to return true
 
-    titleListView = new TitleListView(titleService, wrestlerService);
+    // Mock SecurityUtils
+    when(securityUtils.canCreate()).thenReturn(true);
+    when(securityUtils.canEdit()).thenReturn(true);
+    when(securityUtils.canDelete()).thenReturn(true);
+
+    titleListView = new TitleListView(titleService, wrestlerService, securityUtils);
   }
 
   @Test

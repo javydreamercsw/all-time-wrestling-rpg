@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
@@ -114,8 +115,14 @@ class ShowStyleUIIntegrationTest extends ManagementIntegrationTest {
   void shouldApplyCorrectStylesInShowListView() {
     SeasonService seasonService = mock(SeasonService.class);
     Clock clock = mock(Clock.class);
+    SecurityUtils securityUtils = mock(SecurityUtils.class); // Mock SecurityUtils
+    when(securityUtils.canCreate()).thenReturn(true); // Default to true for tests
+    when(securityUtils.canEdit()).thenReturn(true); // Default to true for tests
+    when(securityUtils.canDelete()).thenReturn(true); // Default to true for tests
+
     ShowListView showListView =
-        new ShowListView(showService, showTypeService, seasonService, showTemplateService, clock);
+        new ShowListView(
+            showService, showTypeService, seasonService, showTemplateService, securityUtils, clock);
     Grid<Show> grid = showListView.showGrid;
 
     // Test the part name generator
@@ -147,6 +154,7 @@ class ShowStyleUIIntegrationTest extends ManagementIntegrationTest {
     UI.setCurrent(ui);
     VaadinSession session = mock(VaadinSession.class);
     when(session.getLocale()).thenReturn(Locale.US);
+    when(session.getService()).thenReturn(mock(com.vaadin.flow.server.VaadinService.class));
     ui.getInternals().setSession(session);
 
     ShowCalendarView showCalendarView = new ShowCalendarView(showService);

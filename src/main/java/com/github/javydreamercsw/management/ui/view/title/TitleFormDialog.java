@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.title;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 
 public class TitleFormDialog extends Dialog {
 
@@ -43,28 +45,38 @@ public class TitleFormDialog extends Dialog {
   private final Binder<Title> binder = new Binder<>(Title.class);
 
   public TitleFormDialog(
-      TitleService titleService, WrestlerService wrestlerService, Title title, Runnable onSave) {
+      @NonNull TitleService titleService,
+      @NonNull WrestlerService wrestlerService,
+      @NonNull Title title,
+      @NonNull Runnable onSave,
+      @NonNull SecurityUtils securityUtils) {
     this.title = title;
 
     TextField name = new TextField("Name");
+    name.setReadOnly(!securityUtils.canEdit());
     TextArea description = new TextArea("Description");
+    description.setReadOnly(!securityUtils.canEdit());
     ComboBox<WrestlerTier> tier = new ComboBox<>("Tier");
     tier.setItems(
         Arrays.stream(WrestlerTier.values())
             .sorted(Comparator.comparing(WrestlerTier::name))
             .collect(Collectors.toList()));
+    tier.setReadOnly(!securityUtils.canEdit());
     ComboBox<Gender> gender = new ComboBox<>("Gender");
     gender.setItems(
         Arrays.stream(Gender.values())
             .sorted(Comparator.comparing(Gender::name))
             .collect(Collectors.toList()));
+    gender.setReadOnly(!securityUtils.canEdit());
     Checkbox isActive = new Checkbox("Active");
+    isActive.setReadOnly(!securityUtils.canEdit());
     MultiSelectComboBox<Wrestler> champion = new MultiSelectComboBox<>("Champion(s)");
     champion.setItems(
         wrestlerService.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
     champion.setItemLabelGenerator(Wrestler::getName);
+    champion.setReadOnly(!securityUtils.canEdit());
 
     binder.forField(name).asRequired().bind(Title::getName, Title::setName);
     binder.bind(description, Title::getDescription, Title::setDescription);
@@ -97,6 +109,7 @@ public class TitleFormDialog extends Dialog {
                 close();
               }
             });
+    saveButton.setVisible(securityUtils.canEdit());
     Button cancelButton = new Button("Cancel", event -> close());
     getFooter().add(new HorizontalLayout(saveButton, cancelButton));
 

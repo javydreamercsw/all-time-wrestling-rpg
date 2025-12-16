@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -48,6 +49,7 @@ class FactionListViewTest {
 
   @Mock private FactionService factionService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private SecurityUtils securityUtils;
 
   private FactionListView factionListView;
   private List<Faction> testFactions;
@@ -64,9 +66,12 @@ class FactionListViewTest {
     // Mock service responses
     when(factionService.findAllWithMembersAndTeams()).thenReturn(testFactions);
     when(wrestlerService.findAll()).thenReturn(testWrestlers);
+    when(securityUtils.canCreate()).thenReturn(true);
+    when(securityUtils.canEdit()).thenReturn(true);
+    when(securityUtils.canDelete()).thenReturn(true);
 
     // Create the view
-    factionListView = new FactionListView(factionService, wrestlerService);
+    factionListView = new FactionListView(factionService, wrestlerService, securityUtils);
   }
 
   @Test
@@ -123,7 +128,7 @@ class FactionListViewTest {
     when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
 
     // When
-    FactionListView emptyView = new FactionListView(factionService, wrestlerService);
+    FactionListView emptyView = new FactionListView(factionService, wrestlerService, securityUtils);
 
     // Then
     assertNotNull(emptyView);
@@ -174,7 +179,7 @@ class FactionListViewTest {
     // Given - services are mocked
 
     // When
-    FactionListView view = new FactionListView(factionService, wrestlerService);
+    FactionListView view = new FactionListView(factionService, wrestlerService, securityUtils);
 
     // Then
     assertNotNull(view);

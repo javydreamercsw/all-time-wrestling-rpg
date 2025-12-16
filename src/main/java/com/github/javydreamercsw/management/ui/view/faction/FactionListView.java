@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.faction;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -70,6 +71,7 @@ public class FactionListView extends Main {
 
   private final FactionService factionService;
   private final WrestlerService wrestlerService;
+  private final SecurityUtils securityUtils;
   private Dialog editDialog;
   private Faction editingFaction;
   private Binder<Faction> binder;
@@ -77,9 +79,13 @@ public class FactionListView extends Main {
   final Button createBtn;
   final Grid<Faction> factionGrid;
 
-  public FactionListView(FactionService factionService, WrestlerService wrestlerService) {
+  public FactionListView(
+      @NonNull FactionService factionService,
+      @NonNull WrestlerService wrestlerService,
+      @NonNull SecurityUtils securityUtils) {
     this.factionService = factionService;
     this.wrestlerService = wrestlerService;
+    this.securityUtils = securityUtils;
 
     // Create form components
     name = new TextField();
@@ -93,6 +99,7 @@ public class FactionListView extends Main {
     createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     createBtn.setId("create-faction-button");
     createBtn.addClickListener(e -> openCreateDialog());
+    createBtn.setVisible(securityUtils.canCreate());
 
     // Initialize grid
     factionGrid = new Grid<>(Faction.class, false);
@@ -179,6 +186,7 @@ public class FactionListView extends Main {
               editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
               editBtn.setId("edit-" + faction.getId());
               editBtn.addClickListener(e -> openEditDialog(faction));
+              editBtn.setVisible(securityUtils.canEdit());
 
               Button membersBtn = new Button("Members", new Icon(VaadinIcon.GROUP));
               membersBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
@@ -189,6 +197,7 @@ public class FactionListView extends Main {
               deleteBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
               deleteBtn.setId("delete-" + faction.getId());
               deleteBtn.addClickListener(e -> deleteFaction(faction));
+              deleteBtn.setVisible(securityUtils.canDelete());
 
               actions.add(viewBtn, editBtn, membersBtn, deleteBtn);
               return actions;
@@ -246,6 +255,7 @@ public class FactionListView extends Main {
     Button saveBtn = new Button("Save", e -> saveFaction());
     saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveBtn.setId("save-button");
+    saveBtn.setVisible(securityUtils.canEdit());
 
     Button cancelBtn = new Button("Cancel", e -> editDialog.close());
 
@@ -501,6 +511,7 @@ public class FactionListView extends Main {
                           .addThemeVariants(NotificationVariant.LUMO_ERROR);
                     }
                   });
+              removeBtn.setVisible(securityUtils.canEdit());
               return removeBtn;
             })
         .setHeader("Actions");
@@ -550,6 +561,7 @@ public class FactionListView extends Main {
 
     HorizontalLayout addMemberLayout = new HorizontalLayout(wrestlerCombo, addBtn);
     addMemberLayout.setAlignItems(HorizontalLayout.Alignment.END);
+    addMemberLayout.setVisible(securityUtils.canEdit());
 
     // Close button
     Button closeBtn = new Button("Close", e -> membersDialog.close());

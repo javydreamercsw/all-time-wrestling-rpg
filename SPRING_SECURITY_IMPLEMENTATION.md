@@ -71,7 +71,7 @@
 
 ## Implementation Phases
 
-### Phase 1: Foundation & Security Setup ✅ (COMPLETED)
+### Phase 1: Foundation & Security Setup ✅ (COMMITTED - December 14, 2025)
 **Goal:** Get basic authentication working
 
 1. ✅ Add Spring Security dependency to pom.xml
@@ -95,26 +95,28 @@
 - Placeholder logo (emoji 🤼)
 - Error handling
 6. ✅ Update MainLayout with user info and logout button
-7. ⏳ Test basic login/logout functionality (NEXT)
+7. ✅ Add security annotations to all views
+8. ✅ Fix MainView final modifier issue
+9. ✅ Generate correct BCrypt password hashes
+10. ✅ Test basic login/logout functionality
 
-**Deliverable:** Can log in with default admin account
+**Deliverable:** ✅ Can log in with default admin account - COMPLETE!
+**Status:** Committed to feature branch
 
 ---
 
-### Phase 2: View-Level Access Control 🚦
-**Goal:** Restrict view access based on roles
+### Phase 2: View-Level Access Control ✅ (COMMITTED - December 14, 2025)
+**Goal:** Restrict view access based on roles and filter menu items
 
-7. 🔨 Update all view classes with appropriate annotations:
-- Admin-only: `@RolesAllowed("ADMIN")`
-- Booker+: `@RolesAllowed({"ADMIN", "BOOKER"})`
-- Most views: `@RolesAllowed({"ADMIN", "BOOKER", "PLAYER", "VIEWER"})`
-8. 🔨 Update MainLayout:
-- Show username and logout button
-- Hide menu items based on role
-9. 🔨 Create AccessDeniedView for unauthorized access
-10. 🔨 Test role-based view access
+7. ✅ Add role annotations to all views using RoleName constants
+8. ✅ Enhanced MenuItem class with role requirements
+9. ✅ Updated MenuService with filtering logic
+10. ✅ Implemented recursive menu filtering
+11. ✅ Created BookerView and PlayerView (placeholders)
+12. ✅ Restricted Entities menu to ADMIN only
+13. ✅ Test role-based menu visibility
 
-**Deliverable:** Different roles see different views
+**Deliverable:** ✅ Different roles see different menu items - COMMITTED!
 
 ---
 
@@ -350,9 +352,10 @@ enum RoleName {
 
 ## Progress Tracking
 
-**Current Phase:** Phase 1 - Foundation & Security Setup (Testing)
+**Current Phase:** Phase 3 - Method-Level Security
 **Started:** December 14, 2025
-**Phase 1 Completed:** December 14, 2025
+**Phase 2 Completed:** December 14, 2025
+**Phase 1 Committed:** December 14, 2025
 **Target Completion:** TBD
 
 ### Completed Tasks
@@ -365,13 +368,23 @@ enum RoleName {
 - ✅ LoginView with placeholder logo
 - ✅ AccessDeniedView
 - ✅ MainLayout updated with user info and logout
+- ✅ All views annotated with security annotations
+- ✅ MainView final modifier removed
+- ✅ BCrypt password hashes corrected
+- ✅ Phase 1 tested and working
+- ✅ **Phase 1 committed to feature branch**
+- ✅ MenuItem enhanced with role requirements
+- ✅ MenuService updated with filtering logic
+- ✅ Menu filtering tested with all 4 roles
+- ✅ **Phase 2 complete - menu filtering working**
 
 ### In Progress
-- 🔨 Testing Phase 1 implementation
+- ⏳ Preparing Phase 3 documentation
 
 ### Next Up
-- ⏳ Build and test the application
-- ⏳ Start Phase 2: View-Level Access Control
+- ⏳ Add @PreAuthorize annotations to service methods
+- ⏳ Implement ownership checks for PLAYER role
+- ⏳ Test method-level security
 
 ---
 

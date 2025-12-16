@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -103,6 +104,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final HorizontalLayout header;
   private final Image wrestlerImage = new Image();
   private final VerticalLayout nameDetailsAndStatsLayout = new VerticalLayout();
+
+  @Autowired private SecurityUtils securityUtils;
 
   @Autowired
   public WrestlerProfileView(
@@ -219,7 +222,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     if (wrestler != null && wrestler.getId() != null) {
       header.getChildren().filter(c -> c instanceof WrestlerActionMenu).forEach(header::remove);
       header.add(
-          new WrestlerActionMenu(wrestler, wrestlerService, injuryService, this::updateView, true));
+          new WrestlerActionMenu(
+              wrestler, wrestlerService, injuryService, this::updateView, true, securityUtils));
       wrestlerName.setText(wrestler.getName());
       wrestlerDetails.setText(
           String.format("Gender: %s, Fans: %d", wrestler.getGender(), wrestler.getFans()));

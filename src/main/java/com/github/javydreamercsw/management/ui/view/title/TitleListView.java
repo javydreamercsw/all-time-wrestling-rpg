@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.title;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -55,12 +56,16 @@ public class TitleListView extends Main {
 
   private final TitleService titleService;
   private final WrestlerService wrestlerService;
+  private final SecurityUtils securityUtils;
   public final Grid<Title> grid = new Grid<>(Title.class, false);
 
   public TitleListView(
-      @NonNull TitleService titleService, @NonNull WrestlerService wrestlerService) {
+      @NonNull TitleService titleService,
+      @NonNull WrestlerService wrestlerService,
+      @NonNull SecurityUtils securityUtils) {
     this.titleService = titleService;
     this.wrestlerService = wrestlerService;
+    this.securityUtils = securityUtils;
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -74,6 +79,7 @@ public class TitleListView extends Main {
     Button createButton = new Button("Create Title", new Icon(VaadinIcon.PLUS));
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     createButton.addClickListener(e -> openCreateDialog());
+    createButton.setVisible(securityUtils.canCreate());
 
     add(new ViewToolbar("Title List", ViewToolbar.group(createButton)));
 
@@ -102,6 +108,7 @@ public class TitleListView extends Main {
               contenderComboBox.setItemLabelGenerator(Wrestler::getName);
               contenderComboBox.setWidthFull();
               contenderComboBox.setClearButtonVisible(true); // Allow clearing the field
+              contenderComboBox.setEnabled(securityUtils.canEdit());
 
               // Set initial value if a contender exists
               title.getContender().stream().findFirst().ifPresent(contenderComboBox::setValue);
@@ -157,10 +164,12 @@ public class TitleListView extends Main {
               Button editButton = new Button("Edit", new Icon(VaadinIcon.EDIT));
               editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
               editButton.addClickListener(e -> openEditDialog(title));
+              editButton.setVisible(securityUtils.canEdit());
 
               Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
               deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
               deleteButton.addClickListener(e -> deleteTitle(title));
+              deleteButton.setVisible(securityUtils.canDelete());
 
               return new HorizontalLayout(editButton, deleteButton);
             })
@@ -176,14 +185,15 @@ public class TitleListView extends Main {
     Title newTitle = new Title();
     newTitle.setIsActive(true);
     TitleFormDialog dialog =
-        new TitleFormDialog(titleService, wrestlerService, newTitle, this::refreshGrid);
+        new TitleFormDialog(
+            titleService, wrestlerService, newTitle, this::refreshGrid, securityUtils);
     dialog.setHeaderTitle("Create New Title");
     dialog.open();
   }
 
   private void openEditDialog(@NonNull Title title) {
     TitleFormDialog dialog =
-        new TitleFormDialog(titleService, wrestlerService, title, this::refreshGrid);
+        new TitleFormDialog(titleService, wrestlerService, title, this::refreshGrid, securityUtils);
     dialog.setHeaderTitle("Edit Title: " + title.getName());
     dialog.open();
   }

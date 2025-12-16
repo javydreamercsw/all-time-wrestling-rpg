@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.component;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -48,7 +49,8 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull WrestlerService wrestlerService,
       @NonNull InjuryService injuryService,
       @NonNull Runnable refreshProvider,
-      boolean isProfileView) {
+      boolean isProfileView,
+      @NonNull SecurityUtils securityUtils) {
     addThemeVariants(MenuBarVariant.LUMO_PRIMARY);
     MenuItem menuItem = addItem("Actions");
     SubMenu subMenu = menuItem.getSubMenu();
@@ -73,6 +75,7 @@ public class WrestlerActionMenu extends MenuBar {
             });
     editItem.addComponentAsFirst(new Icon(VaadinIcon.EDIT));
     editItem.setId("edit-" + wrestler.getId());
+    editItem.setVisible(securityUtils.canEdit());
 
     MenuItem deleteItem =
         subMenu.addItem(
@@ -89,9 +92,10 @@ public class WrestlerActionMenu extends MenuBar {
             });
     deleteItem.addComponentAsFirst(new Icon(VaadinIcon.TRASH));
     deleteItem.setId("delete-" + wrestler.getId());
+    deleteItem.setVisible(securityUtils.canDelete());
 
-    subMenu
-        .addItem(
+    MenuItem addFansItem =
+        subMenu.addItem(
             "Add Fans",
             e -> {
               Dialog dialog = new Dialog();
@@ -120,8 +124,9 @@ public class WrestlerActionMenu extends MenuBar {
               dialog.add(
                   new VerticalLayout(fanAmount, new HorizontalLayout(confirmButton, cancelButton)));
               dialog.open();
-            })
-        .addComponentAsFirst(new Icon(VaadinIcon.PLUS));
+            });
+    addFansItem.addComponentAsFirst(new Icon(VaadinIcon.PLUS));
+    addFansItem.setVisible(securityUtils.canEdit());
 
     MenuItem removeFansItem =
         subMenu.addItem(
@@ -157,6 +162,7 @@ public class WrestlerActionMenu extends MenuBar {
             });
     removeFansItem.addComponentAsFirst(new Icon(VaadinIcon.MINUS));
     removeFansItem.setEnabled(wrestler.getFans() > 0);
+    removeFansItem.setVisible(securityUtils.canEdit());
 
     MenuItem addBumpItem =
         subMenu.addItem(
@@ -170,6 +176,8 @@ public class WrestlerActionMenu extends MenuBar {
             });
     addBumpItem.setId("add-bump-" + wrestler.getId());
     addBumpItem.addComponentAsFirst(new Icon(VaadinIcon.PLUS_CIRCLE));
+    addBumpItem.setVisible(securityUtils.canEdit());
+
     MenuItem healBump =
         subMenu.addItem(
             "Heal Bump",
@@ -185,6 +193,7 @@ public class WrestlerActionMenu extends MenuBar {
     healBump.addComponentAsFirst(new Icon(VaadinIcon.HEART));
     healBump.setId("heal-bump-" + wrestler.getId());
     healBump.setEnabled(wrestler.getBumps() > 0);
+    healBump.setVisible(securityUtils.canEdit());
 
     MenuItem manageInjuriesItem =
         subMenu.addItem(
@@ -196,5 +205,6 @@ public class WrestlerActionMenu extends MenuBar {
             });
     manageInjuriesItem.setId("manage-injuries-" + wrestler.getId());
     manageInjuriesItem.addComponentAsFirst(new Icon(VaadinIcon.AMBULANCE));
+    manageInjuriesItem.setVisible(securityUtils.canEdit());
   }
 }

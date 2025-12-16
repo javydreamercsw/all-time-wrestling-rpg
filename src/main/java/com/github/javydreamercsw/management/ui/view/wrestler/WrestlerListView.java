@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
@@ -49,11 +50,15 @@ import lombok.NonNull;
 public class WrestlerListView extends Main {
 
   private final WrestlerService wrestlerService;
+  private final SecurityUtils securityUtils;
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(
-      @NonNull WrestlerService wrestlerService, @NonNull InjuryService injuryService) {
+      @NonNull WrestlerService wrestlerService,
+      @NonNull InjuryService injuryService,
+      @NonNull SecurityUtils securityUtils) {
     this.wrestlerService = wrestlerService;
+    this.securityUtils = securityUtils;
     wrestlerGrid = new Grid<>();
     wrestlerGrid.setItems(query -> wrestlerService.list(toSpringPageRequest(query)).stream());
 
@@ -103,7 +108,8 @@ public class WrestlerListView extends Main {
                       wrestlerService,
                       injuryService,
                       wrestlerGrid.getDataProvider()::refreshAll,
-                      false);
+                      false,
+                      securityUtils);
               wrestlerActionMenu.setId("action-menu-" + wrestler.getId());
               return wrestlerActionMenu;
             })
@@ -120,7 +126,12 @@ public class WrestlerListView extends Main {
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Gap.SMALL);
 
-    add(new ViewToolbar("Wrestler List", createWrestlerButton()));
+    Button createButton = createWrestlerButton();
+    if (securityUtils.canCreate()) {
+      add(new ViewToolbar("Wrestler List", createButton));
+    } else {
+      add(new ViewToolbar("Wrestler List"));
+    }
     add(wrestlerGrid);
   }
 
@@ -135,6 +146,7 @@ public class WrestlerListView extends Main {
             });
     button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     button.setId("create-wrestler-button");
+    button.setVisible(securityUtils.canCreate());
     return button;
   }
 }
