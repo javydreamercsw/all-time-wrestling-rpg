@@ -42,7 +42,6 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.Collectors;
@@ -55,18 +54,13 @@ import lombok.NonNull;
 public class CardListView extends Main {
 
   private final CardService cardService;
-  private final CardSetService cardSetService;
 
   final TextField name;
   final Button createBtn;
   final Grid<Card> cardGrid;
 
-  public CardListView(
-      @NonNull CardService cardService,
-      @NonNull CardSetService cardSetService,
-      @NonNull Clock clock) {
+  public CardListView(@NonNull CardService cardService, @NonNull CardSetService cardSetService) {
     this.cardService = cardService;
-    this.cardSetService = cardSetService;
 
     name = new TextField();
     name.setPlaceholder("What do you want the card name to be?");

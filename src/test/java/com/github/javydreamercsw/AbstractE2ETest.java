@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw;
 
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.io.File;
@@ -43,6 +44,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -55,8 +57,9 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
-
   @LocalServerPort protected int serverPort;
+
+  @Autowired private DataInitializer dataInitializer;
 
   @Value("${server.servlet.context-path}")
   @Getter
@@ -77,6 +80,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       options.addArguments("--disable-dev-shm-usage");
     }
     driver = new ChromeDriver(options);
+    dataInitializer.init();
   }
 
   @AfterEach

@@ -104,7 +104,8 @@ public class MainLayout extends AppLayout {
   }
 
   private Div createFooter() {
-    Span versionSpan = new Span("Version: " + buildProperties.getVersion());
+    String version = buildProperties != null ? buildProperties.getVersion() : "N/A";
+    Span versionSpan = new Span("Version: " + version);
     versionSpan.addClassNames(
         FontSize.XSMALL, TextColor.SECONDARY, Padding.Top.SMALL, Padding.Bottom.SMALL);
     Anchor githubLink =
