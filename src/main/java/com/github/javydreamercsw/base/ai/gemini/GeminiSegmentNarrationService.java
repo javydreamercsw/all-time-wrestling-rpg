@@ -19,14 +19,19 @@ package com.github.javydreamercsw.base.ai.gemini;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,7 +115,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
                   "topP",
                   0.95,
                   "maxOutputTokens",
-                  4000, // Much longer output for detailed segment narration (up to ~3000 words)
+                  8000, // Much longer output for detailed segment narration (up to ~6000 words)
                   "stopSequences",
                   List.of()),
               "safetySettings",
@@ -148,18 +153,27 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
               .build();
 
       // Send request and get response
-      HttpResponse<String> response =
-          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      HttpResponse<InputStream> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
       if (response.statusCode() == 200) {
-        return extractContentFromResponse(response.body());
+        try (InputStream responseBody = response.body()) {
+          String text =
+              new BufferedReader(new InputStreamReader(responseBody, StandardCharsets.UTF_8))
+                  .lines()
+                  .collect(Collectors.joining("\n"));
+          return extractContentFromResponse(text);
+        }
       } else {
         // Throw custom exception for AI service errors
-        throw new AIServiceException(
-            response.statusCode(),
-            "Gemini API Error",
-            getProviderName(),
-            "Gemini API returned an error: " + response.body());
+        try (InputStream responseBody = response.body()) {
+          String errorText =
+              new BufferedReader(new InputStreamReader(responseBody, StandardCharsets.UTF_8))
+                  .lines()
+                  .collect(Collectors.joining("\n"));
+          throw new AIServiceException(
+              response.statusCode(), "Gemini API Error", getProviderName(), errorText);
+        }
       }
 
     } catch (Exception e) {
