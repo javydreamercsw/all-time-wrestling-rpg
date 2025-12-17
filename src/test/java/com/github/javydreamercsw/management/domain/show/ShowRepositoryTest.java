@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.show;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.github.javydreamercsw.management.ManagementDataJpaTest;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -26,11 +27,9 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
-@DataJpaTest
-class ShowRepositoryTest {
+class ShowRepositoryTest extends ManagementDataJpaTest {
 
   @Autowired private TestEntityManager entityManager;
 
