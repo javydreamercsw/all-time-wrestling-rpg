@@ -28,7 +28,6 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
-import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
@@ -83,7 +82,10 @@ class ShowPlanningViewTest {
     // Create a mock ShowPlanningContext
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
     when(restTemplate.exchange(
-            any(String.class), eq(HttpMethod.GET), any(HttpEntity.class), eq(ShowPlanningContextDTO.class)))
+            any(String.class),
+            eq(HttpMethod.GET),
+            any(HttpEntity.class),
+            eq(ShowPlanningContextDTO.class)))
         .thenReturn(ResponseEntity.of(Optional.of(context)));
 
     // Mock the ObjectMapper
@@ -132,7 +134,10 @@ class ShowPlanningViewTest {
     proposedShow.setSegments(Arrays.asList(segment1, segment2));
 
     when(restTemplate.exchange(
-            any(String.class), eq(HttpMethod.GET), any(HttpEntity.class), eq(ShowPlanningContextDTO.class)))
+            any(String.class),
+            eq(HttpMethod.GET),
+            any(HttpEntity.class),
+            eq(ShowPlanningContextDTO.class)))
         .thenReturn(ResponseEntity.of(Optional.of(context)));
     when(restTemplate.exchange(
             any(String.class), eq(HttpMethod.POST), any(HttpEntity.class), eq(ProposedShow.class)))
@@ -188,7 +193,10 @@ class ShowPlanningViewTest {
     proposedShow.setSegments(List.of(segment1));
 
     when(restTemplate.exchange(
-            any(String.class), eq(HttpMethod.GET), any(HttpEntity.class), eq(ShowPlanningContextDTO.class)))
+            any(String.class),
+            eq(HttpMethod.GET),
+            any(HttpEntity.class),
+            eq(ShowPlanningContextDTO.class)))
         .thenReturn(ResponseEntity.of(Optional.of(context)));
     when(restTemplate.exchange(
             any(String.class), eq(HttpMethod.POST), any(HttpEntity.class), eq(ProposedShow.class)))
