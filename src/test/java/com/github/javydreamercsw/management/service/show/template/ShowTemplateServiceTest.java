@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.management.AbstractTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -32,14 +32,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
-class ShowTemplateServiceTest {
+class ShowTemplateServiceTest extends AbstractTest {
   @Autowired private ShowTemplateRepository repository;
   @Autowired private ShowTemplateService service;
   @Autowired private ShowTypeService showTypeService;
-  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   @BeforeEach
   void setUp() {

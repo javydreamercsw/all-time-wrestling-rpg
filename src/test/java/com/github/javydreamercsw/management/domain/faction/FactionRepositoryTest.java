@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.domain.faction;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.management.ManagementDataJpaTest;
+import com.github.javydreamercsw.management.AbstractTest;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -26,16 +26,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 /**
  * Integration tests for FactionRepository. Tests the new findByExternalId method and existing
  * functionality.
  */
-class FactionRepositoryTest extends ManagementDataJpaTest {
+@DataJpaTest
+class FactionRepositoryTest extends AbstractTest {
 
   @Autowired private TestEntityManager entityManager;
-
   @Autowired private FactionRepository factionRepository;
 
   private Faction testFaction;
