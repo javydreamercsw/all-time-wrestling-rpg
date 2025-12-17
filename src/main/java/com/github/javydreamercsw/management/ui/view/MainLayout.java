@@ -105,7 +105,6 @@ public class MainLayout extends AppLayout {
   }
 
   private Div createFooter() {
-    String version = buildProperties != null ? buildProperties.getVersion() : "N/A";
     Span versionSpan;
     if (buildProperties != null) {
       versionSpan = new Span("Version: " + buildProperties.getVersion());
@@ -151,7 +150,7 @@ public class MainLayout extends AppLayout {
         Padding.Vertical.SMALL,
         Gap.MEDIUM);
 
-    if (securityUtils != null && securityUtils.isAuthenticated()) {
+    if (securityUtils.isAuthenticated()) {
       String username = securityUtils.getCurrentUsername();
 
       // User avatar
@@ -194,31 +193,27 @@ public class MainLayout extends AppLayout {
                     });
               }
             });
-    if (injuryBroadcaster != null) {
-      injuryBroadcasterRegistration =
-          injuryBroadcaster.register(
-              event -> {
-                if (ui.isAttached()) {
-                  ui.access(
-                      () -> {
-                        String message =
-                            String.format(
-                                "%s's injury (%s) has been healed!",
-                                event.getWrestler().getName(), event.getInjury().getName());
-                        Notification.show(message, 3000, Notification.Position.BOTTOM_END)
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                      });
-                }
-              });
-    }
+    injuryBroadcasterRegistration =
+        injuryBroadcaster.register(
+            event -> {
+              if (ui.isAttached()) {
+                ui.access(
+                    () -> {
+                      String message =
+                          String.format(
+                              "%s's injury (%s) has been healed!",
+                              event.getWrestler().getName(), event.getInjury().getName());
+                      Notification.show(message, 3000, Notification.Position.BOTTOM_END)
+                          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                    });
+              }
+            });
   }
 
   @Override
   protected void onDetach(DetachEvent detachEvent) {
     super.onDetach(detachEvent);
     broadcasterRegistration.remove();
-    if (injuryBroadcasterRegistration != null) {
-      injuryBroadcasterRegistration.remove();
-    }
+    injuryBroadcasterRegistration.remove();
   }
 }
