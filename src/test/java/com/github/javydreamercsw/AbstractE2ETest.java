@@ -48,12 +48,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
 @ExtendWith(UITestWatcher.class)
 @Slf4j
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = Application.class)
+@ActiveProfiles("e2e")
 @Import(TestE2ESecurityConfig.class)
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
