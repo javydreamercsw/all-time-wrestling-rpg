@@ -78,7 +78,7 @@ public class MainLayout extends AppLayout {
       SecurityUtils securityUtils) {
     this.menuService = menuService;
     this.injuryBroadcaster = injuryBroadcaster;
-    this.buildProperties = buildProperties;
+    this.buildProperties = buildProperties.orElse(null);
     this.securityUtils = securityUtils;
     setPrimarySection(Section.DRAWER);
 
