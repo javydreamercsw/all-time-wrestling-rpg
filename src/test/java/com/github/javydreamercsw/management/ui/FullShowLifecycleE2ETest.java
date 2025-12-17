@@ -53,7 +53,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
-@WithMockUser(roles = "ADMIN")
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SHOW_TYPE_NAME = "Weekly";
   private static final String SEASON_NAME = "Test Season";
@@ -180,7 +179,6 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
       // Fill in the form
-      log.info("Filling out new show form");
       Objects.requireNonNull(
               wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-name"))))
           .sendKeys(showName);
