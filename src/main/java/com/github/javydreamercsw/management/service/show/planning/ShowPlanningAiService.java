@@ -373,20 +373,52 @@ public class ShowPlanningAiService {
     String jsonMarker = "```json";
     int jsonStart = input.indexOf(jsonMarker);
     if (jsonStart != -1) {
+      // Find the opening bracket after the marker
       int startIndex = input.indexOf('[', jsonStart + jsonMarker.length());
-      int endIndex = input.lastIndexOf(']');
-      if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+      if (startIndex != -1) {
+        // Find the corresponding closing bracket
+        int balance = 1;
+        int endIndex = -1;
+        for (int i = startIndex + 1; i < input.length(); i++) {
+          char c = input.charAt(i);
+          if (c == '[') {
+            balance++;
+          } else if (c == ']') {
+            balance--;
+          }
+          if (balance == 0) {
+            endIndex = i;
+            break;
+          }
+        }
+        if (endIndex != -1) {
+          return input.substring(startIndex, endIndex + 1);
+        }
+      }
+    }
+
+    // Fallback for cases where the marker is not present or the extraction fails
+    int startIndex = input.indexOf('[');
+    if (startIndex != -1) {
+      int balance = 1;
+      int endIndex = -1;
+      for (int i = startIndex + 1; i < input.length(); i++) {
+        char c = input.charAt(i);
+        if (c == '[') {
+          balance++;
+        } else if (c == ']') {
+          balance--;
+        }
+        if (balance == 0) {
+          endIndex = i;
+          break;
+        }
+      }
+      if (endIndex != -1) {
         return input.substring(startIndex, endIndex + 1);
       }
     }
 
-    // Fallback to original method
-    int startIndex = input.indexOf('[');
-    int endIndex = input.lastIndexOf(']');
-
-    if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
-      return input.substring(startIndex, endIndex + 1);
-    }
     return null;
   }
 }
