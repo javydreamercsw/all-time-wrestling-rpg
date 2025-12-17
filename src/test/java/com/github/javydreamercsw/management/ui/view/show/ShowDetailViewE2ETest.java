@@ -77,7 +77,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(
                 By.xpath("//vaadin-button[text()='Add Segment']")));
-    clickAndScrollIntoView(addSegmentButton);
+    clickElement(addSegmentButton);
 
     // Wait for the dialog to open
     WebElement dialog =
@@ -89,7 +89,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     segmentTypeComboBox.sendKeys("Singles Match", Keys.RETURN);
 
     WebElement wrestlersComboBox = dialog.findElement(By.id("wrestlers-combo-box"));
-    clickAndScrollIntoView(wrestlersComboBox);
+    clickElement(wrestlersComboBox);
 
     wrestlersComboBox.sendKeys("Wrestler 1", Keys.RETURN, "Wrestler 2", Keys.RETURN);
 
@@ -109,7 +109,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
 
     // Click the "Add Segment" button in the dialog
     WebElement addSegmentDialogButton = dialog.findElement(By.id("add-segment-save-button"));
-    clickAndScrollIntoView(addSegmentDialogButton);
+    clickElement(addSegmentDialogButton);
 
     // Wait for the dialog to go away
     wait.until(ExpectedConditions.invisibilityOfAllElements(dialog));

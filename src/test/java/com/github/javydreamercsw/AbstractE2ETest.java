@@ -163,9 +163,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   /**
    * Scrolls the given WebElement into view and clicks it using JavaScript.
    *
+   * @param selector the WebElement to scroll into view and click
+   */
+  protected void clickElement(@NonNull By selector) {
+    clickElement(driver.findElement(selector));
+  }
+
+  /**
+   * Scrolls the given WebElement into view and clicks it using JavaScript.
+   *
    * @param element the WebElement to scroll into view and click
    */
-  protected void clickAndScrollIntoView(@NonNull WebElement element) {
+  protected void clickElement(@NonNull WebElement element) {
     scrollIntoView(element);
     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
   }

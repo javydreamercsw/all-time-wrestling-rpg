@@ -49,9 +49,11 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
+@WithMockUser(roles = "ADMIN")
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SHOW_TYPE_NAME = "Weekly";
   private static final String SEASON_NAME = "Test Season";
@@ -180,14 +182,11 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       // Fill in the form
       log.info("Filling out new show form");
       Objects.requireNonNull(
-              wait.until(
-                  ExpectedConditions.visibilityOfElementLocated(
-                      By.cssSelector("vaadin-text-field"))))
+              wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-name"))))
           .sendKeys(showName);
-      List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
-      comboBoxes.get(0).sendKeys(SHOW_TYPE_NAME);
-      comboBoxes.get(1).sendKeys(SEASON_NAME);
-      comboBoxes.get(2).sendKeys(TEMPLATE_NAME);
+      driver.findElement(By.id("show-type")).sendKeys(SHOW_TYPE_NAME);
+      driver.findElement(By.id("season")).sendKeys(SEASON_NAME);
+      driver.findElement(By.id("show-template")).sendKeys(TEMPLATE_NAME);
       driver
           .findElement(By.id("show-date"))
           .sendKeys(LocalDate.now().format(DateTimeFormatter.ofPattern("M/d/yyyy")));
@@ -195,7 +194,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       // Click the "Create" button
       log.info("Creating show");
       WebElement createButton = driver.findElement(By.id("create-show-button"));
-      clickAndScrollIntoView(createButton);
+      clickElement(createButton);
 
       log.info("Waiting for show to appear in grid");
       wait.until(
@@ -211,7 +210,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
           wait.until(
               ExpectedConditions.elementToBeClickable(
                   By.id("view-details-button-" + show.getId())));
-      clickAndScrollIntoView(viewShowDetails);
+      clickElement(viewShowDetails);
 
       // Verify navigation to the show detail view (or planning view)
       log.info("Waiting for show detail URL");
@@ -221,7 +220,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       log.info("Navigating to show planning view");
       WebElement planningShowButton =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("plan-show-button")));
-      clickAndScrollIntoView(planningShowButton);
+      clickElement(planningShowButton);
 
       // Verify navigation to the show planning view
       log.info("Waiting for show planning URL");
@@ -238,7 +237,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       log.info("Proposing segments");
       WebElement proposeSegmentsButton =
           wait.until(ExpectedConditions.elementToBeClickable(By.id("propose-segments-button")));
-      clickAndScrollIntoView(proposeSegmentsButton);
+      clickElement(proposeSegmentsButton);
 
       log.info("Waiting for proposed segments grid");
       wait.until(
@@ -250,7 +249,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebElement approveButton =
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("approve-segments-button")));
-      clickAndScrollIntoView(approveButton);
+      clickElement(approveButton);
 
       // Wait for the notification that segments are approved to appear and disappear
       log.info("Waiting for notification");
@@ -286,7 +285,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
           driver.findElement(
               By.id(
                   "edit-segment-button-" + segmentService.getSegmentsByShow(show).get(0).getId()));
-      clickAndScrollIntoView(editButton);
+      clickElement(editButton);
 
       // Wait for the dialog to appear
       log.info("Waiting for edit dialog");
@@ -304,7 +303,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       // Click the save button
       log.info("Clicking save button");
       WebElement saveButton = driver.findElement(By.id("edit-segment-save-button"));
-      clickAndScrollIntoView(saveButton);
+      clickElement(saveButton);
 
       try {
         Thread.sleep(1000);
@@ -395,7 +394,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement viewShowDetails =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
-    clickAndScrollIntoView(viewShowDetails);
+    clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
@@ -408,7 +407,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Click the down button on the first row
     WebElement downButton =
         driver.findElement(By.id("move-segment-down-button-" + mainEventSegment.getId()));
-    clickAndScrollIntoView(downButton);
+    clickElement(downButton);
 
     // Navigate to the Show Detail view
     driver.get(
@@ -464,7 +463,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement viewShowDetails =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
-    clickAndScrollIntoView(viewShowDetails);
+    clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
@@ -473,18 +472,18 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(
                 By.id("generate-narration-button-" + firstSegment.getId())));
-    clickAndScrollIntoView(narrateButton);
+    clickElement(narrateButton);
 
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
     WebElement generateNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-narration-button")));
-    clickAndScrollIntoView(generateNarrationButton);
+    clickElement(generateNarrationButton);
 
     WebElement saveNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("save-narration-button")));
-    clickAndScrollIntoView(saveNarrationButton);
+    clickElement(saveNarrationButton);
 
     // Wait for the dialog to disappear
     WebDriverWait longWait = new WebDriverWait(driver, Duration.ofSeconds(30));
@@ -495,7 +494,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(
                 By.id("generate-summary-button-" + firstSegment.getId())));
-    clickAndScrollIntoView(summaryButton);
+    clickElement(summaryButton);
 
     // Navigate to the Show Detail view
     driver.get(
@@ -548,7 +547,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement viewShowDetails =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
-    clickAndScrollIntoView(viewShowDetails);
+    clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
@@ -556,7 +555,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Click the main event checkbox on the last row
     WebElement mainEventCheckbox =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("main-event-checkbox")));
-    clickAndScrollIntoView(mainEventCheckbox);
+    clickElement(mainEventCheckbox);
     scrollIntoView(mainEventCheckbox);
   }
 }
