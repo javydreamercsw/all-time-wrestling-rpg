@@ -400,23 +400,23 @@ public class ShowPlanningAiService {
     // Fallback for cases where the marker is not present or the extraction fails
     int startIndex = input.indexOf('[');
     if (startIndex != -1) {
-        int balance = 1;
-        int endIndex = -1;
-        for (int i = startIndex + 1; i < input.length(); i++) {
-          char c = input.charAt(i);
-          if (c == '[') {
-            balance++;
-          } else if (c == ']') {
-            balance--;
-          }
-          if (balance == 0) {
-            endIndex = i;
-            break;
-          }
+      int balance = 1;
+      int endIndex = -1;
+      for (int i = startIndex + 1; i < input.length(); i++) {
+        char c = input.charAt(i);
+        if (c == '[') {
+          balance++;
+        } else if (c == ']') {
+          balance--;
         }
-        if (endIndex != -1) {
-          return input.substring(startIndex, endIndex + 1);
+        if (balance == 0) {
+          endIndex = i;
+          break;
         }
+      }
+      if (endIndex != -1) {
+        return input.substring(startIndex, endIndex + 1);
+      }
     }
 
     return null;
