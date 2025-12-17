@@ -1,5 +1,5 @@
 ai:
-  timeout: 60
+  timeout: 300
   gemini:
     model-name: gemini-2.5-flash
     api-url: https://generativelanguage.googleapis.com/v1beta/models/

@@ -125,19 +125,38 @@ public class SegmentNarrationController {
   public ResponseEntity<Map<String, Object>> narrateSegmentWithProvider(
       @PathVariable(required = false) String provider,
       @RequestBody SegmentNarrationContext context) {
-    SegmentNarrationService service =
-        provider == null ? getAppropriateService() : serviceFactory.getServiceByProvider(provider);
-    if (service == null) {
-      return ResponseEntity.badRequest()
-          .body(Map.of("error", "Provider '" + provider + "' not available or not found"));
-    }
+
     try {
       context = segmentOutcomeService.determineOutcomeIfNeeded(context);
       log.info(context.toString());
-      String narration = service.narrateSegment(context);
-      double estimatedCost = serviceFactory.getEstimatedSegmentCost(service.getProviderName());
+
+      String narration;
+      String providerName;
+      double estimatedCost = 0.0;
+
+      if (provider == null) {
+        if (isTestProfile()) {
+          SegmentNarrationService service = serviceFactory.getTestingService();
+          narration = service.narrateSegment(context);
+          providerName = service.getProviderName();
+        } else {
+          narration = serviceFactory.narrateSegment(context);
+          // We can't know which provider was used, so we can't provide a name or cost.
+          providerName = "Unknown (Fallback)";
+        }
+      } else {
+        SegmentNarrationService service = serviceFactory.getServiceByProvider(provider);
+        if (service == null) {
+          return ResponseEntity.badRequest()
+              .body(Map.of("error", "Provider '" + provider + "' not available or not found"));
+        }
+        narration = service.narrateSegment(context);
+        providerName = service.getProviderName();
+        estimatedCost = serviceFactory.getEstimatedSegmentCost(providerName);
+      }
+
       Map<String, Object> response = new HashMap<>();
-      response.put("provider", service.getProviderName());
+      response.put("provider", providerName);
       response.put("narration", narration);
       response.put("segmentType", context.getSegmentType().getSegmentType());
       response.put(
