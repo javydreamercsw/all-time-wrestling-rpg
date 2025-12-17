@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management;
 import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
@@ -28,8 +27,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  */
 @DataJpaTest
 public abstract class ManagementDataJpaTest {
-  @MockitoBean
-  protected AccountInitializer accountInitializer;
+  @MockitoBean protected AccountInitializer accountInitializer;
   @MockitoBean protected DataInitializer dataInitializer;
   @MockitoBean protected RankingService rankingService;
 }

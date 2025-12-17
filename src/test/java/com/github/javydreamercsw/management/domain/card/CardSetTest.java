@@ -33,7 +33,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 class CardSetTest extends ManagementDataJpaTest {
 
   @Autowired private TestEntityManager entityManager;
-
   @Autowired private CardSetRepository repository;
 
   @AfterEach
