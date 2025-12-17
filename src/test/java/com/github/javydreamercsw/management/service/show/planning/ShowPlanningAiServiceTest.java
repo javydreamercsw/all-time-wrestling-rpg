@@ -56,7 +56,11 @@ class ShowPlanningAiServiceTest {
     ObjectMapper objectMapper = new ObjectMapper(); // Use real ObjectMapper for JSON parsing
     SegmentTypeService segmentTypeService = mock(SegmentTypeService.class);
 
+    // Mock the factory to return the service
     when(narrationServiceFactory.getBestAvailableService()).thenReturn(segmentNarrationService);
+    // This is the new change to mock the generateText method
+    when(narrationServiceFactory.generateText(anyString()))
+        .thenAnswer(invocation -> segmentNarrationService.generateText(invocation.getArgument(0)));
 
     SegmentType segmentType = new SegmentType();
     segmentType.setName("One on One");
@@ -138,7 +142,7 @@ class ShowPlanningAiServiceTest {
 
     // Verify that the AI service was called and capture the prompt
     ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
-    verify(segmentNarrationService, times(1)).generateText(promptCaptor.capture());
+    verify(narrationServiceFactory, times(1)).generateText(promptCaptor.capture());
 
     String capturedPrompt = promptCaptor.getValue();
     assertTrue(
@@ -177,7 +181,7 @@ class ShowPlanningAiServiceTest {
       // Then
       assertNotNull(proposedShow);
       assertTrue(proposedShow.getSegments().isEmpty());
-      verify(segmentNarrationService, never()).generateText(anyString());
+      verify(narrationServiceFactory, never()).generateText(anyString());
     } finally {
       logger.setLevel(originalLevel);
     }
@@ -190,7 +194,7 @@ class ShowPlanningAiServiceTest {
     logger.setLevel(Level.OFF);
     try {
       // Given
-      when(segmentNarrationService.generateText(anyString())).thenReturn("");
+      when(narrationServiceFactory.generateText(anyString())).thenReturn("");
       ShowPlanningContextDTO context = new ShowPlanningContextDTO();
       ShowTemplate showTemplate = new ShowTemplate();
       showTemplate.setExpectedMatches(2);
@@ -203,7 +207,7 @@ class ShowPlanningAiServiceTest {
       // Then
       assertNotNull(proposedShow);
       assertTrue(proposedShow.getSegments().isEmpty());
-      verify(segmentNarrationService, times(1)).generateText(anyString());
+      verify(narrationServiceFactory, times(1)).generateText(anyString());
     } finally {
       logger.setLevel(originalLevel);
     }
@@ -216,7 +220,7 @@ class ShowPlanningAiServiceTest {
     logger.setLevel(Level.OFF);
     try {
       // Given
-      when(segmentNarrationService.generateText(anyString())).thenReturn("invalid json");
+      when(narrationServiceFactory.generateText(anyString())).thenReturn("invalid json");
       ShowPlanningContextDTO context = new ShowPlanningContextDTO();
       ShowTemplate showTemplate = new ShowTemplate();
       showTemplate.setExpectedMatches(2);
@@ -225,7 +229,7 @@ class ShowPlanningAiServiceTest {
 
       // When & Then
       assertThrows(ShowPlanningException.class, () -> showPlanningAiService.planShow(context));
-      verify(segmentNarrationService, times(1)).generateText(anyString());
+      verify(narrationServiceFactory, times(1)).generateText(anyString());
     } finally {
       logger.setLevel(originalLevel);
     }
