@@ -52,6 +52,7 @@ import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
 import com.vaadin.flow.shared.Registration;
 import jakarta.annotation.security.PermitAll;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 
@@ -73,7 +74,7 @@ public class MainLayout extends AppLayout {
   public MainLayout(
       MenuService menuService,
       WrestlerInjuryHealedBroadcaster injuryBroadcaster,
-      BuildProperties buildProperties,
+      Optional<BuildProperties> buildProperties,
       SecurityUtils securityUtils) {
     this.menuService = menuService;
     this.injuryBroadcaster = injuryBroadcaster;
@@ -105,7 +106,12 @@ public class MainLayout extends AppLayout {
 
   private Div createFooter() {
     String version = buildProperties != null ? buildProperties.getVersion() : "N/A";
-    Span versionSpan = new Span("Version: " + version);
+    Span versionSpan;
+    if (buildProperties != null) {
+      versionSpan = new Span("Version: " + buildProperties.getVersion());
+    } else {
+      versionSpan = new Span("Version: N/A");
+    }
     versionSpan.addClassNames(
         FontSize.XSMALL, TextColor.SECONDARY, Padding.Top.SMALL, Padding.Bottom.SMALL);
     Anchor githubLink =
