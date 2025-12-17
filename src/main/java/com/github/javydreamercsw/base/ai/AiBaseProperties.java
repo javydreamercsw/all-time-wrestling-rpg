@@ -20,5 +20,5 @@ import lombok.Data;
 
 @Data
 public class AiBaseProperties {
-  private int timeout = 180;
+  private int timeout = 300;
 }
