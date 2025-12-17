@@ -34,6 +34,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEvent;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +44,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
@@ -50,6 +54,7 @@ class ShowPlanningViewTest {
 
   @Mock private ShowService showService;
   @Mock private RestTemplate restTemplate;
+  @Mock private HttpServletRequest httpServletRequest;
   @InjectMocks private ShowPlanningView showPlanningView;
 
   @BeforeEach
@@ -77,15 +82,9 @@ class ShowPlanningViewTest {
 
     // Create a mock ShowPlanningContext
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
-    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
-    rivalry.setName("Test Rivalry");
-    context.setCurrentRivalries(List.of(rivalry));
-    context.setRecentPromos(new ArrayList<>());
-    context.setRecentSegments(new ArrayList<>());
-
-    // Mock the RestTemplate
-    when(restTemplate.getForObject(any(String.class), eq(ShowPlanningContextDTO.class)))
-        .thenReturn(context);
+    when(restTemplate.exchange(
+            any(String.class), eq(HttpMethod.GET), any(HttpEntity.class), eq(ShowPlanningContextDTO.class)))
+        .thenReturn(ResponseEntity.of(Optional.of(context)));
 
     // Mock the ObjectMapper
     ObjectMapper objectMapper = new ObjectMapper();
@@ -132,12 +131,12 @@ class ShowPlanningViewTest {
     segment2.setParticipants(List.of("C"));
     proposedShow.setSegments(Arrays.asList(segment1, segment2));
 
-    // Mock the RestTemplate
-    when(restTemplate.getForObject(any(String.class), eq(ShowPlanningContextDTO.class)))
-        .thenReturn(context);
-    when(restTemplate.postForObject(
-            any(String.class), any(ShowPlanningContextDTO.class), eq(ProposedShow.class)))
-        .thenReturn(proposedShow);
+    when(restTemplate.exchange(
+            any(String.class), eq(HttpMethod.GET), any(HttpEntity.class), eq(ShowPlanningContextDTO.class)))
+        .thenReturn(ResponseEntity.of(Optional.of(context)));
+    when(restTemplate.exchange(
+            any(String.class), eq(HttpMethod.POST), any(HttpEntity.class), eq(ProposedShow.class)))
+        .thenReturn(ResponseEntity.of(Optional.of(proposedShow)));
 
     // Mock the ObjectMapper
     ObjectMapper objectMapper = new ObjectMapper();
@@ -188,12 +187,12 @@ class ShowPlanningViewTest {
     segment1.setParticipants(Arrays.asList("A", "B"));
     proposedShow.setSegments(List.of(segment1));
 
-    // Mock the RestTemplate
-    when(restTemplate.getForObject(any(String.class), eq(ShowPlanningContextDTO.class)))
-        .thenReturn(context);
-    when(restTemplate.postForObject(
-            any(String.class), any(ShowPlanningContextDTO.class), eq(ProposedShow.class)))
-        .thenReturn(proposedShow);
+    when(restTemplate.exchange(
+            any(String.class), eq(HttpMethod.GET), any(HttpEntity.class), eq(ShowPlanningContextDTO.class)))
+        .thenReturn(ResponseEntity.of(Optional.of(context)));
+    when(restTemplate.exchange(
+            any(String.class), eq(HttpMethod.POST), any(HttpEntity.class), eq(ProposedShow.class)))
+        .thenReturn(ResponseEntity.of(Optional.of(proposedShow)));
 
     // Mock the ObjectMapper
     ObjectMapper objectMapper = new ObjectMapper();
