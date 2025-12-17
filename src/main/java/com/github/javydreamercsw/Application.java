@@ -18,6 +18,7 @@ package com.github.javydreamercsw;
 
 import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 
+import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -59,7 +60,8 @@ public class Application extends SpringBootServletInitializer {
 
   @Bean
   @Profile("!test")
-  public CommandLineRunner initData(DataInitializer dataInitializer) {
+  public CommandLineRunner initData(
+      AccountInitializer accountInitializer, DataInitializer dataInitializer) {
     return args -> {
       log.info("Initializing data on startup...");
       // Create a system authentication context
@@ -68,12 +70,35 @@ public class Application extends SpringBootServletInitializer {
               "system", null, List.of(new SimpleGrantedAuthority("ROLE_" + ADMIN_ROLE)));
       SecurityContextHolder.getContext().setAuthentication(auth);
       try {
+        accountInitializer.init();
         dataInitializer.init();
       } finally {
         // Clear the context
         SecurityContextHolder.clearContext();
       }
       log.info("Data initialization complete.");
+    };
+  }
+
+  @Bean
+  @Profile("test")
+  public CommandLineRunner initTestData(
+      AccountInitializer accountInitializer, DataInitializer dataInitializer) {
+    return args -> {
+      log.info("Initializing test data on startup...");
+      // Create a system authentication context
+      var auth =
+          new UsernamePasswordAuthenticationToken(
+              "system", null, List.of(new SimpleGrantedAuthority("ROLE_" + ADMIN_ROLE)));
+      SecurityContextHolder.getContext().setAuthentication(auth);
+      try {
+        accountInitializer.init();
+        dataInitializer.init();
+      } finally {
+        // Clear the context
+        SecurityContextHolder.clearContext();
+      }
+      log.info("Test data initialization complete.");
     };
   }
 

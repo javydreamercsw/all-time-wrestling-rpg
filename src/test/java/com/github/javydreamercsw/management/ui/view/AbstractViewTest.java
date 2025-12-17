@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
 import org.junit.jupiter.api.AfterEach;
@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
 
-public abstract class AbstractViewTest extends AbstractIntegrationTest {
+public abstract class AbstractViewTest extends AbstractMockUserIntegrationTest {
   private static Routes routes;
 
   @BeforeAll

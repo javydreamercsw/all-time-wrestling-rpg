@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw;
 
-import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.io.File;
@@ -37,7 +37,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.OutputType;
-import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -45,22 +44,21 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 
 @ExtendWith(UITestWatcher.class)
 @Slf4j
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = Application.class)
+@Import(TestE2ESecurityConfig.class)
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
   @LocalServerPort protected int serverPort;
-
-  @Autowired private DataInitializer dataInitializer;
 
   @Value("${server.servlet.context-path}")
   @Getter
@@ -80,20 +78,22 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       options.addArguments("--no-sandbox");
       options.addArguments("--disable-dev-shm-usage");
     }
-    dataInitializer.init();
 
     driver = new ChromeDriver(options);
     driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
     waitForAppToBeReady();
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    WebElement loginFormHost = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
+    WebElement loginFormHost =
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
     WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
     usernameField.sendKeys("admin");
-    WebElement passwordField =
-            loginFormHost.findElement(By.id("vaadinLoginPassword"));
+    WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
     passwordField.sendKeys("admin123");
-    WebElement signInButton = loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
+    WebElement signInButton =
+        loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
     clickElement(signInButton);
+    waitForAppToBeReady();
+    wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("login")));
   }
 
   @AfterEach

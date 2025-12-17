@@ -14,16 +14,9 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.ui.view.faction;
+package com.github.javydreamercsw.management.test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.springframework.security.test.context.support.WithMockUser;
 
-import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
-import org.junit.jupiter.api.DisplayName;
-
-/**
- * Integration test for FactionListView that tests real database interactions. This test would catch
- * LazyInitializationException that unit tests with mocks cannot detect.
- */
-@DisplayName("Faction ListView Integration Tests")
-class FactionListViewIntegrationTest extends AbstractMockUserIntegrationTest {}
+@WithMockUser(roles = "ADMIN")
+public abstract class AbstractMockUserIntegrationTest extends AbstractIntegrationTest {}

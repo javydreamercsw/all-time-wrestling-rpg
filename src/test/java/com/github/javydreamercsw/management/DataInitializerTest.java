@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.config.TestMethodSecurityConfig;
+import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -55,7 +55,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(roles = "ADMIN")
-@Import(TestMethodSecurityConfig.class)
+@Import(TestSecurityConfig.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DataInitializerTest {
 
