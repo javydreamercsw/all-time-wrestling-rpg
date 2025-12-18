@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -45,7 +44,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class TitleListViewTest extends AbstractViewTest {
 
@@ -55,8 +53,6 @@ class TitleListViewTest extends AbstractViewTest {
 
   @Mock
   private TeamRepository teamRepository; // Mocked as it's injected but not used in the test setup
-
-  @MockitoBean private DataInitializer dataInitializer;
 
   private TitleListView titleListView;
   private Title testTitle;

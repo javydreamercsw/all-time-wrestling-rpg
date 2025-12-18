@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
@@ -39,15 +38,11 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WithMockUser(roles = "ADMIN")
 class RankingViewTest extends AbstractViewTest {
 
   @Mock private RankingService rankingService;
   @Mock private TierBoundaryService tierBoundaryService;
-  @MockitoBean private DataInitializer dataInitializer;
 
   private ChampionshipDTO championshipDTO;
 

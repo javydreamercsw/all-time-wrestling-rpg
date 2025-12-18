@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -41,7 +40,6 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
 
   @MockitoBean private WrestlerService wrestlerService;
   @MockitoBean private TitleService titleService;
-  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
   private ProposedSegment segment;
   private Runnable onSave;
 

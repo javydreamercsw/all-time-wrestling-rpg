@@ -53,6 +53,7 @@ import com.vaadin.flow.router.Layout;
 import com.vaadin.flow.shared.Registration;
 import jakarta.annotation.security.PermitAll;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 
@@ -60,12 +61,12 @@ import org.springframework.boot.info.BuildProperties;
 @PermitAll // When security is enabled, allow all authenticated users
 public class MainLayout extends AppLayout {
 
-  private MenuService menuService;
-  private WrestlerInjuryHealedBroadcaster injuryBroadcaster;
-  private BuildProperties buildProperties;
-  private SecurityUtils securityUtils;
-  private Registration broadcasterRegistration;
-  private Registration injuryBroadcasterRegistration;
+  private @Nullable MenuService menuService;
+  private @Nullable WrestlerInjuryHealedBroadcaster injuryBroadcaster;
+  private @Nullable BuildProperties buildProperties;
+  private @Nullable SecurityUtils securityUtils;
+  private @Nullable Registration broadcasterRegistration;
+  private @Nullable Registration injuryBroadcasterRegistration;
 
   /** For testing purposes. */
   public MainLayout() {}
@@ -150,7 +151,7 @@ public class MainLayout extends AppLayout {
         Padding.Vertical.SMALL,
         Gap.MEDIUM);
 
-    if (securityUtils.isAuthenticated()) {
+    if (securityUtils != null && securityUtils.isAuthenticated()) {
       String username = securityUtils.getCurrentUsername();
 
       // User avatar
@@ -176,6 +177,8 @@ public class MainLayout extends AppLayout {
   protected void onAttach(AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     UI ui = attachEvent.getUI();
+
+    // FanChangeBroadcaster is a static utility, always available
     broadcasterRegistration =
         FanChangeBroadcaster.register(
             event -> {
@@ -193,27 +196,35 @@ public class MainLayout extends AppLayout {
                     });
               }
             });
-    injuryBroadcasterRegistration =
-        injuryBroadcaster.register(
-            event -> {
-              if (ui.isAttached()) {
-                ui.access(
-                    () -> {
-                      String message =
-                          String.format(
-                              "%s's injury (%s) has been healed!",
-                              event.getWrestler().getName(), event.getInjury().getName());
-                      Notification.show(message, 3000, Notification.Position.BOTTOM_END)
-                          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                    });
-              }
-            });
+
+    // injuryBroadcaster might be null in test contexts (Karibu Testing)
+    if (injuryBroadcaster != null) {
+      injuryBroadcasterRegistration =
+          injuryBroadcaster.register(
+              event -> {
+                if (ui.isAttached()) {
+                  ui.access(
+                      () -> {
+                        String message =
+                            String.format(
+                                "%s's injury (%s) has been healed!",
+                                event.getWrestler().getName(), event.getInjury().getName());
+                        Notification.show(message, 3000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                      });
+                }
+              });
+    }
   }
 
   @Override
   protected void onDetach(DetachEvent detachEvent) {
     super.onDetach(detachEvent);
-    broadcasterRegistration.remove();
-    injuryBroadcasterRegistration.remove();
+    if (broadcasterRegistration != null) {
+      broadcasterRegistration.remove();
+    }
+    if (injuryBroadcasterRegistration != null) {
+      injuryBroadcasterRegistration.remove();
+    }
   }
 }

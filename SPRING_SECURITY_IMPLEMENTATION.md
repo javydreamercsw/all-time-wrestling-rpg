@@ -123,7 +123,7 @@
 ### Phase 3: Method-Level Security 🔒
 **Goal:** Secure backend services
 
-11. 🔨 Enable method security in SecurityConfig
+11. ✅ Enable method security in SecurityConfig
 12. 🔨 Add `@PreAuthorize` to service layer methods:
 	- Create operations: ADMIN, BOOKER, PLAYER (own content)
 	- Update operations: ADMIN, BOOKER, PLAYER (own content)
@@ -379,9 +379,6 @@ enum RoleName {
 - ✅ **Phase 2 complete - menu filtering working**
 
 ### In Progress
-- ⏳ Preparing Phase 3 documentation
-
-### Next Up
 - ⏳ Add @PreAuthorize annotations to service methods
 - ⏳ Implement ownership checks for PLAYER role
 - ⏳ Test method-level security

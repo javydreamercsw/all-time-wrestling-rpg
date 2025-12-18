@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.service.show.planning;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -66,7 +65,6 @@ class ShowPlanningServiceTest {
   @MockitoBean private SegmentTypeRepository segmentTypeRepository;
   @MockitoBean private WrestlerService wrestlerService;
   @MockitoBean private FactionService factionService;
-  @MockitoBean private DataInitializer dataInitializer; // IDE shows no usages, but it is needed.
 
   @MockitoSpyBean
   private ShowPlanningDtoMapper showPlanningDtoMapper; // IDE shows no usages, but it is needed.

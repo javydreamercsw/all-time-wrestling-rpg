@@ -20,6 +20,7 @@ import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
+import com.github.javydreamercsw.management.AbstractTest;
 import com.github.javydreamercsw.management.DatabaseCleaner;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
@@ -50,7 +51,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
-public abstract class AbstractIntegrationTest {
+public abstract class AbstractIntegrationTest extends AbstractTest {
 
   @Autowired protected InboxRepository inboxRepository;
   @Autowired protected WrestlerRepository wrestlerRepository;

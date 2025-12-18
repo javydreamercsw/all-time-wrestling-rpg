@@ -16,6 +16,10 @@
 */
 package com.github.javydreamercsw.base.config;
 
+import static org.mockito.Mockito.mock;
+
+import com.github.javydreamercsw.base.AccountInitializer;
+import com.github.javydreamercsw.management.event.WrestlerInjuryHealedBroadcaster;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
@@ -45,5 +49,16 @@ public class TestSecurityConfig {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder(10);
+  }
+
+  @Bean
+  public WrestlerInjuryHealedBroadcaster wrestlerInjuryHealedBroadcaster() {
+    return new WrestlerInjuryHealedBroadcaster();
+  }
+
+  @Bean
+  public AccountInitializer accountInitializer() {
+    // Return a mock to prevent initialization logic from running in tests
+    return mock(AccountInitializer.class);
   }
 }

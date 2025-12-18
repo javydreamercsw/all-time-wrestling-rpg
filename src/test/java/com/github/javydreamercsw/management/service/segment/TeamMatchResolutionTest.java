@@ -23,7 +23,6 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -46,7 +45,6 @@ import org.springframework.transaction.annotation.Transactional;
 class TeamMatchResolutionTest extends ManagementIntegrationTest {
   @Autowired private NPCSegmentResolutionService npcSegmentResolutionService;
   @MockitoBean private OpenAISegmentNarrationService openAIService;
-  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   private Wrestler rookie1;
   private Wrestler rookie2;

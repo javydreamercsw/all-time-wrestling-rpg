@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.sync;
 
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -28,12 +27,10 @@ import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class EntityDependencyAnalyzerTest extends ManagementIntegrationTest {
 
   @Autowired private EntityDependencyAnalyzer entityDependencyAnalyzer;
-  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   @Test
   void testGetAutomaticSyncOrder() {

@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mockStatic;
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
@@ -59,7 +58,6 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   @Autowired DeckCardRepository deckCardRepository;
   @Autowired SegmentTypeRepository segmentTypeRepository;
   @MockitoBean private OpenAISegmentNarrationService openAIService;
-  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   private Season testSeason;
   private ShowType weeklyShowType;

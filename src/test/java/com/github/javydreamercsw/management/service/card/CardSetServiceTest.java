@@ -18,20 +18,17 @@ package com.github.javydreamercsw.management.service.card;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 class CardSetServiceTest extends ManagementIntegrationTest {
   @Autowired CardSetService cardSetService;
   @Autowired CardSetRepository cardSetRepository;
-  @MockitoBean private DataInitializer dataInitializer;
 
   @Test
   void testCreateCardSetSet() {

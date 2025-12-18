@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.service.team;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
@@ -32,7 +31,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * Integration tests for TeamService. Tests the complete service layer with real database
@@ -45,7 +43,6 @@ class TeamServiceTest extends ManagementIntegrationTest {
   private Wrestler wrestler2;
   private Wrestler wrestler3;
   private Faction faction;
-  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   @BeforeEach
   public void setUp() {

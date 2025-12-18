@@ -21,7 +21,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
-import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentSyncService;
 import java.util.Optional;
@@ -37,7 +36,6 @@ class SegmentSyncServiceTest extends ManagementIntegrationTest {
   @Autowired private SegmentSyncService segmentSyncService;
 
   @MockitoBean private NotionHandler notionHandler;
-  @MockitoBean private DataInitializer dataInitializer; // Exclude DataInitializer
 
   @Test
   @DisplayName("Should return failure for non-existent segment ID")

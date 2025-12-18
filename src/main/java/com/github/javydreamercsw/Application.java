@@ -81,7 +81,7 @@ public class Application extends SpringBootServletInitializer {
   }
 
   @Bean
-  @Profile("test")
+  @Profile("!test")
   public CommandLineRunner initTestData(
       AccountInitializer accountInitializer, DataInitializer dataInitializer) {
     return args -> {
