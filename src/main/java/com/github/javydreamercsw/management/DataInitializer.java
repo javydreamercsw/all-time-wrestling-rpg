@@ -365,7 +365,6 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
             log.debug("Saved new wrestler: {}", w.getName());
           }
         }
-        log.info("Total wrestlers in database after sync: {}", wrestlerService.count());
       } catch (IOException e) {
         log.error("Error loading wrestlers from file", e);
       }
