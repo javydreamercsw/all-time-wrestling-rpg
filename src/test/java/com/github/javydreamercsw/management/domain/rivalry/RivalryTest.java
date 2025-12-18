@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.javydreamercsw.TestUtils;
-import com.github.javydreamercsw.management.AbstractTest;
+import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Instant;
@@ -33,7 +33,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 /** Unit tests for Rivalry entity. Tests the ATW RPG rivalry and heat system functionality. */
 @DisplayName("Rivalry Tests")
 @DataJpaTest
-class RivalryTest extends AbstractTest {
+class RivalryTest extends AbstractJpaTest {
   @Autowired private WrestlerRepository wrestlerRepository;
 
   private Rivalry rivalry;

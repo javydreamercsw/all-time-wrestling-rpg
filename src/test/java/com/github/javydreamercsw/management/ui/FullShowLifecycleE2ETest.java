@@ -304,8 +304,18 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebElement summaryField =
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("edit-summary-text-area")));
-      Assertions.assertNotNull(summaryField);
       summaryField.sendKeys(newDescription, Keys.TAB);
+
+      // Explicitly set two wrestlers in the MultiSelectComboBox
+      log.info("Setting wrestlers in MultiSelectComboBox");
+      WebElement wrestlersComboBox =
+          wait.until(
+              ExpectedConditions.visibilityOfElementLocated(By.id("edit-wrestlers-combo-box")));
+      Assertions.assertNotNull(wrestlersComboBox);
+      selectFromVaadinMultiSelectComboBox(
+          wrestlersComboBox, wrestlerRepository.findAll().get(0).getName());
+      selectFromVaadinMultiSelectComboBox(
+          wrestlersComboBox, wrestlerRepository.findAll().get(1).getName());
 
       // Click the save button
       log.info("Clicking save button");

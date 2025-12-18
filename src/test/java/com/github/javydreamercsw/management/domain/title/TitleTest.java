@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.AbstractTest;
+import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Instant;
@@ -35,7 +35,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 /** Unit tests for Title entity. Tests the ATW RPG championship system functionality. */
 @DisplayName("Title Tests")
 @DataJpaTest
-class TitleTest extends AbstractTest {
+class TitleTest extends AbstractJpaTest {
   @Autowired private WrestlerRepository wrestlerRepository;
 
   private Title title;

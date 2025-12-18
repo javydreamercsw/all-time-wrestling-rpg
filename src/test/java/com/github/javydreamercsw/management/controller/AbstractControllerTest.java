@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.security.CustomUserDetailsService;
-import com.github.javydreamercsw.management.AbstractTest;
 import com.github.javydreamercsw.management.config.ManagementTestConfig;
 import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
@@ -33,7 +32,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest
 @Import({TestSecurityConfig.class, ManagementTestConfig.class})
 @ActiveProfiles("test")
-public abstract class AbstractControllerTest extends AbstractTest {
+public abstract class AbstractControllerTest {
 
   @Autowired protected MockMvc mockMvc;
   @MockitoBean protected CustomUserDetailsService customUserDetailsService;

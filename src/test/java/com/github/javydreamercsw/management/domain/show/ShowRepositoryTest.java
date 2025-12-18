@@ -19,7 +19,7 @@ package com.github.javydreamercsw.management.domain.show;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import com.github.javydreamercsw.management.AbstractTest;
+import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -31,7 +31,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 @DataJpaTest
-class ShowRepositoryTest extends AbstractTest {
+class ShowRepositoryTest extends AbstractJpaTest {
 
   @Autowired private TestEntityManager entityManager;
 
