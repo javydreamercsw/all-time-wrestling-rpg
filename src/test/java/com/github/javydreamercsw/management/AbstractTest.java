@@ -22,5 +22,4 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 /** Base class for tests. Provides mock beans for common services. */
 public abstract class AbstractTest {
   @MockitoBean protected AccountInitializer accountInitializer;
-  @MockitoBean protected DataInitializer dataInitializer;
 }
