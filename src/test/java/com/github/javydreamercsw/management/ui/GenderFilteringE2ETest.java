@@ -199,7 +199,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       // Open the "Tier Boundaries" dialog
       log.info("Opening tier boundaries dialog");
       WebElement showTierBoundariesButton =
-          wait.until(ExpectedConditions.elementToBeClickable(By.tagName("vaadin-button")));
+          wait.until(ExpectedConditions.elementToBeClickable(By.id("show-tier-boundaries-button")));
       Assertions.assertNotNull(showTierBoundariesButton);
       clickElement(showTierBoundariesButton);
 

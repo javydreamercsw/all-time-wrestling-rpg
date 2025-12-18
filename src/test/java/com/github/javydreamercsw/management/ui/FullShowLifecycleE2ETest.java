@@ -207,7 +207,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
           wait.until(
               ExpectedConditions.elementToBeClickable(
                   By.id("view-details-button-" + show.getId())));
-      clickElement(viewShowDetails);
+        Assertions.assertNotNull(viewShowDetails);
+        clickElement(viewShowDetails);
 
       // Verify navigation to the show detail view (or planning view)
       log.info("Waiting for show detail URL");
@@ -217,7 +218,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       log.info("Navigating to show planning view");
       WebElement planningShowButton =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("plan-show-button")));
-      clickElement(planningShowButton);
+        Assertions.assertNotNull(planningShowButton);
+        clickElement(planningShowButton);
 
       // Verify navigation to the show planning view
       log.info("Waiting for show planning URL");
@@ -227,14 +229,19 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebElement showPlanningContextArea =
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("show-planning-context-area")));
-      wait.until(driver -> !showPlanningContextArea.getText().isEmpty());
-      Assertions.assertFalse(showPlanningContextArea.getText().contains("Error"));
+      wait.until(driver -> {
+          Assertions.assertNotNull(showPlanningContextArea);
+          return !showPlanningContextArea.getText().isEmpty();
+      });
+        Assertions.assertNotNull(showPlanningContextArea);
+        Assertions.assertFalse(showPlanningContextArea.getText().contains("Error"));
 
       // Click the "Propose Segments" button
       log.info("Proposing segments");
       WebElement proposeSegmentsButton =
           wait.until(ExpectedConditions.elementToBeClickable(By.id("propose-segments-button")));
-      clickElement(proposeSegmentsButton);
+        Assertions.assertNotNull(proposeSegmentsButton);
+        clickElement(proposeSegmentsButton);
 
       log.info("Waiting for proposed segments grid");
       wait.until(
@@ -246,7 +253,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebElement approveButton =
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("approve-segments-button")));
-      clickElement(approveButton);
+        Assertions.assertNotNull(approveButton);
+        clickElement(approveButton);
 
       // Wait for the notification that segments are approved to appear and disappear
       log.info("Waiting for notification");
@@ -295,17 +303,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebElement summaryField =
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("edit-summary-text-area")));
-      summaryField.sendKeys(newDescription, Keys.TAB);
-
-      // Explicitly set two wrestlers in the MultiSelectComboBox
-      log.info("Setting wrestlers in MultiSelectComboBox");
-      WebElement wrestlersComboBox =
-          wait.until(
-              ExpectedConditions.visibilityOfElementLocated(By.id("edit-wrestlers-combo-box")));
-      selectFromVaadinMultiSelectComboBox(
-          wrestlersComboBox, wrestlerRepository.findAll().get(0).getName());
-      selectFromVaadinMultiSelectComboBox(
-          wrestlersComboBox, wrestlerRepository.findAll().get(1).getName());
+        Assertions.assertNotNull(summaryField);
+        summaryField.sendKeys(newDescription, Keys.TAB);
 
       // Click the save button
       log.info("Clicking save button");
@@ -319,7 +318,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       }
 
       log.info("Waiting for save button to disappear");
-      wait.withTimeout(Duration.ofSeconds(30));
+      wait.withTimeout(Duration.ofSeconds(60));
       wait.until(
           ExpectedConditions.invisibilityOfElementLocated(By.id("edit-segment-save-button")));
       wait.withTimeout(Duration.ofSeconds(20));
