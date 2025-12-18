@@ -22,6 +22,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
+import com.github.javydreamercsw.management.config.ManagementTestConfig;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import java.util.function.Consumer;
@@ -37,7 +38,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(roles = ADMIN_ROLE)
-@Import(TestSecurityConfig.class)
+@Import({TestSecurityConfig.class, ManagementTestConfig.class})
 class FanChangeEventListenerTest {
 
   @Autowired private ApplicationEventPublisher publisher;
