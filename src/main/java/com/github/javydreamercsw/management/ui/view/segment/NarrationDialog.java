@@ -286,7 +286,6 @@ public class NarrationDialog extends Dialog {
               baseUrl + "/api/segment-narration/narrate", context, String.class);
 
       handleNarrationResponse(response.getBody());
-
     } catch (org.springframework.web.client.HttpClientErrorException e) {
       log.error("HTTP Client Error generating segment narration", e);
       try {
@@ -421,7 +420,6 @@ public class NarrationDialog extends Dialog {
       previousSegmentContexts.add(buildPreviousSegmentContext(prevSegment));
     }
     context.setPreviousSegments(previousSegmentContexts);
-
     return context;
   }
 
@@ -567,7 +565,11 @@ public class NarrationDialog extends Dialog {
     return context;
   }
 
-  private void handleNarrationResponse(@NonNull String response) {
+  private void handleNarrationResponse(String response) {
+    if (response == null || response.isEmpty()) {
+      showError("Received an empty response from the AI service.");
+      return;
+    }
     try {
       JsonNode jsonResponse = objectMapper.readTree(response);
       String narration =
