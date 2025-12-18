@@ -38,7 +38,6 @@ class InboxServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private WrestlerService wrestlerService;
   @Autowired private DataInitializer dataInitializer;
 
-
   @BeforeEach
   public void setUp() {
     inboxRepository.deleteAll();

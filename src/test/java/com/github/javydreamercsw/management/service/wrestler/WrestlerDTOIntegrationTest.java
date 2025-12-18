@@ -15,6 +15,7 @@
 * along with this program.  If not, see <www.gnu.org>.
 */
 package com.github.javydreamercsw.management.service.wrestler;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.management.DataInitializer;
