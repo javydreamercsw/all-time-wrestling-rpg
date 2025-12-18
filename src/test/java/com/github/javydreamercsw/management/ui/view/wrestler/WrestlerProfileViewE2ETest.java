@@ -89,6 +89,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
       showType.setName("Weekly");
       showType.setDescription("A weekly show");
       showTypeRepository.save(showType);
+      showTypeRepository.flush();
     }
   }
 

@@ -103,7 +103,7 @@ public class Application extends SpringBootServletInitializer {
   }
 
   @Bean
-  @Profile("!test")
+  @Profile("test & !e2e")
   public CommandLineRunner recalculateRanking(
       RankingService rankingService, WrestlerRepository wrestlerRepository) {
     return args -> {

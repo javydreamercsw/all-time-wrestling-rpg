@@ -16,10 +16,5 @@
 */
 package com.github.javydreamercsw.management;
 
-import com.github.javydreamercsw.base.AccountInitializer;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
 /** Base class for tests. Provides mock beans for common services. */
-public abstract class AbstractTest {
-  @MockitoBean protected AccountInitializer accountInitializer;
-}
+public abstract class AbstractTest {}

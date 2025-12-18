@@ -51,6 +51,7 @@ public class TestSecurityConfig {
   }
 
   @Bean
+  @Profile("!e2e")
   public AccountInitializer accountInitializer() {
     // Return a mock to prevent initialization logic from running in tests
     return mock(AccountInitializer.class);

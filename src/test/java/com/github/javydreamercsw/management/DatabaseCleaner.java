@@ -117,6 +117,9 @@ public class DatabaseCleaner {
     String[] beanNames = applicationContext.getBeanNamesForType(JpaRepository.class);
 
     for (String beanName : beanNames) {
+      if (beanName.equals("accountRepository") || beanName.equals("roleRepository")) {
+        continue;
+      }
       try {
         JpaRepository<?, ?> repository = applicationContext.getBean(beanName, JpaRepository.class);
 

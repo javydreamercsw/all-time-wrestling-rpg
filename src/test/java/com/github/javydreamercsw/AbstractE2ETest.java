@@ -55,7 +55,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = Application.class)
-@ActiveProfiles("e2e")
+@ActiveProfiles(value = "e2e", inheritProfiles = false)
 @Import(TestE2ESecurityConfig.class)
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 

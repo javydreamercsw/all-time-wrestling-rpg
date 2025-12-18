@@ -1138,8 +1138,10 @@ public class ShowDetailView extends Main
       Set<Wrestler> winners,
       Set<SegmentRule> rules,
       Segment segmentToUpdate) {
+    log.info("Validating and saving segment: {}", segmentToUpdate);
     // Validation
     if (segmentType == null) {
+      log.warn("Validation failed: Segment type is null.");
       Notification.show("Please select a segment type", 3000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return false;
@@ -1147,12 +1149,14 @@ public class ShowDetailView extends Main
 
     if (!"Promo".equalsIgnoreCase(segmentType.getName())) {
       if (wrestlers == null || wrestlers.isEmpty()) {
+        log.warn("Validation failed: Wrestlers are null or empty for non-promo segment.");
         Notification.show("Please select at least one wrestler", 3000, Notification.Position.MIDDLE)
             .addThemeVariants(NotificationVariant.LUMO_ERROR);
         return false;
       }
 
       if (wrestlers.size() < 2) {
+        log.warn("Validation failed: Less than two wrestlers for a non-promo match.");
         Notification.show(
                 "Please select at least two wrestlers for a match",
                 3000,
@@ -1165,6 +1169,7 @@ public class ShowDetailView extends Main
     if (winners != null) {
       for (Wrestler winner : winners) {
         if (!wrestlers.contains(winner)) {
+          log.warn("Validation failed: Winner is not among selected wrestlers.");
           Notification.show(
                   "Winner must be one of the selected wrestlers",
                   3000,
@@ -1182,6 +1187,7 @@ public class ShowDetailView extends Main
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
         segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
+        log.info("Updating existing segment: {}", segment.getId());
       } else {
         segment = new Segment();
         segment.setShow(show);
@@ -1190,6 +1196,7 @@ public class ShowDetailView extends Main
         segment.setIsNpcGenerated(false);
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
+        log.info("Creating new segment for show: {}", show.getName());
       }
 
       segment.setSegmentType(segmentType);
@@ -1200,6 +1207,7 @@ public class ShowDetailView extends Main
 
       // Save or update the segment
       segmentRepository.save(segment);
+      log.info("Segment saved successfully: {}", segment.getId());
       if (segmentToUpdate != null) {
         Notification.show("Segment updated successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -1209,6 +1217,7 @@ public class ShowDetailView extends Main
       }
       return true;
     } catch (Exception e) {
+      log.error("Error saving segment: {}", e.getMessage(), e);
       Notification.show(
               "Error saving segment: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);

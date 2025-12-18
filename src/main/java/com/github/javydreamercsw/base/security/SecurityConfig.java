@@ -31,7 +31,7 @@ import org.springframework.security.web.SecurityFilterChain;
 /** Security configuration for the application. */
 @Configuration
 @EnableWebSecurity
-@Profile("!test")
+@Profile("!test & !e2e")
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {

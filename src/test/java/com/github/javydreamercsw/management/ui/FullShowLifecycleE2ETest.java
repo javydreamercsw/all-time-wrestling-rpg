@@ -297,6 +297,16 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
               ExpectedConditions.visibilityOfElementLocated(By.id("edit-summary-text-area")));
       summaryField.sendKeys(newDescription, Keys.TAB);
 
+      // Explicitly set two wrestlers in the MultiSelectComboBox
+      log.info("Setting wrestlers in MultiSelectComboBox");
+      WebElement wrestlersComboBox =
+          wait.until(
+              ExpectedConditions.visibilityOfElementLocated(By.id("edit-wrestlers-combo-box")));
+      selectFromVaadinMultiSelectComboBox(
+          wrestlersComboBox, wrestlerRepository.findAll().get(0).getName());
+      selectFromVaadinMultiSelectComboBox(
+          wrestlersComboBox, wrestlerRepository.findAll().get(1).getName());
+
       // Click the save button
       log.info("Clicking save button");
       WebElement saveButton = driver.findElement(By.id("edit-segment-save-button"));
@@ -439,7 +449,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
 
     Segment firstSegment = new Segment();
     firstSegment.setNarration("Rob Van Dam looking for another dominant performance.");
-    firstSegment.setSummary("");
+    firstSegment.setSummary("This is a test summary.");
     firstSegment.setSegmentOrder(1);
     firstSegment.setShow(show);
     firstSegment.setSegmentDate(Instant.now());

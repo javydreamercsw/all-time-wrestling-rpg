@@ -30,6 +30,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -43,6 +44,7 @@ import org.springframework.stereotype.Service;
  * be configured via OPENAI_MODEL environment variable.
  */
 @Service
+@Profile("!test & !e2e")
 @Slf4j
 public class OpenAISegmentNarrationService extends AbstractSegmentNarrationService {
 
