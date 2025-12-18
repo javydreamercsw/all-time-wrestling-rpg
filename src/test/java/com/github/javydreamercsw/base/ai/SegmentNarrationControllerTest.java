@@ -34,6 +34,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -41,6 +42,13 @@ import org.springframework.test.web.servlet.MockMvc;
     controllers = SegmentNarrationController.class,
     excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 @EnableConfigurationProperties(SegmentNarrationConfig.class)
+@ContextConfiguration(
+    classes = {
+      SegmentNarrationController.class,
+      SegmentNarrationServiceFactory.class,
+      SegmentOutcomeProvider.class,
+      RankingService.class
+    })
 class SegmentNarrationControllerTest extends BaseControllerTest {
   @Autowired private MockMvc mockMvc;
   @MockitoBean private SegmentNarrationServiceFactory serviceFactory;
