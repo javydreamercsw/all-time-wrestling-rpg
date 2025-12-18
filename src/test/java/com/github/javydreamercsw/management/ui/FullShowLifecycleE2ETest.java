@@ -304,7 +304,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebElement summaryField =
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("edit-summary-text-area")));
-      summaryField.sendKeys(newDescription, Keys.TAB);
+        Assertions.assertNotNull(summaryField);
+        summaryField.sendKeys(newDescription, Keys.TAB);
 
       // Explicitly set two wrestlers in the MultiSelectComboBox
       log.info("Setting wrestlers in MultiSelectComboBox");

@@ -48,7 +48,10 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
   @Autowired private TitleRepository titleRepository;
