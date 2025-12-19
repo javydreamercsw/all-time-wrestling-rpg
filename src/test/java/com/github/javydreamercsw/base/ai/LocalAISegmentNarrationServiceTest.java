@@ -24,9 +24,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(classes = {LocalAISegmentNarrationService.class, LocalAIContainerConfig.class})
+@SpringBootTest(
+    classes = {
+      LocalAISegmentNarrationService.class,
+      LocalAIContainerConfig.class,
+      SegmentNarrationConfig.class
+    })
 @EnableConfigurationProperties(SegmentNarrationConfig.class)
+@ActiveProfiles("localai-test")
 class LocalAISegmentNarrationServiceTest {
 
   @Autowired private LocalAISegmentNarrationService localAIService;

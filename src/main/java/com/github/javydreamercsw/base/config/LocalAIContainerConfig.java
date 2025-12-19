@@ -35,7 +35,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
  * active when the non-test profile is enabled.
  */
 @Configuration
-@Profile("!test & !e2e")
+@Profile("localai-test")
 @Slf4j
 @RequiredArgsConstructor
 public class LocalAIContainerConfig {

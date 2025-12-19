@@ -163,10 +163,10 @@ public class SegmentNarrationServiceFactory {
   public List<SegmentNarrationService> getAvailableServicesInPriorityOrder() {
     // Define priority order based on cost-effectiveness
     ProviderPriority[] priorityOrder = {
-      new ProviderPriority("LocalAI", 1, 0.0, "Local AI, free and private"),
-      new ProviderPriority("Gemini", 2, 0.0, "FREE tier with excellent quality"),
-      new ProviderPriority("Claude", 3, 0.25, "Claude Haiku - good quality, reasonable cost"),
-      new ProviderPriority("OpenAI", 4, 0.50, "GPT-3.5 - good quality, moderate cost"),
+      new ProviderPriority("Gemini", 1, 0.0, "FREE tier with excellent quality"),
+      new ProviderPriority("Claude", 2, 0.25, "Claude Haiku - good quality, reasonable cost"),
+      new ProviderPriority("OpenAI", 3, 0.50, "GPT-3.5 - good quality, moderate cost"),
+      new ProviderPriority("LocalAI", 9, 0.0, "Local AI, free and private"),
       new ProviderPriority("Mock", 10, 0.0, "Mock AI for testing and development")
     };
 

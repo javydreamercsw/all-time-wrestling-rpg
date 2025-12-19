@@ -374,38 +374,42 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
 
-    Segment mainEventSegment = new Segment();
+    Segment mainEventSegment =
+        segmentService.createSegment(
+            show,
+            segmentTypeRepository.findByName("One on One").get(),
+            Instant.now(),
+            new HashSet<>());
     mainEventSegment.setNarration("This is a test narration.");
     mainEventSegment.setSummary("This is a test summary.");
     mainEventSegment.setSegmentOrder(1);
-    mainEventSegment.setShow(show);
-    mainEventSegment.setSegmentDate(Instant.now());
     mainEventSegment.setIsTitleSegment(true);
     mainEventSegment.setIsNpcGenerated(false);
     mainEventSegment.syncParticipants(Arrays.asList(wrestlers.get(2), wrestlers.get(3)));
     mainEventSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
-    mainEventSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
     mainEventSegment.setWinners(Arrays.asList(wrestlers.get(3)));
     HashSet<Title> titles = new HashSet<>();
     if (!titleService.getActiveTitles().isEmpty()) {
       titles.add(titleService.getActiveTitles().get(0));
     }
     mainEventSegment.setTitles(titles);
-    segmentRepository.save(mainEventSegment);
+    segmentService.updateSegment(mainEventSegment);
 
-    Segment firstSegment = new Segment();
+    Segment firstSegment =
+        segmentService.createSegment(
+            show,
+            segmentTypeRepository.findByName("One on One").get(),
+            Instant.now(),
+            new HashSet<>());
     firstSegment.setNarration("This is a test narration.");
     firstSegment.setSummary("This is a test summary.");
     firstSegment.setSegmentOrder(2);
-    firstSegment.setShow(show);
-    firstSegment.setSegmentDate(Instant.now());
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
     firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
-    firstSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
     firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
-    segmentRepository.save(firstSegment);
+    segmentService.updateSegment(firstSegment);
 
     // Navigate to the Show List view
     driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
@@ -462,19 +466,21 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
 
-    Segment firstSegment = new Segment();
+    Segment firstSegment =
+        segmentService.createSegment(
+            show,
+            segmentTypeRepository.findByName("One on One").get(),
+            Instant.now(),
+            new HashSet<>());
     firstSegment.setNarration("Rob Van Dam looking for another dominant performance.");
     firstSegment.setSummary("This is a test summary.");
     firstSegment.setSegmentOrder(1);
-    firstSegment.setShow(show);
-    firstSegment.setSegmentDate(Instant.now());
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
     firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
-    firstSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
     firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
-    segmentRepository.save(firstSegment);
+    segmentService.updateSegment(firstSegment);
 
     // Navigate to the Show List view
     driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
@@ -546,19 +552,21 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
 
-    Segment firstSegment = new Segment();
+    Segment firstSegment =
+        segmentService.createSegment(
+            show,
+            segmentTypeRepository.findByName("One on One").get(),
+            Instant.now(),
+            new HashSet<>());
     firstSegment.setNarration("Rob Van Dam looking for another dominant performance.");
     firstSegment.setSummary("");
     firstSegment.setSegmentOrder(1);
-    firstSegment.setShow(show);
-    firstSegment.setSegmentDate(Instant.now());
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
     firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
-    firstSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
     firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
-    segmentRepository.save(firstSegment);
+    segmentService.updateSegment(firstSegment);
 
     // Navigate back to the list.
     driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");

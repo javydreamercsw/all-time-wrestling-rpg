@@ -17,27 +17,30 @@
 package com.github.javydreamercsw.base.config;
 
 import com.github.javydreamercsw.base.security.CustomUserDetailsService;
-import com.github.javydreamercsw.base.ui.view.LoginView;
-import com.vaadin.flow.spring.security.VaadinWebSecurity;
+import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 
 @TestConfiguration
 @EnableWebSecurity
 @Profile("e2e")
-public class TestE2ESecurityConfig extends VaadinWebSecurity {
+public class TestE2ESecurityConfig {
 
-  @Override
-  protected void configure(HttpSecurity http) throws Exception {
-    super.configure(http);
-    setLoginView(http, LoginView.class);
+  @Bean
+  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
+    http.csrf(AbstractHttpConfigurer::disable)
+        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+    http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
+    return http.build();
   }
 
   @Bean
