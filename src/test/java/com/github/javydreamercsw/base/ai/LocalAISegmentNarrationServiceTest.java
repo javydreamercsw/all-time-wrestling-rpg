@@ -64,7 +64,9 @@ class LocalAISegmentNarrationServiceTest {
 
     while (!statusService.isReady()) {
       if (System.currentTimeMillis() - startTime > timeout) {
-        fail("Timeout waiting for LocalAI to be ready. Current status: " + statusService.getStatus());
+        fail(
+            "Timeout waiting for LocalAI to be ready. Current status: "
+                + statusService.getStatus());
       }
       try {
         Thread.sleep(1000); // Check every second
