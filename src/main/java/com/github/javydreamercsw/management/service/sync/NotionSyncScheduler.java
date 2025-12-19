@@ -72,7 +72,7 @@ public class NotionSyncScheduler {
       fixedRateString = "${notion.sync.scheduler.interval:3600000}",
       initialDelayString = "${notion.sync.scheduler.initial-delay:300000}")
   public void performScheduledSync() {
-    if (!syncProperties.isSchedulerEnabled()) {
+    if (!syncProperties.isSchedulerEnabled() || !notionSyncService.isNotionHandlerAvailable()) {
       log.debug("Notion sync scheduler is disabled, skipping scheduled sync");
       return;
     }
