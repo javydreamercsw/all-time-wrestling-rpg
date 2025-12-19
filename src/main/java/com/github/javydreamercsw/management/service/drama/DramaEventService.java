@@ -36,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,6 +70,7 @@ public class DramaEventService {
    * @return Created drama event
    */
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<DramaEvent> createDramaEvent(
       Long primaryWrestlerId,
       Long secondaryWrestlerId,
@@ -120,6 +122,7 @@ public class DramaEventService {
    * @return Generated drama event, or empty if wrestler not found
    */
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<DramaEvent> generateRandomDramaEvent(Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     if (wrestlerOpt.isEmpty()) {
@@ -165,6 +168,7 @@ public class DramaEventService {
    * @return Number of events processed
    */
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public int processUnprocessedEvents() {
     List<DramaEvent> unprocessedEvents =
         dramaEventRepository.findByIsProcessedFalseOrderByEventDateAsc();
@@ -189,6 +193,7 @@ public class DramaEventService {
    * @param event The event to process
    */
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public void processEvent(@NonNull DramaEvent event) {
     if (event.getIsProcessed()) {
       log.warn("Event {} is already processed", event.getId());
@@ -236,6 +241,7 @@ public class DramaEventService {
    * @param wrestlerId ID of the wrestler
    * @return List of drama events involving the wrestler
    */
+  @PreAuthorize("isAuthenticated()")
   public List<DramaEvent> getEventsForWrestler(Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     if (wrestlerOpt.isEmpty()) {
@@ -251,6 +257,7 @@ public class DramaEventService {
    * @param pageable Pagination information
    * @return Page of drama events
    */
+  @PreAuthorize("isAuthenticated()")
   public Page<DramaEvent> getEventsForWrestler(Long wrestlerId, Pageable pageable) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     if (wrestlerOpt.isEmpty()) {
@@ -264,6 +271,7 @@ public class DramaEventService {
    *
    * @return List of recent drama events
    */
+  @PreAuthorize("isAuthenticated()")
   public List<DramaEvent> getRecentEvents() {
     Instant thirtyDaysAgo = clock.instant().minus(30, ChronoUnit.DAYS);
     return dramaEventRepository.findRecentEvents(thirtyDaysAgo);
@@ -276,6 +284,7 @@ public class DramaEventService {
    * @param wrestler2Id ID of second wrestler
    * @return List of drama events between the wrestlers
    */
+  @PreAuthorize("isAuthenticated()")
   public List<DramaEvent> getEventsBetweenWrestlers(Long wrestler1Id, Long wrestler2Id) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);

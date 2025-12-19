@@ -17,13 +17,12 @@
 package com.github.javydreamercsw.management.controller.sync;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
@@ -33,12 +32,10 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(NotionSyncController.class)
 class NotionSyncControllerTest extends AbstractControllerTest {
 
   @MockitoBean private CommandLineRunner commandLineRunner;
@@ -47,8 +44,6 @@ class NotionSyncControllerTest extends AbstractControllerTest {
   @MockitoBean private NotionSyncScheduler notionSyncScheduler;
   @MockitoBean private NotionSyncProperties syncProperties;
   @MockitoBean private EntityDependencyAnalyzer dependencyAnalyzer;
-  @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @DisplayName("Should return sync status")
@@ -87,7 +82,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/trigger"))
+        .perform(post("/api/sync/notion/trigger").with(csrf()))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.success").value(true))
@@ -110,7 +105,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/trigger"))
+        .perform(post("/api/sync/notion/trigger").with(csrf()))
         .andExpect(status().isInternalServerError())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.success").value(false))
@@ -132,7 +127,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/trigger/shows"))
+        .perform(post("/api/sync/notion/trigger/shows").with(csrf()))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.success").value(true))
@@ -154,7 +149,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/trigger/invalid"))
+        .perform(post("/api/sync/notion/trigger/invalid").with(csrf()))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.error").value("Invalid entity name: invalid"))
@@ -172,7 +167,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/shows"))
+        .perform(post("/api/sync/notion/shows").with(csrf()))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.success").value(true))
@@ -190,7 +185,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/shows"))
+        .perform(post("/api/sync/notion/shows").with(csrf()))
         .andExpect(status().isInternalServerError())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.success").value(false))

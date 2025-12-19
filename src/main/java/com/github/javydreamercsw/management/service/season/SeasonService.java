@@ -27,6 +27,7 @@ import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,7 @@ public class SeasonService {
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private Clock clock;
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Season createOrUpdateSeason(
       @NonNull String name, @NonNull Instant startDate, boolean isActive) {
     Optional<Season> existingSeason = seasonRepository.findByName(name);
@@ -52,6 +54,7 @@ public class SeasonService {
   }
 
   /** Create a new season. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Season createSeason(
       @NonNull String name, @NonNull String description, Integer showsPerPpv) {
     // End any currently active season
@@ -72,40 +75,47 @@ public class SeasonService {
 
   /** Get the currently active season. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Season> getActiveSeason() {
     return seasonRepository.findActiveSeason();
   }
 
   /** Get season by ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Season> getSeasonById(@NonNull Long seasonId) {
     return seasonRepository.findById(seasonId);
   }
 
   /** Find season by name. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Season findByName(@NonNull String name) {
     return seasonRepository.findByName(name).orElse(null);
   }
 
   /** Find season by external ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Season> findByExternalId(@NonNull String externalId) {
     return seasonRepository.findByExternalId(externalId);
   }
 
   /** Save a season. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Season save(@NonNull Season season) {
     return seasonRepository.saveAndFlush(season);
   }
 
   /** Get all seasons with pagination. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<Season> getAllSeasons(@NonNull Pageable pageable) {
     return seasonRepository.findAllBy(pageable);
   }
 
   /** End the current season. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Season> endCurrentSeason() {
     Optional<Season> activeSeason = seasonRepository.findActiveSeason();
     activeSeason.ifPresent(this::endSeason);
@@ -113,12 +123,14 @@ public class SeasonService {
   }
 
   /** End a specific season. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Season endSeason(@NonNull Season season) {
     season.endSeason();
     return seasonRepository.saveAndFlush(season);
   }
 
   /** Add a show to the active season. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Season> addShowToActiveSeason(@NonNull Show show) {
     Optional<Season> activeSeason = seasonRepository.findActiveSeason();
     if (activeSeason.isPresent()) {
@@ -131,12 +143,14 @@ public class SeasonService {
 
   /** Check if it's time for a PPV in the active season. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public boolean isTimeForPpv() {
     return seasonRepository.findActiveSeason().map(Season::isTimeForPpv).orElse(false);
   }
 
   /** Get seasons that need PPVs scheduled. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Season> getSeasonsNeedingPpv() {
     return seasonRepository
         .findActiveSeason()
@@ -146,6 +160,7 @@ public class SeasonService {
   }
 
   /** Update season settings. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Season> updateSeason(
       @NonNull Long seasonId,
       @NonNull String name,
@@ -163,18 +178,21 @@ public class SeasonService {
   }
 
   /** Update season with Season object. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Season updateSeason(@NonNull Season season) {
     return seasonRepository.saveAndFlush(season);
   }
 
   /** Search seasons by name or description. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<Season> searchSeasons(@NonNull String searchTerm, @NonNull Pageable pageable) {
     return seasonRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
         searchTerm, pageable);
   }
 
   /** Delete a season (only if not active and has no shows). */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public boolean deleteSeason(@NonNull Long seasonId) {
     return seasonRepository
         .findById(seasonId)
@@ -189,6 +207,7 @@ public class SeasonService {
 
   /** Get season statistics. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public SeasonStats getSeasonStats(@NonNull Long seasonId) {
     return seasonRepository
         .findById(seasonId)
@@ -221,6 +240,7 @@ public class SeasonService {
 
   /** Get the latest season by creation date. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Season> getLatestSeason() {
     return seasonRepository.findLatestSeason();
   }

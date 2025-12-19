@@ -44,6 +44,9 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * <p>This test prevents runtime errors caused by index scripts referencing non-existent tables or
  * columns, which would otherwise only be discovered during application startup.
  */
+import org.springframework.security.test.context.support.WithMockUser;
+
+@WithMockUser(roles = "ADMIN")
 @Slf4j
 class DatabaseIndexValidationTest extends ManagementIntegrationTest {
 

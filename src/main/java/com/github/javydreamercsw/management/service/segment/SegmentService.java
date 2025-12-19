@@ -39,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -127,6 +128,7 @@ public class SegmentService {
    * @param matchDate The date/time of the match
    * @return The created Segment
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Segment createSegment(
       @NonNull Show show, @NonNull SegmentType matchType, @NonNull Instant matchDate) {
     return createSegment(show, matchType, matchDate, new HashSet<>());
@@ -141,6 +143,7 @@ public class SegmentService {
    * @param titles The titles contested in this segment
    * @return The created Segment
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Segment createSegment(
       @NonNull Show show,
       @NonNull SegmentType matchType,
@@ -167,6 +170,7 @@ public class SegmentService {
    * @return The updated Segment.
    * @throws IllegalArgumentException if the segment with the given ID is not found.
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Segment updateSegment(@NonNull Long id, @NonNull SegmentDTO dto) {
     return segmentRepository
         .findById(id)
@@ -198,6 +202,7 @@ public class SegmentService {
    * @param segment The segment to update
    * @return The updated Segment
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Segment updateSegment(@NonNull Segment segment) {
     return segmentRepository.save(segment);
   }
@@ -209,6 +214,7 @@ public class SegmentService {
    * @return Optional containing the Segment if found
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Segment> findById(@NonNull Long id) {
     return segmentRepository.findById(id);
   }
@@ -220,6 +226,7 @@ public class SegmentService {
    * @return Page of Segment objects
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<Segment> getAllSegments(@NonNull Pageable pageable) {
     return segmentRepository.findAllBy(pageable);
   }
@@ -231,6 +238,7 @@ public class SegmentService {
    * @return List of Segment objects for the show
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegmentsByShow(@NonNull Show show) {
     return segmentRepository.findByShow(show);
   }
@@ -242,6 +250,7 @@ public class SegmentService {
    * @return List of Segment objects where the wrestler participated
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<Segment> getSegmentsByWrestlerParticipation(
       @NonNull Wrestler wrestler, @NonNull Pageable pageable) {
     return segmentRepository.findByWrestlerParticipation(wrestler, pageable);
@@ -255,6 +264,7 @@ public class SegmentService {
    * @return List of Segment objects between the two wrestlers
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegmentsBetween(
       @NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2) {
     return segmentRepository.findSegmentsBetween(wrestler1, wrestler2);
@@ -266,6 +276,7 @@ public class SegmentService {
    * @return List of NPC-generated Segment objects
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Segment> getNpcGeneratedSegments() {
     return segmentRepository.findByIsNpcGeneratedTrue();
   }
@@ -276,6 +287,7 @@ public class SegmentService {
    * @return List of title Segment objects
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Segment> getTitleSegments() {
     return segmentRepository.findByIsTitleSegmentTrue();
   }
@@ -287,6 +299,7 @@ public class SegmentService {
    * @return List of Segment objects after the specified date
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegmentsAfter(@NonNull Instant date) {
     return segmentRepository.findBySegmentDateAfter(date);
   }
@@ -299,6 +312,7 @@ public class SegmentService {
    * @return List of Segment objects where the wrestler participated in the given season
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegmentsByWrestlerAndSeason(
       @NonNull Wrestler wrestler, @NonNull Season season) {
     return segmentRepository.findByWrestlerParticipationAndSeason(wrestler, season);
@@ -311,14 +325,17 @@ public class SegmentService {
    * @return Number of wins
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public long countWinsByWrestler(@NonNull Wrestler wrestler) {
     return segmentRepository.countWinsByWrestler(wrestler);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public long countSegmentsByWrestler(Wrestler wrestler) {
     return segmentRepository.countSegmentsByWrestler(wrestler);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public long countMatchSegmentsByWrestler(Wrestler wrestler) {
     return segmentRepository.countMatchSegmentsByWrestler(wrestler);
   }
@@ -328,6 +345,7 @@ public class SegmentService {
    *
    * @param id The ID of the match to delete
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public void deleteSegment(@NonNull Long id) {
     segmentRepository.deleteById(id);
     log.info("Deleted match with ID: {}", id);
@@ -340,6 +358,7 @@ public class SegmentService {
    * @return true if a match with the external ID exists
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public boolean existsByExternalId(@NonNull String externalId) {
     return segmentRepository.existsByExternalId(externalId);
   }
@@ -351,6 +370,7 @@ public class SegmentService {
    * @return Optional containing the Segment if found
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Segment> findByExternalId(@NonNull String externalId) {
     return segmentRepository.findByExternalId(externalId);
   }
@@ -361,6 +381,7 @@ public class SegmentService {
    * @return List of all external IDs.
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<String> getAllExternalIds() {
     return segmentRepository.findAllExternalIds();
   }
@@ -372,6 +393,7 @@ public class SegmentService {
    * @return List of Segment objects where the wrestler participated
    */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegmentsByWrestlerParticipationWithShow(@NonNull Wrestler wrestler) {
     return segmentRepository.findByWrestlerParticipationWithShow(wrestler);
   }

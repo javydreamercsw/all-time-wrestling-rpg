@@ -87,10 +87,12 @@ public class ShowService {
     this.wrestlerService = wrestlerService;
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Show> list(Pageable pageable) {
     return showRepository.findAllBy(pageable).toList();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public long count() {
     return showRepository.count();
   }
@@ -112,18 +114,22 @@ public class ShowService {
    *
    * @return List of all shows with eagerly loaded relationships
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Show> findAllWithRelationships() {
     return showRepository.findAllWithRelationships();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Show> findByName(String showName) {
     return showRepository.findByName(showName);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public boolean existsByNameAndShowDate(String name, LocalDate showDate) {
     return showRepository.findByNameAndShowDate(name, showDate).isPresent();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<Show> findByExternalId(String externalId) {
     return showRepository.findByExternalId(externalId);
   }
@@ -133,6 +139,7 @@ public class ShowService {
    *
    * @return List of all external IDs.
    */
+  @PreAuthorize("isAuthenticated()")
   public List<String> getAllExternalIds() {
     return showRepository.findAllExternalIds();
   }
@@ -145,6 +152,7 @@ public class ShowService {
    * @param pageable Pagination information
    * @return Page of shows
    */
+  @PreAuthorize("isAuthenticated()")
   public Page<Show> getAllShows(Pageable pageable) {
     return showRepository.findAllBy(pageable);
   }
@@ -155,6 +163,7 @@ public class ShowService {
    * @param id Show ID
    * @return Optional containing the show if found
    */
+  @PreAuthorize("isAuthenticated()")
   public Optional<Show> getShowById(Long id) {
     return showRepository.findById(id);
   }
@@ -166,6 +175,7 @@ public class ShowService {
    * @param endDate End date (inclusive)
    * @return List of shows in the date range
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Show> getShowsByDateRange(LocalDate startDate, LocalDate endDate) {
     return showRepository.findByShowDateBetweenOrderByShowDate(startDate, endDate);
   }
@@ -177,6 +187,7 @@ public class ShowService {
    * @param month Month (1-12)
    * @return List of shows in the specified month
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Show> getShowsForMonth(int year, int month) {
     YearMonth yearMonth = YearMonth.of(year, month);
     LocalDate startDate = yearMonth.atDay(1);
@@ -190,19 +201,23 @@ public class ShowService {
    * @param limit Maximum number of shows to return
    * @return List of upcoming shows
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Show> getUpcomingShows(int limit) {
     return getUpcomingShows(LocalDate.now(clock), limit);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Show> getUpcomingShows(LocalDate referenceDate, int limit) {
     Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
     return showRepository.findByShowDateGreaterThanEqualOrderByShowDate(referenceDate, pageable);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Show> getUpcomingShowsWithRelationships(int limit) {
     return getUpcomingShowsWithRelationships(LocalDate.now(clock), limit);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Show> getUpcomingShowsWithRelationships(LocalDate referenceDate, int limit) {
     Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
     return showRepository.findUpcomingWithRelationships(referenceDate, pageable);
@@ -219,6 +234,7 @@ public class ShowService {
    * @param templateId Template ID (optional)
    * @return Created show
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Show createShow(
       String name,
       String description,
@@ -273,6 +289,7 @@ public class ShowService {
    * @param templateId Template ID (optional)
    * @return Updated show if found
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Show> updateShow(
       Long id,
       String name,
@@ -342,6 +359,7 @@ public class ShowService {
     return false;
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public void adjudicateShow(Long showId) {
     Show show =
         showRepository
@@ -392,6 +410,7 @@ public class ShowService {
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegments(@NonNull Show show) {
     return segmentRepository.findByShow(show);
   }
@@ -411,6 +430,7 @@ public class ShowService {
    * @param participatingWrestlers List of currently participating wrestlers
    * @return List of Wrestlers not participating
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getNonParticipatingWrestlers(
       @NonNull List<Wrestler> participatingWrestlers) {
     List<Wrestler> allWrestlers = new ArrayList<>(wrestlerService.findAll());

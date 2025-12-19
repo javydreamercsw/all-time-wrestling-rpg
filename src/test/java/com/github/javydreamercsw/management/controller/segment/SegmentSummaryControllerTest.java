@@ -20,32 +20,24 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.exception.RestExceptionHandler;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(controllers = SegmentSummaryController.class)
 @Import(RestExceptionHandler.class)
 class SegmentSummaryControllerTest extends AbstractControllerTest {
 
-  @Autowired private MockMvc mockMvc;
   @MockitoBean private SegmentSummaryService segmentSummaryService;
-  @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @WithMockUser(roles = "BOOKER")
@@ -57,7 +49,7 @@ class SegmentSummaryControllerTest extends AbstractControllerTest {
     when(segmentSummaryService.summarizeSegment(segmentId)).thenReturn(mockSegment);
 
     mockMvc
-        .perform(post("/api/segments/{segmentId}/summarize", segmentId))
+        .perform(post("/api/segments/{segmentId}/summarize", segmentId).with(csrf()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.summary", is("Test summary")));
 
@@ -72,7 +64,7 @@ class SegmentSummaryControllerTest extends AbstractControllerTest {
         .thenThrow(new IllegalArgumentException("Invalid segment Id:" + segmentId));
 
     mockMvc
-        .perform(post("/api/segments/{segmentId}/summarize", segmentId))
+        .perform(post("/api/segments/{segmentId}/summarize", segmentId).with(csrf()))
         .andExpect(status().isBadRequest()); // or isNotFound() if you map to 404
 
     verify(segmentSummaryService, times(1)).summarizeSegment(segmentId);

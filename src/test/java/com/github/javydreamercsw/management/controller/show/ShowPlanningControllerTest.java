@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.controller.show;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -32,16 +33,11 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningSe
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(ShowPlanningController.class)
 class ShowPlanningControllerTest extends AbstractControllerTest {
-
-  @MockitoBean private CommandLineRunner commandLineRunner;
 
   @MockitoBean private ShowPlanningService showPlanningService;
 
@@ -52,7 +48,7 @@ class ShowPlanningControllerTest extends AbstractControllerTest {
   @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
-  @WithMockUser(roles = {"ADMIN", "BOOKER"})
+  @WithMockUser(roles = "BOOKER")
   void getShowPlanningContext() throws Exception {
     // Given
     Show show = new Show();
@@ -65,7 +61,7 @@ class ShowPlanningControllerTest extends AbstractControllerTest {
   }
 
   @Test
-  @WithMockUser(roles = {"ADMIN", "BOOKER"})
+  @WithMockUser(roles = "BOOKER")
   void planShow() throws Exception {
     // Given
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
@@ -75,6 +71,7 @@ class ShowPlanningControllerTest extends AbstractControllerTest {
     mockMvc
         .perform(
             post("/api/show-planning/plan")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(context)))
         .andExpect(status().isOk());

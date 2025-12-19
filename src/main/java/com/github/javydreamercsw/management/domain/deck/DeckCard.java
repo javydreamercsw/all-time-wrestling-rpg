@@ -41,7 +41,7 @@ import org.jspecify.annotations.Nullable;
     uniqueConstraints = @UniqueConstraint(columnNames = {"deck_id", "card_id", "set_id"}))
 @Getter
 @Setter
-public class DeckCard extends AbstractEntity<Long> {
+public class DeckCard extends AbstractEntity<Long> { // Removed implements Ownable
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -91,4 +91,6 @@ public class DeckCard extends AbstractEntity<Long> {
   public int hashCode() {
     return Objects.hash(super.hashCode(), deck, card, set);
   }
+
+  // Removed @Override methods getAccount() and isPlayerOwned()
 }

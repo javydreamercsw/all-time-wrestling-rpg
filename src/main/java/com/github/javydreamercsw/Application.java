@@ -67,7 +67,11 @@ public class Application extends SpringBootServletInitializer {
       // Create a system authentication context
       var auth =
           new UsernamePasswordAuthenticationToken(
-              "system", null, List.of(new SimpleGrantedAuthority("ROLE_" + ADMIN_ROLE)));
+              "system",
+              null,
+              List.of(
+                  new SimpleGrantedAuthority("ROLE_" + ADMIN_ROLE),
+                  new SimpleGrantedAuthority("ADMIN")));
       SecurityContextHolder.getContext().setAuthentication(auth);
       try {
         accountInitializer.init();
@@ -81,33 +85,17 @@ public class Application extends SpringBootServletInitializer {
   }
 
   @Bean
-  @Profile("!test")
-  public CommandLineRunner initTestData(
-      AccountInitializer accountInitializer, DataInitializer dataInitializer) {
-    return args -> {
-      log.info("Initializing test data on startup...");
-      // Create a system authentication context
-      var auth =
-          new UsernamePasswordAuthenticationToken(
-              "system", null, List.of(new SimpleGrantedAuthority("ROLE_" + ADMIN_ROLE)));
-      SecurityContextHolder.getContext().setAuthentication(auth);
-      try {
-        accountInitializer.init();
-        dataInitializer.init();
-      } finally {
-        // Clear the context
-        SecurityContextHolder.clearContext();
-      }
-      log.info("Test data initialization complete.");
-    };
-  }
-
-  @Bean
   @Profile("test & !e2e")
   public CommandLineRunner recalculateRanking(
       RankingService rankingService, WrestlerRepository wrestlerRepository) {
     return args -> {
       log.info("Recalculating tiers on startup...");
+      if (SecurityContextHolder.getContext().getAuthentication() == null
+          || !SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
+        log.warn(
+            "Skipping tier recalculation on startup: No authenticated user in SecurityContext.");
+        return;
+      }
       rankingService.recalculateRanking(new java.util.ArrayList<>(wrestlerRepository.findAll()));
       log.info("Tier recalculation complete.");
     };

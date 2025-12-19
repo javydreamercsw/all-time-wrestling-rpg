@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -44,6 +45,7 @@ public class ShowPlanningAiService {
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public ProposedShow planShow(@NonNull ShowPlanningContextDTO context) {
     if (narrationServiceFactory.getBestAvailableService() == null) {
       log.warn("No AI service available for show planning.");

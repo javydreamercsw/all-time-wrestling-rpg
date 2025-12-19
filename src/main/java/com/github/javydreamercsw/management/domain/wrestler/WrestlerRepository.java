@@ -28,6 +28,8 @@ import org.springframework.data.repository.query.Param;
 public interface WrestlerRepository
     extends JpaRepository<Wrestler, Long>, JpaSpecificationExecutor<Wrestler> {
 
+  Optional<Wrestler> findByAccount(com.github.javydreamercsw.base.domain.account.Account account);
+
   // If you don't need a total row count, Slice is better than Page.
   Page<Wrestler> findAllBy(Pageable pageable);
 

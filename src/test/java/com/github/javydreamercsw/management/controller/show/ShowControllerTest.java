@@ -20,28 +20,23 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(ShowController.class)
 class ShowControllerTest extends AbstractControllerTest {
 
   @MockitoBean private ShowService showService;
-  @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @WithMockUser(roles = "BOOKER")
@@ -60,6 +55,7 @@ class ShowControllerTest extends AbstractControllerTest {
     mockMvc
         .perform(
             post("/api/shows")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -69,7 +65,7 @@ class ShowControllerTest extends AbstractControllerTest {
   @Test
   @WithMockUser(roles = "ADMIN")
   void testAdjudicateShow() throws Exception {
-    mockMvc.perform(post("/api/shows/1/adjudicate")).andExpect(status().isOk());
+    mockMvc.perform(post("/api/shows/1/adjudicate").with(csrf())).andExpect(status().isOk());
 
     verify(showService, times(1)).adjudicateShow(1L);
   }

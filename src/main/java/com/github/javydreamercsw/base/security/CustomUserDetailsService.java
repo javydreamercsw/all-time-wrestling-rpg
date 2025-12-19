@@ -18,6 +18,8 @@ package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomUserDetailsService implements UserDetailsService {
 
   private final AccountRepository accountRepository;
+  private final WrestlerRepository wrestlerRepository; // Added repository
 
   @Override
   @Transactional(readOnly = true)
@@ -53,7 +56,10 @@ public class CustomUserDetailsService implements UserDetailsService {
       log.info("Account lock expired and reset for user: {}", username);
     }
 
-    return new CustomUserDetails(account);
+    // Find the wrestler associated with the account
+    Wrestler wrestler = wrestlerRepository.findByAccount(account).orElse(null);
+
+    return new CustomUserDetails(account, wrestler); // Pass wrestler to constructor
   }
 
   /**

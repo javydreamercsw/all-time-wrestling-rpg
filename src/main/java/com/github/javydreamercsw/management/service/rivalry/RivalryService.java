@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +50,7 @@ public class RivalryService {
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   /** Create a new rivalry between two wrestlers. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Rivalry> createRivalry(
       @NonNull Long wrestler1Id, @NonNull Long wrestler2Id, @NonNull String storylineNotes) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
@@ -82,6 +84,7 @@ public class RivalryService {
   }
 
   /** Add heat to a rivalry. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Rivalry> addHeat(Long rivalryId, int heatGain, String reason) {
     return rivalryRepository
         .findById(rivalryId)
@@ -104,6 +107,7 @@ public class RivalryService {
   }
 
   /** Add heat between two specific wrestlers. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Rivalry> addHeatBetweenWrestlers(
       @NonNull Long wrestler1Id, @NonNull Long wrestler2Id, int heatGain, @NonNull String reason) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
@@ -126,6 +130,7 @@ public class RivalryService {
   }
 
   /** Attempt to resolve a rivalry with dice rolls. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public ResolutionResult<Rivalry> attemptResolution(
       @NonNull Long rivalryId, @NonNull Integer wrestler1Roll, @NonNull Integer wrestler2Roll) {
     Optional<Rivalry> rivalryOpt = rivalryRepository.findById(rivalryId);
@@ -169,6 +174,7 @@ public class RivalryService {
   }
 
   /** End a rivalry manually. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Rivalry> endRivalry(@NonNull Long rivalryId, @NonNull String reason) {
     return rivalryRepository
         .findById(rivalryId)
@@ -182,35 +188,41 @@ public class RivalryService {
 
   /** Get rivalry by ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Rivalry> getRivalryById(@NonNull Long rivalryId) {
     return rivalryRepository.findById(rivalryId);
   }
 
   /** Get all rivalries with pagination. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<Rivalry> getAllRivalries(@NonNull Pageable pageable) {
     return rivalryRepository.findAllBy(pageable);
   }
 
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<Rivalry> getAllRivalriesWithWrestlers(@NonNull Pageable pageable) {
     return rivalryRepository.findAllWithWrestlers(pageable);
   }
 
   /** Get active rivalries. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Rivalry> getActiveRivalries() {
     return rivalryRepository.findByIsActiveTrue();
   }
 
   /** Get active rivalries between two dates. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Rivalry> getActiveRivalriesBetween(Instant startDate, Instant endDate) {
     return rivalryRepository.findActiveRivalriesBetween(startDate, endDate);
   }
 
   /** Get rivalries for a specific wrestler. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Rivalry> getRivalriesForWrestler(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -220,24 +232,28 @@ public class RivalryService {
 
   /** Get rivalries requiring matches (10+ heat). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Rivalry> getRivalriesRequiringMatches() {
     return rivalryRepository.findRivalriesRequiringMatches();
   }
 
   /** Get rivalries eligible for resolution (20+ heat). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Rivalry> getRivalriesEligibleForResolution() {
     return rivalryRepository.findRivalriesEligibleForResolution();
   }
 
   /** Get rivalries requiring rule matches (30+ heat). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Rivalry> getRivalriesRequiringStipulationMatches() {
     return rivalryRepository.findRivalriesRequiringStipulationMatches();
   }
 
   /** Get rivalries by intensity level. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Rivalry> getRivalriesByIntensity(@NonNull RivalryIntensity intensity) {
     return rivalryRepository.findByHeatRange(
         intensity.getMinHeat(),
@@ -246,12 +262,14 @@ public class RivalryService {
 
   /** Get the hottest rivalries. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Rivalry> getHottestRivalries(int limit) {
     return rivalryRepository.findHottestRivalries(
         org.springframework.data.domain.PageRequest.of(0, limit));
   }
 
   /** Update rivalry storyline notes. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Rivalry> updateStorylineNotes(
       @NonNull Long rivalryId, @NonNull String storylineNotes) {
     return rivalryRepository
@@ -265,6 +283,7 @@ public class RivalryService {
 
   /** Get rivalry statistics. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public RivalryStats getRivalryStats(@NonNull Long rivalryId) {
     return rivalryRepository
         .findById(rivalryId)
@@ -286,16 +305,19 @@ public class RivalryService {
   }
 
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Rivalry> findByExternalId(@NonNull String externalId) {
     return rivalryRepository.findByExternalId(externalId);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Rivalry save(@NonNull Rivalry rivalry) {
     return rivalryRepository.saveAndFlush(rivalry);
   }
 
   /** Get rivalry between two wrestlers. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Rivalry> getRivalryBetweenWrestlers(
       @NonNull Long wrestler1Id, @NonNull Long wrestler2Id) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
@@ -310,6 +332,7 @@ public class RivalryService {
 
   /** Check if two wrestlers have rivalry history. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public boolean hasRivalryHistory(@NonNull Long wrestler1Id, @NonNull Long wrestler2Id) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);

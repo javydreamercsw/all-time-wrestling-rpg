@@ -34,8 +34,10 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@WithMockUser(roles = "BOOKER")
 class EditSegmentDialogTest extends ManagementIntegrationTest {
 
   @MockitoBean private WrestlerService wrestlerService;

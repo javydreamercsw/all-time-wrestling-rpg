@@ -31,6 +31,7 @@ import java.util.Random;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +65,7 @@ public class NPCSegmentResolutionService {
    * @return Segment with determined winner and details
    */
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Segment resolveTeamSegment(
       @NonNull SegmentTeam team1,
       @NonNull SegmentTeam team2,
@@ -131,6 +133,7 @@ public class NPCSegmentResolutionService {
    * @return Segment with determined winner and details
    */
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Segment resolveMultiTeamSegment(
       @NonNull List<SegmentTeam> teams,
       @NonNull SegmentType segmentType,

@@ -33,6 +33,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -71,10 +72,12 @@ public class TitleService {
                     && wrestler.getFans() <= title.getTier().getMaxFans());
   }
 
+  @PreAuthorize("isAuthenticated()")
   public boolean titleNameExists(@NonNull String name) {
     return titleRepository.findByName(name).isPresent();
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Title createTitle(
       @NonNull String name, @NonNull String description, @NonNull WrestlerTier tier) {
     Title title = new Title();
@@ -85,44 +88,54 @@ public class TitleService {
     return titleRepository.save(title);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<Title> getTitleById(@NonNull Long id) {
     return titleRepository.findById(id);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<Title> findByName(@NonNull String name) {
     return titleRepository.findByName(name);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<Title> findByExternalId(@NonNull String externalId) {
     return titleRepository.findByExternalId(externalId);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Title save(@NonNull Title title) {
     return titleRepository.save(title);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Title> findAll() {
     return (List<Title>) titleRepository.findAll();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Page<Title> getAllTitles(Pageable pageable) {
     return titleRepository.findAll(pageable);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Title> getActiveTitles() {
     return titleRepository.findByIsActiveTrue();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Title> getVacantTitles() {
     return titleRepository.findByIsActiveTrue().stream()
         .filter(Title::isVacant)
         .collect(Collectors.toList());
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Title> getTitlesByTier(@NonNull WrestlerTier tier) {
     return titleRepository.findByIsActiveTrueAndTier(tier);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public void awardTitleTo(@NonNull Title title, @NonNull List<Wrestler> newChampions) {
     // Validate if all new champions are eligible for the title
     for (Wrestler champion : newChampions) {
@@ -135,6 +148,7 @@ public class TitleService {
     titleRepository.save(title);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Title> vacateTitle(@NonNull Long titleId) {
 
     return titleRepository
@@ -147,6 +161,7 @@ public class TitleService {
             });
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Title> updateTitle(
       @NonNull Long id, String name, String description, Boolean isActive) {
 
@@ -173,6 +188,7 @@ public class TitleService {
             });
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public boolean deleteTitle(@NonNull Long id) {
 
     return titleRepository
@@ -191,6 +207,7 @@ public class TitleService {
         .orElse(false);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Long getChallengeCost(@NonNull Title title) {
     Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
     return tierBoundaryService
@@ -199,6 +216,7 @@ public class TitleService {
         .orElse(title.getTier().getChallengeCost()); // Fallback to static
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Long getContenderEntryFee(@NonNull Title title) {
     Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
     return tierBoundaryService
@@ -207,11 +225,13 @@ public class TitleService {
         .orElse(title.getTier().getContenderEntryFee()); // Fallback to static
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Title> findTitlesByChampion(@NonNull Wrestler wrestler) {
 
     return titleRepository.findTitlesHeldByWrestler(wrestler);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public ChallengeResult challengeForTitle(@NonNull Long wrestlerId, @NonNull Long titleId) {
 
     Optional<Wrestler> challengerOpt = wrestlerRepository.findById(wrestlerId);
@@ -273,6 +293,7 @@ public class TitleService {
             + ".");
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getEligibleChallengers(@NonNull Long titleId) {
 
     Optional<Title> titleOpt = titleRepository.findById(titleId);
@@ -289,6 +310,7 @@ public class TitleService {
         .collect(Collectors.toList());
   }
 
+  @PreAuthorize("isAuthenticated()")
   public TitleStats getTitleStats(@NonNull Long id) {
 
     // Basic implementation for now, can be expanded later
@@ -305,6 +327,7 @@ public class TitleService {
         .orElse(null);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Title> updateNumberOneContender(@NonNull Long titleId, @NonNull Long wrestlerId) {
 
     Optional<Title> titleOpt = titleRepository.findById(titleId);
@@ -322,6 +345,7 @@ public class TitleService {
     return Optional.of(titleRepository.save(title));
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Title> clearNumberOneContender(Long titleId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
 
@@ -334,6 +358,7 @@ public class TitleService {
     return Optional.of(titleRepository.save(title));
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Title> getTitlesHeldBy(@NonNull Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     return wrestlerOpt.map(titleRepository::findTitlesHeldByWrestler).orElse(List.of());

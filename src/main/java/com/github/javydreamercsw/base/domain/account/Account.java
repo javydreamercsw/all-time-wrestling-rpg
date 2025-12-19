@@ -178,10 +178,10 @@ public class Account {
         + id
         + ", username='"
         + username
-        + '\''
+        + "'"
         + ", email='"
         + email
-        + '\''
+        + "'"
         + ", enabled="
         + enabled
         + ", roles="

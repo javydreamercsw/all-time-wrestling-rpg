@@ -37,6 +37,7 @@ import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -81,6 +82,7 @@ public class SegmentAdjudicationService {
     this.random = random;
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public void adjudicateMatch(@NonNull Segment segment) {
     List<Wrestler> winners = segment.getWinners();
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());

@@ -379,9 +379,9 @@ enum RoleName {
 - ✅ **Phase 2 complete - menu filtering working**
 
 ### In Progress
-- ⏳ Add @PreAuthorize annotations to service methods
-- ⏳ Implement ownership checks for PLAYER role
-- ⏳ Test method-level security
+- ⏳ Add @PreAuthorize annotations to service methods (CardService: ✅; CardSetService: ✅; DeckService: ✅; DeckCardService: ✅; DramaEventService: ✅; FactionService: ✅; FactionRivalryService: ✅; FeudResolutionService: ✅; InboxService: ✅; InjuryService: ✅; InjuryTypeService: ✅; SegmentAdjudicationService: ✅; NpcService: ✅; PerformanceMonitoringService: ✅; RankingService: ✅; TierBoundaryService: ✅; TierRecalculationService: ✅; TierRecalculationScheduler: ✅; SeasonService: ✅; SegmentService: ✅; SegmentOutcomeService: ✅; SegmentRuleService: ✅; SegmentTypeService: ✅; ShowService: ✅; PromoBookingService: ✅; ShowBookingService: ✅; ShowPlanningService: ✅; ShowPlanningAiService: ✅; ShowTemplateService: ✅; ShowTypeService: ✅; NotionSyncService: ✅; NotionSyncScheduler: ✅; BackupService: ✅; TeamService: ✅; TitleService: ✅; WrestlerService: ✅)
+- ⏳ Implement ownership checks for PLAYER role (WrestlerService: ✅, DeckService: ✅, DeckCardService: ✅, InboxService: ✅)
+- 🔨 Test method-level security
 
 ---
 

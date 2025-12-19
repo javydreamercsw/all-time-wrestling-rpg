@@ -45,6 +45,7 @@ import java.util.Random;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -84,6 +85,7 @@ public class ShowBookingService {
    * @return The booked show with all segments
    */
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Show> bookShow(
       @NonNull String showName,
       @NonNull String showDescription,
@@ -105,6 +107,7 @@ public class ShowBookingService {
    * @return The booked show with all segments
    */
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Show> bookShow(
       @NonNull String showName,
       @NonNull String showDescription,
@@ -192,6 +195,7 @@ public class ShowBookingService {
    * @return The booked PPV show
    */
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Show> bookPPV(@NonNull String ppvName, @NonNull String ppvDescription) {
     try {
       // Get PPV show type
@@ -558,11 +562,13 @@ public class ShowBookingService {
   }
 
   /** Get all segments for a specific show. */
+  @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegmentsForShow(Long showId) {
     return showRepository.findById(showId).map(segmentRepository::findByShow).orElse(List.of());
   }
 
   /** Get show statistics. */
+  @PreAuthorize("isAuthenticated()")
   public ShowStatistics getShowStatistics(Long showId) {
     Optional<Show> showOpt = showRepository.findById(showId);
     if (showOpt.isEmpty()) {

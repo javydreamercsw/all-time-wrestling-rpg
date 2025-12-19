@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,24 +31,29 @@ public class DeckCardService {
     this.deckCardRepository = deckCardRepository;
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER') or @permissionService.isOwner(#dc)")
   public DeckCard save(DeckCard dc) {
+
     return deckCardRepository.save(dc);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER') or @permissionService.isOwner(#dc)")
   public void delete(DeckCard dc) {
+
     deckCardRepository.delete(dc);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<DeckCard> findByDeckIdAndCardIdAndSetId(Long deckId, Long cardId, Long setId) {
-
     return deckCardRepository.findByDeckIdAndCardIdAndSetId(deckId, cardId, setId);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Iterable<DeckCard> findAll() {
-
     return deckCardRepository.findAll();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<DeckCard> findByDeck(com.github.javydreamercsw.management.domain.deck.Deck deck) {
     return deckCardRepository.findByDeck(deck);
   }

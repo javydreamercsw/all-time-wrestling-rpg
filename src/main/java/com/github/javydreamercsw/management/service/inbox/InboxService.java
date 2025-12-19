@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,11 +43,13 @@ public class InboxService {
   private final InboxRepository inboxRepository;
   private final InboxEventTypeRegistry eventTypeRegistry;
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public InboxItem createInboxItem(
       @NonNull InboxEventType eventType, @NonNull String message, @NonNull String referenceId) {
     return createInboxItem(eventType, message, List.of(referenceId));
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public InboxItem createInboxItem(
       @NonNull InboxEventType eventType,
       @NonNull String message,
@@ -58,29 +61,35 @@ public class InboxService {
     return inboxRepository.save(inboxItem);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItems)")
   public void markSelectedAsRead(@NonNull Set<InboxItem> inboxItems) {
     inboxItems.forEach(item -> item.setRead(true));
     inboxRepository.saveAll(inboxItems);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItems)")
   public void markSelectedAsUnread(@NonNull Set<InboxItem> inboxItems) {
     inboxItems.forEach(item -> item.setRead(false));
     inboxRepository.saveAll(inboxItems);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItems)")
   public void deleteSelected(@NonNull Set<InboxItem> inboxItems) {
     inboxRepository.deleteAll(inboxItems);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItem)")
   public InboxItem toggleReadStatus(@NonNull InboxItem inboxItem) {
     inboxItem.setRead(!inboxItem.isRead());
     return inboxRepository.save(inboxItem);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<InboxItem> findAll(Specification<InboxItem> spec, Pageable pageable) {
     return inboxRepository.findAll(spec, pageable).getContent();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<InboxItem> search(
       Set<Wrestler> targets, String readStatus, String eventType, Boolean hideRead) {
     Specification<InboxItem> spec =
@@ -128,10 +137,12 @@ public class InboxService {
     return inboxRepository.findAll(spec, sort);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<InboxItem> list(@NonNull Pageable pageable) {
     return inboxRepository.findAll(pageable).toList();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public long count() {
     return inboxRepository.count();
   }

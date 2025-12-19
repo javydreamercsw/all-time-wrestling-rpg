@@ -16,44 +16,18 @@
 */
 package com.github.javydreamercsw.base.config;
 
-import static org.mockito.Mockito.mock;
-
-import com.github.javydreamercsw.base.AccountInitializer;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Profile;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
 
-/**
- * Test security configuration that disables security for controller tests. Import this
- * in @WebMvcTest classes to bypass security filters.
- */
 @TestConfiguration
-@EnableWebSecurity
-@Profile("test & !e2e")
+@EnableMethodSecurity
 public class TestSecurityConfig {
 
   @Bean
-  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(AbstractHttpConfigurer::disable)
-        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-    return http.build();
-  }
-
-  @Bean
   public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder(10);
-  }
-
-  @Bean
-  @Profile("!e2e")
-  public AccountInitializer accountInitializer() {
-    // Return a mock to prevent initialization logic from running in tests
-    return mock(AccountInitializer.class);
+    return new BCryptPasswordEncoder();
   }
 }

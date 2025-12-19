@@ -37,6 +37,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,6 +66,7 @@ public class PromoBookingService {
    * @return List of booked promo segments
    */
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public List<Segment> bookPromosForShow(
       @NonNull Show show, @NonNull List<Wrestler> availableWrestlers, int maxPromos) {
     List<Segment> promos = new ArrayList<>();
@@ -369,11 +371,13 @@ public class PromoBookingService {
   }
 
   /** Check if a segment is a promo segment. */
+  @PreAuthorize("isAuthenticated()")
   public boolean isPromoSegment(@NonNull Segment segment) {
     return segment.getSegmentType() != null && "Promo".equals(segment.getSegmentType().getName());
   }
 
   /** Get all promo segments for a show. */
+  @PreAuthorize("isAuthenticated()")
   public List<Segment> getPromosForShow(@NonNull Show show) {
     return segmentRepository.findByShow(show).stream().filter(this::isPromoSegment).toList();
   }

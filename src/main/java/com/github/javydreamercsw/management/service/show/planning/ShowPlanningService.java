@@ -43,6 +43,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,6 +67,7 @@ public class ShowPlanningService {
   private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
     ShowPlanningContext context = new ShowPlanningContext();
 
@@ -169,6 +171,7 @@ public class ShowPlanningService {
   }
 
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public void approveSegments(@NonNull Show show, @NonNull List<ProposedSegment> proposedSegments) {
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();

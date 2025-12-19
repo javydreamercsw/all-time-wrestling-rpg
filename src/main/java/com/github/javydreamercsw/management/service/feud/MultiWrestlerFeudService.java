@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,30 +56,35 @@ public class MultiWrestlerFeudService {
 
   /** Get all multi-wrestler feuds with pagination. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<MultiWrestlerFeud> getAllFeuds(@NonNull Pageable pageable) {
     return multiWrestlerFeudRepository.findAllBy(pageable);
   }
 
   /** Get feud by ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<MultiWrestlerFeud> getFeudById(@NonNull Long id) {
     return multiWrestlerFeudRepository.findById(id);
   }
 
   /** Get feud by name. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<MultiWrestlerFeud> getFeudByName(@NonNull String name) {
     return multiWrestlerFeudRepository.findByName(name);
   }
 
   /** Get all active feuds. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getActiveFeuds() {
     return multiWrestlerFeudRepository.findByIsActiveTrue();
   }
 
   /** Get active feuds for a specific wrestler. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getActiveFeudsForWrestler(@NonNull Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -90,6 +96,7 @@ public class MultiWrestlerFeudService {
   }
 
   /** Create a new multi-wrestler feud. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<MultiWrestlerFeud> createFeud(
       @NonNull String name, @NonNull String description, @NonNull String storylineNotes) {
     // Check if feud name already exists
@@ -115,6 +122,7 @@ public class MultiWrestlerFeudService {
   }
 
   /** Add a participant to a feud. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<MultiWrestlerFeud> addParticipant(
       @NonNull Long feudId, @NonNull Long wrestlerId, @NonNull FeudRole role) {
     Optional<MultiWrestlerFeud> feudOpt = multiWrestlerFeudRepository.findById(feudId);
@@ -152,6 +160,7 @@ public class MultiWrestlerFeudService {
   }
 
   /** Remove a participant from a feud. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<MultiWrestlerFeud> removeParticipant(
       @NonNull Long feudId, @NonNull Long wrestlerId, @NonNull String reason) {
     Optional<MultiWrestlerFeud> feudOpt = multiWrestlerFeudRepository.findById(feudId);
@@ -183,6 +192,7 @@ public class MultiWrestlerFeudService {
   }
 
   /** Add heat to a feud. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<MultiWrestlerFeud> addHeat(
       @NonNull Long feudId, int heatGain, @NonNull String reason) {
     return multiWrestlerFeudRepository
@@ -217,6 +227,7 @@ public class MultiWrestlerFeudService {
   }
 
   /** End a feud. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<MultiWrestlerFeud> endFeud(@NonNull Long feudId, @NonNull String reason) {
     Optional<MultiWrestlerFeud> feudOpt = multiWrestlerFeudRepository.findById(feudId);
 
@@ -240,66 +251,77 @@ public class MultiWrestlerFeudService {
 
   /** Get feuds requiring matches at next show. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getFeudsRequiringMatches() {
     return multiWrestlerFeudRepository.findFeudsRequiringMatches();
   }
 
   /** Get feuds eligible for resolution. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getFeudsEligibleForResolution() {
     return multiWrestlerFeudRepository.findFeudsEligibleForResolution();
   }
 
   /** Get feuds requiring rule matches. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getFeudsRequiringStipulationMatches() {
     return multiWrestlerFeudRepository.findFeudsRequiringStipulationMatches();
   }
 
   /** Get hottest feuds. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getHottestFeuds(int limit) {
     return multiWrestlerFeudRepository.findHottestFeuds(Pageable.ofSize(limit));
   }
 
   /** Get valid multi-wrestler feuds (3+ participants). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getValidMultiWrestlerFeuds() {
     return multiWrestlerFeudRepository.findValidMultiWrestlerFeuds();
   }
 
   /** Get feuds with both protagonists and antagonists. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getFeudsWithProtagonistsAndAntagonists() {
     return multiWrestlerFeudRepository.findFeudsWithProtagonistsAndAntagonists();
   }
 
   /** Get feuds with wild card participants. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getFeudsWithWildCards() {
     return multiWrestlerFeudRepository.findFeudsWithWildCards();
   }
 
   /** Get largest feuds by participant count. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getLargestFeuds(int limit) {
     return multiWrestlerFeudRepository.findLargestFeuds(Pageable.ofSize(limit));
   }
 
   /** Get inter-faction feuds. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getInterFactionFeuds() {
     return multiWrestlerFeudRepository.findInterFactionFeuds();
   }
 
   /** Get independent wrestler feuds (no faction members). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getIndependentWrestlerFeuds() {
     return multiWrestlerFeudRepository.findIndependentWrestlerFeuds();
   }
 
   /** Get feuds by participant count range. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getFeudsByParticipantCount(
       int minParticipants, int maxParticipants) {
     return multiWrestlerFeudRepository.findByParticipantCountRange(
@@ -308,12 +330,14 @@ public class MultiWrestlerFeudService {
 
   /** Get feuds with specific role. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getFeudsWithRole(@NonNull FeudRole role) {
     return multiWrestlerFeudRepository.findFeudsWithRole(role);
   }
 
   /** Count active feuds for a wrestler. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public long countActiveFeudsForWrestler(Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -324,6 +348,7 @@ public class MultiWrestlerFeudService {
 
   /** Get recent feuds. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getRecentFeuds(int days) {
     Instant sinceDate = clock.instant().minusSeconds(days * 24L * 3600L);
     return multiWrestlerFeudRepository.findRecentFeuds(sinceDate);
@@ -331,6 +356,7 @@ public class MultiWrestlerFeudService {
 
   /** Check if a feud is valid (has 3+ participants). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public boolean isValidMultiWrestlerFeud(@NonNull Long feudId) {
     Optional<MultiWrestlerFeud> feudOpt = multiWrestlerFeudRepository.findById(feudId);
 
@@ -339,6 +365,7 @@ public class MultiWrestlerFeudService {
 
   /** Get feud statistics. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public FeudStatistics getFeudStatistics() {
     List<MultiWrestlerFeud> activeFeuds = getActiveFeuds();
     List<MultiWrestlerFeud> validFeuds = getValidMultiWrestlerFeuds();

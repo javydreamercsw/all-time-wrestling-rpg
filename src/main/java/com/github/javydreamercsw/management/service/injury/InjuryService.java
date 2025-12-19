@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +52,7 @@ public class InjuryService {
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   /** Create a new injury for a wrestler. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Injury> createInjury(
       Long wrestlerId,
       String name,
@@ -83,6 +85,7 @@ public class InjuryService {
    * Create injury from bump system (3 bumps = 1 injury). This method should only be called when an
    * injury should be created (bumps already reset by Wrestler.addBump()).
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Injury> createInjuryFromBumps(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -114,11 +117,13 @@ public class InjuryService {
   }
 
   /** Attempt to heal an injury. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public HealingResult attemptHealing(@NonNull Long injuryId) {
     return attemptHealing(injuryId, null);
   }
 
   /** Attempt to heal an injury. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public HealingResult attemptHealing(@NonNull Long injuryId, Integer diceRoll) {
     Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
 
@@ -169,18 +174,21 @@ public class InjuryService {
 
   /** Get injury by ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Injury> getInjuryById(@NonNull Long injuryId) {
     return injuryRepository.findById(injuryId);
   }
 
   /** Get all injuries with pagination. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<Injury> getAllInjuries(@NonNull Pageable pageable) {
     return injuryRepository.findAllBy(pageable);
   }
 
   /** Get active injuries for a wrestler. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Injury> getActiveInjuriesForWrestler(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -190,6 +198,7 @@ public class InjuryService {
 
   /** Get all injuries for a wrestler. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Injury> getAllInjuriesForWrestler(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -199,24 +208,28 @@ public class InjuryService {
 
   /** Get injuries by severity. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Injury> getInjuriesBySeverity(@NonNull InjurySeverity severity) {
     return injuryRepository.findBySeverity(severity);
   }
 
   /** Get all active injuries. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Injury> getAllActiveInjuries() {
     return injuryRepository.findAllActiveInjuries();
   }
 
   /** Get wrestlers with active injuries. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getWrestlersWithActiveInjuries() {
     return injuryRepository.findWrestlersWithActiveInjuries();
   }
 
   /** Get total health penalty for a wrestler. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Integer getTotalHealthPenaltyForWrestler(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -226,11 +239,13 @@ public class InjuryService {
 
   /** Get healable injuries (active injuries). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Injury> getHealableInjuries() {
     return injuryRepository.findHealableInjuries();
   }
 
   /** Update injury information. */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Injury> updateInjury(
       @NonNull Long injuryId, String name, String description, String injuryNotes) {
     return injuryRepository
@@ -246,12 +261,14 @@ public class InjuryService {
 
   /** Find injury by external ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Injury> findByExternalId(@NonNull String externalId) {
     return injuryRepository.findByExternalId(externalId);
   }
 
   /** Get injury statistics for a wrestler. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public InjuryStats getInjuryStatsForWrestler(Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)

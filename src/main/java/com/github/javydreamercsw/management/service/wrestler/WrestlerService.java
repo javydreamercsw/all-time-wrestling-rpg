@@ -63,14 +63,17 @@ public class WrestlerService {
   @Autowired private TitleService titleService;
   @Autowired private TierRecalculationService tierRecalculationService;
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public void createWrestler(@NonNull String name) {
     createWrestler(name, false, "", WrestlerTier.ROOKIE);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> list(@NonNull Pageable pageable) {
     return wrestlerRepository.findAllBy(pageable).toList();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public long count() {
     return wrestlerRepository.count();
   }
@@ -78,7 +81,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestler)")
   public Wrestler save(@NonNull Wrestler wrestler) {
     wrestler.setCreationDate(clock.instant());
     return wrestlerRepository.saveAndFlush(wrestler);
@@ -105,25 +108,30 @@ public class WrestlerService {
   }
 
   /** Find wrestler by ID (alias for getWrestlerById for consistency). */
+  @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findById(Long id) {
     return getWrestlerById(id);
   }
 
   /** Find wrestler by ID and fetch injuries. */
+  @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findByIdWithInjuries(Long id) {
     return wrestlerRepository.findByIdWithInjuries(id);
   }
 
   /** Get all wrestlers (alias for findAll for UI compatibility). */
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getAllWrestlers() {
     return findAll();
   }
 
   @Cacheable(value = WRESTLERS_CACHE, key = "'name:' + #name")
+  @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findByName(String name) {
     return wrestlerRepository.findByName(name);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findByExternalId(String externalId) {
     return wrestlerRepository.findByExternalId(externalId);
   }
@@ -131,6 +139,7 @@ public class WrestlerService {
   // ==================== ATW RPG METHODS ====================
 
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fans) {
     return updateFans(wrestlerId, fans);
   }
@@ -169,6 +178,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Wrestler> addBump(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -191,6 +201,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Wrestler> healBump(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -215,6 +226,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Wrestler> healChance(@NonNull Long wrestlerId, @NonNull DiceBag diceBag) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -251,6 +263,7 @@ public class WrestlerService {
             });
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Wrestler> healChance(@NonNull Long wrestlerId) {
     return healChance(wrestlerId, new DiceBag(6));
   }
@@ -261,6 +274,7 @@ public class WrestlerService {
    * @param tier The wrestler tier
    * @return List of wrestlers in that tier
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getWrestlersByTier(@NonNull WrestlerTier tier) {
     return wrestlerRepository.findAll().stream()
         .filter(wrestler -> wrestler.getTier() == tier)
@@ -272,6 +286,7 @@ public class WrestlerService {
    *
    * @return List of player wrestlers
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getPlayerWrestlers() {
     return wrestlerRepository.findAll().stream().filter(Wrestler::getIsPlayer).toList();
   }
@@ -281,6 +296,7 @@ public class WrestlerService {
    *
    * @return List of NPC wrestlers
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getNpcWrestlers() {
     return wrestlerRepository.findAll().stream()
         .filter(wrestler -> !wrestler.getIsPlayer())
@@ -294,6 +310,7 @@ public class WrestlerService {
    * @param cost The fan cost
    * @return true if successful, false if wrestler not found or insufficient fans
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public boolean spendFans(@NonNull Long wrestlerId, @NonNull Long cost) {
     return updateFans(wrestlerId, -cost).isPresent();
   }
@@ -306,6 +323,7 @@ public class WrestlerService {
    * @param description Character description
    * @return The created wrestler
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
     return createWrestler(name, isPlayer, description, WrestlerTier.ROOKIE);
   }
@@ -319,6 +337,7 @@ public class WrestlerService {
    * @param tier The tier of the wrestler
    * @return The created wrestler
    */
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Wrestler createWrestler(
       @NonNull String name, boolean isPlayer, String description, @NonNull WrestlerTier tier) {
     Wrestler wrestler =
@@ -340,6 +359,7 @@ public class WrestlerService {
     return save(wrestler);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<WrestlerDTO> findAllAsDTO() {
     return findAll().stream().map(WrestlerDTO::new).toList();
   }
@@ -351,6 +371,7 @@ public class WrestlerService {
    * @return An Optional containing WrestlerStats if the wrestler is found, otherwise empty.
    */
   @Cacheable(value = WRESTLER_STATS_CACHE, key = "#wrestlerId")
+  @PreAuthorize("isAuthenticated()")
   public Optional<WrestlerStats> getWrestlerStats(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)

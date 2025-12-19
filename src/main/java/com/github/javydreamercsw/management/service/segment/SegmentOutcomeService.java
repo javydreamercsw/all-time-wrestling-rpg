@@ -33,6 +33,7 @@ import java.util.Random;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +54,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
    * bonuses, and weighted random selection.
    */
   @Transactional
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public SegmentNarrationService.SegmentNarrationContext determineOutcomeIfNeeded(
       @NonNull SegmentNarrationService.SegmentNarrationContext context) {
     // If outcome is already determined, return as-is

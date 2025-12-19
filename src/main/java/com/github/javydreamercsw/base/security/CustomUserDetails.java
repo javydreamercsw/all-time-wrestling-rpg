@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -29,9 +30,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class CustomUserDetails implements UserDetails {
 
   private final Account account;
+  private final Wrestler wrestler; // Added field
+
+  public CustomUserDetails(Account account, Wrestler wrestler) { // Updated constructor
+    this.account = account;
+    this.wrestler = wrestler;
+  }
 
   public CustomUserDetails(Account account) {
     this.account = account;
+    this.wrestler = null;
   }
 
   @Override
@@ -91,5 +99,9 @@ public class CustomUserDetails implements UserDetails {
    */
   public Long getId() {
     return account.getId();
+  }
+
+  public Wrestler getWrestler() { // Re-added method
+    return wrestler;
   }
 }

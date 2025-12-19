@@ -24,6 +24,7 @@ import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,27 +35,33 @@ public class ShowTypeService {
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private Clock clock;
 
+  @PreAuthorize("isAuthenticated()")
   public List<ShowType> list(@NonNull Pageable pageable) {
     return showTypeRepository.findAllBy(pageable).toList();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public long count() {
     return showTypeRepository.count();
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public ShowType save(@NonNull ShowType showType) {
     showType.setCreationDate(clock.instant());
     return showTypeRepository.saveAndFlush(showType);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<ShowType> findAll() {
     return showTypeRepository.findAll();
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public void delete(@NonNull ShowType showType) {
     showTypeRepository.delete(showType);
   }
 
+  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public ShowType createOrUpdateShowType(
       @NonNull String name, @NonNull String description, int expectedMatches, int expectedPromos) {
     Optional<ShowType> existingShowType = findByName(name);
@@ -72,6 +79,7 @@ public class ShowTypeService {
    * @param name The name of the show type
    * @return Optional containing the show type if found
    */
+  @PreAuthorize("isAuthenticated()")
   public Optional<ShowType> findByName(@NonNull String name) {
     return showTypeRepository.findByName(name);
   }
@@ -82,6 +90,7 @@ public class ShowTypeService {
    * @param name The name to check
    * @return true if a show type with this name exists
    */
+  @PreAuthorize("isAuthenticated()")
   public boolean existsByName(@NonNull String name) {
     return showTypeRepository.existsByName(name);
   }
