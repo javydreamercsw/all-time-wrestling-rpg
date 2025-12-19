@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -110,6 +111,7 @@ public class ShowDetailView extends Main
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
   private final RivalryService rivalryService;
+  private final LocalAIStatusService localAIStatusService;
   private String referrer = "shows"; // Default referrer
 
   private H2 showTitle;
@@ -131,7 +133,8 @@ public class ShowDetailView extends Main
       ShowTypeService showTypeService,
       SeasonService seasonService,
       ShowTemplateService showTemplateService,
-      RivalryService rivalryService) {
+      RivalryService rivalryService,
+      LocalAIStatusService localAIStatusService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -145,6 +148,7 @@ public class ShowDetailView extends Main
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
     this.rivalryService = rivalryService;
+    this.localAIStatusService = localAIStatusService;
     initializeComponents();
   }
 
@@ -740,10 +744,10 @@ public class ShowDetailView extends Main
                   segment,
                   npcService,
                   wrestlerService,
-                  titleService,
                   showService,
                   updatedSegment -> refreshSegmentsGrid(),
-                  rivalryService); // Call refreshSegmentsGrid
+                  rivalryService,
+                  localAIStatusService); // Call refreshSegmentsGrid
           dialog.open();
         });
 

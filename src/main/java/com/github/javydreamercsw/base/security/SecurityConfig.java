@@ -27,6 +27,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /** Security configuration for the application. */
 @Configuration
@@ -42,7 +43,11 @@ public class SecurityConfig {
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     // Public access to static resources
     http.authorizeHttpRequests(
-        auth -> auth.requestMatchers("/images/**", "/icons/**", "/public/**").permitAll());
+        auth ->
+            auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**").permitAll());
+
+    // Disable CSRF for API endpoints
+    http.csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/api/**")));
 
     // Apply Vaadin security configurer and set the login view
     http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));

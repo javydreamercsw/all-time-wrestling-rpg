@@ -61,7 +61,13 @@ public class SegmentNarrationController {
       log.debug("Test profile detected, using testing service");
       return serviceFactory.getTestingService();
     }
-    return serviceFactory.getBestAvailableService();
+    SegmentNarrationService bestService = serviceFactory.getBestAvailableService();
+    if (bestService != null) {
+      log.debug("Using best available service: {}", bestService.getProviderName());
+    } else {
+      log.warn("No AI service is available.");
+    }
+    return bestService;
   }
 
   private boolean isTestProfile() {
@@ -86,7 +92,7 @@ public class SegmentNarrationController {
                 "temperature",
                 config.getAi().getTemperature(),
                 "timeoutSeconds",
-                config.getAi().getTimeoutSeconds(),
+                config.getAi().getTimeout(),
                 "targetWordCount",
                 Map.of(
                     "minimum",
@@ -128,32 +134,28 @@ public class SegmentNarrationController {
 
     try {
       context = segmentOutcomeService.determineOutcomeIfNeeded(context);
-      log.info(context.toString());
 
       String narration;
       String providerName;
-      double estimatedCost = 0.0;
+      double estimatedCost;
 
+      SegmentNarrationService service;
+      log.debug("Retrieving AI provider...");
       if (provider == null) {
-        if (isTestProfile()) {
-          SegmentNarrationService service = serviceFactory.getTestingService();
-          narration = service.narrateSegment(context);
-          providerName = service.getProviderName();
-        } else {
-          narration = serviceFactory.narrateSegment(context);
-          // We can't know which provider was used, so we can't provide a name or cost.
-          providerName = "Unknown (Fallback)";
+        service = getAppropriateService();
+        if (service == null) {
+          return ResponseEntity.status(503).body(Map.of("error", "No AI provider is available."));
         }
       } else {
-        SegmentNarrationService service = serviceFactory.getServiceByProvider(provider);
+        service = serviceFactory.getServiceByProvider(provider);
         if (service == null) {
           return ResponseEntity.badRequest()
               .body(Map.of("error", "Provider '" + provider + "' not available or not found"));
         }
-        narration = service.narrateSegment(context);
-        providerName = service.getProviderName();
-        estimatedCost = serviceFactory.getEstimatedSegmentCost(providerName);
       }
+      narration = service.narrateSegment(context);
+      providerName = service.getProviderName();
+      estimatedCost = serviceFactory.getEstimatedSegmentCost(providerName);
 
       Map<String, Object> response = new HashMap<>();
       response.put("provider", providerName);

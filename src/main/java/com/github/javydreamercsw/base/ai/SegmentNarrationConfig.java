@@ -55,7 +55,7 @@ public class SegmentNarrationConfig {
     private double temperature = 0.8;
 
     /** Request timeout in seconds for segment narration. Longer narrations need more time. */
-    private int timeoutSeconds = 90;
+    private int timeout = 90;
 
     /** Target word count for segment narrations. */
     private WordCount wordCount = new WordCount();

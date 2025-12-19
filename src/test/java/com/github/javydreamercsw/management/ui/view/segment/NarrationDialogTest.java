@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.segment;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -45,6 +46,7 @@ class NarrationDialogTest {
   @Mock private TitleService titleService;
   @Mock private ShowService showService;
   @Mock private RivalryService rivalryService;
+  @Mock private LocalAIStatusService localAIStatusService;
 
   private NarrationDialog narrationDialog;
 
@@ -80,16 +82,17 @@ class NarrationDialogTest {
     segments.add(segment);
 
     when(showService.getSegments(show)).thenReturn(segments);
+    when(localAIStatusService.isReady()).thenReturn(true);
 
     narrationDialog =
         new NarrationDialog(
             segment,
             npcService,
             wrestlerService,
-            titleService,
             showService,
             s -> {},
-            rivalryService);
+            rivalryService,
+            localAIStatusService);
   }
 
   @Test

@@ -16,9 +16,11 @@
 */
 package com.github.javydreamercsw.base.config;
 
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import java.io.File;
 import java.time.Duration;
 import javax.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -27,55 +29,75 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.MountableFile;
 
 /**
  * Manages a LocalAI container for development using Testcontainers. This configuration is only
- * active when the "local-ai-embedded" profile is enabled.
+ * active when the non-test profile is enabled.
  */
 @Configuration
 @Profile("!test & !e2e")
 @Slf4j
+@RequiredArgsConstructor
 public class LocalAIContainerConfig {
 
   @Value("${segment-narration.ai.localai.model}")
   private String modelName;
 
+  private final LocalAIStatusService statusService;
   private GenericContainer<?> localAiContainer;
 
   @EventListener(ApplicationReadyEvent.class)
   public void startLocalAiContainer() {
-    File modelsDir = new File("models");
-    if (!modelsDir.exists()) {
-      modelsDir.mkdirs();
+    if (modelName != null && !modelName.isEmpty()) {
+      new Thread(this::initializeAndStartContainer).start();
     }
+  }
 
-    // Using the official LocalAI image
-    localAiContainer =
-        new GenericContainer<>("localai/localai:latest")
-            .withExposedPorts(8080)
-            .withCopyFileToContainer(MountableFile.forHostPath(modelsDir.toPath()), "/build/models")
-            // Install the model on startup
-            .withCommand("run", modelName)
-            .withEnv("MODELS_PATH", "/build/models")
-            // Wait for the server to be ready. Increased timeout for model download/install.
-            .waitingFor(
-                Wait.forHttp("/readyz")
-                    .forStatusCode(200)
-                    .withStartupTimeout(Duration.ofMinutes(15)));
+  private void initializeAndStartContainer() {
+    try {
+      statusService.setStatus(LocalAIStatusService.Status.STARTING);
+      statusService.setMessage("LocalAI container is starting...");
 
-    localAiContainer.start();
+      File modelsDir = new File("models");
+      if (!modelsDir.exists()) {
+        modelsDir.mkdirs();
+      }
 
-    // Dynamically set the base URL for the LocalAI service
-    String baseUrl =
-        String.format(
-            "http://%s:%d", localAiContainer.getHost(), localAiContainer.getMappedPort(8080));
-    System.setProperty("segment-narration.ai.localai.base-url", baseUrl);
-    // Set the model name to match what we installed
-    System.setProperty("segment-narration.ai.localai.model", modelName);
+      // Using the official LocalAI image
+      localAiContainer =
+          new GenericContainer<>("localai/localai:latest")
+              .withExposedPorts(8080)
+              .withFileSystemBind(modelsDir.getAbsolutePath(), "/build/models")
+              .withCommand("run", modelName)
+              .withEnv("MODELS_PATH", "/build/models")
+              .waitingFor(
+                  Wait.forHttp("/readyz")
+                      .forStatusCode(200)
+                      .withStartupTimeout(Duration.ofMinutes(15)));
 
-    log.info("LocalAI Container started at: {}", baseUrl);
-    log.info("Model installed: {}", modelName);
+      log.info(
+          "Starting LocalAI container. This may take a while for the initial model download...");
+      statusService.setStatus(LocalAIStatusService.Status.DOWNLOADING_MODEL);
+      statusService.setMessage("Downloading/installing AI model. This can take several minutes...");
+
+      localAiContainer.start();
+
+      String baseUrl =
+          String.format(
+              "http://%s:%d", localAiContainer.getHost(), localAiContainer.getMappedPort(8080));
+      System.setProperty("segment-narration.ai.localai.base-url", baseUrl);
+      System.setProperty("segment-narration.ai.localai.model", modelName);
+
+      statusService.setStatus(LocalAIStatusService.Status.READY);
+      statusService.setMessage("LocalAI is ready.");
+      log.info("LocalAI Container started at: {}", baseUrl);
+      log.info("Model '{}' is ready.", modelName);
+
+    } catch (Exception e) {
+      log.error("Failed to start LocalAI container", e);
+      statusService.setStatus(LocalAIStatusService.Status.FAILED);
+      statusService.setMessage("LocalAI failed to start: " + e.getMessage());
+    }
   }
 
   @PreDestroy

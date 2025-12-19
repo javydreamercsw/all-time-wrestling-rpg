@@ -86,7 +86,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
         };
 
     context.setDeterminedOutcome(outcome);
-    log.info("Automatically determined match outcome: {}", outcome);
+    log.debug("Automatically determined match outcome: {}", outcome);
     return context;
   }
 
