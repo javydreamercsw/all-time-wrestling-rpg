@@ -18,8 +18,10 @@ package com.github.javydreamercsw.base.ai;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.github.javydreamercsw.base.config.LocalAIContainerConfig;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -30,16 +32,20 @@ import org.springframework.test.context.ActiveProfiles;
     classes = {
       LocalAISegmentNarrationService.class,
       LocalAIContainerConfig.class,
-      SegmentNarrationConfig.class
+      LocalAIStatusService.class
     })
 @EnableConfigurationProperties(SegmentNarrationConfig.class)
-@ActiveProfiles("localai-test")
+@ActiveProfiles("localai")
 class LocalAISegmentNarrationServiceTest {
 
   @Autowired private LocalAISegmentNarrationService localAIService;
+  @Autowired private LocalAIStatusService statusService;
 
   @Test
   void testGenerateText() {
+    // Wait for LocalAI to be ready
+    waitForLocalAI();
+
     // Given
     String prompt = "Who is the best wrestler of all time?";
 
@@ -50,5 +56,22 @@ class LocalAISegmentNarrationServiceTest {
     assertNotNull(response);
     assertFalse(response.isEmpty());
     System.out.println("LocalAI Response: " + response);
+  }
+
+  private void waitForLocalAI() {
+    long startTime = System.currentTimeMillis();
+    long timeout = Duration.ofMinutes(15).toMillis(); // 15 minutes timeout
+
+    while (!statusService.isReady()) {
+      if (System.currentTimeMillis() - startTime > timeout) {
+        fail("Timeout waiting for LocalAI to be ready. Current status: " + statusService.getStatus());
+      }
+      try {
+        Thread.sleep(1000); // Check every second
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        fail("Interrupted while waiting for LocalAI");
+      }
+    }
   }
 }
