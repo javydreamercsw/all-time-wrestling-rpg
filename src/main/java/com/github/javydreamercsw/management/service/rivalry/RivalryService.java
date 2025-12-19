@@ -50,7 +50,7 @@ public class RivalryService {
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   /** Create a new rivalry between two wrestlers. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Rivalry> createRivalry(
       @NonNull Long wrestler1Id, @NonNull Long wrestler2Id, @NonNull String storylineNotes) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
@@ -84,7 +84,7 @@ public class RivalryService {
   }
 
   /** Add heat to a rivalry. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Rivalry> addHeat(Long rivalryId, int heatGain, String reason) {
     return rivalryRepository
         .findById(rivalryId)
@@ -107,7 +107,7 @@ public class RivalryService {
   }
 
   /** Add heat between two specific wrestlers. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Rivalry> addHeatBetweenWrestlers(
       @NonNull Long wrestler1Id, @NonNull Long wrestler2Id, int heatGain, @NonNull String reason) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
@@ -130,7 +130,7 @@ public class RivalryService {
   }
 
   /** Attempt to resolve a rivalry with dice rolls. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public ResolutionResult<Rivalry> attemptResolution(
       @NonNull Long rivalryId, @NonNull Integer wrestler1Roll, @NonNull Integer wrestler2Roll) {
     Optional<Rivalry> rivalryOpt = rivalryRepository.findById(rivalryId);
@@ -174,7 +174,7 @@ public class RivalryService {
   }
 
   /** End a rivalry manually. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Rivalry> endRivalry(@NonNull Long rivalryId, @NonNull String reason) {
     return rivalryRepository
         .findById(rivalryId)
@@ -269,7 +269,7 @@ public class RivalryService {
   }
 
   /** Update rivalry storyline notes. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Rivalry> updateStorylineNotes(
       @NonNull Long rivalryId, @NonNull String storylineNotes) {
     return rivalryRepository
@@ -310,7 +310,7 @@ public class RivalryService {
     return rivalryRepository.findByExternalId(externalId);
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Rivalry save(@NonNull Rivalry rivalry) {
     return rivalryRepository.saveAndFlush(rivalry);
   }

@@ -234,7 +234,7 @@ public class ShowService {
    * @param templateId Template ID (optional)
    * @return Created show
    */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Show createShow(
       String name,
       String description,
@@ -289,7 +289,7 @@ public class ShowService {
    * @param templateId Template ID (optional)
    * @return Updated show if found
    */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Show> updateShow(
       Long id,
       String name,
@@ -359,7 +359,7 @@ public class ShowService {
     return false;
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void adjudicateShow(Long showId) {
     Show show =
         showRepository

@@ -91,7 +91,7 @@ public class SegmentRuleService {
    * @return The created segment rule
    */
   @Transactional
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public SegmentRule createRule(
       @NonNull String name, @NonNull String description, boolean requiresHighHeat) {
     if (segmentRuleRepository.existsByName(name)) {
@@ -118,7 +118,7 @@ public class SegmentRuleService {
    * @return The updated segment rule
    */
   @Transactional
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public SegmentRule updateRule(
       @NonNull Long id,
       @NonNull String name,
@@ -187,7 +187,7 @@ public class SegmentRuleService {
    * @return The created or updated segment rule
    */
   @Transactional
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public SegmentRule createOrUpdateRule(
       @NonNull String name,
       String description,

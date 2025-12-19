@@ -77,7 +77,7 @@ public class TitleService {
     return titleRepository.findByName(name).isPresent();
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Title createTitle(
       @NonNull String name, @NonNull String description, @NonNull WrestlerTier tier) {
     Title title = new Title();
@@ -103,7 +103,7 @@ public class TitleService {
     return titleRepository.findByExternalId(externalId);
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Title save(@NonNull Title title) {
     return titleRepository.save(title);
   }
@@ -135,13 +135,13 @@ public class TitleService {
     return titleRepository.findByIsActiveTrueAndTier(tier);
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void awardTitleTo(@NonNull Title title, @NonNull List<Wrestler> newChampions) {
     title.awardTitleTo(newChampions, Instant.now(clock));
     titleRepository.save(title);
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Title> vacateTitle(@NonNull Long titleId) {
     return titleRepository
         .findById(titleId)
@@ -153,7 +153,7 @@ public class TitleService {
             });
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Title> updateTitle(
       @NonNull Long id, String name, String description, Boolean isActive) {
 
@@ -180,7 +180,7 @@ public class TitleService {
             });
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public boolean deleteTitle(@NonNull Long id) {
 
     return titleRepository
@@ -222,7 +222,7 @@ public class TitleService {
     return titleRepository.findTitlesHeldByWrestler(wrestler);
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public ChallengeResult challengeForTitle(@NonNull Long wrestlerId, @NonNull Long titleId) {
     Optional<Wrestler> challengerOpt = wrestlerRepository.findById(wrestlerId);
     Optional<Title> titleOpt = titleRepository.findById(titleId);
@@ -295,7 +295,7 @@ public class TitleService {
         .orElse(null);
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Title> updateNumberOneContender(@NonNull Long titleId, @NonNull Long wrestlerId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
@@ -310,7 +310,7 @@ public class TitleService {
     return Optional.of(titleRepository.save(title));
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Title> clearNumberOneContender(Long titleId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
 
