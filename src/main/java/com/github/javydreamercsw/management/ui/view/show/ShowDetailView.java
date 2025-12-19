@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -112,6 +113,7 @@ public class ShowDetailView extends Main
   private final ShowTemplateService showTemplateService;
   private final RivalryService rivalryService;
   private final LocalAIStatusService localAIStatusService;
+  private final SegmentNarrationConfig segmentNarrationConfig;
   private String referrer = "shows"; // Default referrer
 
   private H2 showTitle;
@@ -134,7 +136,8 @@ public class ShowDetailView extends Main
       SeasonService seasonService,
       ShowTemplateService showTemplateService,
       RivalryService rivalryService,
-      LocalAIStatusService localAIStatusService) {
+      LocalAIStatusService localAIStatusService,
+      SegmentNarrationConfig segmentNarrationConfig) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -149,6 +152,7 @@ public class ShowDetailView extends Main
     this.showTemplateService = showTemplateService;
     this.rivalryService = rivalryService;
     this.localAIStatusService = localAIStatusService;
+    this.segmentNarrationConfig = segmentNarrationConfig;
     initializeComponents();
   }
 
@@ -747,7 +751,8 @@ public class ShowDetailView extends Main
                   showService,
                   updatedSegment -> refreshSegmentsGrid(),
                   rivalryService,
-                  localAIStatusService); // Call refreshSegmentsGrid
+                  localAIStatusService,
+                  segmentNarrationConfig); // Call refreshSegmentsGrid
           dialog.open();
         });
 

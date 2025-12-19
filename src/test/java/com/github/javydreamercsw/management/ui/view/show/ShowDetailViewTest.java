@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -81,6 +82,7 @@ class ShowDetailViewTest {
   @Mock private ShowTemplateService showTemplateService;
   @Mock private RivalryService rivalryService;
   @Mock private LocalAIStatusService localAIStatusService;
+  @Mock private SegmentNarrationConfig segmentNarrationConfig;
 
   @BeforeEach
   void setUp() {
@@ -138,7 +140,8 @@ class ShowDetailViewTest {
               seasonService,
               showTemplateService,
               rivalryService,
-              localAIStatusService);
+              localAIStatusService,
+              segmentNarrationConfig);
 
       ReflectionTestUtils.invokeMethod(
           showDetailView,
@@ -210,7 +213,8 @@ class ShowDetailViewTest {
               seasonService,
               showTemplateService,
               rivalryService,
-              localAIStatusService);
+              localAIStatusService,
+              segmentNarrationConfig);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));

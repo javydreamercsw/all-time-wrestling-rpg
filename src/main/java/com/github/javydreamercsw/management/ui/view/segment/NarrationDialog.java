@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.segment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -69,6 +70,7 @@ public class NarrationDialog extends Dialog {
   private final ShowService showService;
   private final RivalryService rivalryService;
   private final LocalAIStatusService localAIStatusService;
+  private final SegmentNarrationConfig segmentNarrationConfig;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -92,7 +94,8 @@ public class NarrationDialog extends Dialog {
       ShowService showService,
       Consumer<Segment> onSaveCallback,
       RivalryService rivalryService,
-      LocalAIStatusService localAIStatusService) {
+      LocalAIStatusService localAIStatusService,
+      SegmentNarrationConfig segmentNarrationConfig) {
     this.segment = segment;
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
@@ -101,6 +104,7 @@ public class NarrationDialog extends Dialog {
     this.onSaveCallback = onSaveCallback;
     this.rivalryService = rivalryService;
     this.localAIStatusService = localAIStatusService;
+    this.segmentNarrationConfig = segmentNarrationConfig;
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
     setWidth("800px");
@@ -274,13 +278,23 @@ public class NarrationDialog extends Dialog {
   }
 
   private void generateNarration() {
-    if (!localAIStatusService.isReady()) {
-      Notification.show(localAIStatusService.getMessage(), 5000, Notification.Position.MIDDLE);
+    boolean isLocalAi = isLocalAiConfigured();
+    log.debug("Is LocalAI configured? {}", isLocalAi);
+
+    if (isLocalAi && !localAIStatusService.isReady()) {
+      Notification.show(localAIStatusService.getMessage(), 5_000, Notification.Position.BOTTOM_END);
       return;
     }
 
-    showProgress(true);
+    if (isLocalAi) {
+      Notification.show(
+              "Using LocalAI. Generation may take several minutes...",
+              5_000,
+              Notification.Position.BOTTOM_END)
+          .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+    }
 
+    showProgress(true);
     try {
       SegmentNarrationService.SegmentNarrationContext context = buildSegmentContext();
       log.debug("Sending narration context to AI: {}", context);
@@ -313,6 +327,18 @@ public class NarrationDialog extends Dialog {
     } finally {
       showProgress(false);
     }
+  }
+
+  private boolean isLocalAiConfigured() {
+    SegmentNarrationConfig.LocalAI localai = segmentNarrationConfig.getAi().getLocalai();
+    boolean configured =
+        localai != null && localai.getBaseUrl() != null && !localai.getBaseUrl().isEmpty();
+    log.debug(
+        "LocalAI Config Check: localai={}, baseUrl={}, configured={}",
+        localai,
+        localai != null ? localai.getBaseUrl() : "null",
+        configured);
+    return configured;
   }
 
   SegmentNarrationService.SegmentNarrationContext buildSegmentContext() {
@@ -348,6 +374,11 @@ public class NarrationDialog extends Dialog {
     SegmentNarrationService.SegmentTypeContext mtc =
         new SegmentNarrationService.SegmentTypeContext();
     mtc.setSegmentType(segment.getSegmentType().getName());
+    mtc.setStipulation(segment.getSegmentType().getDescription());
+    mtc.setRules(
+        segment.getSegmentRules().stream()
+            .map(rule -> rule.getName() + ": " + rule.getDescription())
+            .collect(Collectors.toList()));
     context.setSegmentType(mtc);
 
     if (refereeField.getValue() != null) {

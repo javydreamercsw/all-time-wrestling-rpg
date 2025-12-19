@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -30,7 +31,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,10 +43,10 @@ class NarrationDialogTest {
 
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
-  @Mock private TitleService titleService;
   @Mock private ShowService showService;
   @Mock private RivalryService rivalryService;
   @Mock private LocalAIStatusService localAIStatusService;
+  @Mock private SegmentNarrationConfig segmentNarrationConfig;
 
   private NarrationDialog narrationDialog;
 
@@ -92,7 +92,8 @@ class NarrationDialogTest {
             showService,
             s -> {},
             rivalryService,
-            localAIStatusService);
+            localAIStatusService,
+            segmentNarrationConfig);
   }
 
   @Test

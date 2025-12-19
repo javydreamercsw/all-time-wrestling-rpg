@@ -16,15 +16,16 @@
 */
 package com.github.javydreamercsw.base.ai;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.prompt.PromptGenerator;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.jspecify.annotations.NonNull;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,7 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
 
   private final SegmentNarrationConfig config;
   private final Environment environment;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
   public String getProviderName() {
@@ -49,12 +51,10 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
   }
 
   private String getBaseUrl() {
-    // Prefer the system property/environment variable if set (e.g. by Testcontainers)
     String dynamicUrl = environment.getProperty("segment-narration.ai.localai.base-url");
     if (dynamicUrl != null && !dynamicUrl.isEmpty()) {
       return dynamicUrl;
     }
-    // Fallback to the configuration property
     if (config.getAi().getLocalai() != null) {
       return config.getAi().getLocalai().getBaseUrl();
     }
@@ -71,7 +71,7 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
           "LocalAI service is not configured.",
           null);
     }
-    String prompt = new PromptGenerator().generateMatchNarrationPrompt(segmentContext);
+    String prompt = new PromptGenerator().generateSimplifiedMatchNarrationPrompt(segmentContext);
     return generateText(prompt);
   }
 
@@ -101,22 +101,30 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
     }
     try {
       log.debug("Generating text with LocalAI. Prompt length: {}", prompt.length());
-      log.trace("Full Prompt: {}", prompt);
+      log.debug("Full Prompt: {}", prompt);
 
       HttpClient client = HttpClient.newHttpClient();
-      String requestBody =
-          new JSONObject()
-              .put("model", config.getAi().getLocalai().getModel())
-              .put("prompt", prompt)
-              .put("temperature", 0.7)
-              .toString();
+
+      Map<String, Object> systemMessage = Map.of("role", "system", "content", getSystemMessage());
+      Map<String, Object> userMessage = Map.of("role", "user", "content", prompt);
+
+      Map<String, Object> requestBodyMap =
+          Map.of(
+              "model",
+              config.getAi().getLocalai().getModel(),
+              "messages",
+              List.of(systemMessage, userMessage),
+              "temperature",
+              0.7);
+
+      String requestBody = objectMapper.writeValueAsString(requestBodyMap);
 
       String baseUrl = getBaseUrl();
       log.debug("Using LocalAI Base URL: {}", baseUrl);
 
       HttpRequest request =
           HttpRequest.newBuilder()
-              .uri(URI.create(baseUrl + "/v1/completions"))
+              .uri(URI.create(baseUrl + "/v1/chat/completions"))
               .header("Content-Type", "application/json")
               .POST(HttpRequest.BodyPublishers.ofString(requestBody))
               .build();
@@ -127,15 +135,7 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
       log.debug("LocalAI response body: {}", response.body());
 
       if (response.statusCode() == 200) {
-        JSONObject jsonResponse = new JSONObject(response.body());
-        JSONArray choices = jsonResponse.getJSONArray("choices");
-        if (!choices.isEmpty()) {
-          String text = choices.getJSONObject(0).getString("text").trim();
-          if (text.isEmpty()) {
-            log.warn("LocalAI returned an empty text string.");
-          }
-          return text;
-        }
+        return extractContentFromResponse(response.body());
       }
       throw new AIServiceException(
           response.statusCode(),
@@ -152,5 +152,30 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
           "Failed to communicate with LocalAI service.",
           e);
     }
+  }
+
+  private String getSystemMessage() {
+    return "You are a creative and knowledgeable wrestling commentator. Your task is to generate a "
+        + "detailed, play-by-play narration for a wrestling segment based on the context provided. "
+        + "Emphasize the wrestlers' personalities, the history between them, the significance of "
+        + "the segment, and the drama of the action. Use vivid language and capture the excitement "
+        + "of a live wrestling broadcast.";
+  }
+
+  private String extractContentFromResponse(@NonNull String responseBody) throws Exception {
+    Map<String, Object> responseMap = objectMapper.readValue(responseBody, Map.class);
+    List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+    if (choices != null && !choices.isEmpty()) {
+      Map<String, Object> firstChoice = choices.get(0);
+      Map<String, Object> message = (Map<String, Object>) firstChoice.get("message");
+      if (message != null && message.containsKey("content")) {
+        String content = (String) message.get("content");
+        if (content != null && !content.trim().isEmpty()) {
+          return content.trim();
+        }
+      }
+    }
+    log.warn("LocalAI returned a response with no usable content.");
+    return "";
   }
 }
