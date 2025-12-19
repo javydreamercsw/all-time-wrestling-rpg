@@ -53,6 +53,7 @@ class NotionSyncSchedulerTest extends BaseTest {
   @BeforeEach
   void setUp() {
     lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient().when(notionSyncService.isNotionHandlerAvailable()).thenReturn(true);
     notionSyncScheduler =
         new NotionSyncScheduler(
             notionSyncService, syncProperties, dependencyAnalyzer, null, syncServiceDependencies);
