@@ -30,6 +30,8 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -62,6 +64,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
+  @Autowired private SegmentRuleService segmentRuleService;
+  @Autowired private SegmentService segmentService;
 
   @BeforeEach
   @Transactional
