@@ -137,20 +137,12 @@ public class TitleService {
 
   @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public void awardTitleTo(@NonNull Title title, @NonNull List<Wrestler> newChampions) {
-    // Validate if all new champions are eligible for the title
-    for (Wrestler champion : newChampions) {
-      if (!this.isWrestlerEligible(champion, title)) {
-        throw new IllegalArgumentException(
-            "Wrestler " + champion.getName() + " is not eligible for title " + title.getName());
-      }
-    }
     title.awardTitleTo(newChampions, Instant.now(clock));
     titleRepository.save(title);
   }
 
   @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Title> vacateTitle(@NonNull Long titleId) {
-
     return titleRepository
         .findById(titleId)
         .map(
@@ -227,63 +219,45 @@ public class TitleService {
 
   @PreAuthorize("isAuthenticated()")
   public List<Title> findTitlesByChampion(@NonNull Wrestler wrestler) {
-
     return titleRepository.findTitlesHeldByWrestler(wrestler);
   }
 
   @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public ChallengeResult challengeForTitle(@NonNull Long wrestlerId, @NonNull Long titleId) {
-
     Optional<Wrestler> challengerOpt = wrestlerRepository.findById(wrestlerId);
-
     Optional<Title> titleOpt = titleRepository.findById(titleId);
-
     if (challengerOpt.isEmpty()) {
-
       return new ChallengeResult(false, "Challenger not found.");
     }
 
     if (titleOpt.isEmpty()) {
-
       return new ChallengeResult(false, "Title not found.");
     }
 
     Wrestler challenger = challengerOpt.get();
-
     Title title = titleOpt.get();
-
     if (!title.getIsActive()) {
-
       return new ChallengeResult(false, "Title is not active.");
     }
 
     if (title.getCurrentChampions().contains(challenger)) {
-
       return new ChallengeResult(false, "Wrestler is already a champion of this title.");
     }
 
     if (!this.isWrestlerEligible(challenger, title)) {
-
       return new ChallengeResult(false, "Wrestler is not eligible for this title based on tier.");
     }
 
     Long entryFee = getContenderEntryFee(title);
-
     if (!challenger.canAfford(entryFee)) {
-
       return new ChallengeResult(false, "Wrestler cannot afford the contender entry fee.");
     }
 
     // All checks pass, set as contender and deduct fee
-
     challenger.spendFans(entryFee);
-
     wrestlerRepository.save(challenger);
-
     title.setNumberOneContender(challenger);
-
     titleRepository.save(title);
-
     return new ChallengeResult(
         true,
         "Challenge successful! "
@@ -295,16 +269,12 @@ public class TitleService {
 
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getEligibleChallengers(@NonNull Long titleId) {
-
     Optional<Title> titleOpt = titleRepository.findById(titleId);
-
     if (titleOpt.isEmpty()) {
-
       return List.of();
     }
 
     Title title = titleOpt.get();
-
     return wrestlerRepository.findAll().stream()
         .filter(wrestler -> this.isWrestlerEligible(wrestler, title))
         .collect(Collectors.toList());
@@ -312,9 +282,7 @@ public class TitleService {
 
   @PreAuthorize("isAuthenticated()")
   public TitleStats getTitleStats(@NonNull Long id) {
-
     // Basic implementation for now, can be expanded later
-
     return titleRepository
         .findById(id)
         .map(
@@ -329,11 +297,8 @@ public class TitleService {
 
   @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
   public Optional<Title> updateNumberOneContender(@NonNull Long titleId, @NonNull Long wrestlerId) {
-
     Optional<Title> titleOpt = titleRepository.findById(titleId);
-
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
-
     if (titleOpt.isEmpty() || wrestlerOpt.isEmpty()) {
       return Optional.empty();
     }
