@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.ai.openai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -54,17 +55,21 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   @Getter private final String model;
   private final OpenAIConfigProperties openAIConfigProperties;
   private final Environment environment;
+  private final SegmentNarrationConfig segmentNarrationConfig;
 
   @Autowired
   public OpenAISegmentNarrationService(
-      OpenAIConfigProperties openAIConfigProperties, Environment environment) {
+      OpenAIConfigProperties openAIConfigProperties,
+      Environment environment,
+      SegmentNarrationConfig segmentNarrationConfig) {
     this.httpClient =
         HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(openAIConfigProperties.getTimeout()))
+            .connectTimeout(Duration.ofSeconds(segmentNarrationConfig.getAi().getTimeout()))
             .build();
     this.objectMapper = new ObjectMapper();
     this.apiKey = System.getenv("OPENAI_API_KEY");
     this.environment = environment;
+    this.segmentNarrationConfig = segmentNarrationConfig;
 
     // Allow model configuration via environment variable
     String configuredModel = System.getenv("OPENAI_MODEL");
@@ -83,9 +88,11 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   @Override
   public String getProviderName() {
     return "OpenAI "
-        + (model.contains(openAIConfigProperties.getPremiumModel())
-            ? "GPT-4"
-            : "GPT-3.5"); // Use configured premium model
+        + (model == null
+            ? "Unknown"
+            : model.contains(openAIConfigProperties.getPremiumModel())
+                ? "GPT-4"
+                : "GPT-3.5"); // Use configured premium model
   }
 
   @Override
@@ -141,7 +148,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
               .uri(URI.create(openAIConfigProperties.getApiUrl())) // Use configured API URL
               .header("Content-Type", "application/json")
               .header("Authorization", "Bearer " + apiKey)
-              .timeout(Duration.ofSeconds(openAIConfigProperties.getTimeout()))
+              .timeout(Duration.ofSeconds(segmentNarrationConfig.getAi().getTimeout()))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
 

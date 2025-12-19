@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.ui.view.segment;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -29,7 +31,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.button.Button;
@@ -67,7 +68,9 @@ public class NarrationDialog extends Dialog {
   private final ObjectMapper objectMapper;
   private final WrestlerService wrestlerService;
   private final ShowService showService;
-  private final RivalryService rivalryService; // New field
+  private final RivalryService rivalryService;
+  private final LocalAIStatusService localAIStatusService;
+  private final SegmentNarrationConfig segmentNarrationConfig;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -82,23 +85,26 @@ public class NarrationDialog extends Dialog {
   private final ComboBox<Npc> ringAnnouncerField;
   private final MultiSelectComboBox<Npc> otherNpcsField;
   private final VerticalLayout teamsLayout;
-  private final Consumer<Segment> onSaveCallback; // New field for callback
+  private final Consumer<Segment> onSaveCallback;
 
   public NarrationDialog(
       Segment segment,
       NpcService npcService,
       WrestlerService wrestlerService,
-      TitleService titleService,
       ShowService showService,
       Consumer<Segment> onSaveCallback,
-      RivalryService rivalryService) { // Modified constructor
+      RivalryService rivalryService,
+      LocalAIStatusService localAIStatusService,
+      SegmentNarrationConfig segmentNarrationConfig) {
     this.segment = segment;
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
     this.showService = showService;
-    this.onSaveCallback = onSaveCallback; // Assign callback
+    this.onSaveCallback = onSaveCallback;
     this.rivalryService = rivalryService;
+    this.localAIStatusService = localAIStatusService;
+    this.segmentNarrationConfig = segmentNarrationConfig;
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
     setWidth("800px");
@@ -146,7 +152,6 @@ public class NarrationDialog extends Dialog {
             .collect(Collectors.toList());
     refereeField.setItems(referees);
 
-    // Declare here
     Button randomRefereeButton = new Button(new Icon(VaadinIcon.RANDOM));
     randomRefereeButton.addThemeVariants(ButtonVariant.LUMO_ICON);
     randomRefereeButton.setId("random-referee-button");
@@ -212,10 +217,9 @@ public class NarrationDialog extends Dialog {
     teamsLayout.setSpacing(true);
     teamsLayout.setPadding(false);
 
-    // Conditional logic for existing narration
     if (segment.getNarration() != null && !segment.getNarration().isEmpty()) {
       narrationDisplay.setText(segment.getNarration());
-      saveButton.setEnabled(true); // Enable save button if narration already exists
+      saveButton.setEnabled(true);
     }
 
     for (com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler :
@@ -274,8 +278,23 @@ public class NarrationDialog extends Dialog {
   }
 
   private void generateNarration() {
-    showProgress(true);
+    boolean isLocalAi = isLocalAiConfigured();
+    log.debug("Is LocalAI configured? {}", isLocalAi);
 
+    if (isLocalAi && !localAIStatusService.isReady()) {
+      Notification.show(localAIStatusService.getMessage(), 5_000, Notification.Position.BOTTOM_END);
+      return;
+    }
+
+    if (isLocalAi) {
+      Notification.show(
+              "Using LocalAI. Generation may take several minutes...",
+              5_000,
+              Notification.Position.BOTTOM_END)
+          .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+    }
+
+    showProgress(true);
     try {
       SegmentNarrationService.SegmentNarrationContext context = buildSegmentContext();
       log.debug("Sending narration context to AI: {}", context);
@@ -310,15 +329,25 @@ public class NarrationDialog extends Dialog {
     }
   }
 
+  private boolean isLocalAiConfigured() {
+    SegmentNarrationConfig.LocalAI localai = segmentNarrationConfig.getAi().getLocalai();
+    boolean configured =
+        localai != null && localai.getBaseUrl() != null && !localai.getBaseUrl().isEmpty();
+    log.debug(
+        "LocalAI Config Check: localai={}, baseUrl={}, configured={}",
+        localai,
+        localai != null ? localai.getBaseUrl() : "null",
+        configured);
+    return configured;
+  }
+
   SegmentNarrationService.SegmentNarrationContext buildSegmentContext() {
     SegmentNarrationService.SegmentNarrationContext context =
         new SegmentNarrationService.SegmentNarrationContext();
 
-    // Populate segmentOrder and isMainEvent
     context.setSegmentOrder(segment.getSegmentOrder());
     context.setMainEvent(segment.isMainEvent());
 
-    // Populate segmentChampionship
     if (!segment.getTitles().isEmpty()) {
       String championshipNames =
           segment.getTitles().stream()
@@ -345,6 +374,11 @@ public class NarrationDialog extends Dialog {
     SegmentNarrationService.SegmentTypeContext mtc =
         new SegmentNarrationService.SegmentTypeContext();
     mtc.setSegmentType(segment.getSegmentType().getName());
+    mtc.setStipulation(segment.getSegmentType().getDescription());
+    mtc.setRules(
+        segment.getSegmentRules().stream()
+            .map(rule -> rule.getName() + ": " + rule.getDescription())
+            .collect(Collectors.toList()));
     context.setSegmentType(mtc);
 
     if (refereeField.getValue() != null) {
@@ -355,7 +389,6 @@ public class NarrationDialog extends Dialog {
     }
 
     context.setNpcs(buildNpcContexts());
-    // Add explicit instructions for the AI
     context.setInstructions(
         "You will be provided with a context object in JSON format.\n"
             + "The fields in this JSON object are described below.\n"
@@ -383,7 +416,6 @@ public class NarrationDialog extends Dialog {
 
     StringBuilder outcomeBuilder = new StringBuilder();
 
-    // Prioritize assigned winners
     List<String> winners =
         segment.getParticipants().stream()
             .filter(p -> p.getIsWinner() != null && p.getIsWinner())
@@ -392,12 +424,10 @@ public class NarrationDialog extends Dialog {
 
     if (!winners.isEmpty()) {
       outcomeBuilder.append(String.join(" and ", winners)).append(" wins the segment.");
-      // TODO: Add more detail about how they won (e.g., by pinfall, submission) if available
     } else if (segment.getSummary() != null && !segment.getSummary().isEmpty()) {
       outcomeBuilder.append(segment.getSummary());
     }
 
-    // Append user feedback
     if (!feedbackArea.isEmpty()) {
       if (!outcomeBuilder.isEmpty()) {
         outcomeBuilder.append("\n\n");
@@ -409,7 +439,6 @@ public class NarrationDialog extends Dialog {
       context.setDeterminedOutcome(outcomeBuilder.toString());
     }
 
-    // Populate previousSegments
     List<Segment> previousSegments =
         showService.getSegments(segment.getShow()).stream()
             .filter(s -> s.getSegmentOrder() < segment.getSegmentOrder())
@@ -436,11 +465,10 @@ public class NarrationDialog extends Dialog {
         wc.setName(wrestler.getName());
         wc.setDescription(wrestler.getDescription());
         wc.setTeam("Team " + (i + 1));
-        wc.setGender(wrestler.getGender()); // Set gender
-        wc.setTier(wrestler.getTier()); // Set tier
-        wc.setMoveSet(wrestler.getMoveSet()); // Add this line
+        wc.setGender(wrestler.getGender());
+        wc.setTier(wrestler.getTier());
+        wc.setMoveSet(wrestler.getMoveSet());
         List<String> feuds = new ArrayList<>();
-        // This is a WrestlerDTO, needs to be converted to a Wrestler
         wrestlerService
             .findByName(wrestler.getName())
             .ifPresent(
@@ -500,7 +528,7 @@ public class NarrationDialog extends Dialog {
                     SegmentNarrationService.NPCContext npc =
                         new SegmentNarrationService.NPCContext();
                     npc.setName(otherNpc.getName());
-                    npc.setRole(otherNpc.getNpcType()); // Use the NPC's defined type as role
+                    npc.setRole(otherNpc.getNpcType());
                     return npc;
                   })
               .toList());
@@ -513,11 +541,9 @@ public class NarrationDialog extends Dialog {
     SegmentNarrationService.SegmentNarrationContext context =
         new SegmentNarrationService.SegmentNarrationContext();
 
-    // Populate segmentOrder and isMainEvent
     context.setSegmentOrder(segment.getSegmentOrder());
     context.setMainEvent(segment.isMainEvent());
 
-    // Populate segmentChampionship
     if (!segment.getTitles().isEmpty()) {
       String championshipNames =
           segment.getTitles().stream()
@@ -532,11 +558,10 @@ public class NarrationDialog extends Dialog {
       SegmentNarrationService.WrestlerContext wc = new SegmentNarrationService.WrestlerContext();
       wc.setName(wrestler.getName());
       wc.setDescription(wrestler.getDescription());
-      // For previous segments, assume each participant is in their own team.
       wc.setTeam("Team " + (wrestlerContexts.size() + 1));
-      wc.setGender(wrestler.getGender()); // Set gender
-      wc.setTier(wrestler.getTier()); // Set tier
-      wc.setMoveSet(wrestler.getMoveSet()); // Add this line
+      wc.setGender(wrestler.getGender());
+      wc.setTier(wrestler.getTier());
+      wc.setMoveSet(wrestler.getMoveSet());
       List<String> feuds = new ArrayList<>();
       wrestlerService
           .findByName(wrestler.getName())
@@ -559,15 +584,17 @@ public class NarrationDialog extends Dialog {
     mtc.setSegmentType(segment.getSegmentType().getName());
     context.setSegmentType(mtc);
 
-    // Not populating referee, npcs, instructions, determinedOutcome for previous segments to keep
-    // it simple.
     context.setNarration(segment.getNarration());
     context.setDeterminedOutcome(segment.getSummary());
 
     return context;
   }
 
-  private void handleNarrationResponse(@NonNull String response) {
+  private void handleNarrationResponse(String response) {
+    if (response == null || response.isEmpty()) {
+      showError("Received an empty response from the AI service.");
+      return;
+    }
     try {
       JsonNode jsonResponse = objectMapper.readTree(response);
       String narration =
@@ -628,10 +655,7 @@ public class NarrationDialog extends Dialog {
 
     try {
       SegmentNarrationService.SegmentNarrationContext context = buildSegmentContext();
-      log.info(
-          "Retrying narration with provider {} and context: {}",
-          provider,
-          context); // Add this line
+      log.info("Retrying narration with provider {} and context: {}", provider, context);
 
       String baseUrl = UrlUtil.getBaseUrl();
       ResponseEntity<String> response =
@@ -673,7 +697,7 @@ public class NarrationDialog extends Dialog {
           baseUrl + "/api/segments/" + segment.getId() + "/narration", narrationDisplay.getText());
       Notification.show("Narration saved successfully!", 3000, Notification.Position.BOTTOM_END)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-      onSaveCallback.accept(segment); // Call the callback with the updated segment
+      onSaveCallback.accept(segment);
       close();
     } catch (Exception e) {
       log.error("Error saving narration", e);

@@ -31,7 +31,17 @@ public class SegmentNarrationConfig {
   private AI ai = new AI();
 
   @Data
+  public static class LocalAI {
+    private String baseUrl;
+    private String model;
+    private String modelUrl;
+  }
+
+  @Data
   public static class AI {
+    /** LocalAI provider settings. */
+    private LocalAI localai;
+
     /**
      * Maximum output tokens for segment narration. Gemini: Up to 8,192 tokens (~6,000 words) OpenAI
      * GPT-3.5: Up to 4,096 tokens (~3,000 words) OpenAI GPT-4: Up to 8,192 tokens (~6,000 words)
@@ -45,7 +55,7 @@ public class SegmentNarrationConfig {
     private double temperature = 0.8;
 
     /** Request timeout in seconds for segment narration. Longer narrations need more time. */
-    private int timeoutSeconds = 90;
+    private int timeout = 90;
 
     /** Target word count for segment narrations. */
     private WordCount wordCount = new WordCount();

@@ -23,6 +23,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -79,6 +81,8 @@ class ShowDetailViewTest {
   @Mock private SeasonService seasonService;
   @Mock private ShowTemplateService showTemplateService;
   @Mock private RivalryService rivalryService;
+  @Mock private LocalAIStatusService localAIStatusService;
+  @Mock private SegmentNarrationConfig segmentNarrationConfig;
 
   @BeforeEach
   void setUp() {
@@ -95,26 +99,20 @@ class ShowDetailViewTest {
       ShowType showType = new ShowType();
       showType.setName("Test Show Type");
       showType.setDescription("Test Description");
-      // Removed unnecessary stubbing:
-      // when(showTypeService.save(any(ShowType.class))).thenReturn(showType);
 
       Show show = new Show();
       show.setName("Test Show");
       show.setDescription("Test Description");
       show.setType(showType);
-      // Removed unnecessary stubbing: when(showService.save(any(Show.class))).thenReturn(show);
 
-      SegmentType segmentType = new SegmentType(); // Corrected type
+      SegmentType segmentType = new SegmentType();
       segmentType.setName("Test Segment Type");
-      // Removed unnecessary stubbing:
-      // when(segmentTypeRepository.save(any(SegmentType.class))).thenReturn(segmentType);
 
       Segment segment = new Segment();
       segment.setId(10L);
       segment.setShow(show);
       segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
       segment.setSegmentType(segmentType);
-      // Mock the behavior of segmentRepository.save() as it is called in validateAndSaveSegment
       when(segmentRepository.save(any(Segment.class))).thenReturn(segment);
 
       Wrestler wrestler1 = new Wrestler();
@@ -141,7 +139,9 @@ class ShowDetailViewTest {
               showTypeService,
               seasonService,
               showTemplateService,
-              rivalryService);
+              rivalryService,
+              localAIStatusService,
+              segmentNarrationConfig);
 
       ReflectionTestUtils.invokeMethod(
           showDetailView,
@@ -164,49 +164,38 @@ class ShowDetailViewTest {
           .when(() -> Notification.show(anyString(), anyInt(), any(Notification.Position.class)))
           .thenReturn(mock(Notification.class));
 
-      // Create a show with two segments
       ShowType showType = new ShowType();
       showType.setName("Test Show Type");
       showType.setDescription("Test Description");
-      // Removed unnecessary stubbing:
-      // when(showTypeService.save(any(ShowType.class))).thenReturn(showType);
 
       Show show = new Show();
-      show.setId(1L); // Assign an ID to the show
+      show.setId(1L);
       show.setName("Test Show");
       show.setDescription("Test Description");
       show.setType(showType);
-      // Removed unnecessary stubbing: when(showService.save(any(Show.class))).thenReturn(show);
 
-      SegmentType segmentType = new SegmentType(); // Corrected type
+      SegmentType segmentType = new SegmentType();
       segmentType.setName("Test Segment Type");
-      // Removed unnecessary stubbing:
-      // when(segmentTypeRepository.save(any(SegmentType.class))).thenReturn(segmentType);
 
       Segment segment1 = new Segment();
-      segment1.setId(10L); // Assign an ID
+      segment1.setId(10L);
       segment1.setShow(show);
       segment1.setSegmentOrder(1);
       segment1.setSegmentType(segmentType);
-      // Mock segmentRepository.save to return the segment passed to it as it is called in
-      // moveSegment
       when(segmentRepository.save(any(Segment.class)))
           .thenAnswer(invocation -> invocation.getArgument(0));
 
       Segment segment2 = new Segment();
-      segment2.setId(11L); // Assign an ID
+      segment2.setId(11L);
       segment2.setShow(show);
       segment2.setSegmentOrder(2);
       segment2.setSegmentType(segmentType);
 
-      // Use an ArrayList to be mutable for reordering
       List<Segment> initialSegments = new ArrayList<>(Arrays.asList(segment1, segment2));
 
       when(showService.getShowById(any())).thenReturn(Optional.of(show));
-      // Corrected to use findByShowOrderBySegmentOrderAsc
       when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
           .thenReturn(initialSegments);
-      // Mock findByShow for refreshSegmentsGrid
       when(segmentRepository.findByShow(any(Show.class))).thenReturn(initialSegments);
 
       ShowDetailView showDetailView =
@@ -223,24 +212,19 @@ class ShowDetailViewTest {
               showTypeService,
               seasonService,
               showTemplateService,
-              rivalryService);
+              rivalryService,
+              localAIStatusService,
+              segmentNarrationConfig);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));
       showDetailView.setParameter(beforeEvent, show.getId());
 
-      // Because the grid is created internally and not exposed easily, we'll directly call
-      // moveSegment
-      // and rely on the internal state change for verification.
-      // We also need to set the currentShow for refreshSegmentsGrid to work
       ReflectionTestUtils.setField(showDetailView, "currentShow", show);
-      ReflectionTestUtils.setField(
-          showDetailView, "segmentsGrid", mock(Grid.class)); // Mock grid for refreshSegmentsGrid
+      ReflectionTestUtils.setField(showDetailView, "segmentsGrid", mock(Grid.class));
 
-      // Simulate clicking the down button on the first segment
       showDetailView.moveSegment(segment1, 1);
 
-      // Verify the new order
       assertEquals(2, segment1.getSegmentOrder());
       assertEquals(1, segment2.getSegmentOrder());
     }
