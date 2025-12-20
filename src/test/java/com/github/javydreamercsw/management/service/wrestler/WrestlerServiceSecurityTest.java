@@ -17,57 +17,135 @@
 package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
-import com.github.javydreamercsw.base.security.PermissionService;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.security.WithMockCustomUser;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ContextConfiguration(classes = TestSecurityConfig.class)
+@Transactional
 class WrestlerServiceSecurityTest {
 
   @Autowired private WrestlerService wrestlerService;
-  @MockitoBean private PermissionService permissionService;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private AccountRepository accountRepository;
+  @Autowired private RoleRepository roleRepository;
+  @Autowired private PasswordEncoder passwordEncoder;
 
-  private final Wrestler playerWrestler = new Wrestler();
-  private final Wrestler otherWrestler = new Wrestler();
+  private Wrestler ownedWrestler;
+  private Wrestler otherWrestler;
+  private Account ownerAccount;
+
+  @BeforeEach
+  void setUp() {
+    Role playerRole =
+        roleRepository
+            .findByName(RoleName.PLAYER)
+            .orElseGet(
+                () -> {
+                  Role newRole = new Role();
+                  newRole.setName(RoleName.PLAYER);
+                  newRole.setDescription("Player role");
+                  return roleRepository.save(newRole);
+                });
+
+    ownerAccount = new Account();
+    ownerAccount.setUsername("owner");
+    ownerAccount.setPassword(passwordEncoder.encode("password"));
+    ownerAccount.setRoles(Set.of(playerRole));
+    ownerAccount.setEmail("owner@test.com");
+    accountRepository.save(ownerAccount);
+
+    ownedWrestler = new Wrestler();
+    ownedWrestler.setName("Owned Wrestler");
+    ownedWrestler.setIsPlayer(true);
+    ownedWrestler.setAccount(ownerAccount);
+    wrestlerRepository.save(ownedWrestler);
+
+    otherWrestler = new Wrestler();
+    otherWrestler.setName("Other Wrestler");
+    wrestlerRepository.save(otherWrestler);
+  }
+
+  // --- Save Method Tests ---
 
   @Test
-  @WithMockUser(roles = "PLAYER")
-  void testSaveWrestlerAsPlayer() {
-    playerWrestler.setName("Player Wrestler");
-    otherWrestler.setName("Other Wrestler");
-    when(permissionService.isOwner(playerWrestler)).thenReturn(true);
-    when(permissionService.isOwner(otherWrestler)).thenReturn(false);
+  @WithMockCustomUser(roles = "ADMIN")
+  void testAdminCanSaveAnyWrestler() {
+    assertDoesNotThrow(() -> wrestlerService.save(ownedWrestler));
+    assertDoesNotThrow(() -> wrestlerService.save(otherWrestler));
+  }
 
-    assertDoesNotThrow(() -> wrestlerService.save(playerWrestler));
+  @Test
+  @WithMockCustomUser(roles = "BOOKER")
+  void testBookerCanSaveAnyWrestler() {
+    assertDoesNotThrow(() -> wrestlerService.save(ownedWrestler));
+    assertDoesNotThrow(() -> wrestlerService.save(otherWrestler));
+  }
+
+  @Test
+  @WithMockCustomUser(username = "owner", roles = "PLAYER")
+  void testPlayerCanSaveOwnedWrestler() {
+    assertNotNull(ownedWrestler);
+    assertDoesNotThrow(() -> wrestlerService.save(ownedWrestler));
+  }
+
+  @Test
+  @WithMockCustomUser(username = "not_owner", roles = "PLAYER")
+  void testPlayerCannotSaveOtherWrestler() {
+    assertNotNull(ownedWrestler);
+    assertThrows(AccessDeniedException.class, () -> wrestlerService.save(ownedWrestler));
     assertThrows(AccessDeniedException.class, () -> wrestlerService.save(otherWrestler));
   }
 
   @Test
-  @WithMockUser(roles = "BOOKER")
-  void testSaveWrestlerAsBooker() {
-    playerWrestler.setName("Player Wrestler");
-    otherWrestler.setName("Other Wrestler");
-    assertDoesNotThrow(() -> wrestlerService.save(playerWrestler));
-    assertDoesNotThrow(() -> wrestlerService.save(otherWrestler));
+  @WithMockCustomUser(roles = "VIEWER")
+  void testViewerCannotSaveWrestler() {
+    assertThrows(AccessDeniedException.class, () -> wrestlerService.save(ownedWrestler));
+  }
+
+  // --- Delete Method Tests ---
+
+  @Test
+  @WithMockCustomUser(roles = "ADMIN")
+  void testAdminCanDeleteWrestler() {
+    assertDoesNotThrow(() -> wrestlerService.delete(otherWrestler));
   }
 
   @Test
-  @WithMockUser(roles = "ADMIN")
-  void testSaveWrestlerAsAdmin() {
-    playerWrestler.setName("Player Wrestler");
-    otherWrestler.setName("Other Wrestler");
-    assertDoesNotThrow(() -> wrestlerService.save(playerWrestler));
-    assertDoesNotThrow(() -> wrestlerService.save(otherWrestler));
+  @WithMockCustomUser(roles = "BOOKER")
+  void testBookerCanDeleteWrestler() {
+    assertDoesNotThrow(() -> wrestlerService.delete(otherWrestler));
+  }
+
+  @Test
+  @WithMockCustomUser(roles = "PLAYER")
+  void testPlayerCannotDeleteWrestler() {
+    assertThrows(AccessDeniedException.class, () -> wrestlerService.delete(ownedWrestler));
+    assertThrows(AccessDeniedException.class, () -> wrestlerService.delete(otherWrestler));
+  }
+
+  @Test
+  @WithMockCustomUser(roles = "VIEWER")
+  void testViewerCannotDeleteWrestler() {
+    assertThrows(AccessDeniedException.class, () -> wrestlerService.delete(ownedWrestler));
   }
 }

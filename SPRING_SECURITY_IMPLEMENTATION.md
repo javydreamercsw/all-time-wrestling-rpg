@@ -234,6 +234,23 @@
 
 ## Technical Specifications
 
+### Ownership Model
+
+For the `PLAYER` role, a concept of "ownership" is used to restrict access to specific data. This ensures that a player can only manage the entities that belong to them.
+
+-   **Account-Wrestler Link:** The core of the ownership model is the link between an `Account` and a `Wrestler`. Each `Account` with the `PLAYER` role is associated with a single `Wrestler` record. This is established via the `account_id` foreign key in the `wrestler` table (see migration `V22__Add_Account_To_Wrestler.sql`).
+-   **Ownership Check:** When a `PLAYER` attempts to modify an entity (like a `Wrestler`, `Deck`, or `DeckCard`), the `PermissionService` checks if the currently authenticated user's account is the one linked to the `Wrestler` associated with that entity.
+-   **Implementation:** This check is performed in the `PermissionService.isOwner()` method, which is called from `@PreAuthorize` annotations in the service layer. For example, in `WrestlerService`:
+    ```java
+    @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestler)")
+    public Wrestler save(@NonNull Wrestler wrestler) {
+        // ...
+    }
+    ```
+-   **Scope:** Ownership rules currently apply to `Wrestler`, `Deck`, `DeckCard`, and `InboxItem` entities.
+
+This model allows `PLAYER`s to have limited control over their own game assets without being able to interfere with other players' or the main game state managed by `BOOKER`s and `ADMIN`s.
+
 ### Account Entity Structure
 ```java
 @Entity
