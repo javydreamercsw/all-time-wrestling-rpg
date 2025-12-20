@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component;
 public class SecurityUtils {
 
   private final AuthenticationContext authenticationContext;
+  private final PermissionService permissionService;
 
   /**
    * Check if the current user has a specific role.
@@ -129,12 +130,44 @@ public class SecurityUtils {
   }
 
   /**
+   * Check if the current user can edit the specific target object.
+   *
+   * @param target the object to check permissions for
+   * @return true if the user can edit the object
+   */
+  public boolean canEdit(Object target) {
+    if (isAdmin() || isBooker()) {
+      return true;
+    }
+    if (isPlayer()) {
+      return permissionService.isOwner(target);
+    }
+    return false;
+  }
+
+  /**
    * Check if the current user can delete content.
    *
    * @return true if the user can delete
    */
   public boolean canDelete() {
     return hasAnyRole(RoleName.ADMIN, RoleName.BOOKER);
+  }
+
+  /**
+   * Check if the current user can delete the specific target object.
+   *
+   * @param target the object to check permissions for
+   * @return true if the user can delete the object
+   */
+  public boolean canDelete(Object target) {
+    if (isAdmin() || isBooker()) {
+      return true;
+    }
+    // Players usually can't delete, but if they can, it would be their own content.
+    // For now, let's assume players can't delete unless specified otherwise.
+    // If we want to allow players to delete their own decks, we can add that check here.
+    return false;
   }
 
   /**
