@@ -75,7 +75,7 @@ public class ShowTemplateService {
    * @param showTemplate The show template to save
    * @return The saved show template
    */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public ShowTemplate save(@NonNull ShowTemplate showTemplate) {
     showTemplate.setCreationDate(clock.instant());
     return showTemplateRepository.saveAndFlush(showTemplate);
@@ -170,7 +170,7 @@ public class ShowTemplateService {
    * @return The created or updated show template
    */
   @Transactional
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public ShowTemplate createOrUpdateTemplate(
       @NonNull String name, String description, @NonNull String showTypeName, String notionUrl) {
 
@@ -246,7 +246,7 @@ public class ShowTemplateService {
    * @return Optional containing the updated show template if found
    */
   @Transactional
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<ShowTemplate> updateTemplate(
       @NonNull Long id,
       @NonNull String name,
@@ -285,7 +285,7 @@ public class ShowTemplateService {
    * @return true if the template was deleted, false if not found
    */
   @Transactional
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public boolean deleteTemplate(@NonNull Long id) {
     if (showTemplateRepository.existsById(id)) {
       showTemplateRepository.deleteById(id);

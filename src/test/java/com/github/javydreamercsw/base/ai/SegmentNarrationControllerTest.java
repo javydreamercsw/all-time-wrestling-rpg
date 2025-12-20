@@ -36,7 +36,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @EnableConfigurationProperties(SegmentNarrationConfig.class)
 @WithMockUser(roles = {"ADMIN", "BOOKER"})
 class SegmentNarrationControllerTest extends AbstractControllerTest {
-  @MockitoBean private SegmentNarrationServiceFactory serviceFactory;
   @MockitoBean private SegmentOutcomeProvider matchOutcomeService;
   @MockitoBean private RankingService rankingService;
 

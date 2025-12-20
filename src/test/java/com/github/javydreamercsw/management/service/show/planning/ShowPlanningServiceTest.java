@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -58,7 +59,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 @SpringBootTest
 @ContextConfiguration(classes = TestSecurityConfig.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class ShowPlanningServiceTest {
+class ShowPlanningServiceTest extends ManagementIntegrationTest {
 
   @MockitoBean private SegmentRepository segmentRepository;
   @MockitoBean private RivalryService rivalryService;

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.security.CustomUserDetailsService;
 import com.github.javydreamercsw.management.config.ManagementTestConfig;
@@ -41,4 +42,5 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
   @Autowired protected ObjectMapper objectMapper;
+  @MockitoBean protected SegmentNarrationServiceFactory serviceFactory;
 }

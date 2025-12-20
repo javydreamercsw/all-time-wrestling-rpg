@@ -37,7 +37,7 @@ public class TierBoundaryService {
     return tierBoundaryRepository.findByTierAndGender(tier, gender);
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public TierBoundary save(TierBoundary tierBoundary) {
     return tierBoundaryRepository.save(tierBoundary);
   }

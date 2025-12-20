@@ -52,7 +52,7 @@ public class InjuryService {
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   /** Create a new injury for a wrestler. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Injury> createInjury(
       Long wrestlerId,
       String name,
@@ -85,7 +85,7 @@ public class InjuryService {
    * Create injury from bump system (3 bumps = 1 injury). This method should only be called when an
    * injury should be created (bumps already reset by Wrestler.addBump()).
    */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Injury> createInjuryFromBumps(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -117,13 +117,13 @@ public class InjuryService {
   }
 
   /** Attempt to heal an injury. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public HealingResult attemptHealing(@NonNull Long injuryId) {
     return attemptHealing(injuryId, null);
   }
 
   /** Attempt to heal an injury. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public HealingResult attemptHealing(@NonNull Long injuryId, Integer diceRoll) {
     Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
 
@@ -245,7 +245,7 @@ public class InjuryService {
   }
 
   /** Update injury information. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Injury> updateInjury(
       @NonNull Long injuryId, String name, String description, String injuryNotes) {
     return injuryRepository

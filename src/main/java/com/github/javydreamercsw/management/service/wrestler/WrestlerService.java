@@ -63,7 +63,7 @@ public class WrestlerService {
   @Autowired private TitleService titleService;
   @Autowired private TierRecalculationService tierRecalculationService;
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void createWrestler(@NonNull String name) {
     createWrestler(name, false, "", WrestlerTier.ROOKIE);
   }
@@ -139,7 +139,7 @@ public class WrestlerService {
   // ==================== ATW RPG METHODS ====================
 
   @Transactional
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fans) {
     return updateFans(wrestlerId, fans);
   }
@@ -178,7 +178,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> addBump(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -201,7 +201,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> healBump(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -226,7 +226,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> healChance(@NonNull Long wrestlerId, @NonNull DiceBag diceBag) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -263,7 +263,7 @@ public class WrestlerService {
             });
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> healChance(@NonNull Long wrestlerId) {
     return healChance(wrestlerId, new DiceBag(6));
   }
@@ -310,7 +310,7 @@ public class WrestlerService {
    * @param cost The fan cost
    * @return true if successful, false if wrestler not found or insufficient fans
    */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public boolean spendFans(@NonNull Long wrestlerId, @NonNull Long cost) {
     return updateFans(wrestlerId, -cost).isPresent();
   }
@@ -323,7 +323,7 @@ public class WrestlerService {
    * @param description Character description
    * @return The created wrestler
    */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
     return createWrestler(name, isPlayer, description, WrestlerTier.ROOKIE);
   }
@@ -337,7 +337,7 @@ public class WrestlerService {
    * @param tier The tier of the wrestler
    * @return The created wrestler
    */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Wrestler createWrestler(
       @NonNull String name, boolean isPlayer, String description, @NonNull WrestlerTier tier) {
     Wrestler wrestler =

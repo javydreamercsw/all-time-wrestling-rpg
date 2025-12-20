@@ -31,13 +31,13 @@ public class DeckCardService {
     this.deckCardRepository = deckCardRepository;
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER') or @permissionService.isOwner(#dc)")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#dc)")
   public DeckCard save(DeckCard dc) {
 
     return deckCardRepository.save(dc);
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER') or @permissionService.isOwner(#dc)")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#dc)")
   public void delete(DeckCard dc) {
 
     deckCardRepository.delete(dc);

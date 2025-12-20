@@ -47,14 +47,14 @@ public class SegmentTypeService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public SegmentType createSegmentType(@NonNull SegmentType segmentType) {
     log.info("Creating new segment type: {}", segmentType.getName());
     return segmentTypeRepository.save(segmentType);
   }
 
   @Transactional
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public SegmentType createOrUpdateSegmentType(@NonNull String name, @NonNull String description) {
     Optional<SegmentType> existingOpt = segmentTypeRepository.findByName(name);
     SegmentType segmentType;
@@ -71,7 +71,7 @@ public class SegmentTypeService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void deleteSegmentType(@NonNull Long id) {
     if (segmentTypeRepository.existsById(id)) {
       segmentTypeRepository.deleteById(id);

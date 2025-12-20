@@ -47,12 +47,12 @@ public class NpcService {
     return npcRepository.findAllByNpcType(type);
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Npc save(Npc npc) {
     return npcRepository.save(npc);
   }
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void delete(Npc npc) {
     npcRepository.delete(npc);
   }

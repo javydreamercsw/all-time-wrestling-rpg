@@ -42,7 +42,7 @@ public class SeasonService {
   @Autowired private SeasonRepository seasonRepository;
   @Autowired private Clock clock;
 
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Season createOrUpdateSeason(
       @NonNull String name, @NonNull Instant startDate, boolean isActive) {
     Optional<Season> existingSeason = seasonRepository.findByName(name);
@@ -54,7 +54,7 @@ public class SeasonService {
   }
 
   /** Create a new season. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Season createSeason(
       @NonNull String name, @NonNull String description, Integer showsPerPpv) {
     // End any currently active season
@@ -102,7 +102,7 @@ public class SeasonService {
   }
 
   /** Save a season. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Season save(@NonNull Season season) {
     return seasonRepository.saveAndFlush(season);
   }
@@ -115,7 +115,7 @@ public class SeasonService {
   }
 
   /** End the current season. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Season> endCurrentSeason() {
     Optional<Season> activeSeason = seasonRepository.findActiveSeason();
     activeSeason.ifPresent(this::endSeason);
@@ -123,14 +123,14 @@ public class SeasonService {
   }
 
   /** End a specific season. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Season endSeason(@NonNull Season season) {
     season.endSeason();
     return seasonRepository.saveAndFlush(season);
   }
 
   /** Add a show to the active season. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Season> addShowToActiveSeason(@NonNull Show show) {
     Optional<Season> activeSeason = seasonRepository.findActiveSeason();
     if (activeSeason.isPresent()) {
@@ -160,7 +160,7 @@ public class SeasonService {
   }
 
   /** Update season settings. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Season> updateSeason(
       @NonNull Long seasonId,
       @NonNull String name,
@@ -178,7 +178,7 @@ public class SeasonService {
   }
 
   /** Update season with Season object. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Season updateSeason(@NonNull Season season) {
     return seasonRepository.saveAndFlush(season);
   }
@@ -192,7 +192,7 @@ public class SeasonService {
   }
 
   /** Delete a season (only if not active and has no shows). */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public boolean deleteSeason(@NonNull Long seasonId) {
     return seasonRepository
         .findById(seasonId)

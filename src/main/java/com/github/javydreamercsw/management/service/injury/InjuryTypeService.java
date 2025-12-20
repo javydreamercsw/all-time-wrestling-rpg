@@ -44,7 +44,7 @@ public class InjuryTypeService {
   // ==================== CRUD OPERATIONS ====================
 
   /** Creates a new injury type. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public InjuryType createInjuryType(
       String injuryName,
       Integer healthEffect,
@@ -70,7 +70,7 @@ public class InjuryTypeService {
   }
 
   /** Updates an existing injury type with individual fields. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<InjuryType> updateInjuryType(
       Long id,
       String injuryName,
@@ -105,7 +105,7 @@ public class InjuryTypeService {
   }
 
   /** Updates an existing injury type. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public InjuryType updateInjuryType(@NonNull InjuryType injuryType) {
     log.debug("Updating injury type: {}", injuryType.getInjuryName());
 
@@ -119,7 +119,7 @@ public class InjuryTypeService {
   }
 
   /** Deletes an injury type by ID. Returns true if deleted, false if not found. */
-  @PreAuthorize("hasAnyAuthority('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public boolean deleteInjuryType(Long id) {
     log.debug("Deleting injury type with ID: {}", id);
 
