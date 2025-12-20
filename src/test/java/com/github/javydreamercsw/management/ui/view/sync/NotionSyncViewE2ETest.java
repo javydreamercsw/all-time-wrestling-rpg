@@ -29,7 +29,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.test.context.TestPropertySource;
 
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
-@TestPropertySource(properties = "notion.sync.scheduler.enabled=true")
+@TestPropertySource(properties = {"notion.sync.scheduler.enabled=true", "notion.sync.enabled=true"})
 public class NotionSyncViewE2ETest extends AbstractE2ETest {
 
   @Test
