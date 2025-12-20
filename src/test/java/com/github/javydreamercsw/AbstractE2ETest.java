@@ -46,13 +46,9 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.test.context.ActiveProfiles;
 
 @ExtendWith(UITestWatcher.class)
@@ -71,14 +67,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   @Value("${server.servlet.context-path}")
   @Getter
   private String contextPath;
-
-  @TestConfiguration
-  static class TestSecurityConfig {
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-      return (web) -> web.ignoring().requestMatchers(new AntPathRequestMatcher("/**"));
-    }
-  }
 
   @BeforeEach
   public void setup() {
