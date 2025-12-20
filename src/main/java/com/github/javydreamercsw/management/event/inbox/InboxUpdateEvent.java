@@ -14,17 +14,12 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.event;
+package com.github.javydreamercsw.management.event.inbox;
 
-import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
-import org.springframework.context.ApplicationListener;
-import org.springframework.stereotype.Component;
+import org.springframework.context.ApplicationEvent;
 
-@Component
-public class FanChangeEventListener implements ApplicationListener<FanAwardedEvent> {
-
-  @Override
-  public void onApplicationEvent(FanAwardedEvent event) {
-    FanChangeBroadcaster.broadcast(event);
+public class InboxUpdateEvent extends ApplicationEvent {
+  public InboxUpdateEvent(Object source) {
+    super(source);
   }
 }

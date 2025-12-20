@@ -14,35 +14,35 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.event;
+package com.github.javydreamercsw.management.event.inbox;
 
-import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
 import com.vaadin.flow.shared.Registration;
-import java.util.LinkedList;
-import java.util.concurrent.Executor;
+import jakarta.annotation.PreDestroy;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import org.springframework.stereotype.Component;
 
 @Component
-public class WrestlerInjuryHealedBroadcaster {
-  private final Executor executor = Executors.newSingleThreadExecutor();
+public class InboxUpdateBroadcaster {
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
+  private final List<Consumer<InboxUpdateEvent>> listeners = new CopyOnWriteArrayList<>();
 
-  private final LinkedList<Consumer<WrestlerInjuryHealedEvent>> listeners = new LinkedList<>();
-
-  public synchronized Registration register(Consumer<WrestlerInjuryHealedEvent> listener) {
+  public Registration register(Consumer<InboxUpdateEvent> listener) {
     listeners.add(listener);
-
-    return () -> {
-      synchronized (WrestlerInjuryHealedBroadcaster.class) {
-        listeners.remove(listener);
-      }
-    };
+    return () -> listeners.remove(listener);
   }
 
-  public synchronized void broadcast(WrestlerInjuryHealedEvent event) {
-    for (final Consumer<WrestlerInjuryHealedEvent> listener : listeners) {
+  public void broadcast(InboxUpdateEvent event) {
+    for (Consumer<InboxUpdateEvent> listener : listeners) {
       executor.execute(() -> listener.accept(event));
     }
+  }
+
+  @PreDestroy
+  public void destroy() {
+    executor.shutdown();
   }
 }

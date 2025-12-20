@@ -16,19 +16,16 @@
 */
 package com.github.javydreamercsw.management.event;
 
-import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import lombok.Getter;
+import org.springframework.context.ApplicationEvent;
 
-@Component
-@RequiredArgsConstructor
-public class WrestlerInjuryHealedEventListener {
+@Getter
+public class RivalryContinuesEvent extends ApplicationEvent {
+  private final Rivalry rivalry;
 
-  private final WrestlerInjuryHealedBroadcaster broadcaster;
-
-  @EventListener
-  public void handleWrestlerInjuryHealedEvent(WrestlerInjuryHealedEvent event) {
-    broadcaster.broadcast(event);
+  public RivalryContinuesEvent(Object source, Rivalry rivalry) {
+    super(source);
+    this.rivalry = rivalry;
   }
 }

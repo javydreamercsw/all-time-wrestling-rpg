@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -111,6 +112,7 @@ class ShowServiceTest {
   @Test
   void testAdjudicateShow_HealsNonParticipatingWrestlers() {
     // Given
+    segment.getSegmentType().setName("Match");
     segment.addParticipant(wrestler1);
     segment.addParticipant(wrestler2);
 
@@ -122,8 +124,11 @@ class ShowServiceTest {
     showService.adjudicateShow(1L);
 
     // Then
+    Assertions.assertNotNull(wrestler3.getId());
     verify(wrestlerService, times(1)).healChance(wrestler3.getId());
+    Assertions.assertNotNull(wrestler1.getId());
     verify(wrestlerService, never()).healChance(wrestler1.getId());
+    Assertions.assertNotNull(wrestler2.getId());
     verify(wrestlerService, never()).healChance(wrestler2.getId());
   }
 }

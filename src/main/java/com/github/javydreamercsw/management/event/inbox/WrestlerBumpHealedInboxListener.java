@@ -21,6 +21,8 @@ import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
@@ -31,11 +33,18 @@ public class WrestlerBumpHealedInboxListener
 
   private final InboxService inboxService;
   private final InboxEventType wrestlerBumpHealed;
+  private final ApplicationEventPublisher eventPublisher;
+  private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public WrestlerBumpHealedInboxListener(
-      @NonNull InboxService inboxService, @NonNull InboxEventType wrestlerBumpHealed) {
+      @NonNull InboxService inboxService,
+      @NonNull @Qualifier("wrestlerBumpHealed") InboxEventType wrestlerBumpHealed,
+      @NonNull ApplicationEventPublisher eventPublisher,
+      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.wrestlerBumpHealed = wrestlerBumpHealed;
+    this.eventPublisher = eventPublisher;
+    this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
   }
 
   @Override
@@ -44,8 +53,10 @@ public class WrestlerBumpHealedInboxListener
     inboxService.createInboxItem(
         wrestlerBumpHealed,
         String.format(
-            "Wrestler %s healed a bump. Total bumps: %d",
+            "Wrestler %s's bumps have healed. New total: %d",
             event.getWrestler().getName(), event.getWrestler().getBumps()),
         event.getWrestler().getId().toString());
+    eventPublisher.publishEvent(new InboxUpdateEvent(this));
+    inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }
 }

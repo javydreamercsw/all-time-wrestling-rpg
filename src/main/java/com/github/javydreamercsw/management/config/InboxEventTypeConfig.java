@@ -57,4 +57,44 @@ public class InboxEventTypeConfig {
   public InboxEventType feudResolved() {
     return new InboxEventType("FEUD_RESOLVED", "Feud Resolved");
   }
+
+  @Bean
+  public InboxEventType adjudicationCompleted() {
+    return new InboxEventType("ADJUDICATION_COMPLETED", "Adjudication Completed");
+  }
+
+  @Bean
+  public InboxEventType championshipChange() {
+    return new InboxEventType("CHAMPIONSHIP_CHANGE", "Championship Change");
+  }
+
+  @Bean
+  public InboxEventType championshipDefended() {
+    return new InboxEventType("CHAMPIONSHIP_DEFENDED", "Championship Defended");
+  }
+
+  @Bean
+  public InboxEventType factionHeatChange() {
+    return new InboxEventType("FACTION_HEAT_CHANGE", "Faction Heat Change");
+  }
+
+  @Bean
+  public InboxEventType rivalryCompleted() {
+    return new InboxEventType("RIVALRY_COMPLETED", "Rivalry Completed");
+  }
+
+  @Bean
+  public InboxEventType rivalryContinues() {
+    return new InboxEventType("RIVALRY_CONTINUES", "Rivalry Continues");
+  }
+
+  @Bean
+  public InboxEventType segmentsApproved() {
+    return new InboxEventType("SEGMENTS_APPROVED", "Segments Approved");
+  }
+
+  @Bean
+  public InboxEventType feudHeatChange() {
+    return new InboxEventType("FEUD_HEAT_CHANGE", "Feud Heat Change");
+  }
 }
