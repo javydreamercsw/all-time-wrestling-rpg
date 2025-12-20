@@ -38,7 +38,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class RankingControllerTest extends AbstractControllerTest {
 
   @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @WithMockUser(roles = "PLAYER")
