@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.ai;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,17 +28,23 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarratio
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@WebMvcTest(SegmentNarrationController.class)
 @EnableConfigurationProperties(SegmentNarrationConfig.class)
 @WithMockUser(roles = {"ADMIN", "BOOKER"})
 class SegmentNarrationControllerTest extends AbstractControllerTest {
-  @MockitoBean private SegmentOutcomeProvider matchOutcomeService;
+
+  @MockitoBean private SegmentOutcomeProvider segmentOutcomeProvider;
+  @MockitoBean private SegmentNarrationConfig segmentNarrationConfig;
   @MockitoBean private RankingService rankingService;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   void testNarrateMatch() throws Exception {
@@ -45,7 +52,7 @@ class SegmentNarrationControllerTest extends AbstractControllerTest {
     SegmentNarrationService service = mock(SegmentNarrationService.class);
     when(serviceFactory.getServiceByProvider("Mock AI")).thenReturn(service);
     when(service.narrateSegment(any(SegmentNarrationContext.class))).thenReturn("Test narration");
-    when(matchOutcomeService.determineOutcomeIfNeeded(any(SegmentNarrationContext.class)))
+    when(segmentOutcomeProvider.determineOutcomeIfNeeded(any(SegmentNarrationContext.class)))
         .thenAnswer(i -> i.getArguments()[0]);
 
     SegmentNarrationContext context = new SegmentNarrationContext();
@@ -55,6 +62,7 @@ class SegmentNarrationControllerTest extends AbstractControllerTest {
     mockMvc
         .perform(
             post("/api/segment-narration/narrate/Mock AI")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(context)))
         .andExpect(status().isOk());

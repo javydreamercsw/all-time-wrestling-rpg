@@ -51,6 +51,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
@@ -76,6 +77,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
   @Autowired private ShowPlanningService showPlanningService;
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   void getShowPlanningContext() {
     // Given
     Show show = mock(Show.class);
@@ -188,6 +190,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   void getShowPlanningContext_shouldCorrectlyHandleNextPle() {
     // Given
     LocalDate futureShowDate = LocalDate.now(clock).plusMonths(3);
@@ -244,6 +247,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   void getShowPlanningContext_shouldUseShowDateForUpcomingShowsAndSegments() {
     // Given
     LocalDate futureShowDate = LocalDate.now(clock).plusMonths(3);
@@ -330,6 +334,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   void getShowPlanningContext_shouldIncludeOnlyNumberOneContenders() {
     // Given
     Show show = mock(Show.class);
@@ -373,6 +378,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   void getShowPlanningContext_shouldIncludeWrestlerHeats() {
     // Given
     Show show = mock(Show.class);
@@ -473,6 +479,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
   }
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   void getShowPlanningContext_shouldHandleWrestlersWithNoRivalries() {
     // Given
     Show show = mock(Show.class);

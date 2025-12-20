@@ -25,22 +25,24 @@ import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest
 @AutoConfigureMockMvc
 @Import({TestSecurityConfig.class, ManagementTestConfig.class})
 @ActiveProfiles("test")
+@WithMockUser(roles = "ADMIN")
 public abstract class AbstractControllerTest {
 
   @Autowired protected MockMvc mockMvc;
+  @Autowired protected ObjectMapper objectMapper;
+
+  // Infrastructure mocks likely needed by multiple controllers or security
   @MockitoBean protected CustomUserDetailsService customUserDetailsService;
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
-  @Autowired protected ObjectMapper objectMapper;
   @MockitoBean protected SegmentNarrationServiceFactory serviceFactory;
 }

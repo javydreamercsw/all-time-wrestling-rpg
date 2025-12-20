@@ -46,11 +46,13 @@ import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
 @Import({TestSecurityConfig.class, ManagementTestConfig.class})
+@WithMockUser(roles = "ADMIN")
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;

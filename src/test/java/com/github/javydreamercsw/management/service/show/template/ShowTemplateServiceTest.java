@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.test.context.support.WithMockUser;
 
 @SpringBootTest
 class ShowTemplateServiceTest extends ManagementIntegrationTest {
@@ -40,6 +41,7 @@ class ShowTemplateServiceTest extends ManagementIntegrationTest {
   @Autowired private ShowTypeService showTypeService;
 
   @BeforeEach
+  @WithMockUser(roles = "ADMIN")
   void setUp() {
     // Manually create the "Weekly" ShowType for tests, but only if it doesn't already exist
     Optional<ShowType> existingType = showTypeService.findByName("Weekly");
@@ -53,6 +55,7 @@ class ShowTemplateServiceTest extends ManagementIntegrationTest {
 
   /** Test of list method, of class ShowTemplateService. */
   @Test
+  @WithMockUser(roles = "ADMIN")
   void testList() {
     Pageable pageable = Pageable.ofSize(10);
     List<ShowTemplate> result = service.list(pageable);
@@ -61,6 +64,7 @@ class ShowTemplateServiceTest extends ManagementIntegrationTest {
 
   /** Test of save method, of class ShowTemplateService. */
   @Test
+  @WithMockUser(roles = "ADMIN")
   void testSave() {
     ShowTemplate st = new ShowTemplate();
     Optional<ShowType> type = showTypeService.findByName("Weekly");
