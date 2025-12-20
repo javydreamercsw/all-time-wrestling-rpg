@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.controller.drama;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,10 +31,12 @@ import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@WebMvcTest(DramaEventController.class)
 class DramaEventControllerTest extends AbstractControllerTest {
 
   @MockitoBean private DramaEventService dramaEventService;
@@ -47,7 +50,13 @@ class DramaEventControllerTest extends AbstractControllerTest {
     event.setSeverity(DramaEventSeverity.NEUTRAL);
     event.setEventType(DramaEventType.BACKSTAGE_INCIDENT);
 
-    when(dramaEventService.createDramaEvent(any(), any(), any(), any(), any(), any()))
+    when(dramaEventService.createDramaEvent(
+            anyLong(),
+            any(),
+            any(DramaEventType.class),
+            any(DramaEventSeverity.class),
+            any(String.class),
+            any(String.class)))
         .thenReturn(Optional.of(event));
 
     DramaEventController.CreateDramaEventRequest request =

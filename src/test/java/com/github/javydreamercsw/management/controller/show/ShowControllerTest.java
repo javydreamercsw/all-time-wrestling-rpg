@@ -25,21 +25,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@WebMvcTest(ShowController.class)
 class ShowControllerTest extends AbstractControllerTest {
 
   @MockitoBean private ShowService showService;
+  @MockitoBean private RankingService rankingService;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
-  @WithMockUser(roles = "BOOKER")
   void createShow() throws Exception {
     Show show = new Show();
     show.setId(1L);

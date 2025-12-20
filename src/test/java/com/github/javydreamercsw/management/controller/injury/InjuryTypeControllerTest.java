@@ -22,18 +22,18 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
-import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.CreateInjuryTypeRequest;
-import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.UpdateInjuryTypeRequest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.mapper.InjuryTypeMapper;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import java.util.List;
 import java.util.Optional;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -41,14 +41,13 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-/** Unit tests for InjuryTypeController. */
-@DisplayName("InjuryType Controller Tests")
+@WebMvcTest(InjuryTypeController.class)
 class InjuryTypeControllerTest extends AbstractControllerTest {
-
-  @Autowired private ObjectMapper objectMapper;
 
   @MockitoBean private InjuryTypeService injuryTypeService;
   @MockitoBean private InjuryTypeMapper injuryTypeMapper;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
+  @MockitoBean private RankingService rankingService;
 
   @Test
   @DisplayName("Should get all injury types with pagination")
@@ -99,8 +98,8 @@ class InjuryTypeControllerTest extends AbstractControllerTest {
   @DisplayName("Should create injury type successfully")
   void shouldCreateInjuryTypeSuccessfully() throws Exception {
     // Given
-    CreateInjuryTypeRequest request =
-        new CreateInjuryTypeRequest("New Injury", -2, 0, -1, "Special effect");
+    InjuryTypeController.CreateInjuryTypeRequest request =
+        new InjuryTypeController.CreateInjuryTypeRequest("New Injury", -2, 0, -1, "Special effect");
     InjuryType createdInjuryType = createSampleInjuryType();
     createdInjuryType.setInjuryName("New Injury");
 
@@ -123,7 +122,7 @@ class InjuryTypeControllerTest extends AbstractControllerTest {
   @DisplayName("Should handle validation errors when creating injury type")
   void shouldHandleValidationErrorsWhenCreatingInjuryType() throws Exception {
     // Given - Invalid request with empty name
-    CreateInjuryTypeRequest request = new CreateInjuryTypeRequest("", -2, 0, -1, "Special effect");
+    InjuryTypeController.CreateInjuryTypeRequest request = new InjuryTypeController.CreateInjuryTypeRequest("", -2, 0, -1, "Special effect");
 
     // When & Then
     mockMvc
@@ -140,8 +139,8 @@ class InjuryTypeControllerTest extends AbstractControllerTest {
   @DisplayName("Should update injury type successfully")
   void shouldUpdateInjuryTypeSuccessfully() throws Exception {
     // Given
-    UpdateInjuryTypeRequest request =
-        new UpdateInjuryTypeRequest("Updated Injury", -3, -1, -2, "Updated special effect");
+    InjuryTypeController.UpdateInjuryTypeRequest request =
+        new InjuryTypeController.UpdateInjuryTypeRequest("Updated Injury", -3, -1, -2, "Updated special effect");
     InjuryType updatedInjuryType = createSampleInjuryType();
     updatedInjuryType.setInjuryName("Updated Injury");
 
@@ -164,8 +163,8 @@ class InjuryTypeControllerTest extends AbstractControllerTest {
   @DisplayName("Should return 404 when updating non-existent injury type")
   void shouldReturn404WhenUpdatingNonExistentInjuryType() throws Exception {
     // Given
-    UpdateInjuryTypeRequest request =
-        new UpdateInjuryTypeRequest("Updated Injury", -3, -1, -2, "Updated special effect");
+    InjuryTypeController.UpdateInjuryTypeRequest request =
+        new InjuryTypeController.UpdateInjuryTypeRequest("Updated Injury", -3, -1, -2, "Updated special effect");
 
     when(injuryTypeService.updateInjuryType(
             eq(999L), anyString(), any(), any(), any(), anyString()))

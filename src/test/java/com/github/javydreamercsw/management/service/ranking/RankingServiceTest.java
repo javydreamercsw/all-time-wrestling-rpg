@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.ranking;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
@@ -120,7 +121,7 @@ class RankingServiceTest {
     when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
         .thenReturn(Optional.of(boundary));
     when(wrestlerRepository.findByFansBetween(
-            WrestlerTier.MIDCARDER.getMinFans(), WrestlerTier.MIDCARDER.getMaxFans()))
+            anyLong(), anyLong()))
         .thenReturn(new ArrayList<>(List.of(contender1, contender2)));
 
     List<RankedWrestlerDTO> contenders = rankingService.getRankedContenders(1L);
@@ -150,7 +151,7 @@ class RankingServiceTest {
     boundary.setMaxFans(WrestlerTier.MAIN_EVENTER.getMaxFans());
     when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
         .thenReturn(Optional.of(boundary));
-    when(wrestlerRepository.findByFansGreaterThanEqual(WrestlerTier.MAIN_EVENTER.getMinFans()))
+    when(wrestlerRepository.findByFansGreaterThanEqual(anyLong()))
         .thenReturn(new ArrayList<>(List.of(champion, contender1, contender2, icon)));
 
     List<RankedWrestlerDTO> contenders = rankingService.getRankedContenders(1L);

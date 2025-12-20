@@ -41,8 +41,6 @@ class SyncHealthControllerTest extends AbstractControllerTest {
   @MockitoBean private CommandLineRunner commandLineRunner;
   @MockitoBean private SyncHealthMonitor healthMonitor;
 
-  @Autowired private ObjectMapper objectMapper;
-
   @Test
   void shouldReturnHealthStatus() throws Exception {
     // Given

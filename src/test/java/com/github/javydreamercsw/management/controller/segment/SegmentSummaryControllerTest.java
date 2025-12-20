@@ -25,22 +25,28 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
+import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.exception.RestExceptionHandler;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Import(RestExceptionHandler.class)
+@WebMvcTest(SegmentSummaryController.class)
 class SegmentSummaryControllerTest extends AbstractControllerTest {
 
   @MockitoBean private SegmentSummaryService segmentSummaryService;
+  @MockitoBean private RankingService rankingService;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
-  @WithMockUser(roles = "BOOKER")
   void testSummarizeSegment() throws Exception {
     Long segmentId = 1L;
     Segment mockSegment = new Segment();

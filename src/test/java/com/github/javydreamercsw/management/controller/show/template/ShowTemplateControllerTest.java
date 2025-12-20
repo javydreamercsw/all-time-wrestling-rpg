@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
+import com.github.javydreamercsw.management.controller.sync.NotionSyncController;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -35,6 +36,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -43,7 +45,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DisplayName("ShowTemplate Controller Tests")
-@WithMockUser(roles = {"ADMIN", "BOOKER"})
+@WebMvcTest(ShowTemplateController.class)
 class ShowTemplateControllerTest extends AbstractControllerTest {
 
   @MockitoBean private ShowTemplateService showTemplateService;
