@@ -52,6 +52,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.test.context.ActiveProfiles;
 
 @ExtendWith(UITestWatcher.class)
@@ -75,7 +76,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   static class TestSecurityConfig {
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-      return (web) -> web.ignoring().anyRequest();
+      return (web) -> web.ignoring().requestMatchers(new AntPathRequestMatcher("/**"));
     }
   }
 
@@ -170,6 +171,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
+  }
+
+  protected void waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout
+    wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
 
   /** Waits for the Vaadin client-side application to fully load. */
