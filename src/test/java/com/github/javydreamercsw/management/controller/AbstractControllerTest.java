@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.security.CustomUserDetailsService;
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,4 +45,5 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
   @MockitoBean protected SegmentNarrationServiceFactory serviceFactory;
+  @MockitoBean protected RankingService baseRankingService;
 }

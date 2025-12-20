@@ -22,7 +22,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -45,7 +44,6 @@ class ShowPlanningControllerTest extends AbstractControllerTest {
   @MockitoBean private ShowPlanningAiService showPlanningAiService;
 
   @MockitoBean private ShowService showService;
-  @MockitoBean private RankingService rankingService;
   @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test

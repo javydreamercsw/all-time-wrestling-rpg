@@ -47,6 +47,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
@@ -74,6 +75,9 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected WrestlerService wrestlerService;
   @Autowired protected ShowTemplateRepository showTemplateRepository;
   @Autowired protected DatabaseCleaner databaseCleaner;
+
+  @MockitoBean
+  protected com.github.javydreamercsw.base.service.ranking.RankingService baseRankingService;
 
   protected Wrestler createTestWrestler(@NonNull String name) {
     return TestUtils.createWrestler(name);

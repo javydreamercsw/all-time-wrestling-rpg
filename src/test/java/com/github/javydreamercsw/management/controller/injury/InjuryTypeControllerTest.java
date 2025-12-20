@@ -22,7 +22,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -46,7 +45,6 @@ class InjuryTypeControllerTest extends AbstractControllerTest {
   @MockitoBean private InjuryTypeService injuryTypeService;
   @MockitoBean private InjuryTypeMapper injuryTypeMapper;
   @MockitoBean private WrestlerRepository wrestlerRepository;
-  @MockitoBean private RankingService rankingService;
 
   @Test
   @DisplayName("Should get all injury types with pagination")

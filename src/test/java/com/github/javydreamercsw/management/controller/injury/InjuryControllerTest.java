@@ -23,7 +23,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
@@ -43,7 +42,6 @@ class InjuryControllerTest extends AbstractControllerTest {
 
   @MockitoBean private InjuryService injuryService;
   @MockitoBean private WrestlerRepository wrestlerRepository;
-  @MockitoBean private RankingService rankingService;
 
   @Test
   @WithMockUser(roles = "BOOKER")

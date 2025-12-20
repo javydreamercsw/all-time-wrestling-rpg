@@ -23,7 +23,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -38,7 +37,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class SeasonControllerTest extends AbstractControllerTest {
 
   @MockitoBean private SeasonService seasonService;
-  @MockitoBean private RankingService rankingService;
   @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
