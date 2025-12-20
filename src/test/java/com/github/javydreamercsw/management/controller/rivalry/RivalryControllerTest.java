@@ -26,7 +26,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.dto.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.mapper.RivalryMapper;
@@ -44,7 +43,6 @@ class RivalryControllerTest extends AbstractControllerTest {
 
   @MockitoBean private RivalryService rivalryService;
   @MockitoBean private RivalryMapper rivalryMapper;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @WithMockUser(roles = "BOOKER")

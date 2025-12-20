@@ -36,7 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
     })
 @EnableConfigurationProperties(SegmentNarrationConfig.class)
 @ActiveProfiles("localai")
-class LocalAISegmentNarrationServiceTest {
+class LocalAISegmentNarrationServiceIT {
 
   @Autowired private LocalAISegmentNarrationService localAIService;
   @Autowired private LocalAIStatusService statusService;

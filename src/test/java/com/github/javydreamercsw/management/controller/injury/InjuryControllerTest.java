@@ -27,7 +27,6 @@ import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Instant;
 import java.util.Optional;
@@ -41,7 +40,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class InjuryControllerTest extends AbstractControllerTest {
 
   @MockitoBean private InjuryService injuryService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @WithMockUser(roles = "BOOKER")

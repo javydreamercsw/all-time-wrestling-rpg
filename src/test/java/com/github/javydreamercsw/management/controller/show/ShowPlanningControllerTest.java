@@ -24,7 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
@@ -44,7 +43,6 @@ class ShowPlanningControllerTest extends AbstractControllerTest {
   @MockitoBean private ShowPlanningAiService showPlanningAiService;
 
   @MockitoBean private ShowService showService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   void getShowPlanningContext() throws Exception {

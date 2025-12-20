@@ -22,11 +22,9 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import java.time.Instant;
 import java.util.Arrays;
@@ -47,8 +45,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class ShowTemplateControllerTest extends AbstractControllerTest {
 
   @MockitoBean private ShowTemplateService showTemplateService;
-  @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   private ShowTemplate testTemplate;
   private ShowType testShowType;

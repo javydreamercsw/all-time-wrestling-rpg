@@ -25,7 +25,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.season.Season;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -37,7 +36,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class SeasonControllerTest extends AbstractControllerTest {
 
   @MockitoBean private SeasonService seasonService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @WithMockUser(roles = "BOOKER")

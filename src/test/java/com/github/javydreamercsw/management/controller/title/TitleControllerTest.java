@@ -24,10 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -38,8 +36,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class TitleControllerTest extends AbstractControllerTest {
 
   @MockitoBean private TitleService titleService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
-  @MockitoBean private RankingService rankingService;
 
   @Test
   void createTitle() throws Exception {

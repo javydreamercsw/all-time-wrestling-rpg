@@ -25,10 +25,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -41,8 +39,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class ShowControllerTest extends AbstractControllerTest {
 
   @MockitoBean private ShowService showService;
-  @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   void createShow() throws Exception {

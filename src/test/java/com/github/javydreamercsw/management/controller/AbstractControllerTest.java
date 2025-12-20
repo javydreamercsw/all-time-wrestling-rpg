@@ -46,6 +46,6 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
   @MockitoBean protected SegmentNarrationServiceFactory serviceFactory;
-  @MockitoBean protected RankingService baseRankingService;
+  @MockitoBean protected RankingService rankingService;
   @MockitoBean protected WrestlerRepository wrestlerRepository;
 }

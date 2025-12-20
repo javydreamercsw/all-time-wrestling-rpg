@@ -22,7 +22,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import java.util.ArrayList;
@@ -37,7 +36,6 @@ class DataExportControllerTest extends AbstractControllerTest {
 
   @MockitoBean private ShowService showService;
   @MockitoBean private ShowTemplateService showTemplateService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @WithMockUser

@@ -25,10 +25,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -43,8 +41,6 @@ class SegmentNarrationControllerTest extends AbstractControllerTest {
 
   @MockitoBean private SegmentOutcomeProvider segmentOutcomeProvider;
   @MockitoBean private SegmentNarrationConfig segmentNarrationConfig;
-  @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   void testNarrateMatch() throws Exception {
