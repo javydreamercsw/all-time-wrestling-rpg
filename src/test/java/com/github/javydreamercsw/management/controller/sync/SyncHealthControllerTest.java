@@ -32,8 +32,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@WebMvcTest(SyncHealthController.class)
 class SyncHealthControllerTest extends AbstractControllerTest {
 
   @MockitoBean private CommandLineRunner commandLineRunner;
