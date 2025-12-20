@@ -124,12 +124,12 @@
 **Goal:** Secure backend services
 
 11. ✅ Enable method security in SecurityConfig
-12. 🔨 Add `@PreAuthorize` to service layer methods:
+12. ✅ Add `@PreAuthorize` to service layer methods:
 	- Create operations: ADMIN, BOOKER, PLAYER (own content)
 	- Update operations: ADMIN, BOOKER, PLAYER (own content)
 	- Delete operations: ADMIN, BOOKER
 	- Read operations: All authenticated
-13. 🔨 Implement ownership checks for PLAYER role
+13. ✅ Implement ownership checks for PLAYER role
 14. 🔨 Test method security with different roles
 
 **Deliverable:** Backend enforces role permissions
