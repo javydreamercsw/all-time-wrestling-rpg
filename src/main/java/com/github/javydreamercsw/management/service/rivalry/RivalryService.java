@@ -22,6 +22,8 @@ import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.HeatChangeEvent;
+import com.github.javydreamercsw.management.event.RivalryCompletedEvent;
+import com.github.javydreamercsw.management.event.RivalryContinuesEvent;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
@@ -161,7 +163,12 @@ public class RivalryService {
     boolean resolved = rivalry.attemptResolution(roll1, roll2);
 
     if (resolved) {
+      rivalry.endRivalry("Rivalry resolved successfully");
+      rivalry.setIsActive(false);
       rivalryRepository.saveAndFlush(rivalry);
+      eventPublisher.publishEvent(new RivalryCompletedEvent(this, rivalry));
+    } else {
+      eventPublisher.publishEvent(new RivalryContinuesEvent(this, rivalry));
     }
 
     return new ResolutionResult<>(

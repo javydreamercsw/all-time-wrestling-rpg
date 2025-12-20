@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.event.FeudResolvedEvent;
+import com.github.javydreamercsw.management.event.FactionHeatChangeEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -28,31 +28,40 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class FeudResolvedInboxListener implements ApplicationListener<FeudResolvedEvent> {
+public class FactionHeatChangeInboxListener implements ApplicationListener<FactionHeatChangeEvent> {
 
   private final InboxService inboxService;
-  private final InboxEventType feudResolved;
+  private final InboxEventType factionHeatChange;
   private final ApplicationEventPublisher eventPublisher;
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
-  public FeudResolvedInboxListener(
+  public FactionHeatChangeInboxListener(
       @NonNull InboxService inboxService,
-      @NonNull @Qualifier("feudResolved") InboxEventType feudResolved,
+      @NonNull @Qualifier("factionHeatChange") InboxEventType factionHeatChange,
       @NonNull ApplicationEventPublisher eventPublisher,
       @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
-    this.feudResolved = feudResolved;
+    this.factionHeatChange = factionHeatChange;
     this.eventPublisher = eventPublisher;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
   }
 
   @Override
-  public void onApplicationEvent(@NonNull FeudResolvedEvent event) {
-    log.info("Received FeudResolvedEvent for feud: {}", event.getFeud().getName());
+  public void onApplicationEvent(@NonNull FactionHeatChangeEvent event) {
+    log.info("Received FactionHeatChangeEvent for rivalry ID: {}", event.getFactionRivalryId());
+
+    String message =
+        String.format(
+            "Faction rivalry between %s and %s %s %d heat. New total: %d. Reason: %s",
+            event.getFaction1Name(),
+            event.getFaction2Name(),
+            (event.getNewHeat() - event.getOldHeat()) > 0 ? "gained" : "lost",
+            Math.abs(event.getNewHeat() - event.getOldHeat()),
+            event.getNewHeat(),
+            event.getReason());
+
     inboxService.createInboxItem(
-        feudResolved,
-        String.format("Feud '%s' has been resolved.", event.getFeud().getName()),
-        event.getFeud().getId().toString());
+        factionHeatChange, message, event.getFactionRivalryId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

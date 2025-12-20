@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.event.FeudResolvedEvent;
+import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -28,31 +28,31 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class FeudResolvedInboxListener implements ApplicationListener<FeudResolvedEvent> {
+public class SegmentsApprovedInboxListener implements ApplicationListener<SegmentsApprovedEvent> {
 
   private final InboxService inboxService;
-  private final InboxEventType feudResolved;
+  private final InboxEventType segmentsApproved;
   private final ApplicationEventPublisher eventPublisher;
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
-  public FeudResolvedInboxListener(
+  public SegmentsApprovedInboxListener(
       @NonNull InboxService inboxService,
-      @NonNull @Qualifier("feudResolved") InboxEventType feudResolved,
+      @NonNull @Qualifier("segmentsApproved") InboxEventType segmentsApproved,
       @NonNull ApplicationEventPublisher eventPublisher,
       @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
-    this.feudResolved = feudResolved;
+    this.segmentsApproved = segmentsApproved;
     this.eventPublisher = eventPublisher;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
   }
 
   @Override
-  public void onApplicationEvent(@NonNull FeudResolvedEvent event) {
-    log.info("Received FeudResolvedEvent for feud: {}", event.getFeud().getName());
+  public void onApplicationEvent(@NonNull SegmentsApprovedEvent event) {
+    log.info("Received SegmentsApprovedEvent for show: {}", event.getShow().getName());
     inboxService.createInboxItem(
-        feudResolved,
-        String.format("Feud '%s' has been resolved.", event.getFeud().getName()),
-        event.getFeud().getId().toString());
+        segmentsApproved,
+        String.format("Segments approved for show: %s", event.getShow().getName()),
+        event.getShow().getId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

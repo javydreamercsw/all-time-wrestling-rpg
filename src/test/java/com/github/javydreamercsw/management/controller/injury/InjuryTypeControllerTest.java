@@ -30,7 +30,6 @@ import com.github.javydreamercsw.management.mapper.InjuryTypeMapper;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import java.util.List;
 import java.util.Optional;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -122,7 +121,8 @@ class InjuryTypeControllerTest extends AbstractControllerTest {
   @DisplayName("Should handle validation errors when creating injury type")
   void shouldHandleValidationErrorsWhenCreatingInjuryType() throws Exception {
     // Given - Invalid request with empty name
-    InjuryTypeController.CreateInjuryTypeRequest request = new InjuryTypeController.CreateInjuryTypeRequest("", -2, 0, -1, "Special effect");
+    InjuryTypeController.CreateInjuryTypeRequest request =
+        new InjuryTypeController.CreateInjuryTypeRequest("", -2, 0, -1, "Special effect");
 
     // When & Then
     mockMvc
@@ -140,7 +140,8 @@ class InjuryTypeControllerTest extends AbstractControllerTest {
   void shouldUpdateInjuryTypeSuccessfully() throws Exception {
     // Given
     InjuryTypeController.UpdateInjuryTypeRequest request =
-        new InjuryTypeController.UpdateInjuryTypeRequest("Updated Injury", -3, -1, -2, "Updated special effect");
+        new InjuryTypeController.UpdateInjuryTypeRequest(
+            "Updated Injury", -3, -1, -2, "Updated special effect");
     InjuryType updatedInjuryType = createSampleInjuryType();
     updatedInjuryType.setInjuryName("Updated Injury");
 
@@ -164,7 +165,8 @@ class InjuryTypeControllerTest extends AbstractControllerTest {
   void shouldReturn404WhenUpdatingNonExistentInjuryType() throws Exception {
     // Given
     InjuryTypeController.UpdateInjuryTypeRequest request =
-        new InjuryTypeController.UpdateInjuryTypeRequest("Updated Injury", -3, -1, -2, "Updated special effect");
+        new InjuryTypeController.UpdateInjuryTypeRequest(
+            "Updated Injury", -3, -1, -2, "Updated special effect");
 
     when(injuryTypeService.updateInjuryType(
             eq(999L), anyString(), any(), any(), any(), anyString()))

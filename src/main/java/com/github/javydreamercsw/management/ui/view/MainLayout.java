@@ -30,8 +30,7 @@ import static com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Width;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
-import com.github.javydreamercsw.management.event.FanChangeBroadcaster;
-import com.github.javydreamercsw.management.event.WrestlerInjuryHealedBroadcaster;
+import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
@@ -51,9 +50,9 @@ import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
 import com.vaadin.flow.shared.Registration;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.security.PermitAll;
 import java.util.Optional;
-import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 
@@ -61,12 +60,11 @@ import org.springframework.boot.info.BuildProperties;
 @PermitAll // When security is enabled, allow all authenticated users
 public class MainLayout extends AppLayout {
 
-  private @Nullable MenuService menuService;
-  private @Nullable WrestlerInjuryHealedBroadcaster injuryBroadcaster;
-  private @Nullable BuildProperties buildProperties;
+  private MenuService menuService;
+  private BuildProperties buildProperties;
+  private InboxUpdateBroadcaster inboxUpdateBroadcaster;
+  private Registration inboxUpdateBroadcasterRegistration;
   private @Nullable SecurityUtils securityUtils;
-  private @Nullable Registration broadcasterRegistration;
-  private @Nullable Registration injuryBroadcasterRegistration;
 
   /** For testing purposes. */
   public MainLayout() {}
@@ -74,11 +72,11 @@ public class MainLayout extends AppLayout {
   @Autowired
   public MainLayout(
       MenuService menuService,
-      WrestlerInjuryHealedBroadcaster injuryBroadcaster,
+      InboxUpdateBroadcaster inboxUpdateBroadcaster,
       Optional<BuildProperties> buildProperties,
       SecurityUtils securityUtils) {
     this.menuService = menuService;
-    this.injuryBroadcaster = injuryBroadcaster;
+    this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
     this.securityUtils = securityUtils;
     setPrimarySection(Section.DRAWER);
@@ -177,54 +175,24 @@ public class MainLayout extends AppLayout {
   protected void onAttach(AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     UI ui = attachEvent.getUI();
-
-    // FanChangeBroadcaster is a static utility, always available
-    broadcasterRegistration =
-        FanChangeBroadcaster.register(
+    inboxUpdateBroadcasterRegistration =
+        inboxUpdateBroadcaster.register(
             event -> {
               if (ui.isAttached()) {
                 ui.access(
                     () -> {
-                      String message =
-                          String.format(
-                              "%s %s %d fans!",
-                              event.getWrestler().getName(),
-                              event.getFanChange() > 0 ? "gained" : "lost",
-                              Math.abs(event.getFanChange()));
-                      Notification.show(message, 3000, Notification.Position.BOTTOM_END)
+                      Notification.show("New inbox item!", 3000, Notification.Position.BOTTOM_END)
                           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                     });
               }
             });
-
-    // injuryBroadcaster might be null in test contexts (Karibu Testing)
-    if (injuryBroadcaster != null) {
-      injuryBroadcasterRegistration =
-          injuryBroadcaster.register(
-              event -> {
-                if (ui.isAttached()) {
-                  ui.access(
-                      () -> {
-                        String message =
-                            String.format(
-                                "%s's injury (%s) has been healed!",
-                                event.getWrestler().getName(), event.getInjury().getName());
-                        Notification.show(message, 3000, Notification.Position.BOTTOM_END)
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                      });
-                }
-              });
-    }
   }
 
   @Override
   protected void onDetach(DetachEvent detachEvent) {
     super.onDetach(detachEvent);
-    if (broadcasterRegistration != null) {
-      broadcasterRegistration.remove();
-    }
-    if (injuryBroadcasterRegistration != null) {
-      injuryBroadcasterRegistration.remove();
+    if (inboxUpdateBroadcasterRegistration != null) {
+      inboxUpdateBroadcasterRegistration.remove();
     }
   }
 }

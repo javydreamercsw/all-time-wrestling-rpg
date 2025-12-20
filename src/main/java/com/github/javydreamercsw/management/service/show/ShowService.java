@@ -373,32 +373,8 @@ public class ShowService {
         .forEach(
             segment -> {
               segmentAdjudicationService.adjudicateMatch(segment);
-              if (segment.getSegmentType().getName().equals("Promo")) {
+              if (!segment.getSegmentType().getName().equals("Promo")) {
                 participatingWrestlers.addAll(segment.getWrestlers());
-              }
-              if (show.isPremiumLiveEvent()) {
-                // Check if feuds should be resolved.
-                switch (segment.getSegmentType().getName()) {
-                  case "Tag Team":
-                    attemptRivalryResolution(
-                        segment.getWrestlers().get(0), segment.getWrestlers().get(2));
-                    attemptRivalryResolution(
-                        segment.getWrestlers().get(0), segment.getWrestlers().get(3));
-                    attemptRivalryResolution(
-                        segment.getWrestlers().get(1), segment.getWrestlers().get(2));
-                    attemptRivalryResolution(
-                        segment.getWrestlers().get(1), segment.getWrestlers().get(3));
-                    break;
-                  case "Abu Dhabi Rumble":
-                  case "One on One":
-                  case "Free-for-All":
-                    int size = segment.getParticipants().size();
-                    for (int i = 1; i < size; i++) {
-                      attemptRivalryResolution(
-                          segment.getWrestlers().get(0), segment.getWrestlers().get(i));
-                    }
-                    break;
-                }
               }
               segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
               segmentRepository.save(segment);

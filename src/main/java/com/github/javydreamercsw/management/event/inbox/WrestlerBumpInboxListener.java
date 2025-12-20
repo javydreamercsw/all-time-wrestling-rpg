@@ -21,6 +21,8 @@ import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
@@ -30,11 +32,18 @@ public class WrestlerBumpInboxListener implements ApplicationListener<WrestlerBu
 
   private final InboxService inboxService;
   private final InboxEventType wrestlerBump;
+  private final ApplicationEventPublisher eventPublisher;
+  private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public WrestlerBumpInboxListener(
-      @NonNull InboxService inboxService, @NonNull InboxEventType wrestlerBump) {
+      @NonNull InboxService inboxService,
+      @NonNull @Qualifier("wrestlerBump") InboxEventType wrestlerBump,
+      @NonNull ApplicationEventPublisher eventPublisher,
+      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.wrestlerBump = wrestlerBump;
+    this.eventPublisher = eventPublisher;
+    this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
   }
 
   @Override
@@ -46,5 +55,7 @@ public class WrestlerBumpInboxListener implements ApplicationListener<WrestlerBu
             "Wrestler %s received a bump. Total bumps: %d",
             event.getWrestler().getName(), event.getWrestler().getBumps()),
         event.getWrestler().getId().toString());
+    eventPublisher.publishEvent(new InboxUpdateEvent(this));
+    inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }
 }

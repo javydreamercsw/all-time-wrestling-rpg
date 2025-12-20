@@ -120,8 +120,7 @@ class RankingServiceTest {
     boundary.setMaxFans(WrestlerTier.MIDCARDER.getMaxFans());
     when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
         .thenReturn(Optional.of(boundary));
-    when(wrestlerRepository.findByFansBetween(
-            anyLong(), anyLong()))
+    when(wrestlerRepository.findByFansBetween(anyLong(), anyLong()))
         .thenReturn(new ArrayList<>(List.of(contender1, contender2)));
 
     List<RankedWrestlerDTO> contenders = rankingService.getRankedContenders(1L);

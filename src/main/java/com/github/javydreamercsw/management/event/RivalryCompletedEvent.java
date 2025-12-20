@@ -16,15 +16,16 @@
 */
 package com.github.javydreamercsw.management.event;
 
-import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
-import org.springframework.context.ApplicationListener;
-import org.springframework.stereotype.Component;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import lombok.Getter;
+import org.springframework.context.ApplicationEvent;
 
-@Component
-public class FanChangeEventListener implements ApplicationListener<FanAwardedEvent> {
+@Getter
+public class RivalryCompletedEvent extends ApplicationEvent {
+  private final Rivalry rivalry;
 
-  @Override
-  public void onApplicationEvent(FanAwardedEvent event) {
-    FanChangeBroadcaster.broadcast(event);
+  public RivalryCompletedEvent(Object source, Rivalry rivalry) {
+    super(source);
+    this.rivalry = rivalry;
   }
 }

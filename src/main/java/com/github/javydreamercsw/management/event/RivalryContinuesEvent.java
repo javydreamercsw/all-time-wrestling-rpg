@@ -14,17 +14,18 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.config;
+package com.github.javydreamercsw.management.event;
 
-import com.github.javydreamercsw.management.event.WrestlerInjuryHealedBroadcaster;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import lombok.Getter;
+import org.springframework.context.ApplicationEvent;
 
-@TestConfiguration
-public class ManagementTestConfig {
+@Getter
+public class RivalryContinuesEvent extends ApplicationEvent {
+  private final Rivalry rivalry;
 
-  @Bean
-  public WrestlerInjuryHealedBroadcaster wrestlerInjuryHealedBroadcaster() {
-    return new WrestlerInjuryHealedBroadcaster();
+  public RivalryContinuesEvent(Object source, Rivalry rivalry) {
+    super(source);
+    this.rivalry = rivalry;
   }
 }

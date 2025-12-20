@@ -17,8 +17,9 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.event.FeudResolvedEvent;
+import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,31 +29,37 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class FeudResolvedInboxListener implements ApplicationListener<FeudResolvedEvent> {
+public class ChampionshipDefendedInboxListener
+    implements ApplicationListener<ChampionshipDefendedEvent> {
 
   private final InboxService inboxService;
-  private final InboxEventType feudResolved;
+  private final InboxEventType championshipDefended;
   private final ApplicationEventPublisher eventPublisher;
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
-  public FeudResolvedInboxListener(
+  public ChampionshipDefendedInboxListener(
       @NonNull InboxService inboxService,
-      @NonNull @Qualifier("feudResolved") InboxEventType feudResolved,
+      @NonNull @Qualifier("championshipDefended") InboxEventType championshipDefended,
       @NonNull ApplicationEventPublisher eventPublisher,
       @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
-    this.feudResolved = feudResolved;
+    this.championshipDefended = championshipDefended;
     this.eventPublisher = eventPublisher;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
   }
 
   @Override
-  public void onApplicationEvent(@NonNull FeudResolvedEvent event) {
-    log.info("Received FeudResolvedEvent for feud: {}", event.getFeud().getName());
-    inboxService.createInboxItem(
-        feudResolved,
-        String.format("Feud '%s' has been resolved.", event.getFeud().getName()),
-        event.getFeud().getId().toString());
+  public void onApplicationEvent(@NonNull ChampionshipDefendedEvent event) {
+    log.info("Received ChampionshipDefendedEvent for title ID: {}", event.getTitleId());
+
+    String champions =
+        event.getChampions().stream().map(w -> w.getName()).collect(Collectors.joining(", "));
+
+    String message =
+        String.format(
+            "Champions %s successfully defended title ID %d", champions, event.getTitleId());
+
+    inboxService.createInboxItem(championshipDefended, message, event.getTitleId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

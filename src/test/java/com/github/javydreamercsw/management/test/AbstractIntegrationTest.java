@@ -21,7 +21,6 @@ import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.management.DatabaseCleaner;
-import com.github.javydreamercsw.management.config.ManagementTestConfig;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
@@ -51,7 +50,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
-@Import({TestSecurityConfig.class, ManagementTestConfig.class})
+@Import({TestSecurityConfig.class})
 @WithMockUser(roles = "ADMIN")
 public abstract class AbstractIntegrationTest {
 

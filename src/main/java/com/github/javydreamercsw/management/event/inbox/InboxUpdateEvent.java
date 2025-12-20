@@ -14,21 +14,12 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.event;
+package com.github.javydreamercsw.management.event.inbox;
 
-import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
+import org.springframework.context.ApplicationEvent;
 
-@Component
-@RequiredArgsConstructor
-public class WrestlerInjuryHealedEventListener {
-
-  private final WrestlerInjuryHealedBroadcaster broadcaster;
-
-  @EventListener
-  public void handleWrestlerInjuryHealedEvent(WrestlerInjuryHealedEvent event) {
-    broadcaster.broadcast(event);
+public class InboxUpdateEvent extends ApplicationEvent {
+  public InboxUpdateEvent(Object source) {
+    super(source);
   }
 }

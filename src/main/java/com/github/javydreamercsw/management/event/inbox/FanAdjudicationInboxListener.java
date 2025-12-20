@@ -14,12 +14,14 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.event;
+package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
@@ -28,11 +30,18 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
 
   private final InboxService inboxService;
   private final InboxEventType fanAdjudication;
+  private final ApplicationEventPublisher eventPublisher;
+  private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public FanAdjudicationInboxListener(
-      @NonNull InboxService inboxService, @NonNull InboxEventType fanAdjudication) {
+      @NonNull InboxService inboxService,
+      @NonNull @Qualifier("fanAdjudication") InboxEventType fanAdjudication,
+      @NonNull ApplicationEventPublisher eventPublisher,
+      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.fanAdjudication = fanAdjudication;
+    this.eventPublisher = eventPublisher;
+    this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
   }
 
   @Override
@@ -46,5 +55,7 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
             event.getWrestler().getFans());
 
     inboxService.createInboxItem(fanAdjudication, message, event.getWrestler().getId().toString());
+    eventPublisher.publishEvent(new InboxUpdateEvent(this));
+    inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }
 }
