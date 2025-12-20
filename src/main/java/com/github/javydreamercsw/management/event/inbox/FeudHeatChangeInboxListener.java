@@ -17,8 +17,9 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.event.FeudResolvedEvent;
+import com.github.javydreamercsw.management.event.FeudHeatChangeEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,31 +29,42 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class FeudResolvedInboxListener implements ApplicationListener<FeudResolvedEvent> {
+public class FeudHeatChangeInboxListener implements ApplicationListener<FeudHeatChangeEvent> {
 
   private final InboxService inboxService;
-  private final InboxEventType feudResolved;
+  private final InboxEventType feudHeatChange;
   private final ApplicationEventPublisher eventPublisher;
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
-  public FeudResolvedInboxListener(
+  public FeudHeatChangeInboxListener(
       @NonNull InboxService inboxService,
-      @NonNull @Qualifier("feudResolved") InboxEventType feudResolved,
+      @NonNull @Qualifier("feudHeatChange") InboxEventType feudHeatChange,
       @NonNull ApplicationEventPublisher eventPublisher,
       @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
-    this.feudResolved = feudResolved;
+    this.feudHeatChange = feudHeatChange;
     this.eventPublisher = eventPublisher;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
   }
 
   @Override
-  public void onApplicationEvent(@NonNull FeudResolvedEvent event) {
-    log.info("Received FeudResolvedEvent for feud: {}", event.getFeud().getName());
-    inboxService.createInboxItem(
-        feudResolved,
-        String.format("Feud '%s' has been resolved.", event.getFeud().getName()),
-        event.getFeud().getId().toString());
+  public void onApplicationEvent(@NonNull FeudHeatChangeEvent event) {
+    log.info("Received FeudHeatChangeEvent for feud ID: {}", event.getFeudId());
+
+    String wrestlers =
+        event.getWrestlers().stream().map(w -> w.getName()).collect(Collectors.joining(", "));
+
+    String message =
+        String.format(
+            "Feud '%s' involving %s %s %d heat. New total: %d. Reason: %s",
+            event.getFeudName(),
+            wrestlers,
+            (event.getNewHeat() - event.getOldHeat()) > 0 ? "gained" : "lost",
+            Math.abs(event.getNewHeat() - event.getOldHeat()),
+            event.getNewHeat(),
+            event.getReason());
+
+    inboxService.createInboxItem(feudHeatChange, message, event.getFeudId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

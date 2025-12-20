@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.event.FeudResolvedEvent;
+import com.github.javydreamercsw.management.event.RivalryContinuesEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -28,31 +28,31 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class FeudResolvedInboxListener implements ApplicationListener<FeudResolvedEvent> {
+public class RivalryContinuesInboxListener implements ApplicationListener<RivalryContinuesEvent> {
 
   private final InboxService inboxService;
-  private final InboxEventType feudResolved;
+  private final InboxEventType rivalryContinues;
   private final ApplicationEventPublisher eventPublisher;
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
-  public FeudResolvedInboxListener(
+  public RivalryContinuesInboxListener(
       @NonNull InboxService inboxService,
-      @NonNull @Qualifier("feudResolved") InboxEventType feudResolved,
+      @NonNull @Qualifier("rivalryContinues") InboxEventType rivalryContinues,
       @NonNull ApplicationEventPublisher eventPublisher,
       @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
-    this.feudResolved = feudResolved;
+    this.rivalryContinues = rivalryContinues;
     this.eventPublisher = eventPublisher;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
   }
 
   @Override
-  public void onApplicationEvent(@NonNull FeudResolvedEvent event) {
-    log.info("Received FeudResolvedEvent for feud: {}", event.getFeud().getName());
+  public void onApplicationEvent(@NonNull RivalryContinuesEvent event) {
+    log.info("Received RivalryContinuesEvent for rivalry: {}", event.getRivalry().getDisplayName());
     inboxService.createInboxItem(
-        feudResolved,
-        String.format("Feud '%s' has been resolved.", event.getFeud().getName()),
-        event.getFeud().getId().toString());
+        rivalryContinues,
+        String.format("Rivalry '%s' continues.", event.getRivalry().getDisplayName()),
+        event.getRivalry().getId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

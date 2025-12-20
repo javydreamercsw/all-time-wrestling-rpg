@@ -29,8 +29,7 @@ import static com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import static com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Width;
 
-import com.github.javydreamercsw.management.event.FanChangeBroadcaster;
-import com.github.javydreamercsw.management.event.WrestlerInjuryHealedBroadcaster;
+import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
@@ -57,10 +56,9 @@ import org.springframework.boot.info.BuildProperties;
 public class MainLayout extends AppLayout {
 
   private MenuService menuService;
-  private WrestlerInjuryHealedBroadcaster injuryBroadcaster;
   private BuildProperties buildProperties;
-  private Registration broadcasterRegistration;
-  private Registration injuryBroadcasterRegistration;
+  private InboxUpdateBroadcaster inboxUpdateBroadcaster;
+  private Registration inboxUpdateBroadcasterRegistration;
 
   /** For testing purposes. */
   public MainLayout() {}
@@ -68,10 +66,10 @@ public class MainLayout extends AppLayout {
   @Autowired
   public MainLayout(
       MenuService menuService,
-      WrestlerInjuryHealedBroadcaster injuryBroadcaster,
+      InboxUpdateBroadcaster inboxUpdateBroadcaster,
       Optional<BuildProperties> buildProperties) {
     this.menuService = menuService;
-    this.injuryBroadcaster = injuryBroadcaster;
+    this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
     setPrimarySection(Section.DRAWER);
 
@@ -136,48 +134,24 @@ public class MainLayout extends AppLayout {
   protected void onAttach(AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     UI ui = attachEvent.getUI();
-    broadcasterRegistration =
-        FanChangeBroadcaster.register(
+    inboxUpdateBroadcasterRegistration =
+        inboxUpdateBroadcaster.register(
             event -> {
               if (ui.isAttached()) {
                 ui.access(
                     () -> {
-                      String message =
-                          String.format(
-                              "%s %s %d fans!",
-                              event.getWrestler().getName(),
-                              event.getFanChange() > 0 ? "gained" : "lost",
-                              Math.abs(event.getFanChange()));
-                      Notification.show(message, 3000, Notification.Position.BOTTOM_END)
+                      Notification.show("New inbox item!", 3000, Notification.Position.BOTTOM_END)
                           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                     });
               }
             });
-    if (injuryBroadcaster != null) {
-      injuryBroadcasterRegistration =
-          injuryBroadcaster.register(
-              event -> {
-                if (ui.isAttached()) {
-                  ui.access(
-                      () -> {
-                        String message =
-                            String.format(
-                                "%s's injury (%s) has been healed!",
-                                event.getWrestler().getName(), event.getInjury().getName());
-                        Notification.show(message, 3000, Notification.Position.BOTTOM_END)
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                      });
-                }
-              });
-    }
   }
 
   @Override
   protected void onDetach(DetachEvent detachEvent) {
     super.onDetach(detachEvent);
-    broadcasterRegistration.remove();
-    if (injuryBroadcasterRegistration != null) {
-      injuryBroadcasterRegistration.remove();
+    if (inboxUpdateBroadcasterRegistration != null) {
+      inboxUpdateBroadcasterRegistration.remove();
     }
   }
 }

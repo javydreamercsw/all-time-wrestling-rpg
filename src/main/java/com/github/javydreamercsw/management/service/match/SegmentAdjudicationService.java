@@ -22,6 +22,8 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
+import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -37,6 +39,7 @@ import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -49,6 +52,7 @@ public class SegmentAdjudicationService {
   private final MultiWrestlerFeudService feudService;
   private final Random random;
   private final TitleService titleService;
+  @Autowired private ApplicationEventPublisher eventPublisher;
 
   @Autowired
   public SegmentAdjudicationService(
@@ -134,6 +138,20 @@ public class SegmentAdjudicationService {
           DiceBag wdb = new DiceBag(random, new int[] {6, 6});
           // for winners 2d6 + 3 + (quality bonus) fans
           wrestlerService.awardFans(id, (wdb.roll() + 3) * 1_000L + matchQualityBonus);
+        }
+      }
+
+      if (segment.getIsTitleSegment()) {
+        for (Title title : segment.getTitles()) {
+          List<Wrestler> currentChampions = title.getCurrentChampions();
+          if (new HashSet<>(winners).containsAll(currentChampions)) {
+            eventPublisher.publishEvent(
+                new ChampionshipDefendedEvent(this, title, currentChampions));
+          } else {
+            titleService.awardTitleTo(title, winners);
+            eventPublisher.publishEvent(
+                new ChampionshipChangeEvent(this, title, currentChampions, winners));
+          }
         }
       }
 

@@ -31,6 +31,9 @@ public class FactionHeatChangeEvent extends ApplicationEvent {
   private final String reason;
   private final List<Wrestler> wrestlers;
 
+  private final String faction1Name;
+  private final String faction2Name;
+
   public FactionHeatChangeEvent(
       Object source, FactionRivalry rivalry, int oldHeat, String reason, List<Wrestler> wrestlers) {
     super(source);
@@ -39,5 +42,7 @@ public class FactionHeatChangeEvent extends ApplicationEvent {
     this.newHeat = rivalry.getHeat();
     this.reason = reason;
     this.wrestlers = wrestlers;
+    this.faction1Name = rivalry.getFaction1().getName();
+    this.faction2Name = rivalry.getFaction2().getName();
   }
 }

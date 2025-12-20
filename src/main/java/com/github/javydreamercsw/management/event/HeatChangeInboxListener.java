@@ -17,8 +17,12 @@
 package com.github.javydreamercsw.management.event;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
+import com.github.javydreamercsw.management.event.inbox.InboxUpdateEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
@@ -27,11 +31,18 @@ public class HeatChangeInboxListener implements ApplicationListener<HeatChangeEv
 
   private final InboxService inboxService;
   private final InboxEventType rivalryHeatChange;
+  private final ApplicationEventPublisher eventPublisher;
+  private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public HeatChangeInboxListener(
-      @NonNull InboxService inboxService, @NonNull InboxEventType rivalryHeatChange) {
+      @NonNull InboxService inboxService,
+      @NonNull @Qualifier("rivalryHeatChange") InboxEventType rivalryHeatChange,
+      @NonNull ApplicationEventPublisher eventPublisher,
+      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.rivalryHeatChange = rivalryHeatChange;
+    this.eventPublisher = eventPublisher;
+    this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
   }
 
   @Override
@@ -48,5 +59,7 @@ public class HeatChangeInboxListener implements ApplicationListener<HeatChangeEv
 
     // Assuming the rivalry ID is the relevant reference for the inbox item
     inboxService.createInboxItem(rivalryHeatChange, message, event.getRivalryId().toString());
+    eventPublisher.publishEvent(new InboxUpdateEvent(this));
+    inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }
 }
