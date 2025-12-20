@@ -24,22 +24,29 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.github.javydreamercsw.base.config.TestSecurityConfig;
+import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(DramaEventController.class)
+@Import(TestSecurityConfig.class)
 class DramaEventControllerTest extends AbstractControllerTest {
 
   @MockitoBean private DramaEventService dramaEventService;
+  @MockitoBean private RankingService rankingService;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @WithMockUser(roles = "BOOKER")
