@@ -149,18 +149,18 @@ class DeckCardServiceSecurityTest extends AbstractSecurityTest {
   }
 
   @Test
-  @WithUserDetails("not_owner")
+  @WithUserDetails("owner")
   void testPlayerCannotSaveOtherDeckCard() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
+    Deck currentPlayerDeck = getOrCreateDeck(getWrestler("owner"));
     CardSet cardSet = getOrCreateCardSet();
     Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
+    DeckCard currentPlayerDeckCard = getOrCreateDeckCard(currentPlayerDeck, card, cardSet);
 
-    Deck otherDeck = getOrCreateDeck(getWrestler("not_owner"));
-    DeckCard otherDeckCard = getOrCreateDeckCard(otherDeck, card, cardSet);
+    Deck otherPlayerDeck = getOrCreateDeck(getWrestler("not_owner"));
+    DeckCard otherPlayerDeckCard = getOrCreateDeckCard(otherPlayerDeck, card, cardSet);
 
-    assertThrows(AccessDeniedException.class, () -> deckCardService.save(ownedDeckCard));
-    assertThrows(AccessDeniedException.class, () -> deckCardService.save(otherDeckCard));
+    assertThrows(AccessDeniedException.class, () -> deckCardService.save(otherPlayerDeckCard));
+    assertDoesNotThrow(() -> deckCardService.save(currentPlayerDeckCard));
   }
 
   @Test
@@ -218,18 +218,18 @@ class DeckCardServiceSecurityTest extends AbstractSecurityTest {
   }
 
   @Test
-  @WithUserDetails("not_owner")
+  @WithUserDetails("owner")
   void testPlayerCannotDeleteOtherDeckCard() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
+    Deck currentPlayerDeck = getOrCreateDeck(getWrestler("owner"));
     CardSet cardSet = getOrCreateCardSet();
     Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
+    DeckCard currentPlayerDeckCard = getOrCreateDeckCard(currentPlayerDeck, card, cardSet);
 
-    Deck otherDeck = getOrCreateDeck(getWrestler("not_owner"));
-    DeckCard otherDeckCard = getOrCreateDeckCard(otherDeck, card, cardSet);
+    Deck otherPlayerDeck = getOrCreateDeck(getWrestler("not_owner"));
+    DeckCard otherPlayerDeckCard = getOrCreateDeckCard(otherPlayerDeck, card, cardSet);
 
-    assertThrows(AccessDeniedException.class, () -> deckCardService.delete(ownedDeckCard));
-    assertThrows(AccessDeniedException.class, () -> deckCardService.delete(otherDeckCard));
+    assertThrows(AccessDeniedException.class, () -> deckCardService.delete(otherPlayerDeckCard));
+    assertDoesNotThrow(() -> deckCardService.delete(currentPlayerDeckCard));
   }
 
   @Test
