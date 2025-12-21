@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.util.UrlUtil;
@@ -50,6 +51,7 @@ import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -57,8 +59,15 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.reactive.function.client.ServletOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 public class NarrationDialog extends Dialog {
@@ -68,6 +77,7 @@ public class NarrationDialog extends Dialog {
   private final ObjectMapper objectMapper;
   private final WrestlerService wrestlerService;
   private final ShowService showService;
+  private final SegmentService segmentService;
   private final RivalryService rivalryService;
   private final LocalAIStatusService localAIStatusService;
   private final SegmentNarrationConfig segmentNarrationConfig;
@@ -86,25 +96,40 @@ public class NarrationDialog extends Dialog {
   private final MultiSelectComboBox<Npc> otherNpcsField;
   private final VerticalLayout teamsLayout;
   private final Consumer<Segment> onSaveCallback;
+  private final WebClient webClient;
 
   public NarrationDialog(
       Segment segment,
       NpcService npcService,
       WrestlerService wrestlerService,
       ShowService showService,
+      SegmentService segmentService,
       Consumer<Segment> onSaveCallback,
       RivalryService rivalryService,
       LocalAIStatusService localAIStatusService,
-      SegmentNarrationConfig segmentNarrationConfig) {
+      SegmentNarrationConfig segmentNarrationConfig,
+      WebClient.Builder webClientBuilder,
+      ClientRegistrationRepository clientRegistrationRepository,
+      OAuth2AuthorizedClientRepository authorizedClientRepository,
+      Environment env) {
     this.segment = segment;
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
     this.showService = showService;
+    this.segmentService = segmentService;
     this.onSaveCallback = onSaveCallback;
     this.rivalryService = rivalryService;
     this.localAIStatusService = localAIStatusService;
     this.segmentNarrationConfig = segmentNarrationConfig;
+    if (Arrays.asList(env.getActiveProfiles()).contains("e2e")) {
+      this.webClient = webClientBuilder.filter(logRequest()).build();
+    } else {
+      ServletOAuth2AuthorizedClientExchangeFilterFunction oauth2Client =
+          new ServletOAuth2AuthorizedClientExchangeFilterFunction(
+              clientRegistrationRepository, authorizedClientRepository);
+      this.webClient = webClientBuilder.filter(oauth2Client).filter(logRequest()).build();
+    }
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
     setWidth("800px");
@@ -692,16 +717,36 @@ public class NarrationDialog extends Dialog {
 
   private void saveNarration() {
     try {
-      String baseUrl = UrlUtil.getBaseUrl();
-      restTemplate.put(
-          baseUrl + "/api/segments/" + segment.getId() + "/narration", narrationDisplay.getText());
-      Notification.show("Narration saved successfully!", 3000, Notification.Position.BOTTOM_END)
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-      onSaveCallback.accept(segment);
-      close();
+      segment.setNarration(narrationDisplay.getText());
+      segmentService.updateSegment(segment);
+
+      getUI()
+          .ifPresent(
+              ui ->
+                  ui.access(
+                      () -> {
+                        Notification.show(
+                                "Narration saved successfully!",
+                                3000,
+                                Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                        onSaveCallback.accept(segment);
+                        close();
+                      }));
     } catch (Exception e) {
       log.error("Error saving narration", e);
-      showError("Failed to save narration: " + e.getMessage());
+      getUI()
+          .ifPresent(
+              ui -> ui.access(() -> showError("Failed to save narration: " + e.getMessage())));
     }
+  }
+
+  private ExchangeFilterFunction logRequest() {
+    return ExchangeFilterFunction.ofRequestProcessor(
+        clientRequest -> {
+          log.info("Request: {} {}", clientRequest.method(), clientRequest.url());
+          log.info("Request Headers: {}", clientRequest.headers());
+          return Mono.just(clientRequest);
+        });
   }
 }

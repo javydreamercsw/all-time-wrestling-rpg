@@ -74,12 +74,9 @@ public class AccountInitializer implements Initializable {
 
   private void createAccount(String username, String password, Set<Role> roles) {
     if (accountRepository.findByUsername(username).isEmpty()) {
-      Account account = new Account();
-      account.setUsername(username);
-      account.setPassword(passwordEncoder.encode(password));
+      Account account =
+          new Account(username, passwordEncoder.encode(password), username + "@example.com");
       account.setRoles(roles);
-      account.setEnabled(true);
-      account.setEmail(username + "@example.com");
       accountRepository.save(account);
       log.info("Created account: {}", username);
     }

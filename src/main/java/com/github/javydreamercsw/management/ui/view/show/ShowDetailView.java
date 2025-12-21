@@ -86,7 +86,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.core.env.Environment;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Detail view for displaying comprehensive information about a specific show. Accessible via URL
@@ -114,6 +118,10 @@ public class ShowDetailView extends Main
   private final RivalryService rivalryService;
   private final LocalAIStatusService localAIStatusService;
   private final SegmentNarrationConfig segmentNarrationConfig;
+  private final WebClient.Builder webClientBuilder;
+  private final ClientRegistrationRepository clientRegistrationRepository;
+  private final OAuth2AuthorizedClientRepository authorizedClientRepository;
+  private final Environment env;
   private String referrer = "shows"; // Default referrer
 
   private H2 showTitle;
@@ -137,7 +145,11 @@ public class ShowDetailView extends Main
       ShowTemplateService showTemplateService,
       RivalryService rivalryService,
       LocalAIStatusService localAIStatusService,
-      SegmentNarrationConfig segmentNarrationConfig) {
+      SegmentNarrationConfig segmentNarrationConfig,
+      WebClient.Builder webClientBuilder,
+      ClientRegistrationRepository clientRegistrationRepository,
+      OAuth2AuthorizedClientRepository authorizedClientRepository,
+      Environment env) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -153,6 +165,10 @@ public class ShowDetailView extends Main
     this.rivalryService = rivalryService;
     this.localAIStatusService = localAIStatusService;
     this.segmentNarrationConfig = segmentNarrationConfig;
+    this.webClientBuilder = webClientBuilder;
+    this.clientRegistrationRepository = clientRegistrationRepository;
+    this.authorizedClientRepository = authorizedClientRepository;
+    this.env = env;
     initializeComponents();
   }
 
@@ -749,10 +765,15 @@ public class ShowDetailView extends Main
                   npcService,
                   wrestlerService,
                   showService,
+                  segmentService,
                   updatedSegment -> refreshSegmentsGrid(),
                   rivalryService,
                   localAIStatusService,
-                  segmentNarrationConfig); // Call refreshSegmentsGrid
+                  segmentNarrationConfig,
+                  webClientBuilder,
+                  clientRegistrationRepository,
+                  authorizedClientRepository,
+                  env); // Call refreshSegmentsGrid
           dialog.open();
         });
 
