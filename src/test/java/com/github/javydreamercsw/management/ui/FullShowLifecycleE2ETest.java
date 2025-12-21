@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.TestUtils;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -67,9 +68,11 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private SegmentRuleService segmentRuleService;
   @Autowired private SegmentService segmentService;
+  @Autowired private DataInitializer dataInitializer;
 
   @BeforeEach
   public void setupTestData() {
+    dataInitializer.init();
     // Clear the cache to ensure we get fresh data
     if (cacheManager != null) {
       Cache wrestlersCache = cacheManager.getCache("wrestlers");
