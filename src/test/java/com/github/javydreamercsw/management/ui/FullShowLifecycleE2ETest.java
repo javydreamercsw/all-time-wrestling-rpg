@@ -51,7 +51,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
@@ -68,7 +67,6 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   @Autowired private SegmentService segmentService;
 
   @BeforeEach
-  @Transactional
   public void setupTestData() {
     // Clear the cache to ensure we get fresh data
     if (cacheManager != null) {
