@@ -19,7 +19,9 @@ package com.github.javydreamercsw.management.test;
 import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.management.DatabaseCleaner;
+import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
@@ -43,10 +45,12 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
+@Import({TestSecurityConfig.class, TestNotionConfiguration.class})
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;
