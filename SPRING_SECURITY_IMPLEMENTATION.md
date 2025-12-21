@@ -120,7 +120,7 @@
 
 ---
 
-### Phase 3: Method-Level Security 🔒
+### Phase 3: Method-Level Security ✅ (COMPLETED - December 21, 2025)
 **Goal:** Secure backend services
 
 11. ✅ Enable method security in SecurityConfig
@@ -130,10 +130,9 @@
 	- Delete operations: ADMIN, BOOKER
 	- Read operations: All authenticated
 13. ✅ Implement ownership checks for PLAYER role
-14. 🔨 Test method security with different roles
+14. ✅ Test method security with different roles
 
-**Deliverable:** Backend enforces role permissions
-
+**Deliverable:** Backend enforces role permissions - COMPLETE!
 ---
 
 ### Phase 4: UI Component Security 🔘
@@ -369,8 +368,9 @@ enum RoleName {
 
 ## Progress Tracking
 
-**Current Phase:** Phase 3 - Method-Level Security
-**Started:** December 14, 2025
+**Current Phase:** Phase 4 - UI Component Security
+**Started:** December 21, 2025
+**Phase 3 Completed:** December 21, 2025
 **Phase 2 Completed:** December 14, 2025
 **Phase 1 Committed:** December 14, 2025
 **Target Completion:** TBD
@@ -394,11 +394,26 @@ enum RoleName {
 - ✅ MenuService updated with filtering logic
 - ✅ Menu filtering tested with all 4 roles
 - ✅ **Phase 2 complete - menu filtering working**
+- ✅ Enable method security in SecurityConfig
+- ✅ Add `@PreAuthorize` to service layer methods (CardService: ✅; CardSetService: ✅; DeckService: ✅; DeckCardService: ✅; DramaEventService: ✅; FactionService: ✅; FactionRivalryService: ✅; FeudResolutionService: ✅; InboxService: ✅; InjuryService: ✅; InjuryTypeService: ✅; SegmentAdjudicationService: ✅; NpcService: ✅; PerformanceMonitoringService: ✅; RankingService: ✅; TierBoundaryService: ✅; TierRecalculationService: ✅; TierRecalculationScheduler: ✅; SeasonService: ✅; SegmentService: ✅; SegmentOutcomeService: ✅; SegmentRuleService: ✅; SegmentTypeService: ✅; ShowService: ✅; PromoBookingService: ✅; ShowBookingService: ✅; ShowPlanningService: ✅; ShowPlanningAiService: ✅; ShowTemplateService: ✅; ShowTypeService: ✅; NotionSyncService: ✅; NotionSyncScheduler: ✅; BackupService: ✅; TeamService: ✅; TitleService: ✅; WrestlerService: ✅)
+- ✅ Implement ownership checks for PLAYER role (WrestlerService: ✅, DeckService: ✅, DeckCardService: ✅, InboxService: ✅)
+- ✅ Test method-level security
 
 ### In Progress
-- ⏳ Add @PreAuthorize annotations to service methods (CardService: ✅; CardSetService: ✅; DeckService: ✅; DeckCardService: ✅; DramaEventService: ✅; FactionService: ✅; FactionRivalryService: ✅; FeudResolutionService: ✅; InboxService: ✅; InjuryService: ✅; InjuryTypeService: ✅; SegmentAdjudicationService: ✅; NpcService: ✅; PerformanceMonitoringService: ✅; RankingService: ✅; TierBoundaryService: ✅; TierRecalculationService: ✅; TierRecalculationScheduler: ✅; SeasonService: ✅; SegmentService: ✅; SegmentOutcomeService: ✅; SegmentRuleService: ✅; SegmentTypeService: ✅; ShowService: ✅; PromoBookingService: ✅; ShowBookingService: ✅; ShowPlanningService: ✅; ShowPlanningAiService: ✅; ShowTemplateService: ✅; ShowTypeService: ✅; NotionSyncService: ✅; NotionSyncScheduler: ✅; BackupService: ✅; TeamService: ✅; TitleService: ✅; WrestlerService: ✅)
-- ⏳ Implement ownership checks for PLAYER role (WrestlerService: ✅, DeckService: ✅, DeckCardService: ✅, InboxService: ✅)
-- 🔨 Test method-level security
+- ⏳ Update all list views to hide create/edit/delete buttons:
+	- Use `SecurityUtils.hasAnyRole()` checks
+	- VIEWER sees no action buttons
+	- PLAYER sees limited buttons
+- ⏳ Update all form views to check permissions before save
+- ⏳ Add helper methods to SecurityUtils:
+	- `canCreate()`
+	- `canEdit()`
+	- `canDelete()`
+	- `isAdmin()`
+	- `isBooker()`
+	- `isPlayer()`
+	- `isViewer()`
+- ⏳ Test UI adapts to user role
 
 ---
 
