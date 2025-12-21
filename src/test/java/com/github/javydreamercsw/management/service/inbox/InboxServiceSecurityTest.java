@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
 import java.util.Set;
+import lombok.NonNull;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -45,13 +46,12 @@ class InboxServiceSecurityTest extends AbstractSecurityTest {
   @TestConfiguration
   static class TestConfig {
     @Bean
-    public com.github.javydreamercsw.management.domain.inbox.InboxEventType testEventType() {
-      return new com.github.javydreamercsw.management.domain.inbox.InboxEventType(
-          "TEST_EVENT", "Test Event Type");
+    public InboxEventType testEventType() {
+      return new InboxEventType("TEST_EVENT", "Test Event Type");
     }
   }
 
-  private Wrestler getWrestler(String username) {
+  private Wrestler getWrestler(@NonNull String username) {
     return wrestlerRepository
         .findByAccountUsername(username)
         .orElseThrow(
@@ -109,7 +109,7 @@ class InboxServiceSecurityTest extends AbstractSecurityTest {
   @Test
   @WithUserDetails("not_owner")
   void testPlayerCannotMarkOtherAsReadUnread() {
-    InboxItem otherInboxItem = getOrCreateInboxItem(getWrestler("not_owner"), "Other Item");
+    InboxItem otherInboxItem = getOrCreateInboxItem(getWrestler("owner"), "Other Item");
     assertThrows(
         AccessDeniedException.class, () -> inboxService.markSelectedAsRead(Set.of(otherInboxItem)));
     assertThrows(
@@ -143,7 +143,7 @@ class InboxServiceSecurityTest extends AbstractSecurityTest {
   @Test
   @WithUserDetails("not_owner")
   void testPlayerCannotDeleteOther() {
-    InboxItem otherInboxItem = getOrCreateInboxItem(getWrestler("not_owner"), "Other Item");
+    InboxItem otherInboxItem = getOrCreateInboxItem(getWrestler("owner"), "Other Item");
     assertThrows(
         AccessDeniedException.class, () -> inboxService.deleteSelected(Set.of(otherInboxItem)));
   }
@@ -173,7 +173,7 @@ class InboxServiceSecurityTest extends AbstractSecurityTest {
   @Test
   @WithUserDetails("not_owner")
   void testPlayerCannotToggleOtherReadStatus() {
-    InboxItem otherInboxItem = getOrCreateInboxItem(getWrestler("not_owner"), "Other Item");
+    InboxItem otherInboxItem = getOrCreateInboxItem(getWrestler("owner"), "Other Item");
     assertThrows(AccessDeniedException.class, () -> inboxService.toggleReadStatus(otherInboxItem));
   }
 
