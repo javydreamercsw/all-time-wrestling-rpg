@@ -43,9 +43,11 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.test.context.support.WithMockUser;
 
 @ExtendWith(MockitoExtension.class)
 @Slf4j
+@WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN"})
 public abstract class AbstractSyncTest {
 
   @Mock protected NotionHandler notionHandler;
