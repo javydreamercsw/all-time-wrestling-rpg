@@ -51,6 +51,8 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 @Slf4j
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
@@ -58,7 +60,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SEASON_NAME = "Test Season";
   private static final String TEMPLATE_NAME = "Continuum";
 
-  @Autowired private org.springframework.cache.CacheManager cacheManager;
+  @Autowired private CacheManager cacheManager;
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private TitleRepository titleRepository;
@@ -70,13 +72,30 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   public void setupTestData() {
     // Clear the cache to ensure we get fresh data
     if (cacheManager != null) {
-      org.springframework.cache.Cache wrestlersCache = cacheManager.getCache("wrestlers");
+      Cache wrestlersCache = cacheManager.getCache("wrestlers");
       if (wrestlersCache != null) {
         wrestlersCache.clear();
       }
     }
 
-    databaseCleaner.clearRepositories();
+    titleReignRepository.deleteAll();
+    titleRepository
+        .findAll()
+        .forEach(
+            title -> {
+              title.setChampion(null);
+              titleRepository.save(title);
+            });
+    segmentRepository.deleteAll();
+    showRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+    seasonRepository.deleteAll();
+    showTemplateRepository.deleteAll();
+    showTypeRepository.deleteAll();
+    rivalryRepository.deleteAll();
+    multiWrestlerFeudRepository.deleteAll();
+    titleRepository.deleteAll();
+    segmentTypeRepository.deleteAll();
 
     // Add segment types
     if (segmentTypeRepository.findByName("One on One").isEmpty()) {
