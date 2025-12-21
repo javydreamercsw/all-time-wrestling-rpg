@@ -164,6 +164,7 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
         + "of a live wrestling broadcast.";
   }
 
+  @SuppressWarnings("unchecked")
   private String extractContentFromResponse(@NonNull String responseBody) throws Exception {
     Map<String, Object> responseMap = objectMapper.readValue(responseBody, Map.class);
     List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");

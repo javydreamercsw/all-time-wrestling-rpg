@@ -27,6 +27,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
@@ -67,7 +68,7 @@ public class LocalAIContainerConfig {
       localAiContainer =
           new GenericContainer<>("localai/localai:latest")
               .withExposedPorts(8080)
-              .withFileSystemBind(modelsDir.getAbsolutePath(), "/build/models")
+              .withFileSystemBind(modelsDir.getAbsolutePath(), "/build/models", BindMode.READ_WRITE)
               .withCommand("run", modelName)
               .withEnv("MODELS_PATH", "/build/models")
               .waitingFor(
