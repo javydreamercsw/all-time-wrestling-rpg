@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.inbox;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -67,14 +68,17 @@ public class InboxView extends VerticalLayout {
   private final Checkbox hideReadCheckbox = new Checkbox("Hide Read");
   private final Button deleteSelectedButton = new Button("Delete Selected");
   private final Set<InboxItem> selectedItems = new HashSet<>();
+  private final SecurityUtils securityUtils;
 
   public InboxView(
       InboxService inboxService,
       InboxEventTypeRegistry eventTypeRegistry,
-      WrestlerRepository wrestlerRepository) {
+      WrestlerRepository wrestlerRepository,
+      SecurityUtils securityUtils) {
     this.inboxService = inboxService;
     this.eventTypeRegistry = eventTypeRegistry;
     this.wrestlerRepository = wrestlerRepository;
+    this.securityUtils = securityUtils;
 
     addClassName("inbox-view");
     setSizeFull();
@@ -86,7 +90,24 @@ public class InboxView extends VerticalLayout {
     splitLayout.addToSecondary(detailsView);
 
     add(splitLayout);
+    configureForUser();
     updateList();
+  }
+
+  private void configureForUser() {
+    // If the user is a player but not an admin or booker, default to their wrestler
+    if (securityUtils.isPlayer() && !securityUtils.isAdmin() && !securityUtils.isBooker()) {
+      securityUtils
+          .getAuthenticatedUser()
+          .ifPresent(
+              user -> {
+                Wrestler wrestler = user.getWrestler();
+                if (wrestler != null) {
+                  targetFilter.setValue(wrestler);
+                  targetFilter.setReadOnly(true);
+                }
+              });
+    }
   }
 
   private HorizontalLayout getToolbar() {
