@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -87,6 +88,7 @@ class ShowDetailViewTest {
   @Mock private RivalryService rivalryService;
   @Mock private LocalAIStatusService localAIStatusService;
   @Mock private SegmentNarrationConfig segmentNarrationConfig;
+  @Mock private SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   @Mock private Environment env;
 
   @BeforeEach
@@ -147,6 +149,7 @@ class ShowDetailViewTest {
               rivalryService,
               localAIStatusService,
               segmentNarrationConfig,
+              segmentNarrationServiceFactory,
               mock(WebClient.Builder.class),
               mock(ClientRegistrationRepository.class),
               mock(OAuth2AuthorizedClientRepository.class),
@@ -224,6 +227,7 @@ class ShowDetailViewTest {
               rivalryService,
               localAIStatusService,
               segmentNarrationConfig,
+              segmentNarrationServiceFactory,
               mock(WebClient.Builder.class),
               mock(ClientRegistrationRepository.class),
               mock(OAuth2AuthorizedClientRepository.class),
