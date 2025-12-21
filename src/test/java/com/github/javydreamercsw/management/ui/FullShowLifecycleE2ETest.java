@@ -76,24 +76,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       }
     }
 
-    titleReignRepository.deleteAll();
-    titleRepository
-        .findAll()
-        .forEach(
-            title -> {
-              title.setChampion(null);
-              titleRepository.save(title);
-            });
-    segmentRepository.deleteAll();
-    showRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    seasonRepository.deleteAll();
-    showTemplateRepository.deleteAll();
-    showTypeRepository.deleteAll();
-    rivalryRepository.deleteAll();
-    multiWrestlerFeudRepository.deleteAll();
-    titleRepository.deleteAll();
-    segmentTypeRepository.deleteAll();
+    databaseCleaner.clearRepositories();
 
     // Add segment types
     if (segmentTypeRepository.findByName("One on One").isEmpty()) {
