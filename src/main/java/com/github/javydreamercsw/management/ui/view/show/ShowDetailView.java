@@ -88,8 +88,6 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -121,8 +119,6 @@ public class ShowDetailView extends Main
   private final SegmentNarrationConfig segmentNarrationConfig;
   private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   private final WebClient.Builder webClientBuilder;
-  private final ClientRegistrationRepository clientRegistrationRepository;
-  private final OAuth2AuthorizedClientRepository authorizedClientRepository;
   private final Environment env;
   private String referrer = "shows"; // Default referrer
 
@@ -150,8 +146,6 @@ public class ShowDetailView extends Main
       SegmentNarrationConfig segmentNarrationConfig,
       SegmentNarrationServiceFactory segmentNarrationServiceFactory,
       WebClient.Builder webClientBuilder,
-      ClientRegistrationRepository clientRegistrationRepository,
-      OAuth2AuthorizedClientRepository authorizedClientRepository,
       Environment env) {
     this.showService = showService;
     this.segmentService = segmentService;
@@ -170,8 +164,6 @@ public class ShowDetailView extends Main
     this.segmentNarrationConfig = segmentNarrationConfig;
     this.segmentNarrationServiceFactory = segmentNarrationServiceFactory;
     this.webClientBuilder = webClientBuilder;
-    this.clientRegistrationRepository = clientRegistrationRepository;
-    this.authorizedClientRepository = authorizedClientRepository;
     this.env = env;
     initializeComponents();
   }
@@ -775,8 +767,6 @@ public class ShowDetailView extends Main
                   localAIStatusService,
                   segmentNarrationConfig,
                   webClientBuilder,
-                  clientRegistrationRepository,
-                  authorizedClientRepository,
                   env); // Call refreshSegmentsGrid
           dialog.open();
         });
