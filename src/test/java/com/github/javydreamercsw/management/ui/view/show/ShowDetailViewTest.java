@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -63,7 +64,11 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.env.Environment;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @ExtendWith(MockitoExtension.class)
 class ShowDetailViewTest {
@@ -83,6 +88,8 @@ class ShowDetailViewTest {
   @Mock private RivalryService rivalryService;
   @Mock private LocalAIStatusService localAIStatusService;
   @Mock private SegmentNarrationConfig segmentNarrationConfig;
+  @Mock private SegmentNarrationServiceFactory segmentNarrationServiceFactory;
+  @Mock private Environment env;
 
   @BeforeEach
   void setUp() {
@@ -141,7 +148,12 @@ class ShowDetailViewTest {
               showTemplateService,
               rivalryService,
               localAIStatusService,
-              segmentNarrationConfig);
+              segmentNarrationConfig,
+              segmentNarrationServiceFactory,
+              mock(WebClient.Builder.class),
+              mock(ClientRegistrationRepository.class),
+              mock(OAuth2AuthorizedClientRepository.class),
+              env);
 
       ReflectionTestUtils.invokeMethod(
           showDetailView,
@@ -214,7 +226,12 @@ class ShowDetailViewTest {
               showTemplateService,
               rivalryService,
               localAIStatusService,
-              segmentNarrationConfig);
+              segmentNarrationConfig,
+              segmentNarrationServiceFactory,
+              mock(WebClient.Builder.class),
+              mock(ClientRegistrationRepository.class),
+              mock(OAuth2AuthorizedClientRepository.class),
+              env);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));

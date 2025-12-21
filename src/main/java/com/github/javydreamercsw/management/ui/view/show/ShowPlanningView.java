@@ -24,10 +24,11 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
@@ -47,19 +48,12 @@ import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.servlet.http.HttpServletRequest;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.web.client.RestTemplate;
 
 @Route("show-planning")
 @PageTitle("Show Planning")
@@ -69,9 +63,9 @@ import org.springframework.web.client.RestTemplate;
 public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private final ShowService showService;
-  private final RestTemplate restTemplate = new RestTemplate();
+  private final ShowPlanningService showPlanningService;
+  private final ShowPlanningAiService showPlanningAiService;
   private final ObjectMapper objectMapper;
-  private final HttpServletRequest httpServletRequest;
 
   private final ComboBox<Show> showComboBox;
   private final Button loadContextButton;
@@ -84,14 +78,16 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   public ShowPlanningView(
       ShowService showService,
+      ShowPlanningService showPlanningService,
+      ShowPlanningAiService showPlanningAiService,
       WrestlerService wrestlerService,
       TitleService titleService,
-      ObjectMapper objectMapper,
-      HttpServletRequest httpServletRequest) {
+      ObjectMapper objectMapper) {
 
     this.showService = showService;
+    this.showPlanningService = showPlanningService;
+    this.showPlanningAiService = showPlanningAiService;
     this.objectMapper = objectMapper;
-    this.httpServletRequest = httpServletRequest;
 
     showComboBox = new ComboBox<>("Select Show");
     showComboBox.setId("select-show-combo-box");
@@ -188,33 +184,11 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     add(layout);
   }
 
-  private <T> HttpEntity<T> createHttpEntityWithCsrf(T body) {
-    HttpHeaders headers = new HttpHeaders();
-    headers.set("Cookie", httpServletRequest.getHeader("Cookie"));
-    // Add CSRF token
-    CsrfToken csrfToken = (CsrfToken) httpServletRequest.getAttribute(CsrfToken.class.getName());
-    if (csrfToken != null) {
-      headers.set(csrfToken.getHeaderName(), csrfToken.getToken());
-    }
-    return new HttpEntity<>(body, headers);
-  }
-
   private void loadContext() {
     Show selectedShow = showComboBox.getValue();
     if (selectedShow != null) {
-      String baseUrl = UrlUtil.getBaseUrl();
-      HttpHeaders headers = new HttpHeaders();
-      headers.set("Cookie", httpServletRequest.getHeader("Cookie"));
-      HttpEntity<String> entity = new HttpEntity<>(headers);
-
-      ResponseEntity<ShowPlanningContextDTO> response =
-          restTemplate.exchange(
-              baseUrl + "/api/show-planning/context/" + selectedShow.getId(),
-              HttpMethod.GET,
-              entity,
-              ShowPlanningContextDTO.class);
-      ShowPlanningContextDTO context = response.getBody();
       try {
+        ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(selectedShow);
         contextArea.setValue(
             objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context));
         proposeSegmentsButton.setEnabled(true);
@@ -227,7 +201,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private void proposeSegments() {
     try {
-      String baseUrl = UrlUtil.getBaseUrl();
       ShowPlanningContextDTO context =
           objectMapper.readValue(contextArea.getValue(), ShowPlanningContextDTO.class);
 
@@ -242,12 +215,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           "Sending context to AI: {}",
           objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context));
 
-      HttpEntity<ShowPlanningContextDTO> entity = createHttpEntityWithCsrf(context);
-
-      ResponseEntity<ProposedShow> response =
-          restTemplate.exchange(
-              baseUrl + "/api/show-planning/plan", HttpMethod.POST, entity, ProposedShow.class);
-      ProposedShow proposedShow = response.getBody();
+      ProposedShow proposedShow = showPlanningAiService.planShow(context);
 
       // Log the response
       log.debug(
@@ -278,14 +246,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     }
 
     try {
-      String baseUrl = UrlUtil.getBaseUrl();
-      HttpEntity<List<ProposedSegment>> entity = createHttpEntityWithCsrf(segments);
-
-      restTemplate.exchange(
-          baseUrl + "/api/show-planning/approve/" + selectedShow.getId(),
-          HttpMethod.POST,
-          entity,
-          Void.class);
+      showPlanningService.approveSegments(selectedShow, segments);
       Notification.show("Segments approved successfully!", 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       proposedSegmentsGrid.setItems(new ArrayList<>());

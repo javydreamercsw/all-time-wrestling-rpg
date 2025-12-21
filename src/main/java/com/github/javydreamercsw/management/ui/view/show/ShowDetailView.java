@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -86,7 +87,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.core.env.Environment;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Detail view for displaying comprehensive information about a specific show. Accessible via URL
@@ -114,6 +119,11 @@ public class ShowDetailView extends Main
   private final RivalryService rivalryService;
   private final LocalAIStatusService localAIStatusService;
   private final SegmentNarrationConfig segmentNarrationConfig;
+  private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
+  private final WebClient.Builder webClientBuilder;
+  private final ClientRegistrationRepository clientRegistrationRepository;
+  private final OAuth2AuthorizedClientRepository authorizedClientRepository;
+  private final Environment env;
   private String referrer = "shows"; // Default referrer
 
   private H2 showTitle;
@@ -137,7 +147,12 @@ public class ShowDetailView extends Main
       ShowTemplateService showTemplateService,
       RivalryService rivalryService,
       LocalAIStatusService localAIStatusService,
-      SegmentNarrationConfig segmentNarrationConfig) {
+      SegmentNarrationConfig segmentNarrationConfig,
+      SegmentNarrationServiceFactory segmentNarrationServiceFactory,
+      WebClient.Builder webClientBuilder,
+      ClientRegistrationRepository clientRegistrationRepository,
+      OAuth2AuthorizedClientRepository authorizedClientRepository,
+      Environment env) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -153,6 +168,11 @@ public class ShowDetailView extends Main
     this.rivalryService = rivalryService;
     this.localAIStatusService = localAIStatusService;
     this.segmentNarrationConfig = segmentNarrationConfig;
+    this.segmentNarrationServiceFactory = segmentNarrationServiceFactory;
+    this.webClientBuilder = webClientBuilder;
+    this.clientRegistrationRepository = clientRegistrationRepository;
+    this.authorizedClientRepository = authorizedClientRepository;
+    this.env = env;
     initializeComponents();
   }
 
@@ -749,10 +769,15 @@ public class ShowDetailView extends Main
                   npcService,
                   wrestlerService,
                   showService,
+                  segmentService,
                   updatedSegment -> refreshSegmentsGrid(),
                   rivalryService,
                   localAIStatusService,
-                  segmentNarrationConfig); // Call refreshSegmentsGrid
+                  segmentNarrationConfig,
+                  webClientBuilder,
+                  clientRegistrationRepository,
+                  authorizedClientRepository,
+                  env); // Call refreshSegmentsGrid
           dialog.open();
         });
 
@@ -772,14 +797,19 @@ public class ShowDetailView extends Main
   }
 
   private void generateSummary(@NonNull Segment segment) {
-    String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
-
-    new RestTemplate()
-        .postForObject(
-            baseUrl + "/api/segments/" + segment.getId() + "/summarize", null, Segment.class);
-    Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
-        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
+    try {
+      String summary = segmentNarrationServiceFactory.summarizeNarration(segment.getNarration());
+      segment.setSummary(summary);
+      segmentService.updateSegment(segment);
+      Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      refreshSegmentsGrid();
+    } catch (Exception e) {
+      log.error("Error generating summary", e);
+      Notification.show(
+              "Error generating summary: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+    }
   }
 
   private void openAddSegmentDialog(@NonNull Show show) {

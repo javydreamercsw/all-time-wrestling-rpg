@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
@@ -38,15 +39,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.core.env.Environment;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.web.reactive.function.client.WebClient;
 
 class NarrationDialogTest {
 
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
   @Mock private ShowService showService;
+  @Mock private SegmentService segmentService;
   @Mock private RivalryService rivalryService;
   @Mock private LocalAIStatusService localAIStatusService;
   @Mock private SegmentNarrationConfig segmentNarrationConfig;
+  @Mock private Environment env;
 
   private NarrationDialog narrationDialog;
 
@@ -83,6 +90,11 @@ class NarrationDialogTest {
 
     when(showService.getSegments(show)).thenReturn(segments);
     when(localAIStatusService.isReady()).thenReturn(true);
+    when(env.getActiveProfiles()).thenReturn(new String[] {});
+    WebClient.Builder webClientBuilder = mock(WebClient.Builder.class);
+    WebClient webClient = mock(WebClient.class);
+    when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
+    when(webClientBuilder.build()).thenReturn(webClient);
 
     narrationDialog =
         new NarrationDialog(
@@ -90,10 +102,15 @@ class NarrationDialogTest {
             npcService,
             wrestlerService,
             showService,
+            segmentService,
             s -> {},
             rivalryService,
             localAIStatusService,
-            segmentNarrationConfig);
+            segmentNarrationConfig,
+            webClientBuilder,
+            mock(ClientRegistrationRepository.class),
+            mock(OAuth2AuthorizedClientRepository.class),
+            env);
   }
 
   @Test

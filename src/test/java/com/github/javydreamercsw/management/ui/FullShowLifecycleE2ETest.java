@@ -420,6 +420,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement viewShowDetails =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
+    Assertions.assertNotNull(viewShowDetails);
     clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
@@ -500,6 +501,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(
                 By.id("generate-narration-button-" + firstSegment.getId())));
+    Assertions.assertNotNull(narrateButton);
     clickElement(narrateButton);
 
     // Wait for the dialog to appear
@@ -507,10 +509,12 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
 
     WebElement generateNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-narration-button")));
+    Assertions.assertNotNull(generateNarrationButton);
     clickElement(generateNarrationButton);
 
     WebElement saveNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("save-narration-button")));
+    Assertions.assertNotNull(saveNarrationButton);
     clickElement(saveNarrationButton);
 
     // Wait for the dialog to disappear
@@ -522,6 +526,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(
                 By.id("generate-summary-button-" + firstSegment.getId())));
+    Assertions.assertNotNull(summaryButton);
     clickElement(summaryButton);
 
     // Navigate to the Show Detail view
@@ -535,6 +540,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.presenceOfAllElementsLocatedBy(
                 By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
+    Assertions.assertNotNull(cells);
     Assertions.assertEquals(22, cells.size()); // 11 headers, 1 rows
   }
 
@@ -577,6 +583,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement viewShowDetails =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
+    Assertions.assertNotNull(viewShowDetails);
     clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
@@ -585,6 +592,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Click the main event checkbox on the last row
     WebElement mainEventCheckbox =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("main-event-checkbox")));
+    Assertions.assertNotNull(mainEventCheckbox);
     clickElement(mainEventCheckbox);
     scrollIntoView(mainEventCheckbox);
   }
