@@ -54,7 +54,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
    * bonuses, and weighted random selection.
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public SegmentNarrationService.SegmentNarrationContext determineOutcomeIfNeeded(
       @NonNull SegmentNarrationService.SegmentNarrationContext context) {
     // If outcome is already determined, return as-is

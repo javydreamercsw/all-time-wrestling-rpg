@@ -41,7 +41,7 @@ public class DeckService {
     this.clock = clock;
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestler)")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#wrestler)")
   public Deck createDeck(@NonNull Wrestler wrestler) {
 
     Deck deck = new Deck();
@@ -65,7 +65,7 @@ public class DeckService {
     return deckRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#deck)")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#deck)")
   public Deck save(@NonNull Deck deck) {
 
     deck.setCreationDate(clock.instant());
@@ -79,7 +79,7 @@ public class DeckService {
     return deckRepository.findAll();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#deck)")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#deck)")
   public void delete(Deck deck) {
 
     deckRepository.delete(deck);

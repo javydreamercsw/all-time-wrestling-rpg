@@ -20,96 +20,61 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.github.javydreamercsw.base.config.TestSecurityConfig;
-import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.Role;
-import com.github.javydreamercsw.base.domain.account.RoleName;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.base.security.WithMockCustomUser;
+import com.github.javydreamercsw.base.test.AbstractSecurityTest;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import java.time.Clock;
-import java.util.Set;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.test.context.support.WithUserDetails;
 
-@SpringBootTest
-@ContextConfiguration(classes = TestSecurityConfig.class)
-@Transactional
-class DeckServiceSecurityTest {
+class DeckServiceSecurityTest extends AbstractSecurityTest {
 
   @Autowired private DeckService deckService;
   @Autowired private DeckRepository deckRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private AccountRepository accountRepository;
-  @Autowired private RoleRepository roleRepository;
-  @Autowired private PasswordEncoder passwordEncoder;
-  @Autowired private Clock clock;
 
-  private Deck ownedDeck;
-  private Deck otherDeck;
-  private Wrestler ownedWrestler;
-  private Wrestler otherWrestler;
-  private Account ownerAccount;
+  private Wrestler getOwnerWrestler() {
+    return wrestlerRepository
+        .findByAccountUsername("owner")
+        .orElseThrow(() -> new IllegalStateException("Owner wrestler not found"));
+  }
 
-  @BeforeEach
-  void setUp() {
-    Role playerRole =
-        roleRepository
-            .findByName(RoleName.PLAYER)
-            .orElseGet(
-                () -> {
-                  Role newRole = new Role();
-                  newRole.setName(RoleName.PLAYER);
-                  newRole.setDescription("Player role");
-                  return roleRepository.save(newRole);
-                });
+  private Wrestler getOtherWrestler() {
+    return wrestlerRepository
+        .findByAccountUsername("not_owner")
+        .orElseThrow(() -> new IllegalStateException("Other wrestler not found"));
+  }
 
-    ownerAccount = new Account();
-    ownerAccount.setUsername("owner");
-    ownerAccount.setPassword(passwordEncoder.encode("password"));
-    ownerAccount.setRoles(Set.of(playerRole));
-    ownerAccount.setEmail("owner@test.com");
-    accountRepository.save(ownerAccount);
+  private Deck getOwnedDeck() {
+    Wrestler ownerWrestler = getOwnerWrestler();
+    List<Deck> decks = deckRepository.findByWrestler(ownerWrestler);
+    if (decks.isEmpty()) {
+      Deck newDeck = new Deck();
+      newDeck.setWrestler(ownerWrestler);
+      newDeck.setCreationDate(clock.instant());
+      return deckRepository.save(newDeck);
+    }
+    return decks.get(0);
+  }
 
-    // Create an owned wrestler and an owned deck associated with it
-    ownedWrestler = new Wrestler();
-    ownedWrestler.setName("Owned Wrestler");
-    ownedWrestler.setIsPlayer(true);
-    ownedWrestler.setAccount(ownerAccount);
-    ownedWrestler.setCreationDate(clock.instant());
-    wrestlerRepository.save(ownedWrestler);
-
-    ownedDeck = new Deck();
-    ownedDeck.setWrestler(ownedWrestler);
-    ownedDeck.setCreationDate(clock.instant());
-    deckRepository.save(ownedDeck);
-
-    // Create another wrestler and deck that are not owned by the test user
-    otherWrestler = new Wrestler();
-    otherWrestler.setName("Other Wrestler");
-    otherWrestler.setCreationDate(clock.instant());
-    wrestlerRepository.save(otherWrestler);
-
-    otherDeck = new Deck();
-    otherDeck.setWrestler(otherWrestler);
-    otherDeck.setCreationDate(clock.instant());
-    deckRepository.save(otherDeck);
+  private Deck getOtherDeck() {
+    Wrestler otherWrestler = getOtherWrestler();
+    List<Deck> decks = deckRepository.findByWrestler(otherWrestler);
+    if (decks.isEmpty()) {
+      Deck newDeck = new Deck();
+      newDeck.setWrestler(otherWrestler);
+      newDeck.setCreationDate(clock.instant());
+      return deckRepository.save(newDeck);
+    }
+    return decks.get(0);
   }
 
   // --- Create Deck Method Tests ---
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
+  @WithUserDetails("admin")
   void testAdminCanCreateDeckForAnyWrestler() {
     Wrestler newWrestler = new Wrestler();
     newWrestler.setName("Admin Created Wrestler");
@@ -118,7 +83,7 @@ class DeckServiceSecurityTest {
   }
 
   @Test
-  @WithMockCustomUser(roles = "BOOKER")
+  @WithUserDetails("booker")
   void testBookerCanCreateDeckForAnyWrestler() {
     Wrestler newWrestler = new Wrestler();
     newWrestler.setName("Booker Created Wrestler");
@@ -127,20 +92,20 @@ class DeckServiceSecurityTest {
   }
 
   @Test
-  @WithMockCustomUser(username = "owner", roles = "PLAYER")
+  @WithUserDetails("owner")
   void testPlayerCanCreateDeckForOwnedWrestler() {
-    assertDoesNotThrow(() -> deckService.createDeck(ownedWrestler));
+    assertDoesNotThrow(() -> deckService.createDeck(getOwnerWrestler()));
   }
 
   @Test
-  @WithMockCustomUser(username = "not_owner", roles = "PLAYER")
+  @WithUserDetails("not_owner")
   void testPlayerCannotCreateDeckForOtherWrestler() {
-    assertThrows(AccessDeniedException.class, () -> deckService.createDeck(ownedWrestler));
-    assertThrows(AccessDeniedException.class, () -> deckService.createDeck(otherWrestler));
+    assertThrows(AccessDeniedException.class, () -> deckService.createDeck(getOwnerWrestler()));
+    assertThrows(AccessDeniedException.class, () -> deckService.createDeck(getOtherWrestler()));
   }
 
   @Test
-  @WithMockCustomUser(roles = "VIEWER")
+  @WithUserDetails("viewer")
   void testViewerCannotCreateDeck() {
     Wrestler newWrestler = new Wrestler();
     newWrestler.setName("Viewer Created Wrestler");
@@ -151,116 +116,120 @@ class DeckServiceSecurityTest {
   // --- Save Deck Method Tests ---
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
+  @WithUserDetails("admin")
   void testAdminCanSaveAnyDeck() {
-    assertDoesNotThrow(() -> deckService.save(ownedDeck));
-    assertDoesNotThrow(() -> deckService.save(otherDeck));
+    assertDoesNotThrow(() -> deckService.save(getOwnedDeck()));
+    assertDoesNotThrow(() -> deckService.save(getOtherDeck()));
   }
 
   @Test
-  @WithMockCustomUser(roles = "BOOKER")
+  @WithUserDetails("booker")
   void testBookerCanSaveAnyDeck() {
-    assertDoesNotThrow(() -> deckService.save(ownedDeck));
-    assertDoesNotThrow(() -> deckService.save(otherDeck));
+    assertDoesNotThrow(() -> deckService.save(getOwnedDeck()));
+    assertDoesNotThrow(() -> deckService.save(getOtherDeck()));
   }
 
   @Test
-  @WithMockCustomUser(username = "owner", roles = "PLAYER")
+  @WithUserDetails("owner")
   void testPlayerCanSaveOwnedDeck() {
+    Deck ownedDeck = getOwnedDeck();
     assertNotNull(ownedDeck);
     assertDoesNotThrow(() -> deckService.save(ownedDeck));
   }
 
   @Test
-  @WithMockCustomUser(username = "not_owner", roles = "PLAYER")
+  @WithUserDetails("not_owner")
   void testPlayerCannotSaveOtherDeck() {
+    Deck ownedDeck = getOwnedDeck();
+    Deck otherDeck = getOtherDeck();
     assertNotNull(ownedDeck);
     assertThrows(AccessDeniedException.class, () -> deckService.save(ownedDeck));
     assertThrows(AccessDeniedException.class, () -> deckService.save(otherDeck));
   }
 
   @Test
-  @WithMockCustomUser(roles = "VIEWER")
+  @WithUserDetails("viewer")
   void testViewerCannotSaveDeck() {
-    assertThrows(AccessDeniedException.class, () -> deckService.save(ownedDeck));
+    assertThrows(AccessDeniedException.class, () -> deckService.save(getOwnedDeck()));
   }
 
   // --- Delete Deck Method Tests ---
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
+  @WithUserDetails("admin")
   void testAdminCanDeleteDeck() {
-    assertDoesNotThrow(() -> deckService.delete(otherDeck));
+    assertDoesNotThrow(() -> deckService.delete(getOtherDeck()));
   }
 
   @Test
-  @WithMockCustomUser(roles = "BOOKER")
+  @WithUserDetails("booker")
   void testBookerCanDeleteDeck() {
-    assertDoesNotThrow(() -> deckService.delete(otherDeck));
+    assertDoesNotThrow(() -> deckService.delete(getOtherDeck()));
   }
 
   @Test
-  @WithMockCustomUser(roles = "PLAYER")
+  @WithUserDetails("owner")
   void testPlayerCannotDeleteDeck() {
-    assertThrows(AccessDeniedException.class, () -> deckService.delete(ownedDeck));
-    assertThrows(AccessDeniedException.class, () -> deckService.delete(otherDeck));
+    assertThrows(AccessDeniedException.class, () -> deckService.delete(getOwnedDeck()));
+    assertThrows(AccessDeniedException.class, () -> deckService.delete(getOtherDeck()));
   }
 
   @Test
-  @WithMockCustomUser(roles = "VIEWER")
+  @WithUserDetails("viewer")
   void testViewerCannotDeleteDeck() {
-    assertThrows(AccessDeniedException.class, () -> deckService.delete(ownedDeck));
+    assertThrows(AccessDeniedException.class, () -> deckService.delete(getOwnedDeck()));
   }
 
   // --- FindById Method Tests (Read Operations) ---
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
+  @WithUserDetails("admin")
   void testAdminCanFindDeckById() {
-    assertDoesNotThrow(() -> deckService.findById(ownedDeck.getId()));
+    assertDoesNotThrow(() -> deckService.findById(getOwnedDeck().getId()));
   }
 
   @Test
-  @WithMockCustomUser(roles = "BOOKER")
+  @WithUserDetails("booker")
   void testBookerCanFindDeckById() {
-    assertDoesNotThrow(() -> deckService.findById(ownedDeck.getId()));
+    assertDoesNotThrow(() -> deckService.findById(getOwnedDeck().getId()));
   }
 
   @Test
-  @WithMockCustomUser(username = "owner", roles = "PLAYER")
+  @WithUserDetails("owner")
   void testPlayerCanFindDeckById() {
-    assertDoesNotThrow(() -> deckService.findById(ownedDeck.getId()));
-    assertDoesNotThrow(() -> deckService.findById(otherDeck.getId())); // Player can view all decks
+    assertDoesNotThrow(() -> deckService.findById(getOwnedDeck().getId()));
+    assertDoesNotThrow(
+        () -> deckService.findById(getOtherDeck().getId())); // Player can view all decks
   }
 
   @Test
-  @WithMockCustomUser(roles = "VIEWER")
+  @WithUserDetails("viewer")
   void testViewerCanFindDeckById() {
-    assertDoesNotThrow(() -> deckService.findById(ownedDeck.getId()));
+    assertDoesNotThrow(() -> deckService.findById(getOwnedDeck().getId()));
   }
 
   // --- FindAll Method Tests (Read Operations) ---
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
+  @WithUserDetails("admin")
   void testAdminCanFindAllDecks() {
     assertDoesNotThrow(() -> deckService.findAll());
   }
 
   @Test
-  @WithMockCustomUser(roles = "BOOKER")
+  @WithUserDetails("booker")
   void testBookerCanFindAllDecks() {
     assertDoesNotThrow(() -> deckService.findAll());
   }
 
   @Test
-  @WithMockCustomUser(username = "owner", roles = "PLAYER")
+  @WithUserDetails("owner")
   void testPlayerCanFindAllDecks() {
     assertDoesNotThrow(() -> deckService.findAll());
   }
 
   @Test
-  @WithMockCustomUser(roles = "VIEWER")
+  @WithUserDetails("viewer")
   void testViewerCanFindAllDecks() {
     assertDoesNotThrow(() -> deckService.findAll());
   }

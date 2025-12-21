@@ -97,7 +97,7 @@ public class ShowService {
     return showRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Show save(@NonNull Show show) {
     show.setCreationDate(clock.instant());
     return showRepository.saveAndFlush(show);
@@ -234,7 +234,7 @@ public class ShowService {
    * @param templateId Template ID (optional)
    * @return Created show
    */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Show createShow(
       String name,
       String description,
@@ -289,7 +289,7 @@ public class ShowService {
    * @param templateId Template ID (optional)
    * @return Updated show if found
    */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Show> updateShow(
       Long id,
       String name,
@@ -350,7 +350,7 @@ public class ShowService {
    * @param id Show ID
    * @return true if deleted, false if not found
    */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public boolean deleteShow(Long id) {
     if (showRepository.existsById(id)) {
       showRepository.deleteById(id);
@@ -359,7 +359,7 @@ public class ShowService {
     return false;
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void adjudicateShow(Long showId) {
     Show show =
         showRepository

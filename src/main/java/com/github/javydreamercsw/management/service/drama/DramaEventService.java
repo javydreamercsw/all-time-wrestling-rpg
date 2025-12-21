@@ -70,7 +70,7 @@ public class DramaEventService {
    * @return Created drama event
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<DramaEvent> createDramaEvent(
       Long primaryWrestlerId,
       Long secondaryWrestlerId,
@@ -122,7 +122,7 @@ public class DramaEventService {
    * @return Generated drama event, or empty if wrestler not found
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<DramaEvent> generateRandomDramaEvent(Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     if (wrestlerOpt.isEmpty()) {
@@ -168,7 +168,7 @@ public class DramaEventService {
    * @return Number of events processed
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public int processUnprocessedEvents() {
     List<DramaEvent> unprocessedEvents =
         dramaEventRepository.findByIsProcessedFalseOrderByEventDateAsc();
@@ -193,7 +193,7 @@ public class DramaEventService {
    * @param event The event to process
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void processEvent(@NonNull DramaEvent event) {
     if (event.getIsProcessed()) {
       log.warn("Event {} is already processed", event.getId());

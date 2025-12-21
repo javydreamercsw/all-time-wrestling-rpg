@@ -45,7 +45,7 @@ public class ShowTypeService {
     return showTypeRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ShowType save(@NonNull ShowType showType) {
     showType.setCreationDate(clock.instant());
     return showTypeRepository.saveAndFlush(showType);
@@ -56,12 +56,12 @@ public class ShowTypeService {
     return showTypeRepository.findAll();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void delete(@NonNull ShowType showType) {
     showTypeRepository.delete(showType);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ShowType createOrUpdateShowType(
       @NonNull String name, @NonNull String description, int expectedMatches, int expectedPromos) {
     Optional<ShowType> existingShowType = findByName(name);

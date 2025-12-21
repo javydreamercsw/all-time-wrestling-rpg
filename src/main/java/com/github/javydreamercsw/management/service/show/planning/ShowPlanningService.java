@@ -67,7 +67,7 @@ public class ShowPlanningService {
   private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
     ShowPlanningContext context = new ShowPlanningContext();
 
@@ -171,7 +171,7 @@ public class ShowPlanningService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void approveSegments(@NonNull Show show, @NonNull List<ProposedSegment> proposedSegments) {
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();

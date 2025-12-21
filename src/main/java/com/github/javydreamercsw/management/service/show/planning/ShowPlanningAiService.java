@@ -45,7 +45,7 @@ public class ShowPlanningAiService {
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ProposedShow planShow(@NonNull ShowPlanningContextDTO context) {
     if (narrationServiceFactory.getBestAvailableService() == null) {
       log.warn("No AI service available for show planning.");
