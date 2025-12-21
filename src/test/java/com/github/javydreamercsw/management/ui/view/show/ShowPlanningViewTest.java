@@ -124,7 +124,8 @@ class ShowPlanningViewTest {
     proposedShow.setSegments(Arrays.asList(segment1, segment2));
 
     when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
-    when(showPlanningAiService.planShow(any(ShowPlanningContextDTO.class))).thenReturn(proposedShow);
+    when(showPlanningAiService.planShow(any(ShowPlanningContextDTO.class)))
+        .thenReturn(proposedShow);
 
     // Mock the ObjectMapper
     ObjectMapper objectMapper = new ObjectMapper();
@@ -176,7 +177,8 @@ class ShowPlanningViewTest {
     proposedShow.setSegments(List.of(segment1));
 
     when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
-    when(showPlanningAiService.planShow(any(ShowPlanningContextDTO.class))).thenReturn(proposedShow);
+    when(showPlanningAiService.planShow(any(ShowPlanningContextDTO.class)))
+        .thenReturn(proposedShow);
 
     // Mock the ObjectMapper
     ObjectMapper objectMapper = new ObjectMapper();
