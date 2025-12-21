@@ -183,6 +183,10 @@ public class InboxView extends VerticalLayout {
           updateSelectedButtonsState();
         });
 
+    markSelectedReadButton.setVisible(securityUtils.canEdit());
+    markSelectedUnreadButton.setVisible(securityUtils.canEdit());
+    deleteSelectedButton.setVisible(securityUtils.canDelete());
+    selectAllCheckbox.setVisible(securityUtils.canEdit());
     updateSelectedButtonsState();
 
     Button clearTargetFilter = new Button("Clear");
@@ -191,6 +195,8 @@ public class InboxView extends VerticalLayout {
           targetFilter.clear();
           updateList();
         });
+    // Hide clear target filter button if the target filter is read-only
+    clearTargetFilter.setVisible(securityUtils.canEdit() && !targetFilter.isReadOnly());
     HorizontalLayout toolbar =
         new HorizontalLayout(
             targetFilter,
@@ -280,6 +286,7 @@ public class InboxView extends VerticalLayout {
           inboxService.toggleReadStatus(item);
           updateList();
         });
+    button.setVisible(securityUtils.canEdit(item));
     return button;
   }
 

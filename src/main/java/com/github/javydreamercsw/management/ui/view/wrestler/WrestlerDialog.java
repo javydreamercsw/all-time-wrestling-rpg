@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -36,9 +37,13 @@ public class WrestlerDialog extends Dialog {
   private final WrestlerService wrestlerService;
   private final Wrestler wrestler;
   private final Binder<Wrestler> binder = new Binder<>(Wrestler.class);
+  private final SecurityUtils securityUtils;
 
-  public WrestlerDialog(@NonNull WrestlerService wrestlerService, @NonNull Runnable onSave) {
-    this(wrestlerService, createDefaultWrestler(), onSave);
+  public WrestlerDialog(
+      @NonNull WrestlerService wrestlerService,
+      @NonNull Runnable onSave,
+      @NonNull SecurityUtils securityUtils) {
+    this(wrestlerService, createDefaultWrestler(), onSave, securityUtils);
     setHeaderTitle("Create Wrestler");
   }
 
@@ -62,30 +67,47 @@ public class WrestlerDialog extends Dialog {
   public WrestlerDialog(
       @NonNull WrestlerService wrestlerService,
       @NonNull Wrestler wrestler,
-      @NonNull Runnable onSave) {
+      @NonNull Runnable onSave,
+      @NonNull SecurityUtils securityUtils) {
     this.wrestlerService = wrestlerService;
     this.wrestler = wrestler;
+    this.securityUtils = securityUtils;
 
     setHeaderTitle("Edit Wrestler");
 
     FormLayout formLayout = new FormLayout();
     TextField nameField = new TextField("Name");
     nameField.setId("wrestler-dialog-name-field");
+    nameField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+
     ComboBox<Gender> genderField = new ComboBox<>("Gender");
     genderField.setItems(Gender.values());
     genderField.setId("wrestler-dialog-gender-field");
+    genderField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+
     TextField deckSizeField = new TextField("Deck Size");
     deckSizeField.setId("wrestler-dialog-deck-size-field");
+    deckSizeField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+
     TextField startingHealthField = new TextField("Starting Health");
     startingHealthField.setId("wrestler-dialog-starting-health-field");
+    startingHealthField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+
     TextField lowHealthField = new TextField("Low Health");
     lowHealthField.setId("wrestler-dialog-low-health-field");
+    lowHealthField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+
     TextField startingStaminaField = new TextField("Starting Stamina");
     startingStaminaField.setId("wrestler-dialog-starting-stamina-field");
+    startingStaminaField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+
     TextField lowStaminaField = new TextField("Low Stamina");
     lowStaminaField.setId("wrestler-dialog-low-stamina-field");
+    lowStaminaField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+
     TextField imageUrlField = new TextField("Image URL");
     imageUrlField.setId("wrestler-dialog-image-url-field");
+    imageUrlField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
     formLayout.add(
         nameField,
@@ -135,6 +157,7 @@ public class WrestlerDialog extends Dialog {
             });
     saveButton.setId("wrestler-dialog-save-button");
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveButton.setVisible(securityUtils.canEdit(this.wrestler));
 
     Button cancelButton = new Button("Cancel", event -> close());
     cancelButton.setId("wrestler-dialog-cancel-button");

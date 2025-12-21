@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.injury;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -35,25 +36,34 @@ import lombok.NonNull;
 public class CreateInjuryDialog extends Dialog {
 
   private final Binder<Injury> binder = new Binder<>(Injury.class);
+  private final SecurityUtils securityUtils;
 
   public CreateInjuryDialog(
-      @NonNull Wrestler wrestler, @NonNull InjuryService injuryService, @NonNull Runnable onSave) {
+      @NonNull Wrestler wrestler,
+      @NonNull InjuryService injuryService,
+      @NonNull Runnable onSave,
+      @NonNull SecurityUtils securityUtils) {
+    this.securityUtils = securityUtils;
     setHeaderTitle("Create Injury for " + wrestler.getName());
     setId("create-injury-dialog");
 
     FormLayout formLayout = new FormLayout();
     TextField nameField = new TextField("Name");
     nameField.setId("create-injury-name");
+    nameField.setReadOnly(!securityUtils.canEdit());
     TextArea descriptionField = new TextArea("Description");
     descriptionField.setId("create-injury-description");
+    descriptionField.setReadOnly(!securityUtils.canEdit());
     ComboBox<InjurySeverity> severityField = new ComboBox<>("Severity");
     severityField.setItems(
         Arrays.stream(InjurySeverity.values())
             .sorted(Comparator.comparing(InjurySeverity::name))
             .collect(Collectors.toList()));
     severityField.setId("create-injury-severity");
+    severityField.setReadOnly(!securityUtils.canEdit());
     TextArea injuryNotesField = new TextArea("Injury Notes");
     injuryNotesField.setId("create-injury-notes");
+    injuryNotesField.setReadOnly(!securityUtils.canEdit());
 
     formLayout.add(nameField, descriptionField, severityField, injuryNotesField);
 
@@ -81,6 +91,7 @@ public class CreateInjuryDialog extends Dialog {
               }
             });
     saveButton.setId("create-injury-save-button");
+    saveButton.setVisible(securityUtils.canCreate());
 
     Button cancelButton = new Button("Cancel", e -> close());
 
