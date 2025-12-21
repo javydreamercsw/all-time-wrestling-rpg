@@ -38,21 +38,24 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 class InboxViewE2ETest extends AbstractE2ETest {
+
   @Autowired private InboxEventType fanAdjudication;
   @Autowired private InboxEventType rivalryHeatChange;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private InboxItemTargetRepository inboxItemTargetRepository;
   @Autowired protected TitleRepository titleRepository;
+
   private Wrestler w1;
   private Wrestler w2;
 
   @BeforeEach
-  @Transactional
   public void setUp() throws IOException {
     super.setup();
     // Clear any existing inbox items to ensure a clean state for each test
