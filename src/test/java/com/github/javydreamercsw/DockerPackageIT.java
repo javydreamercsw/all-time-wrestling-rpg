@@ -61,7 +61,8 @@ class DockerPackageIT {
                     .withStartupTimeout(Duration.ofMinutes(1)))) {
       container.start();
 
-      HttpClient client = HttpClient.newHttpClient();
+      HttpClient client =
+          HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
       HttpRequest request =
           HttpRequest.newBuilder()
               .uri(
