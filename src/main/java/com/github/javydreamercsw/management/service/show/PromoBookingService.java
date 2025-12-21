@@ -66,7 +66,7 @@ public class PromoBookingService {
    * @return List of booked promo segments
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public List<Segment> bookPromosForShow(
       @NonNull Show show, @NonNull List<Wrestler> availableWrestlers, int maxPromos) {
     List<Segment> promos = new ArrayList<>();

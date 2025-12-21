@@ -76,7 +76,7 @@ public class TeamService {
   }
 
   /** Create a new team. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> createTeam(
       String name, String description, Long wrestler1Id, Long wrestler2Id, Long factionId) {
     if (wrestler1Id == null || wrestler2Id == null) {
@@ -146,7 +146,7 @@ public class TeamService {
   }
 
   /** Update an existing team. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> updateTeam(
       Long teamId, String name, String description, TeamStatus status, Long factionId) {
     Optional<Team> teamOpt = teamRepository.findById(teamId);
@@ -180,7 +180,7 @@ public class TeamService {
   }
 
   /** Delete a team. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public boolean deleteTeam(Long teamId) {
     if (!teamRepository.existsById(teamId)) {
       return false;
@@ -245,13 +245,13 @@ public class TeamService {
   // ==================== BUSINESS OPERATIONS ====================
 
   /** Disband a team. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> disbandTeam(Long teamId) {
     return updateTeam(teamId, null, null, TeamStatus.DISBANDED, null);
   }
 
   /** Reactivate a disbanded team. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> reactivateTeam(Long teamId) {
     return updateTeam(teamId, null, null, TeamStatus.ACTIVE, null);
   }

@@ -85,7 +85,16 @@ public class DeckListView extends VerticalLayout {
             })
         .setHeader("Actions");
 
-    deckGrid.setItems(deckService.findAll());
+    if (securityUtils.isPlayer() && !securityUtils.isAdmin() && !securityUtils.isBooker()) {
+      securityUtils
+          .getAuthenticatedUser()
+          .ifPresent(
+              user -> {
+                deckGrid.setItems(deckService.findByWrestler(user.getWrestler()));
+              });
+    } else {
+      deckGrid.setItems(deckService.findAll());
+    }
     deckGrid.getStyle().set("height", "100vh");
     add(deckGrid);
     setSizeFull();

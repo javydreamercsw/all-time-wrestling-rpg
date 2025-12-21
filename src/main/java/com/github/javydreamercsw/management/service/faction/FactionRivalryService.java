@@ -92,7 +92,7 @@ public class FactionRivalryService {
     return factionRivalryRepository.findActiveRivalriesForFaction(factionOpt.get());
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<FactionRivalry> createFactionRivalry(
       Long faction1Id, Long faction2Id, String storylineNotes) {
     Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
@@ -139,7 +139,7 @@ public class FactionRivalryService {
     return Optional.of(savedRivalry);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<FactionRivalry> addHeat(Long rivalryId, int heatGain, String reason) {
     return factionRivalryRepository
         .findById(rivalryId)
@@ -177,7 +177,7 @@ public class FactionRivalryService {
             });
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<FactionRivalry> addHeatBetweenFactions(
       Long faction1Id, Long faction2Id, int heatGain, String reason) {
     Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
@@ -199,7 +199,7 @@ public class FactionRivalryService {
     return rivalryOpt.flatMap(rivalry -> addHeat(rivalry.getId(), heatGain, reason));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ResolutionResult<FactionRivalry> attemptResolution(
       Long rivalryId, Integer faction1Roll, Integer faction2Roll) {
     Optional<FactionRivalry> rivalryOpt = factionRivalryRepository.findById(rivalryId);
@@ -256,7 +256,7 @@ public class FactionRivalryService {
         total);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<FactionRivalry> endFactionRivalry(Long rivalryId, String reason) {
     Optional<FactionRivalry> rivalryOpt = factionRivalryRepository.findById(rivalryId);
 
@@ -363,7 +363,7 @@ public class FactionRivalryService {
     return factionRivalryRepository.findByExternalId(externalId);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public FactionRivalry save(@NonNull FactionRivalry rivalry) {
     return factionRivalryRepository.saveAndFlush(rivalry);
   }

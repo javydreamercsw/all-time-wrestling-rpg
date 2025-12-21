@@ -45,7 +45,7 @@ public class FeudResolutionService {
    *
    * @param feud The feud to attempt to resolve.
    */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void attemptFeudResolution(@NonNull MultiWrestlerFeud feud) {
     if (!feud.canAttemptResolution()) {
       log.debug(

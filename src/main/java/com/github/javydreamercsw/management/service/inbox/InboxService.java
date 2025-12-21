@@ -43,13 +43,13 @@ public class InboxService {
   private final InboxRepository inboxRepository;
   private final InboxEventTypeRegistry eventTypeRegistry;
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public InboxItem createInboxItem(
       @NonNull InboxEventType eventType, @NonNull String message, @NonNull String referenceId) {
     return createInboxItem(eventType, message, List.of(referenceId));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public InboxItem createInboxItem(
       @NonNull InboxEventType eventType,
       @NonNull String message,
@@ -61,24 +61,27 @@ public class InboxService {
     return inboxRepository.save(inboxItem);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItems)")
+  @PreAuthorize(
+      "hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#inboxItems)")
   public void markSelectedAsRead(@NonNull Set<InboxItem> inboxItems) {
     inboxItems.forEach(item -> item.setRead(true));
     inboxRepository.saveAll(inboxItems);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItems)")
+  @PreAuthorize(
+      "hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#inboxItems)")
   public void markSelectedAsUnread(@NonNull Set<InboxItem> inboxItems) {
     inboxItems.forEach(item -> item.setRead(false));
     inboxRepository.saveAll(inboxItems);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItems)")
+  @PreAuthorize(
+      "hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#inboxItems)")
   public void deleteSelected(@NonNull Set<InboxItem> inboxItems) {
     inboxRepository.deleteAll(inboxItems);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItem)")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#inboxItem)")
   public InboxItem toggleReadStatus(@NonNull InboxItem inboxItem) {
     inboxItem.setRead(!inboxItem.isRead());
     return inboxRepository.save(inboxItem);

@@ -46,7 +46,7 @@ public class BackupService {
    * @param fileName The name of the JSON file to backup
    * @throws IOException if backup creation fails
    */
-  @PreAuthorize("hasAuthority('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public void createBackup(@NonNull String fileName) throws IOException {
     Path originalFile = Paths.get("src/main/resources/" + fileName);
 

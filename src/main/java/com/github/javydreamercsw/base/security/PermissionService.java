@@ -16,16 +16,23 @@
 */
 package com.github.javydreamercsw.base.security;
 
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import java.util.Collection;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service("permissionService")
 public class PermissionService {
+
+  @Autowired private AccountRepository accountRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
 
   public boolean isOwner(Object targetDomainObject) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -68,6 +75,12 @@ public class PermissionService {
               .anyMatch(target -> target.getTargetId().equals(wrestler.getId().toString()));
         }
       }
+    } else if (targetDomainObject instanceof Collection<?> collection) {
+      if (collection.isEmpty()) {
+        return true;
+      }
+      // Check if all items in the collection are owned by the user
+      return collection.stream().allMatch(this::isOwner);
     }
     return false;
   }

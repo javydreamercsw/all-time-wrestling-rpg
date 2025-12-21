@@ -120,7 +120,7 @@
 
 ---
 
-### Phase 3: Method-Level Security 🔒
+### Phase 3: Method-Level Security ✅ (COMPLETED - December 21, 2025)
 **Goal:** Secure backend services
 
 11. ✅ Enable method security in SecurityConfig
@@ -130,10 +130,9 @@
 	- Delete operations: ADMIN, BOOKER
 	- Read operations: All authenticated
 13. ✅ Implement ownership checks for PLAYER role
-14. 🔨 Test method security with different roles
+14. ✅ Test method security with different roles
 
-**Deliverable:** Backend enforces role permissions
-
+**Deliverable:** Backend enforces role permissions - COMPLETE!
 ---
 
 ### Phase 4: UI Component Security 🔘
@@ -233,6 +232,23 @@
 ---
 
 ## Technical Specifications
+
+### Ownership Model
+
+For the `PLAYER` role, a concept of "ownership" is used to restrict access to specific data. This ensures that a player can only manage the entities that belong to them.
+
+-   **Account-Wrestler Link:** The core of the ownership model is the link between an `Account` and a `Wrestler`. Each `Account` with the `PLAYER` role is associated with a single `Wrestler` record. This is established via the `account_id` foreign key in the `wrestler` table (see migration `V22__Add_Account_To_Wrestler.sql`).
+-   **Ownership Check:** When a `PLAYER` attempts to modify an entity (like a `Wrestler`, `Deck`, or `DeckCard`), the `PermissionService` checks if the currently authenticated user's account is the one linked to the `Wrestler` associated with that entity.
+-   **Implementation:** This check is performed in the `PermissionService.isOwner()` method, which is called from `@PreAuthorize` annotations in the service layer. For example, in `WrestlerService`:
+	```java
+	@PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestler)")
+	public Wrestler save(@NonNull Wrestler wrestler) {
+		// ...
+	}
+	```
+-   **Scope:** Ownership rules currently apply to `Wrestler`, `Deck`, `DeckCard`, and `InboxItem` entities.
+
+This model allows `PLAYER`s to have limited control over their own game assets without being able to interfere with other players' or the main game state managed by `BOOKER`s and `ADMIN`s.
 
 ### Account Entity Structure
 ```java
@@ -352,8 +368,9 @@ enum RoleName {
 
 ## Progress Tracking
 
-**Current Phase:** Phase 3 - Method-Level Security
-**Started:** December 14, 2025
+**Current Phase:** Phase 4 - UI Component Security
+**Started:** December 21, 2025
+**Phase 3 Completed:** December 21, 2025
 **Phase 2 Completed:** December 14, 2025
 **Phase 1 Committed:** December 14, 2025
 **Target Completion:** TBD
@@ -377,11 +394,26 @@ enum RoleName {
 - ✅ MenuService updated with filtering logic
 - ✅ Menu filtering tested with all 4 roles
 - ✅ **Phase 2 complete - menu filtering working**
+- ✅ Enable method security in SecurityConfig
+- ✅ Add `@PreAuthorize` to service layer methods (CardService: ✅; CardSetService: ✅; DeckService: ✅; DeckCardService: ✅; DramaEventService: ✅; FactionService: ✅; FactionRivalryService: ✅; FeudResolutionService: ✅; InboxService: ✅; InjuryService: ✅; InjuryTypeService: ✅; SegmentAdjudicationService: ✅; NpcService: ✅; PerformanceMonitoringService: ✅; RankingService: ✅; TierBoundaryService: ✅; TierRecalculationService: ✅; TierRecalculationScheduler: ✅; SeasonService: ✅; SegmentService: ✅; SegmentOutcomeService: ✅; SegmentRuleService: ✅; SegmentTypeService: ✅; ShowService: ✅; PromoBookingService: ✅; ShowBookingService: ✅; ShowPlanningService: ✅; ShowPlanningAiService: ✅; ShowTemplateService: ✅; ShowTypeService: ✅; NotionSyncService: ✅; NotionSyncScheduler: ✅; BackupService: ✅; TeamService: ✅; TitleService: ✅; WrestlerService: ✅)
+- ✅ Implement ownership checks for PLAYER role (WrestlerService: ✅, DeckService: ✅, DeckCardService: ✅, InboxService: ✅)
+- ✅ Test method-level security
 
 ### In Progress
-- ⏳ Add @PreAuthorize annotations to service methods (CardService: ✅; CardSetService: ✅; DeckService: ✅; DeckCardService: ✅; DramaEventService: ✅; FactionService: ✅; FactionRivalryService: ✅; FeudResolutionService: ✅; InboxService: ✅; InjuryService: ✅; InjuryTypeService: ✅; SegmentAdjudicationService: ✅; NpcService: ✅; PerformanceMonitoringService: ✅; RankingService: ✅; TierBoundaryService: ✅; TierRecalculationService: ✅; TierRecalculationScheduler: ✅; SeasonService: ✅; SegmentService: ✅; SegmentOutcomeService: ✅; SegmentRuleService: ✅; SegmentTypeService: ✅; ShowService: ✅; PromoBookingService: ✅; ShowBookingService: ✅; ShowPlanningService: ✅; ShowPlanningAiService: ✅; ShowTemplateService: ✅; ShowTypeService: ✅; NotionSyncService: ✅; NotionSyncScheduler: ✅; BackupService: ✅; TeamService: ✅; TitleService: ✅; WrestlerService: ✅)
-- ⏳ Implement ownership checks for PLAYER role (WrestlerService: ✅, DeckService: ✅, DeckCardService: ✅, InboxService: ✅)
-- 🔨 Test method-level security
+- ⏳ Update all list views to hide create/edit/delete buttons:
+	- Use `SecurityUtils.hasAnyRole()` checks
+	- VIEWER sees no action buttons
+	- PLAYER sees limited buttons
+- ⏳ Update all form views to check permissions before save
+- ⏳ Add helper methods to SecurityUtils:
+	- `canCreate()`
+	- `canEdit()`
+	- `canDelete()`
+	- `isAdmin()`
+	- `isBooker()`
+	- `isPlayer()`
+	- `isViewer()`
+- ⏳ Test UI adapts to user role
 
 ---
 

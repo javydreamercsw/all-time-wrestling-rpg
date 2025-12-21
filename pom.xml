@@ -57,6 +57,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.springframework.data</groupId>
+      <artifactId>spring-data-rest-core</artifactId>
+      <version>4.5.7</version>
+    </dependency>
+    <dependency>
       <groupId>com.vaadin</groupId>
       <artifactId>vaadin-dev</artifactId>
       <optional>true</optional>
