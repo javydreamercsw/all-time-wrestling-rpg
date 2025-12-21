@@ -122,6 +122,7 @@ public class TestUserInitializer implements CommandLineRunner {
       ownedWrestler.setIsPlayer(true);
       ownedWrestler.setAccount(ownerAccount);
       ownedWrestler.setCreationDate(clock.instant());
+      ownedWrestler.setExternalId("wrestler-owner");
       wrestlerRepository.save(ownedWrestler);
     }
 
@@ -138,6 +139,7 @@ public class TestUserInitializer implements CommandLineRunner {
       otherWrestler.setIsPlayer(true);
       otherWrestler.setAccount(otherAccount);
       otherWrestler.setCreationDate(clock.instant());
+      otherWrestler.setExternalId("wrestler-not_owner");
       wrestlerRepository.save(otherWrestler);
     }
 

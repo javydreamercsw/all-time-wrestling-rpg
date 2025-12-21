@@ -27,6 +27,7 @@ import java.time.Clock;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
@@ -50,13 +51,13 @@ public class TestCustomUserDetailsService implements UserDetailsService {
   @Autowired private Clock clock;
 
   @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+  public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
     return accountRepository
         .findByUsername(username)
         .map(
             account -> {
-              findOrCreateWrestlerForAccount(account);
-              return new TestCustomUserDetails(account);
+              Wrestler wrestler = findOrCreateWrestlerForAccount(account);
+              return new TestCustomUserDetails(account, wrestler);
             })
         .orElseGet(
             () -> {
@@ -115,46 +116,52 @@ public class TestCustomUserDetailsService implements UserDetailsService {
 
               Wrestler wrestler = findOrCreateWrestlerForAccount(account);
 
-              return new TestCustomUserDetails(account);
+              return new TestCustomUserDetails(account, wrestler);
             });
   }
 
-  private Wrestler findOrCreateWrestlerForAccount(Account account) {
+  private Wrestler findOrCreateWrestlerForAccount(@NonNull Account account) {
     return wrestlerRepository
         .findByAccount(account)
         .orElseGet(
             () -> {
-              Wrestler wrestler = new Wrestler();
-              wrestler.setName(account.getUsername() + " Wrestler");
-              wrestler.setIsPlayer(true);
-              wrestler.setAccount(account);
-              wrestler.setCreationDate(clock.instant());
-              return wrestlerRepository.save(wrestler);
+              // Check if a wrestler with the external ID already exists
+              String externalId = "wrestler-" + account.getUsername();
+              return wrestlerRepository
+                  .findByExternalId(externalId)
+                  .orElseGet(
+                      () -> {
+                        Wrestler wrestler = new Wrestler();
+                        wrestler.setName(account.getUsername() + " Wrestler");
+                        wrestler.setIsPlayer(true);
+                        wrestler.setAccount(account);
+                        wrestler.setCreationDate(clock.instant());
+                        wrestler.setExternalId(externalId);
+                        return wrestlerRepository.save(wrestler);
+                      });
             });
   }
 
-  private static class TestCustomUserDetails implements UserDetails {
-    private final Account account;
-
-    public TestCustomUserDetails(Account account) {
-      this.account = account;
+  private static class TestCustomUserDetails extends CustomUserDetails {
+    public TestCustomUserDetails(Account account, Wrestler wrestler) {
+      super(account, wrestler);
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-      return account.getRoles().stream()
+      return getAccount().getRoles().stream()
           .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
           .collect(Collectors.toSet());
     }
 
     @Override
     public String getPassword() {
-      return account.getPassword();
+      return getAccount().getPassword();
     }
 
     @Override
     public String getUsername() {
-      return account.getUsername();
+      return getAccount().getUsername();
     }
   }
 }
