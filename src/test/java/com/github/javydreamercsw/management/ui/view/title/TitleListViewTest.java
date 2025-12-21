@@ -88,6 +88,9 @@ class TitleListViewTest extends AbstractViewTest {
     when(titleService.findByName("Test Title")).thenReturn(Optional.of(testTitle));
     when(titleService.deleteTitle(anyLong())).thenReturn(true); // Mock delete to return true
 
+    // Mock clearNumberOneContender
+    when(titleService.clearNumberOneContender(anyLong())).thenReturn(Optional.of(testTitle));
+
     // Mock SecurityUtils
     when(securityUtils.canCreate()).thenReturn(true);
     when(securityUtils.canEdit()).thenReturn(true);
