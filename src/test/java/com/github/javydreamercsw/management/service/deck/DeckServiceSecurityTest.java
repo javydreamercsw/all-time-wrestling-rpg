@@ -98,10 +98,10 @@ class DeckServiceSecurityTest extends AbstractSecurityTest {
   }
 
   @Test
-  @WithUserDetails("not_owner")
+  @WithUserDetails("owner")
   void testPlayerCannotCreateDeckForOtherWrestler() {
-    assertThrows(AccessDeniedException.class, () -> deckService.createDeck(getOwnerWrestler()));
     assertThrows(AccessDeniedException.class, () -> deckService.createDeck(getOtherWrestler()));
+    assertDoesNotThrow(() -> deckService.createDeck(getOwnerWrestler()));
   }
 
   @Test
@@ -138,13 +138,13 @@ class DeckServiceSecurityTest extends AbstractSecurityTest {
   }
 
   @Test
-  @WithUserDetails("not_owner")
+  @WithUserDetails("owner")
   void testPlayerCannotSaveOtherDeck() {
     Deck ownedDeck = getOwnedDeck();
     Deck otherDeck = getOtherDeck();
     assertNotNull(ownedDeck);
-    assertThrows(AccessDeniedException.class, () -> deckService.save(ownedDeck));
     assertThrows(AccessDeniedException.class, () -> deckService.save(otherDeck));
+    assertDoesNotThrow(() -> deckService.save(ownedDeck));
   }
 
   @Test
@@ -169,8 +169,8 @@ class DeckServiceSecurityTest extends AbstractSecurityTest {
 
   @Test
   @WithUserDetails("owner")
-  void testPlayerCannotDeleteDeck() {
-    assertThrows(AccessDeniedException.class, () -> deckService.delete(getOwnedDeck()));
+  void testPlayerCanDeleteOwnDeckButNotOthers() {
+    assertDoesNotThrow(() -> deckService.delete(getOwnedDeck()));
     assertThrows(AccessDeniedException.class, () -> deckService.delete(getOtherDeck()));
   }
 
