@@ -40,8 +40,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.core.env.Environment;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.web.reactive.function.client.WebClient;
 
 class NarrationDialogTest {
@@ -108,8 +106,6 @@ class NarrationDialogTest {
             localAIStatusService,
             segmentNarrationConfig,
             webClientBuilder,
-            mock(ClientRegistrationRepository.class),
-            mock(OAuth2AuthorizedClientRepository.class),
             env);
   }
 

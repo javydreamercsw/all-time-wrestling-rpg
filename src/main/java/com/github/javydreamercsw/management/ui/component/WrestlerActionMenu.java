@@ -70,7 +70,7 @@ public class WrestlerActionMenu extends MenuBar {
             "Edit",
             e -> {
               WrestlerDialog dialog =
-                  new WrestlerDialog(wrestlerService, wrestler, refreshProvider);
+                  new WrestlerDialog(wrestlerService, wrestler, refreshProvider, securityUtils);
               dialog.open();
             });
     editItem.addComponentAsFirst(new Icon(VaadinIcon.EDIT));
@@ -199,7 +199,8 @@ public class WrestlerActionMenu extends MenuBar {
         subMenu.addItem(
             "Manage Injuries",
             e -> {
-              InjuryDialog dialog = new InjuryDialog(wrestler, injuryService, refreshProvider);
+              InjuryDialog dialog =
+                  new InjuryDialog(wrestler, injuryService, refreshProvider, securityUtils);
               dialog.setId("injury-dialog");
               dialog.open();
             });

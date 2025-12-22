@@ -61,9 +61,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.client.web.reactive.function.client.ServletOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -109,8 +106,6 @@ public class NarrationDialog extends Dialog {
       LocalAIStatusService localAIStatusService,
       SegmentNarrationConfig segmentNarrationConfig,
       WebClient.Builder webClientBuilder,
-      ClientRegistrationRepository clientRegistrationRepository,
-      OAuth2AuthorizedClientRepository authorizedClientRepository,
       Environment env) {
     this.segment = segment;
     this.restTemplate = new RestTemplate();
@@ -125,10 +120,7 @@ public class NarrationDialog extends Dialog {
     if (Arrays.asList(env.getActiveProfiles()).contains("e2e")) {
       this.webClient = webClientBuilder.filter(logRequest()).build();
     } else {
-      ServletOAuth2AuthorizedClientExchangeFilterFunction oauth2Client =
-          new ServletOAuth2AuthorizedClientExchangeFilterFunction(
-              clientRegistrationRepository, authorizedClientRepository);
-      this.webClient = webClientBuilder.filter(oauth2Client).filter(logRequest()).build();
+      this.webClient = webClientBuilder.filter(logRequest()).build();
     }
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());

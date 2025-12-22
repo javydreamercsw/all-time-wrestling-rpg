@@ -141,7 +141,8 @@ public class WrestlerListView extends Main {
             "Create Wrestler",
             e -> {
               WrestlerDialog dialog =
-                  new WrestlerDialog(wrestlerService, wrestlerGrid.getDataProvider()::refreshAll);
+                  new WrestlerDialog(
+                      wrestlerService, wrestlerGrid.getDataProvider()::refreshAll, securityUtils);
               dialog.open();
             });
     button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);

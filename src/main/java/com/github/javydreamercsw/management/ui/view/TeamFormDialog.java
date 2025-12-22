@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -55,6 +56,7 @@ public class TeamFormDialog extends Dialog {
   private final TeamService teamService;
   private final WrestlerService wrestlerService;
   private final FactionService factionService;
+  private final SecurityUtils securityUtils;
 
   // Form fields
   private final TextField nameField;
@@ -75,10 +77,14 @@ public class TeamFormDialog extends Dialog {
 
   @Autowired
   public TeamFormDialog(
-      TeamService teamService, WrestlerService wrestlerService, FactionService factionService) {
+      TeamService teamService,
+      WrestlerService wrestlerService,
+      FactionService factionService,
+      SecurityUtils securityUtils) {
     this.teamService = teamService;
     this.wrestlerService = wrestlerService;
     this.factionService = factionService;
+    this.securityUtils = securityUtils;
 
     // Initialize form fields
     this.nameField = new TextField("Team Name");
@@ -113,24 +119,29 @@ public class TeamFormDialog extends Dialog {
     nameField.setRequired(true);
     nameField.setMaxLength(255);
     nameField.setWidthFull();
+    nameField.setReadOnly(!securityUtils.canEdit());
 
     // Configure description field
     descriptionField.setMaxLength(255);
     descriptionField.setWidthFull();
     descriptionField.setHeight("100px");
+    descriptionField.setReadOnly(!securityUtils.canEdit());
 
     // Configure wrestler fields
     wrestler1Field.setRequired(true);
     wrestler1Field.setItemLabelGenerator(Wrestler::getName);
     wrestler1Field.setWidthFull();
+    wrestler1Field.setReadOnly(!securityUtils.canEdit());
 
     wrestler2Field.setRequired(true);
     wrestler2Field.setItemLabelGenerator(Wrestler::getName);
     wrestler2Field.setWidthFull();
+    wrestler2Field.setReadOnly(!securityUtils.canEdit());
 
     // Configure faction field
     factionField.setItemLabelGenerator(Faction::getName);
     factionField.setWidthFull();
+    factionField.setReadOnly(!securityUtils.canEdit());
 
     // Configure status field
     statusField.setItems(
@@ -139,6 +150,7 @@ public class TeamFormDialog extends Dialog {
             .collect(Collectors.toList()));
     statusField.setItemLabelGenerator(TeamStatus::getDisplayName);
     statusField.setWidthFull();
+    statusField.setReadOnly(!securityUtils.canEdit());
 
     // Add validation to prevent same wrestler selection
     wrestler1Field.addValueChangeListener(e -> validateWrestlerSelection());
@@ -156,6 +168,7 @@ public class TeamFormDialog extends Dialog {
   private void configureButtons() {
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveButton.addClickListener(e -> saveTeam());
+    saveButton.setVisible(securityUtils.canEdit());
 
     cancelButton.addClickListener(e -> close());
 

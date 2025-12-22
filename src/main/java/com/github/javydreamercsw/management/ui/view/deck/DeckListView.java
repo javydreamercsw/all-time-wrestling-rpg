@@ -138,6 +138,7 @@ public class DeckListView extends VerticalLayout {
                       deckService.save(deck);
                       cardGrid.setItems(deckService.findById(deck.getId()).getCards());
                     });
+                removeBtn.setVisible(securityUtils.canDelete());
                 return removeBtn;
               })
           .setHeader("Remove");
@@ -194,7 +195,7 @@ public class DeckListView extends VerticalLayout {
             });
 
     HorizontalLayout addLayout = new HorizontalLayout(cardCombo, amountInput, addBtn);
-    addLayout.setVisible(securityUtils.canEdit());
+    addLayout.setVisible(securityUtils.canCreate());
 
     layout.add(cardGrid, addLayout);
 

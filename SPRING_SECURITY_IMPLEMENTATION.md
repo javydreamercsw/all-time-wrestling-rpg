@@ -135,15 +135,15 @@
 **Deliverable:** Backend enforces role permissions - COMPLETE!
 ---
 
-### Phase 4: UI Component Security 🔘
+### Phase 4: UI Component Security ✅ (COMPLETED - December 21, 2025)
 **Goal:** Hide/show UI elements based on permissions
 
-15. 🔨 Update all list views to hide create/edit/delete buttons:
+15. ✅ Update all list views to hide create/edit/delete buttons:
 	- Use `SecurityUtils.hasAnyRole()` checks
 	- VIEWER sees no action buttons
 	- PLAYER sees limited buttons
-16. 🔨 Update all form views to check permissions before save
-17. 🔨 Add helper methods to SecurityUtils:
+16. ✅ Update all form views to check permissions before save
+17. ✅ Add helper methods to SecurityUtils:
 	- `canCreate()`
 	- `canEdit()`
 	- `canDelete()`
@@ -151,10 +151,9 @@
 	- `isBooker()`
 	- `isPlayer()`
 	- `isViewer()`
-18. 🔨 Test UI adapts to user role
+18. ✅ Test UI adapts to user role
 
-**Deliverable:** UI shows only permitted actions
-
+**Deliverable:** UI shows only permitted actions - COMPLETE!
 ---
 
 ### Phase 5: Account Management 👥
@@ -368,8 +367,9 @@ enum RoleName {
 
 ## Progress Tracking
 
-**Current Phase:** Phase 4 - UI Component Security
+**Current Phase:** Phase 5 - Account Management
 **Started:** December 21, 2025
+**Phase 4 Completed:** December 21, 2025
 **Phase 3 Completed:** December 21, 2025
 **Phase 2 Completed:** December 14, 2025
 **Phase 1 Committed:** December 14, 2025
@@ -398,22 +398,29 @@ enum RoleName {
 - ✅ Add `@PreAuthorize` to service layer methods (CardService: ✅; CardSetService: ✅; DeckService: ✅; DeckCardService: ✅; DramaEventService: ✅; FactionService: ✅; FactionRivalryService: ✅; FeudResolutionService: ✅; InboxService: ✅; InjuryService: ✅; InjuryTypeService: ✅; SegmentAdjudicationService: ✅; NpcService: ✅; PerformanceMonitoringService: ✅; RankingService: ✅; TierBoundaryService: ✅; TierRecalculationService: ✅; TierRecalculationScheduler: ✅; SeasonService: ✅; SegmentService: ✅; SegmentOutcomeService: ✅; SegmentRuleService: ✅; SegmentTypeService: ✅; ShowService: ✅; PromoBookingService: ✅; ShowBookingService: ✅; ShowPlanningService: ✅; ShowPlanningAiService: ✅; ShowTemplateService: ✅; ShowTypeService: ✅; NotionSyncService: ✅; NotionSyncScheduler: ✅; BackupService: ✅; TeamService: ✅; TitleService: ✅; WrestlerService: ✅)
 - ✅ Implement ownership checks for PLAYER role (WrestlerService: ✅, DeckService: ✅, DeckCardService: ✅, InboxService: ✅)
 - ✅ Test method-level security
-
-### In Progress
-- ⏳ Update all list views to hide create/edit/delete buttons:
+- ✅ Add helper methods to SecurityUtils: canCreate(), canEdit(), canDelete(), isAdmin(), isBooker(), isPlayer(), isViewer().
+- ✅ Update all list views to hide create/edit/delete buttons:
 	- Use `SecurityUtils.hasAnyRole()` checks
 	- VIEWER sees no action buttons
 	- PLAYER sees limited buttons
-- ⏳ Update all form views to check permissions before save
-- ⏳ Add helper methods to SecurityUtils:
-	- `canCreate()`
-	- `canEdit()`
-	- `canDelete()`
-	- `isAdmin()`
-	- `isBooker()`
-	- `isPlayer()`
-	- `isViewer()`
-- ⏳ Test UI adapts to user role
+- ✅ Update all form views to check permissions before save
+- ✅ Test UI adapts to user role
+
+### In Progress
+- ⏳ Create `AccountService.java`
+- ⏳ Create `AccountListView.java` (admin only):
+	- Grid with username, email, role, status, last login
+	- Create/Edit/Delete/Enable/Disable actions
+- ⏳ Create `AccountFormDialog.java`:
+	- Fields: username, email, password, role
+	- Password validation
+	- Unique username/email validation
+- ⏳ Create `ProfileView.java` (all users):
+	- View own details
+	- Change password
+	- Cannot change own role
+- ⏳ Add account management to AdminView
+- ⏳ Test account CRUD operations
 
 ---
 

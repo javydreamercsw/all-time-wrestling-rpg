@@ -65,8 +65,6 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -151,8 +149,6 @@ class ShowDetailViewTest {
               segmentNarrationConfig,
               segmentNarrationServiceFactory,
               mock(WebClient.Builder.class),
-              mock(ClientRegistrationRepository.class),
-              mock(OAuth2AuthorizedClientRepository.class),
               env);
 
       ReflectionTestUtils.invokeMethod(
@@ -229,8 +225,6 @@ class ShowDetailViewTest {
               segmentNarrationConfig,
               segmentNarrationServiceFactory,
               mock(WebClient.Builder.class),
-              mock(ClientRegistrationRepository.class),
-              mock(OAuth2AuthorizedClientRepository.class),
               env);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
