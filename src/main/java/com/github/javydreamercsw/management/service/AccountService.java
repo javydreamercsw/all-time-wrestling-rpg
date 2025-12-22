@@ -48,7 +48,7 @@ public class AccountService {
             .findByName(roleName)
             .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
     Account account = new Account(username, passwordEncoder.encode(password), email);
-    account.setRoles(Set.of(role));
+    account.setRoles(new java.util.HashSet<>(Set.of(role)));
     return accountRepository.save(account);
   }
 

@@ -44,28 +44,31 @@ public class AccountFormDialog extends Dialog {
   public AccountFormDialog(AccountService accountService, Account account) {
     this.accountService = accountService;
     this.account = account;
+    binder.setBean(account);
 
     setHeaderTitle(account.getId() == null ? "New Account" : "Edit Account");
 
     FormLayout formLayout = new FormLayout();
     TextField username = new TextField("Username");
     username.setId("username-field");
+    binder.bind(username, "username");
     if (account.getId() != null) {
       username.setReadOnly(true);
     }
+
     EmailField email = new EmailField("Email");
     email.setId("email-field");
+    binder.bind(email, "email");
     if (account.getId() != null) {
       email.setReadOnly(true);
     }
+
     PasswordField password = new PasswordField("Password");
     password.setId("password-field");
     ComboBox<RoleName> role = new ComboBox<>("Role");
     role.setId("role-field");
     role.setItems(RoleName.values());
 
-    binder.bind(username, "username");
-    binder.bind(email, "email");
     if (account.getId() == null) {
       password.setRequiredIndicatorVisible(true);
       binder.forField(password).asRequired().bind("password");
@@ -86,7 +89,8 @@ public class AccountFormDialog extends Dialog {
         .asRequired()
         .bind(
             acc -> acc.getRoles().stream().findFirst().map(Role::getName).orElse(null),
-            (acc, roleName) -> acc.setRoles(Set.of(accountService.getRole(roleName))));
+            (acc, roleName) ->
+                acc.setRoles(new java.util.HashSet<>(Set.of(accountService.getRole(roleName)))));
 
     if (account.getRoles() != null && !account.getRoles().isEmpty()) {
       role.setValue(account.getRoles().iterator().next().getName());
