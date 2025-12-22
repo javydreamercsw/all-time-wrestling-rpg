@@ -167,11 +167,11 @@
 	- Fields: username, email, password, role
 	- Password validation
 	- Unique username/email validation
-22. 🔨 Create `ProfileView.java` (all users):
+22. ✅ Create `ProfileView.java` (all users):
 	- View own details
 	- Change password
 	- Cannot change own role
-23. 🔨 Add account management to AdminView
+23. ✅ Add account management to AdminView
 24. 🔨 Test account CRUD operations
 
 **Deliverable:** Admins can manage accounts, users can update profile

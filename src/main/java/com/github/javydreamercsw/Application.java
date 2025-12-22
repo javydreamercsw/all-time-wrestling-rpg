@@ -50,7 +50,7 @@ public class Application extends SpringBootServletInitializer {
 
   @Bean
   public Clock clock() {
-    return Clock.systemDefaultZone(); // You can also use Clock.systemUTC()
+    return Clock.systemUTC();
   }
 
   @Bean

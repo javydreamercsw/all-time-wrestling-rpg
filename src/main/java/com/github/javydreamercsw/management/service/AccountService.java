@@ -96,4 +96,10 @@ public class AccountService {
   public boolean canDelete(Account account) {
     return wrestlerRepository.findByAccountId(account.getId()).isEmpty();
   }
+
+  public Role getRole(RoleName roleName) {
+    return roleRepository
+        .findByName(roleName)
+        .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+  }
 }

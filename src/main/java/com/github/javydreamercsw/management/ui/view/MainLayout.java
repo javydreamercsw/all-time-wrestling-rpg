@@ -105,7 +105,7 @@ public class MainLayout extends AppLayout {
 
   private Div createFooter() {
     Span versionSpan;
-    if (buildProperties != null) {
+    if (buildProperties != null) { // Needed for tests
       versionSpan = new Span("Version: " + buildProperties.getVersion());
     } else {
       versionSpan = new Span("Version: N/A");
@@ -147,7 +147,8 @@ public class MainLayout extends AppLayout {
         JustifyContent.END,
         Padding.Horizontal.MEDIUM,
         Padding.Vertical.SMALL,
-        Gap.MEDIUM);
+        Gap.MEDIUM,
+        Width.FULL);
 
     if (securityUtils != null && securityUtils.isAuthenticated()) {
       String username = securityUtils.getCurrentUsername();
@@ -160,12 +161,15 @@ public class MainLayout extends AppLayout {
       Span usernameLabel = new Span(username);
       usernameLabel.addClassNames(FontWeight.SEMIBOLD, FontSize.SMALL);
 
+      // Profile link
+      Anchor profileLink = new Anchor("profile", "Profile");
+
       // Logout button
       Button logoutButton = new Button("Logout", VaadinIcon.SIGN_OUT.create());
       logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
       logoutButton.addClickListener(e -> securityUtils.logout());
 
-      navbar.add(avatar, usernameLabel, logoutButton);
+      navbar.add(avatar, usernameLabel, profileLink, logoutButton);
     }
 
     return navbar;
@@ -175,7 +179,7 @@ public class MainLayout extends AppLayout {
   protected void onAttach(AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     UI ui = attachEvent.getUI();
-    if (inboxUpdateBroadcaster != null) {
+    if (inboxUpdateBroadcaster != null) { // Needed for tests
       inboxUpdateBroadcasterRegistration =
           inboxUpdateBroadcaster.register(
               event -> {
@@ -193,7 +197,7 @@ public class MainLayout extends AppLayout {
   @Override
   protected void onDetach(DetachEvent detachEvent) {
     super.onDetach(detachEvent);
-    if (inboxUpdateBroadcasterRegistration != null) {
+    if (inboxUpdateBroadcasterRegistration != null) { // Needed for tests
       inboxUpdateBroadcasterRegistration.remove();
     }
   }
