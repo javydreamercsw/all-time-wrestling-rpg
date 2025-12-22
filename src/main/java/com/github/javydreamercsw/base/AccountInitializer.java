@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -35,7 +35,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
-@Profile("!test")
+@ConditionalOnProperty(
+    name = "atw.initializer.enabled",
+    havingValue = "true",
+    matchIfMissing = true)
 @RequiredArgsConstructor
 public class AccountInitializer implements Initializable {
 

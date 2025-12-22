@@ -43,6 +43,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -51,6 +52,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
 @Import({TestSecurityConfig.class, TestNotionConfiguration.class})
+@Slf4j
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;
