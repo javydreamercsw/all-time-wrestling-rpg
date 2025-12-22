@@ -36,6 +36,7 @@ import com.vaadin.flow.data.binder.Binder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 
@@ -71,10 +72,6 @@ public class TitleFormDialog extends Dialog {
     Checkbox isActive = new Checkbox("Active");
     isActive.setReadOnly(!securityUtils.canEdit());
     MultiSelectComboBox<Wrestler> champion = new MultiSelectComboBox<>("Champion(s)");
-    champion.setItems(
-        wrestlerService.findAll().stream()
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
     champion.setItemLabelGenerator(Wrestler::getName);
     champion.setReadOnly(!securityUtils.canEdit());
 
@@ -84,9 +81,30 @@ public class TitleFormDialog extends Dialog {
     binder.bind(gender, Title::getGender, Title::setGender);
     binder.bind(isActive, Title::getIsActive, Title::setIsActive);
 
-    if (title.getChampion() != null) {
-      champion.setValue(title.getChampion());
-    }
+    Runnable populateChampions =
+        () -> {
+          var selected = champion.getValue();
+          List<Wrestler> eligible =
+              wrestlerService.findAll().stream()
+                  .filter(w -> titleService.isWrestlerEligible(w, title))
+                  .sorted(Comparator.comparing(Wrestler::getName))
+                  .collect(Collectors.toList());
+          champion.setItems(eligible);
+          champion.setValue(selected);
+        };
+
+    tier.addValueChangeListener(
+        event -> {
+          if (event.isFromClient()) {
+            populateChampions.run();
+          }
+        });
+    gender.addValueChangeListener(
+        event -> {
+          if (event.isFromClient()) {
+            populateChampions.run();
+          }
+        });
 
     FormLayout formLayout = new FormLayout(name, description, tier, gender, isActive, champion);
     add(formLayout);
@@ -114,5 +132,11 @@ public class TitleFormDialog extends Dialog {
     getFooter().add(new HorizontalLayout(saveButton, cancelButton));
 
     binder.readBean(this.title);
+
+    populateChampions.run(); // Initial population after binder is read
+
+    if (title.getChampion() != null) {
+      champion.setValue(title.getChampion());
+    }
   }
 }

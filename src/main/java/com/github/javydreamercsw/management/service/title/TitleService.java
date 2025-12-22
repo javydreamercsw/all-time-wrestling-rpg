@@ -45,31 +45,12 @@ public class TitleService {
   private final WrestlerRepository wrestlerRepository;
   private final Clock clock;
 
-  private boolean isWrestlerEligible(@NonNull Wrestler wrestler, @NonNull Title title) {
+  public boolean isWrestlerEligible(@NonNull Wrestler wrestler, @NonNull Title title) {
     if (title.getGender() != null && title.getGender() != wrestler.getGender()) {
       return false;
     }
-    // A wrestler is eligible if their current fan count falls within the title's tier boundary
-    // OR if the tier boundary is not yet defined, use the static enum values.
-    Optional<TierBoundary> boundary =
-        tierBoundaryService.findByTierAndGender(title.getTier(), wrestler.getGender());
-
-    // Fallback to static eligibility if dynamic boundaries are not set
-    return boundary
-        .map(
-            tierBoundary -> {
-              boolean meetsMin;
-              if (title.getTier() == WrestlerTier.ROOKIE) {
-                meetsMin = wrestler.getFans() >= tierBoundary.getMinFans();
-              } else {
-                meetsMin = wrestler.getFans() > tierBoundary.getMinFans();
-              }
-              return meetsMin && wrestler.getFans() <= tierBoundary.getMaxFans();
-            })
-        .orElseGet(
-            () ->
-                wrestler.getFans() >= title.getTier().getMinFans()
-                    && wrestler.getFans() <= title.getTier().getMaxFans());
+    // A wrestler is eligible if their tier is the same or higher than the title's tier.
+    return wrestler.getTier().ordinal() >= title.getTier().ordinal();
   }
 
   @PreAuthorize("isAuthenticated()")
