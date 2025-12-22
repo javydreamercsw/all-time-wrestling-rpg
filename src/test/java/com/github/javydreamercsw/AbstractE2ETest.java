@@ -59,7 +59,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(value = "e2e", inheritProfiles = false)
 @Import(TestE2ESecurityConfig.class)
 @WithMockUser(username = "admin", roles = "ADMIN")
-public abstract class AbstractE2ETest extends AbstractIntegrationTest {
+public class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
   @LocalServerPort protected int serverPort;
@@ -161,9 +161,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
   }
 
-  protected void waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
+  protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout
-    wait.until(ExpectedConditions.presenceOfElementLocated(selector));
+    return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
 
   /** Waits for the Vaadin client-side application to fully load. */
@@ -234,84 +234,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /**
-   * Selects an item from a Vaadin MultiSelectComboBox by clicking its input/toggle button and
-   * selecting the item from the overlay. Handles shadow DOM for Vaadin components. Uses correct
-   * overlay for MultiSelectComboBox.
-   *
-   * @param comboBox the Vaadin MultiSelectComboBox WebElement
-   * @param itemText the text of the item to select
-   */
-  protected void selectFromVaadinMultiSelectComboBox(
-      @NonNull WebElement comboBox, @NonNull String itemText) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
-    int attempts = 0;
-    boolean itemClicked = false;
-    while (attempts < 3 && !itemClicked) {
-      attempts++;
-      // Try to click the input or toggle button inside the shadow root
-      try {
-        Object input =
-            ((JavascriptExecutor) driver)
-                .executeScript(
-                    "return arguments[0].shadowRoot ? arguments[0].shadowRoot.querySelector('input,"
-                        + " [part=\"toggle-button\"]') : null;",
-                    comboBox);
-        if (input != null && input instanceof WebElement) {
-          ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", input);
-          try {
-            ((WebElement) input).click();
-          } catch (Exception e) {
-            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", input);
-          }
-        } else {
-          // Fallback: scroll and click the comboBox itself
-          ((JavascriptExecutor) driver)
-              .executeScript("arguments[0].scrollIntoView(true);", comboBox);
-          try {
-            comboBox.click();
-          } catch (Exception e) {
-            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", comboBox);
-          }
-        }
-      } catch (Exception e) {
-        // Fallback: scroll and click the comboBox itself
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", comboBox);
-        try {
-          comboBox.click();
-        } catch (Exception ex) {
-          ((JavascriptExecutor) driver).executeScript("arguments[0].click();", comboBox);
-        }
-      }
-      // Wait a bit for overlay to render
-      try {
-        Thread.sleep(300);
-      } catch (InterruptedException ignored) {
-      }
-      // Wait for overlay to be visible (correct overlay for MultiSelectComboBox)
-      try {
-        wait.until(
-            ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector("vaadin-multi-select-combo-box-overlay")));
-        // Use contains(text(), ...) for more robust matching
-        WebElement item =
-            wait.until(
-                ExpectedConditions.elementToBeClickable(
-                    By.xpath(
-                        "//vaadin-multi-select-combo-box-overlay//*[contains(text(), '"
-                            + itemText
-                            + "')]")));
-        // Scroll into view if needed
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", item);
-        item.click();
-        itemClicked = true;
-      } catch (Exception e) {
-        // If not found, try again (overlay may not have opened)
-        if (attempts >= 3) throw e;
-      }
-    }
-  }
-
-  /**
    * Returns all the data from a specific column in a Vaadin grid.
    *
    * @param grid the Vaadin grid WebElement
@@ -338,7 +260,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return (List<WebElement>)
         ((JavascriptExecutor) driver)
             .executeScript(
-                "return arguments[0].shadowRoot.querySelectorAll('[part~=\"row\"]')", grid);
+                "return arguments[0].shadowRoot.querySelectorAll('[part~=\"row\"]');", grid);
   }
 
   protected void takeScreenshot(@NonNull String filePath) {

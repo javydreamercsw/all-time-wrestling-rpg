@@ -159,11 +159,11 @@
 ### Phase 5: Account Management 👥
 **Goal:** Allow admins to manage user accounts
 
-19. 🔨 Create `AccountService.java`
-20. 🔨 Create `AccountListView.java` (admin only):
+19. ✅ Create `AccountService.java`
+20. ✅ Create `AccountListView.java` (admin only):
 	- Grid with username, email, role, status, last login
 	- Create/Edit/Delete/Enable/Disable actions
-21. 🔨 Create `AccountFormDialog.java`:
+21. ✅ Create `AccountFormDialog.java`:
 	- Fields: username, email, password, role
 	- Password validation
 	- Unique username/email validation
