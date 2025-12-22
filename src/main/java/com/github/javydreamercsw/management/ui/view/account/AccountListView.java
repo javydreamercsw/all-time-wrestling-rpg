@@ -20,7 +20,6 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.service.AccountService;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -49,7 +48,18 @@ public class AccountListView extends Main {
     this.securityUtils = securityUtils;
 
     Button createButton = new Button("New Account", VaadinIcon.PLUS.create());
-    createButton.addClickListener(e -> UI.getCurrent().navigate("/account/new"));
+    createButton.addClickListener(
+        e -> {
+          AccountFormDialog dialog = new AccountFormDialog(accountService, new Account());
+          dialog.addOpenedChangeListener(
+              event -> {
+                if (!event.isOpened()) {
+                  refreshGrid();
+                }
+              });
+          dialog.open();
+        });
+    createButton.setId("new-account-button");
 
     add(new ViewToolbar("Account List", ViewToolbar.group(createButton)));
 
@@ -73,7 +83,16 @@ public class AccountListView extends Main {
               editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
               editButton.setId("edit-button-" + account.getId());
               editButton.addClickListener(
-                  e -> UI.getCurrent().navigate("/account/" + account.getId()));
+                  e -> {
+                    AccountFormDialog dialog = new AccountFormDialog(accountService, account);
+                    dialog.addOpenedChangeListener(
+                        event -> {
+                          if (!event.isOpened()) {
+                            refreshGrid();
+                          }
+                        });
+                    dialog.open();
+                  });
               return editButton;
             })
         .setFlexGrow(0);

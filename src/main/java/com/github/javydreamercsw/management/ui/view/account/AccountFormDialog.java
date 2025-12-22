@@ -57,9 +57,24 @@ public class AccountFormDialog extends Dialog {
 
     binder.bind(username, "username");
     binder.bind(email, "email");
-    binder.bind(password, "password");
+    if (account.getId() == null) {
+      password.setRequiredIndicatorVisible(true);
+      binder.forField(password).asRequired().bind("password");
+    } else {
+      password.setPlaceholder("Leave blank to keep current password");
+      binder
+          .forField(password)
+          .bind(
+              acc -> "",
+              (acc, p) -> {
+                if (p != null && !p.isEmpty()) {
+                  acc.setPassword(p);
+                }
+              });
+    }
     binder
         .forField(role)
+        .asRequired()
         .bind(
             acc -> acc.getRoles().stream().findFirst().map(Role::getName).orElse(null),
             (acc, roleName) -> acc.setRoles(Set.of(accountService.getRole(roleName))));

@@ -25,6 +25,10 @@ import com.github.javydreamercsw.management.service.AccountService;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
+import junit.framework.AssertionFailedError;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -160,7 +164,15 @@ public class AccountE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
 
     // Verify the account is created
-    Optional<Account> accountOptional = accountService.findByUsername("new_account");
-    assertTrue(accountOptional.isPresent());
+    Failsafe.with(RetryPolicy.builder()
+                    .withDelay(Duration.ofMillis(500))
+                    .withMaxDuration(Duration.ofSeconds(10))
+                    .withMaxAttempts(3)
+                    .handle(AssertionFailedError.class).build())
+            .run(
+                    () -> {
+                      Optional<Account> accountOptional = accountService.findByUsername("new_account");
+                      assertTrue(accountOptional.isPresent());
+                    });
   }
 }
