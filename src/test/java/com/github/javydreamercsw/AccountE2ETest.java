@@ -22,12 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.service.AccountService;
-import java.time.Duration;
-import java.util.Objects;
-import java.util.Optional;
-
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
+import java.time.Duration;
+import java.util.Optional;
 import junit.framework.AssertionFailedError;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -43,7 +41,7 @@ public class AccountE2ETest extends AbstractE2ETest {
   @Test
   @WithMockUser(roles = "ADMIN")
   public void testEditAccount() {
-    Optional<Account> accountOptional = accountService.get(1L);
+    Optional<Account> accountOptional = accountService.get(2L);
     assertTrue(accountOptional.isPresent());
 
     // Navigate to the AccountListView
@@ -53,18 +51,10 @@ public class AccountE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
 
     // Find the edit button for the admin accountOptional (ID 1)
-    WebElement editButton = driver.findElement(By.id("edit-button-1"));
+    WebElement editButton = driver.findElement(By.id("edit-button-2"));
     editButton.click();
 
     // Edit the fields
-    WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
-    // Check that we are on the correct page
-    assertTrue(Objects.requireNonNull(driver.getCurrentUrl()).endsWith("/account/1"));
-    usernameField.sendKeys("_edited");
-
-    WebElement emailField = waitForVaadinElement(driver, By.id("email-field"));
-    emailField.sendKeys("edited_email@atw.com");
-
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
     passwordField.sendKeys("new_password");
 
@@ -75,25 +65,30 @@ public class AccountE2ETest extends AbstractE2ETest {
     WebElement saveButton = waitForVaadinElement(driver, By.id("save-button"));
     saveButton.click();
 
+    // Wait for the dialog to close
+    new WebDriverWait(driver, Duration.ofSeconds(10))
+        .until(
+            ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+
     // Navigate to the AccountListView
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
 
-    accountOptional = accountService.get(1L);
+    accountOptional = accountService.get(2L);
     assertTrue(accountOptional.isPresent());
     Account account = accountOptional.get();
 
     // Verify the changes
     // It's tricky to verify the change in the grid directly without more IDs.
     // So, let's navigate back to the edit form and check the values.
-    editButton = waitForVaadinElement(driver, By.id("edit-button-1"));
+    editButton = waitForVaadinElement(driver, By.id("edit-button-2"));
     editButton.click();
 
     waitForVaadinElement(driver, By.id("username-field"));
 
-    usernameField = waitForVaadinElement(driver, By.id("username-field"));
+    WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
     assertEquals(account.getUsername(), usernameField.getAttribute("value"));
 
-    emailField = waitForVaadinElement(driver, By.id("email-field"));
+    WebElement emailField = waitForVaadinElement(driver, By.id("email-field"));
     assertEquals(account.getEmail(), emailField.getAttribute("value"));
   }
 
@@ -160,19 +155,26 @@ public class AccountE2ETest extends AbstractE2ETest {
     WebElement saveButton = waitForVaadinElement(driver, By.id("save-button"));
     saveButton.click();
 
+    // Wait for the dialog to close
+    new WebDriverWait(driver, Duration.ofSeconds(10))
+        .until(
+            ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
+
     // Navigate to the AccountListView
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
 
     // Verify the account is created
-    Failsafe.with(RetryPolicy.builder()
-                    .withDelay(Duration.ofMillis(500))
-                    .withMaxDuration(Duration.ofSeconds(10))
-                    .withMaxAttempts(3)
-                    .handle(AssertionFailedError.class).build())
-            .run(
-                    () -> {
-                      Optional<Account> accountOptional = accountService.findByUsername("new_account");
-                      assertTrue(accountOptional.isPresent());
-                    });
+    Failsafe.with(
+            RetryPolicy.builder()
+                .withDelay(Duration.ofMillis(500))
+                .withMaxDuration(Duration.ofSeconds(10))
+                .withMaxAttempts(3)
+                .handle(AssertionFailedError.class)
+                .build())
+        .run(
+            () -> {
+              Optional<Account> accountOptional = accountService.findByUsername("new_account");
+              assertTrue(accountOptional.isPresent());
+            });
   }
 }

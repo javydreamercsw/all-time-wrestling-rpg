@@ -48,6 +48,7 @@ public class AccountListView extends Main {
     this.securityUtils = securityUtils;
 
     Button createButton = new Button("New Account", VaadinIcon.PLUS.create());
+    createButton.setId("new-account-button");
     createButton.addClickListener(
         e -> {
           AccountFormDialog dialog = new AccountFormDialog(accountService, new Account());

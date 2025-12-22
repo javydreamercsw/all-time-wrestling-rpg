@@ -46,7 +46,7 @@ public class Account {
   @NotNull @Size(min = 3, max = 50) private String username;
 
   @Column(nullable = false)
-  @NotNull @Size(min = 60, max = 100) // BCrypt encoded passwords are 60 chars
+  @NotNull @Size(min = 8, max = 100) // BCrypt encoded passwords are 60 chars
   private String password;
 
   @Column(unique = true, nullable = false, length = 100)

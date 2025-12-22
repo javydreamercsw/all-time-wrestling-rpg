@@ -31,9 +31,12 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.ValidationException;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AccountFormDialog extends Dialog {
 
+  private static final Logger LOG = LoggerFactory.getLogger(AccountFormDialog.class);
   private final AccountService accountService;
   private final Account account;
   private final BeanValidationBinder<Account> binder = new BeanValidationBinder<>(Account.class);
@@ -47,8 +50,14 @@ public class AccountFormDialog extends Dialog {
     FormLayout formLayout = new FormLayout();
     TextField username = new TextField("Username");
     username.setId("username-field");
+    if (account.getId() != null) {
+      username.setReadOnly(true);
+    }
     EmailField email = new EmailField("Email");
     email.setId("email-field");
+    if (account.getId() != null) {
+      email.setReadOnly(true);
+    }
     PasswordField password = new PasswordField("Password");
     password.setId("password-field");
     ComboBox<RoleName> role = new ComboBox<>("Role");
@@ -95,7 +104,7 @@ public class AccountFormDialog extends Dialog {
             accountService.update(this.account);
             close();
           } catch (ValidationException e) {
-            // ignore
+            LOG.error("Validation failed", e);
           }
         });
 
