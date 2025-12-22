@@ -72,6 +72,7 @@ import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.format.DateTimeFormatter;
@@ -120,8 +121,8 @@ public class ShowDetailView extends Main
   private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   private final WebClient.Builder webClientBuilder;
   private final Environment env;
-  private String referrer = "shows"; // Default referrer
-
+  private Button backButton;
+  private Registration backButtonListener;
   private H2 showTitle;
   private VerticalLayout contentLayout;
   private Long currentShowId;
@@ -169,7 +170,9 @@ public class ShowDetailView extends Main
   }
 
   private void initializeComponents() {
+
     setSizeFull();
+
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
@@ -178,29 +181,40 @@ public class ShowDetailView extends Main
         LumoUtility.Gap.MEDIUM);
 
     // Context-aware back button
-    Button backButton = createBackButton();
+
+    backButton = new Button("Back", new Icon(VaadinIcon.ARROW_LEFT));
+
     backButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
     showTitle = new H2("Show Details");
+
     showTitle.addClassNames(LumoUtility.Margin.NONE);
 
     HorizontalLayout headerLayout = new HorizontalLayout(backButton, showTitle);
+
     headerLayout.setAlignItems(HorizontalLayout.Alignment.CENTER);
+
     headerLayout.setSpacing(true);
 
     contentLayout = new VerticalLayout();
+
     contentLayout.setSizeFull();
+
     contentLayout.setSpacing(true);
+
     contentLayout.setPadding(false);
 
     add(new ViewToolbar("Show Details", ViewToolbar.group(headerLayout)));
+
     add(contentLayout);
   }
 
   @Override
   public void setParameter(BeforeEvent event, Long showId) {
+
     // Detect referrer from query parameters or referer header
-    this.referrer =
+
+    String referrer =
         event
             .getLocation()
             .getQueryParameters()
@@ -208,32 +222,48 @@ public class ShowDetailView extends Main
             .getOrDefault("ref", List.of("shows"))
             .get(0);
 
+    updateBackButton(referrer);
+
     this.currentShowId = showId; // Store the showId
 
     if (showId != null) {
+
       loadShow(showId);
+
     } else {
+
       showNotFound();
     }
   }
 
-  private Button createBackButton() {
+  private void updateBackButton(String referrer) {
+
     String buttonText;
+
     String navigationTarget =
         switch (referrer) {
           case "calendar" -> {
             buttonText = "Back to Calendar";
+
             yield "show-calendar";
           }
+
           default -> {
             buttonText = "Back to Shows";
+
             yield "show-list";
           }
         };
 
-    Button backButton = new Button(buttonText, new Icon(VaadinIcon.ARROW_LEFT));
-    backButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(navigationTarget)));
-    return backButton;
+    backButton.setText(buttonText);
+
+    if (backButtonListener != null) {
+
+      backButtonListener.remove();
+    }
+
+    backButtonListener =
+        backButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(navigationTarget)));
   }
 
   private void loadShow(Long showId) {
