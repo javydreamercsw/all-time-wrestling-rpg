@@ -28,7 +28,7 @@
     <jib.image.tags>${project.version}</jib.image.tags>
     <lombok.version>1.18.42</lombok.version>
     <surefireArgLine/>
-    <testcontainers.version>1.21.3</testcontainers.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
     <vaadin.version>24.9.7</vaadin.version>
   </properties>
 
