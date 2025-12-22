@@ -38,9 +38,9 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
 
-@Route("account/edit")
+@Route("account")
 @RolesAllowed("ADMIN")
-public class AccountFormView extends Main implements HasUrlParameter<String> {
+public class AccountFormView extends Main implements HasUrlParameter<Long> {
 
   private final AccountService accountService;
   private final RoleRepository roleRepository;
@@ -61,18 +61,14 @@ public class AccountFormView extends Main implements HasUrlParameter<String> {
   }
 
   @Override
-  public void setParameter(BeforeEvent event, String parameter) {
-    if (parameter.equalsIgnoreCase("new")) {
-      account = new Account();
+  public void setParameter(BeforeEvent event, Long parameter) {
+    Optional<Account> optionalAccount = accountService.get(parameter);
+    if (optionalAccount.isPresent()) {
+      account = optionalAccount.get();
     } else {
-      Optional<Account> optionalAccount = accountService.get(Long.parseLong(parameter));
-      if (optionalAccount.isPresent()) {
-        account = optionalAccount.get();
-      } else {
-        Notification.show("Account not found");
-        UI.getCurrent().navigate(AccountListView.class);
-        return;
-      }
+      Notification.show("Account not found");
+      UI.getCurrent().navigate(AccountListView.class);
+      return;
     }
     binder.readBean(account);
     // Don't show existing password

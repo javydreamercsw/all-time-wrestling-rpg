@@ -48,7 +48,7 @@ public class AccountListView extends Main {
     this.securityUtils = securityUtils;
 
     Button createButton = new Button("New Account", VaadinIcon.PLUS.create());
-    createButton.addClickListener(e -> UI.getCurrent().navigate(AccountFormView.class, "new"));
+    createButton.addClickListener(e -> UI.getCurrent().navigate("/account/new"));
 
     add(new ViewToolbar("Account List", ViewToolbar.group(createButton)));
 
@@ -70,8 +70,9 @@ public class AccountListView extends Main {
             account -> {
               Button editButton = new Button("Edit", VaadinIcon.EDIT.create());
               editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              editButton.setId("edit-button-" + account.getId());
               editButton.addClickListener(
-                  e -> UI.getCurrent().navigate("account/edit/" + account.getId()));
+                  e -> UI.getCurrent().navigate("/account/" + account.getId()));
               return editButton;
             })
         .setFlexGrow(0);

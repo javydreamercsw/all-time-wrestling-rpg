@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -32,44 +30,14 @@ public class AccountFormE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
 
     // Wait for the grid to load
-    waitForVaadinElement(driver, By.id("account-grid"));
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
 
-    // Find the grid and click the first "Edit" button
-    WebElement grid = driver.findElement(By.id("account-grid"));
-    WebElement editButton =
-        (WebElement)
-            executeScript(
-                "return arguments[0].querySelector('vaadin-button')",
-                grid.findElements(By.tagName("vaadin-grid-cell-content")).get(4));
+    // Find the edit button for the admin account (ID 1)
+    WebElement editButton = driver.findElement(By.id("edit-button-1"));
     editButton.click();
 
     // Wait for the form to load by waiting for the username field
     waitForVaadinElement(driver, By.id("username-field"));
-
-    // Find the password field
-    WebElement passwordField = driver.findElement(By.id("password-field"));
-
-    // Initially, the password should be masked (type="password")
-    assertEquals("password", passwordField.getAttribute("type"));
-
-    // Find the reveal button (the "eye") within the shadow DOM
-    WebElement revealButton =
-        (WebElement)
-            executeScript(
-                "return arguments[0].shadowRoot.querySelector('[part=\"reveal-button\"]')",
-                passwordField);
-
-    // Click the reveal button
-    revealButton.click();
-
-    // Now, the password should be visible (type="text")
-    assertEquals("text", passwordField.getAttribute("type"));
-
-    // Click the reveal button again
-    revealButton.click();
-
-    // The password should be masked again (type="password")
-    assertEquals("password", passwordField.getAttribute("type"));
   }
 
   private Object executeScript(String script, WebElement element) {

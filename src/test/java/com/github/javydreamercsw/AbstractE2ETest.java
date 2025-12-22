@@ -360,4 +360,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       log.error("Failed to save screenshot to: {}", filePath, e);
     }
   }
+
+  protected void savePageSource(@NonNull String filePath) {
+    try {
+      FileUtils.writeStringToFile(new File(filePath), driver.getPageSource(), "UTF-8");
+      log.info("Page source saved to: {}", filePath);
+    } catch (IOException e) {
+      log.error("Failed to save page source to: {}", filePath, e);
+    }
+  }
 }
