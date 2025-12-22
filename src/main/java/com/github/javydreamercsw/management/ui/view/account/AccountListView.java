@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.service.AccountService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -85,6 +86,39 @@ public class AccountListView extends Main {
             .withProperty("color", account -> account.isEnabled() ? "green" : "red");
 
     grid.addColumn(enabledRenderer).setHeader("Enabled").setSortable(true).setFlexGrow(0);
+    grid.addComponentColumn(
+            account -> {
+              Button deleteButton = new Button("Delete", VaadinIcon.TRASH.create());
+              deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
+              deleteButton.setId("delete-button-" + account.getId());
+              deleteButton.addClickListener(
+                  e -> {
+                    if (accountService.canDelete(account)) {
+                      ConfirmDialog confirmDialog = new ConfirmDialog();
+                      confirmDialog.setHeader("Confirm Delete");
+                      confirmDialog.setText("Are you sure you want to delete this account?");
+
+                      confirmDialog.setConfirmButton(
+                          "Delete",
+                          event -> {
+                            accountService.delete(account.getId());
+                            refreshGrid();
+                          });
+                      confirmDialog.setConfirmButtonTheme("error");
+                      confirmDialog.setCancelable(true);
+                      confirmDialog.open();
+                    } else {
+                      new ConfirmDialog(
+                              "Cannot Delete Account",
+                              "This account is associated with a wrestler and cannot be deleted.",
+                              "OK",
+                              null)
+                          .open();
+                    }
+                  });
+              return deleteButton;
+            })
+        .setFlexGrow(0);
   }
 
   private void refreshGrid() {

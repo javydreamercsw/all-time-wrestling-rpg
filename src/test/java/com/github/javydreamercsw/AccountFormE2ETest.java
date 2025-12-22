@@ -20,12 +20,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.service.AccountService;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -87,5 +91,37 @@ public class AccountFormE2ETest extends AbstractE2ETest {
 
     emailField = waitForVaadinElement(driver, By.id("email-field"));
     assertEquals(account.getEmail(), emailField.getAttribute("value"));
+  }
+
+  @Test
+  @WithMockUser(roles = {"ADMIN"})
+  public void testDeleteAccount() {
+    // Create an account to delete
+    Account account =
+        accountService.createAccount("delete_me", "password", "delete_me@atw.com", RoleName.VIEWER);
+
+    // Navigate to the AccountListView
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
+
+    // Wait for the grid to load
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+
+    // Find the delete button for the new account
+    WebElement deleteButton =
+        waitForVaadinElement(driver, By.id("delete-button-" + account.getId()));
+    deleteButton.click();
+
+    // Confirm the deletion
+    WebElement confirmButton =
+        waitForVaadinElement(
+            driver, By.xpath("//vaadin-confirm-dialog-overlay//vaadin-button[text()='Delete']"));
+    confirmButton.click();
+
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    wait.until(
+        ExpectedConditions.invisibilityOfElementLocated(By.id("delete-button-" + account.getId())));
+
+    // Verify the account is deleted
+    assertTrue(accountService.get(account.getId()).isEmpty());
   }
 }

@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class AccountService {
   private final AccountRepository accountRepository;
   private final RoleRepository roleRepository;
   @Lazy private final PasswordEncoder passwordEncoder;
+  private final WrestlerRepository wrestlerRepository;
 
   public Account createAccount(String username, String password, String email, RoleName roleName) {
     Role role =
@@ -89,5 +91,9 @@ public class AccountService {
 
   public Optional<Account> findByEmail(String email) {
     return accountRepository.findByEmail(email);
+  }
+
+  public boolean canDelete(Account account) {
+    return wrestlerRepository.findByAccountId(account.getId()).isEmpty();
   }
 }
