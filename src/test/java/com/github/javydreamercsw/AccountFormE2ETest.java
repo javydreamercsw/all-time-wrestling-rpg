@@ -48,8 +48,8 @@ public class AccountFormE2ETest extends AbstractE2ETest {
     // Wait for the grid to load
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
 
-    // Find the edit button for the account (ID 2)
-    WebElement editButton = driver.findElement(By.id("edit-button-"+id));
+    // Find the edit button for the account
+    WebElement editButton = waitForVaadinElement(driver, By.id("edit-button-" + id));
     editButton.click();
 
     // Edit the fields
@@ -79,8 +79,6 @@ public class AccountFormE2ETest extends AbstractE2ETest {
     // So, let's navigate back to the edit form and check the values.
     editButton = waitForVaadinElement(driver, By.id("edit-button-2"));
     editButton.click();
-
-    waitForVaadinElement(driver, By.id("username-field"));
 
     WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
     assertEquals(account.getUsername(), usernameField.getAttribute("value"));
