@@ -101,11 +101,11 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     String summaryText = "This is a test summary.";
 
     WebElement summaryArea = dialog.findElement(By.id("summary-text-area"));
-    summaryArea.sendKeys(summaryText);
+    summaryArea.sendKeys(summaryText, Keys.TAB);
     wait.until(ExpectedConditions.textToBePresentInElementValue(summaryArea, summaryText));
 
     WebElement narrationArea = dialog.findElement(By.id("narration-text-area"));
-    narrationArea.sendKeys(narrationText);
+    narrationArea.sendKeys(narrationText, Keys.TAB);
     wait.until(ExpectedConditions.textToBePresentInElementValue(narrationArea, narrationText));
 
     // Click the "Add Segment" button in the dialog
