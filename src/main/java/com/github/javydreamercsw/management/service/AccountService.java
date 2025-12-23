@@ -21,8 +21,13 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +39,8 @@ public class AccountService {
 
   private final AccountRepository accountRepository;
   private final RoleRepository roleRepository;
-  private final PasswordEncoder passwordEncoder;
+  @Lazy private final PasswordEncoder passwordEncoder;
+  private final WrestlerRepository wrestlerRepository;
 
   public Account createAccount(String username, String password, String email, RoleName roleName) {
     Role role =
@@ -42,7 +48,58 @@ public class AccountService {
             .findByName(roleName)
             .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
     Account account = new Account(username, passwordEncoder.encode(password), email);
-    account.setRoles(Set.of(role));
+    account.setRoles(new java.util.HashSet<>(Set.of(role)));
     return accountRepository.save(account);
+  }
+
+  public Optional<Account> get(Long id) {
+    return accountRepository.findById(id);
+  }
+
+  public Account update(Account entity) {
+    // Hash password if it has been changed
+    if (entity.getId() != null) {
+      accountRepository
+          .findById(entity.getId())
+          .ifPresent(
+              original -> {
+                if (!entity.getPassword().equals(original.getPassword())) {
+                  entity.setPassword(passwordEncoder.encode(entity.getPassword()));
+                }
+              });
+    } else {
+      entity.setPassword(passwordEncoder.encode(entity.getPassword()));
+    }
+    return accountRepository.save(entity);
+  }
+
+  public void delete(Long id) {
+    accountRepository.deleteById(id);
+  }
+
+  public Page<Account> list(Pageable pageable) {
+    return accountRepository.findAll(pageable);
+  }
+
+  public int count() {
+    return (int) accountRepository.count();
+  }
+
+  public Optional<Account> findByUsername(String username) {
+    return accountRepository.findByUsername(username);
+  }
+
+  public Optional<Account> findByEmail(String email) {
+    return accountRepository.findByEmail(email);
+  }
+
+  public boolean canDelete(Account account) {
+    return wrestlerRepository.findByAccountId(account.getId()).isEmpty();
+  }
+
+  public Role getRole(RoleName roleName) {
+    return roleRepository
+        .findByName(roleName)
+        .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
   }
 }

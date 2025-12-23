@@ -21,6 +21,7 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Main;
@@ -90,7 +91,11 @@ public class AdminView extends Main {
           }
         });
 
-    content.add(recalculateTiersButton);
+    Button manageAccountsButton = new Button("Manage Accounts");
+    manageAccountsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    manageAccountsButton.addClickListener(event -> UI.getCurrent().navigate("/account-list"));
+
+    content.add(recalculateTiersButton, manageAccountsButton);
     add(content);
   }
 }

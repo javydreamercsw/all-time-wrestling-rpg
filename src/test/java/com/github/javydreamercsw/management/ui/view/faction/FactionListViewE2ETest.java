@@ -198,8 +198,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(By.id("add-member-wrestler-combo")));
     Assertions.assertNotNull(wrestlerComboBox);
-    wrestlerComboBox.sendKeys(wrestler.getName());
-    wrestlerComboBox.sendKeys(Keys.ENTER);
+    selectFromVaadinComboBox(wrestlerComboBox, wrestler.getName());
 
     // Click the "Add Member" button
     WebElement addMemberButton =

@@ -126,8 +126,8 @@ public class ShowDetailView extends Main
   private H2 showTitle;
   private VerticalLayout contentLayout;
   private Long currentShowId;
-  private Show currentShow; // Store the current show object
-  private Grid<Segment> segmentsGrid; // Declare segmentsGrid as a class member
+  private Show currentShow;
+  private Grid<Segment> segmentsGrid;
 
   public ShowDetailView(
       ShowService showService,
@@ -170,7 +170,6 @@ public class ShowDetailView extends Main
   }
 
   private void initializeComponents() {
-
     setSizeFull();
 
     addClassNames(
@@ -181,39 +180,28 @@ public class ShowDetailView extends Main
         LumoUtility.Gap.MEDIUM);
 
     // Context-aware back button
-
     backButton = new Button("Back", new Icon(VaadinIcon.ARROW_LEFT));
-
     backButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
     showTitle = new H2("Show Details");
-
     showTitle.addClassNames(LumoUtility.Margin.NONE);
 
     HorizontalLayout headerLayout = new HorizontalLayout(backButton, showTitle);
-
     headerLayout.setAlignItems(HorizontalLayout.Alignment.CENTER);
-
     headerLayout.setSpacing(true);
 
     contentLayout = new VerticalLayout();
-
     contentLayout.setSizeFull();
-
     contentLayout.setSpacing(true);
-
     contentLayout.setPadding(false);
 
     add(new ViewToolbar("Show Details", ViewToolbar.group(headerLayout)));
-
     add(contentLayout);
   }
 
   @Override
   public void setParameter(BeforeEvent event, Long showId) {
-
     // Detect referrer from query parameters or referer header
-
     String referrer =
         event
             .getLocation()
@@ -223,42 +211,31 @@ public class ShowDetailView extends Main
             .get(0);
 
     updateBackButton(referrer);
-
     this.currentShowId = showId; // Store the showId
-
     if (showId != null) {
-
       loadShow(showId);
-
     } else {
-
       showNotFound();
     }
   }
 
   private void updateBackButton(String referrer) {
-
     String buttonText;
-
     String navigationTarget =
         switch (referrer) {
           case "calendar" -> {
             buttonText = "Back to Calendar";
-
             yield "show-calendar";
           }
 
           default -> {
             buttonText = "Back to Shows";
-
             yield "show-list";
           }
         };
 
     backButton.setText(buttonText);
-
     if (backButtonListener != null) {
-
       backButtonListener.remove();
     }
 
@@ -593,21 +570,17 @@ public class ShowDetailView extends Main
     segmentsLayout.addClassNames(LumoUtility.Width.FULL);
 
     // Always initialize segmentsGrid and its wrapper
-    if (segmentsGrid == null) {
-      segmentsGrid = createSegmentsGrid(segments);
-      segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
-      segmentsGrid.setId("segments-grid");
+    segmentsGrid = createSegmentsGrid(segments);
+    segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
+    segmentsGrid.setId("segments-grid");
 
-      // Wrap the grid in a Div to enable horizontal scrolling
-      Div gridWrapper = new Div(segmentsGrid);
-      gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
-      gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
-      gridWrapper.setId("segments-grid-wrapper");
-      segmentsLayout.add(gridWrapper);
-      segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
-    } else {
-      segmentsGrid.setItems(segments);
-    }
+    // Wrap the grid in a Div to enable horizontal scrolling
+    Div gridWrapper = new Div(segmentsGrid);
+    gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
+    gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
+    gridWrapper.setId("segments-grid-wrapper");
+    segmentsLayout.add(gridWrapper);
+    segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
 
     Span noSegmentsMessage = new Span("No segments scheduled for this show yet.");
     noSegmentsMessage.addClassNames(LumoUtility.TextColor.SECONDARY);

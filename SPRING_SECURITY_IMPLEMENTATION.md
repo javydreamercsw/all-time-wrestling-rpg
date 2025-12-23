@@ -156,25 +156,9 @@
 **Deliverable:** UI shows only permitted actions - COMPLETE!
 ---
 
-### Phase 5: Account Management 👥
-**Goal:** Allow admins to manage user accounts
+### Phase 5: Account Management 👥 ✅ COMPLETE!
 
-19. 🔨 Create `AccountService.java`
-20. 🔨 Create `AccountListView.java` (admin only):
-	- Grid with username, email, role, status, last login
-	- Create/Edit/Delete/Enable/Disable actions
-21. 🔨 Create `AccountFormDialog.java`:
-	- Fields: username, email, password, role
-	- Password validation
-	- Unique username/email validation
-22. 🔨 Create `ProfileView.java` (all users):
-	- View own details
-	- Change password
-	- Cannot change own role
-23. 🔨 Add account management to AdminView
-24. 🔨 Test account CRUD operations
-
-**Deliverable:** Admins can manage accounts, users can update profile
+**Deliverable:** Admins can manage accounts, users can update profile, and core account management components are implemented.
 
 ---
 
@@ -321,46 +305,42 @@ enum RoleName {
 ## Files to Create
 
 ### Domain Layer
-- [ ] `src/main/java/com/github/javydreamercsw/management/domain/account/Account.java`
-- [ ] `src/main/java/com/github/javydreamercsw/management/domain/account/AccountRepository.java`
-- [ ] `src/main/java/com/github/javydreamercsw/management/domain/account/Role.java`
-- [ ] `src/main/java/com/github/javydreamercsw/management/domain/account/RoleRepository.java`
-- [ ] `src/main/java/com/github/javydreamercsw/management/domain/account/RoleName.java`
+- [X] `src/main/java/com/github/javydreamercsw/management/domain/account/Account.java`
+- [X] `src/main/java/com/github/javydreamercsw/management/domain/account/AccountRepository.java`
+- [X] `src/main/java/com/github/javydreamercsw/management/domain/account/Role.java`
+- [X] `src/main/java/com/github/javydreamercsw/management/domain/account/RoleRepository.java`
+- [X] `src/main/java/com/github/javydreamercsw/management/domain/account/RoleName.java`
 - [ ] `src/main/java/com/github/javydreamercsw/management/domain/account/PasswordResetToken.java`
 
 ### Security Layer
-- [ ] `src/main/java/com/github/javydreamercsw/base/security/SecurityConfig.java`
+- [X] `src/main/java/com/github/javydreamercsw/base/security/SecurityConfig.java`
 - [ ] `src/main/java/com/github/javydreamercsw/base/security/CustomUserDetailsService.java`
-- [ ] `src/main/java/com/github/javydreamercsw/base/security/SecurityUtils.java`
-- [ ] `src/main/java/com/github/javydreamercsw/base/security/CustomUserDetails.java`
+- [X] `src/main/java/com/github/javydreamercsw/base/security/SecurityUtils.java`
+- [X] `src/main/java/com/github/javydreamercsw/base/security/CustomUserDetails.java`
 - [ ] `src/main/java/com/github/javydreamercsw/base/security/PasswordValidator.java`
 
 ### Service Layer
-- [ ] `src/main/java/com/github/javydreamercsw/management/service/AccountService.java`
 - [ ] `src/main/java/com/github/javydreamercsw/management/service/PasswordResetService.java`
 
 ### UI Layer
-- [ ] `src/main/java/com/github/javydreamercsw/base/ui/view/LoginView.java`
+- [X] `src/main/java/com/github/javydreamercsw/base/ui/view/LoginView.java`
 - [ ] `src/main/java/com/github/javydreamercsw/base/ui/view/AccessDeniedView.java`
-- [ ] `src/main/java/com/github/javydreamercsw/management/ui/view/account/AccountListView.java`
-- [ ] `src/main/java/com/github/javydreamercsw/management/ui/view/account/AccountFormDialog.java`
-- [ ] `src/main/java/com/github/javydreamercsw/management/ui/view/account/ProfileView.java`
 - [ ] `src/main/java/com/github/javydreamercsw/management/ui/view/account/ChangePasswordDialog.java`
 - [ ] `src/main/java/com/github/javydreamercsw/management/ui/view/ForgotPasswordView.java`
 - [ ] `src/main/java/com/github/javydreamercsw/management/ui/view/ResetPasswordView.java`
 
 ### Database Migrations
-- [ ] `src/main/resources/db/migration/V{next}_create_account_tables.sql`
-- [ ] `src/main/resources/db/migration/V{next}_insert_default_roles.sql`
-- [ ] `src/main/resources/db/migration/V{next}_insert_default_accounts.sql`
+- [X] `src/main/resources/db/migration/V{next}_create_account_tables.sql`
+- [X] `src/main/resources/db/migration/V{next}_insert_default_roles.sql`
+- [X] `src/main/resources/db/migration/V{next}_insert_default_accounts.sql`
 - [ ] `src/main/resources/db/migration/V{next}_create_password_reset_token_table.sql`
 
 ### Test Layer
 - [ ] `src/test/java/com/github/javydreamercsw/base/security/SecurityConfigTest.java`
 - [ ] `src/test/java/com/github/javydreamercsw/base/security/SecurityUtilsTest.java`
-- [ ] `src/test/java/com/github/javydreamercsw/management/service/AccountServiceTest.java`
+- [X] `src/test/java/com/github/javydreamercsw/management/service/AccountServiceTest.java`
 - [ ] `src/test/java/com/github/javydreamercsw/management/ui/view/LoginViewTest.java`
-- [ ] `src/test/java/com/github/javydreamercsw/base/security/TestSecurityConfig.java`
+- [X] `src/test/java/com/github/javydreamercsw/base/security/TestSecurityConfig.java`
 - [ ] `src/test/resources/test-accounts.sql`
 
 ---
@@ -405,22 +385,12 @@ enum RoleName {
 	- PLAYER sees limited buttons
 - ✅ Update all form views to check permissions before save
 - ✅ Test UI adapts to user role
-
-### In Progress
-- ⏳ Create `AccountService.java`
-- ⏳ Create `AccountListView.java` (admin only):
-	- Grid with username, email, role, status, last login
-	- Create/Edit/Delete/Enable/Disable actions
-- ⏳ Create `AccountFormDialog.java`:
-	- Fields: username, email, password, role
-	- Password validation
-	- Unique username/email validation
-- ⏳ Create `ProfileView.java` (all users):
-	- View own details
-	- Change password
-	- Cannot change own role
-- ⏳ Add account management to AdminView
-- ⏳ Test account CRUD operations
+- ✅ Created `AccountService.java`
+- ✅ Created `AccountListView.java` (admin only)
+- ✅ Created `AccountFormDialog.java`
+- ✅ Created `ProfileView.java` (all users)
+- ✅ Added account management to AdminView
+- ✅ Tested account CRUD operations
 
 ---
 

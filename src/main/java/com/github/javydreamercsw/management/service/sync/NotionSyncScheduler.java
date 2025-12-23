@@ -17,10 +17,12 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +35,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Scheduler service for automated Notion data synchronization. This service runs periodically to
- * sync data from Notion databases to local JSON files based on configuration settings.
+ *
+ * <p>sync data from Notion databases to local JSON files based on configuration settings.
  *
  * <p>Can be enabled/disabled via application properties: notion.sync.scheduler.enabled=true/false
  */
@@ -47,14 +50,19 @@ import org.springframework.stereotype.Service;
 public class NotionSyncScheduler {
 
   private final NotionSyncService notionSyncService;
+
   private final NotionSyncProperties syncProperties;
+
   private final EntityDependencyAnalyzer dependencyAnalyzer;
+
   private final BackupService backupService;
+
   private final SyncServiceDependencies syncServiceDependencies;
 
   /**
    * Gets the list of entities to sync using automatic dependency analysis. Analyzes entity
-   * relationships to determine the optimal sync order.
+   *
+   * <p>relationships to determine the optimal sync order.
    *
    * @return List of SyncEntityType in dependency order
    */
@@ -67,48 +75,55 @@ public class NotionSyncScheduler {
 
   /**
    * Performs automatic synchronization of all configured entities. The interval is configurable via
-   * notion.sync.scheduler.interval property.
+   *
+   * <p>notion.sync.scheduler.interval property.
    */
   @Scheduled(
       fixedRateString = "${notion.sync.scheduler.interval:3600000}",
       initialDelayString = "${notion.sync.scheduler.initial-delay:300000}")
   public void performScheduledSync() {
-    if (!syncProperties.isSchedulerEnabled() || !notionSyncService.isNotionHandlerAvailable()) {
-      log.debug("Notion sync scheduler is disabled, skipping scheduled sync");
-      return;
-    }
 
-    log.info("=== STARTING SCHEDULED NOTION SYNC ===");
+    GeneralSecurityUtils.runAsAdmin(
+        (Supplier<Void>)
+            () -> {
+              if (!syncProperties.isSchedulerEnabled()
+                  || !notionSyncService.isNotionHandlerAvailable()) {
+                log.debug("Notion sync scheduler is disabled, skipping scheduled sync");
+                return null;
+              }
 
-    try {
-      List<NotionSyncService.SyncResult> results = new ArrayList<>();
+              log.info("=== STARTING SCHEDULED NOTION SYNC ===");
+              try {
+                List<NotionSyncService.SyncResult> results = new ArrayList<>();
+                // Sync each entity in dependency order
+                for (SyncEntityType entity : getSyncEntities()) {
+                  try {
+                    NotionSyncService.SyncResult result =
+                        syncEntity(entity, SyncDirection.OUTBOUND);
+                    results.add(result);
+                    if (result.isSuccess()) {
+                      log.info(
+                          "✅ {} sync completed: {} items synchronized",
+                          entity,
+                          result.getSyncedCount());
+                    } else {
+                      log.error("❌ {} sync failed: {}", entity, result.getErrorMessage());
+                    }
+                  } catch (Exception e) {
+                    log.error("❌ Unexpected error syncing {}: {}", entity, e.getMessage(), e);
+                    results.add(
+                        NotionSyncService.SyncResult.failure(entity.getKey(), e.getMessage()));
+                  }
+                }
 
-      // Sync each entity in dependency order
-      for (SyncEntityType entity : getSyncEntities()) {
-        try {
-          NotionSyncService.SyncResult result = syncEntity(entity, SyncDirection.OUTBOUND);
-          results.add(result);
-
-          if (result.isSuccess()) {
-            log.info("✅ {} sync completed: {} items synchronized", entity, result.getSyncedCount());
-          } else {
-            log.error("❌ {} sync failed: {}", entity, result.getErrorMessage());
-          }
-
-        } catch (Exception e) {
-          log.error("❌ Unexpected error syncing {}: {}", entity, e.getMessage(), e);
-          results.add(NotionSyncService.SyncResult.failure(entity.getKey(), e.getMessage()));
-        }
-      }
-
-      // Log summary
-      logSyncSummary(results);
-
-    } catch (Exception e) {
-      log.error("❌ Critical error during scheduled sync", e);
-    }
-
-    log.info("=== SCHEDULED NOTION SYNC COMPLETED ===");
+                // Log summary
+                logSyncSummary(results);
+              } catch (Exception e) {
+                log.error("❌ Critical error during scheduled sync", e);
+              }
+              log.info("=== SCHEDULED NOTION SYNC COMPLETED ===");
+              return null;
+            });
   }
 
   /**
