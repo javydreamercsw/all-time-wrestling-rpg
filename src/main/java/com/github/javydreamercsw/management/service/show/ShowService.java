@@ -39,6 +39,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -212,11 +213,27 @@ public class ShowService {
     return showRepository.findByShowDateGreaterThanEqualOrderByShowDate(referenceDate, pageable);
   }
 
-  @PreAuthorize("isAuthenticated()")
-  public List<Show> getUpcomingShowsWithRelationships(int limit) {
-    LocalDate referenceDate = gameSettingService.getCurrentGameDate();
+  public List<Show> getUpcomingShowsWithRelationships(LocalDate referenceDate, int limit) {
     Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
     return showRepository.findUpcomingWithRelationships(referenceDate, pageable);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Show> getUpcomingShowsForWrestler(@NonNull Wrestler wrestler, int limit) {
+    LocalDate referenceDate = gameSettingService.getCurrentGameDate();
+    Sort sort = Sort.by("showDate").ascending();
+
+    // Step 1: Get show IDs using the native query with limit and offset
+    // For offset, we can assume 0 for the first page for now.
+    List<Long> showIds =
+        showRepository.findUpcomingShowIdsForWrestler(referenceDate, wrestler.getId(), limit, 0);
+
+    if (showIds.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    // Step 2: Fetch shows by IDs with relationships and apply sorting
+    return showRepository.findByIdsWithRelationships(showIds, sort);
   }
 
   /**

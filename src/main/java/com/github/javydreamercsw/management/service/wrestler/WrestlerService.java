@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
@@ -129,6 +130,11 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findByName(String name) {
     return wrestlerRepository.findByName(name);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Wrestler> findByAccount(@NonNull Account account) {
+    return wrestlerRepository.findByAccount(account);
   }
 
   @PreAuthorize("isAuthenticated()")

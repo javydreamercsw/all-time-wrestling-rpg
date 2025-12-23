@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -101,4 +102,27 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
   /** Find all external IDs. */
   @Query("SELECT s.externalId FROM Show s WHERE s.externalId IS NOT NULL")
   List<String> findAllExternalIds();
+
+  @Query(
+      value =
+          """
+          SELECT DISTINCT s.id FROM show s
+          JOIN segment seg ON seg.show_id = s.id
+          JOIN segment_participant sp ON sp.segment_id = seg.id
+          WHERE s.show_date >= :date AND sp.wrestler_id = :wrestlerId
+          ORDER BY s.show_date ASC
+          LIMIT :limit OFFSET :offset
+          """,
+      nativeQuery = true)
+  List<Long> findUpcomingShowIdsForWrestler(LocalDate date, Long wrestlerId, int limit, int offset);
+
+  @Query(
+      """
+      SELECT s FROM Show s
+      LEFT JOIN FETCH s.season
+      LEFT JOIN FETCH s.template t
+      LEFT JOIN FETCH t.showType
+      WHERE s.id IN :showIds
+      """)
+  List<Show> findByIdsWithRelationships(List<Long> showIds, Sort sort);
 }

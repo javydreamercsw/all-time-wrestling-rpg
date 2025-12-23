@@ -354,7 +354,8 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     upcomingTitle.addClassNames(LumoUtility.Margin.NONE);
     upcomingShowsPanel.add(upcomingTitle);
 
-    List<Show> upcomingShows = showService.getUpcomingShowsWithRelationships(10);
+    List<Show> upcomingShows =
+        showService.getUpcomingShowsWithRelationships(gameSettingService.getCurrentGameDate(), 10);
 
     if (upcomingShows.isEmpty()) {
       Span noShows = new Span("No upcoming shows scheduled");
