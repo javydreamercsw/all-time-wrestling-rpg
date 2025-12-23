@@ -21,6 +21,7 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
@@ -65,6 +66,9 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ShowService showService;
   private final ShowPlanningService showPlanningService;
   private final ShowPlanningAiService showPlanningAiService;
+  private final WrestlerService wrestlerService;
+  private final TitleService titleService;
+  private final WrestlerRepository wrestlerRepository;
   private final ObjectMapper objectMapper;
 
   private final ComboBox<Show> showComboBox;
@@ -81,12 +85,16 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       ShowPlanningService showPlanningService,
       ShowPlanningAiService showPlanningAiService,
       WrestlerService wrestlerService,
+      WrestlerRepository wrestlerRepository,
       TitleService titleService,
       ObjectMapper objectMapper) {
 
     this.showService = showService;
     this.showPlanningService = showPlanningService;
     this.showPlanningAiService = showPlanningAiService;
+    this.wrestlerService = wrestlerService;
+    this.wrestlerRepository = wrestlerRepository;
+    this.titleService = titleService;
     this.objectMapper = objectMapper;
 
     showComboBox = new ComboBox<>("Select Show");
@@ -151,7 +159,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                     new EditSegmentDialog(
                         segment,
                         wrestlerService,
-                        titleService, // Pass titleService
+                        wrestlerRepository,
+                        titleService,
                         () -> proposedSegmentsGrid.getDataProvider().refreshAll());
                 dialog.open();
               });

@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -55,6 +56,9 @@ public class RivalryListView extends Main {
 
   private final RivalryService rivalryService;
   private final RivalryRepository rivalryRepository;
+  private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
+  private final SecurityUtils securityUtils;
 
   final Grid<Rivalry> rivalryGrid;
 
@@ -62,20 +66,24 @@ public class RivalryListView extends Main {
       @NonNull RivalryService rivalryService,
       @NonNull RivalryRepository rivalryRepository,
       @NonNull WrestlerService wrestlerService,
+      @NonNull WrestlerRepository wrestlerRepository,
       @NonNull SecurityUtils securityUtils) {
     this.rivalryService = rivalryService;
     this.rivalryRepository = rivalryRepository;
+    this.wrestlerService = wrestlerService;
+    this.wrestlerRepository = wrestlerRepository;
+    this.securityUtils = securityUtils;
 
     ComboBox<Wrestler> wrestler1ComboBox = new ComboBox<>("Wrestler 1");
     wrestler1ComboBox.setItems(
-        wrestlerService.findAll().stream()
+        wrestlerRepository.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
     wrestler1ComboBox.setItemLabelGenerator(Wrestler::getName);
 
     ComboBox<Wrestler> wrestler2ComboBox = new ComboBox<>("Wrestler 2");
     wrestler2ComboBox.setItems(
-        wrestlerService.findAll().stream()
+        wrestlerRepository.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
     wrestler2ComboBox.setItemLabelGenerator(Wrestler::getName);

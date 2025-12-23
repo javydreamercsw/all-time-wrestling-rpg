@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.component;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -41,8 +42,10 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.router.RouteParameters;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class WrestlerActionMenu extends MenuBar {
+  private final AccountService accountService;
 
   public WrestlerActionMenu(
       @NonNull Wrestler wrestler,
@@ -50,7 +53,9 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull InjuryService injuryService,
       @NonNull Runnable refreshProvider,
       boolean isProfileView,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull SecurityUtils securityUtils,
+      @NonNull @Qualifier("baseAccountService") AccountService accountService) {
+    this.accountService = accountService;
     addThemeVariants(MenuBarVariant.LUMO_PRIMARY);
     MenuItem menuItem = addItem("Actions");
     SubMenu subMenu = menuItem.getSubMenu();
@@ -70,7 +75,8 @@ public class WrestlerActionMenu extends MenuBar {
             "Edit",
             e -> {
               WrestlerDialog dialog =
-                  new WrestlerDialog(wrestlerService, wrestler, refreshProvider, securityUtils);
+                  new WrestlerDialog(
+                      wrestlerService, accountService, wrestler, refreshProvider, securityUtils);
               dialog.open();
             });
     editItem.addComponentAsFirst(new Icon(VaadinIcon.EDIT));
@@ -107,16 +113,20 @@ public class WrestlerActionMenu extends MenuBar {
               confirmButton.addClickListener(
                   event -> {
                     if (fanAmount.getValue() != null) {
-                      wrestlerService.awardFans(wrestler.getId(), fanAmount.getValue().longValue());
-                      refreshProvider.run();
-                      Notification.show(
-                              "Added "
-                                  + fanAmount.getValue().longValue()
-                                  + " fans to "
-                                  + wrestler.getName(),
-                              3000,
-                              Notification.Position.BOTTOM_END)
-                          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                      wrestlerService
+                          .awardFans(wrestler.getId(), fanAmount.getValue().longValue())
+                          .ifPresent(
+                              w -> {
+                                refreshProvider.run();
+                                Notification.show(
+                                        "Added "
+                                            + fanAmount.getValue().longValue()
+                                            + " fans to "
+                                            + wrestler.getName(),
+                                        3000,
+                                        Notification.Position.BOTTOM_END)
+                                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                              });
                       dialog.close();
                     }
                   });
@@ -141,17 +151,20 @@ public class WrestlerActionMenu extends MenuBar {
               confirmButton.addClickListener(
                   event -> {
                     if (fanAmount.getValue() != null) {
-                      wrestlerService.awardFans(
-                          wrestler.getId(), -fanAmount.getValue().longValue());
-                      refreshProvider.run();
-                      Notification.show(
-                              "Removed "
-                                  + fanAmount.getValue().longValue()
-                                  + " fans from "
-                                  + wrestler.getName(),
-                              3000,
-                              Notification.Position.BOTTOM_END)
-                          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                      wrestlerService
+                          .awardFans(wrestler.getId(), -fanAmount.getValue().longValue())
+                          .ifPresent(
+                              w -> {
+                                refreshProvider.run();
+                                Notification.show(
+                                        "Removed "
+                                            + fanAmount.getValue().longValue()
+                                            + " fans from "
+                                            + wrestler.getName(),
+                                        3000,
+                                        Notification.Position.BOTTOM_END)
+                                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                              });
                       dialog.close();
                     }
                   });
@@ -168,11 +181,17 @@ public class WrestlerActionMenu extends MenuBar {
         subMenu.addItem(
             "Add Bump",
             e -> {
-              wrestlerService.addBump(wrestler.getId());
-              refreshProvider.run();
-              Notification.show(
-                      "Added bump to " + wrestler.getName(), 3000, Notification.Position.BOTTOM_END)
-                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+              wrestlerService
+                  .addBump(wrestler.getId())
+                  .ifPresent(
+                      w -> {
+                        refreshProvider.run();
+                        Notification.show(
+                                "Added bump to " + wrestler.getName(),
+                                3000,
+                                Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                      });
             });
     addBumpItem.setId("add-bump-" + wrestler.getId());
     addBumpItem.addComponentAsFirst(new Icon(VaadinIcon.PLUS_CIRCLE));
@@ -182,13 +201,17 @@ public class WrestlerActionMenu extends MenuBar {
         subMenu.addItem(
             "Heal Bump",
             e -> {
-              wrestlerService.healBump(wrestler.getId());
-              refreshProvider.run();
-              Notification.show(
-                      "Healed bump for " + wrestler.getName(),
-                      3000,
-                      Notification.Position.BOTTOM_END)
-                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+              wrestlerService
+                  .healBump(wrestler.getId())
+                  .ifPresent(
+                      w -> {
+                        refreshProvider.run();
+                        Notification.show(
+                                "Healed bump for " + wrestler.getName(),
+                                3000,
+                                Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                      });
             });
     healBump.addComponentAsFirst(new Icon(VaadinIcon.HEART));
     healBump.setId("heal-bump-" + wrestler.getId());

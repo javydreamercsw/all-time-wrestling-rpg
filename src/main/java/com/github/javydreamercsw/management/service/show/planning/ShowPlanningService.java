@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -63,6 +64,7 @@ public class ShowPlanningService {
       segmentSummaryService;
   private final SegmentTypeService segmentTypeService;
   private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
   private final FactionService factionService;
   private final ApplicationEventPublisher eventPublisher;
 
@@ -142,7 +144,7 @@ public class ShowPlanningService {
     context.setChampionships(championships);
 
     // Get all wrestlers
-    List<Wrestler> allWrestlers = wrestlerService.findAll();
+    List<Wrestler> allWrestlers = wrestlerRepository.findAll();
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);
 
@@ -186,7 +188,7 @@ public class ShowPlanningService {
       segmentTypeService.findByName(proposedSegment.getType()).ifPresent(segment::setSegmentType);
 
       for (String participantName : proposedSegment.getParticipants()) {
-        wrestlerService.findByName(participantName).ifPresent(segment::addParticipant);
+        wrestlerRepository.findByName(participantName).ifPresent(segment::addParticipant);
       }
 
       segmentsToSave.add(segment);

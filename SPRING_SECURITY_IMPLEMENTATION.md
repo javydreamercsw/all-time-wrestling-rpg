@@ -175,18 +175,21 @@
 	- Updated `ShowCalendarView` to use `GameSettingService.getCurrentGameDate()` for initial display and the "Today" button.
 	- Updated `ShowService` to use `GameSettingService.getCurrentGameDate()` for `getUpcomingShows` methods.
 	- Reverted unnecessary changes to test files (`ShowStyleUIIntegrationTest.java`, `FullShowLifecycleE2ETest.java`, `ShowControllerTest.java`, `SegmentAdjudicationServiceIT.java`).
-26. 🔨 **Plan `BookerView` Dashboard**:
+26. ✅ **Implement `PlayerView` Dashboard**:
+	- Implemented basic dashboard layout with sections for:
+		- **My Wrestler Profile summary**: Displays player's wrestler name and tier.
+		- **My Upcoming Matches**: Lists upcoming shows where the player's wrestler is participating, using `ShowService.getUpcomingShowsForWrestler()`.
+		- **My Active Rivalries**: Lists active rivalries for the player's wrestler using `RivalryService.getRivalriesForWrestler()`.
+		- **My Inbox summary**: Displays recent unread inbox items for the player's wrestler using `InboxService.getInboxItemsForWrestler()`.
+	- Injected necessary services: `WrestlerService`, `ShowService`, `RivalryService`, `InboxService`, `SecurityUtils`, and `AccountService`.
+	- Added `getInboxItemsForWrestler` method to `InboxService`.
+	- Added `findUpcomingShowsForWrestler` query to `ShowRepository` and corresponding method in `ShowService`.
+27. 🔨 **Plan `BookerView` Dashboard**:
 	- Layout design with sections for:
 		- Upcoming Shows
 		- Active Rivalries
 		- Roster Overview
 		- Quick Actions (Create Show, Wrestler, Rivalry)
-27. 🔨 **Plan `PlayerView` Dashboard**:
-	- Layout design focused on the player's wrestler:
-		- My Wrestler Profile summary
-		- My Upcoming Matches
-		- My Active Rivalries
-		- My Inbox summary
 28. 🔨 **Component Breakdown**:
 	- List the new UI components required for these views.
 	- Plan the data flow and service methods needed.

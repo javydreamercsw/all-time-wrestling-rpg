@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -44,15 +45,17 @@ public class TitleFormDialog extends Dialog {
 
   private final Title title;
   private final Binder<Title> binder = new Binder<>(Title.class);
+  private final WrestlerRepository wrestlerRepository;
 
   public TitleFormDialog(
       @NonNull TitleService titleService,
       @NonNull WrestlerService wrestlerService,
+      @NonNull WrestlerRepository wrestlerRepository,
       @NonNull Title title,
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
     this.title = title;
-
+    this.wrestlerRepository = wrestlerRepository;
     TextField name = new TextField("Name");
     name.setReadOnly(!securityUtils.canEdit());
     TextArea description = new TextArea("Description");
@@ -85,7 +88,7 @@ public class TitleFormDialog extends Dialog {
         () -> {
           var selected = champion.getValue();
           List<Wrestler> eligible =
-              wrestlerService.findAll().stream()
+              wrestlerRepository.findAll().stream()
                   .filter(w -> titleService.isWrestlerEligible(w, title))
                   .sorted(Comparator.comparing(Wrestler::getName))
                   .collect(Collectors.toList());

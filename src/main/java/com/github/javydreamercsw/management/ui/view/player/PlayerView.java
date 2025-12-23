@@ -60,6 +60,7 @@ import jakarta.annotation.security.RolesAllowed;
 import java.util.Collections;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 @Route(value = "player", layout = MainLayout.class)
 @PageTitle("Player Dashboard | ATW RPG")
@@ -82,7 +83,7 @@ public class PlayerView extends VerticalLayout {
       RivalryService rivalryService,
       InboxService inboxService,
       SecurityUtils securityUtils,
-      AccountService accountService) {
+      @Qualifier("managementAccountService") AccountService accountService) {
     this.wrestlerService = wrestlerService;
     this.showService = showService;
     this.rivalryService = rivalryService;

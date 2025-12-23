@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRep
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
@@ -65,6 +66,7 @@ public class ShowService {
   private final ApplicationEventPublisher eventPublisher;
   private final RivalryService rivalryService;
   private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
   private final GameSettingService gameSettingService;
 
   ShowService(
@@ -78,6 +80,7 @@ public class ShowService {
       ApplicationEventPublisher eventPublisher,
       RivalryService rivalryService,
       WrestlerService wrestlerService,
+      WrestlerRepository wrestlerRepository,
       GameSettingService gameSettingService) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
@@ -89,6 +92,7 @@ public class ShowService {
     this.eventPublisher = eventPublisher;
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
+    this.wrestlerRepository = wrestlerRepository;
     this.gameSettingService = gameSettingService;
   }
 
@@ -422,7 +426,7 @@ public class ShowService {
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getNonParticipatingWrestlers(
       @NonNull List<Wrestler> participatingWrestlers) {
-    List<Wrestler> allWrestlers = new ArrayList<>(wrestlerService.findAll());
+    List<Wrestler> allWrestlers = new ArrayList<>(wrestlerRepository.findAll());
     allWrestlers.removeAll(participatingWrestlers);
     return allWrestlers;
   }
