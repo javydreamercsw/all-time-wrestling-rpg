@@ -32,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -88,15 +89,6 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
 
     // Fill in the form
     Assertions.assertNotNull(dialog);
-    WebElement segmentTypeComboBox = dialog.findElement(By.id("segment-type-combo-box"));
-    segmentTypeComboBox.sendKeys("Singles Match", Keys.RETURN);
-
-    WebElement wrestlersComboBox = dialog.findElement(By.id("wrestlers-combo-box"));
-    clickElement(wrestlersComboBox);
-
-    wrestlersComboBox.sendKeys("Wrestler 1", Keys.RETURN);
-    wrestlersComboBox.sendKeys("Wrestler 2", Keys.RETURN);
-
     String narrationText = "This is a test narration.";
     String summaryText = "This is a test summary.";
 
@@ -108,6 +100,15 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     narrationArea.sendKeys(narrationText, Keys.TAB);
     wait.until(ExpectedConditions.textToBePresentInElementValue(narrationArea, narrationText));
 
+    WebElement segmentTypeComboBox = dialog.findElement(By.id("segment-type-combo-box"));
+    segmentTypeComboBox.sendKeys("Singles Match", Keys.RETURN);
+
+    WebElement wrestlersComboBox = dialog.findElement(By.id("wrestlers-combo-box"));
+    clickElement(wrestlersComboBox);
+
+    wrestlersComboBox.sendKeys("Wrestler 1", Keys.RETURN);
+    wrestlersComboBox.sendKeys("Wrestler 2", Keys.RETURN);
+
     // Click the "Add Segment" button in the dialog
     WebElement addSegmentDialogButton = dialog.findElement(By.id("add-segment-save-button"));
     clickElement(addSegmentDialogButton);
@@ -118,7 +119,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
                 .withDelay(Duration.ofMillis(500))
                 .withMaxDuration(Duration.ofSeconds(10))
                 .withMaxAttempts(3)
-                .handle(AssertionFailedError.class)
+                .handle(AssertionFailedError.class, NoSuchElementException.class)
                 .onRetry(
                     e -> // Navigate to the Show Detail view
                     driver.get(
@@ -130,15 +131,10 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
                 .build())
         .get(
             () -> {
-              WebElement segmentGrid = driver.findElement(By.id("segments-grid-wrapper"));
+              WebElement segmentGrid =
+                  wait.until(
+                      ExpectedConditions.presenceOfElementLocated(By.id("segments-grid-wrapper")));
               wait.until(ExpectedConditions.visibilityOfAllElements(segmentGrid));
-              // Add explicit waits for the text to be present in the grid
-              wait.until(
-                  ExpectedConditions.textToBePresentInElementLocated(
-                      By.id("segments-grid"), narrationText));
-              wait.until(
-                  ExpectedConditions.textToBePresentInElementLocated(
-                      By.id("segments-grid"), summaryText));
               WebElement refreshedGrid = segmentGrid.findElement(By.id("segments-grid"));
               assertTrue(refreshedGrid.getText().contains(narrationText));
               assertTrue(refreshedGrid.getText().contains(summaryText));

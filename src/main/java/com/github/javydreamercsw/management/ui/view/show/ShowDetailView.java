@@ -570,21 +570,17 @@ public class ShowDetailView extends Main
     segmentsLayout.addClassNames(LumoUtility.Width.FULL);
 
     // Always initialize segmentsGrid and its wrapper
-    if (segmentsGrid == null) {
-      segmentsGrid = createSegmentsGrid(segments);
-      segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
-      segmentsGrid.setId("segments-grid");
+    segmentsGrid = createSegmentsGrid(segments);
+    segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
+    segmentsGrid.setId("segments-grid");
 
-      // Wrap the grid in a Div to enable horizontal scrolling
-      Div gridWrapper = new Div(segmentsGrid);
-      gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
-      gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
-      gridWrapper.setId("segments-grid-wrapper");
-      segmentsLayout.add(gridWrapper);
-      segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
-    } else {
-      segmentsGrid.setItems(segments);
-    }
+    // Wrap the grid in a Div to enable horizontal scrolling
+    Div gridWrapper = new Div(segmentsGrid);
+    gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
+    gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
+    gridWrapper.setId("segments-grid-wrapper");
+    segmentsLayout.add(gridWrapper);
+    segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
 
     Span noSegmentsMessage = new Span("No segments scheduled for this show yet.");
     noSegmentsMessage.addClassNames(LumoUtility.TextColor.SECONDARY);
