@@ -113,7 +113,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     clickElement(addSegmentDialogButton);
 
     // Wait for the dialog to go away
-    wait.until(ExpectedConditions.invisibilityOfAllElements(dialog));
+    wait.until(ExpectedConditions.invisibilityOf(dialog));
 
     // Wait for the grid to update and check for the new segment's narration and summary
     Failsafe.with(

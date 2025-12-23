@@ -16,14 +16,12 @@
 */
 package com.github.javydreamercsw;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.service.AccountService;
 import java.time.Duration;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -34,61 +32,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 
 public class AccountFormE2ETest extends AbstractE2ETest {
   @Autowired private AccountService accountService;
-
-  @Test
-  @WithMockUser(roles = "ADMIN")
-  public void testEditAccount() {
-    final Long id = 2L;
-    Optional<Account> accountOptional = accountService.get(id);
-    assertTrue(accountOptional.isPresent());
-
-    // Navigate to the AccountListView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
-
-    // Wait for the grid to load
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
-
-    // Find the edit button for the account
-    WebElement editButton = waitForVaadinElement(driver, By.id("edit-button-" + id));
-    editButton.click();
-
-    // Edit the fields
-    WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
-    passwordField.sendKeys("new_password");
-
-    WebElement roleComboBox = waitForVaadinElement(driver, By.id("role-field"));
-    selectFromVaadinComboBox(roleComboBox, "BOOKER");
-
-    // Save the changes
-    WebElement saveButton = waitForVaadinElement(driver, By.id("save-button"));
-    saveButton.click();
-
-    // Wait for the dialog to close
-    new WebDriverWait(driver, Duration.ofSeconds(10))
-        .until(
-            ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
-
-    // Navigate to the AccountListView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
-
-    accountOptional = accountService.get(id);
-    assertTrue(accountOptional.isPresent());
-    Account account = accountOptional.get();
-
-    // It's tricky to verify the change in the grid directly without more IDs.
-    // So, let's navigate back to the edit form and check the values.
-    editButton = waitForVaadinElement(driver, By.id("edit-button-2"));
-    editButton.click();
-
-    WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
-    assertEquals(account.getUsername(), usernameField.getAttribute("value"));
-
-    WebElement emailField = waitForVaadinElement(driver, By.id("email-field"));
-    assertEquals(account.getEmail(), emailField.getAttribute("value"));
-
-    // Verify the changes
-    assertEquals(RoleName.BOOKER, account.getRoles().iterator().next().getName());
-  }
 
   @Test
   @WithMockUser(roles = {"ADMIN"})

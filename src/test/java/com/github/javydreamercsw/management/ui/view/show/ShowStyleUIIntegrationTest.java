@@ -30,6 +30,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinSession;
 import java.time.Clock;
 import java.time.Instant;
@@ -154,7 +155,7 @@ class ShowStyleUIIntegrationTest extends ManagementIntegrationTest {
     UI.setCurrent(ui);
     VaadinSession session = mock(VaadinSession.class);
     when(session.getLocale()).thenReturn(Locale.US);
-    when(session.getService()).thenReturn(mock(com.vaadin.flow.server.VaadinService.class));
+    when(session.getService()).thenReturn(mock(VaadinService.class));
     ui.getInternals().setSession(session);
 
     ShowCalendarView showCalendarView = new ShowCalendarView(showService);
