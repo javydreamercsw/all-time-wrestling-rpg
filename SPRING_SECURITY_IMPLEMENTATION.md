@@ -162,53 +162,86 @@
 
 ---
 
-### Phase 6: Password Management 🔐
+### Phase 6: Booker and Player View Design 🎨
+**Goal:** Design and plan the implementation of the Booker and Player specific views.
+
+25. ✅ **Implement Game Date Management**:
+	- Created `GameSetting` entity and `GameSettingRepository`.
+	- Created `V24__Create_Game_Setting_Table.sql` migration.
+	- Modified `DataInitializer` to set initial `current_game_date` using `LocalDate.now()`.
+	- Created `GameSettingService` to manage game settings and provide `getCurrentGameDate()`.
+	- Created `GameSettingsView` (`/game-settings`) for ADMINs to view and modify the current in-game date.
+	- Added menu item for `GameSettingsView` under "Configuration" (ADMIN only).
+	- Updated `ShowCalendarView` to use `GameSettingService.getCurrentGameDate()` for initial display and the "Today" button.
+	- Updated `ShowService` to use `GameSettingService.getCurrentGameDate()` for `getUpcomingShows` methods.
+	- Reverted unnecessary changes to test files (`ShowStyleUIIntegrationTest.java`, `FullShowLifecycleE2ETest.java`, `ShowControllerTest.java`, `SegmentAdjudicationServiceIT.java`).
+26. 🔨 **Plan `BookerView` Dashboard**:
+	- Layout design with sections for:
+		- Upcoming Shows
+		- Active Rivalries
+		- Roster Overview
+		- Quick Actions (Create Show, Wrestler, Rivalry)
+27. 🔨 **Plan `PlayerView` Dashboard**:
+	- Layout design focused on the player's wrestler:
+		- My Wrestler Profile summary
+		- My Upcoming Matches
+		- My Active Rivalries
+		- My Inbox summary
+28. 🔨 **Component Breakdown**:
+	- List the new UI components required for these views.
+	- Plan the data flow and service methods needed.
+
+**Deliverable:** A clear design and implementation plan for the Booker and Player views.
+
+---
+
+### Phase 7: Password Management 🔐
 **Goal:** Password reset and security features
 
-25. 🔨 Implement password strength validation
-26. 🔨 Add "Change Password" functionality
-27. 🔨 Implement "Forgot Password" flow:
+28. 🔨 Implement password strength validation
+29. 🔨 Add "Change Password" functionality
+30. 🔨 Implement "Forgot Password" flow:
 	- Password reset token generation
 	- Token storage (in database)
 	- Reset password view
 	- (Email integration can come later)
-28. 🔨 Configure account lockout after failed login attempts
-29. 🔨 Test password features
+31. 🔨 Configure account lockout after failed login attempts
+32. 🔨 Test password features
 
 **Deliverable:** Password management and security features working
 
 ---
 
-### Phase 7: Testing & Documentation 🧪
+### Phase 8: Testing & Documentation 🧪
 **Goal:** Comprehensive test coverage
 
-30. 🔨 Create security test fixtures:
+33. 🔨 Create security test fixtures:
 	- Test accounts for each role
 	- `@WithMockUser` test utilities
-31. 🔨 Write security tests:
+34. 🔨 Write security tests:
 	- View access tests
 	- Method security tests
 	- Login/logout tests
 	- Account management tests
-32. 🔨 Update documentation:
+35. 🔨 Update documentation:
 	- README security section
 	- User guide for account management
 	- Developer guide for adding secured views
-33. 🔨 Test complete flows with all roles
+36. 🔨 Test complete flows with all roles
 
 **Deliverable:** Fully tested and documented security system
 
 ---
 
-### Phase 8: Production Hardening 🛡️
+### Phase 9: Production Hardening 🛡️
 **Goal:** Production-ready security
 
-34. 🔨 Configure HTTPS enforcement for production profile
-35. 🔨 Set secure session cookies
-36. 🔨 Configure CORS if needed
-37. 🔨 Review and test security headers
-38. 🔨 Perform security audit
-39. 🔨 Load testing with authentication
+37. 🔨 Configure HTTPS enforcement for production profile
+38. 🔨 Set secure session cookies
+39. 🔨 Configure CORS if needed
+40. 🔨 Review and test security headers
+41. 🔨 Perform security audit
+42. 🔨 Load testing with authentication
 
 **Deliverable:** Production-ready security configuration
 

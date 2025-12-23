@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -63,6 +64,7 @@ public class ShowService {
   private final ApplicationEventPublisher eventPublisher;
   private final RivalryService rivalryService;
   private final WrestlerService wrestlerService;
+  private final GameSettingService gameSettingService;
 
   ShowService(
       ShowRepository showRepository,
@@ -74,7 +76,8 @@ public class ShowService {
       SegmentRepository segmentRepository,
       ApplicationEventPublisher eventPublisher,
       RivalryService rivalryService,
-      WrestlerService wrestlerService) {
+      WrestlerService wrestlerService,
+      GameSettingService gameSettingService) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -85,6 +88,7 @@ public class ShowService {
     this.eventPublisher = eventPublisher;
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
+    this.gameSettingService = gameSettingService;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -203,22 +207,14 @@ public class ShowService {
    */
   @PreAuthorize("isAuthenticated()")
   public List<Show> getUpcomingShows(int limit) {
-    return getUpcomingShows(LocalDate.now(clock), limit);
-  }
-
-  @PreAuthorize("isAuthenticated()")
-  public List<Show> getUpcomingShows(LocalDate referenceDate, int limit) {
+    LocalDate referenceDate = gameSettingService.getCurrentGameDate();
     Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
     return showRepository.findByShowDateGreaterThanEqualOrderByShowDate(referenceDate, pageable);
   }
 
   @PreAuthorize("isAuthenticated()")
   public List<Show> getUpcomingShowsWithRelationships(int limit) {
-    return getUpcomingShowsWithRelationships(LocalDate.now(clock), limit);
-  }
-
-  @PreAuthorize("isAuthenticated()")
-  public List<Show> getUpcomingShowsWithRelationships(LocalDate referenceDate, int limit) {
+    LocalDate referenceDate = gameSettingService.getCurrentGameDate();
     Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
     return showRepository.findUpcomingWithRelationships(referenceDate, pageable);
   }

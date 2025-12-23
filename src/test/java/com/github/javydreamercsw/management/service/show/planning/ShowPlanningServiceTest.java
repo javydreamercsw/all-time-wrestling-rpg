@@ -220,8 +220,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
     upcomingPle.setShowDate(futureShowDate.plusWeeks(2));
     upcomingPle.setDescription("Test PLE Description");
 
-    when(showService.getUpcomingShows(eq(futureShowDate), anyInt()))
-        .thenReturn(Collections.singletonList(upcomingPle));
+    when(showService.getUpcomingShows(anyInt())).thenReturn(Collections.singletonList(upcomingPle));
 
     // Mock other dependencies to avoid NullPointerExceptions
     when(segmentRepository.findBySegmentDateBetween(any(), any()))
@@ -278,8 +277,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
     when(upcomingPle.getShowDate()).thenReturn(futureShowDate.plusWeeks(2));
     when(upcomingPle.getDescription()).thenReturn("Test PLE Description");
     when(upcomingPle.isPremiumLiveEvent()).thenReturn(true);
-    when(showService.getUpcomingShows(eq(futureShowDate), anyInt()))
-        .thenReturn(Collections.singletonList(upcomingPle));
+    when(showService.getUpcomingShows(anyInt())).thenReturn(Collections.singletonList(upcomingPle));
 
     // Mock segments within 30 days before futureShowDate
     Segment segment1 = new Segment();
@@ -330,7 +328,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
     assertTrue(context.getRecentSegments().stream().anyMatch(s -> s.getId().equals(2L)));
 
     // Verify that getUpcomingShows was called with the correct reference date
-    verify(showService, times(1)).getUpcomingShows(eq(futureShowDate), anyInt());
+    verify(showService, times(1)).getUpcomingShows(anyInt());
   }
 
   @Test

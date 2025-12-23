@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
@@ -44,6 +45,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +74,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
   private final CardService cardService;
   private final TitleService titleService;
   private final DeckService deckService;
+  private final GameSettingService gameSettingService;
 
   @Autowired
   public DataInitializer(
@@ -84,7 +87,8 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       CardSetService cardSetService,
       CardService cardService,
       TitleService titleService,
-      DeckService deckService) {
+      DeckService deckService,
+      GameSettingService gameSettingService) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
     this.wrestlerService = wrestlerService;
@@ -95,11 +99,13 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
     this.cardService = cardService;
     this.titleService = titleService;
     this.deckService = deckService;
+    this.gameSettingService = gameSettingService;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void init() {
     if (enabled) {
+      initializeGameDate();
       loadSegmentRulesFromFile();
       syncShowTypesFromFile();
       loadSegmentTypesFromFile();
@@ -523,6 +529,13 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       } catch (IOException e) {
         log.error("Error loading decks from file", e);
       }
+    }
+  }
+
+  private void initializeGameDate() {
+    if (gameSettingService.findById(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
+      log.info("In-game date not set. Initializing to current date.");
+      gameSettingService.saveCurrentGameDate(LocalDate.now());
     }
   }
 }

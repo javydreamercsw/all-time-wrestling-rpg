@@ -158,9 +158,7 @@ public class ShowPlanningService {
 
     // Get next PLE
     Optional<Show> nextPle =
-        showService.getUpcomingShows(show.getShowDate(), 10).stream()
-            .filter(Show::isPremiumLiveEvent)
-            .findFirst();
+        showService.getUpcomingShows(10).stream().filter(Show::isPremiumLiveEvent).findFirst();
     if (nextPle.isPresent()) {
       ShowPlanningPle ple = new ShowPlanningPle();
       ple.setPle(nextPle.get());
