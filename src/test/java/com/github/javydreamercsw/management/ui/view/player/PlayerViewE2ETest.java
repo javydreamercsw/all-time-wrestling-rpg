@@ -39,18 +39,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.test.context.TestPropertySource;
 
-@TestPropertySource(properties = "data.initializer.enabled=false")
 public class PlayerViewE2ETest extends AbstractE2ETest {
 
   @Autowired
-  @Qualifier("managementAccountService")
-  private AccountService accountService;
+  @Qualifier("managementAccountService") private AccountService accountService;
 
   @Autowired private WrestlerService wrestlerService;
   @Autowired private ShowService showService;
@@ -126,16 +121,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     assertDoesNotThrow(
         () -> {
           driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
-          WebElement upcomingMatchesGrid =
-              waitForVaadinElement(driver, By.id("upcoming-matches-grid"));
-          assertEquals(2, getGridRows(upcomingMatchesGrid).size());
-
-          WebElement activeRivalriesGrid =
-              waitForVaadinElement(driver, By.id("active-rivalries-grid"));
-          assertEquals(1, getGridRows(activeRivalriesGrid).size());
-
-          WebElement inboxGrid = waitForVaadinElement(driver, By.id("inbox-grid"));
-          assertEquals(1, getGridRows(inboxGrid).size());
+          assertEquals(2, getGridRows("upcoming-matches-grid").size());
+          assertEquals(1, getGridRows("active-rivalries-grid").size());
+          assertEquals(1, getGridRows("inbox-grid").size());
         });
   }
 }
