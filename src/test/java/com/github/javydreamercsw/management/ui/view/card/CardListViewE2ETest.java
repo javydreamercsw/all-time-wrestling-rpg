@@ -73,6 +73,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.visibilityOfElementLocated(
                 By.cssSelector(
                     "vaadin-text-field[placeholder='What do you want the card name to be?']")));
+    Assertions.assertNotNull(nameField);
     nameField.sendKeys(cardName);
 
     WebElement createButton = driver.findElement(By.xpath("//vaadin-button[text()='Create']"));
@@ -95,6 +96,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.visibilityOfElementLocated(
                 By.cssSelector("vaadin-text-field[data-testid='name-editor']")));
     String updatedName = cardName + " - Updated";
+    Assertions.assertNotNull(editorNameField);
     wait.until(ExpectedConditions.elementToBeClickable(editorNameField));
     ((JavascriptExecutor) driver).executeScript("arguments[0].value = ''", editorNameField);
     editorNameField.sendKeys(updatedName);
@@ -122,6 +124,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.visibilityOfElementLocated(
                 By.cssSelector(
                     "vaadin-text-field[placeholder='What do you want the card name to be?']")));
+    Assertions.assertNotNull(nameField);
     nameField.sendKeys(cardName);
 
     WebElement createButton = driver.findElement(By.xpath("//vaadin-button[text()='Create']"));
@@ -142,6 +145,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.visibilityOfElementLocated(
                 By.tagName("vaadin-confirm-dialog-overlay")));
 
+    Assertions.assertNotNull(dialogOverlay);
     WebElement confirmDeleteButton =
         dialogOverlay.findElement(By.xpath(".//vaadin-button[text()='Delete']"));
     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", confirmDeleteButton);
@@ -179,27 +183,41 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     // Wait for the grid to be present and populated
     WebElement grid =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
+    Assertions.assertNotNull(grid);
     wait.until(d -> !grid.findElements(By.tagName("vaadin-grid-cell-content")).isEmpty());
 
     // Get the header cell for the "Name" column
+    Assertions.assertNotNull(grid);
     WebElement nameHeader = grid.findElement(By.xpath("//vaadin-grid-sorter[contains(., 'Name')]"));
-
-    // Get the initial order of names
-    List<String> initialOrder = getColumnData(grid, 0);
 
     // Click to sort ascending
     nameHeader.click();
     wait.until(ExpectedConditions.attributeContains(nameHeader, "direction", "asc"));
+    wait.until(
+        d -> {
+          List<String> currentOrder = getColumnData(grid, 0);
+          List<String> sortedCurrentOrder = new ArrayList<>(currentOrder);
+          Collections.sort(sortedCurrentOrder);
+          return sortedCurrentOrder.equals(currentOrder);
+        });
     List<String> ascOrder = getColumnData(grid, 0);
-    List<String> sortedInitial = new ArrayList<>(initialOrder);
-    Collections.sort(sortedInitial);
-    assertEquals(sortedInitial, ascOrder);
+    List<String> manuallySortedAsc = new ArrayList<>(ascOrder);
+    Collections.sort(manuallySortedAsc);
+    assertEquals(manuallySortedAsc, ascOrder); // Assert that the list *is* sorted ascending
 
     // Click to sort descending
     nameHeader.click();
     wait.until(ExpectedConditions.attributeContains(nameHeader, "direction", "desc"));
+    wait.until(
+        d -> {
+          List<String> currentOrder = getColumnData(grid, 0);
+          List<String> sortedCurrentOrder = new ArrayList<>(currentOrder);
+          sortedCurrentOrder.sort(Collections.reverseOrder());
+          return sortedCurrentOrder.equals(currentOrder);
+        });
     List<String> descOrder = getColumnData(grid, 0);
-    Collections.reverse(sortedInitial);
-    assertEquals(sortedInitial, descOrder);
+    List<String> manuallySortedDesc = new ArrayList<>(descOrder);
+    manuallySortedDesc.sort(Collections.reverseOrder());
+    assertEquals(manuallySortedDesc, descOrder); // Assert that the list *is* sorted descending
   }
 }
