@@ -251,13 +251,23 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
    * @return List of Strings representing the data in the specified column
    */
   protected List<String> getColumnData(@NonNull WebElement grid, int columnIndex) {
-    List<WebElement> cells =
-        grid.findElements(
-            By.xpath(
-                "//vaadin-grid-cell-content[count(ancestor::vaadin-grid-column) = "
-                    + (columnIndex + 1)
-                    + "]"));
-    return cells.stream().map(WebElement::getText).collect(Collectors.toList());
+    return getGridRows(grid).stream()
+        .map(
+            row -> {
+              List<WebElement> cells = row.findElements(By.cssSelector("[part~='cell']"));
+              return cells.size() > columnIndex ? cells.get(columnIndex).getText() : "";
+            })
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Returns the number of items in the grid.
+   *
+   * @param grid the Vaadin grid WebElement
+   * @return the number of items
+   */
+  protected int getGridSize(@NonNull WebElement grid) {
+    return getGridRows(grid).size();
   }
 
   /**
@@ -270,7 +280,14 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     return (List<WebElement>)
         ((JavascriptExecutor) driver)
             .executeScript(
-                "return arguments[0].shadowRoot.querySelectorAll('[part~=\"row\"]');", grid);
+                "var items = arguments[0].shadowRoot.getElementById('items');"
+                    + " return items ? items.children : [];",
+                grid);
+  }
+
+  protected List<WebElement> getGridRows(@NonNull String gridId) {
+    WebElement grid = waitForVaadinElement(driver, By.id(gridId));
+    return getGridRows(grid);
   }
 
   protected void takeScreenshot(@NonNull String filePath) {
