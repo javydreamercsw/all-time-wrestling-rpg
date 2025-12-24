@@ -106,9 +106,9 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
   @Query(
       value =
           """
-          SELECT DISTINCT s.id, s.show_date FROM show s
-          JOIN segment seg ON seg.show_id = s.id
-          JOIN segment_participant sp ON sp.segment_id = seg.id
+          SELECT DISTINCT s.show_id, s.show_date FROM show s
+          JOIN segment seg ON seg.show_id = s.show_id
+          JOIN segment_participant sp ON sp.segment_id = seg.segment_id
           WHERE s.show_date >= :date AND sp.wrestler_id = :wrestlerId
           ORDER BY s.show_date ASC
           LIMIT :limit OFFSET :offset

@@ -68,6 +68,8 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
   @Getter
   private String contextPath;
 
+  private boolean loggedIn = false;
+
   @BeforeEach
   public void setup() {
     WebDriverManager.chromedriver().setup();
@@ -84,20 +86,28 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     }
 
     driver = new ChromeDriver(options);
+    login("admin", "admin123");
+  }
+
+  protected void login(@NonNull String username, @NonNull String password) {
+    if (loggedIn) {
+      driver.get("http://localhost:" + serverPort + getContextPath() + "/logout");
+    }
     driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
     waitForAppToBeReady();
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     WebElement loginFormHost =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
     WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
-    usernameField.sendKeys("admin");
+    usernameField.sendKeys(username);
     WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
-    passwordField.sendKeys("admin123");
+    passwordField.sendKeys(password);
     WebElement signInButton =
         loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
     clickElement(signInButton);
     waitForAppToBeReady();
     wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("login")));
+    loggedIn = true;
   }
 
   @AfterEach

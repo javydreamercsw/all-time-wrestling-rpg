@@ -167,4 +167,10 @@ public class InboxService {
 
     return inboxRepository.findAll(spec, sort);
   }
+
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  public InboxItem addInboxItem(@NonNull Wrestler wrestler, @NonNull String message) {
+    InboxEventType eventType = eventTypeRegistry.getEventTypes().get(0);
+    return createInboxItem(eventType, message, List.of(wrestler.getId().toString()));
+  }
 }

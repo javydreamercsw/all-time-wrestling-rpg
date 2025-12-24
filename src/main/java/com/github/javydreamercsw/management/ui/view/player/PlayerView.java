@@ -151,6 +151,7 @@ public class PlayerView extends VerticalLayout {
     layout.add(new H2("Upcoming Matches"));
 
     Grid<Show> grid = new Grid<>();
+    grid.setId("upcoming-matches-grid");
     grid.addColumn(Show::getName).setHeader("Show");
     grid.addColumn(Show::getShowDate).setHeader("Date");
 
@@ -168,6 +169,7 @@ public class PlayerView extends VerticalLayout {
     VerticalLayout layout = new VerticalLayout();
     layout.add(new H2("Active Rivalries"));
     Grid<Rivalry> grid = new Grid<>();
+    grid.setId("active-rivalries-grid");
     grid.addColumn(rivalry -> rivalry.getOpponent(playerWrestler).getName()).setHeader("Opponent");
     grid.addColumn(Rivalry::getHeat).setHeader("Heat");
 
@@ -184,6 +186,7 @@ public class PlayerView extends VerticalLayout {
     layout.add(new H2("Inbox"));
 
     Grid<InboxItem> grid = new Grid<>();
+    grid.setId("inbox-grid");
     grid.addColumn(InboxItem::getDescription).setHeader("Message");
     grid.addColumn(InboxItem::getEventTimestamp).setHeader("Date");
 
