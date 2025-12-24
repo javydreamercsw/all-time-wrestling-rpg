@@ -324,16 +324,14 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected void assertGridContains(@NonNull String gridId, @NonNull String expectedText) {
     WebElement grid = waitForVaadinElement(driver, By.id(gridId));
-    String gridText =
-        (String)
-            ((JavascriptExecutor) driver)
-                .executeScript(
-                    "return arguments[0].shadowRoot.getElementById('table').innerText;", grid);
+    boolean found = false;
+    for (WebElement gridRow : getGridRows(grid)) {
+      if (gridRow.getText().contains(expectedText)) {
+        found = true;
+        break;
+      }
+    }
 
-    boolean result = gridText.contains(expectedText);
-
-    assertTrue(
-        result,
-        "Grid '" + gridId + "' does not contain '" + expectedText + "'. Grid content: " + gridText);
+    assertTrue(found, "Grid '" + gridId + "' does not contain '" + expectedText + "'.");
   }
 }

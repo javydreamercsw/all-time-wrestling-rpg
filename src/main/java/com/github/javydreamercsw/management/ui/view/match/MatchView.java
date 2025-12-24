@@ -82,8 +82,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     setId("match-view-" + segment.getId());
     Wrestler playerWrestler = securityUtils.getAuthenticatedUser().get().getWrestler();
 
-    add(new H3("Show: " + segment.getShow().getName()));
-    add(new Paragraph("Match Type: " + segment.getSegmentType().getName()));
+    H3 showName = new H3("Show: " + segment.getShow().getName());
+    showName.setId("show-name");
+    add(showName);
+
+    Paragraph matchType = new Paragraph("Match Type: " + segment.getSegmentType().getName());
+    matchType.setId("match-type");
+    add(matchType);
 
     add(new H3("Participants"));
     List<Wrestler> opponents =

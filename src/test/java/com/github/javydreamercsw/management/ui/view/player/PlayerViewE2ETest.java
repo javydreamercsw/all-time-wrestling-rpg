@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
@@ -43,6 +44,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -94,6 +96,15 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .build();
     wrestlerService.save(wrestler);
 
+    Wrestler wrestler2 =
+        Wrestler.builder()
+            .name("Test Wrestler Opponent")
+            .isPlayer(true)
+            .gender(Gender.MALE)
+            .tier(WrestlerTier.MIDCARDER)
+            .build();
+    wrestlerService.save(wrestler2);
+
     Wrestler opponent =
         Wrestler.builder()
             .name("Opponent")
@@ -107,6 +118,8 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     inboxService.addInboxItem(wrestler, "Test Message");
 
+    SegmentType oneOnOne = segmentTypeRepository.findByName("One on One").get();
+
     // Create a show
     Show show = new Show();
     show.setName("Test Show");
@@ -116,10 +129,10 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     showService.save(show);
 
     // Create a segment with the wrestler
-    Segment segment =
-        segmentService.createSegment(
-            show, segmentTypeService.findAll().get(0), Instant.now(), new HashSet<>());
+    Segment segment = segmentService.createSegment(show, oneOnOne, Instant.now(), new HashSet<>());
     segment.addParticipant(wrestler);
+    segment.addParticipant(wrestler2);
+    segment.setWinners(List.of(wrestler));
     segmentService.updateSegment(segment);
 
     // Create another show
@@ -132,9 +145,10 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     // Create another segment with the wrestler
     Segment segment2 =
-        segmentService.createSegment(
-            show2, segmentTypeService.findAll().get(0), Instant.now(), new HashSet<>());
+        segmentService.createSegment(show2, oneOnOne, Instant.now(), new HashSet<>());
     segment2.addParticipant(wrestler);
+    segment2.addParticipant(wrestler2);
+    segment2.setWinners(List.of(wrestler2));
     segmentService.updateSegment(segment2);
 
     login("player", "player123");
@@ -152,6 +166,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
           assertEquals(
               "Bumps: " + wrestler.getBumps(),
               waitForVaadinElement(driver, By.id("wrestler-bumps")).getText());
+          assertEquals("Wins: 1", waitForVaadinElement(driver, By.id("wrestler-wins")).getText());
+          assertEquals(
+              "Losses: 1", waitForVaadinElement(driver, By.id("wrestler-losses")).getText());
 
           // Check that the grids have the correct number of rows
           assertEquals(2, getGridRows("upcoming-matches-grid").size());
@@ -211,6 +228,12 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     assertDoesNotThrow(
         () -> {
           waitForVaadinElement(driver, By.id("match-view-" + segment.getId()));
+          assertEquals(
+              "Show: " + show.getName(),
+              waitForVaadinElement(driver, By.id("show-name")).getText());
+          assertEquals(
+              "Match Type: " + segment.getSegmentType().getName(),
+              waitForVaadinElement(driver, By.id("match-type")).getText());
         });
   }
 }
