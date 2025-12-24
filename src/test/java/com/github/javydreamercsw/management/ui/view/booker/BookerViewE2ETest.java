@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -45,10 +46,12 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private ShowRepository showRepository;
+  @Autowired private SegmentRepository segmentRepository; // Added this
 
   @BeforeEach
   public void setupTest() {
     // It's better to delete in order to avoid constraint violations.
+    segmentRepository.deleteAll(); // Delete segments first
     rivalryRepository.deleteAll();
     showRepository.deleteAll();
     wrestlerRepository.deleteAll();
