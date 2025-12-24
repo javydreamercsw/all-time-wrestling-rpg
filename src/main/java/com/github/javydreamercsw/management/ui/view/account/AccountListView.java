@@ -31,7 +31,6 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.PageRequest;
 
 @PageTitle("Accounts")
@@ -44,9 +43,7 @@ public class AccountListView extends Main {
   private final SecurityUtils securityUtils;
   private final Grid<Account> grid = new Grid<>(Account.class, false);
 
-  public AccountListView(
-      @Qualifier("managementAccountService") AccountService accountService,
-      SecurityUtils securityUtils) {
+  public AccountListView(AccountService accountService, SecurityUtils securityUtils) {
     this.accountService = accountService;
     this.securityUtils = securityUtils;
 

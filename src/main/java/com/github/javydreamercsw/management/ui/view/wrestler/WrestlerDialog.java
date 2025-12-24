@@ -16,41 +16,34 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
-import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
-import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.converter.StringToIntegerConverter;
 import lombok.NonNull;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 public class WrestlerDialog extends Dialog {
 
   private final WrestlerService wrestlerService;
-  private final AccountService accountService;
   private final Wrestler wrestler;
   private final Binder<Wrestler> binder = new Binder<>(Wrestler.class);
   private final SecurityUtils securityUtils;
 
   public WrestlerDialog(
       @NonNull WrestlerService wrestlerService,
-      @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
-    this(wrestlerService, accountService, createDefaultWrestler(), onSave, securityUtils);
+    this(wrestlerService, createDefaultWrestler(), onSave, securityUtils);
     setHeaderTitle("Create Wrestler");
   }
 
@@ -73,12 +66,10 @@ public class WrestlerDialog extends Dialog {
 
   public WrestlerDialog(
       @NonNull WrestlerService wrestlerService,
-      @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull Wrestler wrestler,
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
     this.wrestlerService = wrestlerService;
-    this.accountService = accountService;
     this.wrestler = wrestler;
     this.securityUtils = securityUtils;
 
@@ -118,32 +109,6 @@ public class WrestlerDialog extends Dialog {
     imageUrlField.setId("wrestler-dialog-image-url-field");
     imageUrlField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
-    Checkbox isPlayerField = new Checkbox("Is Player");
-    isPlayerField.setId("wrestler-dialog-is-player-field");
-    isPlayerField.setReadOnly(!(securityUtils.isAdmin() || securityUtils.isBooker()));
-
-    ComboBox<Account> accountComboBox = new ComboBox<>("Player Account");
-    accountComboBox.setId("wrestler-dialog-account-combo-box");
-    accountComboBox.setPlaceholder("Select Account");
-    accountComboBox.setItemLabelGenerator(Account::getUsername);
-    accountComboBox.setItems(accountService.findAllNonPlayerAccounts());
-    accountComboBox.setVisible(
-        isPlayerField.getValue() && (securityUtils.isAdmin() || securityUtils.isBooker()));
-    accountComboBox.setReadOnly(!(securityUtils.isAdmin() || securityUtils.isBooker()));
-
-    if (wrestler.getAccount() != null) {
-      accountComboBox.setValue(wrestler.getAccount());
-    }
-
-    isPlayerField.addValueChangeListener(
-        event -> {
-          accountComboBox.setVisible(
-              event.getValue() && (securityUtils.isAdmin() || securityUtils.isBooker()));
-          if (!event.getValue()) {
-            accountComboBox.clear(); // Clear selection if not a player
-          }
-        });
-
     formLayout.add(
         nameField,
         genderField,
@@ -152,9 +117,7 @@ public class WrestlerDialog extends Dialog {
         lowHealthField,
         startingStaminaField,
         lowStaminaField,
-        imageUrlField,
-        isPlayerField,
-        accountComboBox);
+        imageUrlField);
 
     binder.forField(nameField).bind(Wrestler::getName, Wrestler::setName);
     binder.forField(genderField).bind(Wrestler::getGender, Wrestler::setGender);
@@ -179,7 +142,6 @@ public class WrestlerDialog extends Dialog {
         .withConverter(new StringToIntegerConverter(0, "Must be a number"))
         .bind(Wrestler::getLowStamina, Wrestler::setLowStamina);
     binder.forField(imageUrlField).bind(Wrestler::getImageUrl, Wrestler::setImageUrl);
-    binder.forField(isPlayerField).bind(Wrestler::getIsPlayer, Wrestler::setIsPlayer);
 
     binder.readBean(this.wrestler);
 
@@ -188,39 +150,9 @@ public class WrestlerDialog extends Dialog {
             "Save",
             event -> {
               if (binder.writeBeanIfValid(this.wrestler)) {
-                try {
-                  // Save the wrestler properties first
-                  Wrestler savedWrestler =
-                      this.wrestlerService.save(this.wrestler); // Capture the saved wrestler
-                  this.wrestler.setId(
-                      savedWrestler.getId()); // Ensure local wrestler object has the ID
-
-                  // Handle account assignment if isPlayer is true and an account is selected
-                  if (isPlayerField.getValue()) {
-                    Account selectedAccount = accountComboBox.getValue();
-                    if (selectedAccount == null) {
-                      Notification.show(
-                          "Please select an account for the player wrestler.",
-                          3000,
-                          Notification.Position.MIDDLE);
-                      return;
-                    }
-                    // Use the ID from the savedWrestler
-                    this.wrestlerService.setAccountForWrestler(
-                        this.wrestler.getId(), selectedAccount.getId());
-                  } else {
-                    // If isPlayer is false, and there was a previously assigned account, unassign
-                    // it
-                    if (this.wrestler.getAccount() != null) {
-                      this.wrestlerService.setAccountForWrestler(this.wrestler.getId(), null);
-                    }
-                  }
-
-                  onSave.run();
-                  close();
-                } catch (IllegalArgumentException e) {
-                  Notification.show(e.getMessage(), 5000, Notification.Position.MIDDLE);
-                }
+                this.wrestlerService.save(this.wrestler);
+                onSave.run();
+                close();
               }
             });
     saveButton.setId("wrestler-dialog-save-button");

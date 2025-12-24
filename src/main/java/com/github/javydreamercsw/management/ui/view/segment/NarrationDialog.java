@@ -28,7 +28,6 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -74,7 +73,6 @@ public class NarrationDialog extends Dialog {
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
   private final WrestlerService wrestlerService;
-  private final WrestlerRepository wrestlerRepository;
   private final ShowService showService;
   private final SegmentService segmentService;
   private final RivalryService rivalryService;
@@ -101,7 +99,6 @@ public class NarrationDialog extends Dialog {
       Segment segment,
       NpcService npcService,
       WrestlerService wrestlerService,
-      WrestlerRepository wrestlerRepository,
       ShowService showService,
       SegmentService segmentService,
       Consumer<Segment> onSaveCallback,
@@ -114,7 +111,6 @@ public class NarrationDialog extends Dialog {
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
-    this.wrestlerRepository = wrestlerRepository;
     this.showService = showService;
     this.segmentService = segmentService;
     this.onSaveCallback = onSaveCallback;
@@ -271,8 +267,7 @@ public class NarrationDialog extends Dialog {
     wrestlersCombo.setItemLabelGenerator(WrestlerDTO::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setItems(
-        wrestlerRepository.findAll().stream()
-            .map(WrestlerDTO::new)
+        wrestlerService.findAllAsDTO().stream()
             .sorted(Comparator.comparing(WrestlerDTO::getName))
             .collect(Collectors.toList()));
     wrestlersCombo.setValue(new HashSet<>(List.of(wrestler)));
@@ -491,7 +486,7 @@ public class NarrationDialog extends Dialog {
         wc.setTier(wrestler.getTier());
         wc.setMoveSet(wrestler.getMoveSet());
         List<String> feuds = new ArrayList<>();
-        wrestlerRepository
+        wrestlerService
             .findByName(wrestler.getName())
             .ifPresent(
                 w -> {
@@ -585,7 +580,7 @@ public class NarrationDialog extends Dialog {
       wc.setTier(wrestler.getTier());
       wc.setMoveSet(wrestler.getMoveSet());
       List<String> feuds = new ArrayList<>();
-      wrestlerRepository
+      wrestlerService
           .findByName(wrestler.getName())
           .ifPresent(
               w -> {
