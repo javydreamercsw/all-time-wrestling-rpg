@@ -235,8 +235,10 @@ public class PlayerView extends VerticalLayout {
     layout.add(new H2("Active Rivalries"));
     Grid<Rivalry> grid = new Grid<>();
     grid.setId("active-rivalries-grid");
-    grid.addColumn(rivalry -> rivalry.getOpponent(playerWrestler).getName()).setHeader("Opponent");
-    grid.addColumn(Rivalry::getHeat).setHeader("Heat");
+    grid.addColumn(rivalry -> rivalry.getOpponent(playerWrestler).getName())
+        .setHeader("Opponent")
+        .setSortable(true);
+    grid.addColumn(Rivalry::getHeat).setHeader("Heat").setSortable(true);
 
     if (playerWrestler != null) {
       grid.setItems(rivalryService.getRivalriesForWrestler(playerWrestler.getId()));

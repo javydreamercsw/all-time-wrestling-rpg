@@ -107,8 +107,11 @@ public class BookerView extends VerticalLayout {
     layout.add(new H2("Roster Overview"));
 
     Grid<Wrestler> grid = new Grid<>();
+    grid.setId("roster-overview-grid");
     grid.addColumn(Wrestler::getName).setHeader("Name");
     grid.addColumn(Wrestler::getTier).setHeader("Tier");
+    grid.addColumn(Wrestler::getGender).setHeader("Gender");
+    grid.addColumn(Wrestler::getIsPlayer).setHeader("Is Player?");
 
     grid.setItems(wrestlerService.findAll());
     layout.add(grid);
@@ -124,6 +127,7 @@ public class BookerView extends VerticalLayout {
     layout.add(new H2("Upcoming Shows"));
 
     Grid<Show> grid = new Grid<>();
+    grid.setId("upcoming-shows-grid");
     grid.addColumn(Show::getName).setHeader("Show");
     grid.addColumn(Show::getShowDate).setHeader("Date");
     grid.addColumn(show -> show.getType().getName()).setHeader("Brand");
@@ -140,8 +144,9 @@ public class BookerView extends VerticalLayout {
     VerticalLayout layout = new VerticalLayout();
     layout.add(new H2("Active Rivalries"));
     Grid<Rivalry> grid = new Grid<>();
-    grid.addColumn(Rivalry::getDisplayName).setHeader("Rivalry");
-    grid.addColumn(Rivalry::getHeat).setHeader("Heat");
+    grid.setId("active-rivalries-grid");
+    grid.addColumn(Rivalry::getDisplayName).setHeader("Rivalry").setSortable(true);
+    grid.addColumn(Rivalry::getHeat).setHeader("Heat").setSortable(true);
 
     grid.setItems(rivalryService.getActiveRivalries());
 
