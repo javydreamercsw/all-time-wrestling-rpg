@@ -12,9 +12,9 @@ on:
   push:
     tags:
       - 'v*.*.*'
-    paths:
-      - 'src/**'
-      - 'pom.xml'
+    branches:
+      - main
+      - 'release/**'
 
   pull_request:
     paths:

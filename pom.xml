@@ -25,7 +25,7 @@
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.version>0.8.14</jacoco.version>
     <java.version>17</java.version>
-    <jib.image.tags>${project.version}</jib.image.tags>
+    <jib.to.tags>${project.version}</jib.to.tags>
     <lombok.version>1.18.42</lombok.version>
     <surefireArgLine/>
     <testcontainers.version>1.21.4</testcontainers.version>
@@ -615,11 +615,6 @@
           </from>
           <to>
             <image>javydreamercsw/all-time-wrestling-rpg</image>
-            <tags>
-              <!-- Use property for tags, comma-separated -->
-              <!-- Jib will split on comma -->
-              <tag>${jib.image.tags}</tag>
-            </tags>
           </to>
           <container>
             <ports>
@@ -977,7 +972,7 @@
         <activeByDefault>false</activeByDefault>
       </activation>
       <properties>
-        <jib.image.tags>${project.version},latest</jib.image.tags>
+        <jib.to.tags>${project.version},latest</jib.to.tags>
       </properties>
       <build>
         <plugins>
