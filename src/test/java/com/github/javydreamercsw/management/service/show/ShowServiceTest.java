@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
@@ -45,6 +46,7 @@ class ShowServiceTest {
   @Mock private ShowRepository showRepository;
   @Mock private SegmentRepository segmentRepository;
   @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SegmentAdjudicationService segmentAdjudicationService;
   @Mock private ApplicationEventPublisher eventPublisher; // Needed to avoid NPE
 
@@ -118,7 +120,7 @@ class ShowServiceTest {
 
     when(showRepository.findById(1L)).thenReturn(Optional.of(show));
     when(segmentRepository.findByShow(show)).thenReturn(List.of(segment));
-    when(wrestlerService.findAll()).thenReturn(List.of(wrestler1, wrestler2, wrestler3));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(wrestler1, wrestler2, wrestler3));
 
     // When
     showService.adjudicateShow(1L);

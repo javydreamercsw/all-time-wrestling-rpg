@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.show.planning;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -30,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -38,7 +40,6 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -65,7 +66,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
   @MockitoBean private ShowService showService;
   @MockitoBean private SegmentService segmentService;
   @MockitoBean private SegmentTypeRepository segmentTypeRepository;
-  @MockitoBean private WrestlerService wrestlerService;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
   @MockitoBean private FactionService factionService;
 
   @MockitoSpyBean
@@ -393,17 +394,22 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Wrestler 1");
-    wrestler1.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
+    wrestler1.setTier(WrestlerTier.MAIN_EVENTER);
 
     Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("Wrestler 2");
-    wrestler2.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
+    wrestler2.setTier(WrestlerTier.MAIN_EVENTER);
 
     Wrestler wrestler3 = Wrestler.builder().build();
     wrestler3.setId(3L);
     wrestler3.setName("Wrestler 3");
-    wrestler3.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MIDCARDER);
+    wrestler3.setTier(WrestlerTier.MIDCARDER);
+
+    Wrestler wrestler4 = Wrestler.builder().build();
+    wrestler4.setId(4L);
+    wrestler4.setName("Wrestler 4");
+    wrestler4.setTier(WrestlerTier.MIDCARDER);
 
     // Create rivalries
     Rivalry rivalry1 = new Rivalry();
@@ -419,7 +425,8 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
     rivalry2.setHeat(50);
 
     // Mock the wrestler service to return our wrestlers
-    when(wrestlerService.findAll()).thenReturn(Arrays.asList(wrestler1, wrestler2, wrestler3));
+    when(wrestlerService.findAll())
+        .thenReturn(Arrays.asList(wrestler1, wrestler2, wrestler3, wrestler4));
 
     // Mock the rivalry service to return appropriate rivalries for each wrestler
     when(rivalryService.getRivalriesForWrestler(1L)).thenReturn(Arrays.asList(rivalry1, rivalry2));
@@ -427,6 +434,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
         .thenReturn(Collections.singletonList(rivalry1));
     when(rivalryService.getRivalriesForWrestler(3L))
         .thenReturn(Collections.singletonList(rivalry2));
+    when(rivalryService.getRivalriesForWrestler(4L)).thenReturn(Collections.emptyList());
 
     // Mock other dependencies
     when(segmentRepository.findBySegmentDateBetween(any(), any()))
@@ -447,7 +455,10 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
     assertFalse(context.getWrestlerHeats().isEmpty(), "Wrestler heats should not be empty");
 
     // Should have 4 heat entries total (2 for wrestler1, 1 for wrestler2, 1 for wrestler3)
-    assertEquals(4, context.getWrestlerHeats().size(), "Should have 4 wrestler heat entries");
+    assertEquals(
+        4,
+        context.getWrestlerHeats().size(),
+        "Should have 4 wrestler heat entries: " + context.getWrestlerHeats());
 
     // Verify wrestler1's heats
     long wrestler1Heats =

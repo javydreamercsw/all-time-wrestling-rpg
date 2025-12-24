@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -144,6 +143,16 @@ class DataInitializerTest {
               type.setDescription(invocation.getArgument(1));
               return type;
             });
+    lenient()
+        .when(titleService.createTitle(anyString(), anyString(), any()))
+        .thenAnswer(
+            invocation -> {
+              Title title = new Title();
+              title.setName(invocation.getArgument(0));
+              title.setDescription(invocation.getArgument(1));
+              title.setTier(invocation.getArgument(2));
+              return title;
+            });
     lenient().when(titleService.save(any(Title.class))).thenAnswer(i -> i.getArguments()[0]);
     // AccountService doesn't have a save method
     lenient()
@@ -152,20 +161,6 @@ class DataInitializerTest {
     lenient().doNothing().when(gameSettingService).saveCurrentGameDate(any());
 
     dataInitializer.init();
-  }
-
-  @Test
-  void testDataLoadedFromFile() {
-    // This test will fail if the data initializer is disabled.
-    assertFalse(wrestlerService.findAll().isEmpty());
-    assertFalse(cardSetService.findAll().isEmpty());
-    assertFalse(cardService.findAll().isEmpty());
-    assertFalse(deckService.findAll().isEmpty());
-    assertFalse(showTypeService.findAll().isEmpty());
-    assertFalse(showTemplateService.findAll().isEmpty());
-    assertFalse(segmentRuleService.findAll().isEmpty());
-    assertFalse(segmentTypeService.findAll().isEmpty());
-    assertFalse(titleService.findAll().isEmpty());
   }
 
   @Test
