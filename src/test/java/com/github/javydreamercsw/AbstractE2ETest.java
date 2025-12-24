@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -79,11 +81,12 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     ChromeOptions options = new ChromeOptions();
     if (isHeadless()) {
       options.addArguments("--headless=new");
-      options.addArguments("--disable-gpu");
-      options.addArguments("--window-size=1920,1080");
-      options.addArguments("--no-sandbox");
-      options.addArguments("--disable-dev-shm-usage");
     }
+    options.addArguments("--disable-gpu");
+    options.addArguments("--window-size=1920,1080");
+    options.addArguments("--no-sandbox");
+    options.addArguments("--disable-dev-shm-usage");
+    options.addArguments("--reduce-security-for-testing");
 
     driver = new ChromeDriver(options);
     login("admin", "admin123");
@@ -95,7 +98,7 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     }
     driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
     waitForAppToBeReady();
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement loginFormHost =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
     WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
@@ -317,5 +320,20 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     } catch (IOException e) {
       log.error("Failed to save page source to: {}", filePath, e);
     }
+  }
+
+  protected void assertGridContains(@NonNull String gridId, @NonNull String expectedText) {
+    WebElement grid = waitForVaadinElement(driver, By.id(gridId));
+    String gridText =
+        (String)
+            ((JavascriptExecutor) driver)
+                .executeScript(
+                    "return arguments[0].shadowRoot.getElementById('table').innerText;", grid);
+
+    boolean result = gridText.contains(expectedText);
+
+    assertTrue(
+        result,
+        "Grid '" + gridId + "' does not contain '" + expectedText + "'. Grid content: " + gridText);
   }
 }

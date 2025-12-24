@@ -24,9 +24,14 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -38,7 +43,9 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -54,6 +61,21 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Autowired private SegmentService segmentService;
   @Autowired private RivalryService rivalryService;
   @Autowired private InboxService inboxService;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private RivalryRepository rivalryRepository;
+  @Autowired private InboxRepository inboxRepository;
+  @Autowired private SegmentRepository segmentRepository;
+  @Autowired private ShowRepository showRepository;
+
+  @BeforeEach
+  public void setupTest() {
+    // It's better to delete in order to avoid constraint violations.
+    segmentRepository.deleteAll();
+    rivalryRepository.deleteAll();
+    inboxRepository.deleteAll();
+    showRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+  }
 
   @Test
   public void testPlayerViewLoads() {
@@ -121,9 +143,74 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     assertDoesNotThrow(
         () -> {
           driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+          assertEquals(
+              "Name: " + wrestler.getName(),
+              waitForVaadinElement(driver, By.id("wrestler-name")).getText());
+          assertEquals(
+              "Tier: " + wrestler.getTier(),
+              waitForVaadinElement(driver, By.id("wrestler-tier")).getText());
+          assertEquals(
+              "Bumps: " + wrestler.getBumps(),
+              waitForVaadinElement(driver, By.id("wrestler-bumps")).getText());
+
+          // Check that the grids have the correct number of rows
           assertEquals(2, getGridRows("upcoming-matches-grid").size());
           assertEquals(1, getGridRows("active-rivalries-grid").size());
           assertEquals(1, getGridRows("inbox-grid").size());
+
+          // Check the content of the grids
+          assertGridContains("upcoming-matches-grid", "Test Show");
+          assertGridContains("upcoming-matches-grid", "Test Show 2");
+          assertGridContains("active-rivalries-grid", "Opponent");
+          assertGridContains("inbox-grid", "Test Message");
+        });
+  }
+
+  @Test
+  public void testGoToMatchNavigation() {
+    // Get player account
+    Account playerAccount = accountService.findByUsername("player").get();
+    assertNotNull(playerAccount);
+
+    // Create a wrestler and assign it to the player
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name("Test Wrestler")
+            .isPlayer(true)
+            .gender(Gender.MALE)
+            .tier(WrestlerTier.MIDCARDER)
+            .account(playerAccount)
+            .build();
+    wrestlerService.save(wrestler);
+    // Create a show
+    Show show = new Show();
+    show.setName("Test Show");
+    show.setDescription("Test Show Description");
+    show.setShowDate(LocalDate.now().plusDays(1));
+    show.setType(showTypeService.findAll().get(0));
+    showService.save(show);
+
+    // Create a segment with the wrestler
+    Segment segment =
+        segmentService.createSegment(
+            show, segmentTypeService.findAll().get(0), Instant.now(), new HashSet<>());
+    segment.addParticipant(wrestler);
+    segmentService.updateSegment(segment);
+
+    login("player", "player123");
+
+    // Navigate to the PlayerView
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+
+    waitForVaadinToLoad(driver);
+
+    // Click the "Go to Match" button
+    clickElement(By.id("go-to-match-" + segment.getId()));
+
+    // Verify that we navigated to the correct match view
+    assertDoesNotThrow(
+        () -> {
+          waitForVaadinElement(driver, By.id("match-view-" + segment.getId()));
         });
   }
 }
