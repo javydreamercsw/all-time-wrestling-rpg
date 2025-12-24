@@ -229,8 +229,10 @@ public class ShowService {
 
     // Step 1: Get show IDs using the native query with limit and offset
     // For offset, we can assume 0 for the first page for now.
-    List<Long> showIds =
-        showRepository.findUpcomingShowIdsForWrestler(referenceDate, wrestler.getId(), limit, 0);
+    List<Object[]> results =
+        showRepository.findUpcomingShowIdsAndDatesForWrestler(
+            referenceDate, wrestler.getId(), limit, 0);
+    List<Long> showIds = results.stream().map(result -> ((Number) result[0]).longValue()).toList();
 
     if (showIds.isEmpty()) {
       return Collections.emptyList();

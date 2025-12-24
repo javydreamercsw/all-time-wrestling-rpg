@@ -106,7 +106,7 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
   @Query(
       value =
           """
-          SELECT DISTINCT s.id FROM show s
+          SELECT DISTINCT s.id, s.show_date FROM show s
           JOIN segment seg ON seg.show_id = s.id
           JOIN segment_participant sp ON sp.segment_id = seg.id
           WHERE s.show_date >= :date AND sp.wrestler_id = :wrestlerId
@@ -114,7 +114,8 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
           LIMIT :limit OFFSET :offset
           """,
       nativeQuery = true)
-  List<Long> findUpcomingShowIdsForWrestler(LocalDate date, Long wrestlerId, int limit, int offset);
+  List<Object[]> findUpcomingShowIdsAndDatesForWrestler(
+      LocalDate date, Long wrestlerId, int limit, int offset);
 
   @Query(
       """
