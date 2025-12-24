@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +31,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -96,7 +98,9 @@ class TitleListViewTest extends AbstractViewTest {
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.canDelete()).thenReturn(true);
 
-    titleListView = new TitleListView(titleService, wrestlerService, securityUtils);
+    titleListView =
+        new TitleListView(
+            titleService, wrestlerService, mock(WrestlerRepository.class), securityUtils);
   }
 
   @Test

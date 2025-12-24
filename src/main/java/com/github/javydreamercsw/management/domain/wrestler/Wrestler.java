@@ -39,6 +39,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 @Entity
@@ -153,7 +154,7 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   private Faction faction;
 
   @Override
-  public Gender getGender() {
+  public @NonNull Gender getGender() {
     return this.gender;
   }
 

@@ -37,6 +37,7 @@ import jakarta.annotation.security.RolesAllowed;
 import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 @Route("account")
 @RolesAllowed("ADMIN")
@@ -53,7 +54,8 @@ public class AccountFormView extends Main implements HasUrlParameter<Long> {
   private final ComboBox<Role> role = new ComboBox<>("Role");
 
   public AccountFormView(
-      @NonNull AccountService accountService, @NonNull RoleRepository roleRepository) {
+      @NonNull @Qualifier("managementAccountService") AccountService accountService,
+      @NonNull RoleRepository roleRepository) {
     this.accountService = accountService;
     this.roleRepository = roleRepository;
     setupForm();

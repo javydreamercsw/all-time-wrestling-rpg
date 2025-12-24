@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -46,7 +47,8 @@ public class AccountServiceTest {
     }
   }
 
-  @Autowired private AccountService accountService;
+  @Autowired
+  @Qualifier("managementAccountService") private AccountService accountService;
 
   @Test
   public void testCreateAndReadAccount() {
