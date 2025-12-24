@@ -27,7 +27,6 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckCardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
@@ -35,7 +34,6 @@ import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
-import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
@@ -46,7 +44,6 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +53,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -69,7 +65,6 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
   private final boolean enabled;
   private final ShowTemplateService showTemplateService;
   private final WrestlerService wrestlerService;
-  private final WrestlerRepository wrestlerRepository;
   private final ShowTypeService showTypeService;
   private final SegmentRuleService segmentRuleService;
   private final SegmentTypeService segmentTypeService;
@@ -77,26 +72,22 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
   private final CardService cardService;
   private final TitleService titleService;
   private final DeckService deckService;
-  private final GameSettingService gameSettingService;
 
   @Autowired
   public DataInitializer(
       @Value("${data.initializer.enabled:true}") boolean enabled,
       ShowTemplateService showTemplateService,
-      @Lazy WrestlerService wrestlerService,
-      WrestlerRepository wrestlerRepository,
+      WrestlerService wrestlerService,
       ShowTypeService showTypeService,
       SegmentRuleService segmentRuleService,
       SegmentTypeService segmentTypeService,
       CardSetService cardSetService,
       CardService cardService,
       TitleService titleService,
-      DeckService deckService,
-      GameSettingService gameSettingService) {
+      DeckService deckService) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
     this.wrestlerService = wrestlerService;
-    this.wrestlerRepository = wrestlerRepository;
     this.showTypeService = showTypeService;
     this.segmentRuleService = segmentRuleService;
     this.segmentTypeService = segmentTypeService;
@@ -104,13 +95,11 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
     this.cardService = cardService;
     this.titleService = titleService;
     this.deckService = deckService;
-    this.gameSettingService = gameSettingService;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void init() {
     if (enabled) {
-      initializeGameDate();
       loadSegmentRulesFromFile();
       syncShowTypesFromFile();
       loadSegmentTypesFromFile();
@@ -342,7 +331,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
         var wrestlersFromFile = mapper.readValue(is, new TypeReference<List<Wrestler>>() {});
         // Map existing wrestlers by name (handle duplicates by keeping the first one)
         Map<String, Wrestler> existing =
-            wrestlerRepository.findAll().stream()
+            wrestlerService.findAll().stream()
                 .collect(
                     Collectors.toMap(
                         Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
@@ -350,7 +339,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
           // Smart duplicate handling - prefer external ID, fallback to name
           Wrestler existingWrestler = null;
           if (w.getExternalId() != null && !w.getExternalId().trim().isEmpty()) {
-            existingWrestler = wrestlerRepository.findByExternalId(w.getExternalId()).orElse(null);
+            existingWrestler = wrestlerService.findByExternalId(w.getExternalId()).orElse(null);
           }
           if (existingWrestler == null) {
             existingWrestler = existing.get(w.getName());
@@ -368,11 +357,11 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
               existingWrestler.setExternalId(w.getExternalId());
             }
 
-            wrestlerRepository.save(existingWrestler);
+            wrestlerService.save(existingWrestler);
             log.debug("Updated existing wrestler: {}", existingWrestler.getName());
           } else {
             w.setTier(WrestlerTier.ROOKIE);
-            wrestlerRepository.save(w);
+            wrestlerService.save(w);
             log.debug("Saved new wrestler: {}", w.getName());
           }
         }
@@ -404,7 +393,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
           if (dto.getCurrentChampionName() != null
               && !dto.getCurrentChampionName().trim().isEmpty()) {
             Optional<Wrestler> championOpt =
-                wrestlerRepository.findByName(dto.getCurrentChampionName());
+                wrestlerService.findByName(dto.getCurrentChampionName());
             if (championOpt.isPresent()) {
               // Check if the title is already held by this champion
               if (title.getCurrentChampions().isEmpty()
@@ -445,7 +434,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       try (var is = resource.getInputStream()) {
         var decksFromFile = mapper.readValue(is, new TypeReference<List<DeckDTO>>() {});
         Map<String, Wrestler> wrestlers =
-            wrestlerRepository.findAll().stream()
+            wrestlerService.findAll().stream()
                 .collect(
                     Collectors.toMap(
                         Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
@@ -534,13 +523,6 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       } catch (IOException e) {
         log.error("Error loading decks from file", e);
       }
-    }
-  }
-
-  private void initializeGameDate() {
-    if (gameSettingService.findById(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
-      log.info("In-game date not set. Initializing to current date.");
-      gameSettingService.saveCurrentGameDate(LocalDate.now());
     }
   }
 }

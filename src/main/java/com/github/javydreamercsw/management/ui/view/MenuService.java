@@ -98,8 +98,6 @@ public class MenuService {
     configuration.addChild(
         new MenuItem("Sync Dashboard", VaadinIcon.REFRESH, "notion-sync", RoleName.ADMIN));
     configuration.addChild(new MenuItem("Admin", VaadinIcon.TOOLS, "admin", RoleName.ADMIN));
-    configuration.addChild(
-        new MenuItem("Game Settings", VaadinIcon.COGS, "game-settings", RoleName.ADMIN));
 
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);

@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -34,7 +33,6 @@ public class EditSegmentDialog extends Dialog {
 
   private final ProposedSegment segment;
   private final WrestlerService wrestlerService;
-  private final WrestlerRepository wrestlerRepository;
   private final TitleService titleService; // Injected TitleService
   private final Runnable onSave;
 
@@ -48,13 +46,11 @@ public class EditSegmentDialog extends Dialog {
   public EditSegmentDialog(
       ProposedSegment segment,
       WrestlerService wrestlerService,
-      WrestlerRepository wrestlerRepository,
-      TitleService titleService,
+      TitleService titleService, // Added TitleService parameter
       Runnable onSave) {
     this.segment = segment;
     this.wrestlerService = wrestlerService;
-    this.wrestlerRepository = wrestlerRepository;
-    this.titleService = titleService;
+    this.titleService = titleService; // Initialize TitleService
     this.onSave = onSave;
 
     setHeaderTitle("Edit Segment");
@@ -64,11 +60,11 @@ public class EditSegmentDialog extends Dialog {
     descriptionArea.setWidthFull();
 
     participantsCheckboxGroup = new CheckboxGroup<>("Participants");
-    participantsCheckboxGroup.setItems(wrestlerRepository.findAll());
+    participantsCheckboxGroup.setItems(wrestlerService.findAll());
     participantsCheckboxGroup.setItemLabelGenerator(Wrestler::getName);
     participantsCheckboxGroup.setValue(
         segment.getParticipants().stream()
-            .map(wrestlerRepository::findByName)
+            .map(wrestlerService::findByName)
             .filter(java.util.Optional::isPresent)
             .map(java.util.Optional::get)
             .collect(Collectors.toSet()));

@@ -28,7 +28,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -45,7 +44,7 @@ public class AccountInitializer implements Initializable {
 
   private final AccountRepository accountRepository;
   private final RoleRepository roleRepository;
-  @Lazy private final PasswordEncoder passwordEncoder;
+  private final PasswordEncoder passwordEncoder;
 
   @Value("${data.initializer.enabled:true}")
   private boolean enabled;

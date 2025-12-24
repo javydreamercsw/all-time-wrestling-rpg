@@ -139,12 +139,10 @@ public class SegmentAdjudicationService {
         if (id != null) {
           DiceBag wdb = new DiceBag(random, new int[] {6, 6});
           // for winners 2d6 + 3 + (quality bonus) fans
-          Long fanAward = (wdb.roll() + 3) * 1_000L + matchQualityBonus;
-          wrestlerService
-              .awardFans(id, fanAward)
-              .ifPresent(w -> log.debug("Awarded {} fans to wrestler {}", fanAward, w.getName()));
+          wrestlerService.awardFans(id, (wdb.roll() + 3) * 1_000L + matchQualityBonus);
         }
       }
+
       if (segment.getIsTitleSegment()) {
         for (Title title : segment.getTitles()) {
           List<Wrestler> currentChampions = title.getCurrentChampions();
@@ -165,12 +163,7 @@ public class SegmentAdjudicationService {
         if (id != null) {
           DiceBag ldb = new DiceBag(random, new int[] {6});
           // for losers 1d6 - 4 + (quality bonus) fans. Can be negative
-          Long fanChange = (ldb.roll() - 4) * 1_000L + matchQualityBonus;
-          wrestlerService
-              .awardFans(loser.getId(), fanChange)
-              .ifPresent(
-                  w ->
-                      log.debug("Deducted/awarded {} fans to wrestler {}", fanChange, w.getName()));
+          wrestlerService.awardFans(loser.getId(), (ldb.roll() - 4) * 1_000L + matchQualityBonus);
         }
       }
 
@@ -181,9 +174,7 @@ public class SegmentAdjudicationService {
             for (Wrestler winner : segment.getWinners()) {
               Long id = winner.getId();
               if (id != null) {
-                wrestlerService
-                    .addBump(id)
-                    .ifPresent(w -> log.debug("Added bump to wrestler {}", w.getName()));
+                wrestlerService.addBump(id);
               }
             }
             break;
@@ -191,9 +182,7 @@ public class SegmentAdjudicationService {
             for (Wrestler loser : segment.getLosers()) {
               Long id = loser.getId();
               if (id != null) {
-                wrestlerService
-                    .addBump(id)
-                    .ifPresent(w -> log.debug("Added bump to wrestler {}", w.getName()));
+                wrestlerService.addBump(id);
               }
             }
             break;
@@ -201,9 +190,7 @@ public class SegmentAdjudicationService {
             for (Wrestler participant : segment.getWrestlers()) {
               Long id = participant.getId();
               if (id != null) {
-                wrestlerService
-                    .addBump(id)
-                    .ifPresent(w -> log.debug("Added bump to wrestler {}", w.getName()));
+                wrestlerService.addBump(id);
               }
             }
             break;
@@ -228,13 +215,7 @@ public class SegmentAdjudicationService {
       for (Wrestler participant : segment.getWrestlers()) {
         Long id = participant.getId();
         if (id != null) {
-          Long fanAward = promoQualityBonus * 1_000L;
-          wrestlerService
-              .awardFans(id, fanAward)
-              .ifPresent(
-                  w ->
-                      log.debug(
-                          "Awarded {} fans to wrestler {} during promo", fanAward, w.getName()));
+          wrestlerService.awardFans(id, promoQualityBonus * 1_000L);
         }
       }
     }

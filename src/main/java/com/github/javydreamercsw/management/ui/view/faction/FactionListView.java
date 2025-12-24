@@ -20,7 +20,6 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -72,7 +71,6 @@ public class FactionListView extends Main {
 
   private final FactionService factionService;
   private final WrestlerService wrestlerService;
-  private final WrestlerRepository wrestlerRepository;
   private final SecurityUtils securityUtils;
   private Dialog editDialog;
   private Faction editingFaction;
@@ -84,11 +82,9 @@ public class FactionListView extends Main {
   public FactionListView(
       @NonNull FactionService factionService,
       @NonNull WrestlerService wrestlerService,
-      @NonNull WrestlerRepository wrestlerRepository,
       @NonNull SecurityUtils securityUtils) {
     this.factionService = factionService;
     this.wrestlerService = wrestlerService;
-    this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
 
     // Create form components
@@ -237,7 +233,7 @@ public class FactionListView extends Main {
 
     ComboBox<Wrestler> editLeader = new ComboBox<>("Leader");
     editLeader.setItems(
-        wrestlerRepository.findAll().stream()
+        wrestlerService.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
     editLeader.setId("edit-leader");
@@ -528,7 +524,7 @@ public class FactionListView extends Main {
     ComboBox<Wrestler> wrestlerCombo = new ComboBox<>("Select Wrestler");
     wrestlerCombo.setId("add-member-wrestler-combo");
     wrestlerCombo.setItems(
-        wrestlerRepository.findAll().stream()
+        wrestlerService.findAll().stream()
             .filter(w -> !loadedFaction.hasMember(w))
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));

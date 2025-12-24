@@ -28,7 +28,6 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -47,7 +46,6 @@ class NarrationDialogTest {
 
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
-  @Mock private WrestlerRepository wrestlerRepository;
   @Mock private ShowService showService;
   @Mock private SegmentService segmentService;
   @Mock private RivalryService rivalryService;
@@ -101,7 +99,6 @@ class NarrationDialogTest {
             segment,
             npcService,
             wrestlerService,
-            mock(WrestlerRepository.class),
             showService,
             segmentService,
             s -> {},

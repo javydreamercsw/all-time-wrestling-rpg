@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
-import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -26,7 +25,6 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
@@ -62,7 +60,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -86,13 +83,11 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   }
 
   private final WrestlerService wrestlerService;
-  private final WrestlerRepository wrestlerRepository;
   private final TitleService titleService;
   private final SegmentService segmentService;
   private final MultiWrestlerFeudService multiWrestlerFeudService;
   private final RivalryService rivalryService;
   private final InjuryService injuryService;
-  private final AccountService accountService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -115,22 +110,18 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   @Autowired
   public WrestlerProfileView(
       WrestlerService wrestlerService,
-      WrestlerRepository wrestlerRepository,
       TitleService titleService,
       SegmentService segmentService,
       MultiWrestlerFeudService multiWrestlerFeudService,
       RivalryService rivalryService,
       SeasonService seasonService,
-      InjuryService injuryService,
-      @Qualifier("baseAccountService") AccountService accountService) {
+      InjuryService injuryService) {
     this.wrestlerService = wrestlerService;
-    this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
     this.segmentService = segmentService;
     this.multiWrestlerFeudService = multiWrestlerFeudService;
     this.rivalryService = rivalryService;
     this.injuryService = injuryService;
-    this.accountService = accountService;
 
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setSrc("https://via.placeholder.com/150");
@@ -214,7 +205,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     RouteParameters parameters = event.getRouteParameters();
     if (parameters.get("wrestlerId").isPresent()) {
       Long wrestlerId = Long.valueOf(parameters.get("wrestlerId").get());
-      Optional<Wrestler> foundWrestler = wrestlerRepository.findByIdWithInjuries(wrestlerId);
+      Optional<Wrestler> foundWrestler = wrestlerService.findByIdWithInjuries(wrestlerId);
       if (foundWrestler.isPresent()) {
         wrestler = foundWrestler.get();
         updateView();
@@ -232,13 +223,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       header.getChildren().filter(c -> c instanceof WrestlerActionMenu).forEach(header::remove);
       header.add(
           new WrestlerActionMenu(
-              wrestler,
-              wrestlerService,
-              injuryService,
-              this::updateView,
-              true,
-              securityUtils,
-              accountService));
+              wrestler, wrestlerService, injuryService, this::updateView, true, securityUtils));
       wrestlerName.setText(wrestler.getName());
       wrestlerDetails.setText(
           String.format("Gender: %s, Fans: %d", wrestler.getGender(), wrestler.getFans()));

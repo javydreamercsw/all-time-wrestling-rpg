@@ -131,10 +131,11 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
                 .build())
         .get(
             () -> {
-              wait.until(
-                  ExpectedConditions.presenceOfElementLocated(By.id("segments-grid-wrapper")));
-              WebElement refreshedGrid =
-                  wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("segments-grid")));
+              WebElement segmentGrid =
+                  wait.until(
+                      ExpectedConditions.presenceOfElementLocated(By.id("segments-grid-wrapper")));
+              wait.until(ExpectedConditions.visibilityOfAllElements(segmentGrid));
+              WebElement refreshedGrid = segmentGrid.findElement(By.id("segments-grid"));
               assertTrue(refreshedGrid.getText().contains(narrationText));
               assertTrue(refreshedGrid.getText().contains(summaryText));
               return refreshedGrid;

@@ -18,29 +18,20 @@ package com.github.javydreamercsw.management;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.service.account.AccountService;
+import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.management.domain.card.CardSet;
-import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
-import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
@@ -50,117 +41,52 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@ActiveProfiles("test")
+@WithMockUser(roles = "ADMIN")
+@Import({TestSecurityConfig.class})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DataInitializerTest {
 
-  private DataInitializer dataInitializer;
-
-  @Mock private WrestlerService wrestlerService;
-  @Mock private CardSetService cardSetService;
-  @Mock private CardService cardService;
-  @Mock private DeckService deckService;
-  @Mock private ShowTypeService showTypeService;
-  @Mock private ShowTemplateService showTemplateService;
-  @Mock private SegmentRuleService segmentRuleService;
-  @Mock private SegmentTypeService segmentTypeService;
-  @Mock private TitleService titleService;
-
-  @Mock
-  @Qualifier("baseAccountService") private AccountService accountService;
-
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private GameSettingService gameSettingService;
+  @Autowired private DataInitializer dataInitializer;
+  @Autowired private WrestlerService wrestlerService;
+  @Autowired private CardSetService cardSetService;
+  @Autowired private CardService cardService;
+  @Autowired private DeckService deckService;
+  @Autowired private ShowTypeService showTypeService;
+  @Autowired private ShowTemplateService showTemplateService;
+  @Autowired private SegmentRuleService segmentRuleService;
+  @Autowired private SegmentTypeService segmentTypeService;
+  @Autowired private TitleService titleService;
 
   @BeforeEach
   void setUp() {
-    // Manually instantiate DataInitializer with mocked dependencies
-    dataInitializer =
-        new DataInitializer(
-            true, // Enabled parameter
-            showTemplateService,
-            wrestlerService,
-            wrestlerRepository,
-            showTypeService,
-            segmentRuleService,
-            segmentTypeService,
-            cardSetService,
-            cardService,
-            titleService,
-            deckService,
-            gameSettingService);
-
-    // Mock count methods to prevent issues during init()
-    lenient().when(wrestlerService.count()).thenReturn(0L);
-    lenient().when(cardSetService.count()).thenReturn(0L);
-    lenient().when(cardService.count()).thenReturn(0L);
-    lenient().when(deckService.count()).thenReturn(0L);
-    lenient().when(showTypeService.count()).thenReturn(0L);
-    lenient().when(showTemplateService.count()).thenReturn(0L);
-    lenient().when(segmentRuleService.findAll()).thenReturn(new ArrayList<>());
-    lenient().when(segmentTypeService.findAll()).thenReturn(new ArrayList<>());
-    lenient().when(titleService.findAll()).thenReturn(new ArrayList<>());
-    // AccountService doesn't have a count method
-    lenient().when(wrestlerRepository.count()).thenReturn(0L);
-    lenient().when(gameSettingService.findById(any())).thenReturn(Optional.empty());
-
-    // Mock save methods to prevent NullPointerExceptions during init()
-    lenient().when(wrestlerService.save(any(Wrestler.class))).thenAnswer(i -> i.getArguments()[0]);
-    lenient().when(cardSetService.save(any(CardSet.class))).thenAnswer(i -> i.getArguments()[0]);
-    lenient().when(cardService.save(any())).thenAnswer(i -> i.getArguments()[0]);
-    lenient().when(deckService.save(any())).thenAnswer(i -> i.getArguments()[0]);
-    lenient().when(showTypeService.save(any())).thenAnswer(i -> i.getArguments()[0]);
-    lenient().when(showTemplateService.save(any())).thenAnswer(i -> i.getArguments()[0]);
-    lenient()
-        .when(
-            segmentRuleService.createOrUpdateRule(
-                anyString(), anyString(), anyBoolean(), any(BumpAddition.class)))
-        .thenAnswer(
-            invocation -> {
-              SegmentRule rule = new SegmentRule();
-              rule.setName(invocation.getArgument(0));
-              rule.setDescription(invocation.getArgument(1));
-              rule.setRequiresHighHeat(invocation.getArgument(2));
-              rule.setBumpAddition(invocation.getArgument(3));
-              return rule;
-            });
-    lenient()
-        .when(segmentTypeService.createOrUpdateSegmentType(anyString(), anyString()))
-        .thenAnswer(
-            invocation -> {
-              SegmentType type = new SegmentType();
-              type.setName(invocation.getArgument(0));
-              type.setDescription(invocation.getArgument(1));
-              return type;
-            });
-    lenient()
-        .when(titleService.createTitle(anyString(), anyString(), any()))
-        .thenAnswer(
-            invocation -> {
-              Title title = new Title();
-              title.setName(invocation.getArgument(0));
-              title.setDescription(invocation.getArgument(1));
-              title.setTier(invocation.getArgument(2));
-              return title;
-            });
-    lenient().when(titleService.save(any(Title.class))).thenAnswer(i -> i.getArguments()[0]);
-    // AccountService doesn't have a save method
-    lenient()
-        .when(wrestlerRepository.save(any(Wrestler.class)))
-        .thenAnswer(i -> i.getArguments()[0]);
-    lenient().doNothing().when(gameSettingService).saveCurrentGameDate(any());
-
     dataInitializer.init();
+  }
+
+  @Test
+  void testDataLoadedFromFile() {
+    // This test will fail if the data initializer is disabled.
+    assertFalse(wrestlerService.findAll().isEmpty());
+    assertFalse(cardSetService.findAll().isEmpty());
+    assertFalse(cardService.findAll().isEmpty());
+    assertFalse(deckService.findAll().isEmpty());
+    assertFalse(showTypeService.findAll().isEmpty());
+    assertFalse(showTemplateService.findAll().isEmpty());
+    assertFalse(segmentRuleService.findAll().isEmpty());
+    assertFalse(segmentTypeService.findAll().isEmpty());
+    assertFalse(titleService.findAll().isEmpty());
   }
 
   @Test

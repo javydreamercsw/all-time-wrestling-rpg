@@ -25,7 +25,6 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
@@ -42,7 +41,6 @@ import java.util.Locale;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.stefan.fullcalendar.Entry;
 import org.vaadin.stefan.fullcalendar.dataprovider.EntryQuery;
 
@@ -51,7 +49,6 @@ class ShowStyleUIIntegrationTest extends ManagementIntegrationTest {
   private Show pleShow;
   private Show weeklyShow;
   private Show otherShow;
-  @Autowired GameSettingService gameSettingService;
 
   @BeforeEach
   void setUp() {
@@ -161,7 +158,7 @@ class ShowStyleUIIntegrationTest extends ManagementIntegrationTest {
     when(session.getService()).thenReturn(mock(VaadinService.class));
     ui.getInternals().setSession(session);
 
-    ShowCalendarView showCalendarView = new ShowCalendarView(showService, gameSettingService);
+    ShowCalendarView showCalendarView = new ShowCalendarView(showService);
 
     // The calendar is populated in the constructor, so we can get the entries right away.
     Instant start = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();

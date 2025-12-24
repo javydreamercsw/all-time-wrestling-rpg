@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -60,7 +59,6 @@ import org.vaadin.stefan.fullcalendar.FullCalendarBuilder;
 public class ShowCalendarView extends Main implements BeforeEnterObserver {
 
   private final ShowService showService;
-  private final GameSettingService gameSettingService;
   private final DateTimeFormatter monthYearFormatter = DateTimeFormatter.ofPattern("MMMM yyyy");
 
   private FullCalendar calendar;
@@ -78,11 +76,9 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     return upcomingShowsPanel;
   }
 
-  public ShowCalendarView(
-      @NonNull ShowService showService, @NonNull GameSettingService gameSettingService) {
+  public ShowCalendarView(@NonNull ShowService showService) {
     this.showService = showService;
-    this.gameSettingService = gameSettingService;
-    this.currentYearMonth = YearMonth.from(gameSettingService.getCurrentGameDate());
+    this.currentYearMonth = YearMonth.now();
 
     initializeComponents();
     setupLayout();
@@ -238,7 +234,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
   }
 
   private void navigateToToday() {
-    currentYearMonth = YearMonth.from(gameSettingService.getCurrentGameDate());
+    currentYearMonth = YearMonth.now();
     updateCalendarAndControls();
   }
 
@@ -354,8 +350,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     upcomingTitle.addClassNames(LumoUtility.Margin.NONE);
     upcomingShowsPanel.add(upcomingTitle);
 
-    List<Show> upcomingShows =
-        showService.getUpcomingShowsWithRelationships(gameSettingService.getCurrentGameDate(), 10);
+    List<Show> upcomingShows = showService.getUpcomingShowsWithRelationships(10);
 
     if (upcomingShows.isEmpty()) {
       Span noShows = new Span("No upcoming shows scheduled");

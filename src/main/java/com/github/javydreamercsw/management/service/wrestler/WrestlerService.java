@@ -19,8 +19,6 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
-import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
@@ -41,7 +39,6 @@ import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -58,7 +55,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class WrestlerService {
 
   @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private AccountRepository accountRepository;
   @Autowired private DramaEventRepository dramaEventRepository;
   @Autowired private Clock clock;
   @Autowired private InjuryService injuryService;
@@ -69,108 +65,7 @@ public class WrestlerService {
 
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void createWrestler(@NonNull String name) {
-    createWrestler(name, false, "", WrestlerTier.ROOKIE, null);
-  }
-
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
-  public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
-    return createWrestler(name, isPlayer, description, WrestlerTier.ROOKIE, null);
-  }
-
-  /**
-   * Create a new wrestler with ATW RPG defaults.
-   *
-   * @param name Wrestler name
-   * @param isPlayer Whether this is a player-controlled wrestler
-   * @param description Character description
-   * @return The created wrestler
-   */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
-  public Wrestler createWrestler(
-      @NonNull String name, boolean isPlayer, String description, @NonNull WrestlerTier tier) {
-    return createWrestler(name, isPlayer, description, tier, null);
-  }
-
-  /**
-   * Create a new wrestler with ATW RPG defaults, optionally linking to an account.
-   *
-   * @param name Wrestler name
-   * @param isPlayer Whether this is a player-controlled wrestler
-   * @param description Character description
-   * @param tier The tier of the wrestler
-   * @param account The account to link to this wrestler (optional)
-   * @return The created wrestler
-   */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
-  public Wrestler createWrestler(
-      @NonNull String name,
-      boolean isPlayer,
-      String description,
-      @NonNull WrestlerTier tier,
-      @Nullable Account account) {
-    Wrestler wrestler =
-        Wrestler.builder()
-            .name(name)
-            .description(description == null ? "Default Description" : description)
-            .deckSize(15)
-            .startingHealth(15)
-            .lowHealth(0)
-            .startingStamina(0)
-            .lowStamina(0)
-            .fans(0L)
-            .gender(Gender.MALE)
-            .isPlayer(isPlayer)
-            .bumps(0)
-            .tier(tier)
-            .account(account) // Set account here
-            .build();
-
-    return save(wrestler);
-  }
-
-  /**
-   * Assigns an account to an existing wrestler.
-   *
-   * @param wrestlerId The ID of the wrestler.
-   * @param accountId The ID of the account to assign, or null to unassign.
-   * @return The updated wrestler, or empty if wrestler not found.
-   */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
-  public Optional<Wrestler> setAccountForWrestler(
-      @NonNull Long wrestlerId, @Nullable Long accountId) {
-    return wrestlerRepository
-        .findById(wrestlerId)
-        .map(
-            wrestler -> {
-              Account account = null;
-              if (accountId != null) {
-                account =
-                    accountRepository
-                        .findById(accountId)
-                        .orElseThrow(
-                            () ->
-                                new IllegalArgumentException(
-                                    "Account not found with ID: " + accountId));
-              }
-
-              // Check if the account is already assigned to another wrestler
-              if (account != null) {
-                Optional<Wrestler> existingPlayerWrestler =
-                    wrestlerRepository.findByAccount(account);
-                if (existingPlayerWrestler.isPresent()
-                    && !existingPlayerWrestler.get().getId().equals(wrestlerId)) {
-                  throw new IllegalArgumentException(
-                      "Account "
-                          + account.getUsername()
-                          + " is already assigned to another wrestler: "
-                          + existingPlayerWrestler.get().getName());
-                }
-              }
-
-              wrestler.setAccount(account);
-              wrestler.setIsPlayer(account != null); // Set isPlayer based on account presence
-              return wrestlerRepository.saveAndFlush(wrestler);
-            });
+    createWrestler(name, false, "", WrestlerTier.ROOKIE);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -193,9 +88,6 @@ public class WrestlerService {
   }
 
   @Transactional
-  @CacheEvict(
-      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
-      allEntries = true)
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void delete(@NonNull Wrestler wrestler) {
     dramaEventRepository.deleteByPrimaryWrestlerOrSecondaryWrestler(wrestler, wrestler);
@@ -240,11 +132,6 @@ public class WrestlerService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<Wrestler> findByAccount(@NonNull Account account) {
-    return wrestlerRepository.findByAccount(account);
-  }
-
-  @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findByExternalId(String externalId) {
     return wrestlerRepository.findByExternalId(externalId);
   }
@@ -269,18 +156,10 @@ public class WrestlerService {
               long tempFans = fanChange;
               if (fanChange > 0) {
                 switch (wrestler.getTier()) {
-                  case ICON:
-                    tempFans = tempFans * 90 / 100;
-                    break;
-                  case MAIN_EVENTER:
-                    tempFans = tempFans * 93 / 100;
-                    break;
-                  case MIDCARDER:
-                    tempFans = tempFans * 95 / 100;
-                    break;
-                  case CONTENDER:
-                    tempFans = tempFans * 97 / 100;
-                    break;
+                  case ICON -> tempFans = tempFans * 90 / 100;
+                  case MAIN_EVENTER -> tempFans = tempFans * 93 / 100;
+                  case MIDCARDER -> tempFans = tempFans * 95 / 100;
+                  case CONTENDER -> tempFans = tempFans * 97 / 100;
                 }
                 tempFans = Math.round(tempFans / 1000.0) * 1000;
               }
@@ -434,6 +313,50 @@ public class WrestlerService {
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public boolean spendFans(@NonNull Long wrestlerId, @NonNull Long cost) {
     return updateFans(wrestlerId, -cost).isPresent();
+  }
+
+  /**
+   * Create a new wrestler with ATW RPG defaults.
+   *
+   * @param name Wrestler name
+   * @param isPlayer Whether this is a player-controlled wrestler
+   * @param description Character description
+   * @return The created wrestler
+   */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
+    return createWrestler(name, isPlayer, description, WrestlerTier.ROOKIE);
+  }
+
+  /**
+   * Create a new wrestler with ATW RPG defaults.
+   *
+   * @param name Wrestler name
+   * @param isPlayer Whether this is a player-controlled wrestler
+   * @param description Character description
+   * @param tier The tier of the wrestler
+   * @return The created wrestler
+   */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  public Wrestler createWrestler(
+      @NonNull String name, boolean isPlayer, String description, @NonNull WrestlerTier tier) {
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name(name)
+            .description(description == null ? "Default Description" : description)
+            .deckSize(15)
+            .startingHealth(15)
+            .lowHealth(0)
+            .startingStamina(0)
+            .lowStamina(0)
+            .fans(0L)
+            .gender(Gender.MALE)
+            .isPlayer(isPlayer)
+            .bumps(0)
+            .tier(tier)
+            .build();
+
+    return save(wrestler);
   }
 
   @PreAuthorize("isAuthenticated()")

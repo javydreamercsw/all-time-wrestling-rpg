@@ -33,7 +33,6 @@ import com.vaadin.flow.data.binder.ValidationException;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 public class AccountFormDialog extends Dialog {
 
@@ -42,8 +41,7 @@ public class AccountFormDialog extends Dialog {
   private final Account account;
   private final BeanValidationBinder<Account> binder = new BeanValidationBinder<>(Account.class);
 
-  public AccountFormDialog(
-      @Qualifier("managementAccountService") AccountService accountService, Account account) {
+  public AccountFormDialog(AccountService accountService, Account account) {
     this.accountService = accountService;
     this.account = account;
     binder.setBean(account);
