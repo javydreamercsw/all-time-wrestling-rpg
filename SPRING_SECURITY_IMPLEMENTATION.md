@@ -184,13 +184,12 @@
 	- Injected necessary services: `WrestlerService`, `ShowService`, `RivalryService`, `InboxService`, `SecurityUtils`, and `AccountService`.
 	- Added `getInboxItemsForWrestler` method to `InboxService`.
 	- Added `findUpcomingShowsForWrestler` query to `ShowRepository` and corresponding method in `ShowService`.
-27. 🔨 **Plan `BookerView` Dashboard**:
-	- Layout design with sections for:
-		- Upcoming Shows
-		- Active Rivalries
-		- Roster Overview
-		- Quick Actions (Create Show, Wrestler, Rivalry)
-28. 🔨 **Component Breakdown**:
+27. ✅ **Implement `BookerView` Dashboard**:
+	- Implemented a dashboard layout with sections for:
+		- **Upcoming Shows**: Grid displaying the next 5 upcoming shows from `ShowService`.
+		- **Active Rivalries**: Grid displaying all active rivalries from `RivalryService`.
+		- **Roster Overview**: Grid displaying all wrestlers, including their current "brand" (derived from the show type of their last appearance).
+28. ✅ **Component Breakdown**:
 	- List the new UI components required for these views.
 	- Plan the data flow and service methods needed.
 

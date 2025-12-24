@@ -30,6 +30,7 @@ import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.validator.RegexpValidator;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
@@ -104,14 +105,18 @@ public class AccountFormView extends Main implements HasUrlParameter<Long> {
 
     binder
         .forField(password)
+        .withValidator(new RegexpValidator("Password must be at least 8 characters long.", ".{8,}"))
         .withValidator(
-            pass ->
-                account.getId() != null
-                    || (pass.length() >= 8
-                        && pass.matches(".*[a-zA-Z].*")
-                        && pass.matches(".*[0-9].*")),
-            "Password must be at least 8 characters long and contain at least one letter and one"
-                + " number.")
+            new RegexpValidator(
+                "Password must contain at least one uppercase letter.", ".*[A-Z].*"))
+        .withValidator(
+            new RegexpValidator(
+                "Password must contain at least one lowercase letter.", ".*[a-z].*"))
+        .withValidator(new RegexpValidator("Password must contain at least one digit.", ".*\\d.*"))
+        .withValidator(
+            new RegexpValidator(
+                "Password must contain at least one special character (e.g., !@#$%^&*()).",
+                ".*[^a-zA-Z0-9].*"))
         .bind(
             account -> "",
             (account, pass) -> {

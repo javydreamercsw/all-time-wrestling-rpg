@@ -26,6 +26,8 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.ValidationResult;
+import com.vaadin.flow.data.validator.RegexpValidator;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
@@ -41,49 +43,97 @@ public class ProfileView extends Main {
     securityUtils
         .getAuthenticatedUser()
         .ifPresent(
-            user -> {
-              accountService
-                  .findByUsername(user.getUsername())
-                  .ifPresent(
-                      account -> {
-                        FormLayout formLayout = new FormLayout();
+            user ->
+                accountService
+                    .findByUsername(user.getUsername())
+                    .ifPresent(
+                        account -> {
+                          FormLayout formLayout = new FormLayout();
 
-                        TextField usernameField = new TextField("Username");
-                        usernameField.setValue(account.getUsername());
-                        usernameField.setReadOnly(true);
+                          TextField usernameField = new TextField("Username");
+                          usernameField.setValue(account.getUsername());
+                          usernameField.setReadOnly(true);
 
-                        EmailField emailField = new EmailField("Email");
-                        emailField.setValue(account.getEmail());
+                          EmailField emailField = new EmailField("Email");
+                          emailField.setValue(account.getEmail());
 
-                        PasswordField passwordField = new PasswordField("New Password");
-                        PasswordField confirmPasswordField =
-                            new PasswordField("Confirm New Password");
+                          PasswordField passwordField = new PasswordField("New Password");
+                          PasswordField confirmPasswordField =
+                              new PasswordField("Confirm New Password");
 
-                        Button saveButton = new Button("Save");
-                        saveButton.addClickListener(
-                            event -> {
-                              if (passwordField
-                                  .getValue()
-                                  .equals(confirmPasswordField.getValue())) {
-                                account.setEmail(emailField.getValue());
-                                if (!passwordField.getValue().isEmpty()) {
-                                  account.setPassword(passwordField.getValue());
-                                }
-                                accountService.update(account);
-                                Notification.show("Profile updated successfully!");
-                              } else {
-                                Notification.show("Passwords do not match!");
-                              }
-                            });
+                          Button saveButton =
+                              new Button(
+                                  "Save",
+                                  event -> {
+                                    if (passwordField
+                                        .getValue()
+                                        .equals(confirmPasswordField.getValue())) {
+                                      account.setEmail(emailField.getValue());
+                                      if (!passwordField.getValue().isEmpty()) {
+                                        ValidationResult result =
+                                            new RegexpValidator(
+                                                    "Password must be at least 8 characters long.",
+                                                    ".{8,}")
+                                                .apply(passwordField.getValue(), null);
+                                        if (result.isError()) {
+                                          Notification.show(result.getErrorMessage());
+                                          return;
+                                        }
+                                        result =
+                                            new RegexpValidator(
+                                                    "Password must contain at least one uppercase"
+                                                        + " letter.",
+                                                    ".*[A-Z].*")
+                                                .apply(passwordField.getValue(), null);
+                                        if (result.isError()) {
+                                          Notification.show(result.getErrorMessage());
+                                          return;
+                                        }
+                                        result =
+                                            new RegexpValidator(
+                                                    "Password must contain at least one lowercase"
+                                                        + " letter.",
+                                                    ".*[a-z].*")
+                                                .apply(passwordField.getValue(), null);
+                                        if (result.isError()) {
+                                          Notification.show(result.getErrorMessage());
+                                          return;
+                                        }
+                                        result =
+                                            new RegexpValidator(
+                                                    "Password must contain at least one digit.",
+                                                    ".*\\d.*")
+                                                .apply(passwordField.getValue(), null);
+                                        if (result.isError()) {
+                                          Notification.show(result.getErrorMessage());
+                                          return;
+                                        }
+                                        result =
+                                            new RegexpValidator(
+                                                    "Password must contain at least one special"
+                                                        + " character (e.g., !@#$%^&*()).",
+                                                    ".*[^a-zA-Z0-9].*")
+                                                .apply(passwordField.getValue(), null);
+                                        if (result.isError()) {
+                                          Notification.show(result.getErrorMessage());
+                                          return;
+                                        }
+                                        account.setPassword(passwordField.getValue());
+                                      }
+                                      accountService.update(account);
+                                      Notification.show("Profile updated successfully!");
+                                    } else {
+                                      Notification.show("Passwords do not match!");
+                                    }
+                                  });
 
-                        formLayout.add(
-                            usernameField,
-                            emailField,
-                            passwordField,
-                            confirmPasswordField,
-                            saveButton);
-                        add(formLayout);
-                      });
-            });
+                          formLayout.add(
+                              usernameField,
+                              emailField,
+                              passwordField,
+                              confirmPasswordField,
+                              saveButton);
+                          add(formLayout);
+                        }));
   }
 }
