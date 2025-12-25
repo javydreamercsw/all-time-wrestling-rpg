@@ -46,6 +46,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   public void setupTestData() {
+    wrestlerRepository.deleteAll();
     ShowType showType = new ShowType();
     showType.setName("Weekly Show");
     showType.setDescription("A weekly show");
@@ -101,11 +102,11 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.textToBePresentInElementValue(narrationArea, narrationText));
 
     WebElement segmentTypeComboBox = dialog.findElement(By.id("segment-type-combo-box"));
-    segmentTypeComboBox.sendKeys("Singles Match", Keys.RETURN);
+    segmentTypeComboBox.sendKeys("Singles Match", Keys.TAB);
 
     WebElement wrestlersComboBox = dialog.findElement(By.id("wrestlers-combo-box"));
-    selectFromVaadinComboBox(wrestlersComboBox, "Wrestler 1");
-    selectFromVaadinComboBox(wrestlersComboBox, "Wrestler 2");
+    selectFromVaadinMultiSelectComboBox(wrestlersComboBox, "Wrestler 1");
+    selectFromVaadinMultiSelectComboBox(wrestlersComboBox, "Wrestler 2");
 
     // Click the "Add Segment" button in the dialog
     WebElement addSegmentDialogButton = dialog.findElement(By.id("add-segment-save-button"));
