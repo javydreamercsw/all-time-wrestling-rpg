@@ -185,9 +185,17 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
                       By.cssSelector("vaadin-text-field"))))
           .sendKeys(showName);
       List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
-      comboBoxes.get(0).sendKeys(SHOW_TYPE_NAME);
-      comboBoxes.get(1).sendKeys(SEASON_NAME);
-      comboBoxes.get(2).sendKeys(TEMPLATE_NAME);
+      WebElement showTypeComboBox = comboBoxes.get(0);
+      WebElement seasonComboBox = comboBoxes.get(1);
+      WebElement templateComboBox = comboBoxes.get(2);
+
+      showTypeComboBox.sendKeys(SHOW_TYPE_NAME, Keys.TAB);
+
+      wait.until(driver -> templateComboBox.isEnabled());
+
+      seasonComboBox.sendKeys(SEASON_NAME, Keys.TAB);
+      templateComboBox.sendKeys(TEMPLATE_NAME, Keys.TAB);
+
       driver
           .findElement(By.id("show-date"))
           .sendKeys(LocalDate.now().format(DateTimeFormatter.ofPattern("M/d/yyyy")));

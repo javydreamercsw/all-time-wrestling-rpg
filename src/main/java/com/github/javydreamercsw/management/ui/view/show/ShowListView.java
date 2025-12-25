@@ -135,14 +135,26 @@ public class ShowListView extends Main {
     newSeason.setId("season");
 
     newTemplate = new ComboBox<>("Template");
-    newTemplate.setItems(
-        showTemplateService.findAll().stream()
-            .sorted(Comparator.comparing(ShowTemplate::getName))
-            .collect(Collectors.toList()));
     newTemplate.setItemLabelGenerator(ShowTemplate::getName);
     newTemplate.setClearButtonVisible(true);
     newTemplate.setPlaceholder("Select a template (optional)");
     newTemplate.setId("show-template");
+    newTemplate.setEnabled(false);
+
+    newShowType.addValueChangeListener(
+        event -> {
+          ShowType selectedShowType = event.getValue();
+          if (selectedShowType != null) {
+            newTemplate.setItems(
+                showTemplateService.findByShowType(selectedShowType).stream()
+                    .sorted(Comparator.comparing(ShowTemplate::getName))
+                    .collect(Collectors.toList()));
+            newTemplate.setEnabled(true);
+          } else {
+            newTemplate.clear();
+            newTemplate.setEnabled(false);
+          }
+        });
 
     newShowDate = new DatePicker("Show Date");
     newShowDate.setPlaceholder("Select date (optional)");
@@ -410,14 +422,31 @@ public class ShowListView extends Main {
     editSeason.setId("edit-season");
 
     editTemplate = new ComboBox<>("Template");
-    editTemplate.setItems(
-        showTemplateService.findAll().stream()
-            .sorted(Comparator.comparing(ShowTemplate::getName))
-            .collect(Collectors.toList()));
     editTemplate.setItemLabelGenerator(ShowTemplate::getName);
     editTemplate.setWidthFull();
     editTemplate.setClearButtonVisible(true);
     editTemplate.setId("edit-show-template");
+
+    editType.addValueChangeListener(
+        event -> {
+          ShowType selectedShowType = event.getValue();
+          // Keep the old value to check if we need to clear.
+          ShowTemplate oldValue = editTemplate.getValue();
+          if (selectedShowType != null) {
+            editTemplate.setItems(
+                showTemplateService.findByShowType(selectedShowType).stream()
+                    .sorted(Comparator.comparing(ShowTemplate::getName))
+                    .collect(Collectors.toList()));
+            editTemplate.setEnabled(true);
+            // If the old value is not valid for the new type, clear it.
+            if (oldValue != null && !selectedShowType.equals(oldValue.getShowType())) {
+              editTemplate.clear();
+            }
+          } else {
+            editTemplate.clear();
+            editTemplate.setEnabled(false);
+          }
+        });
 
     editShowDate = new DatePicker("Show Date");
     editShowDate.setWidthFull();

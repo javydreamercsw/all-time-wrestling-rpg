@@ -149,6 +149,16 @@ public class ShowTemplateService {
   }
 
   /**
+   * Find templates by show type.
+   *
+   * @param showType The show type
+   * @return List of templates for the specified show type
+   */
+  public List<ShowTemplate> findByShowType(@NonNull ShowType showType) {
+    return showTemplateRepository.findByShowType(showType);
+  }
+
+  /**
    * Create or update a show template from external data.
    *
    * @param name Name of the show template
