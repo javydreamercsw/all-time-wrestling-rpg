@@ -95,7 +95,7 @@ class RankingServiceTest {
     List<Wrestler> contenders = new ArrayList<>();
     contenders.add(contender1);
     contenders.add(contender2);
-    title.setContender(contenders);
+    contenders.forEach(title::addChallenger);
   }
 
   @Test
@@ -140,7 +140,7 @@ class RankingServiceTest {
     icon.setGender(Gender.MALE);
     icon.setFans(WrestlerTier.ICON.getMinFans() + 1000); // Above Main Eventer
     icon.setTier(WrestlerTier.fromFanCount(icon.getFans()));
-    title.getContender().add(icon);
+    title.addChallenger(icon);
 
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
     com.github.javydreamercsw.management.domain.wrestler.TierBoundary boundary =

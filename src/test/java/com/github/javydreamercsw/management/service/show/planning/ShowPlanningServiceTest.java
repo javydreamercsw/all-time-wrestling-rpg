@@ -145,7 +145,7 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
     title.setName("Test Title");
     Wrestler champion = Wrestler.builder().build();
     champion.setName("Champion");
-    title.getCurrentChampions().add(champion);
+    title.awardTitleTo(Collections.singletonList(champion), Instant.now());
     when(titleService.getActiveTitles()).thenReturn(Collections.singletonList(title));
     Wrestler contender = Wrestler.builder().build();
     contender.setName("Contender");
@@ -353,11 +353,11 @@ class ShowPlanningServiceTest extends ManagementIntegrationTest {
     Wrestler champion = Wrestler.builder().build();
     champion.setName("Champion");
 
-    title.getCurrentChampions().add(champion);
+    title.awardTitleTo(Collections.singletonList(champion), Instant.now());
 
     Wrestler numberOneContender = Wrestler.builder().build();
     numberOneContender.setName("Number One Contender");
-    title.setContender(Collections.singletonList(numberOneContender));
+    title.addChallenger(numberOneContender);
 
     when(titleService.getActiveTitles()).thenReturn(Collections.singletonList(title));
     when(titleService.getEligibleChallengers(anyLong()))
