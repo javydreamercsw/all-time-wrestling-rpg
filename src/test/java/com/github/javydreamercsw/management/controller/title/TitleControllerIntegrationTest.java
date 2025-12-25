@@ -28,11 +28,13 @@ import com.github.javydreamercsw.management.controller.title.TitleController.Cre
 import com.github.javydreamercsw.management.controller.title.TitleController.UpdateTitleRequest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -66,9 +68,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
   @MockitoBean private TitleService titleService;
   @MockitoBean private WrestlerService wrestlerService;
 
-  @MockitoBean
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
-      wrestlerRepository;
+  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @MockitoBean private RankingService rankingService;
 
@@ -241,7 +241,9 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler wrestler = createTestWrestler("Champion", 120000L); // Eligible for World title
 
+    Assertions.assertNotNull(title.getId());
     when(titleService.getTitleById(title.getId())).thenReturn(Optional.of(title));
+    Assertions.assertNotNull(wrestler.getId());
     when(wrestlerRepository.findAllById(List.of(wrestler.getId()))).thenReturn(List.of(wrestler));
     doAnswer(
             invocation -> {
@@ -269,7 +271,9 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler wrestler = createTestWrestler("Rookie", 50000L); // Not eligible for World title
 
+    Assertions.assertNotNull(title.getId());
     when(titleService.getTitleById(title.getId())).thenReturn(Optional.of(title));
+    Assertions.assertNotNull(wrestler.getId());
     when(wrestlerRepository.findAllById(List.of(wrestler.getId()))).thenReturn(List.of(wrestler));
     doThrow(new IllegalArgumentException("Wrestler not eligible"))
         .when(titleService)
@@ -294,6 +298,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Title vacatedTitle = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     vacatedTitle.vacateTitle(Instant.now());
 
+    Assertions.assertNotNull(awardedTitle.getId());
     when(titleService.getTitleById(awardedTitle.getId())).thenReturn(Optional.of(awardedTitle));
     when(titleService.vacateTitle(awardedTitle.getId())).thenReturn(Optional.of(vacatedTitle));
 
@@ -310,6 +315,8 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler challenger = createTestWrestler("Challenger", 120000L); // Has enough fans
 
+    Assertions.assertNotNull(title.getId());
+    Assertions.assertNotNull(challenger.getId());
     when(titleService.addChallengerToTitle(title.getId(), challenger.getId()))
         .thenReturn(new TitleService.ChallengeResult(true, "Challenge accepted"));
 
@@ -328,6 +335,8 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler challenger = createTestWrestler("Poor Challenger", 50000L); // Not eligible
 
+    Assertions.assertNotNull(title.getId());
+    Assertions.assertNotNull(challenger.getId());
     when(titleService.addChallengerToTitle(title.getId(), challenger.getId()))
         .thenReturn(new TitleService.ChallengeResult(false, "Wrestler not eligible"));
 
@@ -347,6 +356,8 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Wrestler challenger = createTestWrestler("Challenger", 120000L);
     title.addChallenger(challenger);
 
+    Assertions.assertNotNull(title.getId());
+    Assertions.assertNotNull(challenger.getId());
     when(titleService.removeChallengerFromTitle(title.getId(), challenger.getId()))
         .thenReturn(new TitleService.ChallengeResult(true, "Challenger removed"));
 
@@ -365,6 +376,8 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler nonChallenger = createTestWrestler("Non Challenger", 120000L);
 
+    Assertions.assertNotNull(title.getId());
+    Assertions.assertNotNull(nonChallenger.getId());
     when(titleService.removeChallengerFromTitle(title.getId(), nonChallenger.getId()))
         .thenReturn(new TitleService.ChallengeResult(false, "Wrestler is not a challenger"));
 
@@ -386,6 +399,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Wrestler eligibleWrestler = createTestWrestler("Eligible", 120000L);
     createTestWrestler("Ineligible", 50000L);
 
+    Assertions.assertNotNull(title.getId());
     when(titleService.getEligibleChallengers(title.getId())).thenReturn(List.of(eligibleWrestler));
 
     mockMvc
@@ -408,6 +422,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     when(titleService.save(title1)).thenReturn(title1);
     when(titleService.save(title2)).thenReturn(title2);
 
+    Assertions.assertNotNull(wrestler.getId());
     when(titleService.getTitlesHeldBy(wrestler.getId())).thenReturn(List.of(title1, title2));
 
     mockMvc
@@ -453,6 +468,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     title.setIsActive(false);
     // No need to save to repository, as createTestTitle already sets up the mock for save
 
+    Assertions.assertNotNull(title.getId());
     when(titleService.deleteTitle(title.getId())).thenReturn(true);
 
     mockMvc.perform(delete("/api/titles/{id}", title.getId())).andExpect(status().isNoContent());
@@ -463,6 +479,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
   void shouldNotDeleteActiveTitle() throws Exception {
     Title title = createTestTitle("Active Title", WrestlerTier.MAIN_EVENTER);
 
+    Assertions.assertNotNull(title.getId());
     when(titleService.deleteTitle(title.getId())).thenReturn(false);
 
     mockMvc.perform(delete("/api/titles/{id}", title.getId())).andExpect(status().isConflict());
@@ -475,6 +492,7 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
 
     TitleService.TitleStats stats = new TitleService.TitleStats(title.getName(), 0, 0L, 0);
 
+    Assertions.assertNotNull(title.getId());
     when(titleService.getTitleStats(title.getId())).thenReturn(stats);
 
     mockMvc

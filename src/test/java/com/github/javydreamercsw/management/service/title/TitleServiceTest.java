@@ -78,8 +78,8 @@ class TitleServiceTest {
         .thenAnswer(
             invocation -> {
               WrestlerTier tier = invocation.getArgument(0);
-              com.github.javydreamercsw.management.domain.wrestler.TierBoundary boundary =
-                  new com.github.javydreamercsw.management.domain.wrestler.TierBoundary();
+              com.github.javydreamercsw.base.domain.wrestler.TierBoundary boundary =
+                  new com.github.javydreamercsw.base.domain.wrestler.TierBoundary();
               boundary.setTier(tier);
               boundary.setMinFans(tier.getMinFans());
               boundary.setMaxFans(tier.getMaxFans());
