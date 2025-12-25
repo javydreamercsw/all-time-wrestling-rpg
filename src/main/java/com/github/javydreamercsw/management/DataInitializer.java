@@ -47,6 +47,7 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -467,8 +468,10 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
           Set<DeckCard> cardsToRemove = new HashSet<>(deck.getCards());
 
           // Aggregate cards from DTO
-          Map<String, Integer> cardKeyToAmount = new java.util.HashMap<>();
-          Map<String, Card> cardKeyToCard = new java.util.HashMap<>();
+          Map<String, Integer> cardKeyToAmount = new HashMap<>();
+          Map<String, Card> cardKeyToCard = new HashMap<>();
+          Map<Long, CardSet> setCache = new HashMap<>(); // Cache for CardSet instances
+
           for (DeckCardDTO cardDTO : deckDTO.getCards()) {
             log.debug(
                 "Looking for: {} in set {} from deck {}",
@@ -485,6 +488,17 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
                   wrestler.getName());
               continue;
             }
+
+            // Ensure we use a single instance of CardSet from our cache
+            CardSet canonicalSet =
+                setCache.computeIfAbsent(
+                    card.getSet().getId(),
+                    id -> {
+                      log.debug("Caching CardSet: {}", card.getSet().getName());
+                      return card.getSet();
+                    });
+            card.setSet(canonicalSet); // Replace with the cached instance
+
             String key = card.getSet().getName() + "-" + card.getId();
             cardKeyToAmount.merge(key, cardDTO.getAmount(), Integer::sum);
             cardKeyToCard.putIfAbsent(key, card);

@@ -117,7 +117,21 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
     clickElement(signInButton);
     waitForAppToBeReady();
-    wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("login")));
+    try {
+      wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("login")));
+    } catch (Exception e) {
+      log.error("Login failed for user: {}", username);
+      log.error("Current URL: {}", driver.getCurrentUrl());
+      try {
+        WebElement error = loginFormHost.findElement(By.cssSelector("div[part='error-message']"));
+        if (error.isDisplayed()) {
+          log.error("Login error message: {}", error.getText());
+        }
+      } catch (Exception ignored) {
+        log.error("Could not find error message element.");
+      }
+      throw e;
+    }
     loggedIn = true;
   }
 
