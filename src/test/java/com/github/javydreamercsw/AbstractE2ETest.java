@@ -120,7 +120,7 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  private boolean isHeadless() {
+  protected boolean isHeadless() {
     String headlessProp = System.getProperty("headless");
     String headlessEnv = System.getenv("HEADLESS");
     String githubActions = System.getenv("GITHUB_ACTIONS");
@@ -135,7 +135,7 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /** Waits for the application to be ready by polling the root URL. */
-  private void waitForAppToBeReady() {
+  protected void waitForAppToBeReady() {
     int maxAttempts = 60;
     int attempt = 0;
     while (attempt < maxAttempts) {
