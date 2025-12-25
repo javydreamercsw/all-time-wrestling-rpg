@@ -61,7 +61,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(value = "e2e", inheritProfiles = false)
 @Import(TestE2ESecurityConfig.class)
 @WithMockUser(username = "admin", roles = "ADMIN")
-public class AbstractE2ETest extends AbstractIntegrationTest {
+public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
   @LocalServerPort protected int serverPort;
@@ -71,6 +71,14 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
   private String contextPath;
 
   private boolean loggedIn = false;
+
+  protected String getUsername() {
+    return "admin";
+  }
+
+  protected String getPassword() {
+    return "admin123";
+  }
 
   @BeforeEach
   public void setup() {
@@ -89,7 +97,7 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     options.addArguments("--reduce-security-for-testing");
 
     driver = new ChromeDriver(options);
-    login("admin", "admin123");
+    login(getUsername(), getPassword());
   }
 
   protected void login(@NonNull String username, @NonNull String password) {

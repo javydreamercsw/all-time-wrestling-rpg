@@ -32,12 +32,10 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import io.github.bonigarcia.wdm.WebDriverManager;
 import java.time.LocalDate;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class BookerViewE2ETest extends AbstractE2ETest {
@@ -52,27 +50,17 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @Autowired private SegmentRepository segmentRepository; // Added this
 
   @Override
+  protected String getUsername() {
+    return "booker";
+  }
+
+  @Override
+  protected String getPassword() {
+    return "booker123";
+  }
+
   @BeforeEach
-  public void setup() {
-    // Overriding parent setup to avoid logging in as admin
-    WebDriverManager.chromedriver().setup();
-    waitForAppToBeReady();
-    ChromeOptions options = new ChromeOptions();
-    if (isHeadless()) {
-      options.addArguments("--headless=new");
-    }
-    options.addArguments("--disable-gpu");
-    options.addArguments("--window-size=1920,1080");
-    options.addArguments("--no-sandbox");
-    options.addArguments("--disable-dev-shm-usage");
-    options.addArguments("--reduce-security-for-testing");
-
-    driver = new ChromeDriver(options);
-
-    // Data cleanup
-    segmentRepository.deleteAll();
-    rivalryRepository.deleteAll();
-    showRepository.deleteAll();
+  public void setupData() {
     wrestlerRepository.deleteAll();
   }
 
@@ -97,6 +85,8 @@ public class BookerViewE2ETest extends AbstractE2ETest {
             .build();
     wrestlerService.save(opponent);
 
+    Assertions.assertNotNull(wrestler.getId());
+    Assertions.assertNotNull(opponent.getId());
     rivalryService.createRivalry(wrestler.getId(), opponent.getId(), "Test Rivalry");
 
     // Create a show
@@ -106,8 +96,6 @@ public class BookerViewE2ETest extends AbstractE2ETest {
     show.setShowDate(LocalDate.now().plusDays(1));
     show.setType(showTypeService.findAll().get(0));
     showService.save(show);
-
-    login("booker", "booker123");
 
     // Navigate to the BookerView
     assertDoesNotThrow(
