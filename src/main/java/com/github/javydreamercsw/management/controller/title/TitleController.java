@@ -16,10 +16,10 @@
 */
 package com.github.javydreamercsw.management.controller.title;
 
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -156,7 +156,7 @@ public class TitleController {
   }
 
   @Operation(
-      summary = "Challenge for title",
+      summary = "Add a challenger for a title",
       description = "Allows a wrestler to challenge for a title")
   @ApiResponses(
       value = {
@@ -164,11 +164,34 @@ public class TitleController {
         @ApiResponse(responseCode = "404", description = "Title or wrestler not found"),
         @ApiResponse(responseCode = "400", description = "Challenge failed - see response message")
       })
-  @PostMapping("/{titleId}/challenge/{wrestlerId}")
-  public ResponseEntity<TitleService.ChallengeResult> challengeForTitle(
+  @PostMapping("/{titleId}/challenger/{wrestlerId}")
+  public ResponseEntity<TitleService.ChallengeResult> addChallengerToTitle(
       @PathVariable Long titleId, @PathVariable Long wrestlerId) {
-    TitleService.ChallengeResult result = titleService.challengeForTitle(wrestlerId, titleId);
+    TitleService.ChallengeResult result = titleService.addChallengerToTitle(titleId, wrestlerId);
 
+    if (result.success()) {
+      return ResponseEntity.ok(result);
+    } else {
+      return ResponseEntity.badRequest().body(result);
+    }
+  }
+
+  @Operation(
+      summary = "Remove a challenger from a title",
+      description = "Removes a wrestler from the list of challengers for a title")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Challenger removed successfully"),
+        @ApiResponse(responseCode = "404", description = "Title or wrestler not found"),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Wrestler is not a challenger for this title")
+      })
+  @DeleteMapping("/{titleId}/challenger/{wrestlerId}")
+  public ResponseEntity<TitleService.ChallengeResult> removeChallengerFromTitle(
+      @PathVariable Long titleId, @PathVariable Long wrestlerId) {
+    TitleService.ChallengeResult result =
+        titleService.removeChallengerFromTitle(titleId, wrestlerId);
     if (result.success()) {
       return ResponseEntity.ok(result);
     } else {

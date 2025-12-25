@@ -16,9 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view.faction;
 
+import com.github.javydreamercsw.base.domain.faction.Faction;
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;

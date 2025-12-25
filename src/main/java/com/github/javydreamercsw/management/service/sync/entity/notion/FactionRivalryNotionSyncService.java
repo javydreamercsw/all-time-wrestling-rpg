@@ -18,8 +18,8 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
-import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
-import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
+import com.github.javydreamercsw.base.domain.faction.FactionRivalry;
+import com.github.javydreamercsw.base.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;

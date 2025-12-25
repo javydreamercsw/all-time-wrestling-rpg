@@ -20,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.base.domain.faction.Faction;
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
 import java.time.Duration;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;

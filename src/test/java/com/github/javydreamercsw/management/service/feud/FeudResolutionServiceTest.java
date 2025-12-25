@@ -19,10 +19,10 @@ package com.github.javydreamercsw.management.service.feud;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.FeudResolvedEvent;
 import java.time.Instant;
 import java.util.Random;

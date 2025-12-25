@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.ranking;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
-import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;

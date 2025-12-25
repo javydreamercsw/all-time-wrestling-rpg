@@ -16,10 +16,10 @@
 */
 package com.github.javydreamercsw.management.service.faction;
 
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
-import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
+import com.github.javydreamercsw.base.domain.faction.Faction;
+import com.github.javydreamercsw.base.domain.faction.FactionRepository;
+import com.github.javydreamercsw.base.domain.faction.FactionRivalry;
+import com.github.javydreamercsw.base.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.event.FactionHeatChangeEvent;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;

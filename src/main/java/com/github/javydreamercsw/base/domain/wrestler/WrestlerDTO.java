@@ -14,11 +14,10 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.wrestler;
+package com.github.javydreamercsw.base.domain.wrestler;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.Move;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.MoveSet;
-import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.card.Card;
 import java.util.ArrayList;
 import java.util.List;

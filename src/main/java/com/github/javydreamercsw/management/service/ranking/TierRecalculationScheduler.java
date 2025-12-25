@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.ranking;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

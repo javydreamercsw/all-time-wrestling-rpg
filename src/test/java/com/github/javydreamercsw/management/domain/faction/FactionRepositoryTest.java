@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.domain.faction;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.base.domain.faction.Faction;
+import com.github.javydreamercsw.base.domain.faction.FactionRepository;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;

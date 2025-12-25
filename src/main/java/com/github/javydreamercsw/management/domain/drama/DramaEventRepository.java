@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.drama;
 
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.data.domain.Page;

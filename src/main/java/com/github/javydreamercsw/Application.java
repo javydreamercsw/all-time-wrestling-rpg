@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Clock;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;

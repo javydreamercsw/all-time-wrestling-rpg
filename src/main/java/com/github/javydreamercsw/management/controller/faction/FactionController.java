@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.controller.faction;
 
-import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.base.domain.faction.Faction;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

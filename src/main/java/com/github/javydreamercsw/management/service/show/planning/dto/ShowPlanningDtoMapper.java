@@ -16,14 +16,14 @@
 */
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
-import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.base.domain.faction.Faction;
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
@@ -61,7 +61,7 @@ public class ShowPlanningDtoMapper {
     if (context.getFullRoster() != null) {
       dto.setFullRoster(
           context.getFullRoster().stream()
-              .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO::new)
+              .map(com.github.javydreamercsw.base.domain.wrestler.WrestlerDTO::new)
               .peek(wrestlerDto -> wrestlerDto.setMoveSet(null))
               .collect(Collectors.toList()));
     }

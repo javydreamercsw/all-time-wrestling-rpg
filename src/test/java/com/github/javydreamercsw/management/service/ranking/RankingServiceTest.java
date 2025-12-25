@@ -21,12 +21,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
@@ -112,8 +112,8 @@ class RankingServiceTest {
   void testGetRankedContenders() {
     title.setTier(WrestlerTier.MIDCARDER);
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    com.github.javydreamercsw.management.domain.wrestler.TierBoundary boundary =
-        new com.github.javydreamercsw.management.domain.wrestler.TierBoundary();
+    com.github.javydreamercsw.base.domain.wrestler.TierBoundary boundary =
+        new com.github.javydreamercsw.base.domain.wrestler.TierBoundary();
     boundary.setTier(WrestlerTier.MIDCARDER);
     boundary.setMinFans(WrestlerTier.MIDCARDER.getMinFans());
     boundary.setMaxFans(WrestlerTier.MIDCARDER.getMaxFans());
@@ -143,8 +143,8 @@ class RankingServiceTest {
     title.addChallenger(icon);
 
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    com.github.javydreamercsw.management.domain.wrestler.TierBoundary boundary =
-        new com.github.javydreamercsw.management.domain.wrestler.TierBoundary();
+    com.github.javydreamercsw.base.domain.wrestler.TierBoundary boundary =
+        new com.github.javydreamercsw.base.domain.wrestler.TierBoundary();
     boundary.setTier(WrestlerTier.MAIN_EVENTER);
     boundary.setMinFans(WrestlerTier.MAIN_EVENTER.getMinFans());
     boundary.setMaxFans(WrestlerTier.MAIN_EVENTER.getMaxFans());

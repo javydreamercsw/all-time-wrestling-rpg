@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.drama;
 
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerRepository;
 import java.util.List;
 import java.util.Random;
 import lombok.NonNull;

@@ -16,9 +16,9 @@
 */
 package com.github.javydreamercsw.management.domain.show.segment;
 
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

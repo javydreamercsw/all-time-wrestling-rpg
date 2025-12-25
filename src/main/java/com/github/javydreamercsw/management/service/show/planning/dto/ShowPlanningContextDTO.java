@@ -30,7 +30,7 @@ public class ShowPlanningContextDTO {
   private List<ShowPlanningWrestlerHeatDTO> wrestlerHeats;
   private List<ShowPlanningChampionshipDTO> championships;
   private ShowPlanningPleDTO nextPle;
-  private List<com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO> fullRoster;
+  private List<com.github.javydreamercsw.base.domain.wrestler.WrestlerDTO> fullRoster;
   private List<com.github.javydreamercsw.management.dto.FactionDTO> factions;
   private Instant showDate;
 }

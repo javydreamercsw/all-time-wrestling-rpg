@@ -14,7 +14,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.faction;
+package com.github.javydreamercsw.base.domain.faction;
 
 import java.util.List;
 import java.util.Optional;

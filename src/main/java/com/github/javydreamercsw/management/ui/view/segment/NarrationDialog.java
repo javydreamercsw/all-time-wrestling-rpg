@@ -19,13 +19,13 @@ package com.github.javydreamercsw.management.ui.view.segment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -218,7 +218,7 @@ public class NarrationDialog extends Dialog {
       saveButton.setEnabled(true); // Enable save button if narration already exists
     }
 
-    for (com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler :
+    for (com.github.javydreamercsw.base.domain.wrestler.Wrestler wrestler :
         segment.getWrestlers()) {
       addTeamSelector(new WrestlerDTO(wrestler));
     }

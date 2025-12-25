@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.rivalry;
 
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

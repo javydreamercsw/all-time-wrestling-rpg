@@ -22,11 +22,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.base.test.BaseControllerTest;
 import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.CreateInjuryTypeRequest;
 import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.UpdateInjuryTypeRequest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.mapper.InjuryTypeMapper;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import java.util.List;

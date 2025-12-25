@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
@@ -28,8 +30,6 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -61,7 +61,7 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private InboxRepository inboxRepository;
 
   @Autowired
-  private com.github.javydreamercsw.management.domain.wrestler.TierBoundaryRepository
+  private com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository
       tierBoundaryRepository;
 
   @org.junit.jupiter.api.BeforeEach

@@ -23,11 +23,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.domain.faction.Faction;
+import com.github.javydreamercsw.base.domain.faction.FactionRepository;
+import com.github.javydreamercsw.base.domain.faction.FactionRivalry;
+import com.github.javydreamercsw.base.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
-import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionRivalryNotionSyncService;
 import java.time.Instant;
 import java.util.UUID;
