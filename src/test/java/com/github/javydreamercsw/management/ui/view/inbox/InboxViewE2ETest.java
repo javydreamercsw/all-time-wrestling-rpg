@@ -17,12 +17,12 @@
 package com.github.javydreamercsw.management.ui.view.inbox;
 
 import com.github.javydreamercsw.AbstractE2ETest;
-import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.time.Duration;

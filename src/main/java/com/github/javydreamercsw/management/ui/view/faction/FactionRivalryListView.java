@@ -18,10 +18,10 @@ package com.github.javydreamercsw.management.ui.view.faction;
 
 import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
 
-import com.github.javydreamercsw.base.domain.faction.Faction;
-import com.github.javydreamercsw.base.domain.faction.FactionRivalry;
-import com.github.javydreamercsw.base.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
+import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.vaadin.flow.component.button.Button;

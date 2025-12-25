@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
+import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.show.planning.ShowTemplate;
 import java.time.Instant;
 import java.util.List;
@@ -30,7 +32,7 @@ public class ShowPlanningContextDTO {
   private List<ShowPlanningWrestlerHeatDTO> wrestlerHeats;
   private List<ShowPlanningChampionshipDTO> championships;
   private ShowPlanningPleDTO nextPle;
-  private List<com.github.javydreamercsw.base.domain.wrestler.WrestlerDTO> fullRoster;
-  private List<com.github.javydreamercsw.management.dto.FactionDTO> factions;
+  private List<WrestlerDTO> fullRoster;
+  private List<FactionDTO> factions;
   private Instant showDate;
 }

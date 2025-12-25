@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.controller.faction;
 
-import com.github.javydreamercsw.base.domain.faction.FactionRivalry;
+import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import io.swagger.v3.oas.annotations.Operation;

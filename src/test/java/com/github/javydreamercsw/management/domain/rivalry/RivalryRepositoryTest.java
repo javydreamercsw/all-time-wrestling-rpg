@@ -19,8 +19,8 @@ package com.github.javydreamercsw.management.domain.rivalry;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.TestUtils;
-import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;

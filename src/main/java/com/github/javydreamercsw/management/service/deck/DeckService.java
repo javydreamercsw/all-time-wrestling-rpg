@@ -16,9 +16,9 @@
 */
 package com.github.javydreamercsw.management.service.deck;
 
-import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Clock;
 import java.util.List;

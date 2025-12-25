@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management.mapper;
 
-import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.dto.wrestler.WrestlerDTO;
 import org.springframework.stereotype.Component;

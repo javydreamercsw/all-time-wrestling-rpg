@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.domain.title;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
-import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;

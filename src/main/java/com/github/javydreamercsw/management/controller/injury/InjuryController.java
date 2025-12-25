@@ -16,10 +16,10 @@
 */
 package com.github.javydreamercsw.management.controller.injury;
 
-import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.InjuryResponseDTO;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import io.swagger.v3.oas.annotations.Operation;

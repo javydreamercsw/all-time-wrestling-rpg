@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.event.dto;
 
-import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import lombok.Getter;
 import lombok.NonNull;
 import org.springframework.context.ApplicationEvent;

@@ -17,8 +17,8 @@
 package com.github.javydreamercsw.management.domain.team;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
-import com.github.javydreamercsw.base.domain.faction.Faction;
-import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

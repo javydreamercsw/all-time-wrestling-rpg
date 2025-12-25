@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw;
 
-import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import lombok.NonNull;
 

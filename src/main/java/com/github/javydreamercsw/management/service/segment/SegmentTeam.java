@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.segment;
 
-import com.github.javydreamercsw.base.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
