@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -151,8 +152,7 @@ public class ShowPlanningService {
     context.setWrestlerHeats(wrestlerHeats);
 
     // Get all factions
-    List<com.github.javydreamercsw.management.domain.faction.Faction> allFactions =
-        factionService.findAll();
+    List<Faction> allFactions = factionService.findAll();
     log.debug("Found {} factions", allFactions.size());
     context.setFactions(allFactions);
 

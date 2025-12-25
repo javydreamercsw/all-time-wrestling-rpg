@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
@@ -61,7 +62,7 @@ public class ShowPlanningDtoMapper {
     if (context.getFullRoster() != null) {
       dto.setFullRoster(
           context.getFullRoster().stream()
-              .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO::new)
+              .map(WrestlerDTO::new)
               .peek(wrestlerDto -> wrestlerDto.setMoveSet(null))
               .collect(Collectors.toList()));
     }

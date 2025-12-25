@@ -239,8 +239,7 @@ public class NarrationDialog extends Dialog {
       saveButton.setEnabled(true);
     }
 
-    for (com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler :
-        segment.getWrestlers()) {
+    for (Wrestler wrestler : segment.getWrestlers()) {
       addTeamSelector(new WrestlerDTO(wrestler));
     }
 
