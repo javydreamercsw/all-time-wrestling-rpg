@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.show.template;
 
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -88,6 +89,14 @@ public interface ShowTemplateRepository extends JpaRepository<ShowTemplate, Long
    */
   @Query("SELECT st FROM ShowTemplate st WHERE st.showType.name = :showTypeName")
   List<ShowTemplate> findByShowTypeName(@Param("showTypeName") String showTypeName);
+
+  /**
+   * Find templates by show type.
+   *
+   * @param showType The show type
+   * @return List of templates for the specified show type
+   */
+  List<ShowTemplate> findByShowType(ShowType showType);
 
   /**
    * Find all show templates with ShowType eagerly loaded.
