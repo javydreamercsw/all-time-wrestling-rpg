@@ -59,7 +59,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
   public void setUp() throws IOException {
     super.setup();
     // Clear any existing inbox items to ensure a clean state for each test
-    databaseCleaner.clearRepositories();
+    databaseCleaner.clearDatabase();
     w1 = createTestWrestler("Test Wrestler 1");
     wrestlerService.save(w1);
     w2 = createTestWrestler("Test Wrestler 2");

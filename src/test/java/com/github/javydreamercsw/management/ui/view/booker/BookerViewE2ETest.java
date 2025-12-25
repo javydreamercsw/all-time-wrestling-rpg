@@ -74,8 +74,8 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @BeforeEach
   @Override
   public void setup() {
+    databaseCleaner.clearDatabase();
     dataInitializer.init();
-    wrestlerRepository.deleteAll();
     createBookerUser();
     Assertions.assertTrue(
         accountRepository.findByUsername("booker").isPresent(), "Booker user must exist");

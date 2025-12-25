@@ -48,7 +48,7 @@ class SeasonControllerIntegrationTest extends AbstractMockUserIntegrationTest {
 
   @org.junit.jupiter.api.BeforeEach
   void setUp() {
-    databaseCleaner.clearRepositories();
+    databaseCleaner.clearDatabase();
   }
 
   @Test
