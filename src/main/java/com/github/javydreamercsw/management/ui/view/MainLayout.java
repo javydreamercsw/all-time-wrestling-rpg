@@ -134,17 +134,19 @@ public class MainLayout extends AppLayout {
   protected void onAttach(AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     UI ui = attachEvent.getUI();
-    inboxUpdateBroadcasterRegistration =
-        inboxUpdateBroadcaster.register(
-            event -> {
-              if (ui.isAttached()) {
-                ui.access(
-                    () -> {
-                      Notification.show("New inbox item!", 3000, Notification.Position.BOTTOM_END)
-                          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                    });
-              }
-            });
+    if (inboxUpdateBroadcaster != null) {
+      inboxUpdateBroadcasterRegistration =
+          inboxUpdateBroadcaster.register(
+              event -> {
+                if (ui.isAttached()) {
+                  ui.access(
+                      () -> {
+                        Notification.show("New inbox item!", 3000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                      });
+                }
+              });
+    }
   }
 
   @Override
