@@ -288,20 +288,21 @@ public class TitleSyncService extends BaseSyncService {
           newContenders.stream().map(w -> w.getName() + " (" + w.getExternalId() + ")").toList());
       if (!newContenders.isEmpty()) {
         // Only update if contenders have changed
-        if (!newContenders.equals(title.getContender())) {
+        if (!newContenders.equals(title.getChallengers())) {
           log.info(
               "Setting contenders for title '{}' to '{}'",
               title.getName(),
               newContenders.stream()
                   .map(Wrestler::getName)
                   .collect(java.util.stream.Collectors.joining(", ")));
-          title.setContender(newContenders);
+          title.getChallengers().clear();
+          newContenders.forEach(title::addChallenger);
           syncServiceDependencies.getTitleRepository().saveAndFlush(title);
         }
       }
-    } else if (title.getContender() != null && !title.getContender().isEmpty()) {
+    } else if (title.getChallengers() != null && !title.getChallengers().isEmpty()) {
       log.info("Removing contenders from title: {}", title.getName());
-      title.setContender(new java.util.ArrayList<>());
+      title.getChallengers().clear();
       syncServiceDependencies.getTitleRepository().saveAndFlush(title);
     }
   }

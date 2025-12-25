@@ -136,7 +136,7 @@ public class ShowPlanningService {
         championship.getChampions().addAll(title.getCurrentChampions());
       }
       // Use only the current #1 contender(s) for this title
-      List<Wrestler> numberOneContenders = title.getContender();
+      List<Wrestler> numberOneContenders = title.getChallengers();
       if (numberOneContenders != null && !numberOneContenders.isEmpty()) {
         championship.getContenders().addAll(numberOneContenders);
       }
