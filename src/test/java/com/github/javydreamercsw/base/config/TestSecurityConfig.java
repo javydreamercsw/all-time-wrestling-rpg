@@ -32,7 +32,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @TestConfiguration
 @EnableWebSecurity // Add this to enable web security for the test configuration
 @EnableMethodSecurity
-@Profile("!e2e")
+@Profile("test")
 @Import(InboxEventTypeConfig.class)
 public class TestSecurityConfig {
 
