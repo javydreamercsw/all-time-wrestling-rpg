@@ -95,7 +95,7 @@ class RankingServiceTest {
     List<Wrestler> contenders = new ArrayList<>();
     contenders.add(contender1);
     contenders.add(contender2);
-    title.setContender(contenders);
+    contenders.forEach(title::addChallenger);
   }
 
   @Test
@@ -113,8 +113,8 @@ class RankingServiceTest {
   void testGetRankedContenders() {
     title.setTier(WrestlerTier.MIDCARDER);
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    com.github.javydreamercsw.management.domain.wrestler.TierBoundary boundary =
-        new com.github.javydreamercsw.management.domain.wrestler.TierBoundary();
+    com.github.javydreamercsw.base.domain.wrestler.TierBoundary boundary =
+        new com.github.javydreamercsw.base.domain.wrestler.TierBoundary();
     boundary.setTier(WrestlerTier.MIDCARDER);
     boundary.setMinFans(WrestlerTier.MIDCARDER.getMinFans());
     boundary.setMaxFans(WrestlerTier.MIDCARDER.getMaxFans());
@@ -140,11 +140,11 @@ class RankingServiceTest {
     icon.setGender(Gender.MALE);
     icon.setFans(WrestlerTier.ICON.getMinFans() + 1000); // Above Main Eventer
     icon.setTier(WrestlerTier.fromFanCount(icon.getFans()));
-    title.getContender().add(icon);
+    title.addChallenger(icon);
 
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    com.github.javydreamercsw.management.domain.wrestler.TierBoundary boundary =
-        new com.github.javydreamercsw.management.domain.wrestler.TierBoundary();
+    com.github.javydreamercsw.base.domain.wrestler.TierBoundary boundary =
+        new com.github.javydreamercsw.base.domain.wrestler.TierBoundary();
     boundary.setTier(WrestlerTier.MAIN_EVENTER);
     boundary.setMinFans(WrestlerTier.MAIN_EVENTER.getMinFans());
     boundary.setMaxFans(WrestlerTier.MAIN_EVENTER.getMaxFans());

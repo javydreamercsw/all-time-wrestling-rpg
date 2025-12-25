@@ -20,8 +20,14 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -33,9 +39,12 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDate;
+import java.util.Set;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class BookerViewE2ETest extends AbstractE2ETest {
 
@@ -46,15 +55,57 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private ShowRepository showRepository;
-  @Autowired private SegmentRepository segmentRepository; // Added this
+  @Autowired private SegmentRepository segmentRepository;
+  @Autowired private AccountRepository accountRepository;
+  @Autowired private RoleRepository roleRepository;
+  @Autowired private PasswordEncoder passwordEncoder;
+  @Autowired private DataInitializer dataInitializer;
+
+  @Override
+  protected String getUsername() {
+    return "booker";
+  }
+
+  @Override
+  protected String getPassword() {
+    return "booker123";
+  }
 
   @BeforeEach
-  public void setupTest() {
-    // It's better to delete in order to avoid constraint violations.
-    segmentRepository.deleteAll(); // Delete segments first
-    rivalryRepository.deleteAll();
-    showRepository.deleteAll();
-    wrestlerRepository.deleteAll();
+  @Override
+  public void setup() {
+    databaseCleaner.clearDatabase();
+    dataInitializer.init();
+    createBookerUser();
+    Assertions.assertTrue(
+        accountRepository.findByUsername("booker").isPresent(), "Booker user must exist");
+    super.setup();
+  }
+
+  private void createBookerUser() {
+    Role bookerRole =
+        roleRepository
+            .findByName(RoleName.BOOKER)
+            .orElseGet(
+                () -> {
+                  Role newRole = new Role();
+                  newRole.setName(RoleName.BOOKER);
+                  newRole.setDescription("Booker role");
+                  return roleRepository.saveAndFlush(newRole);
+                });
+
+    if (accountRepository.findByUsername(getUsername()).isEmpty()) {
+      Account bookerAccount = new Account();
+      bookerAccount.setUsername(getUsername());
+      bookerAccount.setPassword(passwordEncoder.encode(getPassword()));
+      bookerAccount.setRoles(Set.of(bookerRole));
+      bookerAccount.setEmail("booker@test.com");
+      bookerAccount.setEnabled(true);
+      bookerAccount.setAccountNonExpired(true);
+      bookerAccount.setAccountNonLocked(true);
+      bookerAccount.setCredentialsNonExpired(true);
+      accountRepository.saveAndFlush(bookerAccount);
+    }
   }
 
   @Test
@@ -78,6 +129,8 @@ public class BookerViewE2ETest extends AbstractE2ETest {
             .build();
     wrestlerService.save(opponent);
 
+    Assertions.assertNotNull(wrestler.getId());
+    Assertions.assertNotNull(opponent.getId());
     rivalryService.createRivalry(wrestler.getId(), opponent.getId(), "Test Rivalry");
 
     // Create a show
@@ -87,8 +140,6 @@ public class BookerViewE2ETest extends AbstractE2ETest {
     show.setShowDate(LocalDate.now().plusDays(1));
     show.setType(showTypeService.findAll().get(0));
     showService.save(show);
-
-    login("booker", "booker123");
 
     // Navigate to the BookerView
     assertDoesNotThrow(

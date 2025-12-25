@@ -61,7 +61,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(value = "e2e", inheritProfiles = false)
 @Import(TestE2ESecurityConfig.class)
 @WithMockUser(username = "admin", roles = "ADMIN")
-public class AbstractE2ETest extends AbstractIntegrationTest {
+public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
   @LocalServerPort protected int serverPort;
@@ -71,6 +71,14 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
   private String contextPath;
 
   private boolean loggedIn = false;
+
+  protected String getUsername() {
+    return "admin";
+  }
+
+  protected String getPassword() {
+    return "admin123";
+  }
 
   @BeforeEach
   public void setup() {
@@ -89,7 +97,7 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     options.addArguments("--reduce-security-for-testing");
 
     driver = new ChromeDriver(options);
-    login("admin", "admin123");
+    login(getUsername(), getPassword());
   }
 
   protected void login(@NonNull String username, @NonNull String password) {
@@ -109,7 +117,21 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
         loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
     clickElement(signInButton);
     waitForAppToBeReady();
-    wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("login")));
+    try {
+      wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("login")));
+    } catch (Exception e) {
+      log.error("Login failed for user: {}", username);
+      log.error("Current URL: {}", driver.getCurrentUrl());
+      try {
+        WebElement error = loginFormHost.findElement(By.cssSelector("div[part='error-message']"));
+        if (error.isDisplayed()) {
+          log.error("Login error message: {}", error.getText());
+        }
+      } catch (Exception ignored) {
+        log.error("Could not find error message element.");
+      }
+      throw e;
+    }
     loggedIn = true;
   }
 
@@ -120,7 +142,7 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  private boolean isHeadless() {
+  protected boolean isHeadless() {
     String headlessProp = System.getProperty("headless");
     String headlessEnv = System.getenv("HEADLESS");
     String githubActions = System.getenv("GITHUB_ACTIONS");
@@ -135,7 +157,7 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /** Waits for the application to be ready by polling the root URL. */
-  private void waitForAppToBeReady() {
+  protected void waitForAppToBeReady() {
     int maxAttempts = 60;
     int attempt = 0;
     while (attempt < maxAttempts) {

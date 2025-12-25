@@ -188,9 +188,18 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       Objects.requireNonNull(
               wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-name"))))
           .sendKeys(showName);
-      driver.findElement(By.id("show-type")).sendKeys(SHOW_TYPE_NAME);
-      driver.findElement(By.id("season")).sendKeys(SEASON_NAME);
-      driver.findElement(By.id("show-template")).sendKeys(TEMPLATE_NAME);
+      List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
+      WebElement showTypeComboBox = comboBoxes.get(0);
+      WebElement seasonComboBox = comboBoxes.get(1);
+      WebElement templateComboBox = comboBoxes.get(2);
+
+      showTypeComboBox.sendKeys(SHOW_TYPE_NAME, Keys.TAB);
+
+      wait.until(driver -> templateComboBox.isEnabled());
+
+      seasonComboBox.sendKeys(SEASON_NAME, Keys.TAB);
+      templateComboBox.sendKeys(TEMPLATE_NAME, Keys.TAB);
+
       driver
           .findElement(By.id("show-date"))
           .sendKeys(LocalDate.now().format(DateTimeFormatter.ofPattern("M/d/yyyy")));

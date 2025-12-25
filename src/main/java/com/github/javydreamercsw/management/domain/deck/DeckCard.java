@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.deck;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -50,11 +51,11 @@ public class DeckCard extends AbstractEntity<Long> { // Removed implements Ownab
   @JoinColumn(name = "deck_id")
   private Deck deck;
 
-  @ManyToOne(optional = false)
+  @ManyToOne(optional = false, cascade = CascadeType.MERGE)
   @JoinColumn(name = "card_id")
   private Card card;
 
-  @ManyToOne(optional = false)
+  @ManyToOne(optional = false, cascade = CascadeType.MERGE)
   @JoinColumn(name = "set_id")
   private CardSet set;
 
