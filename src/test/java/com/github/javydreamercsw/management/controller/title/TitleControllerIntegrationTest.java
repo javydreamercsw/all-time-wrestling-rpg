@@ -310,12 +310,13 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler challenger = createTestWrestler("Challenger", 120000L); // Has enough fans
 
-    when(titleService.challengeForTitle(challenger.getId(), title.getId()))
+    when(titleService.addChallengerToTitle(title.getId(), challenger.getId()))
         .thenReturn(new TitleService.ChallengeResult(true, "Challenge accepted"));
 
     mockMvc
         .perform(
-            post("/api/titles/{titleId}/challenge/{wrestlerId}", title.getId(), challenger.getId()))
+            post(
+                "/api/titles/{titleId}/challenger/{wrestlerId}", title.getId(), challenger.getId()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.message").value("Challenge accepted"));
@@ -327,15 +328,55 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Wrestler challenger = createTestWrestler("Poor Challenger", 50000L); // Not eligible
 
-    when(titleService.challengeForTitle(challenger.getId(), title.getId()))
+    when(titleService.addChallengerToTitle(title.getId(), challenger.getId()))
         .thenReturn(new TitleService.ChallengeResult(false, "Wrestler not eligible"));
 
     mockMvc
         .perform(
-            post("/api/titles/{titleId}/challenge/{wrestlerId}", title.getId(), challenger.getId()))
+            post(
+                "/api/titles/{titleId}/challenger/{wrestlerId}", title.getId(), challenger.getId()))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.success").value(false))
         .andExpect(jsonPath("$.message").exists());
+  }
+
+  @Test
+  @DisplayName("Should remove challenger")
+  void shouldRemoveChallenger() throws Exception {
+    Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    Wrestler challenger = createTestWrestler("Challenger", 120000L);
+    title.addChallenger(challenger);
+
+    when(titleService.removeChallengerFromTitle(title.getId(), challenger.getId()))
+        .thenReturn(new TitleService.ChallengeResult(true, "Challenger removed"));
+
+    mockMvc
+        .perform(
+            delete(
+                "/api/titles/{titleId}/challenger/{wrestlerId}", title.getId(), challenger.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.message").value("Challenger removed"));
+  }
+
+  @Test
+  @DisplayName("Should not remove non-existent challenger")
+  void shouldNotRemoveNonExistentChallenger() throws Exception {
+    Title title = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    Wrestler nonChallenger = createTestWrestler("Non Challenger", 120000L);
+
+    when(titleService.removeChallengerFromTitle(title.getId(), nonChallenger.getId()))
+        .thenReturn(new TitleService.ChallengeResult(false, "Wrestler is not a challenger"));
+
+    mockMvc
+        .perform(
+            delete(
+                "/api/titles/{titleId}/challenger/{wrestlerId}",
+                title.getId(),
+                nonChallenger.getId()))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.success").value(false))
+        .andExpect(jsonPath("$.message").value("Wrestler is not a challenger"));
   }
 
   @Test

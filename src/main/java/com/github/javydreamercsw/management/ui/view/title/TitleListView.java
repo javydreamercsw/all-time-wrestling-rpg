@@ -23,7 +23,7 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -90,67 +90,56 @@ public class TitleListView extends Main {
     grid.addColumn(Title::getChampionNames).setHeader("Champion(s)").setSortable(true);
     grid.addColumn(Title::getIsActive).setHeader("Active").setSortable(true);
 
-    // Add ComboBox for #1 Contender
     grid.addComponentColumn(
             title -> {
-              ComboBox<Wrestler> contenderComboBox = new ComboBox<>("Contender");
+              MultiSelectComboBox<Wrestler> challengerComboBox =
+                  new MultiSelectComboBox<>("Challengers");
               assert title.getId() != null;
-              contenderComboBox.setItems(
+              List<Wrestler> eligibleChallengers =
                   titleService.getEligibleChallengers(title.getId()).stream()
                       .sorted(Comparator.comparing(Wrestler::getName))
-                      .collect(Collectors.toList()));
-              contenderComboBox.setItemLabelGenerator(Wrestler::getName);
-              contenderComboBox.setWidthFull();
-              contenderComboBox.setClearButtonVisible(true); // Allow clearing the field
+                      .collect(Collectors.toList());
+              challengerComboBox.setItems(eligibleChallengers);
+              challengerComboBox.setItemLabelGenerator(Wrestler::getName);
+              challengerComboBox.setWidthFull();
 
-              // Set initial value if a contender exists
-              title.getContender().stream().findFirst().ifPresent(contenderComboBox::setValue);
+              // Set initial value to the current challengers
+              List<Wrestler> currentChallengers = title.getChallengers();
+              challengerComboBox.setValue(
+                  eligibleChallengers.stream()
+                      .filter(currentChallengers::contains)
+                      .collect(Collectors.toSet()));
 
-              contenderComboBox.addValueChangeListener(
+              challengerComboBox.addValueChangeListener(
                   event -> {
-                    if (event.getValue() != null) {
-                      assert event.getValue().getId() != null;
-                      titleService
-                          .updateNumberOneContender(title.getId(), event.getValue().getId())
-                          .ifPresentOrElse(
-                              updatedTitle -> {
-                                Notification.show(
-                                        "Contender updated for " + title.getName(),
-                                        3000,
-                                        Notification.Position.BOTTOM_END)
-                                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                                refreshGrid(); // Refresh grid to reflect changes
-                              },
-                              () ->
-                                  Notification.show(
-                                          "Failed to update contender",
-                                          5000,
-                                          Notification.Position.BOTTOM_END)
-                                      .addThemeVariants(NotificationVariant.LUMO_ERROR));
-                    } else {
-                      // Handle clearing the contender
-                      titleService
-                          .clearNumberOneContender(title.getId())
-                          .ifPresentOrElse(
-                              updatedTitle -> {
-                                Notification.show(
-                                        "Contender cleared for " + title.getName(),
-                                        3000,
-                                        Notification.Position.BOTTOM_END)
-                                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                                refreshGrid(); // Refresh grid to reflect changes
-                              },
-                              () ->
-                                  Notification.show(
-                                          "Failed to clear contender",
-                                          5000,
-                                          Notification.Position.BOTTOM_END)
-                                      .addThemeVariants(NotificationVariant.LUMO_ERROR));
-                    }
+                    // Determine added and removed challengers
+                    var selected = event.getValue();
+                    var old =
+                        eligibleChallengers.stream()
+                            .filter(currentChallengers::contains)
+                            .collect(Collectors.toSet());
+
+                    var added =
+                        selected.stream().filter(w -> !old.contains(w)).collect(Collectors.toSet());
+                    var removed =
+                        old.stream().filter(w -> !selected.contains(w)).collect(Collectors.toSet());
+
+                    added.forEach(
+                        wrestler -> {
+                          assert wrestler.getId() != null;
+                          titleService.addChallengerToTitle(title.getId(), wrestler.getId());
+                        });
+
+                    removed.forEach(
+                        wrestler -> {
+                          assert wrestler.getId() != null;
+                          titleService.removeChallengerFromTitle(title.getId(), wrestler.getId());
+                        });
+                    refreshGrid();
                   });
-              return contenderComboBox;
+              return challengerComboBox;
             })
-        .setHeader("Contender");
+        .setHeader("Challengers");
 
     grid.addComponentColumn(
             title -> {

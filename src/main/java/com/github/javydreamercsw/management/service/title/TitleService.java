@@ -233,16 +233,16 @@ public class TitleService {
       return new ChallengeResult(false, "Wrestler cannot afford the contender entry fee.");
     }
 
-    // All checks pass, set as contender and deduct fee
+    // All checks pass, add as a challenger and deduct fee
     challenger.spendFans(entryFee);
     wrestlerRepository.save(challenger);
-    title.setNumberOneContender(challenger);
+    title.addChallenger(challenger);
     titleRepository.save(title);
     return new ChallengeResult(
         true,
         "Challenge successful! "
             + challenger.getName()
-            + " is now the #1 contender for the "
+            + " is now a challenger for the "
             + title.getName()
             + ".");
   }
@@ -273,30 +273,53 @@ public class TitleService {
         .orElse(null);
   }
 
-  public Optional<Title> updateNumberOneContender(@NonNull Long titleId, @NonNull Long wrestlerId) {
+  public ChallengeResult addChallengerToTitle(@NonNull Long titleId, @NonNull Long wrestlerId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
-    if (titleOpt.isEmpty() || wrestlerOpt.isEmpty()) {
-      return Optional.empty();
+
+    if (titleOpt.isEmpty()) {
+      return new ChallengeResult(false, "Title not found.");
+    }
+    if (wrestlerOpt.isEmpty()) {
+      return new ChallengeResult(false, "Wrestler not found.");
     }
 
     Title title = titleOpt.get();
     Wrestler wrestler = wrestlerOpt.get();
 
-    title.setNumberOneContender(wrestler);
-    return Optional.of(titleRepository.save(title));
+    if (!isWrestlerEligible(wrestler, title)) {
+      return new ChallengeResult(false, "Wrestler is not eligible for this title.");
+    }
+
+    title.addChallenger(wrestler);
+    titleRepository.save(title);
+    return new ChallengeResult(
+        true, wrestler.getName() + " has been added as a challenger for " + title.getName());
   }
 
-  public Optional<Title> clearNumberOneContender(Long titleId) {
+  public ChallengeResult removeChallengerFromTitle(
+      @NonNull Long titleId, @NonNull Long wrestlerId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
+    Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
     if (titleOpt.isEmpty()) {
-      return Optional.empty();
+      return new ChallengeResult(false, "Title not found.");
+    }
+    if (wrestlerOpt.isEmpty()) {
+      return new ChallengeResult(false, "Wrestler not found.");
     }
 
     Title title = titleOpt.get();
-    title.setNumberOneContender(null);
-    return Optional.of(titleRepository.save(title));
+    Wrestler wrestler = wrestlerOpt.get();
+
+    if (title.getChallengers().contains(wrestler)) {
+      title.getChallengers().remove(wrestler);
+      titleRepository.save(title);
+      return new ChallengeResult(
+          true, wrestler.getName() + " is no longer a challenger for " + title.getName());
+    } else {
+      return new ChallengeResult(false, "Wrestler is not a challenger for this title.");
+    }
   }
 
   public List<Title> getTitlesHeldBy(@NonNull Long wrestlerId) {

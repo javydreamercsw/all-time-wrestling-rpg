@@ -26,14 +26,16 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -49,17 +51,19 @@ class TitleListViewTest extends ManagementIntegrationTest {
 
   private TitleListView titleListView;
   private Title testTitle;
+  private Wrestler testWrestler;
+  private Wrestler otherWrestler;
 
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
 
     // Mock WrestlerService
-    Wrestler testWrestler = new Wrestler();
+    testWrestler = new Wrestler();
     testWrestler.setId(1L);
     testWrestler.setName("Test Wrestler");
     // Added for testing multiple contenders
-    Wrestler otherWrestler = new Wrestler();
+    otherWrestler = new Wrestler();
     otherWrestler.setId(2L);
     otherWrestler.setName("Other Wrestler");
     List<Wrestler> allWrestlers = Arrays.asList(testWrestler, otherWrestler);
@@ -74,7 +78,7 @@ class TitleListViewTest extends ManagementIntegrationTest {
     testTitle.setName("Test Title");
     testTitle.setTier(WrestlerTier.MAIN_EVENTER);
     testTitle.setIsActive(true);
-    testTitle.setChampion(new ArrayList<>(List.of(testWrestler)));
+    testTitle.awardTitleTo(new ArrayList<>(List.of(testWrestler)), Instant.now());
     // Mock eligible challengers
     assertNotNull(testTitle.getId());
     when(titleService.getEligibleChallengers(testTitle.getId()))
@@ -97,21 +101,21 @@ class TitleListViewTest extends ManagementIntegrationTest {
     // Verify contender ComboBox is present and populated
     Grid.Column<Title> contenderColumn = null;
     for (Grid.Column<Title> column : grid.getColumns()) {
-      if (column.getHeaderText().equals("Contender")) {
+      if (column.getHeaderText().equals("Challengers")) {
         contenderColumn = column;
         break;
       }
     }
-    assertNotNull(contenderColumn, "Contender column not found");
+    assertNotNull(contenderColumn, "Challengers column not found");
     assertInstanceOf(
         ComponentRenderer.class,
         contenderColumn.getRenderer(),
         "Renderer is not ComponentRenderer");
 
     // Manually create a ComboBox instance using the ComponentRenderer
-    ComponentRenderer<ComboBox<Wrestler>, Title> renderer =
-        (ComponentRenderer<ComboBox<Wrestler>, Title>) contenderColumn.getRenderer();
-    ComboBox<Wrestler> contenderComboBox = renderer.createComponent(testTitle);
+    ComponentRenderer<MultiSelectComboBox<Wrestler>, Title> renderer =
+        (ComponentRenderer<MultiSelectComboBox<Wrestler>, Title>) contenderColumn.getRenderer();
+    MultiSelectComboBox<Wrestler> contenderComboBox = renderer.createComponent(testTitle);
 
     assertEquals(2, contenderComboBox.getDataProvider().size(new Query<>()));
     assertTrue(
@@ -152,7 +156,7 @@ class TitleListViewTest extends ManagementIntegrationTest {
     updatedTitle.setName("Updated Title");
     updatedTitle.setTier(testTitle.getTier());
     updatedTitle.setIsActive(testTitle.getIsActive());
-    updatedTitle.setChampion(testTitle.getChampion());
+    updatedTitle.awardTitleTo(testTitle.getCurrentChampions(), Instant.now());
     when(titleService.save(any(Title.class))).thenReturn(updatedTitle);
     when(titleService.findByName("Updated Title")).thenReturn(Optional.of(updatedTitle));
     when(titleService.findAll()).thenReturn(List.of(updatedTitle)); // Return updated list
@@ -203,54 +207,44 @@ class TitleListViewTest extends ManagementIntegrationTest {
   }
 
   @Test
-  void testContenderSelectionUpdatesTitle() {
+  void testChallengerSelectionUpdatesTitle() {
     // Mock the eligible challengers for the test title
-    Wrestler contenderWrestler = new Wrestler();
-    contenderWrestler.setId(3L);
-    contenderWrestler.setName("Contender Wrestler");
+    Wrestler challengerWrestler = new Wrestler();
+    challengerWrestler.setId(3L);
+    challengerWrestler.setName("Challenger Wrestler");
     assertNotNull(testTitle.getId());
     when(titleService.getEligibleChallengers(testTitle.getId()))
-        .thenReturn(List.of(contenderWrestler));
+        .thenReturn(List.of(challengerWrestler));
 
-    // Mock the updateNumberOneContender call
-    Title updatedTitle = new Title();
-    updatedTitle.setId(testTitle.getId());
-    updatedTitle.setName(testTitle.getName());
-    updatedTitle.setTier(testTitle.getTier());
-    updatedTitle.setIsActive(testTitle.getIsActive());
-    updatedTitle.setChampion(testTitle.getChampion());
-    // Manually set the contender for the updatedTitle mock, as Title.setNumberOneContender is not
-    // mocked
-    updatedTitle.getContender().add(contenderWrestler);
-    when(titleService.updateNumberOneContender(testTitle.getId(), contenderWrestler.getId()))
-        .thenReturn(Optional.of(updatedTitle));
-    when(titleService.findAll()).thenReturn(List.of(updatedTitle)); // Return updated list
+    // Mock the addChallengerToTitle call
+    when(titleService.addChallengerToTitle(testTitle.getId(), challengerWrestler.getId()))
+        .thenReturn(new TitleService.ChallengeResult(true, "Challenger added"));
 
-    titleListView.refreshGrid(); // Refresh grid to show the contender ComboBox
+    titleListView.refreshGrid(); // Refresh grid to show the challenger MultiSelectComboBox
 
-    // Find the contender ComboBox in the grid row for testTitle
-    Grid.Column<Title> contenderColumn = null;
+    // Find the challenger MultiSelectComboBox in the grid row for testTitle
+    Grid.Column<Title> challengerColumn = null;
     for (Grid.Column<Title> column : titleListView.grid.getColumns()) {
-      if (column.getHeaderText().equals("Contender")) {
-        contenderColumn = column;
+      if (column.getHeaderText().equals("Challengers")) {
+        challengerColumn = column;
         break;
       }
     }
-    assertNotNull(contenderColumn, "Contender column not found");
+    assertNotNull(challengerColumn, "Challenger column not found");
     assertInstanceOf(
         ComponentRenderer.class,
-        contenderColumn.getRenderer(),
+        challengerColumn.getRenderer(),
         "Renderer is not ComponentRenderer");
 
-    // Manually create a ComboBox instance using the ComponentRenderer
-    ComponentRenderer<ComboBox<Wrestler>, Title> renderer =
-        (ComponentRenderer<ComboBox<Wrestler>, Title>) contenderColumn.getRenderer();
-    ComboBox<Wrestler> contenderComboBox = renderer.createComponent(testTitle);
+    // Manually create a MultiSelectComboBox instance using the ComponentRenderer
+    ComponentRenderer<MultiSelectComboBox<Wrestler>, Title> renderer =
+        (ComponentRenderer<MultiSelectComboBox<Wrestler>, Title>) challengerColumn.getRenderer();
+    MultiSelectComboBox<Wrestler> challengerComboBox = renderer.createComponent(testTitle);
 
-    contenderComboBox.setValue(contenderWrestler);
+    challengerComboBox.setValue(Set.of(challengerWrestler));
 
-    // Verify that titleService.updateNumberOneContender was called
-    verify(titleService).updateNumberOneContender(testTitle.getId(), contenderWrestler.getId());
+    // Verify that titleService.addChallengerToTitle was called
+    verify(titleService).addChallengerToTitle(testTitle.getId(), challengerWrestler.getId());
 
     // Verify the grid is refreshed (implicitly checks if the update was successful)
     titleListView.refreshGrid();

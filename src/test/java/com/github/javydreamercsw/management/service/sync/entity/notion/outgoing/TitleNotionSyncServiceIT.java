@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleNotionSyncService;
 import dev.failsafe.FailsafeException;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -77,8 +78,8 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       title.setTier(WrestlerTier.MAIN_EVENTER);
       title.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
       title.setIsActive(true);
-      title.setChampion(List.of(testChampion));
-      title.setContender(List.of(testContender));
+      title.awardTitleTo(List.of(testChampion), Instant.now());
+      title.addChallenger(testContender);
       titleRepository.save(title);
 
       // Sync to Notion for the first time
@@ -116,10 +117,10 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       assertFalse(props.get("Champion").getRelation().isEmpty());
       assertEquals(
           testChampion.getExternalId(), props.get("Champion").getRelation().get(0).getId());
-      assertNotNull(props.get("Contender").getRelation());
-      assertFalse(props.get("Contender").getRelation().isEmpty());
+      assertNotNull(props.get("Challengers").getRelation());
+      assertFalse(props.get("Challengers").getRelation().isEmpty());
       assertEquals(
-          testContender.getExternalId(), props.get("Contender").getRelation().get(0).getId());
+          testContender.getExternalId(), props.get("Challengers").getRelation().get(0).getId());
 
       // Sync to Notion again with updates
       updatedTitle.setName("Unified World Championship " + UUID.randomUUID());
@@ -127,7 +128,7 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
       updatedTitle.setTier(WrestlerTier.ICON);
       updatedTitle.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.FEMALE);
       updatedTitle.setIsActive(false);
-      updatedTitle.setChampion(Collections.emptyList()); // Vacate title
+      updatedTitle.vacateTitle(Instant.now()); // Vacate title
       titleRepository.save(updatedTitle);
       titleNotionSyncService.syncToNotion("test-op-2");
       Title updatedTitle2 = titleRepository.findById(title.getId()).get();

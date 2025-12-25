@@ -246,9 +246,10 @@ public class TitleNotionSyncService implements NotionSyncService {
                 }
 
                 // Map Champion (Relation)
-                if (entity.getChampion() != null && !entity.getChampion().isEmpty()) {
+                if (entity.getCurrentChampions() != null
+                    && !entity.getCurrentChampions().isEmpty()) {
                   List<PageProperty.PageReference> relations =
-                      entity.getChampion().stream()
+                      entity.getCurrentChampions().stream()
                           .map(wrestler -> new PageProperty.PageReference(wrestler.getExternalId()))
                           .collect(Collectors.toList());
                   if (!relations.isEmpty()) {
@@ -283,9 +284,9 @@ public class TitleNotionSyncService implements NotionSyncService {
                 }
 
                 // Map Contender (Relation)
-                if (entity.getContender() != null && !entity.getContender().isEmpty()) {
+                if (entity.getChallengers() != null && !entity.getChallengers().isEmpty()) {
                   List<PageProperty.PageReference> relations =
-                      entity.getContender().stream()
+                      entity.getChallengers().stream()
                           .map(wrestler -> new PageProperty.PageReference(wrestler.getExternalId()))
                           .collect(Collectors.toList());
                   if (!relations.isEmpty()) {
