@@ -48,7 +48,17 @@ public class TestE2ESecurityConfig {
 
   @Bean
   public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-    http.authorizeHttpRequests(auth -> auth.requestMatchers("/**").permitAll());
+    http.authorizeHttpRequests(
+        auth ->
+            auth.requestMatchers(
+                    "/login",
+                    "/login/**",
+                    "/images/**",
+                    "/VAADIN/**",
+                    "/line-awesome/**",
+                    "/icons/**",
+                    "/frontend/**")
+                .permitAll());
     http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
     http.csrf(AbstractHttpConfigurer::disable);
     return http.build();

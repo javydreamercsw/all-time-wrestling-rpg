@@ -104,10 +104,8 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     segmentTypeComboBox.sendKeys("Singles Match", Keys.RETURN);
 
     WebElement wrestlersComboBox = dialog.findElement(By.id("wrestlers-combo-box"));
-    clickElement(wrestlersComboBox);
-
-    wrestlersComboBox.sendKeys("Wrestler 1", Keys.RETURN);
-    wrestlersComboBox.sendKeys("Wrestler 2", Keys.RETURN);
+    selectFromVaadinComboBox(wrestlersComboBox, "Wrestler 1");
+    selectFromVaadinComboBox(wrestlersComboBox, "Wrestler 2");
 
     // Click the "Add Segment" button in the dialog
     WebElement addSegmentDialogButton = dialog.findElement(By.id("add-segment-save-button"));
