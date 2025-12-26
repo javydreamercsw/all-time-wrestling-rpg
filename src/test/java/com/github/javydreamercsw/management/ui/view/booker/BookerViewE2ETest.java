@@ -20,17 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.javydreamercsw.AbstractE2ETest;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.DataInitializer;
-import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
@@ -40,7 +33,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class BookerViewE2ETest extends AbstractE2ETest {
 
@@ -48,14 +40,6 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @Autowired private ShowService showService;
   @Autowired private ShowTypeService showTypeService;
   @Autowired private RivalryService rivalryService;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private RivalryRepository rivalryRepository;
-  @Autowired private ShowRepository showRepository;
-  @Autowired private SegmentRepository segmentRepository;
-  @Autowired private AccountRepository accountRepository;
-  @Autowired private RoleRepository roleRepository;
-  @Autowired private PasswordEncoder passwordEncoder;
-  @Autowired private DataInitializer dataInitializer;
 
   @Override
   protected String getUsername() {
@@ -70,10 +54,7 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @BeforeEach
   @Override
   public void setup() {
-    databaseCleaner.clearDatabase();
-    dataInitializer.init();
-    Assertions.assertTrue(
-        accountRepository.findByUsername("booker").isPresent(), "Booker user must exist");
+    wrestlerRepository.deleteAll();
     super.setup();
   }
 

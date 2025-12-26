@@ -19,15 +19,16 @@ package com.github.javydreamercsw.management.ui.view.sync;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.provider.Query;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,12 +39,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class NotionSyncViewTest {
+class NotionSyncViewTest extends AbstractE2ETest {
 
-  @Mock private NotionSyncService notionSyncService;
   @Mock private NotionSyncScheduler notionSyncScheduler;
   @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncProgressTracker progressTracker;
@@ -184,5 +188,16 @@ class NotionSyncViewTest {
         unsortedEntities.stream().map(SyncEntityType::getKey).sorted().toList();
 
     assertEquals(expectedEntities, dropdownItems);
+  }
+
+  @Test
+  public void testControlAlignment() {
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/notion-sync");
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+    WebElement controlSection =
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("control-section")));
+
+    assertEquals("baseline", controlSection.getCssValue("align-items"));
   }
 }
