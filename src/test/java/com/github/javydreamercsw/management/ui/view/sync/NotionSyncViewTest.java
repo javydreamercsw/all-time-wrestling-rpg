@@ -19,10 +19,10 @@ package com.github.javydreamercsw.management.ui.view.sync;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
-import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -41,9 +41,8 @@ import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class NotionSyncViewTest {
+class NotionSyncViewTest extends AbstractE2ETest {
 
-  @Mock private NotionSyncService notionSyncService;
   @Mock private NotionSyncScheduler notionSyncScheduler;
   @Mock private NotionSyncProperties syncProperties;
   @Mock private SyncProgressTracker progressTracker;

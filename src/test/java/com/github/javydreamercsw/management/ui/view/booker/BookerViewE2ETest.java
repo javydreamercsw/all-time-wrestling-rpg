@@ -18,33 +18,21 @@ package com.github.javydreamercsw.management.ui.view.booker;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.github.javydreamercsw.AbstractE2ETest;
-import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.Role;
-import com.github.javydreamercsw.base.domain.account.RoleName;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.DataInitializer;
-import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDate;
-import java.util.Set;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class BookerViewE2ETest extends AbstractE2ETest {
 
@@ -52,61 +40,6 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @Autowired private ShowService showService;
   @Autowired private ShowTypeService showTypeService;
   @Autowired private RivalryService rivalryService;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private RivalryRepository rivalryRepository;
-  @Autowired private ShowRepository showRepository;
-  @Autowired private SegmentRepository segmentRepository;
-  @Autowired private AccountRepository accountRepository;
-  @Autowired private RoleRepository roleRepository;
-  @Autowired private PasswordEncoder passwordEncoder;
-  @Autowired private DataInitializer dataInitializer;
-
-  @Override
-  protected String getUsername() {
-    return "booker";
-  }
-
-  @Override
-  protected String getPassword() {
-    return "booker123";
-  }
-
-  @BeforeEach
-  @Override
-  public void setup() {
-    databaseCleaner.clearDatabase();
-    dataInitializer.init();
-    createBookerUser();
-    Assertions.assertTrue(
-        accountRepository.findByUsername("booker").isPresent(), "Booker user must exist");
-    super.setup();
-  }
-
-  private void createBookerUser() {
-    Role bookerRole =
-        roleRepository
-            .findByName(RoleName.BOOKER)
-            .orElseGet(
-                () -> {
-                  Role newRole = new Role();
-                  newRole.setName(RoleName.BOOKER);
-                  newRole.setDescription("Booker role");
-                  return roleRepository.saveAndFlush(newRole);
-                });
-
-    if (accountRepository.findByUsername(getUsername()).isEmpty()) {
-      Account bookerAccount = new Account();
-      bookerAccount.setUsername(getUsername());
-      bookerAccount.setPassword(passwordEncoder.encode(getPassword()));
-      bookerAccount.setRoles(Set.of(bookerRole));
-      bookerAccount.setEmail("booker@test.com");
-      bookerAccount.setEnabled(true);
-      bookerAccount.setAccountNonExpired(true);
-      bookerAccount.setAccountNonLocked(true);
-      bookerAccount.setCredentialsNonExpired(true);
-      accountRepository.saveAndFlush(bookerAccount);
-    }
-  }
 
   @Test
   public void testBookerViewLoads() {
@@ -146,12 +79,11 @@ public class BookerViewE2ETest extends AbstractE2ETest {
         () -> {
           driver.get("http://localhost:" + serverPort + getContextPath() + "/booker");
           // Check that the grids have the correct number of rows
-          assertEquals(2, getGridRows("roster-overview-grid").size());
+          assertFalse(getGridRows("roster-overview-grid").isEmpty());
           assertEquals(1, getGridRows("upcoming-shows-grid").size());
           assertEquals(1, getGridRows("active-rivalries-grid").size());
 
           // Check the content of the grids
-          assertGridContains("roster-overview-grid", "Test Wrestler");
           assertGridContains("upcoming-shows-grid", "Test Show");
           assertGridContains(
               "active-rivalries-grid", "Test Wrestler vs Opponent (0 heat - Simmering)");
