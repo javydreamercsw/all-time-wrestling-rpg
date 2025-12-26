@@ -16,74 +16,165 @@
 */
 package com.github.javydreamercsw.management;
 
+import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.Table;
-import java.util.List;
+import jakarta.persistence.metamodel.EntityType;
+import java.lang.reflect.Method;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Cleans the database by disabling foreign key constraints, truncating all tables, and then
- * re-enabling the constraints. This is a robust method for ensuring a clean state between tests.
+ * Automatically discovers and clears all JPA repositories in the correct dependency order. Uses
+ * EntityDependencyAnalyzer to determine the safe deletion order based on entity relationships.
  */
 @Service
 @Slf4j
 public class DatabaseCleaner {
 
+  @Autowired private ApplicationContext applicationContext;
+  @Autowired private EntityDependencyAnalyzer dependencyAnalyzer;
   @Autowired private EntityManager entityManager;
 
   /**
-   * Disables foreign key constraints, truncates all tables managed by the entity manager, and then
-   * re-enables the constraints.
+   * Clears all repositories in the correct dependency order. Automatically discovers all
+   * JpaRepository beans and deletes their data in reverse dependency order (children before
+   * parents).
    */
   @Transactional
-  public void clearDatabase() {
-    log.info("🧹 Starting robust database cleanup...");
+  public void clearRepositories() {
+    log.info("🧹 Starting database cleanup...");
 
-    // Detach all entities to prevent any lingering state issues
+    // Detach all managed entities to prevent dirty session issues
     entityManager.clear();
 
-    // Get all table names from the entity metadata
-    List<String> tableNames =
-        entityManager.getMetamodel().getEntities().stream()
-            .map(
-                entityType -> {
-                  Table tableAnnotation = entityType.getJavaType().getAnnotation(Table.class);
-                  return tableAnnotation != null ? tableAnnotation.name() : null;
-                })
-            .filter(java.util.Objects::nonNull)
-            .toList();
+    // Discover all repositories
+    Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
+    log.info("📦 Discovered {} repositories", repositories.size());
 
-    // Add tables that might not be directly mapped as entities but have records
-    // (e.g., join tables)
-    // This part might need manual adjustment if you have complex table naming schemes
-    // or tables not represented by entities. For now, we assume simple cases.
-    // A more robust solution might query the database schema directly.
+    // Get entity classes and determine deletion order
+    Set<Class<?>> entityClasses = getEntityClasses();
+    List<String> syncOrder = dependencyAnalyzer.determineSyncOrder(entityClasses);
 
-    entityManager.flush();
+    // Reverse the order for deletion (delete children before parents)
+    Collections.reverse(syncOrder);
 
-    // Disable foreign key constraints
-    entityManager.createNativeQuery("SET REFERENTIAL_INTEGRITY FALSE").executeUpdate();
-    log.debug("REFERENTIAL_INTEGRITY set to FALSE");
+    log.info("🔄 Deletion order: {}", syncOrder);
 
-    // Truncate all tables
-    for (String tableName : tableNames) {
-      try {
-        log.debug("Truncating table: {}", tableName);
-        entityManager
-            .createNativeQuery("TRUNCATE TABLE " + tableName + " RESTART IDENTITY")
-            .executeUpdate();
-      } catch (Exception e) {
-        log.warn("Could not truncate table {}: {}", tableName, e.getMessage());
+    // Delete data in the correct order
+    int deletedCount = 0;
+    for (String entityName : syncOrder) {
+      JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
+      if (repository != null) {
+        long count = repository.count();
+        if (count > 0) {
+          try {
+            repository.deleteAll();
+            log.debug("✅ Deleted {} records from {}", count, entityName);
+            deletedCount++;
+          } catch (Exception e) {
+            log.warn("⚠️ Error deleting from {}: {}", entityName, e.getMessage());
+            // Try deleteAllInBatch as fallback
+            try {
+              repository.deleteAllInBatch();
+              log.debug("✅ Deleted (batch) {} records from {}", count, entityName);
+              deletedCount++;
+            } catch (Exception e2) {
+              log.error("❌ Failed to delete from {}: {}", entityName, e2.getMessage());
+            }
+          }
+        }
       }
     }
 
-    // Re-enable foreign key constraints
-    entityManager.createNativeQuery("SET REFERENTIAL_INTEGRITY TRUE").executeUpdate();
-    log.debug("REFERENTIAL_INTEGRITY set to TRUE");
+    // Clean up any remaining repositories not in the entity list
+    for (Map.Entry<String, JpaRepository<?, ?>> entry : repositories.entrySet()) {
+      if (!syncOrder.contains(entry.getKey())) {
+        try {
+          long count = entry.getValue().count();
+          if (count > 0) {
+            entry.getValue().deleteAll();
+            log.debug(
+                "✅ Deleted {} records from {} (not in dependency graph)", count, entry.getKey());
+            deletedCount++;
+          }
+        } catch (Exception e) {
+          log.warn("⚠️ Error deleting from {}: {}", entry.getKey(), e.getMessage());
+        }
+      }
+    }
 
-    log.info("✨ Robust database cleanup completed.");
+    log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
+  }
+
+  /**
+   * Discovers all JpaRepository beans in the application context. Returns a map of entity name
+   * (lowercase) to repository instance.
+   */
+  private Map<String, JpaRepository<?, ?>> discoverRepositories() {
+    Map<String, JpaRepository<?, ?>> repositories = new HashMap<>();
+    String[] beanNames = applicationContext.getBeanNamesForType(JpaRepository.class);
+
+    for (String beanName : beanNames) {
+      // Skip account and role repositories to avoid deleting test users
+      if (beanName.equals("accountRepository") || beanName.equals("roleRepository")) {
+        continue;
+      }
+      try {
+        JpaRepository<?, ?> repository = applicationContext.getBean(beanName, JpaRepository.class);
+
+        // Extract entity name from repository
+        String entityName = extractEntityName(repository, beanName);
+        if (entityName != null) {
+          repositories.put(entityName.toLowerCase(), repository);
+          log.debug("📍 Mapped repository {} to entity {}", beanName, entityName);
+        }
+      } catch (Exception e) {
+        log.debug("⚠️ Skipping bean {}: {}", beanName, e.getMessage());
+      }
+    }
+
+    return repositories;
+  }
+
+  /**
+   * Extracts the entity name from a repository bean. Tries multiple strategies: bean name pattern,
+   * repository interface generics.
+   */
+  private String extractEntityName(JpaRepository<?, ?> repository, String beanName) {
+    // Strategy 1: Bean name pattern (e.g., "cardRepository" -> "card")
+    if (beanName.endsWith("Repository")) {
+      return beanName.substring(0, beanName.length() - "Repository".length());
+    }
+
+    // Strategy 2: Try to find the entity class from repository methods
+    try {
+      Method findAllMethod = repository.getClass().getMethod("findAll");
+      Class<?> returnType = findAllMethod.getReturnType();
+      if (returnType != null) {
+        // This is a fallback, might not always work perfectly
+        return returnType.getSimpleName().toLowerCase();
+      }
+    } catch (Exception e) {
+      // Ignore
+    }
+
+    return null;
+  }
+
+  /** Gets all entity classes registered with the EntityManager. */
+  private Set<Class<?>> getEntityClasses() {
+    Set<Class<?>> entityClasses = new HashSet<>();
+    Set<EntityType<?>> entities = entityManager.getMetamodel().getEntities();
+
+    for (EntityType<?> entity : entities) {
+      entityClasses.add(entity.getJavaType());
+    }
+
+    return entityClasses;
   }
 }
