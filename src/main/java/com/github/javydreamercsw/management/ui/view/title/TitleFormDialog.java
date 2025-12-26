@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -46,27 +47,34 @@ public class TitleFormDialog extends Dialog {
   private final Title title;
   private final Binder<Title> binder = new Binder<>(Title.class);
   private final WrestlerRepository wrestlerRepository;
+  private final TextField name;
+  private final TextArea description;
+  private final ComboBox<WrestlerTier> tier;
+  private final ComboBox<Gender> gender;
+  private final MultiSelectComboBox<Wrestler> champion;
+  private final Button saveButton;
 
   public TitleFormDialog(
       @NonNull TitleService titleService,
       @NonNull WrestlerService wrestlerService,
       @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull TierRecalculationService tierRecalculationService,
       @NonNull Title title,
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
     this.title = title;
     this.wrestlerRepository = wrestlerRepository;
-    TextField name = new TextField("Name");
+    name = new TextField("Name");
     name.setReadOnly(!securityUtils.canEdit());
-    TextArea description = new TextArea("Description");
+    description = new TextArea("Description");
     description.setReadOnly(!securityUtils.canEdit());
-    ComboBox<WrestlerTier> tier = new ComboBox<>("Tier");
+    tier = new ComboBox<>("Tier");
     tier.setItems(
         Arrays.stream(WrestlerTier.values())
             .sorted(Comparator.comparing(WrestlerTier::name))
             .collect(Collectors.toList()));
     tier.setReadOnly(!securityUtils.canEdit());
-    ComboBox<Gender> gender = new ComboBox<>("Gender");
+    gender = new ComboBox<>("Gender");
     gender.setItems(
         Arrays.stream(Gender.values())
             .sorted(Comparator.comparing(Gender::name))
@@ -74,7 +82,7 @@ public class TitleFormDialog extends Dialog {
     gender.setReadOnly(!securityUtils.canEdit());
     Checkbox isActive = new Checkbox("Active");
     isActive.setReadOnly(!securityUtils.canEdit());
-    MultiSelectComboBox<Wrestler> champion = new MultiSelectComboBox<>("Champion(s)");
+    champion = new MultiSelectComboBox<>("Champion(s)");
     champion.setItemLabelGenerator(Wrestler::getName);
     champion.setReadOnly(!securityUtils.canEdit());
 
@@ -86,33 +94,32 @@ public class TitleFormDialog extends Dialog {
 
     Runnable populateChampions =
         () -> {
-          var selected = champion.getValue();
-          List<Wrestler> eligible =
-              wrestlerRepository.findAll().stream()
-                  .filter(w -> titleService.isWrestlerEligible(w, title))
-                  .sorted(Comparator.comparing(Wrestler::getName))
-                  .collect(Collectors.toList());
-          champion.setItems(eligible);
-          champion.setValue(selected);
+          WrestlerTier currentTier = tier.getValue();
+          if (currentTier != null) {
+            // Create a temporary title object to avoid binder timing issues in listeners.
+            Title tempTitle = new Title();
+            tempTitle.setTier(currentTier);
+            tempTitle.setGender(gender.getValue());
+
+            var selected = champion.getValue();
+            List<Wrestler> eligible =
+                wrestlerRepository.findAll().stream()
+                    .peek(tierRecalculationService::recalculateTier)
+                    .filter(w -> titleService.isWrestlerEligible(w, tempTitle))
+                    .sorted(Comparator.comparing(Wrestler::getName))
+                    .collect(Collectors.toList());
+            champion.setItems(eligible);
+            champion.setValue(selected);
+          }
         };
 
-    tier.addValueChangeListener(
-        event -> {
-          if (event.isFromClient()) {
-            populateChampions.run();
-          }
-        });
-    gender.addValueChangeListener(
-        event -> {
-          if (event.isFromClient()) {
-            populateChampions.run();
-          }
-        });
+    tier.addValueChangeListener(event -> populateChampions.run());
+    gender.addValueChangeListener(event -> populateChampions.run());
 
     FormLayout formLayout = new FormLayout(name, description, tier, gender, isActive, champion);
     add(formLayout);
 
-    Button saveButton =
+    saveButton =
         new Button(
             "Save",
             event -> {
@@ -136,7 +143,10 @@ public class TitleFormDialog extends Dialog {
 
     binder.readBean(this.title);
 
-    populateChampions.run(); // Initial population after binder is read
+    // Initial population for existing titles.
+    if (this.title.getTier() != null) {
+      populateChampions.run();
+    }
 
     if (title.getChampion() != null) {
       champion.setValue(title.getChampion());
