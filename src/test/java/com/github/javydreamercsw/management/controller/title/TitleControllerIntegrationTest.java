@@ -28,7 +28,6 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -59,8 +58,6 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
 
   @Autowired private WebApplicationContext webApplicationContext;
   @MockitoBean private TitleService titleService;
-  @MockitoBean private WrestlerService wrestlerService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @BeforeEach
   void setup() {
