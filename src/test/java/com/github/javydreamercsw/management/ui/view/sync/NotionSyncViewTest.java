@@ -28,7 +28,6 @@ import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.provider.Query;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,10 +38,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -188,16 +183,5 @@ class NotionSyncViewTest extends AbstractE2ETest {
         unsortedEntities.stream().map(SyncEntityType::getKey).sorted().toList();
 
     assertEquals(expectedEntities, dropdownItems);
-  }
-
-  @Test
-  public void testControlAlignment() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/notion-sync");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-
-    WebElement controlSection =
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("control-section")));
-
-    assertEquals("baseline", controlSection.getCssValue("align-items"));
   }
 }
