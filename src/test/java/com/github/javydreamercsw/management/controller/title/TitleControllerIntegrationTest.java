@@ -26,7 +26,6 @@ import com.github.javydreamercsw.management.controller.title.TitleController.Cre
 import com.github.javydreamercsw.management.controller.title.TitleController.UpdateTitleRequest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.time.Instant;
 import java.util.List;

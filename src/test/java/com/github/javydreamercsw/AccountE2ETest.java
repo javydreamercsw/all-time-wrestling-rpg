@@ -58,7 +58,7 @@ public class AccountE2ETest extends AbstractE2ETest {
 
     // Edit the fields
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
-    passwordField.sendKeys("new_password");
+    passwordField.sendKeys("new_password-1");
 
     WebElement roleComboBox = waitForVaadinElement(driver, By.id("role-field"));
     selectFromVaadinComboBox(roleComboBox, "BOOKER");
@@ -148,7 +148,7 @@ public class AccountE2ETest extends AbstractE2ETest {
     emailField.sendKeys("new_account@atw.com");
 
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
-    passwordField.sendKeys("new_password");
+    passwordField.sendKeys("new_password-1");
 
     WebElement roleComboBox = waitForVaadinElement(driver, By.id("role-field"));
     selectFromVaadinComboBox(roleComboBox, "VIEWER");
