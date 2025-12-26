@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ui.view;
 
+import com.github.javydreamercsw.management.ui.view.account.ForgotPasswordView;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Paragraph;
@@ -69,8 +70,9 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
 
     loginForm.setI18n(i18n);
     loginForm.setAction("login");
-    loginForm.setForgotPasswordButtonVisible(
-        false); // TODO: Enable when forgot password is implemented
+    loginForm.setForgotPasswordButtonVisible(true);
+    loginForm.addForgotPasswordListener(
+        event -> getUI().ifPresent(ui -> ui.navigate(ForgotPasswordView.class)));
 
     // Create header with logo placeholder
     Div header = createHeader();

@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetailsService;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -29,6 +31,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,6 +39,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({TestSecurityConfig.class})
 @ActiveProfiles("test")
 @WithMockUser(roles = "ADMIN")
+@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
 public abstract class AbstractControllerTest {
 
   @Autowired protected MockMvc mockMvc;
@@ -48,4 +52,6 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected SegmentNarrationServiceFactory serviceFactory;
   @MockitoBean protected RankingService rankingService;
   @MockitoBean protected WrestlerRepository wrestlerRepository;
+  @MockitoBean private AccountRepository accountRepository;
+  @MockitoBean private RoleRepository roleRepository;
 }

@@ -39,15 +39,13 @@ public class CustomUserDetailsService implements UserDetailsService {
   private final WrestlerRepository wrestlerRepository; // Added repository
 
   @Override
-  @Transactional(readOnly = true)
+  @Transactional
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    log.debug("Loading user details for username: {}", username);
-
     Account account =
         accountRepository
             .findByUsernameWithRoles(username)
             .orElseThrow(
-                () -> new UsernameNotFoundException("User not found with username: " + username));
+                () -> new UsernameNotFoundException("No user found with username: " + username));
 
     // Check if account lock has expired and unlock if necessary
     if (!account.isAccountNonLocked() && account.isLockExpired()) {

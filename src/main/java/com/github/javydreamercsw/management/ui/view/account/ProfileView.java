@@ -24,20 +24,19 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.EmailField;
-import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.ValidationResult;
-import com.vaadin.flow.data.validator.RegexpValidator;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @PageTitle("Profile")
 @Route(value = "profile")
 @PermitAll
 public class ProfileView extends Main {
 
-  public ProfileView(AccountService accountService, SecurityUtils securityUtils) {
+  public ProfileView(
+      AccountService accountService, SecurityUtils securityUtils, PasswordEncoder passwordEncoder) {
     add(new H1("Profile"));
 
     securityUtils
@@ -57,82 +56,27 @@ public class ProfileView extends Main {
                           EmailField emailField = new EmailField("Email");
                           emailField.setValue(account.getEmail());
 
-                          PasswordField passwordField = new PasswordField("New Password");
-                          PasswordField confirmPasswordField =
-                              new PasswordField("Confirm New Password");
+                          Button changePasswordButton =
+                              new Button(
+                                  "Change Password",
+                                  event -> {
+                                    ChangePasswordDialog dialog =
+                                        new ChangePasswordDialog(
+                                            accountService, passwordEncoder, account);
+                                    dialog.open();
+                                  });
 
                           Button saveButton =
                               new Button(
                                   "Save",
                                   event -> {
-                                    if (passwordField
-                                        .getValue()
-                                        .equals(confirmPasswordField.getValue())) {
-                                      account.setEmail(emailField.getValue());
-                                      if (!passwordField.getValue().isEmpty()) {
-                                        ValidationResult result =
-                                            new RegexpValidator(
-                                                    "Password must be at least 8 characters long.",
-                                                    ".{8,}")
-                                                .apply(passwordField.getValue(), null);
-                                        if (result.isError()) {
-                                          Notification.show(result.getErrorMessage());
-                                          return;
-                                        }
-                                        result =
-                                            new RegexpValidator(
-                                                    "Password must contain at least one uppercase"
-                                                        + " letter.",
-                                                    ".*[A-Z].*")
-                                                .apply(passwordField.getValue(), null);
-                                        if (result.isError()) {
-                                          Notification.show(result.getErrorMessage());
-                                          return;
-                                        }
-                                        result =
-                                            new RegexpValidator(
-                                                    "Password must contain at least one lowercase"
-                                                        + " letter.",
-                                                    ".*[a-z].*")
-                                                .apply(passwordField.getValue(), null);
-                                        if (result.isError()) {
-                                          Notification.show(result.getErrorMessage());
-                                          return;
-                                        }
-                                        result =
-                                            new RegexpValidator(
-                                                    "Password must contain at least one digit.",
-                                                    ".*\\d.*")
-                                                .apply(passwordField.getValue(), null);
-                                        if (result.isError()) {
-                                          Notification.show(result.getErrorMessage());
-                                          return;
-                                        }
-                                        result =
-                                            new RegexpValidator(
-                                                    "Password must contain at least one special"
-                                                        + " character (e.g., !@#$%^&*()).",
-                                                    ".*[^a-zA-Z0-9].*")
-                                                .apply(passwordField.getValue(), null);
-                                        if (result.isError()) {
-                                          Notification.show(result.getErrorMessage());
-                                          return;
-                                        }
-                                        account.setPassword(passwordField.getValue());
-                                      }
-                                      accountService.update(account);
-                                      Notification.show("Profile updated successfully!");
-                                    } else {
-                                      Notification.show("Passwords do not match!");
-                                    }
+                                    account.setEmail(emailField.getValue());
+                                    accountService.update(account);
+                                    Notification.show("Profile updated successfully!");
                                   });
 
                           formLayout.add(
-                              usernameField,
-                              emailField,
-                              passwordField,
-                              confirmPasswordField,
-                              saveButton);
+                              usernameField, emailField, changePasswordButton, saveButton);
                           add(formLayout);
                         }));
   }
