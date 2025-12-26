@@ -18,8 +18,10 @@ package com.github.javydreamercsw.base.service.account;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -47,8 +49,8 @@ public class AccountService {
     List<Account> allAccounts = accountRepository.findAll();
     List<Account> accountsWithWrestlers =
         wrestlerRepository.findAll().stream()
-            .filter(wrestler -> wrestler.getAccount() != null)
-            .map(wrestler -> wrestler.getAccount())
+            .map(Wrestler::getAccount)
+            .filter(Objects::nonNull)
             .toList();
 
     allAccounts.removeAll(accountsWithWrestlers);

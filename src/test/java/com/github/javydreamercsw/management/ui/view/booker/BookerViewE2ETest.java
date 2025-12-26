@@ -40,16 +40,6 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @Autowired private ShowTypeService showTypeService;
   @Autowired private RivalryService rivalryService;
 
-  @Override
-  protected String getUsername() {
-    return "booker";
-  }
-
-  @Override
-  protected String getPassword() {
-    return "booker123";
-  }
-
   @Test
   public void testBookerViewLoads() {
     // Create a wrestler
