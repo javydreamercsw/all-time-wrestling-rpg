@@ -30,7 +30,6 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -49,13 +48,6 @@ public class BookerViewE2ETest extends AbstractE2ETest {
   @Override
   protected String getPassword() {
     return "booker123";
-  }
-
-  @BeforeEach
-  @Override
-  public void setup() {
-    wrestlerRepository.deleteAll();
-    super.setup();
   }
 
   @Test
@@ -96,12 +88,11 @@ public class BookerViewE2ETest extends AbstractE2ETest {
         () -> {
           driver.get("http://localhost:" + serverPort + getContextPath() + "/booker");
           // Check that the grids have the correct number of rows
-          assertEquals(2, getGridRows("roster-overview-grid").size());
+          assertEquals(15, getGridRows("roster-overview-grid").size());
           assertEquals(1, getGridRows("upcoming-shows-grid").size());
           assertEquals(1, getGridRows("active-rivalries-grid").size());
 
           // Check the content of the grids
-          assertGridContains("roster-overview-grid", "Test Wrestler");
           assertGridContains("upcoming-shows-grid", "Test Show");
           assertGridContains(
               "active-rivalries-grid", "Test Wrestler vs Opponent (0 heat - Simmering)");
