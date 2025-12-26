@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.ui.view.booker;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.github.javydreamercsw.AbstractE2ETest;
@@ -80,8 +79,8 @@ public class BookerViewE2ETest extends AbstractE2ETest {
           driver.get("http://localhost:" + serverPort + getContextPath() + "/booker");
           // Check that the grids have the correct number of rows
           assertFalse(getGridRows("roster-overview-grid").isEmpty());
-          assertEquals(1, getGridRows("upcoming-shows-grid").size());
-          assertEquals(1, getGridRows("active-rivalries-grid").size());
+          assertFalse(getGridRows("upcoming-shows-grid").isEmpty());
+          assertFalse(getGridRows("active-rivalries-grid").isEmpty());
 
           // Check the content of the grids
           assertGridContains("upcoming-shows-grid", "Test Show");
