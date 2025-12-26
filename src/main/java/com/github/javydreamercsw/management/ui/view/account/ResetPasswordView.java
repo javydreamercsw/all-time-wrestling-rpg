@@ -16,97 +16,81 @@
 */
 package com.github.javydreamercsw.management.ui.view.account;
 
-import com.github.javydreamercsw.base.security.PasswordValidator;
-import com.github.javydreamercsw.base.ui.view.LoginView;
+import com.github.javydreamercsw.base.security.CustomPasswordValidator;
 import com.github.javydreamercsw.management.service.PasswordResetService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
-import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.router.Location;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@Route("reset-password")
 @PageTitle("Reset Password")
+@Route(value = "reset-password")
 @AnonymousAllowed
-public class ResetPasswordView extends VerticalLayout implements BeforeEnterObserver {
+public class ResetPasswordView extends Main implements BeforeEnterObserver {
 
   private final PasswordResetService passwordResetService;
   private String token;
-  private final Binder<Void> binder = new Binder<>();
 
+  @Autowired
   public ResetPasswordView(PasswordResetService passwordResetService) {
     this.passwordResetService = passwordResetService;
-    setAlignItems(Alignment.CENTER);
+    VerticalLayout layout = new VerticalLayout();
+    layout.setAlignItems(VerticalLayout.Alignment.CENTER);
+    add(layout);
   }
 
   @Override
   public void beforeEnter(BeforeEnterEvent event) {
-    Location location = event.getLocation();
-    Map<String, List<String>> parameters = location.getQueryParameters().getParameters();
+    Map<String, List<String>> parameters = event.getLocation().getQueryParameters().getParameters();
     if (parameters.containsKey("token")) {
       token = parameters.get("token").get(0);
-      passwordResetService
-          .getPasswordResetToken(token)
-          .ifPresentOrElse(
-              resetToken -> {
-                if (resetToken.isExpired()) {
-                  showInvalidTokenError();
-                } else {
-                  buildUi();
-                }
-              },
-              this::showInvalidTokenError);
+      if (passwordResetService.validatePasswordResetToken(token)) {
+        showResetPasswordForm();
+      } else {
+        showInvalidTokenMessage();
+      }
     } else {
-      showInvalidTokenError();
+      showInvalidTokenMessage();
     }
   }
 
-  private void buildUi() {
+  private void showResetPasswordForm() {
     removeAll();
-    add(new H1("Reset Password"));
-
+    VerticalLayout layout = new VerticalLayout();
+    layout.setAlignItems(VerticalLayout.Alignment.CENTER);
+    add(layout);
+    layout.add(new H1("Reset Password"));
     PasswordField newPassword = new PasswordField("New Password");
-    newPassword.setRequired(true);
-
     PasswordField confirmPassword = new PasswordField("Confirm New Password");
-    confirmPassword.setRequired(true);
-
-    binder
-        .forField(newPassword)
-        .withValidator(new PasswordValidator("Invalid password"))
-        .withValidator(p -> p.equals(confirmPassword.getValue()), "Passwords do not match")
-        .bind(v -> null, (v, p) -> {});
-
-    Button saveButton =
+    Button resetButton =
         new Button(
             "Reset Password",
             event -> {
-              if (binder.validate().isOk()) {
+              if (!newPassword.getValue().equals(confirmPassword.getValue())) {
+                Notification.show("New passwords do not match.");
+              } else if (!CustomPasswordValidator.isValid(newPassword.getValue())) {
+                Notification.show("New password does not meet strength requirements.");
+              } else {
                 passwordResetService.resetPassword(token, newPassword.getValue());
-                Notification.show(
-                    "Password reset successfully. You can now log in.",
-                    3000,
-                    Notification.Position.MIDDLE);
-                getUI().ifPresent(ui -> ui.navigate(LoginView.class));
+                Notification.show("Password reset successfully.");
+                getUI().ifPresent(ui -> ui.navigate("login"));
               }
             });
-
-    add(newPassword, confirmPassword, saveButton, new RouterLink("Back to Login", LoginView.class));
+    layout.add(newPassword, confirmPassword, resetButton);
   }
 
-  private void showInvalidTokenError() {
+  private void showInvalidTokenMessage() {
     removeAll();
-    add(new H1("Invalid or Expired Token"));
-    add(new RouterLink("Request a new reset link", ForgotPasswordView.class));
+    add(new H1("Invalid or expired password reset token."));
   }
 }

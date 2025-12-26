@@ -16,71 +16,49 @@
 */
 package com.github.javydreamercsw.management.ui.view.account;
 
-import com.github.javydreamercsw.base.ui.view.LoginView;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.PasswordResetService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.EmailField;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Route("forgot-password")
+@PageTitle("Forgot Password")
+@Route(value = "forgot-password")
 @AnonymousAllowed
-public class ForgotPasswordView extends VerticalLayout {
+public class ForgotPasswordView extends Main {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ForgotPasswordView.class);
 
   public ForgotPasswordView(
-      @Qualifier("managementAccountService") AccountService accountService,
-      PasswordResetService passwordResetService) {
-
-    add(new H1("Forgot Password"));
-
-    EmailField emailField = new EmailField("Enter your email address");
-    emailField.setId("email-field");
-    emailField.setRequiredIndicatorVisible(true);
-    emailField.setWidth("300px");
-
-    Button resetButton = new Button("Send Reset Link");
-    resetButton.setId("reset-button");
-    resetButton.addClickListener(
-        event -> {
-          accountService
-              .findByEmail(emailField.getValue())
-              .ifPresentOrElse(
-                  account -> {
-                    String token = passwordResetService.createPasswordResetTokenForUser(account);
-                    // In a real application, you would send an email with the link.
-                    // For now, we'll show a notification with the link for testing.
-                    getUI()
-                        .ifPresent(
-                            ui ->
-                                ui.getPage()
-                                    .fetchCurrentURL(
-                                        url -> {
-                                          String resetUrl =
-                                              url.toString()
-                                                  .replace(
-                                                      "forgot-password",
-                                                      "reset-password?token=" + token);
-                                          Notification.show(
-                                              "Password reset link (for testing): " + resetUrl,
-                                              5000,
-                                              Notification.Position.MIDDLE);
-                                        }));
-                  },
-                  () ->
-                      Notification.show(
-                          "No account found with that email address.",
-                          3000,
-                          Notification.Position.MIDDLE));
-        });
-
-    add(emailField, resetButton, new RouterLink("Back to Login", LoginView.class));
-
-    setAlignItems(Alignment.CENTER);
+      AccountService accountService, PasswordResetService passwordResetService) {
+    VerticalLayout layout = new VerticalLayout();
+    layout.setAlignItems(VerticalLayout.Alignment.CENTER);
+    add(layout);
+    layout.add(new H1("Forgot Password"));
+    EmailField emailField = new EmailField("Email");
+    Button resetButton =
+        new Button(
+            "Reset Password",
+            event ->
+                accountService
+                    .findByEmail(emailField.getValue())
+                    .ifPresentOrElse(
+                        account -> {
+                          String token =
+                              passwordResetService.createPasswordResetTokenForUser(account);
+                          LOG.info("Password reset token for {}: {}", account.getEmail(), token);
+                          Notification.show(
+                              "A password reset link has been sent to your email address.");
+                        },
+                        () -> Notification.show("No account found with that email address.")));
+    layout.add(emailField, resetButton);
   }
 }

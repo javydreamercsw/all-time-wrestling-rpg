@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.account;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.security.PasswordValidator;
+import com.github.javydreamercsw.base.security.CustomPasswordValidator;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -25,64 +25,43 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
-import com.vaadin.flow.data.binder.Binder;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class ChangePasswordDialog extends Dialog {
 
-  private final Binder<Void> binder = new Binder<>();
-
   public ChangePasswordDialog(
-      @Qualifier("managementAccountService") AccountService accountService,
-      PasswordEncoder passwordEncoder,
-      Account account) {
-
+      AccountService accountService, PasswordEncoder passwordEncoder, Account account) {
     setHeaderTitle("Change Password");
 
     FormLayout formLayout = new FormLayout();
-    PasswordField currentPassword = new PasswordField("Current Password");
-    currentPassword.setId("current-password-field");
-    currentPassword.setRequired(true);
-
+    PasswordField oldPassword = new PasswordField("Old Password");
     PasswordField newPassword = new PasswordField("New Password");
-    newPassword.setId("new-password-field");
-    newPassword.setRequired(true);
-
     PasswordField confirmPassword = new PasswordField("Confirm New Password");
-    confirmPassword.setId("confirm-password-field");
-    confirmPassword.setRequired(true);
 
-    binder
-        .forField(newPassword)
-        .withValidator(new PasswordValidator("Invalid password"))
-        .withValidator(p -> p.equals(confirmPassword.getValue()), "Passwords do not match")
-        .bind(v -> null, (v, p) -> {}); // Dummy binder
+    formLayout.add(oldPassword, newPassword, confirmPassword);
 
-    binder
-        .forField(currentPassword)
-        .withValidator(
-            p -> passwordEncoder.matches(p, account.getPassword()), "Incorrect current password")
-        .bind(v -> null, (v, p) -> {}); // Dummy binder
+    Button saveButton =
+        new Button(
+            "Save",
+            event -> {
+              if (!passwordEncoder.matches(oldPassword.getValue(), account.getPassword())) {
+                Notification.show("Invalid old password.");
+              } else if (!newPassword.getValue().equals(confirmPassword.getValue())) {
+                Notification.show("New passwords do not match.");
+              } else if (!CustomPasswordValidator.isValid(newPassword.getValue())) {
+                Notification.show("New password does not meet strength requirements.");
+              } else {
+                account.setPassword(newPassword.getValue());
+                accountService.update(account);
+                Notification.show("Password changed successfully.");
+                close();
+              }
+            });
 
-    formLayout.add(currentPassword, newPassword, confirmPassword);
-    add(formLayout);
+    Button cancelButton = new Button("Cancel", event -> close());
 
-    Button saveButton = new Button("Save");
-    saveButton.setId("save-button");
-    saveButton.addClickListener(
-        event -> {
-          if (binder.validate().isOk()) {
-            account.setPassword(newPassword.getValue());
-            accountService.update(account);
-            Notification.show("Password changed successfully!");
-            close();
-          }
-        });
+    HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, cancelButton);
 
-    Button cancelButton = new Button("Cancel");
-    cancelButton.addClickListener(event -> close());
-
-    getFooter().add(new HorizontalLayout(saveButton, cancelButton));
+    add(formLayout, buttonLayout);
   }
 }

@@ -17,65 +17,52 @@
 package com.github.javydreamercsw.management.service;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.management.domain.account.PasswordResetToken;
-import com.github.javydreamercsw.management.domain.account.PasswordResetTokenRepository;
-import java.util.Optional;
+import com.github.javydreamercsw.base.domain.account.PasswordResetToken;
+import com.github.javydreamercsw.base.domain.account.PasswordResetTokenRepository;
+import java.time.LocalDateTime;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class PasswordResetService {
 
   private final PasswordResetTokenRepository tokenRepository;
-  private final AccountService accountService;
 
-  public PasswordResetService(
-      PasswordResetTokenRepository tokenRepository,
-      @Qualifier("managementAccountService") AccountService accountService) {
-    this.tokenRepository = tokenRepository;
-    this.accountService = accountService;
-  }
+  @Qualifier("managementAccountService") private final AccountService accountService;
 
-  /**
-   * Creates a password reset token for the given user. If a token already exists for the user, it
-   * will be replaced.
-   *
-   * @param account The account to create the token for.
-   * @return The created token.
-   */
   public String createPasswordResetTokenForUser(Account account) {
-    // Invalidate previous tokens
-    tokenRepository.findByAccount(account).ifPresent(tokenRepository::delete);
-
     String token = UUID.randomUUID().toString();
     PasswordResetToken myToken = new PasswordResetToken(token, account);
     tokenRepository.save(myToken);
     return token;
   }
 
-  public Optional<PasswordResetToken> getPasswordResetToken(String token) {
-    return tokenRepository.findByToken(token);
+  public boolean validatePasswordResetToken(String token) {
+    return tokenRepository.findByToken(token).map(t -> !isTokenExpired(t)).orElse(false);
   }
 
-  /**
-   * Resets the password for the given token.
-   *
-   * @param token The password reset token.
-   * @param newPassword The new password.
-   * @throws IllegalArgumentException if the token is invalid or expired.
-   */
+  private boolean isTokenExpired(PasswordResetToken passToken) {
+    return passToken.getExpiryDate().isBefore(LocalDateTime.now());
+  }
+
   public void resetPassword(String token, String newPassword) {
-    Optional<PasswordResetToken> resetToken = tokenRepository.findByToken(token);
-    if (resetToken.isPresent() && !resetToken.get().isExpired()) {
-      Account account = resetToken.get().getAccount();
-      account.setPassword(newPassword); // Password should be encoded by the AccountService
-      accountService.update(account);
-      tokenRepository.delete(resetToken.get());
-    } else {
+    if (!validatePasswordResetToken(token)) {
       throw new IllegalArgumentException("Invalid or expired password reset token.");
     }
+    tokenRepository
+        .findByToken(token)
+        .ifPresentOrElse(
+            t -> {
+              Account account = t.getAccount();
+              account.setPassword(newPassword);
+              accountService.update(account);
+              tokenRepository.delete(t);
+            },
+            () -> {
+              throw new IllegalArgumentException("Invalid or expired password reset token.");
+            });
   }
 }

@@ -14,9 +14,8 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.account;
+package com.github.javydreamercsw.base.domain.account;
 
-import com.github.javydreamercsw.base.domain.account.Account;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -25,7 +24,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,34 +36,21 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PasswordResetToken {
 
-  private static final int EXPIRATION_MINUTES = 60 * 24; // 24 hours
-
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.AUTO)
   private Long id;
 
-  @NotNull private String token;
+  private String token;
 
   @OneToOne(targetEntity = Account.class, fetch = FetchType.EAGER)
   @JoinColumn(nullable = false, name = "account_id")
   private Account account;
 
-  @NotNull private LocalDateTime expiryDate;
+  private LocalDateTime expiryDate;
 
-  @NotNull private LocalDateTime createdDate;
-
-  public PasswordResetToken(final String token, final Account account) {
+  public PasswordResetToken(String token, Account account) {
     this.token = token;
     this.account = account;
-    this.expiryDate = calculateExpiryDate();
-    this.createdDate = LocalDateTime.now();
-  }
-
-  private LocalDateTime calculateExpiryDate() {
-    return LocalDateTime.now().plusMinutes(EXPIRATION_MINUTES);
-  }
-
-  public boolean isExpired() {
-    return getExpiryDate().isBefore(LocalDateTime.now());
+    this.expiryDate = LocalDateTime.now().plusHours(24);
   }
 }

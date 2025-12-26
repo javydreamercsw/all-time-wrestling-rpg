@@ -36,7 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomUserDetailsService implements UserDetailsService {
 
   private final AccountRepository accountRepository;
-  private final WrestlerRepository wrestlerRepository; // Added repository
+  private final WrestlerRepository wrestlerRepository;
+  private final AccountUnlockService accountUnlockService; // Inject new service
 
   @Override
   @Transactional
@@ -49,15 +50,14 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     // Check if account lock has expired and unlock if necessary
     if (!account.isAccountNonLocked() && account.isLockExpired()) {
-      account.resetFailedAttempts();
-      accountRepository.save(account);
+      account = accountUnlockService.unlockAndReloadAccount(account.getUsername()); // Pass username
       log.info("Account lock expired and reset for user: {}", username);
     }
 
     // Find the wrestler associated with the account
     Wrestler wrestler = wrestlerRepository.findByAccount(account).orElse(null);
 
-    return new CustomUserDetails(account, wrestler); // Pass wrestler to constructor
+    return new CustomUserDetails(account, wrestler); // Pass reloaded account to constructor
   }
 
   /**
