@@ -149,4 +149,28 @@ public class InboxService {
   public long count() {
     return inboxRepository.count();
   }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<InboxItem> getInboxItemsForWrestler(@NonNull Wrestler wrestler, int limit) {
+    Specification<InboxItem> spec =
+        (root, query, cb) -> {
+          Predicate predicate = cb.conjunction();
+          predicate = cb.and(predicate, cb.isFalse(root.get("isRead")));
+          Join<Object, Object> join = root.join("targets", JoinType.INNER);
+          predicate =
+              cb.and(predicate, join.get("targetId").in(List.of(wrestler.getId().toString())));
+          return predicate;
+        };
+
+    Sort sort = Sort.by(Sort.Direction.DESC, "eventTimestamp");
+    Pageable pageable = Pageable.ofSize(limit).withPage(0);
+
+    return inboxRepository.findAll(spec, sort);
+  }
+
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  public InboxItem addInboxItem(@NonNull Wrestler wrestler, @NonNull String message) {
+    InboxEventType eventType = eventTypeRegistry.getEventTypes().get(0);
+    return createInboxItem(eventType, message, List.of(wrestler.getId().toString()));
+  }
 }

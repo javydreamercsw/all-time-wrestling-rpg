@@ -763,6 +763,7 @@ public class ShowDetailView extends Main
                   segment,
                   npcService,
                   wrestlerService,
+                  wrestlerRepository,
                   showService,
                   segmentService,
                   updatedSegment -> refreshSegmentsGrid(),

@@ -46,6 +46,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   public void setupTestData() {
+    wrestlerRepository.deleteAll();
     ShowType showType = new ShowType();
     showType.setName("Weekly Show");
     showType.setDescription("A weekly show");
@@ -101,13 +102,11 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.textToBePresentInElementValue(narrationArea, narrationText));
 
     WebElement segmentTypeComboBox = dialog.findElement(By.id("segment-type-combo-box"));
-    segmentTypeComboBox.sendKeys("Singles Match", Keys.RETURN);
+    segmentTypeComboBox.sendKeys("Singles Match", Keys.TAB);
 
     WebElement wrestlersComboBox = dialog.findElement(By.id("wrestlers-combo-box"));
-    clickElement(wrestlersComboBox);
-
-    wrestlersComboBox.sendKeys("Wrestler 1", Keys.RETURN);
-    wrestlersComboBox.sendKeys("Wrestler 2", Keys.RETURN);
+    selectFromVaadinMultiSelectComboBox(wrestlersComboBox, "Wrestler 1");
+    selectFromVaadinMultiSelectComboBox(wrestlersComboBox, "Wrestler 2");
 
     // Click the "Add Segment" button in the dialog
     WebElement addSegmentDialogButton = dialog.findElement(By.id("add-segment-save-button"));
@@ -131,11 +130,10 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
                 .build())
         .get(
             () -> {
-              WebElement segmentGrid =
-                  wait.until(
-                      ExpectedConditions.presenceOfElementLocated(By.id("segments-grid-wrapper")));
-              wait.until(ExpectedConditions.visibilityOfAllElements(segmentGrid));
-              WebElement refreshedGrid = segmentGrid.findElement(By.id("segments-grid"));
+              wait.until(
+                  ExpectedConditions.presenceOfElementLocated(By.id("segments-grid-wrapper")));
+              WebElement refreshedGrid =
+                  wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("segments-grid")));
               assertTrue(refreshedGrid.getText().contains(narrationText));
               assertTrue(refreshedGrid.getText().contains(summaryText));
               return refreshedGrid;

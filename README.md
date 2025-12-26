@@ -257,10 +257,6 @@ This project includes several security measures:
 
 ⚠️ **Important**: Change default passwords in production!
 
-For detailed security implementation information, see:
-- `SECURITY_PHASE1_COMPLETE.md` - Setup guide
-- `SPRING_SECURITY_IMPLEMENTATION.md` - Full implementation plan
-
 #### Dependency Security
 - **OWASP Dependency Check**: Automated vulnerability scanning of dependencies
 - **GitHub Dependency Review**: PR-based dependency vulnerability detection (public repositories only)

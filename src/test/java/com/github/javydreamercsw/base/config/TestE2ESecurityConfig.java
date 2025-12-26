@@ -29,7 +29,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -48,7 +48,17 @@ public class TestE2ESecurityConfig {
 
   @Bean
   public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-    http.authorizeHttpRequests(auth -> auth.requestMatchers("/**").permitAll());
+    http.authorizeHttpRequests(
+        auth ->
+            auth.requestMatchers(
+                    "/login",
+                    "/login/**",
+                    "/images/**",
+                    "/VAADIN/**",
+                    "/line-awesome/**",
+                    "/icons/**",
+                    "/frontend/**")
+                .permitAll());
     http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
     http.csrf(AbstractHttpConfigurer::disable);
     return http.build();
@@ -59,9 +69,10 @@ public class TestE2ESecurityConfig {
     return customUserDetailsService;
   }
 
+  @SuppressWarnings("deprecation")
   @Bean
   public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder(10);
+    return NoOpPasswordEncoder.getInstance();
   }
 
   @Bean

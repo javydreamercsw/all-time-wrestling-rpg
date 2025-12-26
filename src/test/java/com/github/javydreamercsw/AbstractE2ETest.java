@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -59,7 +61,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles(value = "e2e", inheritProfiles = false)
 @Import(TestE2ESecurityConfig.class)
 @WithMockUser(username = "admin", roles = "ADMIN")
-public class AbstractE2ETest extends AbstractIntegrationTest {
+public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebDriver driver;
   @LocalServerPort protected int serverPort;
@@ -67,6 +69,16 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
   @Value("${server.servlet.context-path}")
   @Getter
   private String contextPath;
+
+  private boolean loggedIn = false;
+
+  protected String getUsername() {
+    return "admin";
+  }
+
+  protected String getPassword() {
+    return "admin123";
+  }
 
   @BeforeEach
   public void setup() {
@@ -77,27 +89,50 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     ChromeOptions options = new ChromeOptions();
     if (isHeadless()) {
       options.addArguments("--headless=new");
-      options.addArguments("--disable-gpu");
-      options.addArguments("--window-size=1920,1080");
-      options.addArguments("--no-sandbox");
-      options.addArguments("--disable-dev-shm-usage");
     }
+    options.addArguments("--disable-gpu");
+    options.addArguments("--window-size=1920,1080");
+    options.addArguments("--no-sandbox");
+    options.addArguments("--disable-dev-shm-usage");
+    options.addArguments("--reduce-security-for-testing");
 
     driver = new ChromeDriver(options);
+    login(getUsername(), getPassword());
+  }
+
+  protected void login(@NonNull String username, @NonNull String password) {
+    if (loggedIn) {
+      driver.get("http://localhost:" + serverPort + getContextPath() + "/logout");
+    }
     driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
     waitForAppToBeReady();
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement loginFormHost =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
     WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
-    usernameField.sendKeys("admin");
+    usernameField.sendKeys(username);
     WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
-    passwordField.sendKeys("admin123");
+    passwordField.sendKeys(password);
     WebElement signInButton =
         loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
     clickElement(signInButton);
     waitForAppToBeReady();
-    wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("login")));
+    try {
+      wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("login")));
+    } catch (Exception e) {
+      log.error("Login failed for user: {}", username);
+      log.error("Current URL: {}", driver.getCurrentUrl());
+      try {
+        WebElement error = loginFormHost.findElement(By.cssSelector("div[part='error-message']"));
+        if (error.isDisplayed()) {
+          log.error("Login error message: {}", error.getText());
+        }
+      } catch (Exception ignored) {
+        log.error("Could not find error message element.");
+      }
+      throw e;
+    }
+    loggedIn = true;
   }
 
   @AfterEach
@@ -107,7 +142,7 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  private boolean isHeadless() {
+  protected boolean isHeadless() {
     String headlessProp = System.getProperty("headless");
     String headlessEnv = System.getenv("HEADLESS");
     String githubActions = System.getenv("GITHUB_ACTIONS");
@@ -122,7 +157,7 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /** Waits for the application to be ready by polling the root URL. */
-  private void waitForAppToBeReady() {
+  protected void waitForAppToBeReady() {
     int maxAttempts = 60;
     int attempt = 0;
     while (attempt < maxAttempts) {
@@ -198,6 +233,10 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
    */
   protected void clickElement(@NonNull WebElement element) {
     scrollIntoView(element);
+    // First, wait for the element to be clickable.
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    wait.until(ExpectedConditions.elementToBeClickable(element));
+    // Then, use JavaScript to click to bypass potential interception by other elements.
     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
   }
 
@@ -241,13 +280,23 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
    * @return List of Strings representing the data in the specified column
    */
   protected List<String> getColumnData(@NonNull WebElement grid, int columnIndex) {
-    List<WebElement> cells =
-        grid.findElements(
-            By.xpath(
-                "//vaadin-grid-cell-content[count(ancestor::vaadin-grid-column) = "
-                    + (columnIndex + 1)
-                    + "]"));
-    return cells.stream().map(WebElement::getText).collect(Collectors.toList());
+    return getGridRows(grid).stream()
+        .map(
+            row -> {
+              List<WebElement> cells = row.findElements(By.cssSelector("[part~='cell']"));
+              return cells.size() > columnIndex ? cells.get(columnIndex).getText() : "";
+            })
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Returns the number of items in the grid.
+   *
+   * @param grid the Vaadin grid WebElement
+   * @return the number of items
+   */
+  protected int getGridSize(@NonNull WebElement grid) {
+    return getGridRows(grid).size();
   }
 
   /**
@@ -260,7 +309,14 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
     return (List<WebElement>)
         ((JavascriptExecutor) driver)
             .executeScript(
-                "return arguments[0].shadowRoot.querySelectorAll('[part~=\"row\"]');", grid);
+                "var items = arguments[0].shadowRoot.getElementById('items');"
+                    + " return items ? items.children : [];",
+                grid);
+  }
+
+  protected List<WebElement> getGridRows(@NonNull String gridId) {
+    WebElement grid = waitForVaadinElement(driver, By.id(gridId));
+    return getGridRows(grid);
   }
 
   protected void takeScreenshot(@NonNull String filePath) {
@@ -289,6 +345,97 @@ public class AbstractE2ETest extends AbstractIntegrationTest {
       log.info("Page source saved to: {}", filePath);
     } catch (IOException e) {
       log.error("Failed to save page source to: {}", filePath, e);
+    }
+  }
+
+  protected void assertGridContains(@NonNull String gridId, @NonNull String expectedText) {
+    WebElement grid = waitForVaadinElement(driver, By.id(gridId));
+    boolean found = false;
+    for (WebElement gridRow : getGridRows(grid)) {
+      if (gridRow.getText().contains(expectedText)) {
+        found = true;
+        break;
+      }
+    }
+
+    assertTrue(found, "Grid '" + gridId + "' does not contain '" + expectedText + "'.");
+  }
+
+  /**
+   * Selects an item from a Vaadin MultiSelectComboBox by clicking its input/toggle button and
+   * selecting the item from the overlay. Handles shadow DOM for Vaadin components. Uses correct
+   * overlay for MultiSelectComboBox.
+   *
+   * @param comboBox the Vaadin MultiSelectComboBox WebElement
+   * @param itemText the text of the item to select
+   */
+  protected void selectFromVaadinMultiSelectComboBox(
+      @NonNull WebElement comboBox, @NonNull String itemText) {
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+    int attempts = 0;
+    boolean itemClicked = false;
+    while (attempts < 3 && !itemClicked) {
+      attempts++;
+      // Try to click the input or toggle button inside the shadow root
+      try {
+        Object input =
+            ((JavascriptExecutor) driver)
+                .executeScript(
+                    "return arguments[0].shadowRoot ? arguments[0].shadowRoot.querySelector('input,"
+                        + " [part=\"toggle-button\"]') : null;",
+                    comboBox);
+        if (input != null && input instanceof WebElement) {
+          ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", input);
+          try {
+            ((WebElement) input).click();
+          } catch (Exception e) {
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", input);
+          }
+        } else {
+          // Fallback: scroll and click the comboBox itself
+          ((JavascriptExecutor) driver)
+              .executeScript("arguments[0].scrollIntoView(true);", comboBox);
+          try {
+            comboBox.click();
+          } catch (Exception e) {
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", comboBox);
+          }
+        }
+      } catch (Exception e) {
+        // Fallback: scroll and click the comboBox itself
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", comboBox);
+        try {
+          comboBox.click();
+        } catch (Exception ex) {
+          ((JavascriptExecutor) driver).executeScript("arguments[0].click();", comboBox);
+        }
+      }
+      // Wait a bit for overlay to render
+      try {
+        Thread.sleep(300);
+      } catch (InterruptedException ignored) {
+      }
+      // Wait for overlay to be visible (correct overlay for MultiSelectComboBox)
+      try {
+        wait.until(
+            ExpectedConditions.visibilityOfElementLocated(
+                By.cssSelector("vaadin-multi-select-combo-box-overlay")));
+        // Use contains(text(), ...) for more robust matching
+        WebElement item =
+            wait.until(
+                ExpectedConditions.elementToBeClickable(
+                    By.xpath(
+                        "//vaadin-multi-select-combo-box-overlay//*[contains(text(), '"
+                            + itemText
+                            + "')]")));
+        // Scroll into view if needed
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", item);
+        item.click();
+        itemClicked = true;
+      } catch (Exception e) {
+        // If not found, try again (overlay may not have opened)
+        if (attempts >= 3) throw e;
+      }
     }
   }
 }

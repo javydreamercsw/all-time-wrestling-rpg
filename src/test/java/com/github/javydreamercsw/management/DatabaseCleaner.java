@@ -49,6 +49,9 @@ public class DatabaseCleaner {
   public void clearRepositories() {
     log.info("🧹 Starting database cleanup...");
 
+    // Detach all managed entities to prevent dirty session issues
+    entityManager.clear();
+
     // Discover all repositories
     Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
     log.info("📦 Discovered {} repositories", repositories.size());
@@ -117,6 +120,7 @@ public class DatabaseCleaner {
     String[] beanNames = applicationContext.getBeanNamesForType(JpaRepository.class);
 
     for (String beanName : beanNames) {
+      // Skip account and role repositories to avoid deleting test users
       if (beanName.equals("accountRepository") || beanName.equals("roleRepository")) {
         continue;
       }

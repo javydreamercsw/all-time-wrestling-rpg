@@ -22,6 +22,7 @@ import static org.mockito.Mockito.*;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
@@ -48,6 +49,7 @@ class FactionFormValidationTest {
 
   @Mock private FactionService factionService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SecurityUtils securityUtils;
 
   private FactionListView factionListView;
@@ -62,8 +64,11 @@ class FactionFormValidationTest {
     when(securityUtils.canCreate()).thenReturn(true);
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.canDelete()).thenReturn(true);
+    when(wrestlerRepository.findAll()).thenReturn(new ArrayList<>());
+    when(wrestlerRepository.findAll()).thenReturn(new ArrayList<>());
 
-    factionListView = new FactionListView(factionService, wrestlerService, securityUtils);
+    factionListView =
+        new FactionListView(factionService, wrestlerService, wrestlerRepository, securityUtils);
   }
 
   @Test

@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -56,15 +57,18 @@ public class TitleListView extends Main {
 
   private final TitleService titleService;
   private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
   private final SecurityUtils securityUtils;
   public final Grid<Title> grid = new Grid<>(Title.class, false);
 
   public TitleListView(
       @NonNull TitleService titleService,
       @NonNull WrestlerService wrestlerService,
+      @NonNull WrestlerRepository wrestlerRepository,
       @NonNull SecurityUtils securityUtils) {
     this.titleService = titleService;
     this.wrestlerService = wrestlerService;
+    this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
 
     addClassNames(
@@ -176,14 +180,25 @@ public class TitleListView extends Main {
     newTitle.setIsActive(true);
     TitleFormDialog dialog =
         new TitleFormDialog(
-            titleService, wrestlerService, newTitle, this::refreshGrid, securityUtils);
+            titleService,
+            wrestlerService,
+            wrestlerRepository,
+            newTitle,
+            this::refreshGrid,
+            securityUtils);
     dialog.setHeaderTitle("Create New Title");
     dialog.open();
   }
 
   private void openEditDialog(@NonNull Title title) {
     TitleFormDialog dialog =
-        new TitleFormDialog(titleService, wrestlerService, title, this::refreshGrid, securityUtils);
+        new TitleFormDialog(
+            titleService,
+            wrestlerService,
+            wrestlerRepository,
+            title,
+            this::refreshGrid,
+            securityUtils);
     dialog.setHeaderTitle("Edit Title: " + title.getName());
     dialog.open();
   }

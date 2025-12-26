@@ -25,10 +25,12 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.SegmentDTO;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -51,6 +54,7 @@ public class SegmentService {
   private final SegmentRepository segmentRepository;
   private final TitleRepository titleRepository;
   private final WrestlerService wrestlerService;
+  private final GameSettingService gameSettingService;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -58,10 +62,12 @@ public class SegmentService {
   public SegmentService(
       SegmentRepository segmentRepository,
       TitleRepository titleRepository,
-      @Lazy WrestlerService wrestlerService) {
+      @Lazy WrestlerService wrestlerService,
+      GameSettingService gameSettingService) {
     this.segmentRepository = segmentRepository;
     this.titleRepository = titleRepository;
     this.wrestlerService = wrestlerService;
+    this.gameSettingService = gameSettingService;
   }
 
   /**
@@ -217,6 +223,18 @@ public class SegmentService {
   @PreAuthorize("isAuthenticated()")
   public Optional<Segment> findById(@NonNull Long id) {
     return segmentRepository.findById(id);
+  }
+
+  /**
+   * Finds a match by ID with the show eagerly fetched.
+   *
+   * @param id The match ID
+   * @return Optional containing the Segment if found
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Segment> findByIdWithShow(@NonNull Long id) {
+    return segmentRepository.findByIdWithShow(id);
   }
 
   /**
@@ -396,5 +414,13 @@ public class SegmentService {
   @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegmentsByWrestlerParticipationWithShow(@NonNull Wrestler wrestler) {
     return segmentRepository.findByWrestlerParticipationWithShow(wrestler);
+  }
+
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Segment> getUpcomingSegmentsForWrestler(@NonNull Wrestler wrestler, int limit) {
+    LocalDate referenceDate = gameSettingService.getCurrentGameDate();
+    Pageable pageable = PageRequest.of(0, limit);
+    return segmentRepository.findUpcomingSegmentsForWrestler(wrestler, referenceDate, pageable);
   }
 }

@@ -19,8 +19,10 @@ package com.github.javydreamercsw.management.ui.view.wrestler;
 import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
@@ -42,6 +44,7 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 @Route("wrestler-list")
 @PageTitle("Wrestler List")
@@ -50,17 +53,25 @@ import lombok.NonNull;
 public class WrestlerListView extends Main {
 
   private final WrestlerService wrestlerService;
+  private final InjuryService injuryService;
+  private final WrestlerRepository wrestlerRepository;
+  private final AccountService accountService;
   private final SecurityUtils securityUtils;
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(
       @NonNull WrestlerService wrestlerService,
       @NonNull InjuryService injuryService,
+      @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull SecurityUtils securityUtils) {
     this.wrestlerService = wrestlerService;
+    this.injuryService = injuryService;
+    this.wrestlerRepository = wrestlerRepository;
+    this.accountService = accountService;
     this.securityUtils = securityUtils;
     wrestlerGrid = new Grid<>();
-    wrestlerGrid.setItems(query -> wrestlerService.list(toSpringPageRequest(query)).stream());
+    wrestlerGrid.setItems(query -> wrestlerRepository.findAll(toSpringPageRequest(query)).stream());
 
     Set<Long> injuredWrestlerIds =
         injuryService.getWrestlersWithActiveInjuries().stream()
@@ -109,7 +120,8 @@ public class WrestlerListView extends Main {
                       injuryService,
                       wrestlerGrid.getDataProvider()::refreshAll,
                       false,
-                      securityUtils);
+                      securityUtils,
+                      accountService);
               wrestlerActionMenu.setId("action-menu-" + wrestler.getId());
               return wrestlerActionMenu;
             })
@@ -142,7 +154,10 @@ public class WrestlerListView extends Main {
             e -> {
               WrestlerDialog dialog =
                   new WrestlerDialog(
-                      wrestlerService, wrestlerGrid.getDataProvider()::refreshAll, securityUtils);
+                      wrestlerService,
+                      accountService,
+                      wrestlerGrid.getDataProvider()::refreshAll,
+                      securityUtils);
               dialog.open();
             });
     button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
