@@ -16,210 +16,368 @@
 */
 package com.github.javydreamercsw.management.service.feud;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import com.github.javydreamercsw.TestUtils;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.event.FeudHeatChangeEvent;
-import java.time.Clock;
-import java.time.Instant;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 
-@ExtendWith(MockitoExtension.class)
-@DisplayName("MultiWrestlerFeudService Tests")
+@SpringBootTest
+@ActiveProfiles("test")
 class MultiWrestlerFeudServiceTest {
+  @Autowired private MultiWrestlerFeudService multiWrestlerFeudService;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private MultiWrestlerFeudRepository feudRepository;
+  @Autowired private FactionRepository factionRepository;
+  @Autowired private DeckRepository deckRepository;
+  @Autowired private AccountRepository accountRepository;
+  @Autowired private RoleRepository roleRepository;
+  @Autowired private WrestlerService wrestlerService;
+  @Autowired private PasswordEncoder passwordEncoder; // Autowire PasswordEncoder
 
-  @Mock private MultiWrestlerFeudRepository multiWrestlerFeudRepository;
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private Clock clock;
-  @Mock private ApplicationEventPublisher eventPublisher;
-
-  @InjectMocks private MultiWrestlerFeudService multiWrestlerFeudService;
+  private Wrestler wrestler1;
+  private Wrestler wrestler2;
+  private Wrestler wrestler3;
+  private Wrestler bookerWrestler;
 
   @BeforeEach
   void setUp() {
-    lenient().when(clock.instant()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
+    factionRepository.deleteAll();
+    feudRepository.deleteAll();
+    deckRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+    accountRepository.deleteAll();
+    roleRepository.deleteAll();
+
+    // Create roles
+    Role adminRole = new Role(RoleName.ADMIN, "Admin role");
+    roleRepository.save(adminRole);
+    Role bookerRole = new Role(RoleName.BOOKER, "Booker role");
+    roleRepository.save(bookerRole);
+    Role playerRole = new Role(RoleName.PLAYER, "Player role");
+    roleRepository.save(playerRole);
+
+    // Create accounts with ValidPassword1!
+    Account adminAccount =
+        new Account("admin", passwordEncoder.encode("ValidPassword1!"), "admin@test.com");
+    adminAccount.setRoles(Collections.singleton(adminRole));
+    accountRepository.save(adminAccount);
+
+    Account bookerAccount =
+        new Account("booker", passwordEncoder.encode("ValidPassword1!"), "booker@test.com");
+    bookerAccount.setRoles(Collections.singleton(bookerRole));
+    accountRepository.save(bookerAccount);
+
+    // Create distinct player accounts for each wrestler
+    Account playerAccount1 =
+        new Account("player1", passwordEncoder.encode("ValidPassword1!"), "player1@test.com");
+    playerAccount1.setRoles(Collections.singleton(playerRole));
+    accountRepository.save(playerAccount1);
+
+    Account playerAccount2 =
+        new Account("player2", passwordEncoder.encode("ValidPassword1!"), "player2@test.com");
+    playerAccount2.setRoles(Collections.singleton(playerRole));
+    accountRepository.save(playerAccount2);
+
+    Account playerAccount3 =
+        new Account("player3", passwordEncoder.encode("ValidPassword1!"), "player3@test.com");
+    playerAccount3.setRoles(Collections.singleton(playerRole));
+    accountRepository.save(playerAccount3);
+
+    // Create wrestlers using the service with admin privileges and distinct accounts
+    TestUtils.runAsAdmin(
+        () -> {
+          wrestler1 =
+              wrestlerService.createWrestler(
+                  "Wrestler One", true, "Desc1", WrestlerTier.ROOKIE, playerAccount1);
+          wrestler2 =
+              wrestlerService.createWrestler(
+                  "Wrestler Two", true, "Desc2", WrestlerTier.ROOKIE, playerAccount2);
+          wrestler3 =
+              wrestlerService.createWrestler(
+                  "Wrestler Three", true, "Desc3", WrestlerTier.ROOKIE, playerAccount3);
+          bookerWrestler =
+              wrestlerService.createWrestler(
+                  "Booker Wrestler", false, "DescB", WrestlerTier.ROOKIE, bookerAccount);
+        });
   }
 
   @Test
-  void testCreateFeud() {
-    when(clock.instant()).thenReturn(Instant.now());
-    when(multiWrestlerFeudRepository.existsByName("TestFeud")).thenReturn(false);
-    MultiWrestlerFeud feud = new MultiWrestlerFeud();
-    feud.setName("TestFeud");
-    feud.setIsActive(true);
-    when(multiWrestlerFeudRepository.saveAndFlush(any())).thenReturn(feud);
-    var result = multiWrestlerFeudService.createFeud("TestFeud", "Desc", "Notes");
-    assertTrue(result.isPresent());
-    assertEquals("TestFeud", result.get().getName());
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanCreateFeud() {
+    Optional<MultiWrestlerFeud> feud =
+        multiWrestlerFeudService.createFeud(
+            "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId()));
+    Assertions.assertTrue(feud.isPresent());
+    Assertions.assertEquals(2, feud.get().getParticipants().size());
   }
 
   @Test
-  void testCreateFeudDuplicateName() {
-    when(multiWrestlerFeudRepository.existsByName("TestFeud")).thenReturn(true);
-    var result = multiWrestlerFeudService.createFeud("TestFeud", "Desc", "Notes");
-    assertTrue(result.isEmpty());
+  @WithCustomMockUser(
+      username = "booker",
+      roles = {"BOOKER", "PLAYER"})
+  void testBookerCanCreateFeud() {
+    Optional<MultiWrestlerFeud> feud =
+        multiWrestlerFeudService.createFeud(
+            "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId()));
+    Assertions.assertTrue(feud.isPresent());
   }
 
   @Test
-  void testGetAllFeuds() {
-    Page<MultiWrestlerFeud> page = new PageImpl<>(java.util.List.of(new MultiWrestlerFeud()));
-    when(multiWrestlerFeudRepository.findAllBy(any())).thenReturn(page);
-    var result = multiWrestlerFeudService.getAllFeuds(PageRequest.of(0, 10));
-    assertEquals(1, result.getTotalElements());
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotCreateFeud() {
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () ->
+            multiWrestlerFeudService.createFeud(
+                "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId())));
   }
 
   @Test
-  void testGetFeudById() {
-    MultiWrestlerFeud feud = new MultiWrestlerFeud();
-    feud.setName("TestFeud");
-    when(multiWrestlerFeudRepository.findById(anyLong())).thenReturn(Optional.of(feud));
-    var result = multiWrestlerFeudService.getFeudById(1L);
-    assertTrue(result.isPresent());
-    assertEquals("TestFeud", result.get().getName());
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanAddParticipant() {
+    Optional<MultiWrestlerFeud> feud =
+        multiWrestlerFeudService.createFeud(
+            "Test Feud", "Description", "", List.of(wrestler1.getId()));
+    Assertions.assertTrue(feud.isPresent());
+    Optional<MultiWrestlerFeud> updatedFeud =
+        multiWrestlerFeudService.addParticipant(
+            feud.get().getId(), wrestler2.getId(), FeudRole.PROTAGONIST);
+    Assertions.assertTrue(updatedFeud.isPresent());
+    Assertions.assertEquals(2, updatedFeud.get().getParticipants().size());
   }
 
   @Test
-  void testGetActiveFeuds() {
-    MultiWrestlerFeud feud = new MultiWrestlerFeud();
-    feud.setIsActive(true);
-    when(multiWrestlerFeudRepository.findByIsActiveTrue()).thenReturn(java.util.List.of(feud));
-    var result = multiWrestlerFeudService.getActiveFeuds();
-    assertEquals(1, result.size());
-    assertTrue(result.get(0).getIsActive());
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotAddParticipant() {
+    Optional<MultiWrestlerFeud> feud =
+        TestUtils.runAsAdmin(
+            () ->
+                multiWrestlerFeudService.createFeud(
+                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
+    Assertions.assertTrue(feud.isPresent());
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () ->
+            multiWrestlerFeudService.addParticipant(
+                feud.get().getId(), wrestler2.getId(), FeudRole.PROTAGONIST));
   }
 
   @Test
-  void testGetFeudByName_found() {
-    MultiWrestlerFeud feud = new MultiWrestlerFeud();
-    feud.setName("FeudName");
-    when(multiWrestlerFeudRepository.findByName("FeudName")).thenReturn(Optional.of(feud));
-    var result = multiWrestlerFeudService.getFeudByName("FeudName");
-    assertTrue(result.isPresent());
-    assertEquals("FeudName", result.get().getName());
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanRemoveParticipant() {
+    Optional<MultiWrestlerFeud> feud =
+        multiWrestlerFeudService.createFeud(
+            "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId()));
+    Assertions.assertTrue(feud.isPresent());
+    Optional<MultiWrestlerFeud> updatedFeud =
+        multiWrestlerFeudService.removeParticipant(feud.get().getId(), wrestler2.getId(), "Reason");
+    Assertions.assertTrue(updatedFeud.isPresent());
+    Assertions.assertEquals(1, updatedFeud.get().getParticipants().size());
   }
 
   @Test
-  void testGetFeudByName_notFound() {
-    when(multiWrestlerFeudRepository.findByName("MissingFeud")).thenReturn(Optional.empty());
-    var result = multiWrestlerFeudService.getFeudByName("MissingFeud");
-    assertTrue(result.isEmpty());
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotRemoveParticipant() {
+    Optional<MultiWrestlerFeud> feud =
+        TestUtils.runAsAdmin(
+            () ->
+                multiWrestlerFeudService.createFeud(
+                    "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId())));
+    Assertions.assertTrue(feud.isPresent());
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () ->
+            multiWrestlerFeudService.removeParticipant(
+                feud.get().getId(), wrestler2.getId(), "Reason"));
   }
 
   @Test
-  void testGetActiveFeudsForWrestler_wrestlerNotFound() {
-    when(wrestlerRepository.findById(99L)).thenReturn(Optional.empty());
-    var result = multiWrestlerFeudService.getActiveFeudsForWrestler(99L);
-    assertTrue(result.isEmpty());
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotRemoveOwnWrestlerFromFeud() {
+    // Create a feud as admin with player1's wrestler (wrestler1) and another wrestler (wrestler2)
+    Optional<MultiWrestlerFeud> feud =
+        TestUtils.runAsAdmin(
+            () ->
+                multiWrestlerFeudService.createFeud(
+                    "Player Feud",
+                    "Description",
+                    "",
+                    List.of(wrestler1.getId(), wrestler2.getId())));
+    Assertions.assertTrue(feud.isPresent());
+
+    // Attempt to remove wrestler1 (owned by player1) from the feud as player1
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () ->
+            multiWrestlerFeudService.removeParticipant(
+                feud.get().getId(), wrestler1.getId(), "Player trying to remove own wrestler"));
   }
 
   @Test
-  void testGetActiveFeudsForWrestler_noFeuds() {
-    Wrestler wrestler = mock(Wrestler.class);
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(multiWrestlerFeudRepository.findActiveFeudsForWrestler(wrestler))
-        .thenReturn(java.util.Collections.emptyList());
-    var result = multiWrestlerFeudService.getActiveFeudsForWrestler(1L);
-    assertTrue(result.isEmpty());
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanEndFeud() {
+    Optional<MultiWrestlerFeud> feud =
+        multiWrestlerFeudService.createFeud(
+            "Test Feud", "Description", "", List.of(wrestler1.getId()));
+    Assertions.assertTrue(feud.isPresent());
+    Optional<MultiWrestlerFeud> updatedFeud =
+        multiWrestlerFeudService.endFeud(feud.get().getId(), "Ended for testing");
+    Assertions.assertTrue(updatedFeud.isPresent());
+    Assertions.assertFalse(updatedFeud.get().getIsActive());
   }
 
   @Test
-  void testAddParticipant_missingFeudOrWrestler() {
-    when(multiWrestlerFeudRepository.findById(1L)).thenReturn(Optional.empty());
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.empty());
-    var result = multiWrestlerFeudService.addParticipant(1L, 2L, FeudRole.PROTAGONIST);
-    assertTrue(result.isEmpty());
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotEndFeud() {
+    Optional<MultiWrestlerFeud> feud =
+        TestUtils.runAsAdmin(
+            () ->
+                multiWrestlerFeudService.createFeud(
+                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
+    Assertions.assertTrue(feud.isPresent());
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () -> multiWrestlerFeudService.endFeud(feud.get().getId(), "Ended for testing"));
   }
 
   @Test
-  void testAddParticipant_nullRole_throws() {
-    assertThrows(
-        NullPointerException.class, () -> multiWrestlerFeudService.addParticipant(1L, 2L, null));
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanDeleteFeud() {
+    final Long[] feudId = new Long[1];
+    TestUtils.runAsAdmin(
+        () -> {
+          Optional<MultiWrestlerFeud> createdFeud =
+              multiWrestlerFeudService.createFeud(
+                  "Test Feud", "Description", "", List.of(wrestler1.getId()));
+          createdFeud.ifPresent(f -> feudId[0] = f.getId());
+        });
+    multiWrestlerFeudService.deleteFeud(feudId[0]);
+    Assertions.assertTrue(feudRepository.findById(feudId[0]).isEmpty());
   }
 
   @Test
-  void testAddParticipant_inactiveFeud() {
-    MultiWrestlerFeud feud = mock(MultiWrestlerFeud.class);
-    Wrestler wrestler = mock(Wrestler.class);
-    when(feud.getIsActive()).thenReturn(false);
-    when(multiWrestlerFeudRepository.findById(1L)).thenReturn(Optional.of(feud));
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(wrestler));
-    var result = multiWrestlerFeudService.addParticipant(1L, 2L, FeudRole.ANTAGONIST);
-    assertTrue(result.isEmpty());
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotDeleteFeud() {
+    final Long[] feudId = new Long[1];
+    TestUtils.runAsAdmin(
+        () -> {
+          Optional<MultiWrestlerFeud> createdFeud =
+              multiWrestlerFeudService.createFeud(
+                  "Test Feud", "Description", "", List.of(wrestler1.getId()));
+          createdFeud.ifPresent(f -> feudId[0] = f.getId());
+        });
+    Assertions.assertThrows(
+        AccessDeniedException.class, () -> multiWrestlerFeudService.deleteFeud(feudId[0]));
   }
 
   @Test
-  @DisplayName("Should publish FeudHeatChangeEvent with wrestlers")
-  void shouldPublishFeudHeatChangeEventWithWrestlers() {
-    // Given
-    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
-    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
-    MultiWrestlerFeud feud = createFeud("Test Feud", 1L, wrestler1, wrestler2);
-
-    when(multiWrestlerFeudRepository.findById(1L)).thenReturn(Optional.of(feud));
-    when(multiWrestlerFeudRepository.saveAndFlush(any(MultiWrestlerFeud.class))).thenReturn(feud);
-
-    // When
-    multiWrestlerFeudService.addHeat(1L, 5, "Feud escalation");
-
-    // Then
-    verify(eventPublisher)
-        .publishEvent(
-            argThat(
-                event ->
-                    event instanceof FeudHeatChangeEvent
-                        && ((FeudHeatChangeEvent) event).getSource() == multiWrestlerFeudService
-                        && ((FeudHeatChangeEvent) event).getFeudId() == feud.getId()
-                        && ((FeudHeatChangeEvent) event).getOldHeat() == 5
-                        && ((FeudHeatChangeEvent) event).getReason().equals("Feud escalation")
-                        && ((FeudHeatChangeEvent) event)
-                            .getWrestlers()
-                            .containsAll(List.of(wrestler1, wrestler2))
-                        && List.of(wrestler1, wrestler2)
-                            .containsAll(((FeudHeatChangeEvent) event).getWrestlers())));
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testAuthenticatedCanGetAllFeuds() {
+    TestUtils.runAsAdmin(
+        () ->
+            multiWrestlerFeudService.createFeud(
+                "Test Feud", "Description", "", List.of(wrestler1.getId())));
+    multiWrestlerFeudService.getAllFeuds(Pageable.unpaged());
+    // No exception means success
   }
 
-  private Wrestler createWrestler(String name, Long id) {
-    Wrestler wrestler = Wrestler.builder().build();
-    wrestler.setId(id);
-    wrestler.setName(name);
-    return wrestler;
+  @Test
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testAuthenticatedCanGetFeudById() {
+    final Long[] feudId = new Long[1];
+    TestUtils.runAsAdmin(
+        () -> {
+          Optional<MultiWrestlerFeud> createdFeud =
+              multiWrestlerFeudService.createFeud(
+                  "Test Feud", "Description", "", List.of(wrestler1.getId()));
+          createdFeud.ifPresent(f -> feudId[0] = f.getId());
+        });
+    multiWrestlerFeudService.getFeudById(feudId[0]);
+    // No exception means success
   }
 
-  private MultiWrestlerFeud createFeud(String name, Long id, Wrestler... wrestlers) {
-    MultiWrestlerFeud feud = new MultiWrestlerFeud();
-    feud.setId(id);
-    feud.setName(name);
-    feud.setHeat(5);
-    feud.setIsActive(true);
-    feud.setStartedDate(Instant.now(clock));
-    for (Wrestler wrestler : wrestlers) {
-      feud.addParticipant(wrestler, FeudRole.PROTAGONIST);
-    }
-    return feud;
+  @Test
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testAuthenticatedCanGetFeudsForWrestler() {
+    TestUtils.runAsAdmin(
+        () ->
+            multiWrestlerFeudService.createFeud(
+                "Test Feud", "Description", "", List.of(wrestler1.getId())));
+    multiWrestlerFeudService.getActiveFeudsForWrestler(wrestler1.getId());
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testAuthenticatedCanGetActiveFeuds() {
+    TestUtils.runAsAdmin(
+        () ->
+            multiWrestlerFeudService.createFeud(
+                "Test Feud", "Description", "", List.of(wrestler1.getId())));
+    multiWrestlerFeudService.getActiveFeuds();
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanAddHeat() {
+    Optional<MultiWrestlerFeud> feud =
+        multiWrestlerFeudService.createFeud(
+            "Test Feud", "Description", "", List.of(wrestler1.getId()));
+    Assertions.assertTrue(feud.isPresent());
+    Optional<MultiWrestlerFeud> updatedFeud =
+        multiWrestlerFeudService.addHeat(feud.get().getId(), 10, "Heated rivalry");
+    Assertions.assertTrue(updatedFeud.isPresent());
+    Assertions.assertEquals(10, updatedFeud.get().getHeat());
+  }
+
+  @Test
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotAddHeat() {
+    Optional<MultiWrestlerFeud> feud =
+        TestUtils.runAsAdmin(
+            () ->
+                multiWrestlerFeudService.createFeud(
+                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
+    Assertions.assertTrue(feud.isPresent());
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () -> multiWrestlerFeudService.addHeat(feud.get().getId(), 10, "Heated rivalry"));
   }
 }

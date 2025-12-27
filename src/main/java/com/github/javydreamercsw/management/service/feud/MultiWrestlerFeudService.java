@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.FeudHeatChangeEvent;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -99,6 +100,16 @@ public class MultiWrestlerFeudService {
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<MultiWrestlerFeud> createFeud(
       @NonNull String name, @NonNull String description, @NonNull String storylineNotes) {
+    return createFeud(name, description, storylineNotes, List.of());
+  }
+
+  /** Create a new multi-wrestler feud. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  public Optional<MultiWrestlerFeud> createFeud(
+      @NonNull String name,
+      @NonNull String description,
+      @NonNull String storylineNotes,
+      @NonNull List<Long> wrestlers) {
     // Check if feud name already exists
     if (multiWrestlerFeudRepository.existsByName(name)) {
       log.warn("Feud with name '{}' already exists", name);
@@ -113,6 +124,20 @@ public class MultiWrestlerFeudService {
     feud.setIsActive(true);
     feud.setStartedDate(clock.instant());
     feud.setCreationDate(clock.instant());
+    List<FeudParticipant> participants = new ArrayList<>();
+    for (Long wrestlerId : wrestlers) {
+      Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
+      if (wrestlerOpt.isEmpty()) {
+        log.warn("Wrestler with ID '{}' not found", wrestlerId);
+      } else {
+        FeudParticipant feudParticipant = new FeudParticipant();
+        feudParticipant.setWrestler(wrestlerOpt.get());
+        feudParticipant.setIsActive(true);
+        feudParticipant.setFeud(feud);
+        participants.add(feudParticipant);
+      }
+    }
+    feud.setParticipants(participants);
 
     MultiWrestlerFeud savedFeud = multiWrestlerFeudRepository.saveAndFlush(feud);
 
@@ -380,6 +405,13 @@ public class MultiWrestlerFeudService {
 
     return new FeudStatistics(
         totalActiveFeuds, validMultiWrestlerFeuds, totalParticipants, averageParticipants);
+  }
+
+  /** Delete a feud by ID. */
+  @PreAuthorize("hasRole('ROLE_ADMIN')")
+  public void deleteFeud(@NonNull Long feudId) {
+    log.info("Deleting feud with ID: {}", feudId);
+    multiWrestlerFeudRepository.deleteById(feudId);
   }
 
   /** Record class for feud statistics. */

@@ -91,4 +91,24 @@ public class TestUtils {
       SecurityContextHolder.setContext(originalContext);
     }
   }
+
+  public static <T> T runAsAdmin(java.util.concurrent.Callable<T> callable) {
+    SecurityContext originalContext = SecurityContextHolder.getContext();
+    try {
+      Account account = new Account("admin", "admin", "admin@localhost.com");
+      Role adminRole = new Role(RoleName.ADMIN, "Admin role");
+      account.setRoles(Collections.singleton(adminRole));
+      CustomUserDetails userDetails = new CustomUserDetails(account, null);
+      Authentication authentication =
+          new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+      SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+      securityContext.setAuthentication(authentication);
+      SecurityContextHolder.setContext(securityContext);
+      return callable.call();
+    } catch (Exception e) {
+      throw new RuntimeException("Error running callable as admin", e);
+    } finally {
+      SecurityContextHolder.setContext(originalContext);
+    }
+  }
 }

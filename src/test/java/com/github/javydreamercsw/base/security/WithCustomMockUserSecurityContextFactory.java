@@ -58,7 +58,8 @@ public class WithCustomMockUserSecurityContextFactory
                 () -> {
                   Account newAccount = new Account();
                   newAccount.setUsername(username);
-                  newAccount.setPassword(passwordEncoder.encode("password")); // Dummy password
+                  newAccount.setPassword(
+                      passwordEncoder.encode("ValidPassword1!")); // Dummy password
                   newAccount.setEmail(username + "@test.com");
                   newAccount.setEnabled(true);
                   newAccount.setAccountNonExpired(true);
@@ -102,7 +103,8 @@ public class WithCustomMockUserSecurityContextFactory
     CustomUserDetails principal = new CustomUserDetails(account, wrestler);
 
     Authentication authentication =
-        new UsernamePasswordAuthenticationToken(principal, "password", principal.getAuthorities());
+        new UsernamePasswordAuthenticationToken(
+            principal, "ValidPassword1!", principal.getAuthorities());
 
     SecurityContext context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(authentication);

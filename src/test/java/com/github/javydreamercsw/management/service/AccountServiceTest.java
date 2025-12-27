@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +56,7 @@ public class AccountServiceTest {
   @Autowired private PasswordEncoder passwordEncoder;
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   public void testCreateAndReadAccount() {
     Account account =
         accountService.createAccount("test_user", "Password123!", "test@user.com", RoleName.PLAYER);
@@ -66,6 +68,7 @@ public class AccountServiceTest {
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   public void testUpdateAccount() {
     Account account =
         accountService.createAccount(
@@ -78,6 +81,7 @@ public class AccountServiceTest {
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   public void testDeleteAccount() {
     Account account =
         accountService.createAccount(
@@ -89,12 +93,14 @@ public class AccountServiceTest {
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   public void testFindByUsername() {
     accountService.createAccount("find_user", "Password123!", "find@user.com", RoleName.PLAYER);
     assertTrue(accountService.findByUsername("find_user").isPresent());
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   public void testCreateAccountWithInvalidPassword_tooShort() {
     IllegalArgumentException exception =
         Assertions.assertThrows(
@@ -106,6 +112,7 @@ public class AccountServiceTest {
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   public void testUpdateAccountWithInvalidPassword_noUppercase() {
     Account account =
         accountService.createAccount(
@@ -120,6 +127,7 @@ public class AccountServiceTest {
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   public void testUpdateAccountWithValidPassword() {
     Account account =
         accountService.createAccount(
