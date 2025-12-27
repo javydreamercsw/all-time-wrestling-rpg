@@ -52,7 +52,6 @@ public class AuthenticationEventListener
 
   private void handleFailedAuthentication(AuthenticationFailureBadCredentialsEvent event) {
     String username = (String) event.getAuthentication().getPrincipal();
-    userDetailsService.recordFailedLoginAttempt(username);
     log.warn("Failed login attempt for user: {}", username);
   }
 }

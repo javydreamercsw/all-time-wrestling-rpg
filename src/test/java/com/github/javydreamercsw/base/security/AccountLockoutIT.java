@@ -56,23 +56,28 @@ public class AccountLockoutIT extends AbstractIntegrationTest {
     String correctPassword = "viewer123";
     String wrongPassword = "wrongpassword";
 
-    // 5 failed attempts
-    for (int i = 0; i < 5; i++) {
+    // 4 failed attempts, should not lock the account
+    for (int i = 0; i < 4; i++) {
       assertThrows(
           BadCredentialsException.class,
-          () -> {
-            authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, wrongPassword));
-          });
+          () ->
+              authenticationManager.authenticate(
+                  new UsernamePasswordAuthenticationToken(username, wrongPassword)));
     }
+
+    // 5th failed attempt should lock the account, but still throw BadCredentialsException
+    assertThrows(
+        BadCredentialsException.class,
+        () ->
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(username, wrongPassword)));
 
     // Account should be locked, so it will throw LockedException
     assertThrows(
         LockedException.class,
-        () -> {
-          authenticationManager.authenticate(
-              new UsernamePasswordAuthenticationToken(username, correctPassword));
-        });
+        () ->
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(username, correctPassword)));
 
     Account lockedAccount = accountService.findByUsername(username).get();
     assertFalse(lockedAccount.isAccountNonLocked());
