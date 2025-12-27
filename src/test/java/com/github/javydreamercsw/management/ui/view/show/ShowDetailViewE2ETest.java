@@ -101,6 +101,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
   @Autowired private InboxItemTargetRepository inboxItemTargetRepository;
   @Autowired private InboxRepository inboxRepository;
   @Autowired private DramaEventRepository dramaEventRepository;
+  @Autowired private TitleRepository titleChampionRepository;
 
   private Show testShow;
 
@@ -129,6 +130,7 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
     injuryRepository.deleteAll();
     injuryTypeRepository.deleteAll();
     npcRepository.deleteAll();
+    titleChampionRepository.deleteAll();
     wrestlerRepository.deleteAll();
     tierBoundaryRepository.deleteAll();
     accountRepository.deleteAll();
