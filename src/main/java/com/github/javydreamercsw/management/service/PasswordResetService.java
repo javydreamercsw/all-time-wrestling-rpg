@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -32,6 +33,8 @@ public class PasswordResetService {
   private final PasswordResetTokenRepository tokenRepository;
 
   @Qualifier("managementAccountService") private final AccountService accountService;
+
+  private final PasswordEncoder passwordEncoder;
 
   public String createPasswordResetTokenForUser(Account account) {
     String token = UUID.randomUUID().toString();
@@ -57,8 +60,9 @@ public class PasswordResetService {
         .ifPresentOrElse(
             t -> {
               Account account = t.getAccount();
-              account.setPassword(newPassword);
-              accountService.update(account);
+              // Encode the new password before passing it to the internal update method
+              String encodedPassword = passwordEncoder.encode(newPassword);
+              accountService.updateAccountPasswordInternal(account, encodedPassword);
               tokenRepository.delete(t);
             },
             () -> {

@@ -40,7 +40,7 @@ public class CardSetService {
   public CardSet createCardSet(@NonNull String name, @NonNull String setCode) {
     CardSet card = new CardSet();
     card.setName(name);
-    card.setSetCode(setCode);
+    card.setCode(setCode);
     return save(card);
   }
 
@@ -67,6 +67,6 @@ public class CardSetService {
 
   @PreAuthorize("isAuthenticated()")
   public Optional<CardSet> findBySetCode(@NonNull String setCode) {
-    return cardSetRepository.findBySetCode(setCode);
+    return cardSetRepository.findByCode(setCode);
   }
 }

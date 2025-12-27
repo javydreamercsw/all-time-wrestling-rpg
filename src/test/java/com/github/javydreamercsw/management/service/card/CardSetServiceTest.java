@@ -16,26 +16,121 @@
 */
 package com.github.javydreamercsw.management.service.card;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.card.CardSetRepository;
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
+import com.github.javydreamercsw.management.domain.card.CardSet;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.test.context.ActiveProfiles;
 
-@Transactional
-class CardSetServiceTest extends ManagementIntegrationTest {
-  @Autowired CardSetService cardSetService;
-  @Autowired CardSetRepository cardSetRepository;
+@SpringBootTest
+@ActiveProfiles("test")
+class CardSetServiceTest {
+
+  @Autowired private CardSetService cardSetService;
 
   @Test
-  void testCreateCardSetSet() {
-    int initialSize = cardSetRepository.findAll().size();
-    cardSetService.createCardSet("TST", "TST");
-    assertThat(cardSetRepository.findAll()).hasSize(initialSize + 1);
-    Assertions.assertTrue(
-        cardSetRepository.findAll().stream().anyMatch(set -> set.getName().equals("TST")));
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanCreateCardSet() {
+    CardSet cs = cardSetService.createCardSet("Test Card Set Admin", "TCSA");
+    Assertions.assertNotNull(cs);
+    Assertions.assertNotNull(cs.getId());
+  }
+
+  @Test
+  @WithCustomMockUser(
+      username = "booker",
+      roles = {"BOOKER", "PLAYER"})
+  void testBookerCanCreateCardSet() {
+    CardSet cs = cardSetService.createCardSet("Test Card Set Booker", "TCSB");
+    Assertions.assertNotNull(cs);
+    Assertions.assertNotNull(cs.getId());
+  }
+
+  @Test
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotCreateCardSet() {
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () -> cardSetService.createCardSet("Test Card Set Player", "TCSP"));
+  }
+
+  @Test
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testViewerCannotCreateCardSet() {
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () -> cardSetService.createCardSet("Test Card Set Viewer", "TCSV"));
+  }
+
+  @Test
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanSaveCardSet() {
+    CardSet cs = cardSetService.createCardSet("Save Card Set Admin", "SCSA");
+    cs.setName("Updated by Admin");
+    CardSet savedCs = cardSetService.save(cs);
+    Assertions.assertEquals("Updated by Admin", savedCs.getName());
+  }
+
+  @Test
+  @WithCustomMockUser(
+      username = "booker",
+      roles = {"BOOKOKER", "PLAYER"})
+  void testBookerCanSaveCardSet() {
+    CardSet cs = cardSetService.createCardSet("Save Card Set Booker", "SCSB");
+    cs.setName("Updated by Booker");
+    CardSet savedCs = cardSetService.save(cs);
+    Assertions.assertEquals("Updated by Booker", savedCs.getName());
+  }
+
+  @Test
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotSaveCardSet() {
+    CardSet cs = new CardSet();
+    cs.setName("Cannot Save Card Player");
+    Assertions.assertThrows(AccessDeniedException.class, () -> cardSetService.save(cs));
+  }
+
+  @Test
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testViewerCannotSaveCardSet() {
+    CardSet cs = new CardSet();
+    cs.setName("Cannot Save Card Viewer");
+    Assertions.assertThrows(AccessDeniedException.class, () -> cardSetService.save(cs));
+  }
+
+  @Test
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testAuthenticatedCanListCardSets() {
+    cardSetService.list(Pageable.unpaged());
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testAuthenticatedCanCountCardSets() {
+    cardSetService.count();
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testAuthenticatedCanFindAllCardSets() {
+    cardSetService.findAll();
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testAuthenticatedCanFindBySetCode() {
+    cardSetService.findBySetCode("TCSA");
+    // No exception means success
   }
 }

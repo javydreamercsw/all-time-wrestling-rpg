@@ -258,7 +258,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       try (var is = resource.getInputStream()) {
         var setsFromFile = mapper.readValue(is, new TypeReference<List<CardSet>>() {});
         for (CardSet c : setsFromFile) {
-          Optional<CardSet> existingSetOpt = cardSetService.findBySetCode(c.getSetCode());
+          Optional<CardSet> existingSetOpt = cardSetService.findBySetCode(c.getCode());
           if (existingSetOpt.isPresent()) {
             CardSet existingSet = existingSetOpt.get();
             // Update fields
@@ -289,7 +289,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
                 .collect(
                     Collectors.toMap(
                         c ->
-                            c.getSet().getSetCode()
+                            c.getSet().getCode()
                                 + "#"
                                 + c.getNumber(), // Unique key: set code + number
                         c -> c,

@@ -97,7 +97,7 @@ public class CardService {
 
   @PreAuthorize("isAuthenticated()")
   public Optional<Card> findByNumberAndSet(Integer number, String setCode) {
-    return cardRepository.findByNumberAndSetSetCode(number, setCode);
+    return cardRepository.findByNumberAndSetCode(number, setCode);
   }
 
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
