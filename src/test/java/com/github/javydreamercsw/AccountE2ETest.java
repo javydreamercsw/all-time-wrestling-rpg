@@ -58,7 +58,7 @@ public class AccountE2ETest extends AbstractE2ETest {
 
     // Edit the fields
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
-    passwordField.sendKeys("new_password-1");
+    passwordField.sendKeys("ValidPassword1!");
 
     WebElement roleComboBox = waitForVaadinElement(driver, By.id("role-field"));
     selectFromVaadinComboBox(roleComboBox, "BOOKER");
@@ -99,7 +99,8 @@ public class AccountE2ETest extends AbstractE2ETest {
   public void testDeleteAccount() {
     // Create an account to delete
     Account account =
-        accountService.createAccount("delete_me", "password", "delete_me@atw.com", RoleName.VIEWER);
+        accountService.createAccount(
+            "delete_me", "ValidPassword1!", "delete_me@atw.com", RoleName.VIEWER);
 
     // Navigate to the AccountListView
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
@@ -148,7 +149,7 @@ public class AccountE2ETest extends AbstractE2ETest {
     emailField.sendKeys("new_account@atw.com");
 
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
-    passwordField.sendKeys("new_password-1");
+    passwordField.sendKeys("ValidPassword1!");
 
     WebElement roleComboBox = waitForVaadinElement(driver, By.id("role-field"));
     selectFromVaadinComboBox(roleComboBox, "VIEWER");

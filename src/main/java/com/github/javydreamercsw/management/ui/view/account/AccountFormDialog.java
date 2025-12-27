@@ -112,7 +112,15 @@ public class AccountFormDialog extends Dialog {
         event -> {
           try {
             binder.writeBean(this.account);
-            accountService.update(this.account);
+            if (this.account.getId() == null) {
+              accountService.createAccount(
+                  this.account.getUsername(),
+                  this.account.getPassword(),
+                  this.account.getEmail(),
+                  this.account.getRoles().iterator().next().getName());
+            } else {
+              accountService.update(this.account);
+            }
             close();
           } catch (ValidationException e) {
             LOG.error("Validation failed", e);
