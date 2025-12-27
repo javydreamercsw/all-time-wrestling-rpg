@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -200,9 +201,10 @@ class MultiWrestlerFeudServiceTest {
             "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId()));
     Assertions.assertTrue(feud.isPresent());
     Optional<MultiWrestlerFeud> updatedFeud =
-        multiWrestlerFeudService.removeParticipant(feud.get().getId(), wrestler2.getId(), "Reason");
+        multiWrestlerFeudService.removeParticipant(
+            Objects.requireNonNull(feud.get().getId()), wrestler2.getId(), "Reason");
     Assertions.assertTrue(updatedFeud.isPresent());
-    Assertions.assertEquals(1, updatedFeud.get().getParticipants().size());
+    Assertions.assertEquals(1, updatedFeud.get().getActiveParticipantCount());
   }
 
   @Test
