@@ -117,6 +117,8 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .build();
     wrestlerService.save(opponent);
 
+    assertNotNull(wrestler.getId());
+    assertNotNull(opponent.getId());
     rivalryService.createRivalry(wrestler.getId(), opponent.getId(), "Test Rivalry");
 
     inboxService.addInboxItem(wrestler, "Test Message");

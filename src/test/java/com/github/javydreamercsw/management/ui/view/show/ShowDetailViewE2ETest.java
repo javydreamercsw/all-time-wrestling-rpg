@@ -101,44 +101,11 @@ public class ShowDetailViewE2ETest extends AbstractE2ETest {
   @Autowired private InboxItemTargetRepository inboxItemTargetRepository;
   @Autowired private InboxRepository inboxRepository;
   @Autowired private DramaEventRepository dramaEventRepository;
-  @Autowired private TitleRepository titleChampionRepository;
 
   private Show testShow;
 
   @BeforeEach
   public void setupTestData() {
-    // Clean up data in the correct order to avoid constraint violations
-    inboxItemTargetRepository.deleteAll();
-    inboxRepository.deleteAll();
-    passwordResetTokenRepository.deleteAll();
-    dramaEventRepository.deleteAll();
-    segmentRepository.deleteAll();
-    showRepository.deleteAll();
-    showTemplateRepository.deleteAll();
-    showTypeRepository.deleteAll();
-    seasonRepository.deleteAll();
-    titleReignRepository.deleteAll();
-    titleRepository.deleteAll();
-    factionRivalryRepository.deleteAll();
-    factionRepository.deleteAll();
-    multiWrestlerFeudRepository.deleteAll();
-    teamRepository.deleteAll();
-    deckCardRepository.deleteAll();
-    deckRepository.deleteAll();
-    cardRepository.deleteAll();
-    cardSetRepository.deleteAll();
-    injuryRepository.deleteAll();
-    injuryTypeRepository.deleteAll();
-    npcRepository.deleteAll();
-    titleChampionRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    tierBoundaryRepository.deleteAll();
-    accountRepository.deleteAll();
-    roleRepository.deleteAll();
-    gameSettingRepository.deleteAll();
-    segmentRuleRepository.deleteAll();
-    segmentTypeRepository.deleteAll();
-
     ShowType showType = new ShowType();
     showType.setName("Weekly Show");
     showType.setDescription("A weekly show");
