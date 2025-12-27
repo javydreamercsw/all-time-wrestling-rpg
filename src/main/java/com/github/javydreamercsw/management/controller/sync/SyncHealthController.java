@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.controller.sync;
 
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.ISyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncHealthSummary;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncMetric;
 import java.util.List;
@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.*;
 @ConditionalOnProperty(name = "notion.sync.enabled", havingValue = "true")
 public class SyncHealthController {
 
-  private final SyncHealthMonitor healthMonitor;
+  private final ISyncHealthMonitor healthMonitor;
 
   /** Get overall sync health status. */
   @GetMapping

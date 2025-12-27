@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +50,7 @@ public class RankingService {
   private final TierBoundaryService tierBoundaryService;
 
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<ChampionshipDTO> getChampionships() {
     return titleRepository.findAll().stream()
         .map(this::toChampionshipDTO)
@@ -56,6 +58,7 @@ public class RankingService {
   }
 
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<RankedWrestlerDTO> getRankedContenders(@NonNull Long championshipId) {
     Optional<Title> titleOpt = titleRepository.findById(championshipId);
     if (titleOpt.isEmpty()) {
@@ -101,6 +104,7 @@ public class RankingService {
   }
 
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<ChampionDTO> getCurrentChampions(@NonNull Long championshipId) {
     return titleRepository
         .findById(championshipId)

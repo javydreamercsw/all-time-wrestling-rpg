@@ -16,9 +16,14 @@
 */
 package com.github.javydreamercsw;
 
+import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
+
+import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Clock;
+import java.util.List;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -29,6 +34,9 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @SpringBootApplication
 @EnableScheduling
@@ -42,7 +50,7 @@ public class Application extends SpringBootServletInitializer {
 
   @Bean
   public Clock clock() {
-    return Clock.systemDefaultZone(); // You can also use Clock.systemUTC()
+    return Clock.systemUTC();
   }
 
   @Bean
@@ -52,10 +60,42 @@ public class Application extends SpringBootServletInitializer {
 
   @Bean
   @Profile("!test")
+  public CommandLineRunner initData(
+      AccountInitializer accountInitializer, DataInitializer dataInitializer) {
+    return args -> {
+      log.info("Initializing data on startup...");
+      // Create a system authentication context
+      var auth =
+          new UsernamePasswordAuthenticationToken(
+              "system",
+              null,
+              List.of(
+                  new SimpleGrantedAuthority("ROLE_" + ADMIN_ROLE),
+                  new SimpleGrantedAuthority("ADMIN")));
+      SecurityContextHolder.getContext().setAuthentication(auth);
+      try {
+        accountInitializer.init();
+        dataInitializer.init();
+      } finally {
+        // Clear the context
+        SecurityContextHolder.clearContext();
+      }
+      log.info("Data initialization complete.");
+    };
+  }
+
+  @Bean
+  @Profile("test & !e2e")
   public CommandLineRunner recalculateRanking(
       RankingService rankingService, WrestlerRepository wrestlerRepository) {
     return args -> {
       log.info("Recalculating tiers on startup...");
+      if (SecurityContextHolder.getContext().getAuthentication() == null
+          || !SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
+        log.warn(
+            "Skipping tier recalculation on startup: No authenticated user in SecurityContext.");
+        return;
+      }
       rankingService.recalculateRanking(new java.util.ArrayList<>(wrestlerRepository.findAll()));
       log.info("Tier recalculation complete.");
     };

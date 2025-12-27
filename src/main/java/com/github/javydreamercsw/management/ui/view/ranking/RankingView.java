@@ -98,6 +98,7 @@ public class RankingView extends Main {
     championshipImage.getStyle().set("object-fit", "contain");
 
     Button showTierBoundariesButton = new Button("Show Tier Boundaries");
+    showTierBoundariesButton.setId("show-tier-boundaries-button");
     showTierBoundariesButton.addClickListener(event -> showTierBoundariesDialog());
 
     HorizontalLayout topLayout =

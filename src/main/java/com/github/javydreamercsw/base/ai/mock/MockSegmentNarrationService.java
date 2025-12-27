@@ -36,7 +36,7 @@ import org.springframework.stereotype.Service;
  * when no AI providers are available.
  */
 @Service
-@Profile("test")
+@Profile({"test", "e2e"})
 @Primary
 @Slf4j
 public class MockSegmentNarrationService extends AbstractSegmentNarrationService {

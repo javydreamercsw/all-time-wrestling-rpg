@@ -28,7 +28,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
@@ -43,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
  * and health calculations.
  */
 @DisplayName("Injury System Integration Tests")
-class InjurySystemIntegrationTest extends AbstractIntegrationTest {
+class InjurySystemIntegrationTest extends AbstractMockUserIntegrationTest {
   @Autowired private InjuryService injuryService;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private NPCSegmentResolutionService npcSegmentResolutionService;

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.faction;
 
 import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
@@ -42,6 +43,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.Comparator;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,9 +60,10 @@ public class FactionRivalryListView extends Main {
   final Grid<FactionRivalry> factionRivalryGrid;
 
   public FactionRivalryListView(
-      FactionRivalryService factionRivalryService,
-      FactionRivalryRepository factionRivalryRepository,
-      FactionService factionService) {
+      @NonNull FactionRivalryService factionRivalryService,
+      @NonNull FactionRivalryRepository factionRivalryRepository,
+      @NonNull FactionService factionService,
+      @NonNull SecurityUtils securityUtils) {
     this.factionRivalryService = factionRivalryService;
     this.factionRivalryRepository = factionRivalryRepository;
 
@@ -97,6 +100,7 @@ public class FactionRivalryListView extends Main {
                   .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             });
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    createButton.setVisible(securityUtils.canCreate());
 
     factionRivalryGrid.setItems(
         query ->
@@ -129,9 +133,11 @@ public class FactionRivalryListView extends Main {
                               dialog.close();
                               factionRivalryGrid.getDataProvider().refreshAll();
                             });
+                    saveButton.setVisible(securityUtils.canEdit());
                     dialog.add(new VerticalLayout(heatField, saveButton));
                     dialog.open();
                   });
+              addHeatButton.setVisible(securityUtils.canEdit());
               return addHeatButton;
             })
         .setHeader("Actions");
@@ -149,6 +155,7 @@ public class FactionRivalryListView extends Main {
                             "Faction Rivalry deleted", 2000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
                   });
+              deleteButton.setVisible(securityUtils.canDelete());
               return deleteButton;
             })
         .setHeader("Delete");
@@ -163,10 +170,14 @@ public class FactionRivalryListView extends Main {
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Gap.SMALL);
 
-    add(
-        new ViewToolbar(
-            "Faction Rivalry List",
-            ViewToolbar.group(faction1ComboBox, faction2ComboBox, storylineNotes, createButton)));
+    if (securityUtils.canCreate()) {
+      add(
+          new ViewToolbar(
+              "Faction Rivalry List",
+              ViewToolbar.group(faction1ComboBox, faction2ComboBox, storylineNotes, createButton)));
+    } else {
+      add(new ViewToolbar("Faction Rivalry List"));
+    }
     add(factionRivalryGrid);
   }
 }

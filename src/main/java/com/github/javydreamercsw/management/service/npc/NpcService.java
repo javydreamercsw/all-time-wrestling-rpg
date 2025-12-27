@@ -22,6 +22,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,30 +32,37 @@ public class NpcService {
 
   @Autowired private NpcRepository npcRepository;
 
+  @PreAuthorize("isAuthenticated()")
   public List<Npc> findAll() {
     return npcRepository.findAll();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Page<Npc> findAll(Pageable pageable) {
     return npcRepository.findAll(pageable);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Npc> findAllByType(String type) {
     return npcRepository.findAllByNpcType(type);
   }
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Npc save(Npc npc) {
     return npcRepository.save(npc);
   }
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void delete(Npc npc) {
     npcRepository.delete(npc);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Npc findByName(String name) {
     return npcRepository.findByName(name);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Npc findByExternalId(String externalId) {
     return npcRepository.findByExternalId(externalId);
   }

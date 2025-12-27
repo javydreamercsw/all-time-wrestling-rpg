@@ -39,6 +39,9 @@ public interface RivalryRepository
   Page<Rivalry> findAllWithWrestlers(Pageable pageable);
 
   /** Find active rivalries. */
+  @Query(
+      "SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2 WHERE r.isActive ="
+          + " true")
   List<Rivalry> findByIsActiveTrue();
 
   /** Find ended rivalries. */

@@ -18,49 +18,31 @@ package com.github.javydreamercsw.management.controller.injury;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.test.BaseControllerTest;
-import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.CreateInjuryTypeRequest;
-import com.github.javydreamercsw.management.controller.injury.InjuryTypeController.UpdateInjuryTypeRequest;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.mapper.InjuryTypeMapper;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-/** Unit tests for InjuryTypeController. */
-@WebMvcTest(
-    controllers = InjuryTypeController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
-@DisplayName("InjuryType Controller Tests")
-class InjuryTypeControllerTest extends BaseControllerTest {
-
-  @MockitoBean private CommandLineRunner commandLineRunner;
-
-  @Autowired private MockMvc mockMvc;
-
-  @Autowired private ObjectMapper objectMapper;
+@WebMvcTest(InjuryTypeController.class)
+class InjuryTypeControllerTest extends AbstractControllerTest {
 
   @MockitoBean private InjuryTypeService injuryTypeService;
   @MockitoBean private InjuryTypeMapper injuryTypeMapper;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @DisplayName("Should get all injury types with pagination")
@@ -107,11 +89,12 @@ class InjuryTypeControllerTest extends BaseControllerTest {
   }
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   @DisplayName("Should create injury type successfully")
   void shouldCreateInjuryTypeSuccessfully() throws Exception {
     // Given
-    CreateInjuryTypeRequest request =
-        new CreateInjuryTypeRequest("New Injury", -2, 0, -1, "Special effect");
+    InjuryTypeController.CreateInjuryTypeRequest request =
+        new InjuryTypeController.CreateInjuryTypeRequest("New Injury", -2, 0, -1, "Special effect");
     InjuryType createdInjuryType = createSampleInjuryType();
     createdInjuryType.setInjuryName("New Injury");
 
@@ -122,6 +105,7 @@ class InjuryTypeControllerTest extends BaseControllerTest {
     mockMvc
         .perform(
             post("/api/injury-types")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -129,26 +113,31 @@ class InjuryTypeControllerTest extends BaseControllerTest {
   }
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   @DisplayName("Should handle validation errors when creating injury type")
   void shouldHandleValidationErrorsWhenCreatingInjuryType() throws Exception {
     // Given - Invalid request with empty name
-    CreateInjuryTypeRequest request = new CreateInjuryTypeRequest("", -2, 0, -1, "Special effect");
+    InjuryTypeController.CreateInjuryTypeRequest request =
+        new InjuryTypeController.CreateInjuryTypeRequest("", -2, 0, -1, "Special effect");
 
     // When & Then
     mockMvc
         .perform(
             post("/api/injury-types")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isBadRequest());
   }
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   @DisplayName("Should update injury type successfully")
   void shouldUpdateInjuryTypeSuccessfully() throws Exception {
     // Given
-    UpdateInjuryTypeRequest request =
-        new UpdateInjuryTypeRequest("Updated Injury", -3, -1, -2, "Updated special effect");
+    InjuryTypeController.UpdateInjuryTypeRequest request =
+        new InjuryTypeController.UpdateInjuryTypeRequest(
+            "Updated Injury", -3, -1, -2, "Updated special effect");
     InjuryType updatedInjuryType = createSampleInjuryType();
     updatedInjuryType.setInjuryName("Updated Injury");
 
@@ -159,6 +148,7 @@ class InjuryTypeControllerTest extends BaseControllerTest {
     mockMvc
         .perform(
             put("/api/injury-types/1")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
@@ -166,11 +156,13 @@ class InjuryTypeControllerTest extends BaseControllerTest {
   }
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   @DisplayName("Should return 404 when updating non-existent injury type")
   void shouldReturn404WhenUpdatingNonExistentInjuryType() throws Exception {
     // Given
-    UpdateInjuryTypeRequest request =
-        new UpdateInjuryTypeRequest("Updated Injury", -3, -1, -2, "Updated special effect");
+    InjuryTypeController.UpdateInjuryTypeRequest request =
+        new InjuryTypeController.UpdateInjuryTypeRequest(
+            "Updated Injury", -3, -1, -2, "Updated special effect");
 
     when(injuryTypeService.updateInjuryType(
             eq(999L), anyString(), any(), any(), any(), anyString()))
@@ -180,29 +172,32 @@ class InjuryTypeControllerTest extends BaseControllerTest {
     mockMvc
         .perform(
             put("/api/injury-types/999")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isNotFound());
   }
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   @DisplayName("Should delete injury type successfully")
   void shouldDeleteInjuryTypeSuccessfully() throws Exception {
     // Given
     when(injuryTypeService.deleteInjuryType(1L)).thenReturn(true);
 
     // When & Then
-    mockMvc.perform(delete("/api/injury-types/1")).andExpect(status().isNoContent());
+    mockMvc.perform(delete("/api/injury-types/1").with(csrf())).andExpect(status().isNoContent());
   }
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   @DisplayName("Should return 404 when deleting non-existent injury type")
   void shouldReturn404WhenDeletingNonExistentInjuryType() throws Exception {
     // Given
     when(injuryTypeService.deleteInjuryType(999L)).thenReturn(false);
 
     // When & Then
-    mockMvc.perform(delete("/api/injury-types/999")).andExpect(status().isNotFound());
+    mockMvc.perform(delete("/api/injury-types/999").with(csrf())).andExpect(status().isNotFound());
   }
 
   @Test

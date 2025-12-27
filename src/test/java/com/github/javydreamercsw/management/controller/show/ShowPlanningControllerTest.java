@@ -17,14 +17,13 @@
 package com.github.javydreamercsw.management.controller.show;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
@@ -32,35 +31,18 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningSe
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(
-    controllers = ShowPlanningController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
-@TestPropertySource(properties = "spring.flyway.enabled=false")
-class ShowPlanningControllerTest {
-
-  @MockitoBean private CommandLineRunner commandLineRunner;
-
-  @Autowired private MockMvc mockMvc;
-
-  @Autowired private ObjectMapper objectMapper;
+@WebMvcTest(ShowPlanningController.class)
+class ShowPlanningControllerTest extends AbstractControllerTest {
 
   @MockitoBean private ShowPlanningService showPlanningService;
 
   @MockitoBean private ShowPlanningAiService showPlanningAiService;
 
   @MockitoBean private ShowService showService;
-  @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   void getShowPlanningContext() throws Exception {
@@ -84,6 +66,7 @@ class ShowPlanningControllerTest {
     mockMvc
         .perform(
             post("/api/show-planning/plan")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(context)))
         .andExpect(status().isOk());

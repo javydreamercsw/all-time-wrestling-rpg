@@ -117,6 +117,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       log.info("Filtering by FEMALE");
       WebElement genderComboBox =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("gender-selection")));
+      Assertions.assertNotNull(genderComboBox);
       selectFromVaadinComboBox(genderComboBox, "FEMALE");
 
       // Verify only the female wrestler is displayed
@@ -155,6 +156,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       log.info("Filtering by MALE");
       WebElement genderComboBox =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("gender-selection")));
+      Assertions.assertNotNull(genderComboBox);
       selectFromVaadinComboBox(genderComboBox, "MALE");
 
       // Verify only the male wrestler is displayed
@@ -197,9 +199,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       // Open the "Tier Boundaries" dialog
       log.info("Opening tier boundaries dialog");
       WebElement showTierBoundariesButton =
-          wait.until(ExpectedConditions.elementToBeClickable(By.tagName("vaadin-button")));
+          wait.until(ExpectedConditions.elementToBeClickable(By.id("show-tier-boundaries-button")));
       Assertions.assertNotNull(showTierBoundariesButton);
-      clickAndScrollIntoView(showTierBoundariesButton);
+      clickElement(showTierBoundariesButton);
 
       // Wait for the dialog to appear
       log.info("Waiting for dialog");

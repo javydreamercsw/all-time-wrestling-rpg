@@ -23,6 +23,9 @@ import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.service.sync.ISyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.NoOpSyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServiceDependencies;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -50,7 +53,57 @@ public class TestNotionConfiguration {
   public NotionSyncProperties testNotionSyncProperties() {
     NotionSyncProperties mockProperties = mock(NotionSyncProperties.class);
     when(mockProperties.getParallelThreads()).thenReturn(1);
+    when(mockProperties.isEnabled()).thenReturn(true);
+
+    // Mock isEntityEnabled to return true for tests
+    when(mockProperties.isEntityEnabled(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+
+    // Mock nested objects to prevent NPEs
+    NotionSyncProperties.Backup backup = new NotionSyncProperties.Backup();
+    backup.setEnabled(false);
+    backup.setDirectory("target/backups");
+    when(mockProperties.getBackup()).thenReturn(backup);
+
+    NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
+    scheduler.setEnabled(false);
+    when(mockProperties.getScheduler()).thenReturn(scheduler);
+
     return mockProperties;
+  }
+
+  @Bean
+  @Primary
+  public EntitySyncConfiguration testEntitySyncConfiguration() {
+    EntitySyncConfiguration config = new EntitySyncConfiguration();
+    EntitySyncConfiguration.EntitySyncSettings defaultSettings =
+        new EntitySyncConfiguration.EntitySyncSettings();
+    defaultSettings.setEnabled(true);
+    defaultSettings.setBatchSize(10);
+    defaultSettings.setParallelProcessing(false);
+    config.setDefaults(defaultSettings);
+    return config;
+  }
+
+  @Bean
+  @Primary
+  public RetryConfig testRetryConfig() {
+    RetryConfig config = new RetryConfig();
+    config.setMaxAttempts(1);
+    config.setInitialDelayMs(10);
+    config.setMaxDelayMs(100);
+    return config;
+  }
+
+  @Bean
+  @Primary
+  public ISyncHealthMonitor testSyncHealthMonitor() {
+    return new NoOpSyncHealthMonitor();
+  }
+
+  @Bean
+  @Primary
+  public SyncProgressTracker testSyncProgressTracker() {
+    return new SyncProgressTracker();
   }
 
   @Bean

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.inbox;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -37,6 +38,7 @@ import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import jakarta.annotation.security.PermitAll;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -49,6 +51,7 @@ import org.springframework.data.domain.Sort;
 
 @Route(value = "inbox", layout = MainLayout.class)
 @PageTitle("Inbox")
+@PermitAll
 public class InboxView extends VerticalLayout {
 
   private final InboxService inboxService;
@@ -65,14 +68,17 @@ public class InboxView extends VerticalLayout {
   private final Checkbox hideReadCheckbox = new Checkbox("Hide Read");
   private final Button deleteSelectedButton = new Button("Delete Selected");
   private final Set<InboxItem> selectedItems = new HashSet<>();
+  private final SecurityUtils securityUtils;
 
   public InboxView(
       InboxService inboxService,
       InboxEventTypeRegistry eventTypeRegistry,
-      WrestlerRepository wrestlerRepository) {
+      WrestlerRepository wrestlerRepository,
+      SecurityUtils securityUtils) {
     this.inboxService = inboxService;
     this.eventTypeRegistry = eventTypeRegistry;
     this.wrestlerRepository = wrestlerRepository;
+    this.securityUtils = securityUtils;
 
     addClassName("inbox-view");
     setSizeFull();
@@ -84,7 +90,24 @@ public class InboxView extends VerticalLayout {
     splitLayout.addToSecondary(detailsView);
 
     add(splitLayout);
+    configureForUser();
     updateList();
+  }
+
+  private void configureForUser() {
+    // If the user is a player but not an admin or booker, default to their wrestler
+    if (securityUtils.isPlayer() && !securityUtils.isAdmin() && !securityUtils.isBooker()) {
+      securityUtils
+          .getAuthenticatedUser()
+          .ifPresent(
+              user -> {
+                Wrestler wrestler = user.getWrestler();
+                if (wrestler != null) {
+                  targetFilter.setValue(wrestler);
+                  targetFilter.setReadOnly(true);
+                }
+              });
+    }
   }
 
   private HorizontalLayout getToolbar() {
@@ -160,6 +183,10 @@ public class InboxView extends VerticalLayout {
           updateSelectedButtonsState();
         });
 
+    markSelectedReadButton.setVisible(securityUtils.canEdit());
+    markSelectedUnreadButton.setVisible(securityUtils.canEdit());
+    deleteSelectedButton.setVisible(securityUtils.canDelete());
+    selectAllCheckbox.setVisible(securityUtils.canEdit());
     updateSelectedButtonsState();
 
     Button clearTargetFilter = new Button("Clear");
@@ -168,6 +195,8 @@ public class InboxView extends VerticalLayout {
           targetFilter.clear();
           updateList();
         });
+    // Hide clear target filter button if the target filter is read-only
+    clearTargetFilter.setVisible(securityUtils.canEdit() && !targetFilter.isReadOnly());
     HorizontalLayout toolbar =
         new HorizontalLayout(
             targetFilter,
@@ -257,6 +286,7 @@ public class InboxView extends VerticalLayout {
           inboxService.toggleReadStatus(item);
           updateList();
         });
+    button.setVisible(securityUtils.canEdit(item));
     return button;
   }
 

@@ -18,8 +18,10 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
@@ -41,6 +43,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,14 +62,14 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private ShowTypeService showTypeService;
   @Autowired private InboxService inboxService;
   @Autowired private InboxRepository inboxRepository;
+  @Autowired private DataInitializer dataInitializer;
 
-  @Autowired
-  private com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository
-      tierBoundaryRepository;
+  @Autowired private TierBoundaryRepository tierBoundaryRepository;
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   void setUp() {
     tierBoundaryRepository.deleteAll();
+    dataInitializer.init();
   }
 
   @Test

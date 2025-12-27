@@ -18,15 +18,13 @@ package com.github.javydreamercsw.management.controller.show.template;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.base.test.BaseControllerTest;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import java.time.Instant;
 import java.util.Arrays;
@@ -35,33 +33,18 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(
-    controllers = ShowTemplateController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 @DisplayName("ShowTemplate Controller Tests")
-class ShowTemplateControllerTest extends BaseControllerTest {
-
-  @MockitoBean private CommandLineRunner commandLineRunner;
-
-  @Autowired private MockMvc mockMvc;
-
-  @Autowired private ObjectMapper objectMapper;
+@WebMvcTest(ShowTemplateController.class)
+class ShowTemplateControllerTest extends AbstractControllerTest {
 
   @MockitoBean private ShowTemplateService showTemplateService;
-  @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   private ShowTemplate testTemplate;
   private ShowType testShowType;
@@ -174,6 +157,7 @@ class ShowTemplateControllerTest extends BaseControllerTest {
     mockMvc
         .perform(
             post("/api/show-templates")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
@@ -195,6 +179,7 @@ class ShowTemplateControllerTest extends BaseControllerTest {
     mockMvc
         .perform(
             post("/api/show-templates")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isBadRequest());
@@ -215,6 +200,7 @@ class ShowTemplateControllerTest extends BaseControllerTest {
     mockMvc
         .perform(
             put("/api/show-templates/1")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
@@ -236,6 +222,7 @@ class ShowTemplateControllerTest extends BaseControllerTest {
     mockMvc
         .perform(
             put("/api/show-templates/999")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isNotFound());
@@ -247,7 +234,7 @@ class ShowTemplateControllerTest extends BaseControllerTest {
     when(showTemplateService.deleteTemplate(1L)).thenReturn(true);
 
     // When & Then
-    mockMvc.perform(delete("/api/show-templates/1")).andExpect(status().isNoContent());
+    mockMvc.perform(delete("/api/show-templates/1").with(csrf())).andExpect(status().isNoContent());
   }
 
   @Test
@@ -256,6 +243,8 @@ class ShowTemplateControllerTest extends BaseControllerTest {
     when(showTemplateService.deleteTemplate(999L)).thenReturn(false);
 
     // When & Then
-    mockMvc.perform(delete("/api/show-templates/999")).andExpect(status().isNotFound());
+    mockMvc
+        .perform(delete("/api/show-templates/999").with(csrf()))
+        .andExpect(status().isNotFound());
   }
 }

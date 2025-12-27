@@ -16,15 +16,20 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
+import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
@@ -43,24 +48,27 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.client.RestTemplate;
 
 @Route("show-planning")
 @PageTitle("Show Planning")
 @Menu(order = 6, icon = "vaadin:calendar", title = "Show Planning")
-@PermitAll
+@RolesAllowed({ADMIN_ROLE, BOOKER_ROLE})
 @Slf4j
 public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private final ShowService showService;
-  private final RestTemplate restTemplate = new RestTemplate();
+  private final ShowPlanningService showPlanningService;
+  private final ShowPlanningAiService showPlanningAiService;
+  private final WrestlerService wrestlerService;
+  private final TitleService titleService;
+  private final WrestlerRepository wrestlerRepository;
   private final ObjectMapper objectMapper;
 
   private final ComboBox<Show> showComboBox;
@@ -74,12 +82,19 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   public ShowPlanningView(
       ShowService showService,
+      ShowPlanningService showPlanningService,
+      ShowPlanningAiService showPlanningAiService,
       WrestlerService wrestlerService,
-      TitleService titleService, // Added TitleService to constructor
+      WrestlerRepository wrestlerRepository,
+      TitleService titleService,
       ObjectMapper objectMapper) {
 
     this.showService = showService;
-    // Injected TitleService
+    this.showPlanningService = showPlanningService;
+    this.showPlanningAiService = showPlanningAiService;
+    this.wrestlerService = wrestlerService;
+    this.wrestlerRepository = wrestlerRepository;
+    this.titleService = titleService;
     this.objectMapper = objectMapper;
 
     showComboBox = new ComboBox<>("Select Show");
@@ -144,7 +159,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                     new EditSegmentDialog(
                         segment,
                         wrestlerService,
-                        titleService, // Pass titleService
+                        wrestlerRepository,
+                        titleService,
                         () -> proposedSegmentsGrid.getDataProvider().refreshAll());
                 dialog.open();
               });
@@ -180,16 +196,13 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private void loadContext() {
     Show selectedShow = showComboBox.getValue();
     if (selectedShow != null) {
-      String baseUrl = UrlUtil.getBaseUrl();
-      ShowPlanningContextDTO context =
-          restTemplate.getForObject(
-              baseUrl + "/api/show-planning/context/" + selectedShow.getId(),
-              ShowPlanningContextDTO.class);
       try {
+        ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(selectedShow);
         contextArea.setValue(
             objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context));
         proposeSegmentsButton.setEnabled(true);
       } catch (Exception ex) {
+        log.error("Error displaying context", ex);
         contextArea.setValue("Error displaying context: " + ex.getMessage());
       }
     }
@@ -197,7 +210,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private void proposeSegments() {
     try {
-      String baseUrl = UrlUtil.getBaseUrl();
       ShowPlanningContextDTO context =
           objectMapper.readValue(contextArea.getValue(), ShowPlanningContextDTO.class);
 
@@ -212,9 +224,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           "Sending context to AI: {}",
           objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context));
 
-      ProposedShow proposedShow =
-          restTemplate.postForObject(
-              baseUrl + "/api/show-planning/plan", context, ProposedShow.class);
+      ProposedShow proposedShow = showPlanningAiService.planShow(context);
 
       // Log the response
       log.debug(
@@ -226,12 +236,13 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
         proposedSegmentsGrid.setItems(segments);
         approveButton.setEnabled(true); // Enable approve button
       } else {
-        Notification.show("AI did not propose any segments.", 5000, Notification.Position.MIDDLE)
+        Notification.show("AI did not propose any segments.", 5_000, Notification.Position.MIDDLE)
             .addThemeVariants(NotificationVariant.LUMO_ERROR);
       }
     } catch (Exception ex) {
+      log.error("Error proposing segments", ex);
       Notification.show(
-              "Error proposing segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+              "Error proposing segments: " + ex.getMessage(), 5_000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
   }
@@ -244,13 +255,12 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     }
 
     try {
-      String baseUrl = UrlUtil.getBaseUrl();
-      restTemplate.postForEntity(
-          baseUrl + "/api/show-planning/approve/" + selectedShow.getId(), segments, Void.class);
+      showPlanningService.approveSegments(selectedShow, segments);
       Notification.show("Segments approved successfully!", 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
       proposedSegmentsGrid.setItems(new ArrayList<>());
     } catch (Exception ex) {
+      log.error("Error approving segments", ex);
       Notification.show(
               "Error approving segments: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);

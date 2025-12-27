@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.season;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.vaadin.flow.component.button.Button;
@@ -42,6 +43,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
 import java.time.format.DateTimeFormatter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 
@@ -57,6 +59,7 @@ import org.springframework.data.domain.Pageable;
 public class SeasonListView extends Main {
 
   private final SeasonService seasonService;
+  private final SecurityUtils securityUtils;
   private final Grid<Season> grid;
   private final TextField searchField;
 
@@ -68,8 +71,10 @@ public class SeasonListView extends Main {
   private Season editingSeason;
   private Binder<Season> binder;
 
-  public SeasonListView(SeasonService seasonService) {
+  public SeasonListView(
+      @NonNull SeasonService seasonService, @NonNull SecurityUtils securityUtils) {
     this.seasonService = seasonService;
+    this.securityUtils = securityUtils;
     this.grid = new Grid<>(Season.class, false);
     this.searchField = new TextField();
 
@@ -91,6 +96,7 @@ public class SeasonListView extends Main {
     addSeasonBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     addSeasonBtn.setIcon(VaadinIcon.PLUS.create());
     addSeasonBtn.addClickListener(e -> openEditDialog(null));
+    addSeasonBtn.setVisible(securityUtils.canCreate());
 
     Button refreshBtn = new Button("Refresh");
     refreshBtn.setIcon(VaadinIcon.REFRESH.create());
@@ -148,11 +154,13 @@ public class SeasonListView extends Main {
               Button editBtn = new Button("Edit", VaadinIcon.EDIT.create());
               editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
               editBtn.addClickListener(e -> openEditDialog(season));
+              editBtn.setVisible(securityUtils.canEdit());
 
               Button deleteBtn = new Button("Delete", VaadinIcon.TRASH.create());
               deleteBtn.addThemeVariants(
                   ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
               deleteBtn.addClickListener(e -> deleteSeason(season));
+              deleteBtn.setVisible(securityUtils.canDelete());
 
               return new HorizontalLayout(editBtn, deleteBtn);
             })
@@ -192,6 +200,7 @@ public class SeasonListView extends Main {
     // Buttons
     Button saveBtn = new Button("Save", e -> saveSeason());
     saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveBtn.setVisible(securityUtils.canEdit());
 
     Button cancelBtn = new Button("Cancel", e -> editDialog.close());
 

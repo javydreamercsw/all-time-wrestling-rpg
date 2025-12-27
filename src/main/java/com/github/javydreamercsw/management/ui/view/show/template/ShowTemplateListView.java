@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.show.template;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -50,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -65,6 +67,7 @@ public class ShowTemplateListView extends Main {
 
   private final ShowTemplateService showTemplateService;
   private final ShowTypeService showTypeService;
+  private final SecurityUtils securityUtils;
 
   private Dialog editDialog;
   private TextField editName;
@@ -80,9 +83,12 @@ public class ShowTemplateListView extends Main {
   final Grid<ShowTemplate> templateGrid;
 
   public ShowTemplateListView(
-      ShowTemplateService showTemplateService, ShowTypeService showTypeService) {
+      @NonNull ShowTemplateService showTemplateService,
+      @NonNull ShowTypeService showTypeService,
+      @NonNull SecurityUtils securityUtils) {
     this.showTemplateService = showTemplateService;
     this.showTypeService = showTypeService;
+    this.securityUtils = securityUtils;
 
     // Initialize filters
     nameFilter = new TextField();
@@ -106,6 +112,7 @@ public class ShowTemplateListView extends Main {
     createBtn = new Button("Create Template", new Icon(VaadinIcon.PLUS));
     createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     createBtn.addClickListener(e -> openCreateDialog());
+    createBtn.setVisible(securityUtils.canCreate());
 
     // Initialize grid
     templateGrid = new Grid<>(ShowTemplate.class, false);
@@ -190,10 +197,12 @@ public class ShowTemplateListView extends Main {
               Button editBtn = new Button("Edit", new Icon(VaadinIcon.EDIT));
               editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
               editBtn.addClickListener(e -> openEditDialog(template));
+              editBtn.setVisible(securityUtils.canEdit());
 
               Button deleteBtn = new Button("Delete", new Icon(VaadinIcon.TRASH));
               deleteBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
               deleteBtn.addClickListener(e -> deleteTemplate(template));
+              deleteBtn.setVisible(securityUtils.canDelete());
 
               actions.add(editBtn, deleteBtn);
               return actions;
@@ -233,6 +242,7 @@ public class ShowTemplateListView extends Main {
 
     Button saveBtn = new Button("Save", e -> saveTemplate());
     saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveBtn.setVisible(securityUtils.canEdit());
     Button cancelBtn = new Button("Cancel", e -> editDialog.close());
 
     FormLayout formLayout = new FormLayout();

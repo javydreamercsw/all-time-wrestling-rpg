@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +44,7 @@ public class InjuryTypeService {
   // ==================== CRUD OPERATIONS ====================
 
   /** Creates a new injury type. */
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public InjuryType createInjuryType(
       String injuryName,
       Integer healthEffect,
@@ -68,6 +70,7 @@ public class InjuryTypeService {
   }
 
   /** Updates an existing injury type with individual fields. */
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<InjuryType> updateInjuryType(
       Long id,
       String injuryName,
@@ -102,6 +105,7 @@ public class InjuryTypeService {
   }
 
   /** Updates an existing injury type. */
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public InjuryType updateInjuryType(@NonNull InjuryType injuryType) {
     log.debug("Updating injury type: {}", injuryType.getInjuryName());
 
@@ -115,6 +119,7 @@ public class InjuryTypeService {
   }
 
   /** Deletes an injury type by ID. Returns true if deleted, false if not found. */
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public boolean deleteInjuryType(Long id) {
     log.debug("Deleting injury type with ID: {}", id);
 
@@ -139,24 +144,28 @@ public class InjuryTypeService {
 
   /** Finds all injury types. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<InjuryType> findAll() {
     return injuryTypeRepository.findAll();
   }
 
   /** Finds injury type by ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<InjuryType> findById(Long id) {
     return injuryTypeRepository.findById(id);
   }
 
   /** Gets injury type by ID (alias for findById for consistency with other services). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<InjuryType> getInjuryTypeById(@NonNull Long id) {
     return findById(id);
   }
 
   /** Gets all injury types with pagination. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public org.springframework.data.domain.Page<InjuryType> getAllInjuryTypes(
       @NonNull Pageable pageable) {
     return injuryTypeRepository.findAll(pageable);
@@ -164,54 +173,63 @@ public class InjuryTypeService {
 
   /** Counts all injury types. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public long countAll() {
     return injuryTypeRepository.count();
   }
 
   /** Finds injury type by name. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<InjuryType> findByName(@NonNull String injuryName) {
     return injuryTypeRepository.findByInjuryName(injuryName);
   }
 
   /** Finds injury type by external ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<InjuryType> findByExternalId(@NonNull String externalId) {
     return injuryTypeRepository.findByExternalId(externalId);
   }
 
   /** Checks if injury type exists by external ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public boolean existsByExternalId(@NonNull String externalId) {
     return injuryTypeRepository.existsByExternalId(externalId);
   }
 
   /** Finds all injury types ordered by severity (most severe first). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<InjuryType> findAllOrderedBySeverity() {
     return injuryTypeRepository.findAllOrderedBySeverity();
   }
 
   /** Finds injury types with health effects. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<InjuryType> findWithHealthEffects() {
     return injuryTypeRepository.findWithHealthEffects();
   }
 
   /** Finds injury types with stamina effects. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<InjuryType> findWithStaminaEffects() {
     return injuryTypeRepository.findWithStaminaEffects();
   }
 
   /** Finds injury types with card effects. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<InjuryType> findWithCardEffects() {
     return injuryTypeRepository.findWithCardEffects();
   }
 
   /** Finds injury types with special effects. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<InjuryType> findWithSpecialEffects() {
     return injuryTypeRepository.findWithSpecialEffects();
   }
@@ -220,6 +238,7 @@ public class InjuryTypeService {
 
   /** Gets statistics about injury type effects. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public InjuryTypeStats getInjuryTypeStats() {
     Long healthCount = injuryTypeRepository.countWithHealthEffects();
     Long staminaCount = injuryTypeRepository.countWithStaminaEffects();

@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -27,8 +26,9 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
-import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
@@ -44,12 +44,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestTemplate;
 
 class ShowPlanningViewTest {
 
   @Mock private ShowService showService;
-  @Mock private RestTemplate restTemplate;
+  @Mock private ShowPlanningService showPlanningService;
+  @Mock private ShowPlanningAiService showPlanningAiService;
   @InjectMocks private ShowPlanningView showPlanningView;
 
   @BeforeEach
@@ -59,7 +59,6 @@ class ShowPlanningViewTest {
     UI ui = mock(UI.class);
     UI.setCurrent(ui);
     when(ui.getUI()).thenReturn(Optional.of(ui));
-    ReflectionTestUtils.setField(showPlanningView, "restTemplate", restTemplate);
   }
 
   @Test
@@ -77,15 +76,7 @@ class ShowPlanningViewTest {
 
     // Create a mock ShowPlanningContext
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
-    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
-    rivalry.setName("Test Rivalry");
-    context.setCurrentRivalries(List.of(rivalry));
-    context.setRecentPromos(new ArrayList<>());
-    context.setRecentSegments(new ArrayList<>());
-
-    // Mock the RestTemplate
-    when(restTemplate.getForObject(any(String.class), eq(ShowPlanningContextDTO.class)))
-        .thenReturn(context);
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
 
     // Mock the ObjectMapper
     ObjectMapper objectMapper = new ObjectMapper();
@@ -132,11 +123,8 @@ class ShowPlanningViewTest {
     segment2.setParticipants(List.of("C"));
     proposedShow.setSegments(Arrays.asList(segment1, segment2));
 
-    // Mock the RestTemplate
-    when(restTemplate.getForObject(any(String.class), eq(ShowPlanningContextDTO.class)))
-        .thenReturn(context);
-    when(restTemplate.postForObject(
-            any(String.class), any(ShowPlanningContextDTO.class), eq(ProposedShow.class)))
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
+    when(showPlanningAiService.planShow(any(ShowPlanningContextDTO.class)))
         .thenReturn(proposedShow);
 
     // Mock the ObjectMapper
@@ -188,11 +176,8 @@ class ShowPlanningViewTest {
     segment1.setParticipants(Arrays.asList("A", "B"));
     proposedShow.setSegments(List.of(segment1));
 
-    // Mock the RestTemplate
-    when(restTemplate.getForObject(any(String.class), eq(ShowPlanningContextDTO.class)))
-        .thenReturn(context);
-    when(restTemplate.postForObject(
-            any(String.class), any(ShowPlanningContextDTO.class), eq(ProposedShow.class)))
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
+    when(showPlanningAiService.planShow(any(ShowPlanningContextDTO.class)))
         .thenReturn(proposedShow);
 
     // Mock the ObjectMapper

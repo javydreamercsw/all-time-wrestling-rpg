@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -49,6 +50,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerService wrestlerService;
   @Autowired private InboxItemTargetRepository inboxItemTargetRepository;
+  @Autowired protected TitleRepository titleRepository;
 
   private Wrestler w1;
   private Wrestler w2;
@@ -58,7 +60,6 @@ class InboxViewE2ETest extends AbstractE2ETest {
     super.setup();
     // Clear any existing inbox items to ensure a clean state for each test
     inboxRepository.deleteAll();
-    wrestlerRepository.deleteAll();
     w1 = createTestWrestler("Test Wrestler 1");
     wrestlerService.save(w1);
     w2 = createTestWrestler("Test Wrestler 2");

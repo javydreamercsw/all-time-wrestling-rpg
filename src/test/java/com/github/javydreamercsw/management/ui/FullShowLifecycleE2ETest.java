@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.TestUtils;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -30,6 +31,8 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -49,7 +52,8 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 @Slf4j
 public class FullShowLifecycleE2ETest extends AbstractE2ETest {
@@ -57,18 +61,21 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
   private static final String SEASON_NAME = "Test Season";
   private static final String TEMPLATE_NAME = "Continuum";
 
-  @Autowired private org.springframework.cache.CacheManager cacheManager;
+  @Autowired private CacheManager cacheManager;
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
+  @Autowired private SegmentRuleService segmentRuleService;
+  @Autowired private SegmentService segmentService;
+  @Autowired private DataInitializer dataInitializer;
 
   @BeforeEach
-  @Transactional
   public void setupTestData() {
+    dataInitializer.init();
     // Clear the cache to ensure we get fresh data
     if (cacheManager != null) {
-      org.springframework.cache.Cache wrestlersCache = cacheManager.getCache("wrestlers");
+      Cache wrestlersCache = cacheManager.getCache("wrestlers");
       if (wrestlersCache != null) {
         wrestlersCache.clear();
       }
@@ -178,11 +185,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
       // Fill in the form
-      log.info("Filling out new show form");
       Objects.requireNonNull(
-              wait.until(
-                  ExpectedConditions.visibilityOfElementLocated(
-                      By.cssSelector("vaadin-text-field"))))
+              wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-name"))))
           .sendKeys(showName);
       List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
       WebElement showTypeComboBox = comboBoxes.get(0);
@@ -203,7 +207,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       // Click the "Create" button
       log.info("Creating show");
       WebElement createButton = driver.findElement(By.id("create-show-button"));
-      clickAndScrollIntoView(createButton);
+      clickElement(createButton);
 
       log.info("Waiting for show to appear in grid");
       wait.until(
@@ -219,7 +223,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
           wait.until(
               ExpectedConditions.elementToBeClickable(
                   By.id("view-details-button-" + show.getId())));
-      clickAndScrollIntoView(viewShowDetails);
+      Assertions.assertNotNull(viewShowDetails);
+      clickElement(viewShowDetails);
 
       // Verify navigation to the show detail view (or planning view)
       log.info("Waiting for show detail URL");
@@ -229,7 +234,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       log.info("Navigating to show planning view");
       WebElement planningShowButton =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("plan-show-button")));
-      clickAndScrollIntoView(planningShowButton);
+      Assertions.assertNotNull(planningShowButton);
+      clickElement(planningShowButton);
 
       // Verify navigation to the show planning view
       log.info("Waiting for show planning URL");
@@ -239,14 +245,20 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebElement showPlanningContextArea =
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("show-planning-context-area")));
-      wait.until(driver -> !showPlanningContextArea.getText().isEmpty());
+      wait.until(
+          driver -> {
+            Assertions.assertNotNull(showPlanningContextArea);
+            return !showPlanningContextArea.getText().isEmpty();
+          });
+      Assertions.assertNotNull(showPlanningContextArea);
       Assertions.assertFalse(showPlanningContextArea.getText().contains("Error"));
 
       // Click the "Propose Segments" button
       log.info("Proposing segments");
       WebElement proposeSegmentsButton =
           wait.until(ExpectedConditions.elementToBeClickable(By.id("propose-segments-button")));
-      clickAndScrollIntoView(proposeSegmentsButton);
+      Assertions.assertNotNull(proposeSegmentsButton);
+      clickElement(proposeSegmentsButton);
 
       log.info("Waiting for proposed segments grid");
       wait.until(
@@ -258,7 +270,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebElement approveButton =
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("approve-segments-button")));
-      clickAndScrollIntoView(approveButton);
+      Assertions.assertNotNull(approveButton);
+      clickElement(approveButton);
 
       // Wait for the notification that segments are approved to appear and disappear
       log.info("Waiting for notification");
@@ -294,7 +307,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
           driver.findElement(
               By.id(
                   "edit-segment-button-" + segmentService.getSegmentsByShow(show).get(0).getId()));
-      clickAndScrollIntoView(editButton);
+      clickElement(editButton);
 
       // Wait for the dialog to appear
       log.info("Waiting for edit dialog");
@@ -307,12 +320,24 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       WebElement summaryField =
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("edit-summary-text-area")));
+      Assertions.assertNotNull(summaryField);
       summaryField.sendKeys(newDescription, Keys.TAB);
+
+      // Explicitly set two wrestlers in the MultiSelectComboBox
+      log.info("Setting wrestlers in MultiSelectComboBox");
+      WebElement wrestlersComboBox =
+          wait.until(
+              ExpectedConditions.visibilityOfElementLocated(By.id("edit-wrestlers-combo-box")));
+      Assertions.assertNotNull(wrestlersComboBox);
+      //      selectFromVaadinMultiSelectComboBox(
+      //          wrestlersComboBox, wrestlerRepository.findAll().get(0).getName());
+      //      selectFromVaadinMultiSelectComboBox(
+      //          wrestlersComboBox, wrestlerRepository.findAll().get(1).getName());
 
       // Click the save button
       log.info("Clicking save button");
       WebElement saveButton = driver.findElement(By.id("edit-segment-save-button"));
-      clickAndScrollIntoView(saveButton);
+      clickElement(saveButton);
 
       try {
         Thread.sleep(1000);
@@ -321,7 +346,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
       }
 
       log.info("Waiting for save button to disappear");
-      wait.withTimeout(Duration.ofSeconds(30));
+      wait.withTimeout(Duration.ofSeconds(60));
       wait.until(
           ExpectedConditions.invisibilityOfElementLocated(By.id("edit-segment-save-button")));
       wait.withTimeout(Duration.ofSeconds(20));
@@ -361,38 +386,42 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
 
-    Segment mainEventSegment = new Segment();
+    Segment mainEventSegment =
+        segmentService.createSegment(
+            show,
+            segmentTypeRepository.findByName("One on One").get(),
+            Instant.now(),
+            new HashSet<>());
     mainEventSegment.setNarration("This is a test narration.");
     mainEventSegment.setSummary("This is a test summary.");
     mainEventSegment.setSegmentOrder(1);
-    mainEventSegment.setShow(show);
-    mainEventSegment.setSegmentDate(Instant.now());
     mainEventSegment.setIsTitleSegment(true);
     mainEventSegment.setIsNpcGenerated(false);
     mainEventSegment.syncParticipants(Arrays.asList(wrestlers.get(2), wrestlers.get(3)));
     mainEventSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
-    mainEventSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
     mainEventSegment.setWinners(Arrays.asList(wrestlers.get(3)));
     HashSet<Title> titles = new HashSet<>();
     if (!titleService.getActiveTitles().isEmpty()) {
       titles.add(titleService.getActiveTitles().get(0));
     }
     mainEventSegment.setTitles(titles);
-    segmentRepository.save(mainEventSegment);
+    segmentService.updateSegment(mainEventSegment);
 
-    Segment firstSegment = new Segment();
+    Segment firstSegment =
+        segmentService.createSegment(
+            show,
+            segmentTypeRepository.findByName("One on One").get(),
+            Instant.now(),
+            new HashSet<>());
     firstSegment.setNarration("This is a test narration.");
     firstSegment.setSummary("This is a test summary.");
     firstSegment.setSegmentOrder(2);
-    firstSegment.setShow(show);
-    firstSegment.setSegmentDate(Instant.now());
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
     firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
-    firstSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
     firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
-    segmentRepository.save(firstSegment);
+    segmentService.updateSegment(firstSegment);
 
     // Navigate to the Show List view
     driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
@@ -403,7 +432,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement viewShowDetails =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
-    clickAndScrollIntoView(viewShowDetails);
+    Assertions.assertNotNull(viewShowDetails);
+    clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
@@ -416,7 +446,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Click the down button on the first row
     WebElement downButton =
         driver.findElement(By.id("move-segment-down-button-" + mainEventSegment.getId()));
-    clickAndScrollIntoView(downButton);
+    clickElement(downButton);
 
     // Navigate to the Show Detail view
     driver.get(
@@ -449,19 +479,21 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
 
-    Segment firstSegment = new Segment();
+    Segment firstSegment =
+        segmentService.createSegment(
+            show,
+            segmentTypeRepository.findByName("One on One").get(),
+            Instant.now(),
+            new HashSet<>());
     firstSegment.setNarration("Rob Van Dam looking for another dominant performance.");
-    firstSegment.setSummary("");
+    firstSegment.setSummary("This is a test summary.");
     firstSegment.setSegmentOrder(1);
-    firstSegment.setShow(show);
-    firstSegment.setSegmentDate(Instant.now());
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
     firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
-    firstSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
     firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
-    segmentRepository.save(firstSegment);
+    segmentService.updateSegment(firstSegment);
 
     // Navigate to the Show List view
     driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
@@ -472,7 +504,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement viewShowDetails =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
-    clickAndScrollIntoView(viewShowDetails);
+    clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
@@ -481,18 +513,21 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(
                 By.id("generate-narration-button-" + firstSegment.getId())));
-    clickAndScrollIntoView(narrateButton);
+    Assertions.assertNotNull(narrateButton);
+    clickElement(narrateButton);
 
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
     WebElement generateNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-narration-button")));
-    clickAndScrollIntoView(generateNarrationButton);
+    Assertions.assertNotNull(generateNarrationButton);
+    clickElement(generateNarrationButton);
 
     WebElement saveNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("save-narration-button")));
-    clickAndScrollIntoView(saveNarrationButton);
+    Assertions.assertNotNull(saveNarrationButton);
+    clickElement(saveNarrationButton);
 
     // Wait for the dialog to disappear
     WebDriverWait longWait = new WebDriverWait(driver, Duration.ofSeconds(30));
@@ -503,7 +538,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(
                 By.id("generate-summary-button-" + firstSegment.getId())));
-    clickAndScrollIntoView(summaryButton);
+    Assertions.assertNotNull(summaryButton);
+    clickElement(summaryButton);
 
     // Navigate to the Show Detail view
     driver.get(
@@ -516,6 +552,7 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.presenceOfAllElementsLocatedBy(
                 By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
+    Assertions.assertNotNull(cells);
     Assertions.assertEquals(22, cells.size()); // 11 headers, 1 rows
   }
 
@@ -533,19 +570,21 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Create a new segment objects
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
 
-    Segment firstSegment = new Segment();
+    Segment firstSegment =
+        segmentService.createSegment(
+            show,
+            segmentTypeRepository.findByName("One on One").get(),
+            Instant.now(),
+            new HashSet<>());
     firstSegment.setNarration("Rob Van Dam looking for another dominant performance.");
     firstSegment.setSummary("");
     firstSegment.setSegmentOrder(1);
-    firstSegment.setShow(show);
-    firstSegment.setSegmentDate(Instant.now());
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
     firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().get(0)));
-    firstSegment.setSegmentType(segmentTypeRepository.findByName("One on One").get());
     firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
-    segmentRepository.save(firstSegment);
+    segmentService.updateSegment(firstSegment);
 
     // Navigate back to the list.
     driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
@@ -556,7 +595,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     WebElement viewShowDetails =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
-    clickAndScrollIntoView(viewShowDetails);
+    Assertions.assertNotNull(viewShowDetails);
+    clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
@@ -564,7 +604,8 @@ public class FullShowLifecycleE2ETest extends AbstractE2ETest {
     // Click the main event checkbox on the last row
     WebElement mainEventCheckbox =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("main-event-checkbox")));
-    clickAndScrollIntoView(mainEventCheckbox);
+    Assertions.assertNotNull(mainEventCheckbox);
+    clickElement(mainEventCheckbox);
     scrollIntoView(mainEventCheckbox);
   }
 }

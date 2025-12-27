@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,29 +49,34 @@ public class TeamService {
 
   /** Get all teams with pagination. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<Team> getAllTeams(Pageable pageable) {
     return teamRepository.findAll(pageable);
   }
 
   /** Get team by ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Team> getTeamById(Long id) {
     return teamRepository.findById(id);
   }
 
   /** Get team by name. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Team> getTeamByName(String name) {
     return teamRepository.findByName(name);
   }
 
   /** Get team by external ID (for Notion sync). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Team> getTeamByExternalId(String externalId) {
     return teamRepository.findByExternalId(externalId);
   }
 
   /** Create a new team. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> createTeam(
       String name, String description, Long wrestler1Id, Long wrestler2Id, Long factionId) {
     if (wrestler1Id == null || wrestler2Id == null) {
@@ -140,6 +146,7 @@ public class TeamService {
   }
 
   /** Update an existing team. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> updateTeam(
       Long teamId, String name, String description, TeamStatus status, Long factionId) {
     Optional<Team> teamOpt = teamRepository.findById(teamId);
@@ -173,6 +180,7 @@ public class TeamService {
   }
 
   /** Delete a team. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public boolean deleteTeam(Long teamId) {
     if (!teamRepository.existsById(teamId)) {
       return false;
@@ -187,42 +195,49 @@ public class TeamService {
 
   /** Get all active teams. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Team> getActiveTeams() {
     return teamRepository.findByStatus(TeamStatus.ACTIVE);
   }
 
   /** Get teams by faction. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Team> getTeamsByFaction(Faction faction) {
     return teamRepository.findByFaction(faction);
   }
 
   /** Get teams where a wrestler is a member. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Team> getTeamsByWrestler(Wrestler wrestler) {
     return teamRepository.findByWrestler(wrestler);
   }
 
   /** Get active teams where a wrestler is a member. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Team> getActiveTeamsByWrestler(Wrestler wrestler) {
     return teamRepository.findByWrestlerAndStatus(wrestler, TeamStatus.ACTIVE);
   }
 
   /** Find team by both wrestlers. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Team> findTeamByWrestlers(Wrestler wrestler1, Wrestler wrestler2) {
     return teamRepository.findByBothWrestlers(wrestler1, wrestler2);
   }
 
   /** Find active team by both wrestlers. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Team> findActiveTeamByWrestlers(Wrestler wrestler1, Wrestler wrestler2) {
     return teamRepository.findActiveTeamByBothWrestlers(wrestler1, wrestler2);
   }
 
   /** Count active teams. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public long countActiveTeams() {
     return teamRepository.countByStatus(TeamStatus.ACTIVE);
   }
@@ -230,11 +245,13 @@ public class TeamService {
   // ==================== BUSINESS OPERATIONS ====================
 
   /** Disband a team. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> disbandTeam(Long teamId) {
     return updateTeam(teamId, null, null, TeamStatus.DISBANDED, null);
   }
 
   /** Reactivate a disbanded team. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> reactivateTeam(Long teamId) {
     return updateTeam(teamId, null, null, TeamStatus.ACTIVE, null);
   }

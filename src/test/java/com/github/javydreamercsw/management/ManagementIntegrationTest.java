@@ -50,7 +50,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
 import org.junit.jupiter.api.AfterEach;
@@ -59,7 +59,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public abstract class ManagementIntegrationTest extends AbstractIntegrationTest {
+public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrationTest {
   @Autowired protected DeckCardRepository deckCardRepository;
   @Autowired protected DramaEventRepository dramaEventRepository;
   @Autowired protected FactionRivalryRepository factionRivalryRepository;

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,21 +36,25 @@ public class SegmentTypeService {
     this.segmentTypeRepository = segmentTypeRepository;
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<SegmentType> findByName(@NonNull String name) {
     return segmentTypeRepository.findByName(name);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<SegmentType> findAll() {
     return segmentTypeRepository.findAll();
   }
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public SegmentType createSegmentType(@NonNull SegmentType segmentType) {
     log.info("Creating new segment type: {}", segmentType.getName());
     return segmentTypeRepository.save(segmentType);
   }
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public SegmentType createOrUpdateSegmentType(@NonNull String name, @NonNull String description) {
     Optional<SegmentType> existingOpt = segmentTypeRepository.findByName(name);
     SegmentType segmentType;
@@ -66,6 +71,7 @@ public class SegmentTypeService {
   }
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void deleteSegmentType(@NonNull Long id) {
     if (segmentTypeRepository.existsById(id)) {
       segmentTypeRepository.deleteById(id);

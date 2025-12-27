@@ -32,7 +32,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.dto.ShowDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,7 +54,7 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-class DataExportControllerIntegrationTest extends AbstractIntegrationTest {
+class DataExportControllerIntegrationTest extends AbstractMockUserIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private ShowRepository showRepository;

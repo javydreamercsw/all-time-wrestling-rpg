@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.ui.view.faction;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 
 /**
@@ -26,4 +26,4 @@ import org.junit.jupiter.api.DisplayName;
  * LazyInitializationException that unit tests with mocks cannot detect.
  */
 @DisplayName("Faction ListView Integration Tests")
-class FactionListViewIntegrationTest extends AbstractIntegrationTest {}
+class FactionListViewIntegrationTest extends AbstractMockUserIntegrationTest {}

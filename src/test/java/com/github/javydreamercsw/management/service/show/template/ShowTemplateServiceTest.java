@@ -20,25 +20,42 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.test.context.support.WithMockUser;
 
 @SpringBootTest
-class ShowTemplateServiceTest {
+class ShowTemplateServiceTest extends ManagementIntegrationTest {
   @Autowired private ShowTemplateRepository repository;
   @Autowired private ShowTemplateService service;
   @Autowired private ShowTypeService showTypeService;
 
+  @BeforeEach
+  @WithMockUser(roles = "ADMIN")
+  void setUp() {
+    // Manually create the "Weekly" ShowType for tests, but only if it doesn't already exist
+    Optional<ShowType> existingType = showTypeService.findByName("Weekly");
+    if (existingType.isEmpty()) {
+      ShowType weeklyShowType = new ShowType();
+      weeklyShowType.setName("Weekly");
+      weeklyShowType.setDescription("Weekly Show Type");
+      showTypeService.save(weeklyShowType); // Save it using the service
+    }
+  }
+
   /** Test of list method, of class ShowTemplateService. */
   @Test
+  @WithMockUser(roles = "ADMIN")
   void testList() {
     Pageable pageable = Pageable.ofSize(10);
     List<ShowTemplate> result = service.list(pageable);
@@ -47,6 +64,7 @@ class ShowTemplateServiceTest {
 
   /** Test of save method, of class ShowTemplateService. */
   @Test
+  @WithMockUser(roles = "ADMIN")
   void testSave() {
     ShowTemplate st = new ShowTemplate();
     Optional<ShowType> type = showTypeService.findByName("Weekly");

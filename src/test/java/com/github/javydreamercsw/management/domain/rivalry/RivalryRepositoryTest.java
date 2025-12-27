@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.rivalry;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.TestUtils;
+import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Instant;
@@ -31,7 +32,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 @DataJpaTest
-class RivalryRepositoryTest {
+class RivalryRepositoryTest extends AbstractJpaTest {
 
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private WrestlerRepository wrestlerRepository;

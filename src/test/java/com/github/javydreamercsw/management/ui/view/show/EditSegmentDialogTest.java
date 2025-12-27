@@ -23,6 +23,7 @@ import static org.mockito.Mockito.*;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -35,19 +36,20 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@WithMockUser(roles = "BOOKER")
 class EditSegmentDialogTest extends ManagementIntegrationTest {
 
-  @Mock private WrestlerService wrestlerService;
-  @Mock private TitleService titleService;
+  @MockitoBean private WrestlerService wrestlerService;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @MockitoBean private TitleService titleService;
   private ProposedSegment segment;
   private Runnable onSave;
 
   @BeforeEach
   void setUp() {
-    MockitoAnnotations.openMocks(this);
-
     segment = new ProposedSegment();
     segment.setDescription("Old Description");
     segment.setParticipants(new ArrayList<>(List.of("Wrestler 1")));
@@ -63,6 +65,9 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
     when(wrestlerService.findAll()).thenReturn(allWrestlers);
     when(wrestlerService.findByName("Wrestler 1")).thenReturn(Optional.of(wrestler1));
     when(wrestlerService.findByName("Wrestler 2")).thenReturn(Optional.of(wrestler2));
+    when(wrestlerRepository.findAll()).thenReturn(allWrestlers);
+    when(wrestlerRepository.findByName("Wrestler 1")).thenReturn(Optional.of(wrestler1));
+    when(wrestlerRepository.findByName("Wrestler 2")).thenReturn(Optional.of(wrestler2));
 
     // Mock TitleService and available titles
     Title title1 = new Title(); // Use no-arg constructor
@@ -79,7 +84,8 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
   @Test
   void testSave() {
     EditSegmentDialog dialog =
-        new EditSegmentDialog(segment, wrestlerService, titleService, onSave); // Pass titleService
+        new EditSegmentDialog(
+            segment, wrestlerService, mock(WrestlerRepository.class), titleService, onSave);
     dialog.open();
 
     // Simulate user input
@@ -101,8 +107,6 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
 
     // Verify onSave is called and dialog is closed
     verify(onSave).run();
-    // Note: Directly checking dialog.isOpened() might not work as expected in a unit test
-    // without a full Vaadin UI environment. We rely on the onSave callback being triggered.
   }
 
   @Test
@@ -117,7 +121,8 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
     segment.setTitles(Set.of(title1, title2)); // Set initial titles
 
     EditSegmentDialog dialog =
-        new EditSegmentDialog(segment, wrestlerService, titleService, onSave);
+        new EditSegmentDialog(
+            segment, wrestlerService, mock(WrestlerRepository.class), titleService, onSave);
     dialog.open();
 
     // Verify title MultiSelectComboBox is visible and populated

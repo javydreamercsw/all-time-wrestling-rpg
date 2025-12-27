@@ -14,9 +14,12 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.test;
+package com.github.javydreamercsw.management.test;
 
-import org.springframework.test.context.TestPropertySource;
+import com.github.javydreamercsw.base.config.TestSecurityConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 
-@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
-public abstract class BaseControllerTest {}
+@WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN"})
+@Import(TestSecurityConfig.class)
+public abstract class AbstractMockUserIntegrationTest extends AbstractIntegrationTest {}

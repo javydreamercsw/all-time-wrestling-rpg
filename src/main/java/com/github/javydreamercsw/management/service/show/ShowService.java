@@ -29,7 +29,9 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRep
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -38,6 +40,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -63,6 +66,8 @@ public class ShowService {
   private final ApplicationEventPublisher eventPublisher;
   private final RivalryService rivalryService;
   private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
+  private final GameSettingService gameSettingService;
 
   ShowService(
       ShowRepository showRepository,
@@ -74,7 +79,9 @@ public class ShowService {
       SegmentRepository segmentRepository,
       ApplicationEventPublisher eventPublisher,
       RivalryService rivalryService,
-      WrestlerService wrestlerService) {
+      WrestlerService wrestlerService,
+      WrestlerRepository wrestlerRepository,
+      GameSettingService gameSettingService) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -85,17 +92,21 @@ public class ShowService {
     this.eventPublisher = eventPublisher;
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
+    this.wrestlerRepository = wrestlerRepository;
+    this.gameSettingService = gameSettingService;
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Show> list(Pageable pageable) {
     return showRepository.findAllBy(pageable).toList();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public long count() {
     return showRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Show save(@NonNull Show show) {
     show.setCreationDate(clock.instant());
     return showRepository.saveAndFlush(show);
@@ -112,18 +123,22 @@ public class ShowService {
    *
    * @return List of all shows with eagerly loaded relationships
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Show> findAllWithRelationships() {
     return showRepository.findAllWithRelationships();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Show> findByName(String showName) {
     return showRepository.findByName(showName);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public boolean existsByNameAndShowDate(String name, LocalDate showDate) {
     return showRepository.findByNameAndShowDate(name, showDate).isPresent();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<Show> findByExternalId(String externalId) {
     return showRepository.findByExternalId(externalId);
   }
@@ -133,6 +148,7 @@ public class ShowService {
    *
    * @return List of all external IDs.
    */
+  @PreAuthorize("isAuthenticated()")
   public List<String> getAllExternalIds() {
     return showRepository.findAllExternalIds();
   }
@@ -145,6 +161,7 @@ public class ShowService {
    * @param pageable Pagination information
    * @return Page of shows
    */
+  @PreAuthorize("isAuthenticated()")
   public Page<Show> getAllShows(Pageable pageable) {
     return showRepository.findAllBy(pageable);
   }
@@ -155,6 +172,7 @@ public class ShowService {
    * @param id Show ID
    * @return Optional containing the show if found
    */
+  @PreAuthorize("isAuthenticated()")
   public Optional<Show> getShowById(Long id) {
     return showRepository.findById(id);
   }
@@ -166,6 +184,7 @@ public class ShowService {
    * @param endDate End date (inclusive)
    * @return List of shows in the date range
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Show> getShowsByDateRange(LocalDate startDate, LocalDate endDate) {
     return showRepository.findByShowDateBetweenOrderByShowDate(startDate, endDate);
   }
@@ -177,6 +196,7 @@ public class ShowService {
    * @param month Month (1-12)
    * @return List of shows in the specified month
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Show> getShowsForMonth(int year, int month) {
     YearMonth yearMonth = YearMonth.of(year, month);
     LocalDate startDate = yearMonth.atDay(1);
@@ -190,22 +210,36 @@ public class ShowService {
    * @param limit Maximum number of shows to return
    * @return List of upcoming shows
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Show> getUpcomingShows(int limit) {
-    return getUpcomingShows(LocalDate.now(clock), limit);
-  }
-
-  public List<Show> getUpcomingShows(LocalDate referenceDate, int limit) {
+    LocalDate referenceDate = gameSettingService.getCurrentGameDate();
     Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
     return showRepository.findByShowDateGreaterThanEqualOrderByShowDate(referenceDate, pageable);
-  }
-
-  public List<Show> getUpcomingShowsWithRelationships(int limit) {
-    return getUpcomingShowsWithRelationships(LocalDate.now(clock), limit);
   }
 
   public List<Show> getUpcomingShowsWithRelationships(LocalDate referenceDate, int limit) {
     Pageable pageable = PageRequest.of(0, limit, Sort.by("showDate").ascending());
     return showRepository.findUpcomingWithRelationships(referenceDate, pageable);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Show> getUpcomingShowsForWrestler(@NonNull Wrestler wrestler, int limit) {
+    LocalDate referenceDate = gameSettingService.getCurrentGameDate();
+    Sort sort = Sort.by("showDate").ascending();
+
+    // Step 1: Get show IDs using the native query with limit and offset
+    // For offset, we can assume 0 for the first page for now.
+    List<Object[]> results =
+        showRepository.findUpcomingShowIdsAndDatesForWrestler(
+            referenceDate, wrestler.getId(), limit, 0);
+    List<Long> showIds = results.stream().map(result -> ((Number) result[0]).longValue()).toList();
+
+    if (showIds.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    // Step 2: Fetch shows by IDs with relationships and apply sorting
+    return showRepository.findByIdsWithRelationships(showIds, sort);
   }
 
   /**
@@ -219,6 +253,7 @@ public class ShowService {
    * @param templateId Template ID (optional)
    * @return Created show
    */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Show createShow(
       String name,
       String description,
@@ -273,6 +308,7 @@ public class ShowService {
    * @param templateId Template ID (optional)
    * @return Updated show if found
    */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Show> updateShow(
       Long id,
       String name,
@@ -333,7 +369,7 @@ public class ShowService {
    * @param id Show ID
    * @return true if deleted, false if not found
    */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public boolean deleteShow(Long id) {
     if (showRepository.existsById(id)) {
       showRepository.deleteById(id);
@@ -342,6 +378,7 @@ public class ShowService {
     return false;
   }
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void adjudicateShow(Long showId) {
     Show show =
         showRepository
@@ -368,6 +405,7 @@ public class ShowService {
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegments(@NonNull Show show) {
     return segmentRepository.findByShow(show);
   }
@@ -387,9 +425,10 @@ public class ShowService {
    * @param participatingWrestlers List of currently participating wrestlers
    * @return List of Wrestlers not participating
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getNonParticipatingWrestlers(
       @NonNull List<Wrestler> participatingWrestlers) {
-    List<Wrestler> allWrestlers = new ArrayList<>(wrestlerService.findAll());
+    List<Wrestler> allWrestlers = new ArrayList<>(wrestlerRepository.findAll());
     allWrestlers.removeAll(participatingWrestlers);
     return allWrestlers;
   }

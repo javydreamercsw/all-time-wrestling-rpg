@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.wrestler;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.WrestlerData;
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.card.Card;
@@ -38,6 +39,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 @Entity
@@ -57,28 +59,27 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Size(max = Card.DESCRIPTION_MAX_LENGTH) private String name;
 
   @Column(name = "starting_stamina", nullable = false)
-  private Integer startingStamina;
+  @Builder.Default
+  private Integer startingStamina = 0;
 
   @Column(name = "low_stamina", nullable = false)
-  private Integer lowStamina;
+  @Builder.Default
+  private Integer lowStamina = 0;
 
   @Column(name = "starting_health", nullable = false)
-  private Integer startingHealth;
+  @Builder.Default
+  private Integer startingHealth = 0;
 
   @Column(name = "low_health", nullable = false)
-  private Integer lowHealth;
+  @Builder.Default
+  private Integer lowHealth = 0;
 
   @Column(name = "deck_size", nullable = false)
-  private Integer deckSize;
+  @Builder.Default
+  private Integer deckSize = 0;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
-
-  @Column(name = "external_id", unique = true)
-  @Size(max = 255) private String externalId;
-
-  @Column(name = "last_sync")
-  private Instant lastSync;
 
   // ==================== ATW RPG FIELDS ====================
 
@@ -88,11 +89,13 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
 
   @Column(name = "tier", nullable = false)
   @Enumerated(EnumType.STRING)
-  private WrestlerTier tier;
+  @Builder.Default
+  private WrestlerTier tier = WrestlerTier.MIDCARDER;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private Gender gender;
+  @Builder.Default
+  private Gender gender = Gender.MALE;
 
   @Column(name = "bumps")
   @Min(0) @Builder.Default
@@ -112,6 +115,9 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Size(max = 255) private String imageUrl;
 
   // ==================== ATW RPG RELATIONSHIPS ====================
+  @OneToOne
+  @JoinColumn(name = "account_id")
+  private Account account;
 
   @ManyToMany(mappedBy = "champions", fetch = FetchType.LAZY)
   @JsonIgnore
@@ -148,7 +154,7 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   private Faction faction;
 
   @Override
-  public Gender getGender() {
+  public @NonNull Gender getGender() {
     return this.gender;
   }
 

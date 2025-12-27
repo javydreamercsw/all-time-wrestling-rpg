@@ -355,26 +355,27 @@ class TitleServiceTest {
   void shouldGetEligibleChallengers() {
     // Given
     Title title = createTitle(1L, "World Championship", WrestlerTier.MAIN_EVENTER);
-    Wrestler eligible1 = createWrestler("Eligible 1", 120000L);
-    Wrestler eligible2 =
-        createWrestler(
-            "Eligible 2", 140000L); // Changed from 150000L (ICON) to 140000L (MAIN_EVENTER)
-    Wrestler ineligible = createWrestler("Ineligible", 50000L);
+    Wrestler eligible1 = createWrestler("Eligible 1", 120000L); // MAIN_EVENTER
+    Wrestler eligible2 = createWrestler("Eligible 2", 140000L); // MAIN_EVENTER
+    Wrestler eligible3 = createWrestler("Eligible 3", 150000L); // ICON
+    Wrestler ineligible = createWrestler("Ineligible", 50000L); // CONTENDER
     eligible1.setId(2L);
     eligible2.setId(3L);
+    eligible3.setId(5L);
     ineligible.setId(4L);
 
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    when(wrestlerRepository.findAll()).thenReturn(Arrays.asList(eligible1, eligible2, ineligible));
+    when(wrestlerRepository.findAll())
+        .thenReturn(Arrays.asList(eligible1, eligible2, eligible3, ineligible));
 
     // When
     List<Wrestler> result = titleService.getEligibleChallengers(1L);
 
     // Then
-    assertThat(result).hasSize(2);
+    assertThat(result).hasSize(3);
     assertThat(result)
         .extracting(Wrestler::getName)
-        .containsExactlyInAnyOrder("Eligible 1", "Eligible 2");
+        .containsExactlyInAnyOrder("Eligible 1", "Eligible 2", "Eligible 3");
   }
 
   @Test

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.faction;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.management.AbstractJpaTest;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -33,10 +34,9 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
  * functionality.
  */
 @DataJpaTest
-class FactionRepositoryTest {
+class FactionRepositoryTest extends AbstractJpaTest {
 
   @Autowired private TestEntityManager entityManager;
-
   @Autowired private FactionRepository factionRepository;
 
   private Faction testFaction;

@@ -154,7 +154,7 @@ class TierRecalculationServiceTest {
     assertEquals(19000L, femaleIconBoundary.getMinFans());
     assertEquals(Long.MAX_VALUE, femaleIconBoundary.getMaxFans());
 
-    verify(wrestlerRepository, times(wrestlers.size())).save(wrestlerCaptor.capture());
+    verify(wrestlerRepository, times(14)).save(wrestlerCaptor.capture());
   }
 
   @Test

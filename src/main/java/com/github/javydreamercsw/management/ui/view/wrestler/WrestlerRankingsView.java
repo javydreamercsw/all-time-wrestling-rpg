@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -56,6 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 public class WrestlerRankingsView extends Main {
 
   private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
   private final TitleService titleService;
   private final TierBoundaryService tierBoundaryService;
   private final Grid<Wrestler> grid = new Grid<>(Wrestler.class, false);
@@ -64,9 +66,11 @@ public class WrestlerRankingsView extends Main {
 
   public WrestlerRankingsView(
       WrestlerService wrestlerService,
+      WrestlerRepository wrestlerRepository,
       TitleService titleService,
       TierBoundaryService tierBoundaryService) {
     this.wrestlerService = wrestlerService;
+    this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
     this.tierBoundaryService = tierBoundaryService;
     addClassNames(
@@ -198,7 +202,7 @@ public class WrestlerRankingsView extends Main {
             .collect(Collectors.toSet());
 
     Gender selectedGender = genderComboBox.getValue();
-    List<Wrestler> wrestlers = wrestlerService.findAll();
+    List<Wrestler> wrestlers = wrestlerRepository.findAll();
     if (selectedGender != null) {
       wrestlers =
           wrestlers.stream()

@@ -16,10 +16,20 @@
 */
 package com.github.javydreamercsw.management.domain.inbox;
 
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface InboxRepository
-    extends JpaRepository<InboxItem, Long>, JpaSpecificationExecutor<InboxItem> {}
+    extends JpaRepository<InboxItem, Long>, JpaSpecificationExecutor<InboxItem> {
+
+  @Query(
+      "SELECT i FROM InboxItem i JOIN i.targets t WHERE t.targetId = :wrestlerId AND i.description"
+          + " = :description")
+  List<InboxItem> findByWrestlerIdAndDescription(
+      @Param("wrestlerId") String wrestlerId, @Param("description") String description);
+}

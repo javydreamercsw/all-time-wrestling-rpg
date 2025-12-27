@@ -30,6 +30,7 @@ import java.util.Map;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +39,7 @@ import org.springframework.stereotype.Service;
  * API for wrestling segment narration with rich context.
  */
 @Service
+@Profile("!test & !e2e")
 @Slf4j
 public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationService {
 

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.segment.type;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -40,6 +41,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import lombok.NonNull;
 
 @Route("segment-type-list")
 @PageTitle("Segment Types")
@@ -48,6 +50,7 @@ import jakarta.annotation.security.PermitAll;
 public class SegmentTypeListView extends Main {
 
   private final SegmentTypeService segmentTypeService;
+  private final SecurityUtils securityUtils;
 
   private Grid<SegmentType> segmentTypeGrid;
   private Dialog editDialog;
@@ -56,8 +59,10 @@ public class SegmentTypeListView extends Main {
   private SegmentType editingSegmentType;
   private Binder<SegmentType> binder;
 
-  public SegmentTypeListView(SegmentTypeService segmentTypeService) {
+  public SegmentTypeListView(
+      @NonNull SegmentTypeService segmentTypeService, @NonNull SecurityUtils securityUtils) {
     this.segmentTypeService = segmentTypeService;
+    this.securityUtils = securityUtils;
     initializeUI();
   }
 
@@ -74,6 +79,7 @@ public class SegmentTypeListView extends Main {
     Button createButton = new Button("Create Segment Type", new Icon(VaadinIcon.PLUS));
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     createButton.addClickListener(e -> openCreateDialog());
+    createButton.setVisible(securityUtils.canCreate());
 
     HorizontalLayout toolbar = new HorizontalLayout(createButton);
     toolbar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
@@ -105,11 +111,13 @@ public class SegmentTypeListView extends Main {
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editButton.setTooltipText("Edit Segment Type");
     editButton.addClickListener(e -> openEditDialog(segmentType));
+    editButton.setVisible(securityUtils.canEdit());
 
     Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
     deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
     deleteButton.setTooltipText("Delete Segment Type");
     deleteButton.addClickListener(e -> confirmDelete(segmentType));
+    deleteButton.setVisible(securityUtils.canDelete());
 
     HorizontalLayout actions = new HorizontalLayout(editButton, deleteButton);
     actions.setSpacing(true);
@@ -153,6 +161,8 @@ public class SegmentTypeListView extends Main {
 
     Button saveButton = new Button("Save", e -> saveSegmentType());
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveButton.setVisible(securityUtils.canEdit());
+
     Button cancelButton = new Button("Cancel", e -> editDialog.close());
 
     HorizontalLayout buttons = new HorizontalLayout(saveButton, cancelButton);

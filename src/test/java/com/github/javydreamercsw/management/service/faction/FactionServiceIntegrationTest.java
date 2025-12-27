@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @DisplayName("Faction Service Integration Tests")
 @Transactional
-class FactionServiceIntegrationTest extends AbstractIntegrationTest {
+class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
 
   @Autowired private FactionService factionService;
 

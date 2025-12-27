@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -58,6 +59,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -71,6 +73,7 @@ public class ShowListView extends Main {
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
+  private final SecurityUtils securityUtils;
   private final Clock clock; // Add this field
 
   private final ComboBox<Season> newSeason; // New field
@@ -92,15 +95,17 @@ public class ShowListView extends Main {
   final Grid<Show> showGrid;
 
   public ShowListView(
-      ShowService showService,
-      ShowTypeService showTypeService,
-      SeasonService seasonService,
-      ShowTemplateService showTemplateService,
+      @NonNull ShowService showService,
+      @NonNull ShowTypeService showTypeService,
+      @NonNull SeasonService seasonService,
+      @NonNull ShowTemplateService showTemplateService,
+      @NonNull SecurityUtils securityUtils,
       Clock clock) {
     this.showService = showService;
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
+    this.securityUtils = securityUtils;
     this.clock =
         (clock != null) ? clock : Clock.systemDefaultZone(); // Assign clock here, with fallback
 
@@ -164,6 +169,7 @@ public class ShowListView extends Main {
     createBtn = new Button("Create", event -> createShow());
     createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     createBtn.setId("create-show-button");
+    createBtn.setVisible(securityUtils.canCreate());
 
     HorizontalLayout formLayout =
         new HorizontalLayout(name, newShowType, newSeason, newTemplate, newShowDate, createBtn);
@@ -287,6 +293,7 @@ public class ShowListView extends Main {
               editBtn.setTooltipText("Edit Show");
               editBtn.setId("edit-show-button-" + show.getId());
               editBtn.addClickListener(e -> openEditDialog(show));
+              editBtn.setVisible(securityUtils.canEdit());
 
               // Delete button
               Button deleteBtn = new Button(new Icon(VaadinIcon.TRASH));
@@ -295,6 +302,7 @@ public class ShowListView extends Main {
               deleteBtn.setTooltipText("Delete Show");
               deleteBtn.setId("delete-show-button-" + show.getId());
               deleteBtn.addClickListener(e -> openDeleteDialog(show));
+              deleteBtn.setVisible(securityUtils.canDelete());
 
               // Calendar button (if show has date)
               if (show.getShowDate() != null) {
@@ -326,7 +334,9 @@ public class ShowListView extends Main {
     // Editor setup (optional, as in your previous code)
     Editor<Show> editor = showGrid.getEditor();
     Binder<Show> binder = new Binder<>(Show.class);
-    editor.setBinder(binder);
+    if (securityUtils.canEdit()) {
+      editor.setBinder(binder);
+    }
 
     setSizeFull();
     addClassNames(
@@ -337,7 +347,11 @@ public class ShowListView extends Main {
         LumoUtility.Gap.SMALL);
 
     // Toolbar and form in a header row
-    add(new ViewToolbar("Show List", ViewToolbar.group(formLayout)));
+    if (securityUtils.canCreate()) {
+      add(new ViewToolbar("Show List", ViewToolbar.group(formLayout)));
+    } else {
+      add(new ViewToolbar("Show List"));
+    }
     // Grid fills the rest
     add(showGrid);
 
@@ -456,6 +470,7 @@ public class ShowListView extends Main {
     Button saveBtn = new Button("Save", e -> saveEdit());
     saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveBtn.setId("save-changes-button");
+    saveBtn.setVisible(securityUtils.canEdit());
     Button cancelBtn = new Button("Cancel", e -> editDialog.close());
     cancelBtn.setId("cancel-button");
 

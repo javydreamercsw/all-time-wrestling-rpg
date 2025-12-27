@@ -36,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 class CardServiceTest extends ManagementIntegrationTest {
   @Autowired CardRepository cardRepository;
   @Autowired CardSetRepository cardSetRepository;
+  @Autowired CardService cardService; // Autowire CardService
 
   @BeforeEach
   public void setUp() {

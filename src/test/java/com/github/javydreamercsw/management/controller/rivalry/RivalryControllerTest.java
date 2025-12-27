@@ -18,15 +18,14 @@ package com.github.javydreamercsw.management.controller.rivalry;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.dto.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.mapper.RivalryMapper;
@@ -34,26 +33,19 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(RivalryController.class)
-class RivalryControllerTest {
-
-  @Autowired private MockMvc mockMvc;
+class RivalryControllerTest extends AbstractControllerTest {
 
   @MockitoBean private RivalryService rivalryService;
-
   @MockitoBean private RivalryMapper rivalryMapper;
-  @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
-
-  @Autowired private ObjectMapper objectMapper;
 
   @Test
+  @WithMockUser(roles = "BOOKER")
   void createRivalry() throws Exception {
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
@@ -94,6 +86,7 @@ class RivalryControllerTest {
     mockMvc
         .perform(
             post("/api/rivalries")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())

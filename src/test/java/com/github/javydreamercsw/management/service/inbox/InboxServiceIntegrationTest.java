@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.inbox;
 
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
@@ -35,10 +36,12 @@ class InboxServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private InboxRepository inboxRepository;
   @Autowired private InboxEventTypeRegistry eventTypeRegistry;
   @Autowired private WrestlerService wrestlerService;
+  @Autowired private DataInitializer dataInitializer;
 
   @BeforeEach
   public void setUp() {
     inboxRepository.deleteAll();
+    dataInitializer.init();
   }
 
   @Test

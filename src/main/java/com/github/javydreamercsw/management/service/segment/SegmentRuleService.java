@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +46,7 @@ public class SegmentRuleService {
    *
    * @return List of active segment rules
    */
+  @PreAuthorize("isAuthenticated()")
   public List<SegmentRule> getAllActiveRules() {
     return segmentRuleRepository.findAll();
   }
@@ -55,6 +57,7 @@ public class SegmentRuleService {
    * @param name The name of the segment rule
    * @return Optional containing the segment rule if found
    */
+  @PreAuthorize("isAuthenticated()")
   public Optional<SegmentRule> findByName(String name) {
     return segmentRuleRepository.findByName(name);
   }
@@ -64,6 +67,7 @@ public class SegmentRuleService {
    *
    * @return List of segment rules appropriate for intense rivalries
    */
+  @PreAuthorize("isAuthenticated()")
   public List<SegmentRule> getHighHeatRules() {
     return segmentRuleRepository.findSuitableForHighHeat();
   }
@@ -73,6 +77,7 @@ public class SegmentRuleService {
    *
    * @return List of standard segment rules
    */
+  @PreAuthorize("isAuthenticated()")
   public List<SegmentRule> getStandardRules() {
     return segmentRuleRepository.findStandardRules();
   }
@@ -86,6 +91,7 @@ public class SegmentRuleService {
    * @return The created segment rule
    */
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public SegmentRule createRule(
       @NonNull String name, @NonNull String description, boolean requiresHighHeat) {
     if (segmentRuleRepository.existsByName(name)) {
@@ -112,6 +118,7 @@ public class SegmentRuleService {
    * @return The updated segment rule
    */
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public SegmentRule updateRule(
       @NonNull Long id,
       @NonNull String name,
@@ -145,6 +152,7 @@ public class SegmentRuleService {
    * @param name The name to check
    * @return true if a rule with this name exists
    */
+  @PreAuthorize("isAuthenticated()")
   public boolean existsByName(@NonNull String name) {
     return segmentRuleRepository.existsByName(name);
   }
@@ -155,6 +163,7 @@ public class SegmentRuleService {
    * @param id The ID of the segment rule
    * @return Optional containing the segment rule if found
    */
+  @PreAuthorize("isAuthenticated()")
   public Optional<SegmentRule> findById(@NonNull Long id) {
     return segmentRuleRepository.findById(id);
   }
@@ -164,6 +173,7 @@ public class SegmentRuleService {
    *
    * @return List of all segment rules
    */
+  @PreAuthorize("isAuthenticated()")
   public List<SegmentRule> getAllRules() {
     return segmentRuleRepository.findAll();
   }
@@ -177,6 +187,7 @@ public class SegmentRuleService {
    * @return The created or updated segment rule
    */
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public SegmentRule createOrUpdateRule(
       @NonNull String name,
       String description,
@@ -201,6 +212,7 @@ public class SegmentRuleService {
     return segmentRuleRepository.save(segmentRule);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<SegmentRule> findAll() {
     return segmentRuleRepository.findAll();
   }

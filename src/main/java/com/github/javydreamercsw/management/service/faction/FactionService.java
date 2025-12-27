@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,65 +48,76 @@ public class FactionService {
 
   /** Get all factions. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Faction> findAll() {
     return factionRepository.findAll();
   }
 
   /** Get all factions (alias for findAll for UI compatibility). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Faction> getAllFactions() {
     return findAll();
   }
 
   /** Get all factions with members eagerly loaded for UI display. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Faction> findAllWithMembers() {
     return factionRepository.findAllWithMembers();
   }
 
   /** Get all factions with both members and teams eagerly loaded for UI display. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Faction> findAllWithMembersAndTeams() {
     return factionRepository.findAllWithMembersAndTeams();
   }
 
   /** Get all factions with pagination. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<Faction> getAllFactions(Pageable pageable) {
     return factionRepository.findAllBy(pageable);
   }
 
   /** Get faction by ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Faction> getFactionById(Long id) {
     return factionRepository.findById(id);
   }
 
   /** Get faction by ID with members eagerly loaded. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Faction> getFactionByIdWithMembers(Long id) {
     return factionRepository.findByIdWithMembers(id);
   }
 
   /** Get faction by name. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Faction> getFactionByName(String name) {
     return factionRepository.findByName(name);
   }
 
   /** Get faction by external ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Faction> findByExternalId(String externalId) {
     return factionRepository.findByExternalId(externalId);
   }
 
   /** Get all active factions. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Faction> getActiveFactions() {
     return factionRepository.findByIsActiveTrue();
   }
 
   /** Create a new faction. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Faction> createFaction(@NonNull String name, String description, Long leaderId) {
     // Check if faction name already exists
     if (factionRepository.existsByName(name)) {
@@ -141,6 +153,7 @@ public class FactionService {
   }
 
   /** Add a member to a faction. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Faction> addMemberToFaction(@NonNull Long factionId, @NonNull Long wrestlerId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
@@ -180,6 +193,7 @@ public class FactionService {
   }
 
   /** Remove a member from a faction. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Faction> removeMemberFromFaction(
       @NonNull Long factionId, @NonNull Long wrestlerId, @NonNull String reason) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
@@ -217,6 +231,7 @@ public class FactionService {
   }
 
   /** Change faction leader. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Faction> changeFactionLeader(@NonNull Long factionId, @NonNull Long newLeaderId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> newLeaderOpt = wrestlerRepository.findById(newLeaderId);
@@ -251,6 +266,7 @@ public class FactionService {
   }
 
   /** Disband a faction. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Faction> disbandFaction(@NonNull Long factionId, @NonNull String reason) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
 
@@ -275,6 +291,7 @@ public class FactionService {
 
   /** Get faction for a wrestler. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<Faction> getFactionForWrestler(@NonNull Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -287,12 +304,14 @@ public class FactionService {
 
   /** Get factions with active rivalries. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Faction> getFactionsWithActiveRivalries() {
     return factionRepository.findFactionsWithActiveRivalries();
   }
 
   /** Get factions by type (singles, tag team, stable). */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Faction> getFactionsByType(@NonNull String type) {
     return switch (type.toLowerCase()) {
       case "singles" -> factionRepository.findSinglesFactions();
@@ -304,12 +323,14 @@ public class FactionService {
 
   /** Get largest active factions. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<Faction> getLargestFactions(int limit) {
     return factionRepository.findLargestFactions(Pageable.ofSize(limit));
   }
 
   /** Check if two factions can have a rivalry. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public boolean canHaveRivalry(@NonNull Long faction1Id, @NonNull Long faction2Id) {
     Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
     Optional<Faction> faction2Opt = factionRepository.findById(faction2Id);
@@ -336,6 +357,7 @@ public class FactionService {
   }
 
   /** Save a faction. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Faction save(@NonNull Faction faction) {
     if (faction.getId() == null) {
       // New faction
@@ -348,12 +370,14 @@ public class FactionService {
   }
 
   /** Delete a faction. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void delete(@NonNull Faction faction) {
     log.info("Deleting faction: {}", faction.getName());
     factionRepository.delete(faction);
   }
 
   /** Delete a faction by ID. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void deleteById(@NonNull Long id) {
     log.info("Deleting faction with ID: {}", id);
     factionRepository.deleteById(id);
@@ -361,12 +385,14 @@ public class FactionService {
 
   /** Check if a faction exists by ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public boolean existsById(@NonNull Long id) {
     return factionRepository.existsById(id);
   }
 
   /** Count all factions. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public long count() {
     return factionRepository.count();
   }

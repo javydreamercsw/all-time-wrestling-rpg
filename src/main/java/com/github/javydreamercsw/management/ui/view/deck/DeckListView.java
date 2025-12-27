@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.deck;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
@@ -48,12 +49,17 @@ public class DeckListView extends VerticalLayout {
   private final DeckService deckService;
   private final DeckCardService deckCardService;
   private final CardService cardService;
+  private final SecurityUtils securityUtils;
 
   public DeckListView(
-      DeckService deckService, DeckCardService deckCardService, CardService cardService) {
+      @NonNull DeckService deckService,
+      @NonNull DeckCardService deckCardService,
+      @NonNull CardService cardService,
+      @NonNull SecurityUtils securityUtils) {
     this.deckService = deckService;
     this.deckCardService = deckCardService;
     this.cardService = cardService;
+    this.securityUtils = securityUtils;
 
     Grid<Deck> deckGrid = new Grid<>(Deck.class, false);
     deckGrid.addColumn(Deck::getId).setHeader("Deck ID");
@@ -74,11 +80,21 @@ public class DeckListView extends VerticalLayout {
             deck -> {
               Button edit = new Button("Edit");
               edit.addClickListener(e -> openDeckEditor(deck));
+              edit.setVisible(securityUtils.canEdit());
               return edit;
             })
         .setHeader("Actions");
 
-    deckGrid.setItems(deckService.findAll());
+    if (securityUtils.isPlayer() && !securityUtils.isAdmin() && !securityUtils.isBooker()) {
+      securityUtils
+          .getAuthenticatedUser()
+          .ifPresent(
+              user -> {
+                deckGrid.setItems(deckService.findByWrestler(user.getWrestler()));
+              });
+    } else {
+      deckGrid.setItems(deckService.findAll());
+    }
     deckGrid.getStyle().set("height", "100vh");
     add(deckGrid);
     setSizeFull();
@@ -97,31 +113,36 @@ public class DeckListView extends VerticalLayout {
     // Editor for amount
     Binder<DeckCard> binder = new Binder<>(DeckCard.class);
     Editor<DeckCard> editor = cardGrid.getEditor();
-    editor.setBinder(binder);
+    if (securityUtils.canEdit()) {
+      editor.setBinder(binder);
+    }
 
-    cardGrid
-        .addComponentColumn(
-            dc -> {
-              Button editBtn = new Button("Edit");
-              editBtn.addClickListener(e -> openDeckCardEditor(dc, cardGrid, deck, dialog));
-              return editBtn;
-            })
-        .setHeader("Edit");
+    if (securityUtils.canEdit()) {
+      cardGrid
+          .addComponentColumn(
+              dc -> {
+                Button editBtn = new Button("Edit");
+                editBtn.addClickListener(e -> openDeckCardEditor(dc, cardGrid, deck));
+                return editBtn;
+              })
+          .setHeader("Edit");
 
-    cardGrid
-        .addComponentColumn(
-            dc -> {
-              Button removeBtn = new Button("Remove");
-              removeBtn.addClickListener(
-                  e -> {
-                    deckCardService.delete(dc);
-                    deck.getCards().remove(dc);
-                    deckService.save(deck);
-                    cardGrid.setItems(deckService.findById(deck.getId()).getCards());
-                  });
-              return removeBtn;
-            })
-        .setHeader("Remove");
+      cardGrid
+          .addComponentColumn(
+              dc -> {
+                Button removeBtn = new Button("Remove");
+                removeBtn.addClickListener(
+                    e -> {
+                      deckCardService.delete(dc);
+                      deck.getCards().remove(dc);
+                      deckService.save(deck);
+                      cardGrid.setItems(deckService.findById(deck.getId()).getCards());
+                    });
+                removeBtn.setVisible(securityUtils.canDelete());
+                return removeBtn;
+              })
+          .setHeader("Remove");
+    }
 
     // Save/Cancel buttons for editor
     Button saveBtn =
@@ -174,19 +195,20 @@ public class DeckListView extends VerticalLayout {
             });
 
     HorizontalLayout addLayout = new HorizontalLayout(cardCombo, amountInput, addBtn);
+    addLayout.setVisible(securityUtils.canCreate());
 
     layout.add(cardGrid, addLayout);
 
     Button closeBtn = new Button("Close", e -> dialog.close());
     HorizontalLayout actions = new HorizontalLayout(saveBtn, cancelBtn, closeBtn);
+    actions.setVisible(securityUtils.canEdit());
     layout.add(actions);
 
     dialog.add(layout);
     dialog.open();
   }
 
-  private void openDeckCardEditor(
-      DeckCard deckCard, Grid<DeckCard> cardGrid, Deck deck, Dialog parentDialog) {
+  private void openDeckCardEditor(DeckCard deckCard, Grid<DeckCard> cardGrid, Deck deck) {
     Dialog editDialog = new Dialog();
     editDialog.setHeaderTitle("Edit Card Amount");
 
@@ -210,7 +232,9 @@ public class DeckListView extends VerticalLayout {
               }
             });
     Button cancelBtn = new Button("Cancel", e -> editDialog.close());
-    layout.add(new HorizontalLayout(saveBtn, cancelBtn));
+    HorizontalLayout actions = new HorizontalLayout(saveBtn, cancelBtn);
+    actions.setVisible(securityUtils.canEdit());
+    layout.add(actions);
 
     editDialog.add(layout);
     editDialog.open();

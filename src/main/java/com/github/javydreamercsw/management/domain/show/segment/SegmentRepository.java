@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -163,4 +164,20 @@ public interface SegmentRepository
       ORDER BY s.segmentDate DESC
       """)
   List<Segment> findByWrestlerParticipationWithShow(@Param("wrestler") Wrestler wrestler);
+
+  @Query(
+      """
+      SELECT s FROM Segment s
+      JOIN FETCH s.show
+      JOIN s.participants p
+      WHERE p.wrestler = :wrestler AND s.show.showDate >= :referenceDate
+      ORDER BY s.show.showDate ASC
+      """)
+  List<Segment> findUpcomingSegmentsForWrestler(
+      @Param("wrestler") Wrestler wrestler,
+      @Param("referenceDate") LocalDate referenceDate,
+      Pageable pageable);
+
+  @Query("SELECT s FROM Segment s JOIN FETCH s.show WHERE s.id = :id")
+  Optional<Segment> findByIdWithShow(@Param("id") Long id);
 }

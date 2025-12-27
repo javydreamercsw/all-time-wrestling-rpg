@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ public class TierRecalculationService implements RankingService {
   private final TierBoundaryService tierBoundaryService;
 
   @Override
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void recalculateRanking(List<WrestlerData> wrestlersData) {
     log.info("Starting tier recalculation...");
 
@@ -127,7 +129,6 @@ public class TierRecalculationService implements RankingService {
                 minFans = genderWrestlers.get(boundaryIndex).getFans() + 1;
               }
             } else {
-              // If no wrestlers in this tier, set minFans based on the next lower tier's max
               minFans = maxFansForNextLowerTier > 0 ? maxFansForNextLowerTier + 1 : 0;
             }
           }
@@ -162,7 +163,7 @@ public class TierRecalculationService implements RankingService {
             wrestlerRepository.save(
                 (Wrestler) wrestlerData); // Cast back to Wrestler for repository
           }
-        } else {
+        } else { // This 'else' belongs to 'if (newTier != null)'
           log.warn(
               "Wrestler {} with {} fans does not match any tier!",
               wrestlerData.getName(),
@@ -174,6 +175,7 @@ public class TierRecalculationService implements RankingService {
   }
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void recalculateTier(Wrestler wrestler) {
     WrestlerTier newTier = calculateTier(wrestler.getFans(), wrestler.getGender());
     if (wrestler.getTier() != newTier) {

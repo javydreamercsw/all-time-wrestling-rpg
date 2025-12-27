@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -69,6 +72,7 @@ import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.format.DateTimeFormatter;
@@ -82,10 +86,11 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.core.env.Environment;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Detail view for displaying comprehensive information about a specific show. Accessible via URL
@@ -98,33 +103,75 @@ import org.springframework.web.client.RestTemplate;
 public class ShowDetailView extends Main
     implements HasUrlParameter<Long>, ApplicationListener<ApplicationEvent> {
 
-  @Autowired private ShowService showService;
-  @Autowired private SegmentService segmentService;
-  @Autowired private SegmentRepository segmentRepository;
-  @Autowired private SegmentTypeRepository segmentTypeRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private NpcService npcService;
-  @Autowired private WrestlerService wrestlerService;
-  @Autowired private TitleService titleService;
-  @Autowired private SegmentRuleRepository segmentRuleRepository;
-  @Autowired private ShowTypeService showTypeService;
-  @Autowired private SeasonService seasonService;
-  @Autowired private ShowTemplateService showTemplateService;
-  @Autowired private RivalryService rivalryService;
-  private String referrer = "shows"; // Default referrer
-
+  private final ShowService showService;
+  private final SegmentService segmentService;
+  private final SegmentRepository segmentRepository;
+  private final SegmentTypeRepository segmentTypeRepository;
+  private final WrestlerRepository wrestlerRepository;
+  private final NpcService npcService;
+  private final WrestlerService wrestlerService;
+  private final TitleService titleService;
+  private final SegmentRuleRepository segmentRuleRepository;
+  private final ShowTypeService showTypeService;
+  private final SeasonService seasonService;
+  private final ShowTemplateService showTemplateService;
+  private final RivalryService rivalryService;
+  private final LocalAIStatusService localAIStatusService;
+  private final SegmentNarrationConfig segmentNarrationConfig;
+  private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
+  private final WebClient.Builder webClientBuilder;
+  private final Environment env;
+  private Button backButton;
+  private Registration backButtonListener;
   private H2 showTitle;
   private VerticalLayout contentLayout;
   private Long currentShowId;
-  private Show currentShow; // Store the current show object
-  private Grid<Segment> segmentsGrid; // Declare segmentsGrid as a class member
+  private Show currentShow;
+  private Grid<Segment> segmentsGrid;
 
-  public ShowDetailView() {
+  public ShowDetailView(
+      ShowService showService,
+      SegmentService segmentService,
+      SegmentRepository segmentRepository,
+      SegmentTypeRepository segmentTypeRepository,
+      WrestlerRepository wrestlerRepository,
+      NpcService npcService,
+      WrestlerService wrestlerService,
+      TitleService titleService,
+      SegmentRuleRepository segmentRuleRepository,
+      ShowTypeService showTypeService,
+      SeasonService seasonService,
+      ShowTemplateService showTemplateService,
+      RivalryService rivalryService,
+      LocalAIStatusService localAIStatusService,
+      SegmentNarrationConfig segmentNarrationConfig,
+      SegmentNarrationServiceFactory segmentNarrationServiceFactory,
+      WebClient.Builder webClientBuilder,
+      Environment env) {
+    this.showService = showService;
+    this.segmentService = segmentService;
+    this.segmentRepository = segmentRepository;
+    this.segmentTypeRepository = segmentTypeRepository;
+    this.wrestlerRepository = wrestlerRepository;
+    this.npcService = npcService;
+    this.wrestlerService = wrestlerService;
+    this.titleService = titleService;
+    this.segmentRuleRepository = segmentRuleRepository;
+    this.showTypeService = showTypeService;
+    this.seasonService = seasonService;
+    this.showTemplateService = showTemplateService;
+    this.rivalryService = rivalryService;
+    this.localAIStatusService = localAIStatusService;
+    this.segmentNarrationConfig = segmentNarrationConfig;
+    this.segmentNarrationServiceFactory = segmentNarrationServiceFactory;
+    this.webClientBuilder = webClientBuilder;
+    this.env = env;
     initializeComponents();
   }
 
   private void initializeComponents() {
     setSizeFull();
+
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
@@ -133,7 +180,7 @@ public class ShowDetailView extends Main
         LumoUtility.Gap.MEDIUM);
 
     // Context-aware back button
-    Button backButton = createBackButton();
+    backButton = new Button("Back", new Icon(VaadinIcon.ARROW_LEFT));
     backButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
     showTitle = new H2("Show Details");
@@ -155,7 +202,7 @@ public class ShowDetailView extends Main
   @Override
   public void setParameter(BeforeEvent event, Long showId) {
     // Detect referrer from query parameters or referer header
-    this.referrer =
+    String referrer =
         event
             .getLocation()
             .getQueryParameters()
@@ -163,8 +210,8 @@ public class ShowDetailView extends Main
             .getOrDefault("ref", List.of("shows"))
             .get(0);
 
+    updateBackButton(referrer);
     this.currentShowId = showId; // Store the showId
-
     if (showId != null) {
       loadShow(showId);
     } else {
@@ -172,7 +219,7 @@ public class ShowDetailView extends Main
     }
   }
 
-  private Button createBackButton() {
+  private void updateBackButton(String referrer) {
     String buttonText;
     String navigationTarget =
         switch (referrer) {
@@ -180,15 +227,20 @@ public class ShowDetailView extends Main
             buttonText = "Back to Calendar";
             yield "show-calendar";
           }
+
           default -> {
             buttonText = "Back to Shows";
             yield "show-list";
           }
         };
 
-    Button backButton = new Button(buttonText, new Icon(VaadinIcon.ARROW_LEFT));
-    backButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(navigationTarget)));
-    return backButton;
+    backButton.setText(buttonText);
+    if (backButtonListener != null) {
+      backButtonListener.remove();
+    }
+
+    backButtonListener =
+        backButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(navigationTarget)));
   }
 
   private void loadShow(Long showId) {
@@ -518,21 +570,17 @@ public class ShowDetailView extends Main
     segmentsLayout.addClassNames(LumoUtility.Width.FULL);
 
     // Always initialize segmentsGrid and its wrapper
-    if (segmentsGrid == null) {
-      segmentsGrid = createSegmentsGrid(segments);
-      segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
-      segmentsGrid.setId("segments-grid");
+    segmentsGrid = createSegmentsGrid(segments);
+    segmentsGrid.setHeight("400px"); // Set a reasonable height for the grid
+    segmentsGrid.setId("segments-grid");
 
-      // Wrap the grid in a Div to enable horizontal scrolling
-      Div gridWrapper = new Div(segmentsGrid);
-      gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
-      gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
-      gridWrapper.setId("segments-grid-wrapper");
-      segmentsLayout.add(gridWrapper);
-      segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
-    } else {
-      segmentsGrid.setItems(segments);
-    }
+    // Wrap the grid in a Div to enable horizontal scrolling
+    Div gridWrapper = new Div(segmentsGrid);
+    gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
+    gridWrapper.getStyle().set("flex-grow", "4"); // Allow wrapper to grow
+    gridWrapper.setId("segments-grid-wrapper");
+    segmentsLayout.add(gridWrapper);
+    segmentsLayout.setFlexGrow(4, gridWrapper); // Let grid wrapper expand
 
     Span noSegmentsMessage = new Span("No segments scheduled for this show yet.");
     noSegmentsMessage.addClassNames(LumoUtility.TextColor.SECONDARY);
@@ -715,10 +763,15 @@ public class ShowDetailView extends Main
                   segment,
                   npcService,
                   wrestlerService,
-                  titleService,
+                  wrestlerRepository,
                   showService,
+                  segmentService,
                   updatedSegment -> refreshSegmentsGrid(),
-                  rivalryService); // Call refreshSegmentsGrid
+                  rivalryService,
+                  localAIStatusService,
+                  segmentNarrationConfig,
+                  webClientBuilder,
+                  env); // Call refreshSegmentsGrid
           dialog.open();
         });
 
@@ -738,14 +791,19 @@ public class ShowDetailView extends Main
   }
 
   private void generateSummary(@NonNull Segment segment) {
-    String baseUrl = com.github.javydreamercsw.management.util.UrlUtil.getBaseUrl();
-
-    new RestTemplate()
-        .postForObject(
-            baseUrl + "/api/segments/" + segment.getId() + "/summarize", null, Segment.class);
-    Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
-        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
+    try {
+      String summary = segmentNarrationServiceFactory.summarizeNarration(segment.getNarration());
+      segment.setSummary(summary);
+      segmentService.updateSegment(segment);
+      Notification.show("Summary generated successfully!", 3000, Notification.Position.BOTTOM_START)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+      refreshSegmentsGrid();
+    } catch (Exception e) {
+      log.error("Error generating summary", e);
+      Notification.show(
+              "Error generating summary: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+    }
   }
 
   private void openAddSegmentDialog(@NonNull Show show) {
@@ -1113,8 +1171,10 @@ public class ShowDetailView extends Main
       Set<Wrestler> winners,
       Set<SegmentRule> rules,
       Segment segmentToUpdate) {
+    log.info("Validating and saving segment: {}", segmentToUpdate);
     // Validation
     if (segmentType == null) {
+      log.warn("Validation failed: Segment type is null.");
       Notification.show("Please select a segment type", 3000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
       return false;
@@ -1122,12 +1182,14 @@ public class ShowDetailView extends Main
 
     if (!"Promo".equalsIgnoreCase(segmentType.getName())) {
       if (wrestlers == null || wrestlers.isEmpty()) {
+        log.warn("Validation failed: Wrestlers are null or empty for non-promo segment.");
         Notification.show("Please select at least one wrestler", 3000, Notification.Position.MIDDLE)
             .addThemeVariants(NotificationVariant.LUMO_ERROR);
         return false;
       }
 
       if (wrestlers.size() < 2) {
+        log.warn("Validation failed: Less than two wrestlers for a non-promo match.");
         Notification.show(
                 "Please select at least two wrestlers for a match",
                 3000,
@@ -1140,6 +1202,7 @@ public class ShowDetailView extends Main
     if (winners != null) {
       for (Wrestler winner : winners) {
         if (!wrestlers.contains(winner)) {
+          log.warn("Validation failed: Winner is not among selected wrestlers.");
           Notification.show(
                   "Winner must be one of the selected wrestlers",
                   3000,
@@ -1157,6 +1220,7 @@ public class ShowDetailView extends Main
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
         segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
+        log.info("Updating existing segment: {}", segment.getId());
       } else {
         segment = new Segment();
         segment.setShow(show);
@@ -1165,6 +1229,7 @@ public class ShowDetailView extends Main
         segment.setIsNpcGenerated(false);
         segment.syncParticipants(new ArrayList<>(wrestlers));
         segment.syncSegmentRules(new ArrayList<>(rules));
+        log.info("Creating new segment for show: {}", show.getName());
       }
 
       segment.setSegmentType(segmentType);
@@ -1175,6 +1240,7 @@ public class ShowDetailView extends Main
 
       // Save or update the segment
       segmentRepository.save(segment);
+      log.info("Segment saved successfully: {}", segment.getId());
       if (segmentToUpdate != null) {
         Notification.show("Segment updated successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -1184,6 +1250,7 @@ public class ShowDetailView extends Main
       }
       return true;
     } catch (Exception e) {
+      log.error("Error saving segment: {}", e.getMessage(), e);
       Notification.show(
               "Error saving segment: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);

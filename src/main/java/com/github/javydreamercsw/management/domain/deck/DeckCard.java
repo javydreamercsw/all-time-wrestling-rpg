@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.deck;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -41,7 +42,7 @@ import org.jspecify.annotations.Nullable;
     uniqueConstraints = @UniqueConstraint(columnNames = {"deck_id", "card_id", "set_id"}))
 @Getter
 @Setter
-public class DeckCard extends AbstractEntity<Long> {
+public class DeckCard extends AbstractEntity<Long> { // Removed implements Ownable
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -50,11 +51,11 @@ public class DeckCard extends AbstractEntity<Long> {
   @JoinColumn(name = "deck_id")
   private Deck deck;
 
-  @ManyToOne(optional = false)
+  @ManyToOne(optional = false, cascade = CascadeType.MERGE)
   @JoinColumn(name = "card_id")
   private Card card;
 
-  @ManyToOne(optional = false)
+  @ManyToOne(optional = false, cascade = CascadeType.MERGE)
   @JoinColumn(name = "set_id")
   private CardSet set;
 
@@ -91,4 +92,6 @@ public class DeckCard extends AbstractEntity<Long> {
   public int hashCode() {
     return Objects.hash(super.hashCode(), deck, card, set);
   }
+
+  // Removed @Override methods getAccount() and isPlayerOwned()
 }

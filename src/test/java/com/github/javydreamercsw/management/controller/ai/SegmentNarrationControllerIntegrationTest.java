@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +42,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 @DisplayName("Segment Narration Controller Integration Tests")
 @TestPropertySource(properties = "notion.sync.enabled=true")
-class SegmentNarrationControllerIntegrationTest extends AbstractIntegrationTest {
+class SegmentNarrationControllerIntegrationTest extends AbstractMockUserIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
 
