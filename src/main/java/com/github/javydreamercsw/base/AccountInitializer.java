@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,7 +72,8 @@ public class AccountInitializer implements Initializable {
     }
   }
 
-  private void createAccount(String username, String password, Set<Role> roles) {
+  private void createAccount(
+      @NonNull String username, @NonNull String password, @NonNull Set<Role> roles) {
     if (accountRepository.findByUsername(username).isEmpty()) {
       Account account =
           new Account(username, passwordEncoder.encode(password), username + "@example.com");

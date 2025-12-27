@@ -158,6 +158,7 @@ class SecurityServiceTest {
     CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
     Account account = principal.getAccount();
     account.setEmail("new_booker_email@test.com");
+    account.setPassword("ValidPassword1!");
     accountService.update(account);
     // No exception means success
   }

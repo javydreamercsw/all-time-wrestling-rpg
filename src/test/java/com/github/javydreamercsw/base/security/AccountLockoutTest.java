@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.RoleName;
@@ -60,12 +61,15 @@ public class AccountLockoutTest {
 
   @BeforeEach
   void setUp() {
-    testAccount =
-        accountService.createAccount(
-            "locktest-" + UUID.randomUUID().toString(),
-            "LockPass123!",
-            "lock-" + UUID.randomUUID().toString() + "@test.com",
-            RoleName.PLAYER);
+    TestUtils.runAsAdmin(
+        () -> {
+          testAccount =
+              accountService.createAccount(
+                  "locktest-" + UUID.randomUUID(),
+                  "LockPass123!",
+                  "lock-" + UUID.randomUUID() + "@test.com",
+                  RoleName.PLAYER);
+        });
     // Reload to ensure testAccount is a managed entity for the test method's transaction
     testAccount = accountRepository.findByUsername(testAccount.getUsername()).orElseThrow();
   }

@@ -16,9 +16,11 @@
 */
 package com.github.javydreamercsw.management.service.drama;
 
+import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
+import com.github.javydreamercsw.management.DatabaseCleaner;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
@@ -32,34 +34,40 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class DramaEventServiceTest {
 
   @Autowired private DramaEventService dramaEventService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
+  @Autowired private AccountInitializer accountInitializer;
+  @Autowired private DatabaseCleaner cleaner;
 
   private Wrestler bookerWrestler;
   private Wrestler playerWrestler;
 
   @BeforeEach
   void setUp() {
-    Account booker = accountRepository.findByUsername("booker").orElseThrow();
-    bookerWrestler = new Wrestler();
-    bookerWrestler.setName("Booker T");
-    bookerWrestler.setAccount(booker);
-    wrestlerRepository.save(bookerWrestler);
+    cleaner.clearRepositories();
+    accountInitializer.init();
+    if (bookerWrestler == null) {
+      Account booker = accountRepository.findByUsername("booker").get();
+      bookerWrestler = new Wrestler();
+      bookerWrestler.setName("Booker T");
+      bookerWrestler.setAccount(booker);
+      wrestlerRepository.save(bookerWrestler);
+    }
 
-    Account player = accountRepository.findByUsername("player").orElseThrow();
-    playerWrestler = new Wrestler();
-    playerWrestler.setName("Player One");
-    playerWrestler.setAccount(player);
-    wrestlerRepository.save(playerWrestler);
+    if (playerWrestler == null) {
+      Account player = accountRepository.findByUsername("player").orElseThrow();
+      playerWrestler = new Wrestler();
+      playerWrestler.setName("Player One");
+      playerWrestler.setAccount(player);
+      wrestlerRepository.save(playerWrestler);
+    }
   }
 
   @Test
