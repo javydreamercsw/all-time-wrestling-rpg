@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.account;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.PasswordValidator;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -73,11 +74,15 @@ public class AccountFormDialog extends Dialog {
 
     if (account.getId() == null) {
       password.setRequiredIndicatorVisible(true);
-      binder.forField(password).asRequired().bind("password");
+      binder
+          .forField(password)
+          .withValidator(new PasswordValidator("Invalid password"))
+          .bind("password");
     } else {
       password.setPlaceholder("Leave blank to keep current password");
       binder
           .forField(password)
+          .withValidator(new PasswordValidator("Password"))
           .bind(
               acc -> "",
               (acc, p) -> {
@@ -107,7 +112,15 @@ public class AccountFormDialog extends Dialog {
         event -> {
           try {
             binder.writeBean(this.account);
-            accountService.update(this.account);
+            if (this.account.getId() == null) {
+              accountService.createAccount(
+                  this.account.getUsername(),
+                  this.account.getPassword(),
+                  this.account.getEmail(),
+                  this.account.getRoles().iterator().next().getName());
+            } else {
+              accountService.update(this.account);
+            }
             close();
           } catch (ValidationException e) {
             LOG.error("Validation failed", e);

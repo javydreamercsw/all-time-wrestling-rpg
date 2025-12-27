@@ -69,6 +69,9 @@ public class SecurityConfig {
                 .deleteCookies("JSESSIONID", "remember-me")
                 .permitAll());
 
+    // Configure form login
+    http.formLogin(formLogin -> formLogin.permitAll());
+
     return http.build();
   }
 

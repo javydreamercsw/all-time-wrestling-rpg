@@ -162,53 +162,29 @@
 
 ---
 
-### Phase 6: Booker and Player View Design 🎨
-**Goal:** Design and plan the implementation of the Booker and Player specific views.
-
-25. ✅ **Implement Game Date Management**:
-	- Created `GameSetting` entity and `GameSettingRepository`.
-	- Created `V24__Create_Game_Setting_Table.sql` migration.
-	- Modified `DataInitializer` to set initial `current_game_date` using `LocalDate.now()`.
-	- Created `GameSettingService` to manage game settings and provide `getCurrentGameDate()`.
-	- Created `GameSettingsView` (`/game-settings`) for ADMINs to view and modify the current in-game date.
-	- Added menu item for `GameSettingsView` under "Configuration" (ADMIN only).
-	- Updated `ShowCalendarView` to use `GameSettingService.getCurrentGameDate()` for initial display and the "Today" button.
-	- Updated `ShowService` to use `GameSettingService.getCurrentGameDate()` for `getUpcomingShows` methods.
-	- Reverted unnecessary changes to test files (`ShowStyleUIIntegrationTest.java`, `FullShowLifecycleE2ETest.java`, `ShowControllerTest.java`, `SegmentAdjudicationServiceIT.java`).
-26. ✅ **Implement `PlayerView` Dashboard**:
-	- Implemented basic dashboard layout with sections for:
-		- **My Wrestler Profile summary**: Displays player's wrestler name and tier.
-		- **My Upcoming Matches**: Lists upcoming shows where the player's wrestler is participating, using `ShowService.getUpcomingShowsForWrestler()`.
-		- **My Active Rivalries**: Lists active rivalries for the player's wrestler using `RivalryService.getRivalriesForWrestler()`.
-		- **My Inbox summary**: Displays recent unread inbox items for the player's wrestler using `InboxService.getInboxItemsForWrestler()`.
-	- Injected necessary services: `WrestlerService`, `ShowService`, `RivalryService`, `InboxService`, `SecurityUtils`, and `AccountService`.
-	- Added `getInboxItemsForWrestler` method to `InboxService`.
-	- Added `findUpcomingShowsForWrestler` query to `ShowRepository` and corresponding method in `ShowService`.
-27. ✅ **Implement `BookerView` Dashboard**:
-	- Implemented a dashboard layout with sections for:
-		- **Upcoming Shows**: Grid displaying the next 5 upcoming shows from `ShowService`.
-		- **Active Rivalries**: Grid displaying all active rivalries from `RivalryService`.
-		- **Roster Overview**: Grid displaying all wrestlers, including their current "brand" (derived from the show type of their last appearance).
-28. ✅ **Component Breakdown**:
-	- List the new UI components required for these views.
-	- Plan the data flow and service methods needed.
+### Phase 6: Booker and Player View Design 🎨 ✅ COMPLETE!
 
 **Deliverable:** A clear design and implementation plan for the Booker and Player views.
 
 ---
 
-### Phase 7: Password Management 🔐
+### Phase 7: Password Management 🔐 ✅ COMPLETE!
 **Goal:** Password reset and security features
 
-28. 🔨 Implement password strength validation
-29. 🔨 Add "Change Password" functionality
-30. 🔨 Implement "Forgot Password" flow:
-	- Password reset token generation
-	- Token storage (in database)
-	- Reset password view
+28. ✅ Implement password strength validation
+29. ✅ Add "Change Password" functionality
+30. ✅ Implement "Forgot Password" flow:
+	- ✅ Password reset token generation
+	- ✅ Token storage (in database)
+	- ✅ Reset password view
 	- (Email integration can come later)
-31. 🔨 Configure account lockout after failed login attempts
-32. 🔨 Test password features
+31. ✅ Configure account lockout after failed login attempts
+	- ✅ Updated `Account` entity (fields `failedLoginAttempts`, `lockedUntil`, `accountNonLocked` already present in `V20__Create_Account_Tables.sql`)
+	- ✅ Updated `AccountService` (password validation logic for update, successful)
+	- ✅ Updated `CustomUserDetailsService` (implemented `recordFailedLoginAttempt`, `recordSuccessfulLogin`, and lockout check in `loadUserByUsername`)
+	- ✅ Updated `SecurityConfig` (configured to use the handlers for login/logout)
+	- ✅ Flyway migration confirmed to be in place (`V20__Create_Account_Tables.sql` has the necessary columns)
+32. ✅ Test password features
 
 **Deliverable:** Password management and security features working
 
@@ -382,8 +358,10 @@ enum RoleName {
 
 ## Progress Tracking
 
-**Current Phase:** Phase 5 - Account Management
-**Started:** December 21, 2025
+**Current Phase:** Phase 7 - Password Management
+**Started:** December 26, 2025
+**Phase 6 Completed:** December 26, 2025
+**Phase 5 Completed:** December 26, 2025
 **Phase 4 Completed:** December 21, 2025
 **Phase 3 Completed:** December 21, 2025
 **Phase 2 Completed:** December 14, 2025

@@ -14,12 +14,14 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.test;
+package com.github.javydreamercsw.base.domain.account;
 
-import com.github.javydreamercsw.base.config.TestSecurityConfig;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.TestPropertySource;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-@TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
-@Import(TestSecurityConfig.class)
-public abstract class BaseControllerTest {}
+@Repository
+public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
+
+  Optional<PasswordResetToken> findByToken(String token);
+}

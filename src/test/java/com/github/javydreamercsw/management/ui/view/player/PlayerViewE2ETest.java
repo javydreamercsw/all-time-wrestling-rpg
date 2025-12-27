@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
@@ -68,6 +69,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Autowired private InboxRepository inboxRepository;
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
+  @Autowired private TitleRepository titleChampionRepository;
 
   @BeforeEach
   public void setupTest() {
@@ -76,6 +78,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     rivalryRepository.deleteAll();
     inboxRepository.deleteAll();
     showRepository.deleteAll();
+    titleChampionRepository.deleteAll();
     wrestlerRepository.deleteAll();
   }
 
@@ -114,6 +117,8 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .build();
     wrestlerService.save(opponent);
 
+    assertNotNull(wrestler.getId());
+    assertNotNull(opponent.getId());
     rivalryService.createRivalry(wrestler.getId(), opponent.getId(), "Test Rivalry");
 
     inboxService.addInboxItem(wrestler, "Test Message");

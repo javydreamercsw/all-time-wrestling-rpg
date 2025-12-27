@@ -18,11 +18,13 @@ package com.github.javydreamercsw.management.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,10 +52,12 @@ public class AccountServiceTest {
   @Autowired
   @Qualifier("managementAccountService") private AccountService accountService;
 
+  @Autowired private PasswordEncoder passwordEncoder;
+
   @Test
   public void testCreateAndReadAccount() {
     Account account =
-        accountService.createAccount("test_user", "password", "test@user.com", RoleName.PLAYER);
+        accountService.createAccount("test_user", "Password123!", "test@user.com", RoleName.PLAYER);
     assertNotNull(account.getId());
 
     Account foundAccount = accountService.get(account.getId()).orElse(null);
@@ -64,7 +68,8 @@ public class AccountServiceTest {
   @Test
   public void testUpdateAccount() {
     Account account =
-        accountService.createAccount("update_user", "password", "update@user.com", RoleName.PLAYER);
+        accountService.createAccount(
+            "update_user", "Password123!", "update@user.com", RoleName.PLAYER);
     assertNotNull(account.getId());
 
     account.setEmail("new_email@user.com");
@@ -75,7 +80,8 @@ public class AccountServiceTest {
   @Test
   public void testDeleteAccount() {
     Account account =
-        accountService.createAccount("delete_user", "password", "delete@user.com", RoleName.PLAYER);
+        accountService.createAccount(
+            "delete_user", "Password123!", "delete@user.com", RoleName.PLAYER);
     assertNotNull(account.getId());
 
     accountService.delete(account.getId());
@@ -84,7 +90,46 @@ public class AccountServiceTest {
 
   @Test
   public void testFindByUsername() {
-    accountService.createAccount("find_user", "password", "find@user.com", RoleName.PLAYER);
+    accountService.createAccount("find_user", "Password123!", "find@user.com", RoleName.PLAYER);
     assertTrue(accountService.findByUsername("find_user").isPresent());
+  }
+
+  @Test
+  public void testCreateAccountWithInvalidPassword_tooShort() {
+    IllegalArgumentException exception =
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                accountService.createAccount(
+                    "invalid_pass_short", "short", "a@b.com", RoleName.PLAYER));
+    assertEquals("Password is not valid.", exception.getMessage());
+  }
+
+  @Test
+  public void testUpdateAccountWithInvalidPassword_noUppercase() {
+    Account account =
+        accountService.createAccount(
+            "test_user_valid", "Password123!", "valid@user.com", RoleName.PLAYER);
+    assertNotNull(account.getId());
+
+    account.setPassword("password123!");
+    IllegalArgumentException exception =
+        Assertions.assertThrows(
+            IllegalArgumentException.class, () -> accountService.update(account));
+    assertEquals("Password is not valid.", exception.getMessage());
+  }
+
+  @Test
+  public void testUpdateAccountWithValidPassword() {
+    Account account =
+        accountService.createAccount(
+            "test_user_update", "Password123!", "update@user.com", RoleName.PLAYER);
+    assertNotNull(account.getId());
+    String oldEncodedPassword = account.getPassword();
+
+    account.setPassword("NewPass456$");
+    Account updatedAccount = accountService.update(account);
+    assertNotEquals(oldEncodedPassword, updatedAccount.getPassword());
+    assertTrue(passwordEncoder.matches("NewPass456$", updatedAccount.getPassword()));
   }
 }

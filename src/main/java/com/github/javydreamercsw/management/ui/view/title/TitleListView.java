@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -58,6 +59,7 @@ public class TitleListView extends Main {
   private final TitleService titleService;
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
+  private final TierRecalculationService tierRecalculationService;
   private final SecurityUtils securityUtils;
   public final Grid<Title> grid = new Grid<>(Title.class, false);
 
@@ -65,10 +67,12 @@ public class TitleListView extends Main {
       @NonNull TitleService titleService,
       @NonNull WrestlerService wrestlerService,
       @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull TierRecalculationService tierRecalculationService,
       @NonNull SecurityUtils securityUtils) {
     this.titleService = titleService;
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
+    this.tierRecalculationService = tierRecalculationService;
     this.securityUtils = securityUtils;
 
     addClassNames(
@@ -82,7 +86,7 @@ public class TitleListView extends Main {
 
     Button createButton = new Button("Create Title", new Icon(VaadinIcon.PLUS));
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    createButton.addClickListener(e -> openCreateDialog());
+    createButton.addClickListener(e -> openCreateDialog().open());
     createButton.setVisible(securityUtils.canCreate());
 
     add(new ViewToolbar("Title List", ViewToolbar.group(createButton)));
@@ -157,7 +161,7 @@ public class TitleListView extends Main {
             title -> {
               Button editButton = new Button("Edit", new Icon(VaadinIcon.EDIT));
               editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-              editButton.addClickListener(e -> openEditDialog(title));
+              editButton.addClickListener(e -> openEditDialog(title).open());
               editButton.setVisible(securityUtils.canEdit());
 
               Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
@@ -175,7 +179,7 @@ public class TitleListView extends Main {
     grid.setItems(titles);
   }
 
-  private void openCreateDialog() {
+  TitleFormDialog openCreateDialog() {
     Title newTitle = new Title();
     newTitle.setIsActive(true);
     TitleFormDialog dialog =
@@ -183,24 +187,26 @@ public class TitleListView extends Main {
             titleService,
             wrestlerService,
             wrestlerRepository,
+            tierRecalculationService,
             newTitle,
             this::refreshGrid,
             securityUtils);
     dialog.setHeaderTitle("Create New Title");
-    dialog.open();
+    return dialog;
   }
 
-  private void openEditDialog(@NonNull Title title) {
+  TitleFormDialog openEditDialog(@NonNull Title title) {
     TitleFormDialog dialog =
         new TitleFormDialog(
             titleService,
             wrestlerService,
             wrestlerRepository,
+            tierRecalculationService,
             title,
             this::refreshGrid,
             securityUtils);
     dialog.setHeaderTitle("Edit Title: " + title.getName());
-    dialog.open();
+    return dialog;
   }
 
   private void deleteTitle(@NonNull Title title) {

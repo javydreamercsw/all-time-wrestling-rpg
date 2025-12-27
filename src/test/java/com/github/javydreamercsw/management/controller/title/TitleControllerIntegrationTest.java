@@ -20,17 +20,13 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.base.test.BaseControllerTest;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.controller.title.TitleController.CreateTitleRequest;
 import com.github.javydreamercsw.management.controller.title.TitleController.UpdateTitleRequest;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +42,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -58,19 +53,10 @@ import org.springframework.web.context.WebApplicationContext;
     controllers = TitleController.class,
     excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 @DisplayName("TitleController Integration Tests")
-class TitleControllerIntegrationTest extends BaseControllerTest {
+class TitleControllerIntegrationTest extends AbstractControllerTest {
 
   @Autowired private WebApplicationContext webApplicationContext;
-  private MockMvc mockMvc;
-
-  @Autowired private ObjectMapper objectMapper;
-
   @MockitoBean private TitleService titleService;
-  @MockitoBean private WrestlerService wrestlerService;
-
-  @MockitoBean private WrestlerRepository wrestlerRepository;
-
-  @MockitoBean private RankingService rankingService;
 
   @BeforeEach
   void setup() {
@@ -511,7 +497,6 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     title.setDescription("Test description");
     title.setTier(tier);
     title.setIsActive(true);
-    when(titleService.save(any(Title.class))).thenReturn(title);
     return title;
   }
 
@@ -528,7 +513,6 @@ class TitleControllerIntegrationTest extends BaseControllerTest {
     wrestler.setDeckSize(40); // Set required deck size
     wrestler.setBumps(0);
     wrestler.setIsPlayer(true);
-    when(wrestlerService.save(any(Wrestler.class))).thenReturn(wrestler);
     return wrestler;
   }
 }

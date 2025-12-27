@@ -40,7 +40,8 @@ public class AccountFormE2ETest extends AbstractE2ETest {
   public void testDeleteAccount() {
     // Create an account to delete
     Account account =
-        accountService.createAccount("delete_me", "password", "delete_me@atw.com", RoleName.VIEWER);
+        accountService.createAccount(
+            "delete_me", "ValidPassword1!", "delete_me@atw.com", RoleName.VIEWER);
 
     // Navigate to the AccountListView
     driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");

@@ -34,6 +34,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.By;
@@ -362,80 +363,68 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /**
-   * Selects an item from a Vaadin MultiSelectComboBox by clicking its input/toggle button and
-   * selecting the item from the overlay. Handles shadow DOM for Vaadin components. Uses correct
-   * overlay for MultiSelectComboBox.
+   * Selects an item from a Vaadin MultiSelectComboBox by opening it and scrolling through the
+   * items.
    *
    * @param comboBox the Vaadin MultiSelectComboBox WebElement
    * @param itemText the text of the item to select
    */
   protected void selectFromVaadinMultiSelectComboBox(
       @NonNull WebElement comboBox, @NonNull String itemText) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
-    int attempts = 0;
-    boolean itemClicked = false;
-    while (attempts < 3 && !itemClicked) {
-      attempts++;
-      // Try to click the input or toggle button inside the shadow root
-      try {
-        Object input =
-            ((JavascriptExecutor) driver)
-                .executeScript(
-                    "return arguments[0].shadowRoot ? arguments[0].shadowRoot.querySelector('input,"
-                        + " [part=\"toggle-button\"]') : null;",
-                    comboBox);
-        if (input != null && input instanceof WebElement) {
-          ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", input);
-          try {
-            ((WebElement) input).click();
-          } catch (Exception e) {
-            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", input);
-          }
-        } else {
-          // Fallback: scroll and click the comboBox itself
-          ((JavascriptExecutor) driver)
-              .executeScript("arguments[0].scrollIntoView(true);", comboBox);
-          try {
-            comboBox.click();
-          } catch (Exception e) {
-            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", comboBox);
-          }
-        }
-      } catch (Exception e) {
-        // Fallback: scroll and click the comboBox itself
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", comboBox);
-        try {
-          comboBox.click();
-        } catch (Exception ex) {
-          ((JavascriptExecutor) driver).executeScript("arguments[0].click();", comboBox);
-        }
-      }
-      // Wait a bit for overlay to render
-      try {
-        Thread.sleep(300);
-      } catch (InterruptedException ignored) {
-      }
-      // Wait for overlay to be visible (correct overlay for MultiSelectComboBox)
-      try {
+    // 1. Click the combo box to open the dropdown.
+    clickElement(comboBox);
+
+    // 2. Wait for the overlay to become visible.
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebElement overlay =
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(
                 By.cssSelector("vaadin-multi-select-combo-box-overlay")));
-        // Use contains(text(), ...) for more robust matching
-        WebElement item =
-            wait.until(
-                ExpectedConditions.elementToBeClickable(
-                    By.xpath(
-                        "//vaadin-multi-select-combo-box-overlay//*[contains(text(), '"
-                            + itemText
-                            + "')]")));
-        // Scroll into view if needed
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", item);
-        item.click();
-        itemClicked = true;
+
+    // 3. Find the scroller element within the overlay.
+    Assertions.assertNotNull(overlay);
+    WebElement scroller = overlay.findElement(By.tagName("vaadin-multi-select-combo-box-scroller"));
+
+    // 4. Loop and scroll down, checking for the item.
+    long lastScrollTop = -1;
+    for (int i = 0; i < 100; i++) { // Limit iterations to prevent infinite loops
+      // Check for the item in the current view
+      try {
+        String xpath = ".//vaadin-multi-select-combo-box-item[contains(., '" + itemText + "')]";
+        List<WebElement> items = overlay.findElements(By.xpath(xpath));
+        for (WebElement item : items) {
+          if (item.isDisplayed()) {
+            clickElement(item);
+            return; // Success!
+          }
+        }
       } catch (Exception e) {
-        // If not found, try again (overlay may not have opened)
-        if (attempts >= 3) throw e;
+        // Item not found, continue.
       }
+
+      // Scroll down by a fixed amount
+      ((JavascriptExecutor) driver).executeScript("arguments[0].scrollTop += 300", scroller);
+
+      // Small pause to allow for rendering
+      try {
+        Thread.sleep(250);
+      } catch (InterruptedException ignored) {
+      }
+
+      // Check if we have reached the bottom of the scroll
+      long currentScrollTop =
+          (long)
+              ((JavascriptExecutor) driver)
+                  .executeScript("return arguments[0].scrollTop", scroller);
+      if (currentScrollTop == lastScrollTop) {
+        // Scrolled to the bottom, but item not found
+        break;
+      }
+      lastScrollTop = currentScrollTop;
     }
+
+    // 5. If the loop finishes without finding the item, throw an error.
+    throw new org.openqa.selenium.NoSuchElementException(
+        "Could not find item '" + itemText + "' in combobox after scrolling.");
   }
 }

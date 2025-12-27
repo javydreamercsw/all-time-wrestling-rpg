@@ -19,9 +19,38 @@ package com.github.javydreamercsw.management.ui.view.show;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.PasswordResetTokenRepository;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
+import com.github.javydreamercsw.management.domain.GameSettingRepository;
+import com.github.javydreamercsw.management.domain.card.CardRepository;
+import com.github.javydreamercsw.management.domain.card.CardSetRepository;
+import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
+import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
+import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
+import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 import java.time.Duration;
@@ -36,17 +65,47 @@ import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 public class ShowDetailViewE2ETest extends AbstractE2ETest {
 
+  @Autowired private SegmentRepository segmentRepository;
+  @Autowired private ShowRepository showRepository;
+  @Autowired private ShowTemplateRepository showTemplateRepository;
+  @Autowired private ShowTypeRepository showTypeRepository;
+  @Autowired private SeasonRepository seasonRepository;
+  @Autowired private TitleReignRepository titleReignRepository;
+  @Autowired private TitleRepository titleRepository;
+  @Autowired private FactionRivalryRepository factionRivalryRepository;
+  @Autowired private FactionRepository factionRepository;
+  @Autowired private MultiWrestlerFeudRepository multiWrestlerFeudRepository;
+  @Autowired private TeamRepository teamRepository;
+  @Autowired private DeckCardRepository deckCardRepository;
+  @Autowired private DeckRepository deckRepository;
+  @Autowired private CardRepository cardRepository;
+  @Autowired private CardSetRepository cardSetRepository;
+  @Autowired private InjuryRepository injuryRepository;
+  @Autowired private InjuryTypeRepository injuryTypeRepository;
+  @Autowired private NpcRepository npcRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private TierBoundaryRepository tierBoundaryRepository;
+  @Autowired private AccountRepository accountRepository;
+  @Autowired private RoleRepository roleRepository;
+  @Autowired private GameSettingRepository gameSettingRepository;
+  @Autowired private SegmentRuleRepository segmentRuleRepository;
+  @Autowired private SegmentTypeRepository segmentTypeRepository;
+  @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
+  @Autowired private InboxItemTargetRepository inboxItemTargetRepository;
+  @Autowired private InboxRepository inboxRepository;
+  @Autowired private DramaEventRepository dramaEventRepository;
+
   private Show testShow;
 
   @BeforeEach
   public void setupTestData() {
-    wrestlerRepository.deleteAll();
     ShowType showType = new ShowType();
     showType.setName("Weekly Show");
     showType.setDescription("A weekly show");
