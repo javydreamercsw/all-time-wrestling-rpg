@@ -18,12 +18,15 @@ package com.github.javydreamercsw.management.service.deck;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.AccountService;
+import java.util.Collections;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,10 +41,10 @@ import org.springframework.test.context.ActiveProfiles;
 class DeckServiceTest {
 
   @Autowired private DeckService deckService;
-  @Autowired private AccountService accountService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private DeckRepository deckRepository;
+  @Autowired private RoleRepository roleRepository;
 
   private Wrestler bookerWrestler;
   private Wrestler playerWrestler;
@@ -50,14 +53,27 @@ class DeckServiceTest {
   void setUp() {
     deckRepository.deleteAll();
     wrestlerRepository.deleteAll();
-    Account booker = accountRepository.findByUsername("booker").orElseThrow();
+    accountRepository.deleteAll();
+    roleRepository.deleteAll();
+
+    Role bookerRole = new Role(RoleName.BOOKER, "Booker role");
+    roleRepository.save(bookerRole);
+    Account booker = new Account("booker", "password", "booker@test.com");
+    booker.setRoles(Collections.singleton(bookerRole));
+    accountRepository.save(booker);
+
     bookerWrestler = new Wrestler();
     bookerWrestler.setName("Booker T");
     bookerWrestler.setAccount(booker);
     bookerWrestler.setIsPlayer(true);
     wrestlerRepository.save(bookerWrestler);
 
-    Account player = accountRepository.findByUsername("player").orElseThrow();
+    Role playerRole = new Role(RoleName.PLAYER, "Player role");
+    roleRepository.save(playerRole);
+    Account player = new Account("player", "password", "player@test.com");
+    player.setRoles(Collections.singleton(playerRole));
+    accountRepository.save(player);
+
     playerWrestler = new Wrestler();
     playerWrestler.setName("Player One");
     playerWrestler.setAccount(player);

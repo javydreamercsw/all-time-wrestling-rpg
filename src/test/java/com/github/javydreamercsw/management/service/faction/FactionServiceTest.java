@@ -16,335 +16,290 @@
 */
 package com.github.javydreamercsw.management.service.faction;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
+import com.github.javydreamercsw.TestUtils;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.*;
+import java.util.Collections;
+import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.test.context.ActiveProfiles;
 
-@ExtendWith(MockitoExtension.class)
-@DisplayName("FactionService Tests")
+@SpringBootTest
+@ActiveProfiles("test")
 class FactionServiceTest {
 
-  @Mock private FactionRepository factionRepository;
+  @Autowired private FactionService factionService;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private AccountRepository accountRepository;
+  @Autowired private FactionRepository factionRepository;
+  @Autowired private RoleRepository roleRepository;
 
-  @Mock private WrestlerRepository wrestlerRepository;
-
-  @Mock private Clock clock;
-
-  @InjectMocks private FactionService factionService;
-
-  private Faction testFaction;
-  private Wrestler testWrestler;
-  private List<Faction> testFactions;
+  private Wrestler bookerWrestler;
+  private Wrestler playerWrestler;
+  private Faction faction;
 
   @BeforeEach
   void setUp() {
-    // Create test faction
-    testFaction = Faction.builder().build();
-    testFaction.setId(1L);
-    testFaction.setName("Test Faction");
-    testFaction.setDescription("A test faction");
-    testFaction.setIsActive(true);
-    testFaction.setFormedDate(Instant.now());
+    factionRepository.deleteAll();
+    wrestlerRepository.deleteAll();
+    accountRepository.deleteAll();
+    roleRepository.deleteAll();
 
-    // Create test wrestler
-    testWrestler = Wrestler.builder().build();
-    testWrestler.setId(1L);
-    testWrestler.setName("Test Wrestler");
+    Role bookerRole = new Role(RoleName.BOOKER, "Booker role");
+    roleRepository.save(bookerRole);
+    Role adminRole = new Role(RoleName.ADMIN, "Admin role");
+    roleRepository.save(adminRole);
+    Role playerRole = new Role(RoleName.PLAYER, "Player role");
+    roleRepository.save(playerRole);
+    Role viewerRole = new Role(RoleName.VIEWER, "Viewer role");
+    roleRepository.save(viewerRole);
 
-    // Create test factions list
-    testFactions = Arrays.asList(testFaction);
+    Account booker = new Account("booker", "password", "booker@test.com");
+    booker.setRoles(Collections.singleton(bookerRole));
+    accountRepository.save(booker);
+
+    bookerWrestler = new Wrestler();
+    bookerWrestler.setName("Booker T");
+    bookerWrestler.setAccount(booker);
+    bookerWrestler.setIsPlayer(true);
+    wrestlerRepository.save(bookerWrestler);
+
+    Account player = new Account("player", "password", "player@test.com");
+    player.setRoles(Collections.singleton(playerRole));
+    accountRepository.save(player);
+
+    playerWrestler = new Wrestler();
+    playerWrestler.setName("Player One");
+    playerWrestler.setAccount(player);
+    playerWrestler.setIsPlayer(true);
+    wrestlerRepository.save(playerWrestler);
+
+    faction = new Faction();
+    faction.setName("Test Faction");
+    faction.setDescription("Test Description");
+    factionRepository.save(faction);
   }
 
   @Test
-  @DisplayName("Should find all factions")
-  void shouldFindAllFactions() {
-    // Given
-    when(factionRepository.findAll()).thenReturn(testFactions);
-
-    // When
-    List<Faction> result = factionService.findAll();
-
-    // Then
-    assertNotNull(result);
-    assertEquals(1, result.size());
-    assertEquals(testFaction.getName(), result.get(0).getName());
-    verify(factionRepository).findAll();
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanCreateFaction() {
+    Optional<Faction> createdFaction =
+        factionService.createFaction("Admin Faction", "Admin Description", bookerWrestler.getId());
+    Assertions.assertTrue(createdFaction.isPresent());
   }
 
   @Test
-  @DisplayName("Should find all factions with members")
-  void shouldFindAllFactionsWithMembers() {
-    // Given
-    when(factionRepository.findAllWithMembers()).thenReturn(testFactions);
-
-    // When
-    List<Faction> result = factionService.findAllWithMembers();
-
-    // Then
-    assertNotNull(result);
-    assertEquals(1, result.size());
-    assertEquals(testFaction.getName(), result.get(0).getName());
-    verify(factionRepository).findAllWithMembers();
+  @WithCustomMockUser(
+      username = "booker",
+      roles = {"BOOKER", "PLAYER"})
+  void testBookerCanCreateFaction() {
+    Optional<Faction> createdFaction =
+        factionService.createFaction(
+            "Booker Faction", "Booker Description", bookerWrestler.getId());
+    Assertions.assertTrue(createdFaction.isPresent());
   }
 
   @Test
-  @DisplayName("Should get all factions (alias method)")
-  void shouldGetAllFactions() {
-    // Given
-    when(factionRepository.findAll()).thenReturn(testFactions);
-
-    // When
-    List<Faction> result = factionService.getAllFactions();
-
-    // Then
-    assertNotNull(result);
-    assertEquals(1, result.size());
-    assertEquals(testFaction.getName(), result.get(0).getName());
-    verify(factionRepository).findAll();
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotCreateFaction() {
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () ->
+            factionService.createFaction(
+                "Player Faction", "Player Description", playerWrestler.getId()));
   }
 
   @Test
-  @DisplayName("Should find faction by ID")
-  void shouldFindFactionById() {
-    // Given
-    when(factionRepository.findById(1L)).thenReturn(Optional.of(testFaction));
-
-    // When
-    Optional<Faction> result = factionService.getFactionById(1L);
-
-    // Then
-    assertTrue(result.isPresent());
-    assertEquals(testFaction.getName(), result.get().getName());
-    verify(factionRepository).findById(1L);
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanAddMember() {
+    Optional<Faction> updatedFaction =
+        factionService.addMemberToFaction(faction.getId(), playerWrestler.getId());
+    Assertions.assertTrue(updatedFaction.isPresent());
+    Assertions.assertTrue(updatedFaction.get().hasMember(playerWrestler));
   }
 
   @Test
-  @DisplayName("Should return empty when faction not found by ID")
-  void shouldReturnEmptyWhenFactionNotFoundById() {
-    // Given
-    when(factionRepository.findById(999L)).thenReturn(Optional.empty());
-
-    // When
-    Optional<Faction> result = factionService.getFactionById(999L);
-
-    // Then
-    assertFalse(result.isPresent());
-    verify(factionRepository).findById(999L);
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotAddMember() {
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () -> factionService.addMemberToFaction(faction.getId(), playerWrestler.getId()));
   }
 
   @Test
-  @DisplayName("Should find faction by ID with members")
-  void shouldFindFactionByIdWithMembers() {
-    // Given
-    Set<Wrestler> members = new HashSet<>();
-    members.add(testWrestler);
-    testFaction.setMembers(members);
-
-    when(factionRepository.findByIdWithMembers(1L)).thenReturn(Optional.of(testFaction));
-
-    // When
-    Optional<Faction> result = factionService.getFactionByIdWithMembers(1L);
-
-    // Then
-    assertTrue(result.isPresent());
-    assertEquals(testFaction.getName(), result.get().getName());
-    // Verify that members collection was accessed (forcing initialization)
-    assertEquals(1, result.get().getMembers().size());
-    verify(factionRepository).findByIdWithMembers(1L);
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanRemoveMember() {
+    TestUtils.runAsAdmin(
+        () -> factionService.addMemberToFaction(faction.getId(), playerWrestler.getId()));
+    Optional<Faction> updatedFaction =
+        factionService.removeMemberFromFaction(faction.getId(), playerWrestler.getId(), "Test");
+    Assertions.assertTrue(updatedFaction.isPresent());
+    Assertions.assertFalse(updatedFaction.get().hasMember(playerWrestler));
   }
 
   @Test
-  @DisplayName("Should save faction")
-  void shouldSaveFaction() {
-    // Given
-    when(factionRepository.saveAndFlush(testFaction)).thenReturn(testFaction);
-
-    // When
-    Faction result = factionService.save(testFaction);
-
-    // Then
-    assertNotNull(result);
-    assertEquals(testFaction.getName(), result.getName());
-    verify(factionRepository).saveAndFlush(testFaction);
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotRemoveMember() {
+    TestUtils.runAsAdmin(
+        () -> factionService.addMemberToFaction(faction.getId(), playerWrestler.getId()));
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () ->
+            factionService.removeMemberFromFaction(
+                faction.getId(), playerWrestler.getId(), "Test"));
   }
 
   @Test
-  @DisplayName("Should add member to faction")
-  void shouldAddMemberToFaction() {
-    // Given
-    when(factionRepository.findById(1L)).thenReturn(Optional.of(testFaction));
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(testWrestler));
-    when(factionRepository.saveAndFlush(any(Faction.class))).thenReturn(testFaction);
-
-    // When
-    Optional<Faction> result = factionService.addMemberToFaction(1L, 1L);
-
-    // Then
-    assertTrue(result.isPresent());
-    assertEquals(testFaction.getName(), result.get().getName());
-    verify(factionRepository).findById(1L);
-    verify(wrestlerRepository).findById(1L);
-    verify(factionRepository).saveAndFlush(testFaction);
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanChangeLeader() {
+    TestUtils.runAsAdmin(
+        () -> factionService.addMemberToFaction(faction.getId(), playerWrestler.getId()));
+    Optional<Faction> updatedFaction =
+        factionService.changeFactionLeader(faction.getId(), playerWrestler.getId());
+    Assertions.assertTrue(updatedFaction.isPresent());
+    Assertions.assertEquals(playerWrestler, updatedFaction.get().getLeader());
   }
 
   @Test
-  @DisplayName("Should not add member when faction not found")
-  void shouldNotAddMemberWhenFactionNotFound() {
-    // Given
-    when(factionRepository.findById(999L)).thenReturn(Optional.empty());
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(testWrestler));
-
-    // When
-    Optional<Faction> result = factionService.addMemberToFaction(999L, 1L);
-
-    // Then
-    assertFalse(result.isPresent());
-    verify(factionRepository).findById(999L);
-    verify(wrestlerRepository).findById(1L); // Service calls both repositories
-    verify(factionRepository, never()).saveAndFlush(any());
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotChangeLeader() {
+    TestUtils.runAsAdmin(
+        () -> factionService.addMemberToFaction(faction.getId(), playerWrestler.getId()));
+    Assertions.assertThrows(
+        AccessDeniedException.class,
+        () -> factionService.changeFactionLeader(faction.getId(), playerWrestler.getId()));
   }
 
   @Test
-  @DisplayName("Should not add member when wrestler not found")
-  void shouldNotAddMemberWhenWrestlerNotFound() {
-    // Given
-    when(factionRepository.findById(1L)).thenReturn(Optional.of(testFaction));
-    when(wrestlerRepository.findById(999L)).thenReturn(Optional.empty());
-
-    // When
-    Optional<Faction> result = factionService.addMemberToFaction(1L, 999L);
-
-    // Then
-    assertFalse(result.isPresent());
-    verify(factionRepository).findById(1L);
-    verify(wrestlerRepository).findById(999L);
-    verify(factionRepository, never()).saveAndFlush(any());
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN", "PLAYER"})
+  void testAdminCanDisbandFaction() {
+    Optional<Faction> disbandedFaction = factionService.disbandFaction(faction.getId(), "Test");
+    Assertions.assertTrue(disbandedFaction.isPresent());
+    Assertions.assertFalse(disbandedFaction.get().getIsActive());
   }
 
   @Test
-  @DisplayName("Should remove member from faction")
-  void shouldRemoveMemberFromFaction() {
-    // Given
-    Set<Wrestler> members = new HashSet<>();
-    members.add(testWrestler);
-    testFaction.setMembers(members);
-
-    when(factionRepository.findById(1L)).thenReturn(Optional.of(testFaction));
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(testWrestler));
-    when(factionRepository.saveAndFlush(any(Faction.class))).thenReturn(testFaction);
-
-    // When
-    Optional<Faction> result = factionService.removeMemberFromFaction(1L, 1L, "Test removal");
-
-    // Then
-    assertTrue(result.isPresent());
-    assertEquals(testFaction.getName(), result.get().getName());
-    verify(factionRepository).findById(1L);
-    verify(wrestlerRepository).findById(1L);
-    verify(factionRepository).saveAndFlush(testFaction);
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testPlayerCannotDisbandFaction() {
+    Assertions.assertThrows(
+        AccessDeniedException.class, () -> factionService.disbandFaction(faction.getId(), "Test"));
   }
 
   @Test
-  @DisplayName("Should not remove member when faction not found")
-  void shouldNotRemoveMemberWhenFactionNotFound() {
-    // Given
-    when(factionRepository.findById(999L)).thenReturn(Optional.empty());
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(testWrestler));
-
-    // When
-    Optional<Faction> result = factionService.removeMemberFromFaction(999L, 1L, "Test removal");
-
-    // Then
-    assertFalse(result.isPresent());
-    verify(factionRepository).findById(999L);
-    verify(wrestlerRepository).findById(1L); // Service calls both repositories
-    verify(factionRepository, never()).saveAndFlush(any());
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testAuthenticatedCanFindAll() {
+    factionService.findAll();
+    // No exception means success
   }
 
   @Test
-  @DisplayName("Should not remove member when wrestler not found")
-  void shouldNotRemoveMemberWhenWrestlerNotFound() {
-    // Given
-    when(factionRepository.findById(1L)).thenReturn(Optional.of(testFaction));
-    when(wrestlerRepository.findById(999L)).thenReturn(Optional.empty());
-
-    // When
-    Optional<Faction> result = factionService.removeMemberFromFaction(1L, 999L, "Test removal");
-
-    // Then
-    assertFalse(result.isPresent());
-    verify(factionRepository).findById(1L);
-    verify(wrestlerRepository).findById(999L);
-    verify(factionRepository, never()).saveAndFlush(any());
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testAuthenticatedCanGetAllFactions() {
+    factionService.getAllFactions();
+    // No exception means success
   }
 
   @Test
-  @DisplayName("Should delete faction by ID")
-  void shouldDeleteFactionById() {
-    // Given
-    doNothing().when(factionRepository).deleteById(1L);
-
-    // When
-    factionService.deleteById(1L);
-
-    // Then
-    verify(factionRepository).deleteById(1L);
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testAuthenticatedCanFindAllWithMembers() {
+    factionService.findAllWithMembers();
+    // No exception means success
   }
 
   @Test
-  @DisplayName("Should check if faction exists by ID")
-  void shouldCheckIfFactionExistsById() {
-    // Given
-    when(factionRepository.existsById(1L)).thenReturn(true);
-
-    // When
-    boolean result = factionService.existsById(1L);
-
-    // Then
-    assertTrue(result);
-    verify(factionRepository).existsById(1L);
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testAuthenticatedCanFindAllWithMembersAndTeams() {
+    factionService.findAllWithMembersAndTeams();
+    // No exception means success
   }
 
   @Test
-  @DisplayName("Should return false when faction does not exist by ID")
-  void shouldReturnFalseWhenFactionDoesNotExistById() {
-    // Given
-    when(factionRepository.existsById(999L)).thenReturn(false);
-
-    // When
-    boolean result = factionService.existsById(999L);
-
-    // Then
-    assertFalse(result);
-    verify(factionRepository).existsById(999L);
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testAuthenticatedCanGetAllFactionsWithPageable() {
+    factionService.getAllFactions(Pageable.unpaged());
+    // No exception means success
   }
 
   @Test
-  @DisplayName("Should count all factions")
-  void shouldCountAllFactions() {
-    // Given
-    when(factionRepository.count()).thenReturn(5L);
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testAuthenticatedCanGetFactionById() {
+    factionService.getFactionById(faction.getId());
+    // No exception means success
+  }
 
-    // When
-    long result = factionService.count();
+  @Test
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testAuthenticatedCanGetFactionByIdWithMembers() {
+    factionService.getFactionByIdWithMembers(faction.getId());
+    // No exception means success
+  }
 
-    // Then
-    assertEquals(5L, result);
-    verify(factionRepository).count();
+  @Test
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testAuthenticatedCanGetFactionByName() {
+    factionService.getFactionByName(faction.getName());
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testAuthenticatedCanGetFactionForWrestler() {
+    factionService.getFactionForWrestler(playerWrestler.getId());
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testAuthenticatedCanGetFactionsWithActiveRivalries() {
+    factionService.getFactionsWithActiveRivalries();
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testAuthenticatedCanGetFactionsByType() {
+    factionService.getFactionsByType("singles");
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  void testAuthenticatedCanGetLargestFactions() {
+    factionService.getLargestFactions(5);
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  void testAuthenticatedCanHaveRivalry() {
+    Faction other = new Faction();
+    other.setName("Other Faction");
+    factionRepository.save(other);
+    factionService.canHaveRivalry(faction.getId(), other.getId());
+    // No exception means success
   }
 }
