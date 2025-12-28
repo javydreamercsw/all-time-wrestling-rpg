@@ -196,16 +196,16 @@
 33. ✅ Create security test fixtures:
 	- Test accounts for each role
 	- `@WithMockUser` test utilities
-34. 🔨 Write security tests:
-	- View access tests (in progress, E2E tests for main views and wrestler list view exist)
-	- Method security tests (in progress, specific security tests for services exist)
+34. ✅ Write security tests:
+	- View access tests (✅)
+	- Method security tests (✅)
 	- Login/logout tests (✅)
 	- Account management tests (✅)
-35. 🔨 Update documentation:
+35. ✅ Update documentation:
 	- README security section
 	- User guide for account management
 	- Developer guide for adding secured views
-36. 🔨 Test complete flows with all roles
+36. ✅ Test complete flows with all roles
 
 **Deliverable:** Fully tested and documented security system
 
