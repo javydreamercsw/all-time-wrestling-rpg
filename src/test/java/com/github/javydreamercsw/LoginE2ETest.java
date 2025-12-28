@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.Objects;
-
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -59,6 +58,9 @@ public class LoginE2ETest extends AbstractE2ETest {
     WebElement signInButton =
         loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
     clickElement(signInButton);
+    assertTrue(
+        Objects.requireNonNull(driver.getCurrentUrl()).endsWith(getContextPath() + "/login?error"),
+        driver.getCurrentUrl());
   }
 
   @Test
