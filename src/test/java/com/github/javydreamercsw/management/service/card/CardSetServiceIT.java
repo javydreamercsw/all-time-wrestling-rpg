@@ -17,18 +17,15 @@
 package com.github.javydreamercsw.management.service.card;
 
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@ActiveProfiles("test")
-class CardSetServiceIT {
+class CardSetServiceIT extends ManagementIntegrationTest {
 
   @Autowired private CardSetService cardSetService;
 
@@ -82,7 +79,7 @@ class CardSetServiceIT {
   @Test
   @WithCustomMockUser(
       username = "booker",
-      roles = {"BOOKOKER", "PLAYER"})
+      roles = {"BOOKER", "PLAYER"})
   void testBookerCanSaveCardSet() {
     CardSet cs = cardSetService.createCardSet("Save Card Set Booker", "SCSB");
     cs.setName("Updated by Booker");

@@ -17,36 +17,30 @@
 package com.github.javydreamercsw.management.service.faction;
 
 import com.github.javydreamercsw.TestUtils;
+import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.Role;
-import com.github.javydreamercsw.base.domain.account.RoleName;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@ActiveProfiles("test")
-class FactionServiceIT {
+class FactionServiceIT extends ManagementIntegrationTest {
 
   @Autowired private FactionService factionService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private FactionRepository factionRepository;
-  @Autowired private RoleRepository roleRepository;
+  @Autowired private AccountInitializer accountInitializer;
 
   private Wrestler bookerWrestler;
   private Wrestler playerWrestler;
@@ -54,34 +48,17 @@ class FactionServiceIT {
 
   @BeforeEach
   void setUp() {
-    factionRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    accountRepository.deleteAll();
-    roleRepository.deleteAll();
+    databaseCleaner.clearRepositories();
+    accountInitializer.init();
 
-    Role bookerRole = new Role(RoleName.BOOKER, "Booker role");
-    roleRepository.save(bookerRole);
-    Role adminRole = new Role(RoleName.ADMIN, "Admin role");
-    roleRepository.save(adminRole);
-    Role playerRole = new Role(RoleName.PLAYER, "Player role");
-    roleRepository.save(playerRole);
-    Role viewerRole = new Role(RoleName.VIEWER, "Viewer role");
-    roleRepository.save(viewerRole);
-
-    Account booker = new Account("booker", "password", "booker@test.com");
-    booker.setRoles(Collections.singleton(bookerRole));
-    accountRepository.save(booker);
-
+    Account booker = accountRepository.findByUsername("booker").orElseThrow();
     bookerWrestler = new Wrestler();
     bookerWrestler.setName("Booker T");
     bookerWrestler.setAccount(booker);
     bookerWrestler.setIsPlayer(true);
     wrestlerRepository.save(bookerWrestler);
 
-    Account player = new Account("player", "password", "player@test.com");
-    player.setRoles(Collections.singleton(playerRole));
-    accountRepository.save(player);
-
+    Account player = accountRepository.findByUsername("player").orElseThrow();
     playerWrestler = new Wrestler();
     playerWrestler.setName("Player One");
     playerWrestler.setAccount(player);

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.card;
 
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
@@ -26,14 +27,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@ActiveProfiles("test")
-class CardServiceIT {
+class CardServiceIT extends ManagementIntegrationTest {
 
   @Autowired private CardService cardService;
   @Autowired private CardSetRepository cardSetRepository;
