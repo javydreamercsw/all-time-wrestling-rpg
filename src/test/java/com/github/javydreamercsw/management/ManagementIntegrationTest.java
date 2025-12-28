@@ -134,7 +134,8 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     titleReignRepository.deleteAll();
     titleRepository.deleteAll();
 
-    // Need to clear wrestler-faction relationships before deleting factions
+    // Break circular dependencies between Faction and Wrestler
+    // 1. Clear faction from all wrestlers
     wrestlerRepository
         .findAll()
         .forEach(
@@ -143,6 +144,16 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
               wrestlerRepository.save(w);
             });
 
+    // 2. Clear leader from all factions
+    factionRepository
+        .findAll()
+        .forEach(
+            f -> {
+              f.setLeader(null);
+              factionRepository.save(f);
+            });
+
+    // Now safe to delete
     factionRepository.deleteAll();
     npcRepository.deleteAll();
     wrestlerRepository.deleteAll();
