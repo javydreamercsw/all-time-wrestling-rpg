@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collections;
@@ -45,6 +46,7 @@ class DeckServiceTest {
   @Autowired private AccountRepository accountRepository;
   @Autowired private DeckRepository deckRepository;
   @Autowired private RoleRepository roleRepository;
+  @Autowired private FactionRepository factionRepository;
 
   private Wrestler bookerWrestler;
   private Wrestler playerWrestler;
@@ -52,6 +54,7 @@ class DeckServiceTest {
   @BeforeEach
   void setUp() {
     deckRepository.deleteAll();
+    factionRepository.deleteAll();
     wrestlerRepository.deleteAll();
     accountRepository.deleteAll();
     roleRepository.deleteAll();

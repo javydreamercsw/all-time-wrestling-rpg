@@ -21,17 +21,22 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @SpringBootTest
+@Import(com.github.javydreamercsw.base.config.TestSecurityConfig.class)
 public class AccountLockoutIT extends AbstractIntegrationTest {
 
   @Autowired private AuthenticationManager authenticationManager;
@@ -41,6 +46,14 @@ public class AccountLockoutIT extends AbstractIntegrationTest {
 
   @BeforeEach
   void setUp() {
+    // Manually set up the security context
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                "admin",
+                "password",
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+
     accountService
         .findByUsername("viewer")
         .ifPresent(
