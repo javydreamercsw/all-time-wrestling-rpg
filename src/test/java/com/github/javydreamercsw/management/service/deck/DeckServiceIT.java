@@ -30,7 +30,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 class DeckServiceIT extends ManagementIntegrationTest {
 
   @Autowired private DeckService deckService;
@@ -43,22 +45,27 @@ class DeckServiceIT extends ManagementIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    databaseCleaner.clearRepositories();
     accountInitializer.init();
+    wrestlerRepository.deleteAll();
 
     Account booker = accountRepository.findByUsername("booker").orElseThrow();
-    bookerWrestler = new Wrestler();
-    bookerWrestler.setName("Booker T");
-    bookerWrestler.setAccount(booker);
-    bookerWrestler.setIsPlayer(true);
-    wrestlerRepository.save(bookerWrestler);
-
     Account player = accountRepository.findByUsername("player").orElseThrow();
-    playerWrestler = new Wrestler();
-    playerWrestler.setName("Player One");
-    playerWrestler.setAccount(player);
-    playerWrestler.setIsPlayer(true);
-    wrestlerRepository.save(playerWrestler);
+
+    if (bookerWrestler == null) {
+      bookerWrestler = new Wrestler();
+      bookerWrestler.setName("Booker");
+      bookerWrestler.setAccount(booker);
+      bookerWrestler.setIsPlayer(true);
+      wrestlerRepository.saveAndFlush(bookerWrestler);
+    }
+
+    if (playerWrestler == null) {
+      playerWrestler = new Wrestler();
+      playerWrestler.setName("Player One");
+      playerWrestler.setAccount(player);
+      playerWrestler.setIsPlayer(true);
+      wrestlerRepository.saveAndFlush(playerWrestler);
+    }
   }
 
   @Test
@@ -121,6 +128,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanFindById() {
     Deck deck = deckService.createDeck(playerWrestler);
+    Assertions.assertNotNull(deck.getId());
     deckService.findById(deck.getId());
     // No exception means success
   }

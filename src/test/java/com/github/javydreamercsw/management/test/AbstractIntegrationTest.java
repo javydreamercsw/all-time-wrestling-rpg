@@ -22,7 +22,6 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.management.DatabaseCleaner;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
@@ -76,7 +75,6 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected FactionService factionService;
   @Autowired protected WrestlerService wrestlerService;
   @Autowired protected ShowTemplateRepository showTemplateRepository;
-  @Autowired protected DatabaseCleaner databaseCleaner;
   @Autowired protected AccountRepository accountRepository;
   @Autowired protected RoleRepository roleRepository;
 
