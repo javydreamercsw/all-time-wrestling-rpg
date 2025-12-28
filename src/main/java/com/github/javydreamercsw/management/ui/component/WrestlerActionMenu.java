@@ -81,7 +81,7 @@ public class WrestlerActionMenu extends MenuBar {
             });
     editItem.addComponentAsFirst(new Icon(VaadinIcon.EDIT));
     editItem.setId("edit-" + wrestler.getId());
-    editItem.setVisible(securityUtils.canEdit());
+    editItem.setVisible(securityUtils.canEdit(wrestler));
 
     MenuItem deleteItem =
         subMenu.addItem(
@@ -98,7 +98,7 @@ public class WrestlerActionMenu extends MenuBar {
             });
     deleteItem.addComponentAsFirst(new Icon(VaadinIcon.TRASH));
     deleteItem.setId("delete-" + wrestler.getId());
-    deleteItem.setVisible(securityUtils.canDelete());
+    deleteItem.setVisible(securityUtils.canDelete(wrestler));
 
     MenuItem addFansItem =
         subMenu.addItem(
@@ -230,5 +230,8 @@ public class WrestlerActionMenu extends MenuBar {
     manageInjuriesItem.setId("manage-injuries-" + wrestler.getId());
     manageInjuriesItem.addComponentAsFirst(new Icon(VaadinIcon.AMBULANCE));
     manageInjuriesItem.setVisible(securityUtils.canEdit());
+
+    // The menu should only be visible if there are any actions to perform
+    setVisible(securityUtils.canEdit() || securityUtils.canDelete());
   }
 }

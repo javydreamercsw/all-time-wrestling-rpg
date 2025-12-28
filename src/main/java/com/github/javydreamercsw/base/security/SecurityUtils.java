@@ -117,7 +117,7 @@ public class SecurityUtils {
    * @return true if the user can create
    */
   public boolean canCreate() {
-    return hasAnyRole(RoleName.ADMIN, RoleName.BOOKER, RoleName.PLAYER);
+    return hasAnyRole(RoleName.ADMIN, RoleName.BOOKER);
   }
 
   /**

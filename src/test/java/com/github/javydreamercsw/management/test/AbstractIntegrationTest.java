@@ -20,6 +20,8 @@ import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.management.DatabaseCleaner;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
@@ -75,6 +77,8 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected WrestlerService wrestlerService;
   @Autowired protected ShowTemplateRepository showTemplateRepository;
   @Autowired protected DatabaseCleaner databaseCleaner;
+  @Autowired protected AccountRepository accountRepository;
+  @Autowired protected RoleRepository roleRepository;
 
   protected Wrestler createTestWrestler(@NonNull String name) {
     return TestUtils.createWrestler(name);
