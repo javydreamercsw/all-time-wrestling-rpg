@@ -40,7 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @Transactional
 @ActiveProfiles("test")
-public class AccountServiceTest {
+public class AccountServiceIT {
 
   @TestConfiguration
   static class TestConfig {

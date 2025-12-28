@@ -29,7 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class FeudResolutionServiceTest {
+class FeudResolutionServiceIT {
 
   @Autowired private FeudResolutionService feudResolutionService;
 

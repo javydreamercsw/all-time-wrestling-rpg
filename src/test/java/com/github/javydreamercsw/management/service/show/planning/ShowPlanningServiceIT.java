@@ -58,7 +58,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @SpringBootTest
 @MockitoSettings(strictness = Strictness.LENIENT)
-class ShowPlanningServiceTest extends ManagementIntegrationTest {
+class ShowPlanningServiceIT extends ManagementIntegrationTest {
 
   @MockitoBean private SegmentRepository segmentRepository;
   @MockitoBean private RivalryService rivalryService;

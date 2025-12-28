@@ -200,7 +200,7 @@ public class WrestlerService {
   public void delete(@NonNull Wrestler wrestler) {
     dramaEventRepository.deleteByPrimaryWrestlerOrSecondaryWrestler(wrestler, wrestler);
     wrestlerRepository.delete(wrestler);
-    log.info("Deleted wrestler: {}", wrestler.getName());
+    log.debug("Deleted wrestler: {}", wrestler.getName());
   }
 
   // @Cacheable(value = WRESTLERS_CACHE, key = "'all'")

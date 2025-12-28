@@ -44,7 +44,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class SecurityServiceTest {
+class SecurityServiceIT {
 
   @Autowired private AccountService accountService;
 

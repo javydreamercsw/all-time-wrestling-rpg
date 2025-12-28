@@ -38,7 +38,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class DramaEventServiceTest {
+class DramaEventServiceIT {
 
   @Autowired private DramaEventService dramaEventService;
   @Autowired private WrestlerRepository wrestlerRepository;

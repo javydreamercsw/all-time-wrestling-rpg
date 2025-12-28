@@ -40,7 +40,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class FactionServiceTest {
+class FactionServiceIT {
 
   @Autowired private FactionService factionService;
   @Autowired private WrestlerRepository wrestlerRepository;

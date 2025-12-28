@@ -33,7 +33,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class CardServiceTest {
+class CardServiceIT {
 
   @Autowired private CardService cardService;
   @Autowired private CardSetRepository cardSetRepository;

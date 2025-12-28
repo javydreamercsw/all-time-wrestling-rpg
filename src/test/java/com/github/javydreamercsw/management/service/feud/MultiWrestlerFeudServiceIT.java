@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudReposit
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -48,7 +49,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class MultiWrestlerFeudServiceTest {
+class MultiWrestlerFeudServiceIT extends AbstractIntegrationTest {
   @Autowired private MultiWrestlerFeudService multiWrestlerFeudService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private MultiWrestlerFeudRepository feudRepository;
@@ -57,7 +58,7 @@ class MultiWrestlerFeudServiceTest {
   @Autowired private AccountRepository accountRepository;
   @Autowired private RoleRepository roleRepository;
   @Autowired private WrestlerService wrestlerService;
-  @Autowired private PasswordEncoder passwordEncoder; // Autowire PasswordEncoder
+  @Autowired private PasswordEncoder passwordEncoder;
 
   private Wrestler wrestler1;
   private Wrestler wrestler2;

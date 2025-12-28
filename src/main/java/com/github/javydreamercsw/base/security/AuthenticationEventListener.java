@@ -46,7 +46,7 @@ public class AuthenticationEventListener
     if (event.getAuthentication().getPrincipal() instanceof CustomUserDetails userDetails) {
       String username = userDetails.getUsername();
       userDetailsService.recordSuccessfulLogin(username);
-      log.info("Successful login for user: {}", username);
+      log.debug("Successful login for user: {}", username);
     }
   }
 

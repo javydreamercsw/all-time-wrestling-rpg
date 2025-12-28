@@ -28,7 +28,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class CardSetServiceTest {
+class CardSetServiceIT {
 
   @Autowired private CardSetService cardSetService;
 
