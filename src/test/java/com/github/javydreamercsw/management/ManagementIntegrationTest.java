@@ -122,7 +122,6 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   protected void clearAllRepositories() {
     deckCardRepository.deleteAllInBatch();
     deckRepository.deleteAll();
-    deckRepository.deleteAll();
     dramaEventRepository.deleteAll();
     factionRivalryRepository.deleteAll();
     multiWrestlerFeudRepository.deleteAll();
@@ -134,6 +133,16 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     teamRepository.deleteAll();
     titleReignRepository.deleteAll();
     titleRepository.deleteAll();
+
+    // Need to clear wrestler-faction relationships before deleting factions
+    wrestlerRepository
+        .findAll()
+        .forEach(
+            w -> {
+              w.setFaction(null);
+              wrestlerRepository.save(w);
+            });
+
     factionRepository.deleteAll();
     npcRepository.deleteAll();
     wrestlerRepository.deleteAll();
