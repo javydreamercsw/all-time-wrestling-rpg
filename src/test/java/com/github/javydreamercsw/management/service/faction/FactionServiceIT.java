@@ -17,9 +17,11 @@
 package com.github.javydreamercsw.management.service.faction;
 
 import com.github.javydreamercsw.TestUtils;
-import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -27,12 +29,16 @@ import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class FactionServiceIT extends ManagementIntegrationTest {
 
@@ -40,35 +46,64 @@ class FactionServiceIT extends ManagementIntegrationTest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private FactionRepository factionRepository;
-  @Autowired private AccountInitializer accountInitializer;
+  @Autowired private RoleRepository roleRepository;
+  @Autowired private PasswordEncoder passwordEncoder;
 
   private Wrestler bookerWrestler;
   private Wrestler playerWrestler;
   private Faction faction;
+  private Account bookerAccount;
+  private Account playerAccount;
 
   @BeforeEach
   void setUp() {
-    databaseCleaner.clearRepositories();
-    accountInitializer.init();
+    // Roles should be present in the DB from migrations or a general test data setup.
+    Role bookerRole =
+        roleRepository
+            .findByName(RoleName.BOOKER)
+            .orElseGet(() -> roleRepository.save(new Role(RoleName.BOOKER, "Booker role")));
+    Role playerRole =
+        roleRepository
+            .findByName(RoleName.PLAYER)
+            .orElseGet(() -> roleRepository.save(new Role(RoleName.PLAYER, "Player role")));
 
-    Account booker = accountRepository.findByUsername("booker").orElseThrow();
+    String uuid1 = UUID.randomUUID().toString();
+    bookerAccount =
+        new Account(
+            "bk-" + uuid1, passwordEncoder.encode("password"), "booker-" + uuid1 + "@test.com");
+    bookerAccount.setRoles(Set.of(bookerRole, playerRole));
+    accountRepository.save(bookerAccount);
+
+    String uuid2 = UUID.randomUUID().toString();
+    playerAccount =
+        new Account(
+            "pl-" + uuid2, passwordEncoder.encode("password"), "player-" + uuid2 + "@test.com");
+    playerAccount.setRoles(Set.of(playerRole));
+    accountRepository.save(playerAccount);
+
     bookerWrestler = new Wrestler();
     bookerWrestler.setName("Booker T");
-    bookerWrestler.setAccount(booker);
+    bookerWrestler.setAccount(bookerAccount);
     bookerWrestler.setIsPlayer(true);
     wrestlerRepository.save(bookerWrestler);
 
-    Account player = accountRepository.findByUsername("player").orElseThrow();
     playerWrestler = new Wrestler();
     playerWrestler.setName("Player One");
-    playerWrestler.setAccount(player);
+    playerWrestler.setAccount(playerAccount);
     playerWrestler.setIsPlayer(true);
     wrestlerRepository.save(playerWrestler);
 
     faction = new Faction();
-    faction.setName("Test Faction");
+    faction.setName("Test Faction " + UUID.randomUUID());
     faction.setDescription("Test Description");
     factionRepository.save(faction);
+  }
+
+  @AfterEach
+  @Override
+  public void tearDown() {
+    // Rely on the robust cleanup in the parent class
+    super.tearDown();
   }
 
   @Test
