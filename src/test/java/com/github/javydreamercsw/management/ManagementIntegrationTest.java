@@ -58,6 +58,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrationTest {
   @Autowired protected DeckCardRepository deckCardRepository;
@@ -94,6 +96,10 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @Autowired protected CardSetRepository cardSetRepository;
   @Autowired protected SegmentTypeRepository segmentTypeRepository;
   @Autowired protected DramaEventService dramaEventService;
+
+  @Autowired
+  @Qualifier("testCustomUserDetailsService") protected UserDetailsService userDetailsService;
+
   private static Routes routes;
 
   @BeforeAll
