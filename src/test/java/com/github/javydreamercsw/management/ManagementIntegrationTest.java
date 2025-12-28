@@ -58,6 +58,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrationTest {
   @Autowired protected DeckCardRepository deckCardRepository;
@@ -94,6 +96,10 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @Autowired protected CardSetRepository cardSetRepository;
   @Autowired protected SegmentTypeRepository segmentTypeRepository;
   @Autowired protected DramaEventService dramaEventService;
+
+  @Autowired
+  @Qualifier("testCustomUserDetailsService") protected UserDetailsService userDetailsService;
+
   private static Routes routes;
 
   @BeforeAll
@@ -116,7 +122,6 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   protected void clearAllRepositories() {
     deckCardRepository.deleteAllInBatch();
     deckRepository.deleteAll();
-    deckRepository.deleteAll();
     dramaEventRepository.deleteAll();
     factionRivalryRepository.deleteAll();
     multiWrestlerFeudRepository.deleteAll();
@@ -128,6 +133,27 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     teamRepository.deleteAll();
     titleReignRepository.deleteAll();
     titleRepository.deleteAll();
+
+    // Break circular dependencies between Faction and Wrestler
+    // 1. Clear faction from all wrestlers
+    wrestlerRepository
+        .findAll()
+        .forEach(
+            w -> {
+              w.setFaction(null);
+              wrestlerRepository.save(w);
+            });
+
+    // 2. Clear leader from all factions
+    factionRepository
+        .findAll()
+        .forEach(
+            f -> {
+              f.setLeader(null);
+              factionRepository.save(f);
+            });
+
+    // Now safe to delete
     factionRepository.deleteAll();
     npcRepository.deleteAll();
     wrestlerRepository.deleteAll();

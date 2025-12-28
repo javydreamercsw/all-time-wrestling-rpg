@@ -26,7 +26,6 @@ import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.PasswordResetService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
@@ -37,39 +36,25 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 
 class SecurityServiceIT extends ManagementIntegrationTest {
 
   @Autowired private AccountService accountService;
-
-  @Autowired private WrestlerService wrestlerService;
-
   @Autowired private GameSettingService gameSettingService;
-
   @Autowired private PasswordResetService passwordResetService;
-
   @Autowired private PasswordEncoder passwordEncoder;
-
-  @Autowired private UserDetailsService userDetailsService;
-
   @Autowired private AccountRepository accountRepository;
-
   @Autowired private RoleRepository roleRepository;
 
   private static final String TEST_PASSWORD = "ValidPassword1!";
 
   private Account createAccountDirectly(
       String username, String password, String email, RoleName roleName) {
-
     Role role = roleRepository.findByName(roleName).orElseThrow();
-
     Account account = new Account(username, passwordEncoder.encode(password), email);
-
     account.setRoles(Set.of(role));
-
     return accountRepository.save(account);
   }
 
