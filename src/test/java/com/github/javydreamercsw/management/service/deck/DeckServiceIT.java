@@ -47,25 +47,22 @@ class DeckServiceIT extends ManagementIntegrationTest {
   void setUp() {
     accountInitializer.init();
     wrestlerRepository.deleteAll();
+    wrestlerRepository.flush();
 
     Account booker = accountRepository.findByUsername("booker").orElseThrow();
     Account player = accountRepository.findByUsername("player").orElseThrow();
 
-    if (bookerWrestler == null) {
-      bookerWrestler = new Wrestler();
-      bookerWrestler.setName("Booker");
-      bookerWrestler.setAccount(booker);
-      bookerWrestler.setIsPlayer(true);
-      wrestlerRepository.saveAndFlush(bookerWrestler);
-    }
+    bookerWrestler = new Wrestler();
+    bookerWrestler.setName("Booker");
+    bookerWrestler.setAccount(booker);
+    bookerWrestler.setIsPlayer(true);
+    wrestlerRepository.saveAndFlush(bookerWrestler);
 
-    if (playerWrestler == null) {
-      playerWrestler = new Wrestler();
-      playerWrestler.setName("Player One");
-      playerWrestler.setAccount(player);
-      playerWrestler.setIsPlayer(true);
-      wrestlerRepository.saveAndFlush(playerWrestler);
-    }
+    playerWrestler = new Wrestler();
+    playerWrestler.setName("Player One");
+    playerWrestler.setAccount(player);
+    playerWrestler.setIsPlayer(true);
+    wrestlerRepository.saveAndFlush(playerWrestler);
   }
 
   @Test

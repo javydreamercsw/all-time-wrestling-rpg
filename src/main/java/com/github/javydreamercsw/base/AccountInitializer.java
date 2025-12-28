@@ -31,7 +31,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -46,7 +45,7 @@ public class AccountInitializer implements Initializable {
   @Value("${data.initializer.enabled:true}")
   private boolean enabled;
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional
   public void init() {
     if (enabled) {
       log.info("Initializing accounts...");
