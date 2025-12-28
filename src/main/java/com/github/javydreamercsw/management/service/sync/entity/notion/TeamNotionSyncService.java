@@ -378,7 +378,7 @@ public class TeamNotionSyncService implements INotionSyncService {
                         null,
                         null));
               }
-              if (!entity.getExternalId().isBlank()) {
+              if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                 // Update existing page
                 UpdatePageRequest updatePageRequest =
                     new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
