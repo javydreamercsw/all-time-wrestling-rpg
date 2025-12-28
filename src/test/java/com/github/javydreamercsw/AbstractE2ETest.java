@@ -71,8 +71,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   @Getter
   private String contextPath;
 
-  private boolean loggedIn = false;
-
   protected String getUsername() {
     return "admin";
   }
@@ -102,9 +100,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void login(@NonNull String username, @NonNull String password) {
-    if (loggedIn) {
-      driver.get("http://localhost:" + serverPort + getContextPath() + "/logout");
-    }
     driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
     waitForAppToBeReady();
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
@@ -133,7 +128,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       }
       throw e;
     }
-    loggedIn = true;
   }
 
   @AfterEach
@@ -425,6 +419,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
     // 5. If the loop finishes without finding the item, throw an error.
     throw new org.openqa.selenium.NoSuchElementException(
-        "Could not find item '" + itemText + "' in combobox after scrolling.");
+        "Could not find item '" + itemText + "' in combo box after scrolling.");
+  }
+
+  protected void logout() {
+    driver.get("http://localhost:" + serverPort + getContextPath());
+    waitForVaadinElement(driver, By.id("logout-button"));
+    WebElement logoutButton = driver.findElement(By.id("logout-button"));
+    clickElement(logoutButton);
   }
 }

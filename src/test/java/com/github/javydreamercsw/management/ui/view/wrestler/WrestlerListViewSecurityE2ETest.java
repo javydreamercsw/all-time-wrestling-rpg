@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
@@ -28,6 +27,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.AccountService;
 import java.time.Duration;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -118,9 +118,10 @@ public class WrestlerListViewSecurityE2ETest extends AbstractE2ETest {
                     "//vaadin-menu-bar[@id='action-menu-"
                         + playerWrestler.getId()
                         + "']/vaadin-menu-bar-button")));
+    Assertions.assertNotNull(ownMenu);
     clickElement(ownMenu);
     assertTrue(driver.findElement(By.id("edit-" + playerWrestler.getId())).isDisplayed());
-    assertFalse(driver.findElements(By.id("delete-" + playerWrestler.getId())).size() > 0);
+    assertTrue(driver.findElements(By.id("delete-" + playerWrestler.getId())).isEmpty());
 
     // Close the menu
     clickElement(ownMenu);
@@ -133,8 +134,9 @@ public class WrestlerListViewSecurityE2ETest extends AbstractE2ETest {
                     "//vaadin-menu-bar[@id='action-menu-"
                         + otherWrestler.getId()
                         + "']/vaadin-menu-bar-button")));
+    Assertions.assertNotNull(otherMenu);
     clickElement(otherMenu);
-    assertFalse(driver.findElements(By.id("edit-" + otherWrestler.getId())).size() > 0);
+    assertTrue(driver.findElements(By.id("edit-" + otherWrestler.getId())).isEmpty());
   }
 
   @Test
@@ -156,6 +158,7 @@ public class WrestlerListViewSecurityE2ETest extends AbstractE2ETest {
                     "//vaadin-menu-bar[@id='action-menu-"
                         + playerWrestler.getId()
                         + "']/vaadin-menu-bar-button")));
+    Assertions.assertNotNull(menu);
     clickElement(menu);
     assertTrue(driver.findElement(By.id("edit-" + playerWrestler.getId())).isDisplayed());
     assertTrue(driver.findElement(By.id("delete-" + playerWrestler.getId())).isDisplayed());
@@ -179,15 +182,9 @@ public class WrestlerListViewSecurityE2ETest extends AbstractE2ETest {
                     "//vaadin-menu-bar[@id='action-menu-"
                         + playerWrestler.getId()
                         + "']/vaadin-menu-bar-button")));
+    Assertions.assertNotNull(menu);
     clickElement(menu);
     assertTrue(driver.findElement(By.id("edit-" + playerWrestler.getId())).isDisplayed());
     assertTrue(driver.findElement(By.id("delete-" + playerWrestler.getId())).isDisplayed());
-  }
-
-  private void logout() {
-    driver.get("http://localhost:" + serverPort + getContextPath());
-    waitForVaadinElement(driver, By.id("logout-button"));
-    WebElement logoutButton = driver.findElement(By.id("logout-button"));
-    clickElement(logoutButton);
   }
 }

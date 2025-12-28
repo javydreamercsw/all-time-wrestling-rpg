@@ -69,13 +69,6 @@ public class LoginE2ETest extends AbstractE2ETest {
 
     // Verify redirection to the login view
     waitForVaadinElement(driver, By.id("vaadinLoginFormWrapper"));
-    assertTrue(driver.getCurrentUrl().contains("/login"));
-  }
-
-  private void logout() {
-    driver.get("http://localhost:" + serverPort + getContextPath());
-    waitForVaadinElement(driver, By.id("logout-button"));
-    WebElement logoutButton = driver.findElement(By.id("logout-button"));
-    clickElement(logoutButton);
+    assertTrue(Objects.requireNonNull(driver.getCurrentUrl()).contains("/login"));
   }
 }
