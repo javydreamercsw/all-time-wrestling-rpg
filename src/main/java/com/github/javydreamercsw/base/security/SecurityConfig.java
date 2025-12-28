@@ -17,10 +17,12 @@
 package com.github.javydreamercsw.base.security;
 
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -38,6 +40,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
   private final CustomUserDetailsService userDetailsService;
+  private final Environment environment;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -72,6 +75,17 @@ public class SecurityConfig {
 
     // Configure form login
     http.formLogin(AbstractAuthenticationFilterConfigurer::permitAll);
+
+    // Enforce HTTPS in production
+    if (Arrays.asList(environment.getActiveProfiles()).contains("prod")) {
+      http.requiresChannel(channel -> channel.anyRequest().requiresSecure());
+    }
+
+    // Add security headers
+    http.headers(
+        headers ->
+            headers.httpStrictTransportSecurity(
+                hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000)));
 
     return http.build();
   }
