@@ -5,7 +5,7 @@ Thank you for your interest in contributing to the All Time Wrestling RPG projec
 ## Development Setup
 
 ### Prerequisites
-- Java 17 or higher
+- Java 25 or higher
 - Maven 3.8+
 - Git
 
@@ -21,11 +21,11 @@ Thank you for your interest in contributing to the All Time Wrestling RPG projec
 This project maintains a **90% code coverage goal** using JaCoCo. All contributions must maintain or improve coverage.
 
 #### Running Coverage Analysis
-**Important**: This project requires Java 17. If you have multiple Java versions installed, set JAVA_HOME:
+**Important**: This project requires Java 25. If you have multiple Java versions installed, set JAVA_HOME:
 
 ```bash
-# Set Java 17 (adjust path as needed)
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home
+# Set Java 25 (adjust path as needed)
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-25.jdk/Contents/Home
 
 # Run all tests with coverage
 mvn clean verify
@@ -40,9 +40,9 @@ mvn jacoco:report
 open target/site/jacoco/index.html
 ```
 
-**Alternative**: Run with Java 17 inline:
+**Alternative**: Run with Java 25 inline:
 ```bash
-JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home mvn clean verify
+JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-25.jdk/Contents/Home mvn clean verify
 ```
 
 #### Coverage Thresholds
