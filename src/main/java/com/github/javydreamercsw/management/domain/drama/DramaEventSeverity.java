@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.domain.drama;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 /**
@@ -46,6 +48,24 @@ public enum DramaEventSeverity {
     this.displayName = displayName;
     this.description = description;
     this.emoji = emoji;
+  }
+
+  @JsonCreator
+  public static DramaEventSeverity fromString(String value) {
+    if (value == null) {
+      return null;
+    }
+    for (DramaEventSeverity severity : values()) {
+      if (severity.name().equalsIgnoreCase(value) || severity.displayName.equalsIgnoreCase(value)) {
+        return severity;
+      }
+    }
+    throw new IllegalArgumentException("Unknown DramaEventSeverity: " + value);
+  }
+
+  @JsonValue
+  public String getDisplayName() {
+    return displayName;
   }
 
   /** Get the typical fan impact range for this severity level. */
