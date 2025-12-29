@@ -101,7 +101,7 @@ class FactionServiceIT extends ManagementIntegrationTest {
 
   @AfterEach
   @Override
-  public void tearDown() {
+  public void tearDown() throws Exception {
     // Rely on the robust cleanup in the parent class
     super.tearDown();
   }

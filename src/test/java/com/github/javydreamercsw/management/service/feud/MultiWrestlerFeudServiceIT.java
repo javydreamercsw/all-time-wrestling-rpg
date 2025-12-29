@@ -18,10 +18,8 @@ package com.github.javydreamercsw.management.service.feud;
 
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -33,7 +31,6 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudReposit
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -43,7 +40,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Autowired private MultiWrestlerFeudService multiWrestlerFeudService;
@@ -51,10 +47,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Autowired private MultiWrestlerFeudRepository feudRepository;
   @Autowired private FactionRepository factionRepository;
   @Autowired private DeckRepository deckRepository;
-  @Autowired private AccountRepository accountRepository;
-  @Autowired private RoleRepository roleRepository;
   @Autowired private WrestlerService wrestlerService;
-  @Autowired private PasswordEncoder passwordEncoder;
 
   private Wrestler wrestler1;
   private Wrestler wrestler2;
@@ -63,47 +56,19 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    factionRepository.deleteAll();
-    feudRepository.deleteAll();
-    deckRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    accountRepository.deleteAll();
-    roleRepository.deleteAll();
+    clearAllRepositories();
+    // Do NOT delete accounts to avoid breaking other tests running in parallel
 
-    // Create roles
-    Role adminRole = new Role(RoleName.ADMIN, "Admin role");
-    roleRepository.save(adminRole);
-    Role bookerRole = new Role(RoleName.BOOKER, "Booker role");
-    roleRepository.save(bookerRole);
-    Role playerRole = new Role(RoleName.PLAYER, "Player role");
-    roleRepository.save(playerRole);
+    // Ensure roles exist
+    Role adminRole = getOrCreateRole(RoleName.ADMIN);
+    Role bookerRole = getOrCreateRole(RoleName.BOOKER);
+    Role playerRole = getOrCreateRole(RoleName.PLAYER);
 
-    // Create accounts with ValidPassword1!
-    Account adminAccount =
-        new Account("admin", passwordEncoder.encode("ValidPassword1!"), "admin@test.com");
-    adminAccount.setRoles(Collections.singleton(adminRole));
-    accountRepository.save(adminAccount);
-
-    Account bookerAccount =
-        new Account("booker", passwordEncoder.encode("ValidPassword1!"), "booker@test.com");
-    bookerAccount.setRoles(Collections.singleton(bookerRole));
-    accountRepository.save(bookerAccount);
-
-    // Create distinct player accounts for each wrestler
-    Account playerAccount1 =
-        new Account("player1", passwordEncoder.encode("ValidPassword1!"), "player1@test.com");
-    playerAccount1.setRoles(Collections.singleton(playerRole));
-    accountRepository.save(playerAccount1);
-
-    Account playerAccount2 =
-        new Account("player2", passwordEncoder.encode("ValidPassword1!"), "player2@test.com");
-    playerAccount2.setRoles(Collections.singleton(playerRole));
-    accountRepository.save(playerAccount2);
-
-    Account playerAccount3 =
-        new Account("player3", passwordEncoder.encode("ValidPassword1!"), "player3@test.com");
-    playerAccount3.setRoles(Collections.singleton(playerRole));
-    accountRepository.save(playerAccount3);
+    // Create test-specific accounts
+    Account bookerAccount = createTestAccount("feud_booker", RoleName.BOOKER);
+    Account playerAccount1 = createTestAccount("feud_player1", RoleName.PLAYER);
+    Account playerAccount2 = createTestAccount("feud_player2", RoleName.PLAYER);
+    Account playerAccount3 = createTestAccount("feud_player3", RoleName.PLAYER);
 
     // Create wrestlers using the service with admin privileges and distinct accounts
     TestUtils.runAsAdmin(
@@ -123,9 +88,15 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
         });
   }
 
+  private Role getOrCreateRole(RoleName roleName) {
+    return roleRepository
+        .findByName(roleName)
+        .orElseGet(() -> roleRepository.save(new Role(roleName, roleName.name() + " role")));
+  }
+
   @Test
   @WithCustomMockUser(
-      username = "admin",
+      username = "feud_admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanCreateFeud() {
     Optional<MultiWrestlerFeud> feud =
@@ -137,7 +108,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "booker",
+      username = "feud_booker",
       roles = {"BOOKER", "PLAYER"})
   void testBookerCanCreateFeud() {
     Optional<MultiWrestlerFeud> feud =
@@ -147,7 +118,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotCreateFeud() {
     Assertions.assertThrows(
         AccessDeniedException.class,
@@ -158,7 +129,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "admin",
+      username = "feud_admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanAddParticipant() {
     Optional<MultiWrestlerFeud> feud =
@@ -173,7 +144,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotAddParticipant() {
     Optional<MultiWrestlerFeud> feud =
         TestUtils.runAsAdmin(
@@ -190,7 +161,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "admin",
+      username = "feud_admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanRemoveParticipant() {
     Optional<MultiWrestlerFeud> feud =
@@ -205,7 +176,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotRemoveParticipant() {
     Optional<MultiWrestlerFeud> feud =
         TestUtils.runAsAdmin(
@@ -221,7 +192,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotRemoveOwnWrestlerFromFeud() {
     // Create a feud as admin with player1's wrestler (wrestler1) and another wrestler (wrestler2)
     Optional<MultiWrestlerFeud> feud =
@@ -244,7 +215,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "admin",
+      username = "feud_admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanEndFeud() {
     Optional<MultiWrestlerFeud> feud =
@@ -258,7 +229,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotEndFeud() {
     Optional<MultiWrestlerFeud> feud =
         TestUtils.runAsAdmin(
@@ -273,7 +244,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "admin",
+      username = "feud_admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanDeleteFeud() {
     final Long[] feudId = new Long[1];
@@ -289,7 +260,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotDeleteFeud() {
     final Long[] feudId = new Long[1];
     TestUtils.runAsAdmin(
@@ -304,7 +275,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testAuthenticatedCanGetAllFeuds() {
     TestUtils.runAsAdmin(
         () ->
@@ -330,7 +301,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testAuthenticatedCanGetFeudsForWrestler() {
     TestUtils.runAsAdmin(
         () ->
@@ -353,7 +324,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "admin",
+      username = "feud_admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanAddHeat() {
     Optional<MultiWrestlerFeud> feud =
@@ -367,7 +338,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
+  @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotAddHeat() {
     Optional<MultiWrestlerFeud> feud =
         TestUtils.runAsAdmin(
