@@ -250,16 +250,16 @@ For technical details on the security implementation, see the [**Developer Secur
 
 #### Authentication & Authorization
 - **Role-Based Access Control**: The application uses a robust role-based system with four distinct roles:
-  - **ADMIN**: Full system access, including user account management.
-  - **BOOKER**: Can manage all game content (shows, wrestlers, etc.).
-  - **PLAYER**: Can manage their own wrestler and related items.
-  - **VIEWER**: Read-only access to public data.
+- **ADMIN**: Full system access, including user account management.
+- **BOOKER**: Can manage all game content (shows, wrestlers, etc.).
+- **PLAYER**: Can manage their own wrestler and related items.
+- **VIEWER**: Read-only access to public data.
 - **Login**: Users must authenticate via a login form.
 - **Default Test Accounts**:
-  - Admin: `admin` / `admin123`
-  - Booker: `booker` / `booker123`
-  - Player: `player` / `player123`
-  - Viewer: `viewer` / `viewer123`
+- Admin: `admin` / `admin123`
+- Booker: `booker` / `booker123`
+- Player: `player` / `player123`
+- Viewer: `viewer` / `viewer123`
 
 ⚠️ **Important**: Change default passwords in a production environment!
 
