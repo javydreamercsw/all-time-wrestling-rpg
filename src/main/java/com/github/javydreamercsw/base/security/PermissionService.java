@@ -27,8 +27,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service("permissionService")
+@Transactional(readOnly = true)
 public class PermissionService {
 
   @Autowired private AccountRepository accountRepository;
@@ -41,9 +43,10 @@ public class PermissionService {
     }
 
     Object principal = authentication.getPrincipal();
+    String username = authentication.getName();
 
     if (targetDomainObject instanceof Wrestler wrestler) {
-      // Strategy 1: Check if the authenticated user has this wrestler assigned in UserDetails
+      // Strategy 1: Check by ID if principal has wrestler info
       if (principal instanceof CustomUserDetails userDetails) {
         Wrestler userWrestler = userDetails.getWrestler();
         if (userWrestler != null
@@ -53,13 +56,27 @@ public class PermissionService {
         }
       }
 
-      // Strategy 2: Check if the wrestler has an account that matches the authenticated user
-      if (Boolean.TRUE.equals(wrestler.getIsPlayer()) && wrestler.getAccount() != null) {
-        String username = authentication.getName();
-        if (username != null && username.equals(wrestler.getAccount().getUsername())) {
+      // Strategy 2: Check by Account Username on the passed object
+      if (wrestler.getAccount() != null && username != null) {
+        if (username.equals(wrestler.getAccount().getUsername())) {
           return true;
         }
       }
+
+      // Strategy 3: Reload from DB to be sure (handles detached objects or missing account info)
+      if (wrestler.getId() != null) {
+        return wrestlerRepository
+            .findById(wrestler.getId())
+            .map(
+                dbWrestler -> {
+                  if (dbWrestler.getAccount() != null && username != null) {
+                    return username.equals(dbWrestler.getAccount().getUsername());
+                  }
+                  return false;
+                })
+            .orElse(false);
+      }
+
     } else if (targetDomainObject instanceof Deck deck) {
       Wrestler wrestler = deck.getWrestler();
       if (wrestler != null) {
