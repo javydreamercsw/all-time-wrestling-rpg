@@ -70,6 +70,7 @@ public class BookerViewE2ETest extends AbstractE2ETest {
     if (showTypeRepository.count() == 0) {
       ShowType st = new ShowType();
       st.setName("Weekly Show");
+      st.setDescription("Weekly Show");
       showTypeRepository.save(st);
     }
 
