@@ -41,7 +41,7 @@ import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class NotionSyncViewTest extends AbstractE2ETest {
+class NotionSyncViewE2ETest extends AbstractE2ETest {
 
   @Mock private NotionSyncScheduler notionSyncScheduler;
   @Mock private NotionSyncProperties syncProperties;
