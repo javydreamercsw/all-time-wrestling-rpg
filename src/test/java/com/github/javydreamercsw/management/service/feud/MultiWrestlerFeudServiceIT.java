@@ -18,10 +18,8 @@ package com.github.javydreamercsw.management.service.feud;
 
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -33,7 +31,6 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudReposit
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -43,7 +40,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Autowired private MultiWrestlerFeudService multiWrestlerFeudService;
@@ -51,10 +47,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Autowired private MultiWrestlerFeudRepository feudRepository;
   @Autowired private FactionRepository factionRepository;
   @Autowired private DeckRepository deckRepository;
-  @Autowired private AccountRepository accountRepository;
-  @Autowired private RoleRepository roleRepository;
   @Autowired private WrestlerService wrestlerService;
-  @Autowired private PasswordEncoder passwordEncoder;
 
   private Wrestler wrestler1;
   private Wrestler wrestler2;
@@ -72,10 +65,10 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
     Role playerRole = getOrCreateRole(RoleName.PLAYER);
 
     // Create test-specific accounts
-    Account bookerAccount = createTestAccount("feud_booker", bookerRole);
-    Account playerAccount1 = createTestAccount("feud_player1", playerRole);
-    Account playerAccount2 = createTestAccount("feud_player2", playerRole);
-    Account playerAccount3 = createTestAccount("feud_player3", playerRole);
+    Account bookerAccount = createTestAccount("feud_booker", RoleName.BOOKER);
+    Account playerAccount1 = createTestAccount("feud_player1", RoleName.PLAYER);
+    Account playerAccount2 = createTestAccount("feud_player2", RoleName.PLAYER);
+    Account playerAccount3 = createTestAccount("feud_player3", RoleName.PLAYER);
 
     // Create wrestlers using the service with admin privileges and distinct accounts
     TestUtils.runAsAdmin(
@@ -99,17 +92,6 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
     return roleRepository
         .findByName(roleName)
         .orElseGet(() -> roleRepository.save(new Role(roleName, roleName.name() + " role")));
-  }
-
-  private Account createTestAccount(String username, Role role) {
-    Optional<Account> existing = accountRepository.findByUsername(username);
-    if (existing.isPresent()) {
-      return existing.get();
-    }
-    Account account =
-        new Account(username, passwordEncoder.encode("ValidPassword1!"), username + "@test.com");
-    account.setRoles(Collections.singleton(role));
-    return accountRepository.save(account);
   }
 
   @Test

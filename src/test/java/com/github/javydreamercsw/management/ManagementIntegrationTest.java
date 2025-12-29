@@ -16,23 +16,13 @@
 */
 package com.github.javydreamercsw.management;
 
-import com.github.javydreamercsw.base.AccountInitializer;
-import com.github.javydreamercsw.management.domain.card.CardRepository;
-import com.github.javydreamercsw.management.domain.card.CardSetRepository;
-import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
-import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
-import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
-import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
-import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
-import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
@@ -40,9 +30,6 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.card.CardService;
-import com.github.javydreamercsw.management.service.card.CardSetService;
-import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -63,16 +50,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrationTest {
-  @Autowired protected DeckCardRepository deckCardRepository;
-  @Autowired protected DramaEventRepository dramaEventRepository;
   @Autowired protected FactionRivalryRepository factionRivalryRepository;
-  @Autowired protected MultiWrestlerFeudRepository multiWrestlerFeudRepository;
   @Autowired protected RivalryRepository rivalryRepository;
-  @Autowired protected InjuryRepository injuryRepository;
-  @Autowired protected InjuryTypeRepository injuryTypeRepository;
   @Autowired protected SegmentRepository segmentRepository;
-  @Autowired protected SegmentRuleRepository segmentRuleRepository;
-  @Autowired protected NpcRepository npcRepository;
   @Autowired protected SeasonRepository seasonRepository;
   @Autowired protected SegmentRuleService segmentRuleService;
   @Autowired protected ShowTypeService showTypeService;
@@ -81,8 +61,6 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @Autowired protected ShowRepository showRepository;
   @Autowired protected SegmentTypeService segmentTypeService;
   @Autowired protected ShowTemplateService showTemplateService;
-  @Autowired protected CardSetService cardSetService;
-  @Autowired protected CardService cardService;
   @Autowired protected WrestlerService wrestlerService;
   @Autowired protected NotionSyncService notionSyncService;
   @Autowired protected FactionRepository factionRepository;
@@ -93,16 +71,14 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @Autowired protected TeamRepository teamRepository;
   @Autowired protected ShowService showService;
   @Autowired protected DeckRepository deckRepository;
-  @Autowired protected CardRepository cardRepository;
-  @Autowired protected CardSetRepository cardSetRepository;
   @Autowired protected SegmentTypeRepository segmentTypeRepository;
-  @Autowired protected DramaEventService dramaEventService;
-  @Autowired private AccountInitializer accountInitializer;
+  @Autowired protected DatabaseCleaner databaseCleaner;
 
   @Autowired
   @Qualifier("testCustomUserDetailsService") protected UserDetailsService userDetailsService;
 
   private static Routes routes;
+  private AutoCloseable mocks;
 
   @BeforeAll
   public static void discoverRoutes() {
@@ -112,61 +88,19 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
 
   @BeforeEach
   public void setupKaribu() {
-    MockitoAnnotations.openMocks(this);
+    mocks = MockitoAnnotations.openMocks(this);
     MockVaadin.setup(routes); // Set up Karibu with your discovered routes
   }
 
   @AfterEach
-  public void tearDown() {
+  public void tearDown() throws Exception {
     MockVaadin.tearDown();
+    if (mocks != null) {
+      mocks.close();
+    }
   }
 
   protected void clearAllRepositories() {
-    deckCardRepository.deleteAllInBatch();
-    deckRepository.deleteAll();
-    dramaEventRepository.deleteAll();
-    factionRivalryRepository.deleteAll();
-    multiWrestlerFeudRepository.deleteAll();
-    rivalryRepository.deleteAll();
-    injuryRepository.deleteAll();
-    injuryTypeRepository.deleteAll();
-    segmentRepository.deleteAll();
-    segmentRuleRepository.deleteAll();
-    teamRepository.deleteAll();
-    titleReignRepository.deleteAll();
-    titleRepository.deleteAll();
-
-    // Break circular dependencies between Faction and Wrestler
-    // 1. Clear faction from all wrestlers
-    wrestlerRepository
-        .findAll()
-        .forEach(
-            w -> {
-              w.setFaction(null);
-              wrestlerRepository.save(w);
-            });
-
-    // 2. Clear leader from all factions
-    factionRepository
-        .findAll()
-        .forEach(
-            f -> {
-              f.setLeader(null);
-              factionRepository.save(f);
-            });
-
-    // Now safe to delete
-    factionRepository.deleteAll();
-    npcRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    cardRepository.deleteAll();
-    cardSetRepository.deleteAll();
-    seasonRepository.deleteAll();
-    showRepository.deleteAll();
-    showTemplateRepository.deleteAll();
-    showTypeRepository.deleteAll();
-    segmentTypeRepository.deleteAll();
-
-    accountInitializer.init();
+    databaseCleaner.clearRepositories();
   }
 }

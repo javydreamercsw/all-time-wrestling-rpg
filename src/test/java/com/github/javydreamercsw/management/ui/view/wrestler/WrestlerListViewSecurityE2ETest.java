@@ -21,10 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.AccountService;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
@@ -34,16 +32,11 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 public class WrestlerListViewSecurityE2ETest extends AbstractE2ETest {
-
-  @Autowired
-  @Qualifier("managementAccountService") private AccountService accountService;
 
   private Wrestler playerWrestler;
   private Wrestler otherWrestler;
@@ -51,28 +44,15 @@ public class WrestlerListViewSecurityE2ETest extends AbstractE2ETest {
   @BeforeEach
   void setUp() {
     // Clean up database
-    segmentRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-    accountRepository.deleteAll();
-    roleRepository.deleteAll();
+    databaseCleaner.clearRepositories();
 
-    // Re-create roles
-    roleRepository.save(new Role(RoleName.ADMIN, "Admin role"));
-    roleRepository.save(new Role(RoleName.BOOKER, "Booker role"));
-    roleRepository.save(new Role(RoleName.PLAYER, "Player role"));
-    roleRepository.save(new Role(RoleName.VIEWER, "Viewer role"));
-
-    // Re-create accounts
-    accountService.createAccount("admin", "Admin123!", "admin@atwrpg.local", RoleName.ADMIN);
-    accountService.createAccount("booker", "Booker123!", "booker@atwrpg.local", RoleName.BOOKER);
-    Account playerAccount =
-        accountService.createAccount(
-            "player", "Player123!", "player@atwrpg.local", RoleName.PLAYER);
-    accountService.createAccount("viewer", "Viewer123!", "viewer@atwrpg.local", RoleName.VIEWER);
+    Account player = createTestAccount("player-test", "ValidPassword1!", RoleName.PLAYER);
+    createTestAccount("viewer-test", "ValidPassword1!", RoleName.VIEWER);
+    createTestAccount("booker-test", "ValidPassword1!", RoleName.BOOKER);
 
     // Create wrestlers
     playerWrestler = TestUtils.createWrestler("Player's Wrestler");
-    playerWrestler.setAccount(playerAccount);
+    playerWrestler.setAccount(player);
     playerWrestler.setIsPlayer(true);
     wrestlerRepository.save(playerWrestler);
 
@@ -83,7 +63,7 @@ public class WrestlerListViewSecurityE2ETest extends AbstractE2ETest {
   @Test
   void testAsViewer() {
     logout();
-    login("viewer", "Viewer123!");
+    login("viewer-test", "ValidPassword1!");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
@@ -101,7 +81,7 @@ public class WrestlerListViewSecurityE2ETest extends AbstractE2ETest {
   @Test
   void testAsPlayer() {
     logout();
-    login("player", "Player123!");
+    login("player-test", "ValidPassword1!");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
@@ -142,7 +122,7 @@ public class WrestlerListViewSecurityE2ETest extends AbstractE2ETest {
   @Test
   void testAsBooker() {
     logout();
-    login("booker", "Booker123!");
+    login("booker-test", "ValidPassword1!");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
