@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.injury;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -44,6 +45,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -58,6 +60,7 @@ import lombok.extern.slf4j.Slf4j;
 public class InjuryTypeListView extends Main {
 
   private final InjuryTypeService injuryTypeService;
+  private final SecurityUtils securityUtils;
   private final Grid<InjuryType> grid;
   private final TextField searchField;
   private final Button createButton;
@@ -71,8 +74,10 @@ public class InjuryTypeListView extends Main {
   private InjuryType editingInjuryType;
   private Binder<InjuryType> binder;
 
-  public InjuryTypeListView(InjuryTypeService injuryTypeService) {
+  public InjuryTypeListView(
+      @NonNull InjuryTypeService injuryTypeService, @NonNull SecurityUtils securityUtils) {
     this.injuryTypeService = injuryTypeService;
+    this.securityUtils = securityUtils;
     this.grid = new Grid<>(InjuryType.class, false);
     this.searchField = new TextField();
     this.createButton = new Button("Create Injury Type", VaadinIcon.PLUS.create());
@@ -144,11 +149,13 @@ public class InjuryTypeListView extends Main {
               Button editButton = new Button("Edit", VaadinIcon.EDIT.create());
               editButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
               editButton.addClickListener(e -> editInjuryType(injuryType));
+              editButton.setVisible(securityUtils.canEdit());
 
               Button deleteButton = new Button("Delete", VaadinIcon.TRASH.create());
               deleteButton.addThemeVariants(
                   ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
               deleteButton.addClickListener(e -> confirmDelete(injuryType));
+              deleteButton.setVisible(securityUtils.canDelete());
 
               actions.add(editButton, deleteButton);
               return actions;
@@ -193,6 +200,7 @@ public class InjuryTypeListView extends Main {
 
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     createButton.addClickListener(e -> createInjuryType());
+    createButton.setVisible(securityUtils.canCreate());
   }
 
   private HorizontalLayout createToolbar() {
@@ -252,6 +260,7 @@ public class InjuryTypeListView extends Main {
     // Buttons
     Button saveButton = new Button("Save", e -> saveInjuryType());
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveButton.setVisible(securityUtils.canEdit());
 
     Button cancelButton = new Button("Cancel", e -> editDialog.close());
 

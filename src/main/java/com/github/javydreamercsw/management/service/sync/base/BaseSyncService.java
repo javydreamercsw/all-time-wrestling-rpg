@@ -37,6 +37,8 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * Enhanced base class for all sync services providing common functionality including rate limiting,
@@ -223,6 +225,9 @@ public abstract class BaseSyncService {
         batchSize);
     List<R> allResults = new java.util.ArrayList<>();
 
+    // Capture the current security context to propagate to async threads
+    SecurityContext securityContext = SecurityContextHolder.getContext();
+
     for (int i = 0; i < items.size(); i += batchSize) {
       int endIndex = Math.min(i + batchSize, items.size());
       List<T> batch = items.subList(i, endIndex);
@@ -236,6 +241,8 @@ public abstract class BaseSyncService {
                   item ->
                       CompletableFuture.supplyAsync(
                           () -> {
+                            // Set the security context in the async thread
+                            SecurityContextHolder.setContext(securityContext);
                             try {
                               syncServiceDependencies.getRateLimitService().acquirePermit();
                               return processor.apply(item);
@@ -250,6 +257,9 @@ public abstract class BaseSyncService {
                               log.error(msg);
                               if (messageConsumer != null) messageConsumer.accept(msg);
                               throw new RuntimeException("Processing failed", e);
+                            } finally {
+                              // Clear the security context to prevent leaks
+                              SecurityContextHolder.clearContext();
                             }
                           },
                           notionApiExecutor.getSyncExecutorService()))

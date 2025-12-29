@@ -1,0 +1,56 @@
+/*
+* Copyright (C) 2025 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
+package com.github.javydreamercsw.management.ui.view;
+
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.Route;
+import jakarta.annotation.security.RolesAllowed;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@PageTitle("Game Settings")
+@Route(value = "game-settings")
+@RolesAllowed("ADMIN")
+public class GameSettingsView extends VerticalLayout {
+
+  private final GameSettingService gameSettingService;
+  private DatePicker gameDatePicker;
+
+  @Autowired
+  public GameSettingsView(GameSettingService gameSettingService) {
+    this.gameSettingService = gameSettingService;
+    init();
+  }
+
+  private void init() {
+    gameDatePicker = new DatePicker("Current Game Date");
+    gameDatePicker.setValue(gameSettingService.getCurrentGameDate());
+    gameDatePicker.addValueChangeListener(
+        event -> {
+          gameSettingService.saveCurrentGameDate(event.getValue());
+          Notification.show("Game date updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    VerticalLayout layout = new VerticalLayout(gameDatePicker);
+    add(layout);
+  }
+}

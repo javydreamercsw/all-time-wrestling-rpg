@@ -23,7 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.controller.season.SeasonController.CreateSeasonRequest;
 import com.github.javydreamercsw.management.controller.season.SeasonController.UpdateSeasonRequest;
 import com.github.javydreamercsw.management.domain.season.Season;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,15 +40,14 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("SeasonController Integration Tests")
-class SeasonControllerIntegrationTest extends AbstractIntegrationTest {
+class SeasonControllerIntegrationTest extends AbstractMockUserIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
-  @Autowired private com.github.javydreamercsw.management.DatabaseCleaner databaseCleaner;
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   void setUp() {
-    databaseCleaner.clearRepositories();
+    seasonRepository.deleteAll();
   }
 
   @Test

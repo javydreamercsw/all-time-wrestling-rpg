@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.exception.NotionAPIError;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,6 +35,7 @@ public class SegmentSummaryService {
   private final SegmentService segmentService;
   private final SegmentNarrationServiceFactory narrationServiceFactory;
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Segment summarizeSegment(@NonNull Long segmentId) {
     Segment segment =
         segmentService

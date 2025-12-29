@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.npc;
 
 import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -36,6 +37,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import lombok.NonNull;
 
 @Route("npc-list")
 @PageTitle("NPC List")
@@ -50,7 +52,7 @@ public class NpcListView extends Main {
   final Button createBtn;
   final Grid<Npc> npcGrid;
 
-  public NpcListView(NpcService npcService) {
+  public NpcListView(@NonNull NpcService npcService, @NonNull SecurityUtils securityUtils) {
     this.npcService = npcService;
 
     name = new TextField();
@@ -65,12 +67,15 @@ public class NpcListView extends Main {
 
     createBtn = new Button("Create", event -> createNpc());
     createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    createBtn.setVisible(securityUtils.canCreate());
 
     npcGrid = new Grid<>();
     Editor<Npc> editor = npcGrid.getEditor();
     editor.setBuffered(true);
     Binder<Npc> binder = new Binder<>(Npc.class);
-    editor.setBinder(binder);
+    if (securityUtils.canEdit()) {
+      editor.setBinder(binder);
+    }
 
     TextField nameField = new TextField();
     TextField npcTypeField = new TextField();
@@ -92,6 +97,7 @@ public class NpcListView extends Main {
             npc -> {
               Button editButton = new Button("Edit");
               editButton.addClickListener(e -> npcGrid.getEditor().editItem(npc));
+              editButton.setVisible(securityUtils.canEdit());
               return editButton;
             })
         .setHeader("Actions");
@@ -108,6 +114,7 @@ public class NpcListView extends Main {
                     Notification.show("NPC deleted", 2000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
                   });
+              deleteButton.setVisible(securityUtils.canDelete());
               return deleteButton;
             })
         .setHeader("Delete");
@@ -136,9 +143,14 @@ public class NpcListView extends Main {
     Button saveButton = new Button("Save", e -> editor.save());
     Button cancelButton = new Button("Cancel", e -> editor.cancel());
     HorizontalLayout actions = new HorizontalLayout(saveButton, cancelButton);
+    actions.setVisible(securityUtils.canEdit());
     npcGrid.getElement().appendChild(actions.getElement());
 
-    add(new ViewToolbar("NPC List", ViewToolbar.group(name, npcType, createBtn)));
+    if (securityUtils.canCreate()) {
+      add(new ViewToolbar("NPC List", ViewToolbar.group(name, npcType, createBtn)));
+    } else {
+      add(new ViewToolbar("NPC List"));
+    }
     add(npcGrid, actions);
   }
 

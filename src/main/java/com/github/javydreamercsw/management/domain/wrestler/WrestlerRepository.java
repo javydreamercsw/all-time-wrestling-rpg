@@ -24,9 +24,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
+@RepositoryRestResource
 public interface WrestlerRepository
     extends JpaRepository<Wrestler, Long>, JpaSpecificationExecutor<Wrestler> {
+
+  Optional<Wrestler> findByAccount(com.github.javydreamercsw.base.domain.account.Account account);
 
   // If you don't need a total row count, Slice is better than Page.
   Page<Wrestler> findAllBy(Pageable pageable);
@@ -42,4 +46,8 @@ public interface WrestlerRepository
   List<Wrestler> findByFansBetween(long minFans, long maxFans);
 
   List<Wrestler> findByFansGreaterThanEqual(long minFans);
+
+  Optional<Wrestler> findByAccountUsername(String username);
+
+  Optional<Wrestler> findByAccountId(Long accountId);
 }

@@ -29,6 +29,7 @@ import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,7 @@ public class CardService {
   @Autowired private Clock clock;
   @Autowired private Validator validator;
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Card createCard(@NonNull String name) {
     Card card = new Card();
     card.setName(name);
@@ -68,14 +70,17 @@ public class CardService {
     return save(card);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Card> list(Pageable pageable) {
     return cardRepository.findAll(pageable).toList();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public long count() {
     return cardRepository.count();
   }
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Card save(@NonNull Card card) {
     card.setCreationDate(clock.instant());
     var violations = validator.validate(card);
@@ -85,18 +90,22 @@ public class CardService {
     return cardRepository.saveAndFlush(card);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Card> findAll() {
     return cardRepository.findAll();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<Card> findByNumberAndSet(Integer number, String setCode) {
-    return cardRepository.findByNumberAndSetSetCode(number, setCode);
+    return cardRepository.findByNumberAndSetCode(number, setCode);
   }
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void delete(Long id) {
     cardRepository.deleteById(id);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<Card> findById(Long id) {
     return cardRepository.findById(id);
   }

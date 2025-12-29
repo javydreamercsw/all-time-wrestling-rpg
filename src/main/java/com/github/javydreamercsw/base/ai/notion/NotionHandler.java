@@ -51,7 +51,16 @@ public class NotionHandler {
   protected final Map<String, String> databaseMap = new HashMap<>();
 
   public NotionHandler() {
-    initializeDatabases();
+    // Only initialize databases if NOTION_TOKEN is available
+    if (EnvironmentVariableUtil.isNotionTokenAvailable()) {
+      try {
+        initializeDatabases();
+      } catch (Exception e) {
+        log.warn("Failed to initialize Notion databases: {}", e.getMessage());
+      }
+    } else {
+      log.info("NOTION_TOKEN not available, skipping database initialization");
+    }
   }
 
   /**

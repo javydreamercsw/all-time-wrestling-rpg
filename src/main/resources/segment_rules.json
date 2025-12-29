@@ -1,86 +1,86 @@
 [ {
   "name": "No DQ",
-  "description": "No disqualification match - anything goes",
+  "description": "No Disqualification: All weapons are legal. Interference from outside parties is allowed. The match can only end by pinfall or submission inside the ring.",
   "requiresHighHeat": false,
   "bumpAddition": "ALL"
 }, {
   "name": "Extreme",
-  "description": "Extreme rules match with weapons and hardcore elements",
+  "description": "Extreme Rules: Similar to No DQ, but with an emphasis on hardcore wrestling and the use of unconventional weapons. Falls count anywhere in the arena.",
   "requiresHighHeat": true,
   "bumpAddition": "ALL"
 }, {
   "name": "Normal",
-  "description": "Standard wrestling match with traditional rules",
+  "description": "Standard Match: Victory is achieved by pinfall, submission, count-out, or disqualification. Standard rules apply, including rope breaks and a 10-count for being outside the ring.",
   "requiresHighHeat": false,
   "bumpAddition": "NONE"
 }, {
   "name": "Elimination",
-  "description": "Multi-person elimination match",
+  "description": "Elimination Match: Participants are eliminated individually by pinfall or submission until only one wrestler or team remains.",
   "requiresHighHeat": false,
   "bumpAddition": "NONE"
 }, {
   "name": "Over the Top Rope Elimination",
-  "description": "Battle royal style elimination over the top rope",
+  "description": "Battle Royal: Participants are eliminated when they are thrown over the top rope and both feet touch the floor. The last person in the ring wins.",
   "requiresHighHeat": false,
   "bumpAddition": "NONE"
 }, {
   "name": "Submission",
-  "description": "Match can only be won by submission",
+  "description": "Submission Match: The only way to win is by forcing an opponent to submit. There are no pinfalls, count-outs, or disqualifications.",
   "requiresHighHeat": false,
   "bumpAddition": "LOSERS"
 }, {
   "name": "Promo",
-  "description": "Non-wrestling promo segment for storyline development",
+  "description": "A non-wrestling segment where participants speak to the audience, each other, or an interviewer to advance a storyline. No physical combat occurs.",
   "requiresHighHeat": false,
   "bumpAddition": "NONE"
 }, {
   "name": "Cage",
-  "description": "Steel cage match with escape or pinfall victory",
+  "description": "Steel Cage Match: The ring is surrounded by a steel cage. Victory can be achieved by escaping the cage (either over the top or through the door) or by pinfall/submission inside the ring.",
   "requiresHighHeat": true,
   "bumpAddition": "ALL"
 }, {
   "name": "Last Man Standing",
-  "description": "Match won by incapacitating opponent for 10-count",
+  "description": "Last Man Standing: The match is won when one wrestler is unable to answer a 10-count from the referee. There are no pinfalls, submissions, or disqualifications.",
   "requiresHighHeat": true,
   "bumpAddition": "ALL"
 }, {
   "name": "Free-For-All",
-  "description": "Multi-person match with no teams or alliances",
+  "description": "Every wrestler for themselves. The first person to achieve a pinfall or submission wins. No teams or alliances are officially recognized.",
   "requiresHighHeat": false,
   "bumpAddition": "NONE"
 }, {
   "name": "I Quit Match",
-  "description": "Match won only when opponent says 'I Quit'",
+  "description": "I Quit Match: The only way to win is to force your opponent to say the words 'I Quit' into a microphone. There are no other ways to win.",
   "requiresHighHeat": true,
   "bumpAddition": "NONE"
 }, {
   "name": "Ladder Match",
-  "description": "Match with ladders to retrieve suspended object",
+  "description": "Ladder Match: A championship or other prize is suspended above the ring. The winner is the first person to climb a ladder and retrieve the prize.",
   "requiresHighHeat": true,
   "bumpAddition": "ALL"
 }, {
   "name": "Casket Match",
-  "description": "Match won by placing opponent in a casket",
+  "description": "Casket Match: The only way to win is to force your opponent into a casket and close the lid.",
   "requiresHighHeat": true,
   "bumpAddition": "LOSERS"
 }, {
   "name": "Tables, Ladders and Chairs (TLC)",
-  "description": "Extreme match featuring tables, ladders, and chairs",
+  "description": "TLC Match: A variation of a Ladder Match where tables and chairs are also legal and expected to be used. Victory is achieved by retrieving the suspended prize.",
   "requiresHighHeat": true,
   "bumpAddition": "ALL"
 }, {
   "name": "🪖 War Games",
-  "description": "Multi-team cage match with timed entries",
+  "description": "War Games: Two teams are locked inside a massive cage covering two rings. Participants enter at timed intervals. Once all participants are in, 'The Match Beyond' begins, and victory can only be achieved by pinfall or submission.",
   "requiresHighHeat": true,
   "bumpAddition": "ALL"
 }, {
   "name": "Barbwire Exploding Deathmatch",
-  "description": "Extreme deathmatch with barbwire and explosives",
+  "description": "An extreme and violent match where the ring ropes are replaced with barbed wire, and various objects in and around the ring are rigged to explode on impact.",
   "requiresHighHeat": true,
   "bumpAddition": "ALL"
 }, {
   "name": "Gauntlet",
-  "description": "One wrestler faces multiple opponents in succession",
+  "description": "A series of one-on-one matches. The winner of each match stays in the ring to face the next opponent in line until all opponents have been defeated.",
   "requiresHighHeat": false,
   "bumpAddition": "NONE"
 } ]

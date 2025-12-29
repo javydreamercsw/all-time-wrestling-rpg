@@ -54,14 +54,17 @@ class DockerPackageIT {
             .withEnv("vaadin.devmode.enable", "false")
             .withEnv("SPRING_DATASOURCE_URL", "jdbc:h2:mem:testdb")
             .withEnv(
-                "JAVA_TOOL_OPTIONS", "-Dspring.profiles.active=prod -Dvaadin.productionMode=true")
+                "JAVA_TOOL_OPTIONS",
+                "-Dspring.profiles.active=prod -Dvaadin.productionMode=true"
+                    + " -Dhttps.enforcement.disabled=true")
             .waitingFor(
                 Wait.forHttp(contextPath + "/actuator/health")
                     .forStatusCode(200)
                     .withStartupTimeout(Duration.ofMinutes(1)))) {
       container.start();
 
-      HttpClient client = HttpClient.newHttpClient();
+      HttpClient client =
+          HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
       HttpRequest request =
           HttpRequest.newBuilder()
               .uri(

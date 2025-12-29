@@ -19,6 +19,14 @@ package com.github.javydreamercsw.management.test;
 import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.config.TestSecurityConfig;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.management.DatabaseCleanup;
+import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
@@ -39,13 +47,20 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.util.Collections;
+import java.util.Optional;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
+@Import({TestSecurityConfig.class, TestNotionConfiguration.class})
+@Slf4j
 public abstract class AbstractIntegrationTest {
 
   @Autowired protected InboxRepository inboxRepository;
@@ -67,9 +82,35 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected FactionService factionService;
   @Autowired protected WrestlerService wrestlerService;
   @Autowired protected ShowTemplateRepository showTemplateRepository;
+  @Autowired protected AccountRepository accountRepository;
+  @Autowired protected RoleRepository roleRepository;
+  @Autowired protected DatabaseCleanup databaseCleaner;
+  @Autowired protected PasswordEncoder passwordEncoder;
 
   protected Wrestler createTestWrestler(@NonNull String name) {
     return TestUtils.createWrestler(name);
+  }
+
+  protected Account createTestAccount(@NonNull String username, @NonNull RoleName roleName) {
+    return createTestAccount(username, "password", roleName);
+  }
+
+  protected Account createTestAccount(
+      @NonNull String username, @NonNull String password, @NonNull RoleName roleName) {
+    Optional<Account> existing = accountRepository.findByUsername(username);
+    if (existing.isPresent()) {
+      return existing.get();
+    }
+
+    Role role =
+        roleRepository
+            .findByName(roleName)
+            .orElseGet(() -> roleRepository.save(new Role(roleName, roleName.name())));
+
+    Account account =
+        new Account(username, passwordEncoder.encode(password), username + "@example.com");
+    account.setRoles(Collections.singleton(role));
+    return accountRepository.save(account);
   }
 
   protected SegmentNarrationService.SegmentNarrationContext createCustomSegmentContext() {

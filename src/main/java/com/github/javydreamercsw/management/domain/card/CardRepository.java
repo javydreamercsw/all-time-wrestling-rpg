@@ -29,7 +29,9 @@ public interface CardRepository extends JpaRepository<Card, Long>, JpaSpecificat
   // If you don't need a total row count, Slice is better than Page.
   Page<Card> findAllBy(Pageable pageable);
 
-  Optional<Card> findByNumberAndSetSetCode(Integer number, String setCode);
+  Optional<Card> findByNumberAndSetCode(Integer number, String setCode);
+
+  Optional<Card> findByName(String name);
 
   @Query("SELECT MAX(c.number) FROM Card c WHERE c.set.id = :setId")
   Integer findMaxCardNumberBySet(@Param("setId") Long setId);

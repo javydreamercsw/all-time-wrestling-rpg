@@ -24,6 +24,7 @@ import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,31 +36,37 @@ public class CardSetService {
   @Autowired private CardSetRepository cardSetRepository;
   @Autowired private Clock clock;
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public CardSet createCardSet(@NonNull String name, @NonNull String setCode) {
     CardSet card = new CardSet();
     card.setName(name);
-    card.setSetCode(setCode);
+    card.setCode(setCode);
     return save(card);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<CardSet> list(@NonNull Pageable pageable) {
     return cardSetRepository.findAll(pageable).toList();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public long count() {
     return cardSetRepository.count();
   }
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public CardSet save(@NonNull CardSet card) {
     card.setCreationDate(clock.instant());
     return cardSetRepository.saveAndFlush(card);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<CardSet> findAll() {
     return cardSetRepository.findAll();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<CardSet> findBySetCode(@NonNull String setCode) {
-    return cardSetRepository.findBySetCode(setCode);
+    return cardSetRepository.findByCode(setCode);
   }
 }

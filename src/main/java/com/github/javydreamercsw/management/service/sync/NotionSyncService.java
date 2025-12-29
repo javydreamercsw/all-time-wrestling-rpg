@@ -27,6 +27,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 /**
@@ -69,6 +70,7 @@ public class NotionSyncService extends BaseSyncService {
    *
    * @return ParallelSyncResult containing results for all entity syncs
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public ParallelSyncResult syncAllEntitiesParallel() {
     log.info("🚀 Starting parallel synchronization of all enabled entities");
     return parallelSyncOrchestrator.executeParallelSync();
@@ -80,6 +82,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Operation ID for tracking and logging
    * @return ParallelSyncResult containing results for all entity syncs
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public ParallelSyncResult syncAllEntitiesParallel(@NonNull String operationId) {
     log.info("🚀 Starting parallel synchronization with operation ID: {}", operationId);
     return parallelSyncOrchestrator.executeParallelSync(operationId);
@@ -93,6 +96,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param showId The Notion ID of the show to sync.
    * @return SyncResult containing the outcome of the sync operation.
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncShow(@NonNull String showId) {
     return notionSyncServicesManager.getShowSyncService().syncShow(showId);
   }
@@ -102,6 +106,7 @@ public class NotionSyncService extends BaseSyncService {
    *
    * @return List of all show IDs.
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public java.util.List<String> getAllShowIds() {
     return notionSyncServicesManager.getShowSyncService().getShowIds();
   }
@@ -112,6 +117,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param segmentId The Notion ID of the segment to sync.
    * @return SyncResult containing the outcome of the sync operation.
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncSegment(@NonNull String segmentId) {
     return notionSyncServicesManager.getSegmentSyncService().syncSegment(segmentId);
   }
@@ -121,6 +127,7 @@ public class NotionSyncService extends BaseSyncService {
    *
    * @return List of all segment IDs.
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public java.util.List<String> getAllSegmentIds() {
     return notionSyncServicesManager.getSegmentSyncService().getSegmentIds();
   }
@@ -130,6 +137,7 @@ public class NotionSyncService extends BaseSyncService {
    *
    * @return SyncResult containing the outcome of the sync operation
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncShows(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getShowSyncService().syncShows(operationId)
@@ -142,6 +150,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncWrestlers(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getWrestlerSyncService().syncWrestlers(operationId)
@@ -154,6 +163,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncFactions(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getFactionSyncService().syncFactions(operationId)
@@ -165,6 +175,7 @@ public class NotionSyncService extends BaseSyncService {
    *
    * @return SyncResult containing the operation status and details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncTeams(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getTeamSyncService().syncTeams(operationId)
@@ -179,6 +190,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param direction The direction of the synchronization (inbound or outbound)
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncShowTemplates(
       @NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
@@ -192,6 +204,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncSeasons(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getSeasonSyncService().syncSeasons(operationId)
@@ -205,6 +218,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param direction The direction of the synchronization (inbound or outbound)
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncShowTypes(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getShowTypeSyncService().syncShowTypes(operationId)
@@ -218,6 +232,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param direction The direction of the synchronization (inbound or outbound)
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncInjuryTypes(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getInjurySyncService().syncInjuryTypes(operationId)
@@ -230,6 +245,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncNpcs(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getNpcSyncService().syncNpcs(operationId, direction)
@@ -242,6 +258,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncTitles(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getTitleSyncService().syncTitles(operationId)
@@ -254,6 +271,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncTitleReigns(@NonNull String operationId) {
     return notionSyncServicesManager.getTitleReignSyncService().syncTitleReigns(operationId);
   }
@@ -264,6 +282,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncRivalries(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getRivalrySyncService().syncRivalries(operationId)
@@ -276,6 +295,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param operationId Optional operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncFactionRivalries(
       @NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
@@ -290,6 +310,7 @@ public class NotionSyncService extends BaseSyncService {
    * @param direction The direction of the synchronization (inbound or outbound)
    * @return SyncResult indicating success or failure with details
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncSegments(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
         ? notionSyncServicesManager.getSegmentSyncService().syncSegments(operationId + "-segments")

@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -44,6 +45,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,10 +65,12 @@ public class ShowPlanningService {
       segmentSummaryService;
   private final SegmentTypeService segmentTypeService;
   private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
   private final FactionService factionService;
   private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
     ShowPlanningContext context = new ShowPlanningContext();
 
@@ -141,7 +145,7 @@ public class ShowPlanningService {
     context.setChampionships(championships);
 
     // Get all wrestlers
-    List<Wrestler> allWrestlers = wrestlerService.findAll();
+    List<Wrestler> allWrestlers = wrestlerRepository.findAll();
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);
 
@@ -156,9 +160,7 @@ public class ShowPlanningService {
 
     // Get next PLE
     Optional<Show> nextPle =
-        showService.getUpcomingShows(show.getShowDate(), 10).stream()
-            .filter(Show::isPremiumLiveEvent)
-            .findFirst();
+        showService.getUpcomingShows(10).stream().filter(Show::isPremiumLiveEvent).findFirst();
     if (nextPle.isPresent()) {
       ShowPlanningPle ple = new ShowPlanningPle();
       ple.setPle(nextPle.get());
@@ -169,6 +171,7 @@ public class ShowPlanningService {
   }
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void approveSegments(@NonNull Show show, @NonNull List<ProposedSegment> proposedSegments) {
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();
@@ -185,7 +188,7 @@ public class ShowPlanningService {
       segmentTypeService.findByName(proposedSegment.getType()).ifPresent(segment::setSegmentType);
 
       for (String participantName : proposedSegment.getParticipants()) {
-        wrestlerService.findByName(participantName).ifPresent(segment::addParticipant);
+        wrestlerRepository.findByName(participantName).ifPresent(segment::addParticipant);
       }
 
       segmentsToSave.add(segment);

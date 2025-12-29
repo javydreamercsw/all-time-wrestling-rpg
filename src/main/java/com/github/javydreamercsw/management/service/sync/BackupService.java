@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -45,6 +46,7 @@ public class BackupService {
    * @param fileName The name of the JSON file to backup
    * @throws IOException if backup creation fails
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public void createBackup(@NonNull String fileName) throws IOException {
     Path originalFile = Paths.get("src/main/resources/" + fileName);
 

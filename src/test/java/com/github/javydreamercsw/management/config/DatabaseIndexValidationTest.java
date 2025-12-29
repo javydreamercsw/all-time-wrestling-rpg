@@ -44,6 +44,9 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * <p>This test prevents runtime errors caused by index scripts referencing non-existent tables or
  * columns, which would otherwise only be discovered during application startup.
  */
+import org.springframework.security.test.context.support.WithMockUser;
+
+@WithMockUser(roles = "ADMIN")
 @Slf4j
 class DatabaseIndexValidationTest extends ManagementIntegrationTest {
 
@@ -83,7 +86,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
         if (!availableColumns.contains(cleanColumn.toLowerCase())) {
           errors.add(
               String.format(
-                  "Index '%s' on table '%s' references non-existent column '%s'. Available columns:"
+                  "Index '%s' on table '%s' references non-existent column '%s'. Available columns:" 
                       + " %s",
                   index.indexName, index.tableName, cleanColumn, availableColumns));
         }
@@ -163,6 +166,7 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
     log.info("Loaded schema for {} tables", tableColumns.size());
   }
 
+  // spotless:off
   private void parseIndexScript() throws IOException {
     indexDefinitions = new ArrayList<>();
 
@@ -191,7 +195,9 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
 
     log.info("Parsed {} index definitions from script", indexDefinitions.size());
   }
+  // spotless:on
 
+  // spotless:off
   private List<String> parseColumns(String columnsPart) {
     List<String> columns = new ArrayList<>();
 
@@ -200,18 +206,21 @@ class DatabaseIndexValidationTest extends ManagementIntegrationTest {
     for (String part : parts) {
       String column =
           part.trim()
-              .replaceAll("\\s+DESC\\s*$", "") // Remove DESC
-              .replaceAll("\\s+ASC\\s*$", "") // Remove ASC
+              .replaceAll("\s+DESC\s*$", "") // Remove DESC
+              .replaceAll("\s+ASC\s*$", "") // Remove ASC
               .trim();
       columns.add(column);
     }
 
     return columns;
   }
+  // spotless:on
 
+  // spotless:off
   private String cleanColumnName(String column) {
-    return column.trim().replaceAll("\\s+DESC\\s*$", "").replaceAll("\\s+ASC\\s*$", "").trim();
+    return column.trim().replaceAll("\s+DESC\s*$", "").replaceAll("\s+ASC\s*$", "").trim();
   }
+  // spotless:on
 
   /** Represents a parsed index definition from the SQL script. */
   private static class IndexDefinition {

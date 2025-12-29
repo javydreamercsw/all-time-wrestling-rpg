@@ -242,12 +242,37 @@ mvn spotless:apply
 
 ### Security
 
-This project includes several security measures:
+This project includes a comprehensive security implementation based on **Spring Security** to ensure that data is protected and users can only perform actions they are authorized for.
+
+For a detailed guide on account management and user roles, see the [**User Guide**](./docs/USER_GUIDE.md).
+
+For technical details on the security implementation, see the [**Developer Security Guide**](./docs/DEVELOPER_GUIDE.md).
+
+#### Authentication & Authorization
+- **Role-Based Access Control**: The application uses a robust role-based system with four distinct roles:
+- **ADMIN**: Full system access, including user account management.
+- **BOOKER**: Can manage all game content (shows, wrestlers, etc.).
+- **PLAYER**: Can manage their own wrestler and related items.
+- **VIEWER**: Read-only access to public data.
+- **Login**: Users must authenticate via a login form.
+- **Default Test Accounts**:
+- Admin: `admin` / `admin123`
+- Booker: `booker` / `booker123`
+- Player: `player` / `player123`
+- Viewer: `viewer` / `viewer123`
+
+⚠️ **Important**: Change default passwords in a production environment!
+
+#### Security Features
+- **Account Lockout**: Accounts are automatically locked for 15 minutes after 5 failed login attempts.
+- **Password Security**: Passwords are encrypted using BCrypt (10 rounds).
+- **Remember Me**: Optional 7-day "Remember Me" functionality for trusted devices.
+- **HTTPS**: Enforced in the production environment.
 
 #### Dependency Security
-- **OWASP Dependency Check**: Automated vulnerability scanning of dependencies
-- **GitHub Dependency Review**: PR-based dependency vulnerability detection (public repositories only)
-- **Regular Security Scans**: Weekly automated security scans via GitHub Actions
+- **OWASP Dependency Check**: Automated scanning for vulnerabilities in third-party libraries.
+- **GitHub Dependency Review**: Scans pull requests for dependency vulnerabilities.
+- **Weekly Security Scans**: Automated security scans are run weekly via GitHub Actions.
 
 #### NVD API Key Configuration
 To improve OWASP Dependency Check performance and avoid long update times, configure an NVD API key:

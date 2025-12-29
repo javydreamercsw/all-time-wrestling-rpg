@@ -16,9 +16,11 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.TeamDTO;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.team.TeamService;
@@ -54,7 +56,9 @@ public class TeamFormDialog extends Dialog {
 
   private final TeamService teamService;
   private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
   private final FactionService factionService;
+  private final SecurityUtils securityUtils;
 
   // Form fields
   private final TextField nameField;
@@ -75,10 +79,16 @@ public class TeamFormDialog extends Dialog {
 
   @Autowired
   public TeamFormDialog(
-      TeamService teamService, WrestlerService wrestlerService, FactionService factionService) {
+      TeamService teamService,
+      WrestlerService wrestlerService,
+      WrestlerRepository wrestlerRepository,
+      FactionService factionService,
+      SecurityUtils securityUtils) {
     this.teamService = teamService;
     this.wrestlerService = wrestlerService;
+    this.wrestlerRepository = wrestlerRepository;
     this.factionService = factionService;
+    this.securityUtils = securityUtils;
 
     // Initialize form fields
     this.nameField = new TextField("Team Name");
@@ -113,24 +123,29 @@ public class TeamFormDialog extends Dialog {
     nameField.setRequired(true);
     nameField.setMaxLength(255);
     nameField.setWidthFull();
+    nameField.setReadOnly(!securityUtils.canEdit());
 
     // Configure description field
     descriptionField.setMaxLength(255);
     descriptionField.setWidthFull();
     descriptionField.setHeight("100px");
+    descriptionField.setReadOnly(!securityUtils.canEdit());
 
     // Configure wrestler fields
     wrestler1Field.setRequired(true);
     wrestler1Field.setItemLabelGenerator(Wrestler::getName);
     wrestler1Field.setWidthFull();
+    wrestler1Field.setReadOnly(!securityUtils.canEdit());
 
     wrestler2Field.setRequired(true);
     wrestler2Field.setItemLabelGenerator(Wrestler::getName);
     wrestler2Field.setWidthFull();
+    wrestler2Field.setReadOnly(!securityUtils.canEdit());
 
     // Configure faction field
     factionField.setItemLabelGenerator(Faction::getName);
     factionField.setWidthFull();
+    factionField.setReadOnly(!securityUtils.canEdit());
 
     // Configure status field
     statusField.setItems(
@@ -139,6 +154,7 @@ public class TeamFormDialog extends Dialog {
             .collect(Collectors.toList()));
     statusField.setItemLabelGenerator(TeamStatus::getDisplayName);
     statusField.setWidthFull();
+    statusField.setReadOnly(!securityUtils.canEdit());
 
     // Add validation to prevent same wrestler selection
     wrestler1Field.addValueChangeListener(e -> validateWrestlerSelection());
@@ -156,6 +172,7 @@ public class TeamFormDialog extends Dialog {
   private void configureButtons() {
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveButton.addClickListener(e -> saveTeam());
+    saveButton.setVisible(securityUtils.canEdit());
 
     cancelButton.addClickListener(e -> close());
 
@@ -182,7 +199,7 @@ public class TeamFormDialog extends Dialog {
         .forField(wrestler1Field)
         .withValidator(wrestler -> wrestler != null, "First wrestler is required")
         .bind(
-            dto -> wrestlerService.getWrestlerById(dto.getWrestler1Id()).orElse(null),
+            dto -> wrestlerRepository.findById(dto.getWrestler1Id()).orElse(null),
             (dto, wrestler) -> {
               if (wrestler != null) {
                 dto.setWrestler1Id(wrestler.getId());
@@ -194,7 +211,7 @@ public class TeamFormDialog extends Dialog {
         .forField(wrestler2Field)
         .withValidator(wrestler -> wrestler != null, "Second wrestler is required")
         .bind(
-            dto -> wrestlerService.getWrestlerById(dto.getWrestler2Id()).orElse(null),
+            dto -> wrestlerRepository.findById(dto.getWrestler2Id()).orElse(null),
             (dto, wrestler) -> {
               if (wrestler != null) {
                 dto.setWrestler2Id(wrestler.getId());
@@ -237,14 +254,13 @@ public class TeamFormDialog extends Dialog {
   private void loadComboBoxData() {
     // Load wrestlers
     wrestler1Field.setItems(
-        wrestlerService.getAllWrestlers().stream()
+        wrestlerRepository.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
     wrestler2Field.setItems(
-        wrestlerService.getAllWrestlers().stream()
+        wrestlerRepository.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
-
     // Load factions
     factionField.setItems(
         factionService.findAll().stream()

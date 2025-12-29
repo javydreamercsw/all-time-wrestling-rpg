@@ -16,9 +16,12 @@
 */
 package com.github.javydreamercsw.management.ui.view.admin;
 
+import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
+
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Main;
@@ -29,11 +32,13 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import jakarta.annotation.security.RolesAllowed;
 import lombok.extern.slf4j.Slf4j;
 
 @Route("admin")
 @PageTitle("Admin")
 @Menu(order = 11, icon = "vaadin:tools", title = "Admin")
+@RolesAllowed(ADMIN_ROLE)
 @Slf4j
 public class AdminView extends Main {
 
@@ -86,7 +91,11 @@ public class AdminView extends Main {
           }
         });
 
-    content.add(recalculateTiersButton);
+    Button manageAccountsButton = new Button("Manage Accounts");
+    manageAccountsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    manageAccountsButton.addClickListener(event -> UI.getCurrent().navigate("/account-list"));
+
+    content.add(recalculateTiersButton, manageAccountsButton);
     add(content);
   }
 }

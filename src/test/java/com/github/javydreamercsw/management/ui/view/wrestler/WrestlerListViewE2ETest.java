@@ -64,7 +64,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Click the "Create Wrestler" button
     WebElement createButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-wrestler-button")));
-    clickAndScrollIntoView(createButton);
+    clickElement(createButton);
 
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
@@ -80,7 +80,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Click the save button
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("wrestler-dialog-save-button")));
-    clickAndScrollIntoView(saveButton);
+    clickElement(saveButton);
 
     wait.until(
         ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
@@ -113,13 +113,13 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
                     "//vaadin-menu-bar[@id='action-menu-"
                         + wrestler.getId()
                         + "']/vaadin-menu-bar-button")));
-    clickAndScrollIntoView(menu);
+    clickElement(menu);
 
     // Find the "Edit" button for the wrestler and click it
     WebElement editButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("edit-" + wrestler.getId())));
 
-    clickAndScrollIntoView(editButton);
+    clickElement(editButton);
 
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
@@ -134,7 +134,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Find the "Save" button and click it
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("wrestler-dialog-save-button")));
-    clickAndScrollIntoView(saveButton);
+    clickElement(saveButton);
 
     wait.until(
         ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
@@ -172,13 +172,13 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
                     "//vaadin-menu-bar[@id='action-menu-"
                         + wrestler.getId()
                         + "']/vaadin-menu-bar-button")));
-    clickAndScrollIntoView(menu);
+    clickElement(menu);
 
     // Find the "Delete" button for the wrestler and click it
     WebElement deleteButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("delete-" + wrestler.getId())));
 
-    clickAndScrollIntoView(deleteButton);
+    clickElement(deleteButton);
 
     // Verify that the wrestler is removed from the grid
     wait.until(
@@ -209,13 +209,13 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
                     "//vaadin-menu-bar[@id='action-menu-"
                         + wrestler.getId()
                         + "']/vaadin-menu-bar-button")));
-    clickAndScrollIntoView(menu);
+    clickElement(menu);
 
     // Find the "Add Bump" button for the wrestler and click it
     WebElement addBumpButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("add-bump-" + wrestler.getId())));
 
-    clickAndScrollIntoView(addBumpButton);
+    clickElement(addBumpButton);
 
     // Verify that the bump count is updated
     wait.until(
@@ -247,13 +247,13 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
                     "//vaadin-menu-bar[@id='action-menu-"
                         + wrestler.getId()
                         + "']/vaadin-menu-bar-button")));
-    clickAndScrollIntoView(menu);
+    clickElement(menu);
 
     // Find the "Heal Bump" button for the wrestler and click it
     WebElement healBumpButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("heal-bump-" + wrestler.getId())));
 
-    clickAndScrollIntoView(healBumpButton);
+    clickElement(healBumpButton);
 
     // Verify that the bump count is updated
     wait.until(
@@ -300,7 +300,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
                     "//vaadin-menu-bar[@id='action-menu-"
                         + wrestler.getId()
                         + "']/vaadin-menu-bar-button")));
-    clickAndScrollIntoView(menu);
+    clickElement(menu);
 
     // Find the "Manage Injuries" button for the wrestler and click it
     WebElement manageInjuriesButton =
@@ -338,12 +338,12 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     WebElement healButton =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("heal-injury-" + injuryToHeal.getId())));
-    clickAndScrollIntoView(healButton);
+    clickElement(healButton);
 
     // Create a new injury
     WebElement createButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-button")));
-    clickAndScrollIntoView(createButton);
+    clickElement(createButton);
 
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
@@ -358,13 +358,13 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     descriptionField.sendKeys("A very broken leg.");
     WebElement severitySelector =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-severity")));
-    clickAndScrollIntoView(severitySelector);
+    clickElement(severitySelector);
 
     severitySelector.sendKeys("CRITICAL", Keys.TAB);
 
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-save-button")));
-    clickAndScrollIntoView(saveButton);
+    clickElement(saveButton);
 
     // Verify the new injury is in the grid
     wait.until(

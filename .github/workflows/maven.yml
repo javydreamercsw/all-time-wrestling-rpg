@@ -191,12 +191,14 @@ jobs:
         path: target/
 
     - name: Download Notion integration test coverage data
+      if: needs.check-paths.outputs.notion_changed == 'true'
       uses: actions/download-artifact@v4
       with:
         name: jacoco-notion-it-exec
         path: target/
 
     - name: Download Notion E2E test coverage data
+      if: needs.check-paths.outputs.notion_changed == 'true'
       uses: actions/download-artifact@v4
       with:
         name: jacoco-notion-e2e-exec

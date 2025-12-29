@@ -29,11 +29,15 @@ import static com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import static com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Width;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.avatar.Avatar;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
@@ -46,6 +50,7 @@ import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
 import com.vaadin.flow.shared.Registration;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.security.PermitAll;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +64,7 @@ public class MainLayout extends AppLayout {
   private BuildProperties buildProperties;
   private InboxUpdateBroadcaster inboxUpdateBroadcaster;
   private Registration inboxUpdateBroadcasterRegistration;
+  private @Nullable SecurityUtils securityUtils;
 
   /** For testing purposes. */
   public MainLayout() {}
@@ -67,10 +73,12 @@ public class MainLayout extends AppLayout {
   public MainLayout(
       MenuService menuService,
       InboxUpdateBroadcaster inboxUpdateBroadcaster,
-      Optional<BuildProperties> buildProperties) {
+      Optional<BuildProperties> buildProperties,
+      SecurityUtils securityUtils) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
+    this.securityUtils = securityUtils;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -79,6 +87,7 @@ public class MainLayout extends AppLayout {
     content.setSizeFull(); // Ensure content takes full size for proper scrolling
 
     addToDrawer(createHeader(), new Scroller(content));
+    addToNavbar(createNavbar());
   }
 
   private Div createHeader() {
@@ -96,7 +105,7 @@ public class MainLayout extends AppLayout {
 
   private Div createFooter() {
     Span versionSpan;
-    if (buildProperties != null) {
+    if (buildProperties != null) { // Needed for tests
       versionSpan = new Span("Version: " + buildProperties.getVersion());
     } else {
       versionSpan = new Span("Version: N/A");
@@ -130,11 +139,48 @@ public class MainLayout extends AppLayout {
     return item;
   }
 
+  private Div createNavbar() {
+    Div navbar = new Div();
+    navbar.addClassNames(
+        Display.FLEX,
+        AlignItems.CENTER,
+        JustifyContent.END,
+        Padding.Horizontal.MEDIUM,
+        Padding.Vertical.SMALL,
+        Gap.MEDIUM,
+        Width.FULL);
+
+    if (securityUtils != null && securityUtils.isAuthenticated()) {
+      String username = securityUtils.getCurrentUsername();
+
+      // User avatar
+      Avatar avatar = new Avatar(username);
+      avatar.setTooltipEnabled(true);
+
+      // Username label
+      Span usernameLabel = new Span(username);
+      usernameLabel.addClassNames(FontWeight.SEMIBOLD, FontSize.SMALL);
+
+      // Profile link
+      Anchor profileLink = new Anchor("profile", "Profile");
+
+      // Logout button
+      Button logoutButton = new Button("Logout", VaadinIcon.SIGN_OUT.create());
+      logoutButton.setId("logout-button");
+      logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+      logoutButton.addClickListener(e -> securityUtils.logout());
+
+      navbar.add(avatar, usernameLabel, profileLink, logoutButton);
+    }
+
+    return navbar;
+  }
+
   @Override
   protected void onAttach(AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     UI ui = attachEvent.getUI();
-    if (inboxUpdateBroadcaster != null) {
+    if (inboxUpdateBroadcaster != null) { // Needed for tests
       inboxUpdateBroadcasterRegistration =
           inboxUpdateBroadcaster.register(
               event -> {
@@ -152,7 +198,7 @@ public class MainLayout extends AppLayout {
   @Override
   protected void onDetach(DetachEvent detachEvent) {
     super.onDetach(detachEvent);
-    if (inboxUpdateBroadcasterRegistration != null) {
+    if (inboxUpdateBroadcasterRegistration != null) { // Needed for tests
       inboxUpdateBroadcasterRegistration.remove();
     }
   }

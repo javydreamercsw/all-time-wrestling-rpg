@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +54,7 @@ public class ShowTemplateService {
    * @param pageable Pagination information
    * @return List of show templates
    */
+  @PreAuthorize("isAuthenticated()")
   public List<ShowTemplate> list(Pageable pageable) {
     return showTemplateRepository.findAllBy(pageable).toList();
   }
@@ -62,6 +64,7 @@ public class ShowTemplateService {
    *
    * @return Total count
    */
+  @PreAuthorize("isAuthenticated()")
   public long count() {
     return showTemplateRepository.count();
   }
@@ -72,6 +75,7 @@ public class ShowTemplateService {
    * @param showTemplate The show template to save
    * @return The saved show template
    */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ShowTemplate save(@NonNull ShowTemplate showTemplate) {
     showTemplate.setCreationDate(clock.instant());
     return showTemplateRepository.saveAndFlush(showTemplate);
@@ -82,6 +86,7 @@ public class ShowTemplateService {
    *
    * @return List of all show templates
    */
+  @PreAuthorize("isAuthenticated()")
   public List<ShowTemplate> findAll() {
     return showTemplateRepository.findAllWithShowType();
   }
@@ -92,10 +97,12 @@ public class ShowTemplateService {
    * @param name The name of the show template
    * @return Optional containing the show template if found
    */
+  @PreAuthorize("isAuthenticated()")
   public Optional<ShowTemplate> findByName(@NonNull String name) {
     return showTemplateRepository.findByName(name);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<ShowTemplate> findByExternalId(@NonNull String externalId) {
     return showTemplateRepository.findByExternalId(externalId);
   }
@@ -106,6 +113,7 @@ public class ShowTemplateService {
    * @param name The name to check
    * @return true if a show template with this name exists
    */
+  @PreAuthorize("isAuthenticated()")
   public boolean existsByName(@NonNull String name) {
     return showTemplateRepository.existsByName(name);
   }
@@ -116,6 +124,7 @@ public class ShowTemplateService {
    * @param id The ID of the show template
    * @return Optional containing the show template if found
    */
+  @PreAuthorize("isAuthenticated()")
   public Optional<ShowTemplate> findById(@NonNull Long id) {
     return showTemplateRepository.findById(id);
   }
@@ -125,6 +134,7 @@ public class ShowTemplateService {
    *
    * @return List of PLE templates
    */
+  @PreAuthorize("isAuthenticated()")
   public List<ShowTemplate> getPremiumLiveEventTemplates() {
     return showTemplateRepository.findPremiumLiveEventTemplates();
   }
@@ -134,6 +144,7 @@ public class ShowTemplateService {
    *
    * @return List of weekly show templates
    */
+  @PreAuthorize("isAuthenticated()")
   public List<ShowTemplate> getWeeklyShowTemplates() {
     return showTemplateRepository.findWeeklyShowTemplates();
   }
@@ -144,6 +155,7 @@ public class ShowTemplateService {
    * @param showTypeName The name of the show type
    * @return List of templates for the specified show type
    */
+  @PreAuthorize("isAuthenticated()")
   public List<ShowTemplate> findByShowTypeName(@NonNull String showTypeName) {
     return showTemplateRepository.findByShowTypeName(showTypeName);
   }
@@ -168,6 +180,7 @@ public class ShowTemplateService {
    * @return The created or updated show template
    */
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ShowTemplate createOrUpdateTemplate(
       @NonNull String name, String description, @NonNull String showTypeName, String notionUrl) {
 
@@ -205,6 +218,7 @@ public class ShowTemplateService {
    * @param pageable Pagination information
    * @return Page of show templates
    */
+  @PreAuthorize("isAuthenticated()")
   public Page<ShowTemplate> getAllTemplates(Pageable pageable) {
     return showTemplateRepository.findAll(pageable);
   }
@@ -215,6 +229,7 @@ public class ShowTemplateService {
    * @param id The ID of the show template
    * @return Optional containing the show template if found
    */
+  @PreAuthorize("isAuthenticated()")
   public Optional<ShowTemplate> getTemplateById(@NonNull Long id) {
     return showTemplateRepository.findById(id);
   }
@@ -225,6 +240,7 @@ public class ShowTemplateService {
    * @param showTypeName The name of the show type
    * @return List of templates for the specified show type
    */
+  @PreAuthorize("isAuthenticated()")
   public List<ShowTemplate> getTemplatesByShowType(@NonNull String showTypeName) {
     return showTemplateRepository.findByShowTypeName(showTypeName);
   }
@@ -240,6 +256,7 @@ public class ShowTemplateService {
    * @return Optional containing the updated show template if found
    */
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<ShowTemplate> updateTemplate(
       @NonNull Long id,
       @NonNull String name,
@@ -278,6 +295,7 @@ public class ShowTemplateService {
    * @return true if the template was deleted, false if not found
    */
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public boolean deleteTemplate(@NonNull Long id) {
     if (showTemplateRepository.existsById(id)) {
       showTemplateRepository.deleteById(id);
