@@ -16,8 +16,10 @@
 */
 package com.github.javydreamercsw.base.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.TestCustomUserDetailsService;
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -39,6 +41,14 @@ import org.springframework.security.web.SecurityFilterChain;
 @Profile("test")
 @Import(InboxEventTypeConfig.class)
 public class TestSecurityConfig {
+
+  @Bean
+  @ConditionalOnMissingBean
+  public ObjectMapper objectMapper() {
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.findAndRegisterModules();
+    return mapper;
+  }
 
   @Bean
   public TestCustomUserDetailsService testCustomUserDetailsService() {

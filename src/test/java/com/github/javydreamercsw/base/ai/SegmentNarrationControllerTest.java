@@ -23,7 +23,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
@@ -60,7 +59,7 @@ class SegmentNarrationControllerTest extends AbstractControllerTest {
             post("/api/segment-narration/narrate/Mock AI")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(new ObjectMapper().writeValueAsString(context)))
+                .content(objectMapper.writeValueAsString(context)))
         .andExpect(status().isOk());
   }
 }
