@@ -19,6 +19,9 @@ package com.github.javydreamercsw.management;
 import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
+import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
@@ -38,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Slf4j
-public class DatabaseCleaner {
+public class DatabaseCleaner implements DatabaseCleanup {
 
   @Autowired private ApplicationContext applicationContext;
   @Autowired private EntityDependencyAnalyzer dependencyAnalyzer;
@@ -48,6 +51,9 @@ public class DatabaseCleaner {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountInitializer accountInitializer;
   @Autowired private DeckRepository deckRepository;
+  @Autowired private MultiWrestlerFeudRepository multiWrestlerFeudRepository;
+  @Autowired private InboxRepository inboxRepository;
+  @Autowired private InboxItemTargetRepository inboxItemTargetRepository;
 
   /**
    * Clears all repositories in the correct dependency order. Automatically discovers all
@@ -55,6 +61,7 @@ public class DatabaseCleaner {
    * parents).
    */
   @Transactional
+  @Override
   public void clearRepositories() {
     log.info("🧹 Starting database cleanup...");
 
@@ -93,7 +100,7 @@ public class DatabaseCleaner {
               factionRepository.save(f);
             });
 
-    // 3.
+    // 3. Clear deck cards
     deckRepository
         .findAll()
         .forEach(
@@ -102,8 +109,29 @@ public class DatabaseCleaner {
               deckRepository.save(d);
             });
 
-    // Now safe to delete
+    // 4. Delete MultiWrestlerFeud explicitly to ensure participants are removed before Wrestlers
+    // This is necessary because FeudParticipant does not have its own repository
+    // and relies on cascade delete from MultiWrestlerFeud.
+    if (multiWrestlerFeudRepository.count() > 0) {
+      multiWrestlerFeudRepository.deleteAll();
+      deletedCount++;
+    }
 
+    // 5. Clear InboxItem targets
+    inboxRepository
+        .findAll()
+        .forEach(
+            item -> {
+              item.getTargets()
+                  .forEach(
+                      target -> {
+                        inboxItemTargetRepository.delete(target);
+                      });
+              item.getTargets().clear();
+              inboxRepository.save(item);
+            });
+
+    // Now safe to delete
     for (String entityName : syncOrder) {
       JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
       if (repository != null) {
@@ -145,6 +173,9 @@ public class DatabaseCleaner {
         }
       }
     }
+
+    entityManager.flush();
+    entityManager.clear();
 
     accountInitializer.init();
     log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
