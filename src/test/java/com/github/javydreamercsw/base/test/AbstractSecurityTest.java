@@ -26,9 +26,11 @@ import java.time.Clock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     classes = {Application.class, TestSecurityConfig.class, TestCustomUserDetailsService.class})
+@ActiveProfiles("test")
 public abstract class AbstractSecurityTest {
 
   @Autowired protected AccountRepository accountRepository;
