@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.security;
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -41,6 +42,9 @@ public class SecurityConfig {
 
   private final CustomUserDetailsService userDetailsService;
   private final Environment environment;
+
+  @Value("${https.enforcement.disabled:false}")
+  private boolean httpsEnforcementDisabled;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -76,8 +80,9 @@ public class SecurityConfig {
     // Configure form login
     http.formLogin(AbstractAuthenticationFilterConfigurer::permitAll);
 
-    // Enforce HTTPS in production
-    if (Arrays.asList(environment.getActiveProfiles()).contains("prod")) {
+    // Enforce HTTPS in production unless disabled
+    if (!httpsEnforcementDisabled
+        && Arrays.asList(environment.getActiveProfiles()).contains("prod")) {
       http.requiresChannel(channel -> channel.anyRequest().requiresSecure());
     }
 
