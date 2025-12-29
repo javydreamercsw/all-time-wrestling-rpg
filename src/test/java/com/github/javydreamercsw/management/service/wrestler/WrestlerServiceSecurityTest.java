@@ -33,11 +33,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class WrestlerServiceSecurityTest extends AbstractSecurityTest {
 
   @Autowired private WrestlerService wrestlerService;
@@ -57,22 +58,9 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
   @WithUserDetails("owner")
   void testPermissionServiceIsOwner() {
     Wrestler ownedWrestler = getWrestler("owner");
-    System.out.println("DEBUG: Testing isOwner for wrestler: " + ownedWrestler.getName());
-    System.out.println("DEBUG: Wrestler ID: " + ownedWrestler.getId());
-    System.out.println(
-        "DEBUG: Wrestler Account: "
-            + (ownedWrestler.getAccount() != null
-                ? ownedWrestler.getAccount().getUsername()
-                : "null"));
-    System.out.println(
-        "DEBUG: Authentication: " + SecurityContextHolder.getContext().getAuthentication());
-    System.out.println(
-        "DEBUG: Principal: "
-            + SecurityContextHolder.getContext().getAuthentication().getPrincipal());
-
-    boolean isOwner = permissionService.isOwner(ownedWrestler);
-    System.out.println("DEBUG: isOwner result: " + isOwner);
-    assertTrue(isOwner, "PermissionService.isOwner should return true for owner");
+    assertTrue(
+        permissionService.isOwner(ownedWrestler),
+        "PermissionService.isOwner should return true for owner");
   }
 
   @Test
@@ -386,18 +374,6 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
   @WithUserDetails("booker")
   void testBookerCanFindWrestlerByExternalId() {
     Wrestler ownedWrestler = getWrestler("owner");
-    System.out.println("DEBUG: Wrestlers in DB:");
-    wrestlerRepository
-        .findAll()
-        .forEach(
-            w ->
-                System.out.println(
-                    "ID: "
-                        + w.getId()
-                        + ", Name: "
-                        + w.getName()
-                        + ", ExternalID: "
-                        + w.getExternalId()));
     assertDoesNotThrow(() -> wrestlerService.findByExternalId(ownedWrestler.getExternalId()));
   }
 
