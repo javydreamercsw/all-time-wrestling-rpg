@@ -27,7 +27,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -49,9 +48,9 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     // Public access to static resources
-        http.authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**").permitAll());
+    http.authorizeHttpRequests(
+        auth ->
+            auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**").permitAll());
 
     // Disable CSRF for API endpoints
     http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"));
@@ -76,6 +75,9 @@ public class SecurityConfig {
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID", "remember-me")
                 .permitAll());
+
+    // Configure form login
+    http.formLogin(AbstractAuthenticationFilterConfigurer::permitAll);
 
     // Enforce HTTPS in production unless disabled
     if (!httpsEnforcementDisabled
