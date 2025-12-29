@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management.controller.drama;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -54,12 +54,12 @@ class DramaEventControllerTest extends AbstractControllerTest {
     event.setEventType(DramaEventType.BACKSTAGE_INCIDENT);
 
     when(dramaEventService.createDramaEvent(
-            anyLong(),
-            any(),
-            any(DramaEventType.class),
-            any(DramaEventSeverity.class),
-            any(String.class),
-            any(String.class)))
+            eq(1L),
+            isNull(),
+            eq(DramaEventType.BACKSTAGE_INCIDENT),
+            eq(DramaEventSeverity.NEUTRAL),
+            eq("Test Event"),
+            eq("Description")))
         .thenReturn(Optional.of(event));
 
     DramaEventController.CreateDramaEventRequest request =
