@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -70,7 +71,7 @@ public class EditShowDetailsDialog extends Dialog {
     this.show = show;
 
     setHeaderTitle("Edit Show Details");
-    setModal(true);
+    setModality(ModalityMode.VISUAL);
     setResizable(false);
     setCloseOnEsc(true);
     setCloseOnOutsideClick(false);

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -44,7 +45,7 @@ public class EditShowNameDialog extends Dialog {
     this.show = show;
 
     setHeaderTitle("Edit Show Name");
-    setModal(true);
+    setModality(ModalityMode.VISUAL);
     setResizable(false);
     setCloseOnEsc(true);
     setCloseOnOutsideClick(false);
