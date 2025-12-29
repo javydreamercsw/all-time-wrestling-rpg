@@ -358,6 +358,7 @@
             </goals>
             <phase>compile</phase>
             <configuration>
+              <release>${java.version}</release>
               <annotationProcessorPaths>
                 <path>
                   <groupId>org.projectlombok</groupId>
@@ -384,6 +385,7 @@
             </goals>
             <phase>test-compile</phase>
             <configuration>
+              <release>${java.version}</release>
               <annotationProcessorPaths>
                 <path>
                   <groupId>org.projectlombok</groupId>

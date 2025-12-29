@@ -395,11 +395,13 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
           Title title;
           if (existingTitle.isEmpty()) {
             title = titleService.createTitle(dto.getName(), dto.getDescription(), dto.getTier());
-            log.debug("Created new title: {}", dto.getName());
+            log.debug(
+                "Created new title: {} with type: {}", dto.getName(), dto.getChampionshipType());
           } else {
             title = existingTitle.get();
             log.debug("Title {} already exists, skipping creation.", dto.getName());
           }
+          title.setChampionshipType(dto.getChampionshipType());
 
           // Award title if currentChampionName is provided
           if (dto.getCurrentChampionName() != null

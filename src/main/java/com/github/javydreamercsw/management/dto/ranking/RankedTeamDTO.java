@@ -14,19 +14,22 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.dto;
+package com.github.javydreamercsw.management.dto.ranking;
 
-import com.github.javydreamercsw.base.domain.wrestler.Gender;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.title.ChampionshipType;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
-public class TitleDTO {
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class RankedTeamDTO {
+  private Long id;
   private String name;
-  private String description;
-  private WrestlerTier tier;
-  private Gender gender;
-  private String currentChampionName;
-  private ChampionshipType championshipType;
+  private Long fans;
+  private int rank;
 }

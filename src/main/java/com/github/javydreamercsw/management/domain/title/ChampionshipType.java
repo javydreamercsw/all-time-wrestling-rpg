@@ -14,19 +14,15 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.dto;
+package com.github.javydreamercsw.management.domain.title;
 
-import com.github.javydreamercsw.base.domain.wrestler.Gender;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.title.ChampionshipType;
-import lombok.Data;
-
-@Data
-public class TitleDTO {
-  private String name;
-  private String description;
-  private WrestlerTier tier;
-  private Gender gender;
-  private String currentChampionName;
-  private ChampionshipType championshipType;
+public enum ChampionshipType {
+  SINGLE,
+  /**
+   * @deprecated use TAG_TEAM instead.
+   */
+  @Deprecated
+  TEAM,
+  TAG_TEAM,
+  FACTION
 }

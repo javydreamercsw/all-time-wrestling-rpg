@@ -101,6 +101,7 @@ public class TitleListView extends Main {
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.addColumn(Title::getName).setHeader("Name").setSortable(true);
     grid.addColumn(Title::getTier).setHeader("Tier").setSortable(true);
+    grid.addColumn(Title::getChampionshipType).setHeader("Championship Type").setSortable(true);
     grid.addColumn(Title::getChampionNames).setHeader("Champion(s)").setSortable(true);
     grid.addColumn(Title::getIsActive).setHeader("Active").setSortable(true);
 
@@ -185,7 +186,6 @@ public class TitleListView extends Main {
     TitleFormDialog dialog =
         new TitleFormDialog(
             titleService,
-            wrestlerService,
             wrestlerRepository,
             tierRecalculationService,
             newTitle,
@@ -199,7 +199,6 @@ public class TitleListView extends Main {
     TitleFormDialog dialog =
         new TitleFormDialog(
             titleService,
-            wrestlerService,
             wrestlerRepository,
             tierRecalculationService,
             title,

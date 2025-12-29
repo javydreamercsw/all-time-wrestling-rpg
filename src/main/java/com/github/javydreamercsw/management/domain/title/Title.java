@@ -61,6 +61,10 @@ public class Title extends AbstractEntity<Long> {
   @Enumerated(EnumType.STRING)
   private Gender gender;
 
+  @Column(name = "championship_type", nullable = false)
+  @Enumerated(EnumType.STRING)
+  private ChampionshipType championshipType;
+
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 

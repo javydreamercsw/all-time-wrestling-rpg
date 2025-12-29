@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
+import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import java.util.List;
@@ -62,12 +63,28 @@ class RankingControllerTest extends AbstractControllerTest {
     RankedWrestlerDTO contender =
         RankedWrestlerDTO.builder().id(1L).name("Contender 1").fans(1000L).rank(1).build();
 
-    when(rankingService.getRankedContenders(anyLong())).thenReturn(List.of(contender));
+    when(rankingService.getRankedContenders(anyLong()))
+        .thenAnswer(invocation -> List.of(contender));
 
     mockMvc
         .perform(get("/api/rankings/championships/1/contenders"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].name").value("Contender 1"));
+  }
+
+  @Test
+  @WithMockUser(roles = "PLAYER")
+  void getRankedTeamContenders() throws Exception {
+    RankedTeamDTO contender =
+        RankedTeamDTO.builder().id(1L).name("Contender Team 1").fans(1000L).rank(1).build();
+
+    when(rankingService.getRankedContenders(anyLong()))
+        .thenAnswer(invocation -> List.of(contender));
+
+    mockMvc
+        .perform(get("/api/rankings/championships/1/contenders"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].name").value("Contender Team 1"));
   }
 
   @Test
