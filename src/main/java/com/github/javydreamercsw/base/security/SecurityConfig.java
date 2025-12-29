@@ -49,11 +49,9 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     // Public access to static resources
-    http.authorizeHttpRequests(
-        auth ->
-            auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**").permitAll()
-                .anyRequest()
-                .authenticated());
+        http.authorizeHttpRequests(
+            auth ->
+                auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**").permitAll());
 
     // Disable CSRF for API endpoints
     http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"));
@@ -79,9 +77,6 @@ public class SecurityConfig {
                 .deleteCookies("JSESSIONID", "remember-me")
                 .permitAll());
 
-    // Configure form login
-    http.formLogin(AbstractAuthenticationFilterConfigurer::permitAll);
-
     // Enforce HTTPS in production unless disabled
     if (!httpsEnforcementDisabled
         && Arrays.asList(environment.getActiveProfiles()).contains("prod")) {
@@ -92,7 +87,7 @@ public class SecurityConfig {
     http.headers(
         headers ->
             headers.httpStrictTransportSecurity(
-                hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000)));
+                hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)));
 
     return http.build();
   }
