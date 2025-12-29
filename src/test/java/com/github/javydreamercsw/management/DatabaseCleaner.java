@@ -17,12 +17,6 @@
 package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.base.AccountInitializer;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTargetRepository;
-import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.metamodel.EntityType;
@@ -46,14 +40,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
   @Autowired private ApplicationContext applicationContext;
   @Autowired private EntityDependencyAnalyzer dependencyAnalyzer;
   @Autowired private EntityManager entityManager;
-
-  @Autowired private FactionRepository factionRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountInitializer accountInitializer;
-  @Autowired private DeckRepository deckRepository;
-  @Autowired private MultiWrestlerFeudRepository multiWrestlerFeudRepository;
-  @Autowired private InboxRepository inboxRepository;
-  @Autowired private InboxItemTargetRepository inboxItemTargetRepository;
 
   /**
    * Clears all repositories in the correct dependency order. Automatically discovers all
@@ -80,56 +67,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
     // Delete data in the correct order
     int deletedCount = 0;
-
-    // Break circular dependencies between Faction and Wrestler
-    // 1. Clear faction from all wrestlers
-    wrestlerRepository
-        .findAll()
-        .forEach(
-            w -> {
-              w.setFaction(null);
-              wrestlerRepository.save(w);
-            });
-
-    // 2. Clear leader from all factions
-    factionRepository
-        .findAll()
-        .forEach(
-            f -> {
-              f.setLeader(null);
-              factionRepository.save(f);
-            });
-
-    // 3. Clear deck cards
-    deckRepository
-        .findAll()
-        .forEach(
-            d -> {
-              d.getCards().clear();
-              deckRepository.save(d);
-            });
-
-    // 4. Delete MultiWrestlerFeud explicitly to ensure participants are removed before Wrestlers
-    // This is necessary because FeudParticipant does not have its own repository
-    // and relies on cascade delete from MultiWrestlerFeud.
-    if (multiWrestlerFeudRepository.count() > 0) {
-      multiWrestlerFeudRepository.deleteAll();
-      deletedCount++;
-    }
-
-    // 5. Clear InboxItem targets
-    inboxRepository
-        .findAll()
-        .forEach(
-            item -> {
-              item.getTargets()
-                  .forEach(
-                      target -> {
-                        inboxItemTargetRepository.delete(target);
-                      });
-              item.getTargets().clear();
-              inboxRepository.save(item);
-            });
 
     // Now safe to delete
     for (String entityName : syncOrder) {

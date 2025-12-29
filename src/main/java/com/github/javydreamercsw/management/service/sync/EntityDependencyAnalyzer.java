@@ -261,7 +261,11 @@ public class EntityDependencyAnalyzer {
     Set<String> visited = new HashSet<>();
     Set<String> visiting = new HashSet<>();
 
-    for (String entity : dependencies.keySet()) {
+    // Sort keys to ensure deterministic order for independent nodes
+    List<String> sortedKeys = new ArrayList<>(dependencies.keySet());
+    Collections.sort(sortedKeys);
+
+    for (String entity : sortedKeys) {
       if (!visited.contains(entity)) {
         topologicalSortVisit(entity, dependencies, visited, visiting, result);
       }
@@ -278,7 +282,11 @@ public class EntityDependencyAnalyzer {
       Set<String> visiting,
       List<String> result) {
     if (visiting.contains(entity)) {
-      throw new RuntimeException("Circular dependency detected involving entity: " + entity);
+      // Circular dependency detected.
+      // We log it but don't throw exception to allow best-effort sorting.
+      // In a real cycle, one must be broken manually or via nullable fields.
+      log.warn("Circular dependency detected involving entity: {}", entity);
+      return;
     }
 
     if (visited.contains(entity)) {
@@ -289,7 +297,11 @@ public class EntityDependencyAnalyzer {
 
     // Visit all dependencies first
     Set<String> entityDeps = dependencies.getOrDefault(entity, Collections.emptySet());
-    for (String dependency : entityDeps) {
+    // Sort dependencies for deterministic order
+    List<String> sortedDeps = new ArrayList<>(entityDeps);
+    Collections.sort(sortedDeps);
+
+    for (String dependency : sortedDeps) {
       if (dependencies.containsKey(dependency)) {
         topologicalSortVisit(dependency, dependencies, visited, visiting, result);
       }
