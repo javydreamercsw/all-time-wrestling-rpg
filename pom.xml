@@ -29,7 +29,7 @@
     <lombok.version>1.18.42</lombok.version>
     <surefireArgLine/>
     <testcontainers.version>1.21.3</testcontainers.version>
-    <vaadin.version>24.9.7</vaadin.version>
+    <vaadin.version>25.0.2</vaadin.version>
   </properties>
 
   <dependencyManagement>
