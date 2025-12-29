@@ -56,7 +56,7 @@ class DockerPackageIT {
             .withEnv(
                 "JAVA_TOOL_OPTIONS", "-Dspring.profiles.active=prod -Dvaadin.productionMode=true")
             .waitingFor(
-                Wait.forHttp(contextPath + "/actuator/health")
+                Wait.forHttps(contextPath + "/actuator/health")
                     .forStatusCode(200)
                     .withStartupTimeout(Duration.ofMinutes(1)))) {
       container.start();
@@ -67,7 +67,7 @@ class DockerPackageIT {
           HttpRequest.newBuilder()
               .uri(
                   URI.create(
-                      "http://"
+                      "https://"
                           + container.getHost()
                           + ":"
                           + container.getMappedPort(port)
