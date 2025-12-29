@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management;
 
+import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
@@ -96,6 +97,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @Autowired protected CardSetRepository cardSetRepository;
   @Autowired protected SegmentTypeRepository segmentTypeRepository;
   @Autowired protected DramaEventService dramaEventService;
+  @Autowired private AccountInitializer accountInitializer;
 
   @Autowired
   @Qualifier("testCustomUserDetailsService") protected UserDetailsService userDetailsService;
@@ -164,5 +166,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
     segmentTypeRepository.deleteAll();
+
+    accountInitializer.init();
   }
 }
