@@ -23,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ public class GameSettingService {
   public static final String CURRENT_GAME_DATE_KEY = "current_game_date";
   private final GameSettingRepository repository;
 
+  @PreAuthorize("isAuthenticated()")
   public LocalDate getCurrentGameDate() {
     return repository
         .findById(CURRENT_GAME_DATE_KEY)
@@ -41,6 +43,7 @@ public class GameSettingService {
         .orElse(LocalDate.now()); // Fallback to real date if not set
   }
 
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @Transactional
   public void saveCurrentGameDate(LocalDate date) {
     GameSetting setting = repository.findById(CURRENT_GAME_DATE_KEY).orElseGet(GameSetting::new);
@@ -49,15 +52,18 @@ public class GameSettingService {
     repository.save(setting);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<GameSetting> findById(String key) {
     return repository.findById(key);
   }
 
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @Transactional
   public GameSetting save(GameSetting gameSetting) {
     return repository.save(gameSetting);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<GameSetting> findAll() {
     return repository.findAll();
   }

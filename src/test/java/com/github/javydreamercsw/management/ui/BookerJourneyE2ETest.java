@@ -56,7 +56,7 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
 @Slf4j
-public class FullShowLifecycleE2ETest extends AbstractE2ETest {
+public class BookerJourneyE2ETest extends AbstractE2ETest {
   private static final String SHOW_TYPE_NAME = "Weekly";
   private static final String SEASON_NAME = "Test Season";
   private static final String TEMPLATE_NAME = "Continuum";

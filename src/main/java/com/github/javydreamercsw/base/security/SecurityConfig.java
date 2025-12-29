@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -63,14 +64,14 @@ public class SecurityConfig {
     http.logout(
         logout ->
             logout
-                .logoutUrl("/logout")
+                .logoutUrl("/login")
                 .logoutSuccessUrl("/login")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID", "remember-me")
                 .permitAll());
 
     // Configure form login
-    http.formLogin(formLogin -> formLogin.permitAll());
+    http.formLogin(AbstractAuthenticationFilterConfigurer::permitAll);
 
     return http.build();
   }

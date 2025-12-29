@@ -23,6 +23,7 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -64,6 +65,14 @@ public class BookerViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(wrestler.getId());
     Assertions.assertNotNull(opponent.getId());
     rivalryService.createRivalry(wrestler.getId(), opponent.getId(), "Test Rivalry");
+
+    // Ensure ShowType exists
+    if (showTypeRepository.count() == 0) {
+      ShowType st = new ShowType();
+      st.setName("Weekly Show");
+      st.setDescription("Weekly Show");
+      showTypeRepository.save(st);
+    }
 
     // Create a show
     Show show = new Show();

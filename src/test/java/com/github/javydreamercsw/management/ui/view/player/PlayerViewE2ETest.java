@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -123,7 +124,21 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     inboxService.addInboxItem(wrestler, "Test Message");
 
+    // Ensure SegmentType exists
+    if (segmentTypeRepository.count() == 0) {
+      SegmentType st = new SegmentType();
+      st.setName("One on One");
+      segmentTypeRepository.save(st);
+    }
     SegmentType oneOnOne = segmentTypeRepository.findByName("One on One").get();
+
+    // Ensure ShowType exists
+    if (showTypeRepository.count() == 0) {
+      ShowType st = new ShowType();
+      st.setName("Weekly Show");
+      st.setDescription("Weekly Show");
+      showTypeRepository.save(st);
+    }
 
     // Create a show
     Show show = new Show();
@@ -204,6 +219,15 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .account(playerAccount)
             .build();
     wrestlerService.save(wrestler);
+
+    // Ensure ShowType exists
+    if (showTypeRepository.count() == 0) {
+      ShowType st = new ShowType();
+      st.setName("Weekly Show");
+      st.setDescription("Weekly Show");
+      showTypeRepository.save(st);
+    }
+
     // Create a show
     Show show = new Show();
     show.setName("Test Show");
@@ -211,6 +235,13 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     show.setShowDate(LocalDate.now().plusDays(1));
     show.setType(showTypeService.findAll().get(0));
     showService.save(show);
+
+    // Ensure SegmentType exists
+    if (segmentTypeRepository.count() == 0) {
+      SegmentType st = new SegmentType();
+      st.setName("One on One");
+      segmentTypeRepository.save(st);
+    }
 
     // Create a segment with the wrestler
     Segment segment =

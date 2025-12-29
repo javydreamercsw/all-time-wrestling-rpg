@@ -14,8 +14,10 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.domain.faction;
+package com.github.javydreamercsw.management;
 
-// This file is intentionally left empty to force migration to the new package.
-// Please update your imports to
-// com.github.javydreamercsw.management.domain.faction.FactionRepository
+/** Interface for database cleanup operations during testing. */
+public interface DatabaseCleanup {
+  /** Clears all repositories/entities in the correct dependency order. */
+  void clearRepositories();
+}

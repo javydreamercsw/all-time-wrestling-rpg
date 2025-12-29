@@ -69,7 +69,7 @@ class DeckCardServiceSecurityTest extends AbstractSecurityTest {
               CardSet newCardSet = new CardSet();
               newCardSet.setName("Test Set");
               newCardSet.setCreationDate(clock.instant());
-              newCardSet.setSetCode("TEST_SET_CODE");
+              newCardSet.setCode("TEST_SET_CODE");
               return cardSetRepository.save(newCardSet);
             });
   }

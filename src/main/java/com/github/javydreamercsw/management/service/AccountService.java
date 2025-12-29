@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -44,6 +45,7 @@ public class AccountService {
   @Lazy private final PasswordEncoder passwordEncoder;
   private final WrestlerRepository wrestlerRepository;
 
+  @PreAuthorize("hasRole('ADMIN')")
   public Account createAccount(String username, String password, String email, RoleName roleName) {
     if (!CustomPasswordValidator.isValid(password)) {
       throw new IllegalArgumentException("Password is not valid.");
@@ -61,6 +63,9 @@ public class AccountService {
     return accountRepository.findById(id);
   }
 
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'BOOKER') or (hasRole('PLAYER') and #entity.id =="
+          + " authentication.principal.id)")
   public Account update(Account entity) {
     Account original =
         accountRepository
@@ -137,5 +142,17 @@ public class AccountService {
                         "Account not found for setLockExpiredAndSave: " + account.getUsername()));
     reloadedAccount.setLockedUntil(java.time.LocalDateTime.now().minusMinutes(1));
     return accountRepository.save(reloadedAccount);
+  }
+
+  // Package-private method for internal use by trusted services (e.g., PasswordResetService)
+  // Bypasses regular @PreAuthorize checks.
+  void updateAccountPasswordInternal(Account account, String newEncodedPassword) {
+    Account existingAccount =
+        accountRepository
+            .findById(account.getId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("Account not found for internal update."));
+    existingAccount.setPassword(newEncodedPassword);
+    accountRepository.save(existingAccount);
   }
 }

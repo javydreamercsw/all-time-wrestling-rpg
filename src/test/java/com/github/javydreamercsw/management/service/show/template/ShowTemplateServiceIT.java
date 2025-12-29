@@ -35,7 +35,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.test.context.support.WithMockUser;
 
 @SpringBootTest
-class ShowTemplateServiceTest extends ManagementIntegrationTest {
+class ShowTemplateServiceIT extends ManagementIntegrationTest {
   @Autowired private ShowTemplateRepository repository;
   @Autowired private ShowTemplateService service;
   @Autowired private ShowTypeService showTypeService;

@@ -69,6 +69,7 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
         "Default accounts: admin/admin123, booker/booker123, player/player123, viewer/viewer123");
 
     loginForm.setI18n(i18n);
+    loginForm.setId("vaadinLoginFormWrapper");
     loginForm.setAction("login");
     loginForm.setForgotPasswordButtonVisible(true);
     loginForm.addForgotPasswordListener(

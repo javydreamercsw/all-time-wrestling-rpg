@@ -23,8 +23,13 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor;
 import com.github.javydreamercsw.base.ai.notion.NotionRateLimitService;
+import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -34,6 +39,8 @@ import com.github.javydreamercsw.management.service.sync.RetryService;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
+import com.github.javydreamercsw.management.service.sync.SyncValidationService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +52,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
-class ShowSyncServiceIT {
+class ShowSyncServiceIT extends ManagementIntegrationTest {
 
   @Mock private ShowService showService;
   @Mock private ShowTypeService showTypeService;
@@ -61,6 +68,9 @@ class ShowSyncServiceIT {
   @Mock private CircuitBreakerService circuitBreakerService;
   @Mock private RetryService retryService;
   @Mock private SyncServiceDependencies syncServiceDependencies;
+  @Mock private SyncSessionManager syncSessionManager;
+  @Mock private SyncValidationService syncValidationService;
+  @Mock private NotionPageDataExtractor notionPageDataExtractor;
 
   private ShowSyncService showSyncService;
 
@@ -81,6 +91,22 @@ class ShowSyncServiceIT {
         .when(syncServiceDependencies.getCircuitBreakerService())
         .thenReturn(circuitBreakerService);
     lenient().when(syncServiceDependencies.getRetryService()).thenReturn(retryService);
+    lenient().when(syncServiceDependencies.getSyncSessionManager()).thenReturn(syncSessionManager);
+    lenient()
+        .when(syncServiceDependencies.getValidationService())
+        .thenReturn(syncValidationService);
+    lenient()
+        .when(syncValidationService.validateSyncPrerequisites())
+        .thenReturn(
+            new SyncValidationService.ValidationResult(
+                true, new java.util.ArrayList<>(), new java.util.ArrayList<>()));
+    lenient()
+        .when(syncServiceDependencies.getNotionPageDataExtractor())
+        .thenReturn(notionPageDataExtractor);
+
+    lenient()
+        .when(notionApiExecutor.getSyncExecutorService())
+        .thenReturn(java.util.concurrent.Executors.newSingleThreadExecutor());
 
     showSyncService =
         new ShowSyncService(
@@ -125,22 +151,22 @@ class ShowSyncServiceIT {
     when(showService.getAllExternalIds()).thenReturn(java.util.Collections.emptyList());
     when(notionHandler.getDatabasePageIds(anyString())).thenReturn(java.util.List.of("show-1"));
 
-    com.github.javydreamercsw.base.ai.notion.ShowPage showPage =
-        new com.github.javydreamercsw.base.ai.notion.ShowPage();
+    ShowPage showPage = new ShowPage();
     showPage.setId("show-1");
     java.util.Map<String, Object> properties = new java.util.HashMap<>();
     properties.put("Name", "Test Show");
     properties.put("Show Type", "Weekly");
     showPage.setRawProperties(properties);
     when(notionHandler.loadShowById(anyString())).thenReturn(java.util.Optional.of(showPage));
+    when(notionPageDataExtractor.extractNameFromNotionPage(any())).thenReturn("Test Show");
+    when(notionPageDataExtractor.extractPropertyAsString(any(), eq("Show Type")))
+        .thenReturn("Weekly");
 
-    com.github.javydreamercsw.management.domain.show.type.ShowType showType =
-        new com.github.javydreamercsw.management.domain.show.type.ShowType();
+    ShowType showType = new ShowType();
     showType.setName("Weekly");
     when(showTypeService.findAll()).thenReturn(java.util.List.of(showType));
 
-    when(showService.save(any(com.github.javydreamercsw.management.domain.show.Show.class)))
-        .thenAnswer(i -> i.getArguments()[0]);
+    when(showService.save(any(Show.class))).thenAnswer(i -> i.getArguments()[0]);
 
     // When
     SyncResult result = showSyncService.syncShows("test-operation");

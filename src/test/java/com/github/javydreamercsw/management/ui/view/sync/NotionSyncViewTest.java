@@ -59,7 +59,7 @@ class NotionSyncViewTest extends AbstractE2ETest {
 
     // Mock scheduler properties
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
-    scheduler.setInterval(3600000L);
+    scheduler.setInterval(3_600_000L);
     when(syncProperties.getScheduler()).thenReturn(scheduler);
 
     // Mock backup properties

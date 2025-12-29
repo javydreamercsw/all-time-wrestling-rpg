@@ -24,13 +24,13 @@ import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -45,7 +45,7 @@ public class AccountInitializer implements Initializable {
   @Value("${data.initializer.enabled:true}")
   private boolean enabled;
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional
   public void init() {
     if (enabled) {
       log.info("Initializing accounts...");
@@ -71,7 +71,8 @@ public class AccountInitializer implements Initializable {
     }
   }
 
-  private void createAccount(String username, String password, Set<Role> roles) {
+  private void createAccount(
+      @NonNull String username, @NonNull String password, @NonNull Set<Role> roles) {
     if (accountRepository.findByUsername(username).isEmpty()) {
       Account account =
           new Account(username, passwordEncoder.encode(password), username + "@example.com");

@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.PasswordResetToken;
 import com.github.javydreamercsw.base.domain.account.PasswordResetTokenRepository;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @Transactional
 @ActiveProfiles("test")
-public class PasswordResetServiceTest {
+public class PasswordResetServiceIT {
 
   @TestConfiguration
   static class TestConfig {
@@ -68,6 +69,7 @@ public class PasswordResetServiceTest {
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   void testCreatePasswordResetTokenForUser() {
     String token = passwordResetService.createPasswordResetTokenForUser(testAccount);
     assertNotNull(token);
@@ -75,17 +77,20 @@ public class PasswordResetServiceTest {
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   void testValidatePasswordResetToken_valid() {
     String token = passwordResetService.createPasswordResetTokenForUser(testAccount);
     assertTrue(passwordResetService.validatePasswordResetToken(token));
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   void testValidatePasswordResetToken_invalid() {
     assertFalse(passwordResetService.validatePasswordResetToken("invalid_token"));
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   void testValidatePasswordResetToken_expired() {
     String token = passwordResetService.createPasswordResetTokenForUser(testAccount);
     PasswordResetToken resetToken = tokenRepository.findByToken(token).get();
@@ -96,6 +101,7 @@ public class PasswordResetServiceTest {
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   void testResetPassword_validToken() {
     String token = passwordResetService.createPasswordResetTokenForUser(testAccount);
     String newPassword = "NewResetPass456!";
@@ -107,6 +113,7 @@ public class PasswordResetServiceTest {
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   void testResetPassword_invalidToken() {
     String newPassword = "NewResetPass456!";
     assertThrows(
@@ -115,6 +122,7 @@ public class PasswordResetServiceTest {
   }
 
   @Test
+  @WithCustomMockUser(roles = "ADMIN")
   void testResetPassword_expiredToken() {
     String token = passwordResetService.createPasswordResetTokenForUser(testAccount);
     PasswordResetToken resetToken = tokenRepository.findByToken(token).get();

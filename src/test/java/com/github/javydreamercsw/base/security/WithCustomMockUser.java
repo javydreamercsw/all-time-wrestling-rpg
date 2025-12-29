@@ -14,13 +14,22 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.card;
+package com.github.javydreamercsw.base.security;
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.JpaRepository;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.springframework.security.test.context.support.WithSecurityContext;
 
-public interface CardSetRepository extends JpaRepository<CardSet, Long> {
-  Optional<CardSet> findByCode(String setCode);
+@Target({ElementType.METHOD, ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@WithSecurityContext(factory = WithCustomMockUserSecurityContextFactory.class)
+public @interface WithCustomMockUser {
+  String username() default "user";
 
-  Optional<CardSet> findByName(String name);
+  String[] roles() default {"PLAYER"};
+
+  long accountId() default
+      1L; // Dummy ID for owner checks, might not be needed depending on implementation
 }

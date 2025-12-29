@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management;
 
+import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.metamodel.EntityType;
@@ -34,11 +35,12 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Slf4j
-public class DatabaseCleaner {
+public class DatabaseCleaner implements DatabaseCleanup {
 
   @Autowired private ApplicationContext applicationContext;
   @Autowired private EntityDependencyAnalyzer dependencyAnalyzer;
   @Autowired private EntityManager entityManager;
+  @Autowired private AccountInitializer accountInitializer;
 
   /**
    * Clears all repositories in the correct dependency order. Automatically discovers all
@@ -46,11 +48,9 @@ public class DatabaseCleaner {
    * parents).
    */
   @Transactional
+  @Override
   public void clearRepositories() {
     log.info("🧹 Starting database cleanup...");
-
-    // Detach all managed entities to prevent dirty session issues
-    entityManager.clear();
 
     // Discover all repositories
     Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
@@ -67,12 +67,15 @@ public class DatabaseCleaner {
 
     // Delete data in the correct order
     int deletedCount = 0;
+
+    // Now safe to delete
     for (String entityName : syncOrder) {
       JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
       if (repository != null) {
         long count = repository.count();
         if (count > 0) {
           try {
+            log.debug("Deleting {} records from {}", count, entityName);
             repository.deleteAll();
             log.debug("✅ Deleted {} records from {}", count, entityName);
             deletedCount++;
@@ -108,6 +111,10 @@ public class DatabaseCleaner {
       }
     }
 
+    entityManager.flush();
+    entityManager.clear();
+
+    accountInitializer.init();
     log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
   }
 

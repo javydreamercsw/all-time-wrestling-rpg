@@ -88,7 +88,8 @@ public class Rivalry extends AbstractEntity<Long> {
 
   /** Add heat to the rivalry based on ATW RPG rules. */
   public void addHeat(int heatGain, String reason) {
-    this.heat += heatGain;
+    int newHeat = this.heat + heatGain;
+    this.heat = Math.max(0, newHeat);
 
     // Create heat event for tracking
     HeatEvent event = new HeatEvent();
