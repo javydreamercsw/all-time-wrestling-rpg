@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.8</version>
+    <version>4.0.1</version>
     <relativePath/>
   </parent>
 
@@ -24,12 +24,12 @@
     <jacoco.integration.coverage.minimum>0.80</jacoco.integration.coverage.minimum>
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.version>0.8.14</jacoco.version>
-    <java.version>17</java.version>
+    <java.version>21</java.version>
     <jib.to.tags>${project.version}</jib.to.tags>
     <lombok.version>1.18.42</lombok.version>
     <surefireArgLine/>
     <testcontainers.version>1.21.4</testcontainers.version>
-    <vaadin.version>24.9.8</vaadin.version>
+    <vaadin.version>25.0.2</vaadin.version>
   </properties>
 
   <dependencyManagement>
@@ -52,10 +52,29 @@
         <artifactId>notion-sdk-jvm-core</artifactId>
         <version>1.11.1</version>
       </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-aop</artifactId>
+        <version>4.0.0-M2</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-flyway</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.springframework.data</groupId>
       <artifactId>spring-data-rest-core</artifactId>
@@ -249,7 +268,7 @@
     <dependency>
       <groupId>com.github.mvysny.kaributesting</groupId>
       <artifactId>karibu-testing-v24</artifactId>
-      <version>2.5.0</version>
+      <version>2.6.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>

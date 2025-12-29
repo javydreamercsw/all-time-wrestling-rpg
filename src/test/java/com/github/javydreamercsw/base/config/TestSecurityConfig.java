@@ -48,8 +48,8 @@ public class TestSecurityConfig {
   @Bean
   public DaoAuthenticationProvider authenticationProvider(
       TestCustomUserDetailsService testCustomUserDetailsService, PasswordEncoder passwordEncoder) {
-    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-    authProvider.setUserDetailsService(testCustomUserDetailsService);
+    DaoAuthenticationProvider authProvider =
+        new DaoAuthenticationProvider(testCustomUserDetailsService);
     authProvider.setPasswordEncoder(passwordEncoder);
     return authProvider;
   }

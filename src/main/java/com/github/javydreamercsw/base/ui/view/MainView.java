@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.base.ui.view;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.router.Route;
@@ -33,10 +32,5 @@ public class MainView extends Main {
     addClassName(LumoUtility.Padding.MEDIUM);
     add(new ViewToolbar("Main"));
     add(new Div("Please select a view from the menu on the left."));
-  }
-
-  /** Navigates to the main view. */
-  public static void showMainView() {
-    UI.getCurrent().navigate(MainView.class);
   }
 }
