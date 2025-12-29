@@ -17,9 +17,12 @@
 package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.javydreamercsw.base.security.PermissionService;
 import com.github.javydreamercsw.base.security.TestCustomUserDetailsService;
 import com.github.javydreamercsw.base.test.AbstractSecurityTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -30,6 +33,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +42,7 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
 
   @Autowired private WrestlerService wrestlerService;
   @Autowired private TestCustomUserDetailsService userDetailsService;
+  @Autowired private PermissionService permissionService;
 
   private Wrestler getWrestler(@NonNull String username) {
     // Ensure the user and their wrestler are created/loaded via the userDetailsService
@@ -46,6 +51,28 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
         .findByAccountUsername(username)
         .orElseThrow(
             () -> new IllegalStateException("Wrestler for user " + username + " not found"));
+  }
+
+  @Test
+  @WithUserDetails("owner")
+  void testPermissionServiceIsOwner() {
+    Wrestler ownedWrestler = getWrestler("owner");
+    System.out.println("DEBUG: Testing isOwner for wrestler: " + ownedWrestler.getName());
+    System.out.println("DEBUG: Wrestler ID: " + ownedWrestler.getId());
+    System.out.println(
+        "DEBUG: Wrestler Account: "
+            + (ownedWrestler.getAccount() != null
+                ? ownedWrestler.getAccount().getUsername()
+                : "null"));
+    System.out.println(
+        "DEBUG: Authentication: " + SecurityContextHolder.getContext().getAuthentication());
+    System.out.println(
+        "DEBUG: Principal: "
+            + SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+
+    boolean isOwner = permissionService.isOwner(ownedWrestler);
+    System.out.println("DEBUG: isOwner result: " + isOwner);
+    assertTrue(isOwner, "PermissionService.isOwner should return true for owner");
   }
 
   @Test
@@ -67,6 +94,8 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
   void testPlayerCanSaveOwnedWrestler() {
     Wrestler ownedWrestler = getWrestler("owner");
     assertNotNull(ownedWrestler);
+    assertNotNull(ownedWrestler.getAccount(), "Account should not be null");
+    assertEquals("owner", ownedWrestler.getAccount().getUsername(), "Username should match");
     assertDoesNotThrow(() -> wrestlerService.save(ownedWrestler));
   }
 

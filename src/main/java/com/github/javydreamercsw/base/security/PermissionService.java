@@ -39,41 +39,39 @@ public class PermissionService {
     if (authentication == null) {
       return false;
     }
+
+    Object principal = authentication.getPrincipal();
+
     if (targetDomainObject instanceof Wrestler wrestler) {
-      if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-        // Check if the wrestler is a player wrestler and if the account matches.
-        if (Boolean.TRUE.equals(wrestler.getIsPlayer())) {
-          if (wrestler.getAccount() != null) {
-            return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
-          }
+      // Strategy 1: Check if the authenticated user has this wrestler assigned in UserDetails
+      if (principal instanceof CustomUserDetails userDetails) {
+        Wrestler userWrestler = userDetails.getWrestler();
+        if (userWrestler != null
+            && wrestler.getId() != null
+            && userWrestler.getId().equals(wrestler.getId())) {
+          return true;
+        }
+      }
+
+      // Strategy 2: Check if the wrestler has an account that matches the authenticated user
+      if (Boolean.TRUE.equals(wrestler.getIsPlayer()) && wrestler.getAccount() != null) {
+        String username = authentication.getName();
+        if (username != null && username.equals(wrestler.getAccount().getUsername())) {
+          return true;
         }
       }
     } else if (targetDomainObject instanceof Deck deck) {
-      if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-        // Check if the deck's wrestler is a player wrestler and if the account matches.
-        Wrestler wrestler = deck.getWrestler();
-        if (wrestler != null && Boolean.TRUE.equals(wrestler.getIsPlayer())) {
-          if (wrestler.getAccount() != null) {
-            return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
-          }
-        }
+      Wrestler wrestler = deck.getWrestler();
+      if (wrestler != null) {
+        return isOwner(wrestler);
       }
     } else if (targetDomainObject instanceof DeckCard deckCard) {
-      if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-        // Check if the deck card's deck's wrestler is a player wrestler and if the account
-        // matches.
-        Deck deck = deckCard.getDeck();
-        if (deck != null) {
-          Wrestler wrestler = deck.getWrestler();
-          if (wrestler != null && Boolean.TRUE.equals(wrestler.getIsPlayer())) {
-            if (wrestler.getAccount() != null) {
-              return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
-            }
-          }
-        }
+      Deck deck = deckCard.getDeck();
+      if (deck != null) {
+        return isOwner(deck);
       }
     } else if (targetDomainObject instanceof InboxItem inboxItem) {
-      if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
+      if (principal instanceof CustomUserDetails userDetails) {
         // Check if the inbox item's target is the current user's wrestler.
         Wrestler wrestler = userDetails.getWrestler();
         if (wrestler != null) {
