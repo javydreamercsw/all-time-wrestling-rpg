@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,13 +83,14 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
     assertDoesNotThrow(() -> wrestlerService.save(ownedWrestler));
 
     // Should NOT be able to save unowned wrestler
-    assertThrows(AccessDeniedException.class, () -> wrestlerService.save(unownedWrestler));
+    assertThrows(AuthorizationDeniedException.class, () -> wrestlerService.save(unownedWrestler));
   }
 
   @Test
   @WithUserDetails("viewer")
   void testViewerCannotSaveWrestler() {
-    assertThrows(AccessDeniedException.class, () -> wrestlerService.save(getWrestler("owner")));
+    assertThrows(
+        AuthorizationDeniedException.class, () -> wrestlerService.save(getWrestler("owner")));
   }
 
   // --- Delete Method Tests ---
@@ -109,15 +110,17 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
   @Test
   @WithUserDetails("owner")
   void testPlayerCannotDeleteWrestler() {
-    assertThrows(AccessDeniedException.class, () -> wrestlerService.delete(getWrestler("owner")));
     assertThrows(
-        AccessDeniedException.class, () -> wrestlerService.delete(getWrestler("not_owner")));
+        AuthorizationDeniedException.class, () -> wrestlerService.delete(getWrestler("owner")));
+    assertThrows(
+        AuthorizationDeniedException.class, () -> wrestlerService.delete(getWrestler("not_owner")));
   }
 
   @Test
   @WithUserDetails("viewer")
   void testViewerCannotDeleteWrestler() {
-    assertThrows(AccessDeniedException.class, () -> wrestlerService.delete(getWrestler("owner")));
+    assertThrows(
+        AuthorizationDeniedException.class, () -> wrestlerService.delete(getWrestler("owner")));
   }
 
   // --- Read Method Tests (All authenticated) ---

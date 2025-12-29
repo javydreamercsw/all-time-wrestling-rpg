@@ -42,16 +42,20 @@ public class PermissionService {
     if (targetDomainObject instanceof Wrestler wrestler) {
       if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
         // Check if the wrestler is a player wrestler and if the account matches.
-        if (wrestler.getIsPlayer()) {
-          return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
+        if (Boolean.TRUE.equals(wrestler.getIsPlayer())) {
+          if (wrestler.getAccount() != null) {
+            return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
+          }
         }
       }
     } else if (targetDomainObject instanceof Deck deck) {
       if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
         // Check if the deck's wrestler is a player wrestler and if the account matches.
         Wrestler wrestler = deck.getWrestler();
-        if (wrestler != null && wrestler.getIsPlayer()) {
-          return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
+        if (wrestler != null && Boolean.TRUE.equals(wrestler.getIsPlayer())) {
+          if (wrestler.getAccount() != null) {
+            return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
+          }
         }
       }
     } else if (targetDomainObject instanceof DeckCard deckCard) {
@@ -61,8 +65,10 @@ public class PermissionService {
         Deck deck = deckCard.getDeck();
         if (deck != null) {
           Wrestler wrestler = deck.getWrestler();
-          if (wrestler != null && wrestler.getIsPlayer()) {
-            return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
+          if (wrestler != null && Boolean.TRUE.equals(wrestler.getIsPlayer())) {
+            if (wrestler.getAccount() != null) {
+              return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
+            }
           }
         }
       }
