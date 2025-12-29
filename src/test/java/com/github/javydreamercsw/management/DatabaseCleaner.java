@@ -17,9 +17,6 @@
 package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.base.AccountInitializer;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.metamodel.EntityType;
@@ -38,16 +35,12 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Slf4j
-public class DatabaseCleaner {
+public class DatabaseCleaner implements DatabaseCleanup {
 
   @Autowired private ApplicationContext applicationContext;
   @Autowired private EntityDependencyAnalyzer dependencyAnalyzer;
   @Autowired private EntityManager entityManager;
-
-  @Autowired private FactionRepository factionRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountInitializer accountInitializer;
-  @Autowired private DeckRepository deckRepository;
 
   /**
    * Clears all repositories in the correct dependency order. Automatically discovers all
@@ -55,6 +48,7 @@ public class DatabaseCleaner {
    * parents).
    */
   @Transactional
+  @Override
   public void clearRepositories() {
     log.info("🧹 Starting database cleanup...");
 
@@ -74,36 +68,7 @@ public class DatabaseCleaner {
     // Delete data in the correct order
     int deletedCount = 0;
 
-    // Break circular dependencies between Faction and Wrestler
-    // 1. Clear faction from all wrestlers
-    wrestlerRepository
-        .findAll()
-        .forEach(
-            w -> {
-              w.setFaction(null);
-              wrestlerRepository.save(w);
-            });
-
-    // 2. Clear leader from all factions
-    factionRepository
-        .findAll()
-        .forEach(
-            f -> {
-              f.setLeader(null);
-              factionRepository.save(f);
-            });
-
-    // 3.
-    deckRepository
-        .findAll()
-        .forEach(
-            d -> {
-              d.getCards().clear();
-              deckRepository.save(d);
-            });
-
     // Now safe to delete
-
     for (String entityName : syncOrder) {
       JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
       if (repository != null) {
@@ -145,6 +110,9 @@ public class DatabaseCleaner {
         }
       }
     }
+
+    entityManager.flush();
+    entityManager.clear();
 
     accountInitializer.init();
     log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);

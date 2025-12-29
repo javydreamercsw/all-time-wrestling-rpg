@@ -72,7 +72,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @Autowired protected ShowService showService;
   @Autowired protected DeckRepository deckRepository;
   @Autowired protected SegmentTypeRepository segmentTypeRepository;
-  @Autowired protected DatabaseCleaner databaseCleaner;
+  @Autowired protected DatabaseCleanup databaseCleaner;
 
   @Autowired
   @Qualifier("testCustomUserDetailsService") protected UserDetailsService userDetailsService;

@@ -18,18 +18,14 @@ package com.github.javydreamercsw.management.service.feud;
 
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Objects;
@@ -43,28 +39,19 @@ import org.springframework.security.access.AccessDeniedException;
 
 class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Autowired private MultiWrestlerFeudService multiWrestlerFeudService;
-  @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private MultiWrestlerFeudRepository feudRepository;
-  @Autowired private FactionRepository factionRepository;
-  @Autowired private DeckRepository deckRepository;
   @Autowired private WrestlerService wrestlerService;
 
   private Wrestler wrestler1;
   private Wrestler wrestler2;
-  private Wrestler wrestler3;
-  private Wrestler bookerWrestler;
 
   @BeforeEach
   void setUp() {
     clearAllRepositories();
     // Do NOT delete accounts to avoid breaking other tests running in parallel
 
-    // Ensure roles exist
-    Role adminRole = getOrCreateRole(RoleName.ADMIN);
-    Role bookerRole = getOrCreateRole(RoleName.BOOKER);
-    Role playerRole = getOrCreateRole(RoleName.PLAYER);
-
     // Create test-specific accounts
+    createTestAccount("feud_admin", RoleName.ADMIN);
     Account bookerAccount = createTestAccount("feud_booker", RoleName.BOOKER);
     Account playerAccount1 = createTestAccount("feud_player1", RoleName.PLAYER);
     Account playerAccount2 = createTestAccount("feud_player2", RoleName.PLAYER);
@@ -79,19 +66,11 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
           wrestler2 =
               wrestlerService.createWrestler(
                   "Wrestler Two", true, "Desc2", WrestlerTier.ROOKIE, playerAccount2);
-          wrestler3 =
-              wrestlerService.createWrestler(
-                  "Wrestler Three", true, "Desc3", WrestlerTier.ROOKIE, playerAccount3);
-          bookerWrestler =
-              wrestlerService.createWrestler(
-                  "Booker Wrestler", false, "DescB", WrestlerTier.ROOKIE, bookerAccount);
+          wrestlerService.createWrestler(
+              "Wrestler Three", true, "Desc3", WrestlerTier.ROOKIE, playerAccount3);
+          wrestlerService.createWrestler(
+              "Booker Wrestler", false, "DescB", WrestlerTier.ROOKIE, bookerAccount);
         });
-  }
-
-  private Role getOrCreateRole(RoleName roleName) {
-    return roleRepository
-        .findByName(roleName)
-        .orElseGet(() -> roleRepository.save(new Role(roleName, roleName.name() + " role")));
   }
 
   @Test
