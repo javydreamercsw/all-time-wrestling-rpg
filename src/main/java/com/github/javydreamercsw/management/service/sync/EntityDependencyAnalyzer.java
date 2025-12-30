@@ -214,7 +214,10 @@ public class EntityDependencyAnalyzer {
         // This is a reverse dependency, so we add it to the other side of the graph
         // For deletion order, this means the referenced entity must be deleted before this one.
         // So, the referenced entity depends on this one.
-        log.debug("Found @OneToMany dependency: {} -> {}", referencedEntity, getEntityName(field.getDeclaringClass()));
+        log.debug(
+            "Found @OneToMany dependency: {} -> {}",
+            referencedEntity,
+            getEntityName(field.getDeclaringClass()));
       }
     }
   }
