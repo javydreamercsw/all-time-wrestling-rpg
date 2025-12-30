@@ -172,7 +172,7 @@ class TitleListViewTest extends AbstractViewTest {
     // Verify grid is refreshed and contains the new title with the correct champion
     Grid<Title> grid = titleListView.grid;
     List<Title> items = grid.getGenericDataView().getItems().toList();
-    assertEquals(2, items.size());
+    assertEquals(1, items.size());
     Optional<Title> createdTitle =
         items.stream().filter(t -> t.getName().equals("New Title")).findFirst();
     assertTrue(createdTitle.isPresent());

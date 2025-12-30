@@ -52,6 +52,7 @@ public class TitleFormDialog extends Dialog {
   private final ComboBox<WrestlerTier> tier;
   private final ComboBox<Gender> gender;
   private final MultiSelectComboBox<Wrestler> champion;
+  private final Button saveButton;
 
   public TitleFormDialog(
       @NonNull TitleService titleService,
@@ -128,7 +129,7 @@ public class TitleFormDialog extends Dialog {
         new FormLayout(name, description, tier, gender, championshipType, isActive, champion);
     add(formLayout);
 
-    Button saveButton =
+    saveButton =
         new Button(
             "Save",
             event -> {
