@@ -29,7 +29,6 @@ import org.springframework.security.access.AccessDeniedException;
 class FeudResolutionServiceIT extends ManagementIntegrationTest {
 
   @Autowired private FeudResolutionService feudResolutionService;
-
   @Autowired private MultiWrestlerFeudRepository feudRepository;
 
   private MultiWrestlerFeud feud;
