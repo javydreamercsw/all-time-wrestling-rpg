@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.service.sync;
 
 import jakarta.persistence.*;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -208,6 +210,20 @@ public class EntityDependencyAnalyzer {
         log.debug("Found @OneToOne dependency: {} -> {}", field.getName(), referencedEntity);
       }
     }
+
+    // @OneToMany - the referenced entity depends on this entity
+    if (field.isAnnotationPresent(OneToMany.class)) {
+      String referencedEntity = getEntityNameFromCollectionFieldType(field, entityNameToClass);
+      if (referencedEntity != null) {
+        // This is a reverse dependency, so we add it to the other side of the graph
+        // For deletion order, this means the referenced entity must be deleted before this one.
+        // So, the referenced entity depends on this one.
+        log.debug(
+            "Found @OneToMany dependency: {} -> {}",
+            referencedEntity,
+            getEntityName(field.getDeclaringClass()));
+      }
+    }
   }
 
   /** Gets the entity name from a field's type. */
@@ -227,6 +243,28 @@ public class EntityDependencyAnalyzer {
       }
     }
 
+    return null;
+  }
+
+  /** Gets the entity name from a collection field's type. */
+  private String getEntityNameFromCollectionFieldType(
+      Field field, Map<String, Class<?>> entityNameToClass) {
+    Type genericType = field.getGenericType();
+    if (genericType instanceof ParameterizedType) {
+      ParameterizedType parameterizedType = (ParameterizedType) genericType;
+      Type[] typeArguments = parameterizedType.getActualTypeArguments();
+      if (typeArguments.length > 0) {
+        Type typeArgument = typeArguments[0];
+        if (typeArgument instanceof Class) {
+          Class<?> collectionType = (Class<?>) typeArgument;
+          for (Map.Entry<String, Class<?>> entry : entityNameToClass.entrySet()) {
+            if (entry.getValue().equals(collectionType)) {
+              return entry.getKey();
+            }
+          }
+        }
+      }
+    }
     return null;
   }
 

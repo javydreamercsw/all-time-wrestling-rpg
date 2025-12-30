@@ -82,16 +82,20 @@ public class DatabaseCleaner implements DatabaseCleanup {
         long count = repository.count();
         if (count > 0) {
           try {
-            log.debug("Deleting {} records from {}", count, entityName);
-            repository.deleteAll();
-            log.debug("✅ Deleted {} records from {}", count, entityName);
+            log.debug("Deleting {} records from {} using deleteAllInBatch()", count, entityName);
+            repository.deleteAllInBatch();
+            log.debug("✅ Deleted (batch) {} records from {}", count, entityName);
             deletedCount++;
           } catch (Exception e) {
-            log.warn("⚠️ Error deleting from {}: {}", entityName, e.getMessage());
-            // Try deleteAllInBatch as fallback
+            log.warn(
+                "⚠️ Error deleting (batch) from {}: {}. Falling back to deleteAll()",
+                entityName,
+                e.getMessage());
+            // Fallback to deleteAll for repositories that don't support deleteAllInBatch or have
+            // other issues
             try {
-              repository.deleteAllInBatch();
-              log.debug("✅ Deleted (batch) {} records from {}", count, entityName);
+              repository.deleteAll();
+              log.debug("✅ Deleted {} records from {}", count, entityName);
               deletedCount++;
             } catch (Exception e2) {
               log.error("❌ Failed to delete from {}: {}", entityName, e2.getMessage());
@@ -107,9 +111,11 @@ public class DatabaseCleaner implements DatabaseCleanup {
         try {
           long count = entry.getValue().count();
           if (count > 0) {
-            entry.getValue().deleteAll();
+            entry.getValue().deleteAllInBatch();
             log.debug(
-                "✅ Deleted {} records from {} (not in dependency graph)", count, entry.getKey());
+                "✅ Deleted (batch) {} records from {} (not in dependency graph)",
+                count,
+                entry.getKey());
             deletedCount++;
           }
         } catch (Exception e) {
@@ -117,9 +123,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
         }
       }
     }
-
-    entityManager.flush();
-    entityManager.clear();
 
     accountInitializer.init();
     log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
