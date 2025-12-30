@@ -180,10 +180,6 @@ public class EntityDependencyAnalyzer {
   /** Analyzes a field for foreign key relationships that create dependencies. */
   private void analyzeForeignKeyDependencies(
       Field field, Set<String> dependencies, Map<String, Class<?>> entityNameToClass) {
-    if (field.getDeclaringClass().getSimpleName().equals("Faction")
-        && field.getName().equals("leader")) {
-      return;
-    }
     // @ManyToOne - this entity depends on the referenced entity
     if (field.isAnnotationPresent(ManyToOne.class)) {
       String referencedEntity = getEntityNameFromFieldType(field, entityNameToClass);
@@ -218,10 +214,7 @@ public class EntityDependencyAnalyzer {
         // This is a reverse dependency, so we add it to the other side of the graph
         // For deletion order, this means the referenced entity must be deleted before this one.
         // So, the referenced entity depends on this one.
-        log.debug(
-            "Found @OneToMany dependency: {} -> {}",
-            referencedEntity,
-            getEntityName(field.getDeclaringClass()));
+        log.debug("Found @OneToMany dependency: {} -> {}", referencedEntity, getEntityName(field.getDeclaringClass()));
       }
     }
   }
