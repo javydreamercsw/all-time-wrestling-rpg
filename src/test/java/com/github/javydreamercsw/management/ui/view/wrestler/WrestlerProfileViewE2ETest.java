@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -188,7 +189,9 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     wrestler1.setFans(1000L);
     wrestlerRepository.saveAndFlush(wrestler1);
 
-    Title title = titleService.createTitle("Test Title", "Test Title", WrestlerTier.ROOKIE);
+    Title title =
+        titleService.createTitle(
+            "Test Title", "Test Title", WrestlerTier.ROOKIE, ChampionshipType.SINGLE);
 
     Season season = seasonService.createSeason("Test Season", "Test Season", 5);
     Show show =

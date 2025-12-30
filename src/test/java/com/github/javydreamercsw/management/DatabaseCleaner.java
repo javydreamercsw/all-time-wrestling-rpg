@@ -19,7 +19,11 @@ package com.github.javydreamercsw.management;
 import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +56,15 @@ public class DatabaseCleaner implements DatabaseCleanup {
   public void clearRepositories() {
     log.info("🧹 Starting database cleanup...");
 
+    // Detach all managed entities to prevent dirty state from interfering with cleanup.
+    entityManager.clear();
+
+    // Manually break known circular dependencies before doing anything else.
+    breakCircularDependencies();
+
+    // Clear join tables first to handle Many-to-Many relationships without dedicated repositories
+    clearJoinTables();
+
     // Discover all repositories
     Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
     log.info("📦 Discovered {} repositories", repositories.size());
@@ -67,29 +80,12 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
     // Delete data in the correct order
     int deletedCount = 0;
-
-    // Now safe to delete
     for (String entityName : syncOrder) {
       JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
       if (repository != null) {
-        long count = repository.count();
-        if (count > 0) {
-          try {
-            log.debug("Deleting {} records from {}", count, entityName);
-            repository.deleteAll();
-            log.debug("✅ Deleted {} records from {}", count, entityName);
-            deletedCount++;
-          } catch (Exception e) {
-            log.warn("⚠️ Error deleting from {}: {}", entityName, e.getMessage());
-            // Try deleteAllInBatch as fallback
-            try {
-              repository.deleteAllInBatch();
-              log.debug("✅ Deleted (batch) {} records from {}", count, entityName);
-              deletedCount++;
-            } catch (Exception e2) {
-              log.error("❌ Failed to delete from {}: {}", entityName, e2.getMessage());
-            }
-          }
+        if (repository.count() > 0) {
+          repository.deleteAllInBatch();
+          deletedCount++;
         }
       }
     }
@@ -97,25 +93,77 @@ public class DatabaseCleaner implements DatabaseCleanup {
     // Clean up any remaining repositories not in the entity list
     for (Map.Entry<String, JpaRepository<?, ?>> entry : repositories.entrySet()) {
       if (!syncOrder.contains(entry.getKey())) {
-        try {
-          long count = entry.getValue().count();
-          if (count > 0) {
-            entry.getValue().deleteAll();
-            log.debug(
-                "✅ Deleted {} records from {} (not in dependency graph)", count, entry.getKey());
-            deletedCount++;
-          }
-        } catch (Exception e) {
-          log.warn("⚠️ Error deleting from {}: {}", entry.getKey(), e.getMessage());
+        if (entry.getValue().count() > 0) {
+          entry.getValue().deleteAllInBatch();
+          deletedCount++;
         }
       }
     }
 
-    entityManager.flush();
-    entityManager.clear();
-
     accountInitializer.init();
     log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
+  }
+
+  /**
+   * Manually breaks known circular dependencies by setting foreign keys to NULL. This is necessary
+   * before batch deletion to avoid constraint violations.
+   */
+  private void breakCircularDependencies() {
+    log.info("💔 Breaking circular dependencies...");
+    try {
+      entityManager.createNativeQuery("UPDATE wrestler SET faction_id = NULL").executeUpdate();
+      log.debug("✅ Nullified wrestler.faction_id");
+    } catch (Exception e) {
+      // This might fail if the table doesn't exist yet on first run, which is fine.
+      log.warn("Could not nullify wrestler.faction_id: {}", e.getMessage());
+    }
+    try {
+      entityManager.createNativeQuery("UPDATE faction SET leader_id = NULL").executeUpdate();
+      log.debug("✅ Nullified faction.leader_id");
+    } catch (Exception e) {
+      // This might fail if the table doesn't exist yet on first run, which is fine.
+      log.warn("Could not nullify faction.leader_id: {}", e.getMessage());
+    }
+  }
+
+  /**
+   * Discovers and clears all join tables defined with @JoinTable annotation. This is necessary for
+   * Many-to-Many relationships that don't have a dedicated repository.
+   */
+  private void clearJoinTables() {
+    Set<String> joinTableNames = new HashSet<>();
+    Set<EntityType<?>> entities = entityManager.getMetamodel().getEntities();
+
+    for (EntityType<?> entity : entities) {
+      for (Attribute<?, ?> attribute : entity.getAttributes()) {
+        if (attribute.isCollection()) {
+          Member member = attribute.getJavaMember();
+          if (member instanceof AnnotatedElement) {
+            AnnotatedElement annotatedElement = (AnnotatedElement) member;
+            JoinTable joinTable = annotatedElement.getAnnotation(JoinTable.class);
+            if (joinTable != null) {
+              joinTableNames.add(joinTable.name());
+            }
+          }
+        }
+      }
+    }
+
+    if (!joinTableNames.isEmpty()) {
+      log.info("🧹 Clearing {} join tables...", joinTableNames.size());
+      for (String tableName : joinTableNames) {
+        try {
+          log.debug("Deleting all records from join table {}", tableName);
+          // Use uppercase to match database schema and no quotes to avoid case-sensitivity issues
+          entityManager
+              .createNativeQuery("DELETE FROM " + tableName.toUpperCase(Locale.ROOT))
+              .executeUpdate();
+          log.debug("✅ Deleted all records from join table {}", tableName);
+        } catch (Exception e) {
+          log.error("❌ Failed to delete from join table {}: {}", tableName, e.getMessage());
+        }
+      }
+    }
   }
 
   /**

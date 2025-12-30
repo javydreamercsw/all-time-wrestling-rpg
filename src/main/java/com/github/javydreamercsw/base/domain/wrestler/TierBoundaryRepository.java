@@ -18,11 +18,11 @@ package com.github.javydreamercsw.base.domain.wrestler;
 
 import java.util.List;
 import java.util.Optional;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface TierBoundaryRepository extends CrudRepository<TierBoundary, Long> {
+public interface TierBoundaryRepository extends JpaRepository<TierBoundary, Long> {
   Optional<TierBoundary> findByTierAndGender(WrestlerTier tier, Gender gender);
 
   List<TierBoundary> findAllByGender(Gender gender);

@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.domain.drama;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 /**
@@ -66,6 +68,24 @@ public enum DramaEventType {
   DramaEventType(String displayName, String description) {
     this.displayName = displayName;
     this.description = description;
+  }
+
+  @JsonCreator
+  public static DramaEventType fromString(String value) {
+    if (value == null) {
+      return null;
+    }
+    for (DramaEventType type : values()) {
+      if (type.name().equalsIgnoreCase(value) || type.displayName.equalsIgnoreCase(value)) {
+        return type;
+      }
+    }
+    throw new IllegalArgumentException("Unknown DramaEventType: " + value);
+  }
+
+  @JsonValue
+  public String getDisplayName() {
+    return displayName;
   }
 
   /** Check if this event type typically involves multiple wrestlers. */

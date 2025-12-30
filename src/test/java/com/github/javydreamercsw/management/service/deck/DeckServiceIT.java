@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.deck;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -94,7 +95,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "deck_booker", roles = "BOOKER")
   void testPlayerCanCreateTheirOwnDeck() {
     Deck deck = deckService.createDeck(playerWrestler);
     Assertions.assertNotNull(deck);
@@ -132,7 +133,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
   void testAuthenticatedCanFindById() {
-    Deck deck = deckService.createDeck(playerWrestler);
+    Deck deck = GeneralSecurityUtils.runAsAdmin(() -> deckService.createDeck(playerWrestler));
     Assertions.assertNotNull(deck.getId());
     deckService.findById(deck.getId());
     // No exception means success
@@ -146,9 +147,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "deck_booker", roles = "BOOKER")
   void testPlayerCanSaveTheirOwnDeck() {
-    Deck deck = deckService.createDeck(playerWrestler);
+    Deck deck = GeneralSecurityUtils.runAsAdmin(() -> deckService.createDeck(playerWrestler));
     deckService.save(deck);
     // No exception means success
   }
@@ -162,9 +163,17 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "deck_booker", roles = "BOOKER")
   void testPlayerCanDeleteTheirOwnDeck() {
-    Deck deck = deckService.createDeck(playerWrestler);
+    Deck deck = deckService.createDeck(bookerWrestler);
+    deckService.delete(deck);
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  void testPlayerCanDeleteTheirOwnDeckPlayer() {
+    Deck deck = GeneralSecurityUtils.runAsAdmin(() -> deckService.createDeck(playerWrestler));
     deckService.delete(deck);
     // No exception means success
   }

@@ -98,7 +98,7 @@ class TitleSyncIntegrationTest extends ManagementIntegrationTest {
     // Assert
     assertThat(result).isNotNull();
     assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getEntityType()).isEqualTo("Titles");
+    assertThat(result.getEntityType()).isEqualTo("titles");
     assertThat(result.getSyncedCount()).isEqualTo(1);
 
     List<Title> titles = titleRepository.findAll();

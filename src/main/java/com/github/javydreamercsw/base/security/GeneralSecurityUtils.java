@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.security;
 
 import java.util.Collections;
 import java.util.function.Supplier;
+import lombok.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,19 +33,6 @@ public final class GeneralSecurityUtils {
   }
 
   /**
-   * Runs the given {@link Runnable} with the admin role.
-   *
-   * @param runnable The runnable to run.
-   */
-  public static void runAsAdmin(Runnable runnable) {
-    runAsAdmin(
-        () -> {
-          runnable.run();
-          return null;
-        });
-  }
-
-  /**
    * Runs the given {@link Supplier} with the admin role.
    *
    * @param <T> The type of the result.
@@ -52,14 +40,29 @@ public final class GeneralSecurityUtils {
    * @return The result of the supplier.
    */
   public static <T> T runAsAdmin(Supplier<T> supplier) {
+    return runAs(supplier, "admin", "password", "ADMIN");
+  }
+
+  /**
+   * Runs the given {@link Supplier} with the credentials and roles provided.
+   *
+   * @param <T> The type of the result.
+   * @param supplier The supplier to run.
+   * @return The result of the supplier.
+   */
+  public static <T> T runAs(
+      Supplier<T> supplier,
+      @NonNull String username,
+      @NonNull String password,
+      @NonNull String role) {
     SecurityContext originalContext = SecurityContextHolder.getContext();
     try {
       SecurityContext context = SecurityContextHolder.createEmptyContext();
       Authentication authentication =
           new UsernamePasswordAuthenticationToken(
-              "admin",
-              "password",
-              Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
+              username,
+              password,
+              Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)));
       context.setAuthentication(authentication);
       SecurityContextHolder.setContext(context);
       return supplier.get();

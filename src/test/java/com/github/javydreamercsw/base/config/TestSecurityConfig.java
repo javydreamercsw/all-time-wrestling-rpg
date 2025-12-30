@@ -16,14 +16,15 @@
 */
 package com.github.javydreamercsw.base.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.TestCustomUserDetailsService;
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -41,17 +42,16 @@ import org.springframework.security.web.SecurityFilterChain;
 public class TestSecurityConfig {
 
   @Bean
-  public TestCustomUserDetailsService testCustomUserDetailsService() {
-    return new TestCustomUserDetailsService();
+  @ConditionalOnMissingBean
+  public ObjectMapper objectMapper() {
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.findAndRegisterModules();
+    return mapper;
   }
 
   @Bean
-  public DaoAuthenticationProvider authenticationProvider(
-      TestCustomUserDetailsService testCustomUserDetailsService, PasswordEncoder passwordEncoder) {
-    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-    authProvider.setUserDetailsService(testCustomUserDetailsService);
-    authProvider.setPasswordEncoder(passwordEncoder);
-    return authProvider;
+  public TestCustomUserDetailsService testCustomUserDetailsService() {
+    return new TestCustomUserDetailsService();
   }
 
   @Bean

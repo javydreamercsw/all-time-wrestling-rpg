@@ -2,5 +2,12 @@
   "name": "ATW World",
   "tier": "MAIN_EVENTER",
   "description": "",
-  "gender": "MALE"
+  "gender": "MALE",
+  "championshipType": "SINGLE"
+}, {
+  "name": "ATW Tag Team",
+  "tier": "MIDCARDER",
+  "description": "",
+  "gender": "MALE",
+  "championshipType": "TEAM"
 } ]

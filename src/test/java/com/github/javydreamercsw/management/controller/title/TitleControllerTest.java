@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import org.junit.jupiter.api.Test;
@@ -45,10 +46,11 @@ class TitleControllerTest extends AbstractControllerTest {
     title.setTier(WrestlerTier.MIDCARDER);
 
     when(titleService.titleNameExists(any())).thenReturn(false);
-    when(titleService.createTitle(any(), any(), any())).thenReturn(title);
+    when(titleService.createTitle(any(), any(), any(), any())).thenReturn(title);
 
     TitleController.CreateTitleRequest request =
-        new TitleController.CreateTitleRequest("Test Title", "Description", WrestlerTier.MIDCARDER);
+        new TitleController.CreateTitleRequest(
+            "Test Title", "Description", WrestlerTier.MIDCARDER, ChampionshipType.SINGLE);
 
     mockMvc
         .perform(

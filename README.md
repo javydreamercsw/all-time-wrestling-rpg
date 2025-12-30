@@ -225,8 +225,8 @@ The application will be accessible at `http://localhost:8080/atw-rpg` (assuming 
 This project maintains a **90% code coverage goal** using JaCoCo:
 
 ```bash
-# Run tests with coverage (requires Java 17)
-JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home mvn clean verify
+# Run tests with coverage (requires Java 25)
+JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-25.jdk/Contents/Home mvn clean verify
 
 # View coverage report
 open target/site/jacoco/index.html

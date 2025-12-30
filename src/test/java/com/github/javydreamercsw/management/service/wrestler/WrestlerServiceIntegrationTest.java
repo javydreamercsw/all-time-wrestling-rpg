@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -104,7 +105,9 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     segmentService.updateSegment(lossSegment);
 
     // Create a title and have the wrestler win it
-    Title title = titleService.createTitle("Test Title", "Test Title", WrestlerTier.ROOKIE);
+    Title title =
+        titleService.createTitle(
+            "Test Title", "Test Title", WrestlerTier.ROOKIE, ChampionshipType.SINGLE);
     titleService.awardTitleTo(title, List.of(wrestler));
     wrestlerRepository.flush();
 

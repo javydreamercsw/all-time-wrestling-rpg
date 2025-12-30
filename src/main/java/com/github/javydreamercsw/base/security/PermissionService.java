@@ -23,58 +23,62 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collection;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Optional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service("permissionService")
+@Transactional(readOnly = true)
 public class PermissionService {
 
-  @Autowired private AccountRepository accountRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
+  private final WrestlerRepository wrestlerRepository;
+  private final AccountRepository accountRepository;
+
+  public PermissionService(
+      WrestlerRepository wrestlerRepository, AccountRepository accountRepository) {
+    this.wrestlerRepository = wrestlerRepository;
+    this.accountRepository = accountRepository;
+  }
 
   public boolean isOwner(Object targetDomainObject) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null) {
       return false;
     }
-    if (targetDomainObject instanceof Wrestler wrestler) {
-      if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-        // Check if the wrestler is a player wrestler and if the account matches.
-        if (wrestler.getIsPlayer()) {
-          return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
-        }
-      }
+
+    Object principal = authentication.getPrincipal();
+    if (!(principal instanceof UserDetails userDetails)) {
+      return false; // Or handle anonymous user differently
+    }
+
+    // Fetch the wrestler directly using the username from the security context
+    Optional<Wrestler> userWrestlerOpt =
+        accountRepository
+            .findByUsername(userDetails.getUsername())
+            .flatMap(wrestlerRepository::findByAccount);
+
+    if (userWrestlerOpt.isEmpty()) {
+      return false; // User does not have a wrestler assigned
+    }
+    Wrestler userWrestler = userWrestlerOpt.get();
+
+    if (targetDomainObject instanceof Wrestler targetWrestler) {
+      return userWrestler.getId().equals(targetWrestler.getId());
     } else if (targetDomainObject instanceof Deck deck) {
-      if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-        // Check if the deck's wrestler is a player wrestler and if the account matches.
-        Wrestler wrestler = deck.getWrestler();
-        if (wrestler != null && wrestler.getIsPlayer()) {
-          return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
-        }
-      }
+      Wrestler deckWrestler = deck.getWrestler();
+      return deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
     } else if (targetDomainObject instanceof DeckCard deckCard) {
-      if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-        // Check if the deck card's deck's wrestler is a player wrestler and if the account
-        // matches.
-        Deck deck = deckCard.getDeck();
-        if (deck != null) {
-          Wrestler wrestler = deck.getWrestler();
-          if (wrestler != null && wrestler.getIsPlayer()) {
-            return wrestler.getAccount().getUsername().equals(userDetails.getUsername());
-          }
-        }
+      Deck deck = deckCard.getDeck();
+      if (deck != null) {
+        Wrestler deckWrestler = deck.getWrestler();
+        return deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
       }
     } else if (targetDomainObject instanceof InboxItem inboxItem) {
-      if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-        // Check if the inbox item's target is the current user's wrestler.
-        Wrestler wrestler = userDetails.getWrestler();
-        if (wrestler != null) {
-          return inboxItem.getTargets().stream()
-              .anyMatch(target -> target.getTargetId().equals(wrestler.getId().toString()));
-        }
-      }
+      return inboxItem.getTargets().stream()
+          .anyMatch(target -> target.getTargetId().equals(userWrestler.getId().toString()));
     } else if (targetDomainObject instanceof Collection<?> collection) {
       if (collection.isEmpty()) {
         return true;
@@ -82,6 +86,7 @@ public class PermissionService {
       // Check if all items in the collection are owned by the user
       return collection.stream().allMatch(this::isOwner);
     }
+
     return false;
   }
 }

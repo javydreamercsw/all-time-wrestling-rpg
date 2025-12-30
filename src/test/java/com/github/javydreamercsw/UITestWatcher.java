@@ -52,7 +52,10 @@ public class UITestWatcher implements AfterTestExecutionCallback {
                       // Create a directory for the test output
                       Path outputDir =
                           Paths.get(
-                              "target", "test-failures", context.getRequiredTestMethod().getName());
+                              "target",
+                              "test-failures",
+                              context.getTestClass().get().getSimpleName(),
+                              context.getRequiredTestMethod().getName());
                       Files.createDirectories(outputDir);
 
                       String testName = context.getDisplayName().replaceAll("[^a-zA-Z0-9.-]", "_");

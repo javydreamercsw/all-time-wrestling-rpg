@@ -27,7 +27,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -35,14 +34,14 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@AutoConfigureMockMvc
-@Import({TestSecurityConfig.class})
+@Import(TestSecurityConfig.class)
 @ActiveProfiles("test")
 @WithMockUser(roles = "ADMIN")
 @TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
 public abstract class AbstractControllerTest {
 
   @Autowired protected MockMvc mockMvc;
+
   @Autowired protected ObjectMapper objectMapper;
 
   // Infrastructure mocks likely needed by multiple controllers or security

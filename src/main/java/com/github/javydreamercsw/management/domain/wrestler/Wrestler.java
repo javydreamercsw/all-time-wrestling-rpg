@@ -206,14 +206,22 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @JsonIgnore
   public List<Rivalry> getActiveRivalries() {
     List<Rivalry> allRivalries = new ArrayList<>();
-    allRivalries.addAll(rivalriesAsWrestler1.stream().filter(Rivalry::getIsActive).toList());
-    allRivalries.addAll(rivalriesAsWrestler2.stream().filter(Rivalry::getIsActive).toList());
+    allRivalries.addAll(
+        rivalriesAsWrestler1.stream()
+            .filter(Rivalry::getIsActive)
+            .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
+    allRivalries.addAll(
+        rivalriesAsWrestler2.stream()
+            .filter(Rivalry::getIsActive)
+            .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
     return allRivalries;
   }
 
   @JsonIgnore
   public List<Injury> getActiveInjuries() {
-    return injuries.stream().filter(Injury::isCurrentlyActive).toList();
+    return injuries.stream()
+        .filter(Injury::isCurrentlyActive)
+        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
   }
 
   @JsonIgnore

@@ -20,6 +20,7 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -90,6 +91,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
     womensTitle.setName("Women's World Championship");
     womensTitle.setGender(Gender.FEMALE);
     womensTitle.setTier(WrestlerTier.MIDCARDER);
+    womensTitle.setChampionshipType(ChampionshipType.SINGLE);
     titleRepository.save(womensTitle);
 
     tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerRepository.findAll()));

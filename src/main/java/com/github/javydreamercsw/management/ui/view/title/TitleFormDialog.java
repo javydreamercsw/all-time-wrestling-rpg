@@ -19,12 +19,12 @@ package com.github.javydreamercsw.management.ui.view.title;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -56,7 +56,6 @@ public class TitleFormDialog extends Dialog {
 
   public TitleFormDialog(
       @NonNull TitleService titleService,
-      @NonNull WrestlerService wrestlerService,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull TierRecalculationService tierRecalculationService,
       @NonNull Title title,
@@ -80,6 +79,12 @@ public class TitleFormDialog extends Dialog {
             .sorted(Comparator.comparing(Gender::name))
             .collect(Collectors.toList()));
     gender.setReadOnly(!securityUtils.canEdit());
+    ComboBox<ChampionshipType> championshipType = new ComboBox<>("Championship Type");
+    championshipType.setItems(
+        Arrays.stream(ChampionshipType.values())
+            .sorted(Comparator.comparing(ChampionshipType::name))
+            .collect(Collectors.toList()));
+    championshipType.setReadOnly(!securityUtils.canEdit());
     Checkbox isActive = new Checkbox("Active");
     isActive.setReadOnly(!securityUtils.canEdit());
     champion = new MultiSelectComboBox<>("Champion(s)");
@@ -90,6 +95,10 @@ public class TitleFormDialog extends Dialog {
     binder.bind(description, Title::getDescription, Title::setDescription);
     binder.forField(tier).asRequired().bind(Title::getTier, Title::setTier);
     binder.bind(gender, Title::getGender, Title::setGender);
+    binder
+        .forField(championshipType)
+        .asRequired()
+        .bind(Title::getChampionshipType, Title::setChampionshipType);
     binder.bind(isActive, Title::getIsActive, Title::setIsActive);
 
     Runnable populateChampions =
@@ -116,7 +125,8 @@ public class TitleFormDialog extends Dialog {
     tier.addValueChangeListener(event -> populateChampions.run());
     gender.addValueChangeListener(event -> populateChampions.run());
 
-    FormLayout formLayout = new FormLayout(name, description, tier, gender, isActive, champion);
+    FormLayout formLayout =
+        new FormLayout(name, description, tier, gender, championshipType, isActive, champion);
     add(formLayout);
 
     saveButton =

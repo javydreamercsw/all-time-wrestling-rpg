@@ -108,22 +108,17 @@
     "hash": "f4a92751da82a2fdf3ce85a2503fc6c715ff70e50843eeca6f88d045a99621d2"
   },
   "overrides": {
-    "@vaadin/bundles": "$@vaadin/bundles",
-    "@vaadin/polymer-legacy-adapter": "$@vaadin/polymer-legacy-adapter",
     "@vaadin/vaadin-development-mode-detector": "$@vaadin/vaadin-development-mode-detector",
     "@vaadin/vaadin-usage-statistics": "$@vaadin/vaadin-usage-statistics",
     "@vaadin/react-components": "$@vaadin/react-components",
     "@vaadin/common-frontend": "$@vaadin/common-frontend",
     "react-dom": "$react-dom",
-    "construct-style-sheets-polyfill": "$construct-style-sheets-polyfill",
     "lit": "$lit",
-    "@polymer/polymer": "$@polymer/polymer",
     "react": "$react",
     "react-router": "$react-router",
     "date-fns": "$date-fns",
     "@vaadin/vaadin-themable-mixin": "$@vaadin/vaadin-themable-mixin",
     "@vaadin/vaadin-lumo-styles": "$@vaadin/vaadin-lumo-styles",
-    "@vaadin/vaadin-material-styles": "$@vaadin/vaadin-material-styles",
     "@fullcalendar/interaction": "$@fullcalendar/interaction",
     "@fullcalendar/timegrid": "$@fullcalendar/timegrid",
     "@fullcalendar/core": "$@fullcalendar/core",
@@ -137,6 +132,7 @@
     "@vaadin/react-components-pro": "$@vaadin/react-components-pro",
     "proj4": "$proj4",
     "@vaadin/router": "2.0.1",
+    "@vaadin/cookie-consent": "24.9.7",
     "@vaadin/a11y-base": "24.9.7",
     "@vaadin/accordion": "24.9.7",
     "@vaadin/app-layout": "24.9.7",
@@ -197,11 +193,15 @@
     "@vaadin/virtual-list": "24.9.7",
     "@vaadin/board": "24.9.7",
     "@vaadin/charts": "24.9.7",
-    "@vaadin/cookie-consent": "24.9.7",
     "@vaadin/crud": "24.9.7",
     "@vaadin/dashboard": "24.9.7",
     "@vaadin/grid-pro": "24.9.7",
     "@vaadin/map": "24.9.7",
-    "@vaadin/rich-text-editor": "24.9.7"
+    "@vaadin/rich-text-editor": "24.9.7",
+    "@vaadin/bundles": "$@vaadin/bundles",
+    "@vaadin/polymer-legacy-adapter": "$@vaadin/polymer-legacy-adapter",
+    "construct-style-sheets-polyfill": "$construct-style-sheets-polyfill",
+    "@polymer/polymer": "$@polymer/polymer",
+    "@vaadin/vaadin-material-styles": "$@vaadin/vaadin-material-styles"
   }
 }

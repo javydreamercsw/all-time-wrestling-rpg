@@ -14,10 +14,22 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.inbox;
+package com.github.javydreamercsw.management.dto.ranking;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Repository
-public interface InboxItemTargetRepository extends JpaRepository<InboxItemTarget, Long> {}
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class RankedTeamDTO {
+  private Long id;
+  private String name;
+  private Long fans;
+  private int rank;
+}

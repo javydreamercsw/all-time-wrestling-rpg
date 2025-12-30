@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
+import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
@@ -58,7 +59,8 @@ public class RankingView extends Main {
 
   private final Image championshipImage = new Image();
   private final VerticalLayout championLayout = new VerticalLayout();
-  private final Grid<RankedWrestlerDTO> contendersGrid = new Grid<>();
+  private final Grid<RankedWrestlerDTO> wrestlerContendersGrid = new Grid<>();
+  private final Grid<RankedTeamDTO> teamContendersGrid = new Grid<>();
 
   public RankingView(
       @NonNull RankingService rankingService, @NonNull TierBoundaryService tierBoundaryService) {
@@ -78,7 +80,7 @@ public class RankingView extends Main {
         .min(Comparator.comparing(ChampionshipDTO::getName))
         .ifPresent(championshipComboBox::setValue);
 
-    contendersGrid
+    wrestlerContendersGrid
         .addColumn(
             new ComponentRenderer<>(
                 wrestler -> {
@@ -89,8 +91,24 @@ public class RankingView extends Main {
                   return span;
                 }))
         .setHeader("Rank");
-    contendersGrid.addColumn(RankedWrestlerDTO::getName).setHeader("Name");
-    contendersGrid.addColumn(RankedWrestlerDTO::getFans).setHeader("Fans");
+    wrestlerContendersGrid.addColumn(RankedWrestlerDTO::getName).setHeader("Name");
+    wrestlerContendersGrid.addColumn(RankedWrestlerDTO::getFans).setHeader("Fans");
+    wrestlerContendersGrid.setId("wrestler-contenders-grid");
+
+    teamContendersGrid
+        .addColumn(
+            new ComponentRenderer<>(
+                team -> {
+                  Span span = new Span(String.valueOf(team.getRank()));
+                  if (team.getRank() == 1) {
+                    span.getStyle().set("font-weight", "bold");
+                  }
+                  return span;
+                }))
+        .setHeader("Rank");
+    teamContendersGrid.addColumn(RankedTeamDTO::getName).setHeader("Name");
+    teamContendersGrid.addColumn(RankedTeamDTO::getFans).setHeader("Fans");
+    teamContendersGrid.setId("team-contenders-grid");
 
     championshipImage.setId("championship-image");
     championshipImage.setMaxHeight("300px");
@@ -105,7 +123,7 @@ public class RankingView extends Main {
         new HorizontalLayout(championshipComboBox, showTierBoundariesButton);
     topLayout.setAlignItems(Alignment.CENTER);
 
-    add(topLayout, championLayout, championshipImage, contendersGrid);
+    add(topLayout, championLayout, championshipImage, wrestlerContendersGrid, teamContendersGrid);
   }
 
   private void showTierBoundariesDialog() {
@@ -160,13 +178,13 @@ public class RankingView extends Main {
     if (championship == null) {
       championshipImage.setVisible(false);
       championLayout.setVisible(false);
-      contendersGrid.setVisible(false);
+      wrestlerContendersGrid.setVisible(false);
+      teamContendersGrid.setVisible(false);
       return;
     }
 
     championshipImage.setVisible(true);
     championLayout.setVisible(true);
-    contendersGrid.setVisible(true);
 
     // Update championship image using static resource URL
     // Resources in META-INF/resources are served relative to the context path
@@ -192,6 +210,20 @@ public class RankingView extends Main {
     }
 
     // Update contenders
-    contendersGrid.setItems(rankingService.getRankedContenders(championship.getId()));
+    List<?> contenders = rankingService.getRankedContenders(championship.getId());
+    if (!contenders.isEmpty()) {
+      if (contenders.get(0) instanceof RankedWrestlerDTO) {
+        wrestlerContendersGrid.setVisible(true);
+        teamContendersGrid.setVisible(false);
+        wrestlerContendersGrid.setItems((List<RankedWrestlerDTO>) contenders);
+      } else {
+        wrestlerContendersGrid.setVisible(false);
+        teamContendersGrid.setVisible(true);
+        teamContendersGrid.setItems((List<RankedTeamDTO>) contenders);
+      }
+    } else {
+      wrestlerContendersGrid.setVisible(false);
+      teamContendersGrid.setVisible(false);
+    }
   }
 }

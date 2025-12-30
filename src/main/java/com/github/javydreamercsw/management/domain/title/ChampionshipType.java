@@ -14,10 +14,9 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.inbox;
+package com.github.javydreamercsw.management.domain.title;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface InboxItemTargetRepository extends JpaRepository<InboxItemTarget, Long> {}
+public enum ChampionshipType {
+  SINGLE,
+  TEAM
+}

@@ -24,12 +24,15 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.controller.title.TitleController.CreateTitleRequest;
 import com.github.javydreamercsw.management.controller.title.TitleController.UpdateTitleRequest;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +42,7 @@ import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -68,7 +72,10 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
   void shouldCreateNewTitleSuccessfully() throws Exception {
     CreateTitleRequest request =
         new CreateTitleRequest(
-            "World Championship", "The top championship", WrestlerTier.MAIN_EVENTER);
+            "World Championship",
+            "The top championship",
+            WrestlerTier.MAIN_EVENTER,
+            ChampionshipType.SINGLE);
 
     Title createdTitle = new Title();
     createdTitle.setId(1L);
@@ -77,7 +84,8 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
     createdTitle.setTier(request.tier());
     createdTitle.setIsActive(true);
 
-    when(titleService.createTitle(anyString(), anyString(), any(WrestlerTier.class)))
+    when(titleService.createTitle(
+            anyString(), anyString(), any(WrestlerTier.class), any(ChampionshipType.class)))
         .thenReturn(createdTitle);
 
     mockMvc
@@ -97,12 +105,13 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
   @DisplayName("Should prevent duplicate title names")
   void shouldPreventDuplicateTitleNames() throws Exception {
     // Create first title
-    Title existingTitle = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     when(titleService.titleNameExists("World Championship")).thenReturn(true);
 
     // Try to create duplicate
     CreateTitleRequest request =
-        new CreateTitleRequest("World Championship", "Duplicate title", WrestlerTier.ROOKIE);
+        new CreateTitleRequest(
+            "World Championship", "Duplicate title", WrestlerTier.ROOKIE, ChampionshipType.SINGLE);
 
     mockMvc
         .perform(
@@ -116,12 +125,7 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
   @Test
   @DisplayName("Should validate required fields when creating title")
   void shouldValidateRequiredFieldsWhenCreatingTitle() throws Exception {
-    CreateTitleRequest request =
-        new CreateTitleRequest(
-            "", // Invalid empty name
-            null,
-            null // Invalid null tier
-            );
+    CreateTitleRequest request = new CreateTitleRequest("", null, null, null);
 
     mockMvc
         .perform(
@@ -134,11 +138,11 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
   @Test
   @DisplayName("Should get all titles with pagination")
   void shouldGetAllTitlesWithPagination() throws Exception {
-    // Create test titles
     Title title1 = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Title title2 = createTestTitle("Extreme Championship", WrestlerTier.ROOKIE);
     when(titleService.getAllTitles(any(Pageable.class)))
-        .thenReturn(new PageImpl<>(List.of(title1, title2)));
+        .thenReturn(
+            new PageImpl<>(new ArrayList<>(List.of(title1, title2)), PageRequest.of(0, 10), 2));
 
     mockMvc
         .perform(get("/api/titles").param("page", "0").param("size", "10"))
@@ -490,17 +494,23 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
         .andExpect(jsonPath("$.currentChampionsCount").value(0));
   }
 
-  private Title createTestTitle(String name, WrestlerTier tier) {
+  private static long nextTitleId = 1L;
+
+  private Title createTestTitle(@NonNull String name, @NonNull WrestlerTier tier) {
     Title title = new Title();
-    title.setId(1L); // Assign a dummy ID for the mock
+    title.setId(nextTitleId++); // Assign a unique ID for the mock
     title.setName(name);
     title.setDescription("Test description");
     title.setTier(tier);
     title.setIsActive(true);
+    title.setCreationDate(Instant.now());
+    title.setChampion(new ArrayList<>());
+    title.setChallengers(new ArrayList<>());
+    title.setChampionshipType(ChampionshipType.SINGLE);
     return title;
   }
 
-  private Wrestler createTestWrestler(String name, Long fans) {
+  private Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(1L); // Assign a dummy ID for the mock
     wrestler.setName(name);

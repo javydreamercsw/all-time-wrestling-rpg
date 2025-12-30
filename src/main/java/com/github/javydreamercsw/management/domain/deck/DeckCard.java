@@ -48,7 +48,7 @@ public class DeckCard extends AbstractEntity<Long> { // Removed implements Ownab
   private Long id;
 
   @ManyToOne(optional = false)
-  @JoinColumn(name = "deck_id")
+  @JoinColumn(name = "deck_id", nullable = false)
   private Deck deck;
 
   @ManyToOne(optional = false, cascade = CascadeType.MERGE)

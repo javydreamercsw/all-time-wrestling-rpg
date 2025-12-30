@@ -31,10 +31,12 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 public class WithCustomMockUserSecurityContextFactory
     implements WithSecurityContextFactory<WithCustomMockUser> {
@@ -46,6 +48,7 @@ public class WithCustomMockUserSecurityContextFactory
   @Autowired private Clock clock;
 
   @Override
+  @Transactional
   public SecurityContext createSecurityContext(WithCustomMockUser customUser) {
     String username = customUser.username();
     String[] roles = customUser.roles();
@@ -102,9 +105,14 @@ public class WithCustomMockUserSecurityContextFactory
 
     CustomUserDetails principal = new CustomUserDetails(account, wrestler);
 
+    // Ensure all roles are correctly mapped to authorities
+    Set<SimpleGrantedAuthority> authorities =
+        Arrays.stream(roles)
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+            .collect(Collectors.toSet());
+
     Authentication authentication =
-        new UsernamePasswordAuthenticationToken(
-            principal, "ValidPassword1!", principal.getAuthorities());
+        new UsernamePasswordAuthenticationToken(principal, "ValidPassword1!", authorities);
 
     SecurityContext context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(authentication);

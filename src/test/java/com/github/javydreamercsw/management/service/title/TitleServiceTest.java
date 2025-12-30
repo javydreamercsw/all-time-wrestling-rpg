@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -107,10 +108,15 @@ class TitleServiceTest {
     newTitle.setDescription("Top title");
     newTitle.setTier(WrestlerTier.MAIN_EVENTER);
     newTitle.setCreationDate(Instant.now(clock));
+    newTitle.setChampionshipType(ChampionshipType.SINGLE);
 
     // When
     Title result =
-        titleService.createTitle(newTitle.getName(), newTitle.getDescription(), newTitle.getTier());
+        titleService.createTitle(
+            newTitle.getName(),
+            newTitle.getDescription(),
+            newTitle.getTier(),
+            newTitle.getChampionshipType());
 
     // Then
     assertThat(result.getName()).isEqualTo(newTitle.getName());
