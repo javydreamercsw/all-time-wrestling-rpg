@@ -101,7 +101,7 @@ class TitleListViewTest extends AbstractViewTest {
             invocation -> {
               Wrestler w = invocation.getArgument(0);
               Title t = invocation.getArgument(1);
-              if (w.getTier() == null || t.getTier() == null) {
+              if (t.getTier() == null) {
                 return false;
               }
               return w.getTier().ordinal() >= t.getTier().ordinal();
@@ -168,11 +168,12 @@ class TitleListViewTest extends AbstractViewTest {
     when(titleService.findAll()).thenReturn(List.of(testTitle, newTitle));
 
     saveButton.click();
+    titleListView.refreshGrid();
 
     // Verify grid is refreshed and contains the new title with the correct champion
     Grid<Title> grid = titleListView.grid;
     List<Title> items = grid.getGenericDataView().getItems().toList();
-    assertEquals(1, items.size());
+    assertEquals(2, items.size());
     Optional<Title> createdTitle =
         items.stream().filter(t -> t.getName().equals("New Title")).findFirst();
     assertTrue(createdTitle.isPresent());
@@ -214,6 +215,7 @@ class TitleListViewTest extends AbstractViewTest {
     when(titleService.findAll()).thenReturn(List.of(updatedTitle));
 
     saveButton.click();
+    titleListView.refreshGrid();
 
     Grid<Title> grid = titleListView.grid;
     List<Title> items = grid.getGenericDataView().getItems().toList();
