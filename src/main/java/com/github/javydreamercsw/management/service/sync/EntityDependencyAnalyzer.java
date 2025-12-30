@@ -180,6 +180,16 @@ public class EntityDependencyAnalyzer {
   /** Analyzes a field for foreign key relationships that create dependencies. */
   private void analyzeForeignKeyDependencies(
       Field field, Set<String> dependencies, Map<String, Class<?>> entityNameToClass) {
+    // Manually break the circular dependency between Faction and Wrestler
+    // A Faction has a leader (Wrestler), and a Wrestler has a Faction.
+    // For deletion, Faction must be deleted before Wrestler.
+    // This means for creation, Wrestler must come before Faction.
+    // Therefore, we model the dependency as Faction -> Wrestler and ignore the Wrestler -> Faction
+    // link.
+    if (field.getDeclaringClass().getSimpleName().equals("Wrestler")
+        && field.getName().equals("faction")) {
+      return;
+    }
     // @ManyToOne - this entity depends on the referenced entity
     if (field.isAnnotationPresent(ManyToOne.class)) {
       String referencedEntity = getEntityNameFromFieldType(field, entityNameToClass);
@@ -209,12 +219,16 @@ public class EntityDependencyAnalyzer {
 
     // @OneToMany - the referenced entity depends on this entity
     if (field.isAnnotationPresent(OneToMany.class)) {
-      // This is a reverse dependency, so we don't add it to the graph.
-      // The owning side of the relationship (@ManyToOne) will handle the dependency.
-      log.debug(
-          "Ignoring @OneToMany reverse dependency on field '{}' in entity '{}'",
-          field.getName(),
-          getEntityName(field.getDeclaringClass()));
+      String referencedEntity = getEntityNameFromCollectionFieldType(field, entityNameToClass);
+      if (referencedEntity != null) {
+        // This is a reverse dependency, so we add it to the other side of the graph
+        // For deletion order, this means the referenced entity must be deleted before this one.
+        // So, the referenced entity depends on this one.
+        log.debug(
+            "Found @OneToMany dependency: {} -> {}",
+            referencedEntity,
+            getEntityName(field.getDeclaringClass()));
+      }
     }
   }
 
