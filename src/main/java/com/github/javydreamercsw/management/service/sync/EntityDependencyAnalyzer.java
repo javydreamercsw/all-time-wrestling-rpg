@@ -209,16 +209,12 @@ public class EntityDependencyAnalyzer {
 
     // @OneToMany - the referenced entity depends on this entity
     if (field.isAnnotationPresent(OneToMany.class)) {
-      String referencedEntity = getEntityNameFromCollectionFieldType(field, entityNameToClass);
-      if (referencedEntity != null) {
-        // This is a reverse dependency, so we add it to the other side of the graph
-        // For deletion order, this means the referenced entity must be deleted before this one.
-        // So, the referenced entity depends on this one.
-        log.debug(
-            "Found @OneToMany dependency: {} -> {}",
-            referencedEntity,
-            getEntityName(field.getDeclaringClass()));
-      }
+      // This is a reverse dependency, so we don't add it to the graph.
+      // The owning side of the relationship (@ManyToOne) will handle the dependency.
+      log.debug(
+          "Ignoring @OneToMany reverse dependency on field '{}' in entity '{}'",
+          field.getName(),
+          getEntityName(field.getDeclaringClass()));
     }
   }
 
