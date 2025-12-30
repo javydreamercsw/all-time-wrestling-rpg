@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.0.1</version>
+    <version>3.5.8</version>
     <relativePath/>
   </parent>
 
@@ -29,7 +29,7 @@
     <lombok.version>1.18.42</lombok.version>
     <surefireArgLine/>
     <testcontainers.version>1.21.4</testcontainers.version>
-    <vaadin.version>25.0.2</vaadin.version>
+    <vaadin.version>24.9.8</vaadin.version>
   </properties>
 
   <dependencyManagement>
@@ -55,26 +55,11 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-aop</artifactId>
-        <version>4.0.0-M2</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-flyway</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-data-jpa-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-webmvc-test</artifactId>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.springframework.data</groupId>
       <artifactId>spring-data-rest-core</artifactId>
@@ -186,10 +171,6 @@
     </dependency>
     <!-- AspectJ for Performance Monitoring -->
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-aop</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.mapstruct</groupId>
       <artifactId>mapstruct</artifactId>
       <version>1.6.3</version>
@@ -268,7 +249,7 @@
     <dependency>
       <groupId>com.github.mvysny.kaributesting</groupId>
       <artifactId>karibu-testing-v24</artifactId>
-      <version>2.6.1</version>
+      <version>2.5.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>

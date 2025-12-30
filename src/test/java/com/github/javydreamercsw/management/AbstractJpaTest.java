@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.base.service.ranking.RankingService;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /** Base class for tests. Provides mock beans for common services. */

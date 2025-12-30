@@ -25,7 +25,6 @@ import com.github.javydreamercsw.management.dto.TeamDTO;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -112,7 +111,7 @@ public class TeamFormDialog extends Dialog {
   }
 
   private void configureDialog() {
-    setModality(ModalityMode.VISUAL);
+    setModal(true);
     setDraggable(true);
     setResizable(true);
     setWidth("600px");

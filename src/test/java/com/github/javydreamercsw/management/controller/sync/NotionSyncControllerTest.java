@@ -32,7 +32,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -67,8 +67,8 @@ class NotionSyncControllerTest extends AbstractControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.enabled").value(true))
         .andExpect(jsonPath("$.schedulerEnabled").value(true))
-        .andExpect(jsonPath("$.entities[0]").value("shows"))
-        .andExpect(jsonPath("$.entities[1]").value("wrestlers"))
+        .andExpect(jsonPath("$.entities[0]").value("SHOWS"))
+        .andExpect(jsonPath("$.entities[1]").value("WRESTLERS"))
         .andExpect(jsonPath("$.backupEnabled").value(true));
   }
 

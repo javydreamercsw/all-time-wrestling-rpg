@@ -19,7 +19,7 @@ package com.github.javydreamercsw.management.service.sync;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncHealthSummary;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncMetric;
 import java.util.List;
-import org.springframework.boot.health.contributor.HealthIndicator;
+import org.springframework.boot.actuate.health.HealthIndicator;
 
 public interface ISyncHealthMonitor extends HealthIndicator {
   void recordSuccess(String entityType, long durationMs, int itemCount);

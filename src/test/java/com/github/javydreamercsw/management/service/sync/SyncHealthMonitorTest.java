@@ -28,16 +28,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.health.contributor.Health;
-import org.springframework.boot.health.contributor.Status;
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.Status;
 
 @ExtendWith(MockitoExtension.class)
 class SyncHealthMonitorTest {
 
   @Mock private NotionSyncProperties syncProperties;
-
   @Mock private SyncProgressTracker progressTracker;
-
   private SyncHealthMonitor healthMonitor;
 
   @BeforeEach
