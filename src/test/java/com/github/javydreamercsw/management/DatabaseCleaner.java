@@ -57,9 +57,10 @@ public class DatabaseCleaner implements DatabaseCleanup {
     log.info("🧹 Starting database cleanup...");
 
     // Detach all managed entities to prevent dirty state from interfering with cleanup.
-    // This is crucial to prevent Hibernate from trying to flush updates on entities
-    // we are about to delete directly from the database.
     entityManager.clear();
+
+    // Manually break known circular dependencies before doing anything else.
+    breakCircularDependencies();
 
     // Clear join tables first to handle Many-to-Many relationships without dedicated repositories
     clearJoinTables();
@@ -101,6 +102,28 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
     accountInitializer.init();
     log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
+  }
+
+  /**
+   * Manually breaks known circular dependencies by setting foreign keys to NULL. This is necessary
+   * before batch deletion to avoid constraint violations.
+   */
+  private void breakCircularDependencies() {
+    log.info("💔 Breaking circular dependencies...");
+    try {
+      entityManager.createNativeQuery("UPDATE wrestler SET faction_id = NULL").executeUpdate();
+      log.debug("✅ Nullified wrestler.faction_id");
+    } catch (Exception e) {
+      // This might fail if the table doesn't exist yet on first run, which is fine.
+      log.warn("Could not nullify wrestler.faction_id: {}", e.getMessage());
+    }
+    try {
+      entityManager.createNativeQuery("UPDATE faction SET leader_id = NULL").executeUpdate();
+      log.debug("✅ Nullified faction.leader_id");
+    } catch (Exception e) {
+      // This might fail if the table doesn't exist yet on first run, which is fine.
+      log.warn("Could not nullify faction.leader_id: {}", e.getMessage());
+    }
   }
 
   /**

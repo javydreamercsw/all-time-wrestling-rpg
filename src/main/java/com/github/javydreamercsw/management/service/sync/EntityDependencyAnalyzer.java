@@ -180,16 +180,6 @@ public class EntityDependencyAnalyzer {
   /** Analyzes a field for foreign key relationships that create dependencies. */
   private void analyzeForeignKeyDependencies(
       Field field, Set<String> dependencies, Map<String, Class<?>> entityNameToClass) {
-    // Manually break the circular dependency between Faction and Wrestler
-    // A Faction has a leader (Wrestler), and a Wrestler has a Faction.
-    // For deletion, Faction must be deleted before Wrestler.
-    // This means for creation, Wrestler must come before Faction.
-    // Therefore, we model the dependency as Faction -> Wrestler and ignore the Wrestler -> Faction
-    // link.
-    if (field.getDeclaringClass().getSimpleName().equals("Wrestler")
-        && field.getName().equals("faction")) {
-      return;
-    }
     // @ManyToOne - this entity depends on the referenced entity
     if (field.isAnnotationPresent(ManyToOne.class)) {
       String referencedEntity = getEntityNameFromFieldType(field, entityNameToClass);
