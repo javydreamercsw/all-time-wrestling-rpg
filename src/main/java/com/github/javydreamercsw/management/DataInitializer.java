@@ -394,7 +394,9 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
           Optional<Title> existingTitle = titleService.findByName(dto.getName());
           Title title;
           if (existingTitle.isEmpty()) {
-            title = titleService.createTitle(dto.getName(), dto.getDescription(), dto.getTier());
+            title =
+                titleService.createTitle(
+                    dto.getName(), dto.getDescription(), dto.getTier(), dto.getChampionshipType());
             log.debug(
                 "Created new title: {} with type: {}", dto.getName(), dto.getChampionshipType());
           } else {

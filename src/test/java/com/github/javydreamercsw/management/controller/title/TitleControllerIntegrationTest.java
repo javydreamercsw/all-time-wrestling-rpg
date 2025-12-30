@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.controller.title.TitleController.CreateTitleRequest;
 import com.github.javydreamercsw.management.controller.title.TitleController.UpdateTitleRequest;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -68,7 +69,10 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
   void shouldCreateNewTitleSuccessfully() throws Exception {
     CreateTitleRequest request =
         new CreateTitleRequest(
-            "World Championship", "The top championship", WrestlerTier.MAIN_EVENTER);
+            "World Championship",
+            "The top championship",
+            WrestlerTier.MAIN_EVENTER,
+            ChampionshipType.SINGLE);
 
     Title createdTitle = new Title();
     createdTitle.setId(1L);
@@ -77,7 +81,8 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
     createdTitle.setTier(request.tier());
     createdTitle.setIsActive(true);
 
-    when(titleService.createTitle(anyString(), anyString(), any(WrestlerTier.class)))
+    when(titleService.createTitle(
+            anyString(), anyString(), any(WrestlerTier.class), any(ChampionshipType.class)))
         .thenReturn(createdTitle);
 
     mockMvc
@@ -97,12 +102,13 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
   @DisplayName("Should prevent duplicate title names")
   void shouldPreventDuplicateTitleNames() throws Exception {
     // Create first title
-    Title existingTitle = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
+    createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     when(titleService.titleNameExists("World Championship")).thenReturn(true);
 
     // Try to create duplicate
     CreateTitleRequest request =
-        new CreateTitleRequest("World Championship", "Duplicate title", WrestlerTier.ROOKIE);
+        new CreateTitleRequest(
+            "World Championship", "Duplicate title", WrestlerTier.ROOKIE, ChampionshipType.SINGLE);
 
     mockMvc
         .perform(
@@ -116,12 +122,7 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
   @Test
   @DisplayName("Should validate required fields when creating title")
   void shouldValidateRequiredFieldsWhenCreatingTitle() throws Exception {
-    CreateTitleRequest request =
-        new CreateTitleRequest(
-            "", // Invalid empty name
-            null,
-            null // Invalid null tier
-            );
+    CreateTitleRequest request = new CreateTitleRequest("", null, null, null);
 
     mockMvc
         .perform(

@@ -144,7 +144,7 @@ class DataInitializerTest {
               return type;
             });
     lenient()
-        .when(titleService.createTitle(anyString(), anyString(), any()))
+        .when(titleService.createTitle(anyString(), anyString(), any(), any()))
         .thenAnswer(
             invocation -> {
               Title title = new Title();

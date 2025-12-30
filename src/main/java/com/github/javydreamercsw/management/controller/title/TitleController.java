@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.controller.title;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -74,7 +75,9 @@ public class TitleController {
           .body(new ErrorResponse("Title name already exists: " + request.name()));
     }
 
-    Title title = titleService.createTitle(request.name(), request.description(), request.tier());
+    Title title =
+        titleService.createTitle(
+            request.name(), request.description(), request.tier(), request.type);
     return ResponseEntity.status(HttpStatus.CREATED).body(title);
   }
 
@@ -257,7 +260,8 @@ public class TitleController {
   public record CreateTitleRequest(
       @NotBlank(message = "Title name is required") @Size(max = 255, message = "Title name must not exceed 255 characters") String name,
       @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
-      @NotNull(message = "Title tier is required") WrestlerTier tier) {}
+      @NotNull(message = "Title tier is required") WrestlerTier tier,
+      @NotNull(message = "Title type is required") ChampionshipType type) {}
 
   public record UpdateTitleRequest(
       @Size(max = 255, message = "Title name must not exceed 255 characters") String name,

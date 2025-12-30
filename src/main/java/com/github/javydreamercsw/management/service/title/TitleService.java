@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.title;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -60,12 +61,16 @@ public class TitleService {
 
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Title createTitle(
-      @NonNull String name, @NonNull String description, @NonNull WrestlerTier tier) {
+      @NonNull String name,
+      @NonNull String description,
+      @NonNull WrestlerTier tier,
+      @NonNull ChampionshipType type) {
     Title title = new Title();
     title.setName(name);
     title.setDescription(description);
     title.setTier(tier);
     title.setCreationDate(Instant.now(clock));
+    title.setChampionshipType(type);
     return titleRepository.save(title);
   }
 

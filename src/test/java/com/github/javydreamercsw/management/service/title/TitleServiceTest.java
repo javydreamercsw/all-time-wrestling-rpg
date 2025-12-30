@@ -110,7 +110,11 @@ class TitleServiceTest {
 
     // When
     Title result =
-        titleService.createTitle(newTitle.getName(), newTitle.getDescription(), newTitle.getTier());
+        titleService.createTitle(
+            newTitle.getName(),
+            newTitle.getDescription(),
+            newTitle.getTier(),
+            newTitle.getChampionshipType());
 
     // Then
     assertThat(result.getName()).isEqualTo(newTitle.getName());
