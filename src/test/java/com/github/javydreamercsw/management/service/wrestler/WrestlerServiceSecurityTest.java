@@ -22,148 +22,151 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.security.PermissionService;
-import com.github.javydreamercsw.base.security.TestCustomUserDetailsService;
 import com.github.javydreamercsw.base.test.AbstractSecurityTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import lombok.NonNull;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
-import org.springframework.security.test.context.support.WithUserDetails;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class WrestlerServiceSecurityTest extends AbstractSecurityTest {
 
   @Autowired private WrestlerService wrestlerService;
-  @Autowired private TestCustomUserDetailsService userDetailsService;
   @Autowired private PermissionService permissionService;
 
-  private Wrestler getWrestler(@NonNull String username) {
-    // Ensure the user and their wrestler are created/loaded via the userDetailsService
-    userDetailsService.loadUserByUsername(username);
-    return wrestlerRepository
-        .findByAccountUsername(username)
-        .orElseThrow(
-            () -> new IllegalStateException("Wrestler for user " + username + " not found"));
+  private Wrestler ownedWrestler;
+  private Wrestler unownedWrestler;
+  private final String prefix = "-" + UUID.randomUUID();
+
+  @BeforeEach
+  protected void setup() {
+    super.setup();
+    Account ownerAccount = createTestAccount("owner", RoleName.PLAYER);
+    ownedWrestler = createTestWrestler("owner");
+    ownedWrestler.setAccount(ownerAccount);
+    wrestlerRepository.save(ownedWrestler);
+
+    Account notOwnerAccount = createTestAccount("not_owner" + prefix, RoleName.PLAYER);
+    unownedWrestler = createTestWrestler("not_owner" + prefix);
+    unownedWrestler.setAccount(notOwnerAccount);
+    wrestlerRepository.save(unownedWrestler);
+
+    createTestAccount("admin" + prefix, RoleName.ADMIN);
+    createTestAccount("booker" + prefix, RoleName.BOOKER);
+    createTestAccount("viewer" + prefix, RoleName.VIEWER);
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPermissionServiceIsOwner() {
-    Wrestler ownedWrestler = getWrestler("owner");
+    login("owner" + prefix);
     assertTrue(
         permissionService.isOwner(ownedWrestler),
         "PermissionService.isOwner should return true for owner");
   }
 
   @Test
-  @WithUserDetails("admin")
   void testAdminCanSaveAnyWrestler() {
-    assertDoesNotThrow(() -> wrestlerService.save(getWrestler("owner")));
-    assertDoesNotThrow(() -> wrestlerService.save(getWrestler("not_owner")));
+    login("admin" + prefix);
+    assertDoesNotThrow(() -> wrestlerService.save(ownedWrestler));
+    assertDoesNotThrow(() -> wrestlerService.save(unownedWrestler));
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanSaveAnyWrestler() {
-    assertDoesNotThrow(() -> wrestlerService.save(getWrestler("owner")));
-    assertDoesNotThrow(() -> wrestlerService.save(getWrestler("not_owner")));
+    login("booker" + prefix);
+    assertDoesNotThrow(() -> wrestlerService.save(ownedWrestler));
+    assertDoesNotThrow(() -> wrestlerService.save(unownedWrestler));
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCanSaveOwnedWrestler() {
-    Wrestler ownedWrestler = getWrestler("owner");
+    login("owner" + prefix);
     assertNotNull(ownedWrestler);
     assertNotNull(ownedWrestler.getAccount(), "Account should not be null");
-    assertEquals("owner", ownedWrestler.getAccount().getUsername(), "Username should match");
+    assertEquals(
+        "owner" + prefix, ownedWrestler.getAccount().getUsername(), "Username should match");
     assertDoesNotThrow(() -> wrestlerService.save(ownedWrestler));
   }
 
   @Test
-  @WithUserDetails("not_owner")
   void testPlayerCanSaveOwnedWrestlerAndCannotSaveUnownedWrestler() {
-    Wrestler ownedWrestler = getWrestler("not_owner"); // Wrestler owned by the current user
-    Wrestler unownedWrestler = getWrestler("owner"); // Wrestler not owned by the current user
-
+    login("not_owner" + prefix);
     assertNotNull(ownedWrestler);
     assertNotNull(unownedWrestler);
 
     // Should be able to save own wrestler
-    assertDoesNotThrow(() -> wrestlerService.save(ownedWrestler));
+    assertDoesNotThrow(() -> wrestlerService.save(unownedWrestler));
 
     // Should NOT be able to save unowned wrestler
-    assertThrows(AuthorizationDeniedException.class, () -> wrestlerService.save(unownedWrestler));
+    assertThrows(AuthorizationDeniedException.class, () -> wrestlerService.save(ownedWrestler));
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCannotSaveWrestler() {
-    assertThrows(
-        AuthorizationDeniedException.class, () -> wrestlerService.save(getWrestler("owner")));
+    login("viewer" + prefix);
+    assertThrows(AuthorizationDeniedException.class, () -> wrestlerService.save(ownedWrestler));
   }
 
   // --- Delete Method Tests ---
 
   @Test
-  @WithUserDetails("admin")
   void testAdminCanDeleteWrestler() {
-    assertDoesNotThrow(() -> wrestlerService.delete(getWrestler("not_owner")));
+    login("admin" + prefix);
+    assertDoesNotThrow(() -> wrestlerService.delete(unownedWrestler));
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanDeleteWrestler() {
-    assertDoesNotThrow(() -> wrestlerService.delete(getWrestler("not_owner")));
+    login("booker" + prefix);
+    assertDoesNotThrow(() -> wrestlerService.delete(unownedWrestler));
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCannotDeleteWrestler() {
-    assertThrows(
-        AuthorizationDeniedException.class, () -> wrestlerService.delete(getWrestler("owner")));
-    assertThrows(
-        AuthorizationDeniedException.class, () -> wrestlerService.delete(getWrestler("not_owner")));
+    login("owner" + prefix);
+    assertThrows(AuthorizationDeniedException.class, () -> wrestlerService.delete(ownedWrestler));
+    assertThrows(AuthorizationDeniedException.class, () -> wrestlerService.delete(unownedWrestler));
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCannotDeleteWrestler() {
-    assertThrows(
-        AuthorizationDeniedException.class, () -> wrestlerService.delete(getWrestler("owner")));
+    login("viewer" + prefix);
+    assertThrows(AuthorizationDeniedException.class, () -> wrestlerService.delete(ownedWrestler));
   }
 
   // --- Read Method Tests (All authenticated) ---
 
   // Count tests
   @Test
-  @WithUserDetails("admin")
   void testAdminCanCountWrestlers() {
+    login("admin" + prefix);
     assertDoesNotThrow(() -> wrestlerService.count());
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanCountWrestlers() {
+    login("booker" + prefix);
     assertDoesNotThrow(() -> wrestlerService.count());
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCanCountWrestlers() {
+    login("owner" + prefix);
     assertDoesNotThrow(() -> wrestlerService.count());
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCanCountWrestlers() {
+    login("viewer" + prefix);
     assertDoesNotThrow(() -> wrestlerService.count());
   }
 
@@ -174,26 +177,26 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
 
   // FindAll tests
   @Test
-  @WithUserDetails("admin")
   void testAdminCanFindAllWrestlers() {
+    login("admin" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findAll());
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanFindAllWrestlers() {
+    login("booker" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findAll());
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCanFindAllWrestlers() {
+    login("owner" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findAll());
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCanFindAllWrestlers() {
+    login("viewer" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findAll());
   }
 
@@ -204,29 +207,29 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
 
   // List (Pageable) tests
   @Test
-  @WithUserDetails("admin")
   void testAdminCanListWrestlers() {
+    login("admin" + prefix);
     Pageable pageable = PageRequest.of(0, 10);
     assertDoesNotThrow(() -> wrestlerService.list(pageable));
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanListWrestlers() {
+    login("booker" + prefix);
     Pageable pageable = PageRequest.of(0, 10);
     assertDoesNotThrow(() -> wrestlerService.list(pageable));
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCanListWrestlers() {
+    login("owner" + prefix);
     Pageable pageable = PageRequest.of(0, 10);
     assertDoesNotThrow(() -> wrestlerService.list(pageable));
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCanListWrestlers() {
+    login("viewer" + prefix);
     Pageable pageable = PageRequest.of(0, 10);
     assertDoesNotThrow(() -> wrestlerService.list(pageable));
   }
@@ -240,41 +243,34 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
 
   // findById and getWrestlerById (same underlying method) tests
   @Test
-  @WithUserDetails("admin")
   void testAdminCanFindWrestlerById() {
-    Wrestler ownedWrestler = getWrestler("owner");
+    login("admin" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findById(ownedWrestler.getId()));
     assertDoesNotThrow(() -> wrestlerService.getWrestlerById(ownedWrestler.getId()));
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanFindWrestlerById() {
-    Wrestler ownedWrestler = getWrestler("owner");
+    login("booker" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findById(ownedWrestler.getId()));
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCanFindAnyWrestlerById() { // Player can read any wrestler by ID
-    Wrestler ownedWrestler = getWrestler("owner");
-    Wrestler notOwnedWrestler = getWrestler("not_owner");
+    login("owner" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findById(ownedWrestler.getId()));
-    assertDoesNotThrow(() -> wrestlerService.findById(notOwnedWrestler.getId()));
+    assertDoesNotThrow(() -> wrestlerService.findById(unownedWrestler.getId()));
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCanFindAnyWrestlerById() {
-    Wrestler ownedWrestler = getWrestler("owner");
-    Wrestler notOwnedWrestler = getWrestler("not_owner");
+    login("viewer" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findById(ownedWrestler.getId()));
-    assertDoesNotThrow(() -> wrestlerService.findById(notOwnedWrestler.getId()));
+    assertDoesNotThrow(() -> wrestlerService.findById(unownedWrestler.getId()));
   }
 
   @Test
   void testUnauthenticatedCannotFindWrestlerById() {
-    Wrestler ownedWrestler = getWrestler("owner");
     assertThrows(
         AuthenticationCredentialsNotFoundException.class,
         () -> wrestlerService.findById(ownedWrestler.getId()));
@@ -282,40 +278,33 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
 
   // findByIdWithInjuries tests
   @Test
-  @WithUserDetails("admin")
   void testAdminCanFindWrestlerByIdWithInjuries() {
-    Wrestler ownedWrestler = getWrestler("owner");
+    login("admin" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByIdWithInjuries(ownedWrestler.getId()));
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanFindWrestlerByIdWithInjuries() {
-    Wrestler ownedWrestler = getWrestler("owner");
+    login("booker" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByIdWithInjuries(ownedWrestler.getId()));
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCanFindAnyWrestlerByIdWithInjuries() {
-    Wrestler ownedWrestler = getWrestler("owner");
-    Wrestler notOwnedWrestler = getWrestler("not_owner");
+    login("owner" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByIdWithInjuries(ownedWrestler.getId()));
-    assertDoesNotThrow(() -> wrestlerService.findByIdWithInjuries(notOwnedWrestler.getId()));
+    assertDoesNotThrow(() -> wrestlerService.findByIdWithInjuries(unownedWrestler.getId()));
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCanFindAnyWrestlerByIdWithInjuries() {
-    Wrestler ownedWrestler = getWrestler("owner");
-    Wrestler notOwnedWrestler = getWrestler("not_owner");
+    login("viewer" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByIdWithInjuries(ownedWrestler.getId()));
-    assertDoesNotThrow(() -> wrestlerService.findByIdWithInjuries(notOwnedWrestler.getId()));
+    assertDoesNotThrow(() -> wrestlerService.findByIdWithInjuries(unownedWrestler.getId()));
   }
 
   @Test
   void testUnauthenticatedCannotFindWrestlerByIdWithInjuries() {
-    Wrestler ownedWrestler = getWrestler("owner");
     assertThrows(
         AuthenticationCredentialsNotFoundException.class,
         () -> wrestlerService.findByIdWithInjuries(ownedWrestler.getId()));
@@ -323,40 +312,33 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
 
   // findByName tests
   @Test
-  @WithUserDetails("admin")
   void testAdminCanFindWrestlerByName() {
-    Wrestler ownedWrestler = getWrestler("owner");
+    login("admin" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByName(ownedWrestler.getName()));
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanFindWrestlerByName() {
-    Wrestler ownedWrestler = getWrestler("owner");
+    login("booker" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByName(ownedWrestler.getName()));
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCanFindAnyWrestlerByName() {
-    Wrestler ownedWrestler = getWrestler("owner");
-    Wrestler notOwnedWrestler = getWrestler("not_owner");
+    login("owner" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByName(ownedWrestler.getName()));
-    assertDoesNotThrow(() -> wrestlerService.findByName(notOwnedWrestler.getName()));
+    assertDoesNotThrow(() -> wrestlerService.findByName(unownedWrestler.getName()));
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCanFindAnyWrestlerByName() {
-    Wrestler ownedWrestler = getWrestler("owner");
-    Wrestler notOwnedWrestler = getWrestler("not_owner");
+    login("viewer" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByName(ownedWrestler.getName()));
-    assertDoesNotThrow(() -> wrestlerService.findByName(notOwnedWrestler.getName()));
+    assertDoesNotThrow(() -> wrestlerService.findByName(unownedWrestler.getName()));
   }
 
   @Test
   void testUnauthenticatedCannotFindWrestlerByName() {
-    Wrestler ownedWrestler = getWrestler("owner");
     assertThrows(
         AuthenticationCredentialsNotFoundException.class,
         () -> wrestlerService.findByName(ownedWrestler.getName()));
@@ -364,40 +346,33 @@ class WrestlerServiceSecurityTest extends AbstractSecurityTest {
 
   // findByExternalId tests
   @Test
-  @WithUserDetails("admin")
   void testAdminCanFindWrestlerByExternalId() {
-    Wrestler ownedWrestler = getWrestler("owner");
+    login("admin" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByExternalId(ownedWrestler.getExternalId()));
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanFindWrestlerByExternalId() {
-    Wrestler ownedWrestler = getWrestler("owner");
+    login("booker" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByExternalId(ownedWrestler.getExternalId()));
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCanFindAnyWrestlerByExternalId() {
-    Wrestler ownedWrestler = getWrestler("owner");
-    Wrestler notOwnedWrestler = getWrestler("not_owner");
+    login("owner" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByExternalId(ownedWrestler.getExternalId()));
-    assertDoesNotThrow(() -> wrestlerService.findByExternalId(notOwnedWrestler.getExternalId()));
+    assertDoesNotThrow(() -> wrestlerService.findByExternalId(unownedWrestler.getExternalId()));
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCanFindAnyWrestlerByExternalId() {
-    Wrestler ownedWrestler = getWrestler("owner");
-    Wrestler notOwnedWrestler = getWrestler("not_owner");
+    login("viewer" + prefix);
     assertDoesNotThrow(() -> wrestlerService.findByExternalId(ownedWrestler.getExternalId()));
-    assertDoesNotThrow(() -> wrestlerService.findByExternalId(notOwnedWrestler.getExternalId()));
+    assertDoesNotThrow(() -> wrestlerService.findByExternalId(unownedWrestler.getExternalId()));
   }
 
   @Test
   void testUnauthenticatedCannotFindWrestlerByExternalId() {
-    Wrestler ownedWrestler = getWrestler("owner");
     assertThrows(
         AuthenticationCredentialsNotFoundException.class,
         () -> wrestlerService.findByExternalId(ownedWrestler.getExternalId()));

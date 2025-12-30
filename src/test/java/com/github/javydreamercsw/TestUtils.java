@@ -52,6 +52,7 @@ public class TestUtils {
   public static Wrestler createWrestler(@NonNull String name) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
+    wrestler.setExternalId(java.util.UUID.randomUUID().toString());
     wrestler.setDescription("Test Wrestler");
     wrestler.setDeckSize(15);
     wrestler.setStartingHealth(15);
