@@ -56,6 +56,11 @@ public class DatabaseCleaner implements DatabaseCleanup {
   public void clearRepositories() {
     log.info("🧹 Starting database cleanup...");
 
+    // Detach all managed entities to prevent dirty state from interfering with cleanup.
+    // This is crucial to prevent Hibernate from trying to flush updates on entities
+    // we are about to delete directly from the database.
+    entityManager.clear();
+
     // Clear join tables first to handle Many-to-Many relationships without dedicated repositories
     clearJoinTables();
 
@@ -74,33 +79,12 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
     // Delete data in the correct order
     int deletedCount = 0;
-
-    // Now safe to delete
     for (String entityName : syncOrder) {
       JpaRepository<?, ?> repository = repositories.get(entityName.toLowerCase());
       if (repository != null) {
-        long count = repository.count();
-        if (count > 0) {
-          try {
-            log.debug("Deleting {} records from {} using deleteAllInBatch()", count, entityName);
-            repository.deleteAllInBatch();
-            log.debug("✅ Deleted (batch) {} records from {}", count, entityName);
-            deletedCount++;
-          } catch (Exception e) {
-            log.warn(
-                "⚠️ Error deleting (batch) from {}: {}. Falling back to deleteAll()",
-                entityName,
-                e.getMessage());
-            // Fallback to deleteAll for repositories that don't support deleteAllInBatch or have
-            // other issues
-            try {
-              repository.deleteAll();
-              log.debug("✅ Deleted {} records from {}", count, entityName);
-              deletedCount++;
-            } catch (Exception e2) {
-              log.error("❌ Failed to delete from {}: {}", entityName, e2.getMessage());
-            }
-          }
+        if (repository.count() > 0) {
+          repository.deleteAllInBatch();
+          deletedCount++;
         }
       }
     }
@@ -108,18 +92,9 @@ public class DatabaseCleaner implements DatabaseCleanup {
     // Clean up any remaining repositories not in the entity list
     for (Map.Entry<String, JpaRepository<?, ?>> entry : repositories.entrySet()) {
       if (!syncOrder.contains(entry.getKey())) {
-        try {
-          long count = entry.getValue().count();
-          if (count > 0) {
-            entry.getValue().deleteAllInBatch();
-            log.debug(
-                "✅ Deleted (batch) {} records from {} (not in dependency graph)",
-                count,
-                entry.getKey());
-            deletedCount++;
-          }
-        } catch (Exception e) {
-          log.warn("⚠️ Error deleting from {}: {}", entry.getKey(), e.getMessage());
+        if (entry.getValue().count() > 0) {
+          entry.getValue().deleteAllInBatch();
+          deletedCount++;
         }
       }
     }

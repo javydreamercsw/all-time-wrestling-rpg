@@ -44,7 +44,7 @@ public class TierBoundaryService {
 
   @PreAuthorize("isAuthenticated()")
   public List<TierBoundary> findAll() {
-    return (List<TierBoundary>) tierBoundaryRepository.findAll();
+    return tierBoundaryRepository.findAll();
   }
 
   @PreAuthorize("isAuthenticated()")
