@@ -44,6 +44,7 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.io.File;
@@ -100,14 +101,14 @@ class InjurySyncServiceTest extends AbstractSyncTest {
   @Test
   void syncInjuryTypes_WhenDisabled_ShouldReturnSuccessWithoutSync() {
     // Given
-    when(syncProperties.isEntityEnabled("injuries")).thenReturn(false);
+    when(syncProperties.isEntityEnabled(SyncEntityType.INJURIES.getKey())).thenReturn(false);
 
     // When
     SyncResult result = injurySyncService.syncInjuryTypes("test-operation");
 
     // Then
     assertTrue(result.isSuccess());
-    assertEquals("Injuries", result.getEntityType());
+    assertEquals(SyncEntityType.INJURIES.getKey(), result.getEntityType());
     assertEquals(0, result.getSyncedCount());
     verify(notionHandler, never()).loadAllInjuries();
   }
@@ -115,7 +116,9 @@ class InjurySyncServiceTest extends AbstractSyncTest {
   @Test
   void syncInjuryTypes_WhenAlreadySyncedInSession_ShouldSkip() {
     // Given - Use reflection to mark as already synced since the method is protected
-    when(syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("injury-types"))
+    when(syncServiceDependencies
+            .getSyncSessionManager()
+            .isAlreadySyncedInSession(SyncEntityType.INJURIES.getKey()))
         .thenReturn(true);
 
     // When
@@ -131,7 +134,7 @@ class InjurySyncServiceTest extends AbstractSyncTest {
   @DisplayName("Should sync injury types from Notion sample data successfully")
   void shouldSyncInjuryTypesFromNotionSampleDataSuccessfully() throws Exception {
     List<InjuryPage> sampleInjuries = loadSampleInjuries();
-    when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+    when(syncProperties.isEntityEnabled(SyncEntityType.INJURIES.getKey())).thenReturn(true);
     when(syncServiceDependencies.getNotionHandler().loadAllInjuries()).thenReturn(sampleInjuries);
 
     when(notionPageDataExtractor.extractNameFromNotionPage(any(InjuryPage.class)))
@@ -184,7 +187,7 @@ class InjurySyncServiceTest extends AbstractSyncTest {
     assertThat(result.isSuccess())
         .withFailMessage(result.getErrorMessage() == null ? "" : result.getErrorMessage())
         .isTrue();
-    assertThat(result.getEntityType()).isEqualTo("Injuries");
+    assertThat(result.getEntityType()).isEqualTo(SyncEntityType.INJURIES.getKey());
     assertThat(result.getSyncedCount()).isEqualTo(3);
     assertThat(result.getErrorCount()).isEqualTo(0);
 
@@ -197,7 +200,7 @@ class InjurySyncServiceTest extends AbstractSyncTest {
   @Test
   void syncInjuryTypes_WhenNoInjuriesFound_ShouldReturnSuccessWithZeroCount() {
     // Given
-    when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+    when(syncProperties.isEntityEnabled(SyncEntityType.INJURIES.getKey())).thenReturn(true);
     when(notionHandler.loadAllInjuries()).thenReturn(Collections.emptyList());
 
     // When
@@ -213,7 +216,7 @@ class InjurySyncServiceTest extends AbstractSyncTest {
   @Test
   void syncInjuryTypes_WhenDuplicateInjuries_ShouldSkipExisting() {
     // Given
-    when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+    when(syncProperties.isEntityEnabled(SyncEntityType.INJURIES.getKey())).thenReturn(true);
 
     List<InjuryPage> mockPages = createMockInjuryPages();
 
@@ -255,7 +258,7 @@ class InjurySyncServiceTest extends AbstractSyncTest {
   @Test
   void syncInjuryTypes_WhenNotionHandlerThrowsException_ShouldReturnFailure() {
     // Given
-    when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+    when(syncProperties.isEntityEnabled(SyncEntityType.INJURIES.getKey())).thenReturn(true);
     when(notionHandler.loadAllInjuries()).thenThrow(new RuntimeException("Notion API error"));
 
     // When
@@ -263,18 +266,18 @@ class InjurySyncServiceTest extends AbstractSyncTest {
 
     // Then
     assertFalse(result.isSuccess());
-    assertEquals("Injuries", result.getEntityType());
+    assertEquals(SyncEntityType.INJURIES.getKey(), result.getEntityType());
     assertTrue(result.getErrorMessage().contains("Notion API error"));
 
     // Verify error handling
     verify(progressTracker).failOperation(eq("test-operation"), anyString());
-    verify(healthMonitor).recordFailure(eq("Injuries"), anyString());
+    verify(healthMonitor).recordFailure(eq(SyncEntityType.INJURIES.getKey()), anyString());
   }
 
   @Test
   void syncInjuryTypes_WhenServiceThrowsException_ShouldContinueWithOtherInjuries() {
     // Given
-    when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+    when(syncProperties.isEntityEnabled(SyncEntityType.INJURIES.getKey())).thenReturn(true);
 
     List<InjuryPage> mockPages = createMockInjuryPages();
 
@@ -304,7 +307,7 @@ class InjurySyncServiceTest extends AbstractSyncTest {
   @Test
   void syncInjuryTypes_WhenValidationFails_ShouldReturnFailure() {
     // Given
-    when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+    when(syncProperties.isEntityEnabled(SyncEntityType.INJURIES.getKey())).thenReturn(true);
 
     List<InjuryPage> mockPages = createMockInjuryPages();
     when(notionHandler.loadAllInjuries()).thenReturn(mockPages);
@@ -324,7 +327,7 @@ class InjurySyncServiceTest extends AbstractSyncTest {
         .when(EnvironmentVariableUtil::isNotionTokenAvailable)
         .thenReturn(false);
     mockedEnvironmentVariableUtil.when(EnvironmentVariableUtil::getNotionToken).thenReturn(null);
-    when(syncProperties.isEntityEnabled("injuries")).thenReturn(true);
+    when(syncProperties.isEntityEnabled(SyncEntityType.INJURIES.getKey())).thenReturn(true);
     when(injurySyncService.isNotionHandlerAvailable()).thenReturn(false);
 
     // When
@@ -332,7 +335,7 @@ class InjurySyncServiceTest extends AbstractSyncTest {
 
     // Then
     assertFalse(result.isSuccess());
-    assertEquals("Injuries", result.getEntityType());
+    assertEquals(SyncEntityType.INJURIES.getKey(), result.getEntityType());
     assertTrue(
         result.getErrorMessage().contains("NotionHandler is not available for injuries sync"),
         result.getErrorMessage());

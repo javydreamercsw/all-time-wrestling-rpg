@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.parallel;
 
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServicesManager;
 import java.util.ArrayList;
@@ -109,120 +110,120 @@ public class ParallelSyncOrchestrator {
     List<Future<EntitySyncResult>> futures = new ArrayList<>();
 
     // Submit tasks for each entity type if enabled
-    if (entityConfig.isEntityEnabled("shows")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.SHOWS.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "shows",
+                      SyncEntityType.SHOWS.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getShowSyncService()
                               .syncShows(baseOperationId + "-shows"))));
     }
 
-    if (entityConfig.isEntityEnabled("wrestlers")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.WRESTLERS.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "wrestlers",
+                      SyncEntityType.WRESTLERS.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getWrestlerSyncService()
                               .syncWrestlers(baseOperationId + "-wrestlers"))));
     }
 
-    if (entityConfig.isEntityEnabled("factions")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.FACTIONS.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "factions",
+                      SyncEntityType.FACTIONS.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getFactionSyncService()
                               .syncFactions(baseOperationId + "-factions"))));
     }
 
-    if (entityConfig.isEntityEnabled("teams")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.TEAMS.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "teams",
+                      SyncEntityType.TEAMS.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getTeamSyncService()
                               .syncTeams(baseOperationId + "-teams"))));
     }
 
-    if (entityConfig.isEntityEnabled("segments")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.SEGMENTS.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "segments",
+                      SyncEntityType.SEGMENTS.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getSegmentSyncService()
                               .syncSegments(baseOperationId + "-segments"))));
     }
 
-    if (entityConfig.isEntityEnabled("seasons")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.SEASONS.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "seasons",
+                      SyncEntityType.SEASONS.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getSeasonSyncService()
                               .syncSeasons(baseOperationId + "-seasons"))));
     }
 
-    if (entityConfig.isEntityEnabled("showtypes")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.SHOW_TYPES.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "showtypes",
+                      SyncEntityType.SHOW_TYPES.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getShowTypeSyncService()
                               .syncShowTypes(baseOperationId + "-showtypes"))));
     }
 
-    if (entityConfig.isEntityEnabled("showtemplates")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.TEMPLATES.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "showtemplates",
+                      SyncEntityType.TEMPLATES.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getShowTemplateSyncService()
                               .syncShowTemplates(baseOperationId + "-showtemplates"))));
     }
 
-    if (entityConfig.isEntityEnabled("injuries")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.INJURIES.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "injuries",
+                      SyncEntityType.INJURIES.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getInjurySyncService()
                               .syncInjuryTypes(baseOperationId + "-injuries"))));
     }
 
-    if (entityConfig.isEntityEnabled("npcs")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.NPCS.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "npcs",
+                      SyncEntityType.NPCS.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getNpcSyncService()
@@ -232,24 +233,24 @@ public class ParallelSyncOrchestrator {
                                       .SyncDirection.INBOUND))));
     }
 
-    if (entityConfig.isEntityEnabled("titles")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.TITLES.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "titles",
+                      SyncEntityType.TITLES.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getTitleSyncService()
                               .syncTitles(baseOperationId + "-titles"))));
     }
 
-    if (entityConfig.isEntityEnabled("titlereigns")) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.TITLE_REIGN.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      "titlereigns",
+                      SyncEntityType.TITLE_REIGN.getKey(),
                       () ->
                           notionSyncServicesManager
                               .getTitleReignSyncService()
@@ -306,27 +307,11 @@ public class ParallelSyncOrchestrator {
   /** Counts the number of enabled entities for thread pool sizing. */
   private int countEnabledEntities() {
     int count = 0;
-    String[] entities = {
-      "seasons",
-      "showtypes",
-      "showtemplates",
-      "shows",
-      "wrestlers",
-      "factions",
-      "teams",
-      "injuries",
-      "npcs",
-      "segments",
-      "titles",
-      "titlereigns"
-    };
-
-    for (String entity : entities) {
-      if (entityConfig.isEntityEnabled(entity)) {
+    for (SyncEntityType entity : SyncEntityType.values()) {
+      if (entityConfig.isEntityEnabled(entity.getKey())) {
         count++;
       }
     }
-
     return count;
   }
 
