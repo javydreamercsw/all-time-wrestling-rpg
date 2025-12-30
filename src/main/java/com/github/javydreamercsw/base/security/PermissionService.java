@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collection;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +30,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service("permissionService")
 @Transactional(readOnly = true)
 public class PermissionService {
+
+  private final WrestlerRepository wrestlerRepository;
+
+  public PermissionService(WrestlerRepository wrestlerRepository) {
+    this.wrestlerRepository = wrestlerRepository;
+  }
 
   public boolean isOwner(Object targetDomainObject) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -46,20 +53,26 @@ public class PermissionService {
       return false; // User does not have a wrestler assigned
     }
 
+    // Re-load the wrestler from the database to ensure it's a managed entity
+    Wrestler managedUserWrestler = wrestlerRepository.findById(userWrestler.getId()).orElse(null);
+    if (managedUserWrestler == null) {
+      return false;
+    }
+
     if (targetDomainObject instanceof Wrestler targetWrestler) {
-      return userWrestler.getId().equals(targetWrestler.getId());
+      return managedUserWrestler.getId().equals(targetWrestler.getId());
     } else if (targetDomainObject instanceof Deck deck) {
       Wrestler deckWrestler = deck.getWrestler();
-      return deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
+      return deckWrestler != null && managedUserWrestler.getId().equals(deckWrestler.getId());
     } else if (targetDomainObject instanceof DeckCard deckCard) {
       Deck deck = deckCard.getDeck();
       if (deck != null) {
         Wrestler deckWrestler = deck.getWrestler();
-        return deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
+        return deckWrestler != null && managedUserWrestler.getId().equals(deckWrestler.getId());
       }
     } else if (targetDomainObject instanceof InboxItem inboxItem) {
       return inboxItem.getTargets().stream()
-          .anyMatch(target -> target.getTargetId().equals(userWrestler.getId().toString()));
+          .anyMatch(target -> target.getTargetId().equals(managedUserWrestler.getId().toString()));
     } else if (targetDomainObject instanceof Collection<?> collection) {
       if (collection.isEmpty()) {
         return true;

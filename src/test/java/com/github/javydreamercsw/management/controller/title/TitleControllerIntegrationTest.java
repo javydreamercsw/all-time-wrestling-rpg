@@ -141,7 +141,8 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
     Title title1 = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Title title2 = createTestTitle("Extreme Championship", WrestlerTier.ROOKIE);
     when(titleService.getAllTitles(any(Pageable.class)))
-        .thenReturn(new PageImpl<>(new ArrayList<>(List.of(title1, title2)), PageRequest.of(0, 10), 2));
+        .thenReturn(
+            new PageImpl<>(new ArrayList<>(List.of(title1, title2)), PageRequest.of(0, 10), 2));
 
     mockMvc
         .perform(get("/api/titles").param("page", "0").param("size", "10"))
