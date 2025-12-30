@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.ai.notion.TitleReignPage;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -93,6 +94,7 @@ class TitleReignSyncIT extends ManagementIntegrationTest {
     title.setName("Test Title");
     title.setExternalId("title-id");
     title.setTier(WrestlerTier.MIDCARDER);
+    title.setChampionshipType(ChampionshipType.SINGLE);
     titleRepository.save(title);
 
     String reignId = UUID.randomUUID().toString();
