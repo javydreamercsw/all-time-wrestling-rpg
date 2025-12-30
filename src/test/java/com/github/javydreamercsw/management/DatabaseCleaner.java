@@ -19,7 +19,11 @@ package com.github.javydreamercsw.management;
 import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +55,9 @@ public class DatabaseCleaner implements DatabaseCleanup {
   @Override
   public void clearRepositories() {
     log.info("🧹 Starting database cleanup...");
+
+    // Clear join tables first to handle Many-to-Many relationships without dedicated repositories
+    clearJoinTables();
 
     // Discover all repositories
     Map<String, JpaRepository<?, ?>> repositories = discoverRepositories();
@@ -116,6 +123,46 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
     accountInitializer.init();
     log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
+  }
+
+  /**
+   * Discovers and clears all join tables defined with @JoinTable annotation. This is necessary for
+   * Many-to-Many relationships that don't have a dedicated repository.
+   */
+  private void clearJoinTables() {
+    Set<String> joinTableNames = new HashSet<>();
+    Set<EntityType<?>> entities = entityManager.getMetamodel().getEntities();
+
+    for (EntityType<?> entity : entities) {
+      for (Attribute<?, ?> attribute : entity.getAttributes()) {
+        if (attribute.isCollection()) {
+          Member member = attribute.getJavaMember();
+          if (member instanceof AnnotatedElement) {
+            AnnotatedElement annotatedElement = (AnnotatedElement) member;
+            JoinTable joinTable = annotatedElement.getAnnotation(JoinTable.class);
+            if (joinTable != null) {
+              joinTableNames.add(joinTable.name());
+            }
+          }
+        }
+      }
+    }
+
+    if (!joinTableNames.isEmpty()) {
+      log.info("🧹 Clearing {} join tables...", joinTableNames.size());
+      for (String tableName : joinTableNames) {
+        try {
+          log.debug("Deleting all records from join table {}", tableName);
+          // Use uppercase to match database schema and no quotes to avoid case-sensitivity issues
+          entityManager
+              .createNativeQuery("DELETE FROM " + tableName.toUpperCase(Locale.ROOT))
+              .executeUpdate();
+          log.debug("✅ Deleted all records from join table {}", tableName);
+        } catch (Exception e) {
+          log.error("❌ Failed to delete from join table {}: {}", tableName, e.getMessage());
+        }
+      }
+    }
   }
 
   /**

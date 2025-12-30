@@ -29,8 +29,10 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +42,7 @@ import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -135,11 +138,10 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
   @Test
   @DisplayName("Should get all titles with pagination")
   void shouldGetAllTitlesWithPagination() throws Exception {
-    // Create test titles
     Title title1 = createTestTitle("World Championship", WrestlerTier.MAIN_EVENTER);
     Title title2 = createTestTitle("Extreme Championship", WrestlerTier.ROOKIE);
     when(titleService.getAllTitles(any(Pageable.class)))
-        .thenReturn(new PageImpl<>(List.of(title1, title2)));
+        .thenReturn(new PageImpl<>(new ArrayList<>(List.of(title1, title2)), PageRequest.of(0, 10), 2));
 
     mockMvc
         .perform(get("/api/titles").param("page", "0").param("size", "10"))
@@ -491,17 +493,23 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
         .andExpect(jsonPath("$.currentChampionsCount").value(0));
   }
 
-  private Title createTestTitle(String name, WrestlerTier tier) {
+  private static long nextTitleId = 1L;
+
+  private Title createTestTitle(@NonNull String name, @NonNull WrestlerTier tier) {
     Title title = new Title();
-    title.setId(1L); // Assign a dummy ID for the mock
+    title.setId(nextTitleId++); // Assign a unique ID for the mock
     title.setName(name);
     title.setDescription("Test description");
     title.setTier(tier);
     title.setIsActive(true);
+    title.setCreationDate(Instant.now());
+    title.setChampion(new ArrayList<>());
+    title.setChallengers(new ArrayList<>());
+    title.setChampionshipType(ChampionshipType.SINGLE);
     return title;
   }
 
-  private Wrestler createTestWrestler(String name, Long fans) {
+  private Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setId(1L); // Assign a dummy ID for the mock
     wrestler.setName(name);

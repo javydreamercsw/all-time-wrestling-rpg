@@ -189,14 +189,14 @@ public class Segment extends AbstractEntity<Long> {
     return participants.stream()
         .filter(SegmentParticipant::getIsWinner)
         .map(SegmentParticipant::getWrestler)
-        .collect(java.util.stream.Collectors.toList());
+        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
   }
 
   public List<Wrestler> getLosers() {
     return participants.stream()
         .filter(participant -> !participant.getIsWinner())
         .map(SegmentParticipant::getWrestler)
-        .collect(java.util.stream.Collectors.toList());
+        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
   }
 
   public void setWinners(List<Wrestler> winners) {
