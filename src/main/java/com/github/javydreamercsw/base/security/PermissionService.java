@@ -16,14 +16,17 @@
 */
 package com.github.javydreamercsw.base.security;
 
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collection;
+import java.util.Optional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,9 +35,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class PermissionService {
 
   private final WrestlerRepository wrestlerRepository;
+  private final AccountRepository accountRepository;
 
-  public PermissionService(WrestlerRepository wrestlerRepository) {
+  public PermissionService(
+      WrestlerRepository wrestlerRepository, AccountRepository accountRepository) {
     this.wrestlerRepository = wrestlerRepository;
+    this.accountRepository = accountRepository;
   }
 
   public boolean isOwner(Object targetDomainObject) {
@@ -44,35 +50,35 @@ public class PermissionService {
     }
 
     Object principal = authentication.getPrincipal();
-    if (!(principal instanceof CustomUserDetails userDetails)) {
+    if (!(principal instanceof UserDetails userDetails)) {
       return false; // Or handle anonymous user differently
     }
 
-    Wrestler userWrestler = userDetails.getWrestler();
-    if (userWrestler == null) {
+    // Fetch the wrestler directly using the username from the security context
+    Optional<Wrestler> userWrestlerOpt =
+        accountRepository
+            .findByUsername(userDetails.getUsername())
+            .flatMap(wrestlerRepository::findByAccount);
+
+    if (userWrestlerOpt.isEmpty()) {
       return false; // User does not have a wrestler assigned
     }
-
-    // Re-load the wrestler from the database to ensure it's a managed entity
-    Wrestler managedUserWrestler = wrestlerRepository.findById(userWrestler.getId()).orElse(null);
-    if (managedUserWrestler == null) {
-      return false;
-    }
+    Wrestler userWrestler = userWrestlerOpt.get();
 
     if (targetDomainObject instanceof Wrestler targetWrestler) {
-      return managedUserWrestler.getId().equals(targetWrestler.getId());
+      return userWrestler.getId().equals(targetWrestler.getId());
     } else if (targetDomainObject instanceof Deck deck) {
       Wrestler deckWrestler = deck.getWrestler();
-      return deckWrestler != null && managedUserWrestler.getId().equals(deckWrestler.getId());
+      return deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
     } else if (targetDomainObject instanceof DeckCard deckCard) {
       Deck deck = deckCard.getDeck();
       if (deck != null) {
         Wrestler deckWrestler = deck.getWrestler();
-        return deckWrestler != null && managedUserWrestler.getId().equals(deckWrestler.getId());
+        return deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
       }
     } else if (targetDomainObject instanceof InboxItem inboxItem) {
       return inboxItem.getTargets().stream()
-          .anyMatch(target -> target.getTargetId().equals(managedUserWrestler.getId().toString()));
+          .anyMatch(target -> target.getTargetId().equals(userWrestler.getId().toString()));
     } else if (targetDomainObject instanceof Collection<?> collection) {
       if (collection.isEmpty()) {
         return true;

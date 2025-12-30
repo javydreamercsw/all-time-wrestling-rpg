@@ -165,7 +165,15 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "deck_booker", roles = "BOOKER")
   void testPlayerCanDeleteTheirOwnDeck() {
-    Deck deck = deckService.createDeck(playerWrestler);
+    Deck deck = deckService.createDeck(bookerWrestler);
+    deckService.delete(deck);
+    // No exception means success
+  }
+
+  @Test
+  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  void testPlayerCanDeleteTheirOwnDeckPlayer() {
+    Deck deck = GeneralSecurityUtils.runAsAdmin(() -> deckService.createDeck(playerWrestler));
     deckService.delete(deck);
     // No exception means success
   }
