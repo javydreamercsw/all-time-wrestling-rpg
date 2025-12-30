@@ -19,6 +19,9 @@ package com.github.javydreamercsw.management.service.deck;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.TestCustomUserDetailsService;
 import com.github.javydreamercsw.base.test.AbstractSecurityTest;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
@@ -29,12 +32,13 @@ import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 class DeckCardServiceSecurityTest extends AbstractSecurityTest {
 
   @Autowired private DeckCardService deckCardService;
@@ -42,217 +46,149 @@ class DeckCardServiceSecurityTest extends AbstractSecurityTest {
   @Autowired private DeckRepository deckRepository;
   @Autowired private CardRepository cardRepository;
   @Autowired private CardSetRepository cardSetRepository;
+  @Autowired private TestCustomUserDetailsService userDetailsService;
 
-  private Wrestler getWrestler(String username) {
-    return wrestlerRepository
-        .findByAccountUsername(username)
-        .orElseThrow(
-            () -> new IllegalStateException("Wrestler for user " + username + " not found"));
-  }
+  private Account ownerAccount;
+  private Account notOwnerAccount;
+  private Account adminAccount;
+  private Account bookerAccount;
+  private Account viewerAccount;
 
-  private Deck getOrCreateDeck(Wrestler wrestler) {
-    List<Deck> decks = deckRepository.findByWrestler(wrestler);
-    if (decks.isEmpty()) {
-      Deck newDeck = new Deck();
-      newDeck.setWrestler(wrestler);
-      newDeck.setCreationDate(clock.instant());
-      return deckRepository.save(newDeck);
-    }
-    return decks.get(0);
-  }
+  private Wrestler ownedWrestler;
+  private Wrestler unownedWrestler;
 
-  private CardSet getOrCreateCardSet() {
-    return cardSetRepository
-        .findByName("Test Set")
-        .orElseGet(
-            () -> {
-              CardSet newCardSet = new CardSet();
-              newCardSet.setName("Test Set");
-              newCardSet.setCreationDate(clock.instant());
-              newCardSet.setCode("TEST_SET_CODE");
-              return cardSetRepository.save(newCardSet);
-            });
-  }
+  private Deck ownedDeck;
+  private Deck unownedDeck;
 
-  private Card getOrCreateCard(CardSet cardSet) {
-    return cardRepository
-        .findByName("Test Card")
-        .orElseGet(
-            () -> {
-              Card newCard = new Card();
-              newCard.setName("Test Card");
-              newCard.setSet(cardSet);
-              newCard.setType("Test");
-              newCard.setTarget(1);
-              newCard.setStamina(1);
-              newCard.setDamage(1);
-              newCard.setMomentum(1);
-              newCard.setCreationDate(clock.instant());
-              return cardRepository.save(newCard);
-            });
-  }
+  private Card card;
+  private CardSet cardSet;
 
-  private DeckCard getOrCreateDeckCard(Deck deck, Card card, CardSet cardSet) {
-    return deckCardRepository
-        .findByDeckAndCardAndSet(deck, card, cardSet)
-        .orElseGet(
-            () -> {
-              DeckCard newDeckCard = new DeckCard();
-              newDeckCard.setDeck(deck);
-              newDeckCard.setCard(card);
-              newDeckCard.setSet(cardSet);
-              return deckCardRepository.save(newDeckCard);
-            });
+  private DeckCard ownedDeckCard;
+  private DeckCard unownedDeckCard;
+
+  @BeforeEach
+  protected void setup() {
+    super.setup();
+    ownerAccount = createTestAccount("owner", RoleName.PLAYER);
+    ownedWrestler = createTestWrestler("owner");
+    ownedWrestler.setAccount(ownerAccount);
+    wrestlerRepository.save(ownedWrestler);
+    ownedDeck = new Deck();
+    ownedDeck.setWrestler(ownedWrestler);
+    deckRepository.save(ownedDeck);
+
+    notOwnerAccount = createTestAccount("not_owner", RoleName.PLAYER);
+    unownedWrestler = createTestWrestler("not_owner");
+    unownedWrestler.setAccount(notOwnerAccount);
+    wrestlerRepository.save(unownedWrestler);
+    unownedDeck = new Deck();
+    unownedDeck.setWrestler(unownedWrestler);
+    deckRepository.save(unownedDeck);
+
+    adminAccount = createTestAccount("admin", RoleName.ADMIN);
+    bookerAccount = createTestAccount("booker", RoleName.BOOKER);
+    viewerAccount = createTestAccount("viewer", RoleName.VIEWER);
+
+    cardSet = new CardSet();
+    cardSet.setName("Test Set");
+    cardSetRepository.save(cardSet);
+
+    card = new Card();
+    card.setName("Test Card");
+    card.setSet(cardSet);
+    card.setType("Test");
+    card.setTarget(1);
+    card.setStamina(1);
+    card.setDamage(1);
+    card.setMomentum(1);
+    cardRepository.save(card);
+
+    ownedDeckCard = new DeckCard();
+    ownedDeckCard.setDeck(ownedDeck);
+    ownedDeckCard.setCard(card);
+    ownedDeckCard.setSet(cardSet);
+    deckCardRepository.save(ownedDeckCard);
+
+    unownedDeckCard = new DeckCard();
+    unownedDeckCard.setDeck(unownedDeck);
+    unownedDeckCard.setCard(card);
+    unownedDeckCard.setSet(cardSet);
+    deckCardRepository.save(unownedDeckCard);
   }
 
   // --- Save DeckCard Method Tests ---
 
   @Test
-  @WithUserDetails("admin")
   void testAdminCanSaveAnyDeckCard() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-
-    Deck otherDeck = getOrCreateDeck(getWrestler("not_owner"));
-    DeckCard otherDeckCard = getOrCreateDeckCard(otherDeck, card, cardSet);
-
+    login("admin");
     assertDoesNotThrow(() -> deckCardService.save(ownedDeckCard));
-    assertDoesNotThrow(() -> deckCardService.save(otherDeckCard));
+    assertDoesNotThrow(() -> deckCardService.save(unownedDeckCard));
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanSaveAnyDeckCard() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-
-    Deck otherDeck = getOrCreateDeck(getWrestler("not_owner"));
-    DeckCard otherDeckCard = getOrCreateDeckCard(otherDeck, card, cardSet);
-
+    login("booker");
     assertDoesNotThrow(() -> deckCardService.save(ownedDeckCard));
-    assertDoesNotThrow(() -> deckCardService.save(otherDeckCard));
+    assertDoesNotThrow(() -> deckCardService.save(unownedDeckCard));
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCanSaveOwnedDeckCard() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-
+    login("owner");
     assertDoesNotThrow(() -> deckCardService.save(ownedDeckCard));
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCannotSaveOtherDeckCard() {
-    Deck currentPlayerDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard currentPlayerDeckCard = getOrCreateDeckCard(currentPlayerDeck, card, cardSet);
-
-    Deck otherPlayerDeck = getOrCreateDeck(getWrestler("not_owner"));
-    DeckCard otherPlayerDeckCard = getOrCreateDeckCard(otherPlayerDeck, card, cardSet);
-
-    assertThrows(AccessDeniedException.class, () -> deckCardService.save(otherPlayerDeckCard));
-    assertDoesNotThrow(() -> deckCardService.save(currentPlayerDeckCard));
+    login("owner");
+    assertThrows(AuthorizationDeniedException.class, () -> deckCardService.save(unownedDeckCard));
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCannotSaveDeckCard() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-
-    assertThrows(AccessDeniedException.class, () -> deckCardService.save(ownedDeckCard));
+    login("viewer");
+    assertThrows(AuthorizationDeniedException.class, () -> deckCardService.save(ownedDeckCard));
   }
 
   // --- Delete DeckCard Method Tests ---
 
   @Test
-  @WithUserDetails("admin")
   void testAdminCanDeleteAnyDeckCard() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-
-    Deck otherDeck = getOrCreateDeck(getWrestler("not_owner"));
-    DeckCard otherDeckCard = getOrCreateDeckCard(otherDeck, card, cardSet);
-
+    login("admin");
     assertDoesNotThrow(() -> deckCardService.delete(ownedDeckCard));
-    assertDoesNotThrow(() -> deckCardService.delete(otherDeckCard));
+    assertDoesNotThrow(() -> deckCardService.delete(unownedDeckCard));
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanDeleteAnyDeckCard() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-
-    Deck otherDeck = getOrCreateDeck(getWrestler("not_owner"));
-    DeckCard otherDeckCard = getOrCreateDeckCard(otherDeck, card, cardSet);
-
+    login("booker");
     assertDoesNotThrow(() -> deckCardService.delete(ownedDeckCard));
-    assertDoesNotThrow(() -> deckCardService.delete(otherDeckCard));
+    assertDoesNotThrow(() -> deckCardService.delete(unownedDeckCard));
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCanDeleteOwnedDeckCard() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-    // Players can delete their own deck cards
+    login("owner");
     assertDoesNotThrow(() -> deckCardService.delete(ownedDeckCard));
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCannotDeleteOtherDeckCard() {
-    Deck currentPlayerDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard currentPlayerDeckCard = getOrCreateDeckCard(currentPlayerDeck, card, cardSet);
-
-    Deck otherPlayerDeck = getOrCreateDeck(getWrestler("not_owner"));
-    DeckCard otherPlayerDeckCard = getOrCreateDeckCard(otherPlayerDeck, card, cardSet);
-
-    assertThrows(AccessDeniedException.class, () -> deckCardService.delete(otherPlayerDeckCard));
-    assertDoesNotThrow(() -> deckCardService.delete(currentPlayerDeckCard));
+    login("owner");
+    assertThrows(AuthorizationDeniedException.class, () -> deckCardService.delete(unownedDeckCard));
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCannotDeleteDeckCard() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-
-    assertThrows(AccessDeniedException.class, () -> deckCardService.delete(ownedDeckCard));
+    login("viewer");
+    assertThrows(AuthorizationDeniedException.class, () -> deckCardService.delete(ownedDeckCard));
   }
 
   // --- Read Operations Tests ---
 
   @Test
-  @WithUserDetails("admin")
   void testAdminCanReadDeckCards() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-
+    login("admin");
     assertDoesNotThrow(
         () ->
             deckCardService.findByDeckIdAndCardIdAndSetId(
@@ -262,13 +198,8 @@ class DeckCardServiceSecurityTest extends AbstractSecurityTest {
   }
 
   @Test
-  @WithUserDetails("booker")
   void testBookerCanReadDeckCards() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-
+    login("booker");
     assertDoesNotThrow(
         () ->
             deckCardService.findByDeckIdAndCardIdAndSetId(
@@ -278,18 +209,8 @@ class DeckCardServiceSecurityTest extends AbstractSecurityTest {
   }
 
   @Test
-  @WithUserDetails("owner")
   void testPlayerCanReadDeckCards() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-
-    Deck otherDeck = getOrCreateDeck(getWrestler("not_owner"));
-    CardSet otherCardSet = getOrCreateCardSet();
-    Card otherCard = getOrCreateCard(otherCardSet);
-    DeckCard otherDeckCard = getOrCreateDeckCard(otherDeck, otherCard, otherCardSet);
-
+    login("owner");
     assertDoesNotThrow(
         () ->
             deckCardService.findByDeckIdAndCardIdAndSetId(
@@ -297,19 +218,14 @@ class DeckCardServiceSecurityTest extends AbstractSecurityTest {
     assertDoesNotThrow(
         () ->
             deckCardService.findByDeckIdAndCardIdAndSetId(
-                otherDeck.getId(), otherCard.getId(), otherCardSet.getId()));
+                unownedDeck.getId(), card.getId(), cardSet.getId()));
     assertDoesNotThrow(() -> deckCardService.findAll());
     assertDoesNotThrow(() -> deckCardService.findByDeck(ownedDeck));
   }
 
   @Test
-  @WithUserDetails("viewer")
   void testViewerCanReadDeckCards() {
-    Deck ownedDeck = getOrCreateDeck(getWrestler("owner"));
-    CardSet cardSet = getOrCreateCardSet();
-    Card card = getOrCreateCard(cardSet);
-    DeckCard ownedDeckCard = getOrCreateDeckCard(ownedDeck, card, cardSet);
-
+    login("viewer");
     assertDoesNotThrow(
         () ->
             deckCardService.findByDeckIdAndCardIdAndSetId(
