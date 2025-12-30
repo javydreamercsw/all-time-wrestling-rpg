@@ -77,8 +77,7 @@ public class RankingService {
 
     Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
 
-    if (title.getChampionshipType() == ChampionshipType.TEAM
-        || title.getChampionshipType() == ChampionshipType.TAG_TEAM) {
+    if (title.getChampionshipType() == ChampionshipType.TEAM) {
       List<Team> contenders =
           teamRepository.findAll().stream()
               .filter(
@@ -108,34 +107,6 @@ public class RankingService {
           .sorted(
               Comparator.comparing(
                       (Team team) -> team.getWrestler1().getFans() + team.getWrestler2().getFans())
-                  .reversed())
-          .map(t -> toRankedTeamDTO(t, rank.getAndIncrement()))
-          .collect(Collectors.toList());
-    } else if (title.getChampionshipType() == ChampionshipType.FACTION) {
-      List<Faction> contenders =
-          factionRepository.findAll().stream()
-              .filter(
-                  faction ->
-                      faction.getMembers().stream()
-                          .allMatch(member -> member.getGender() == gender))
-              .collect(Collectors.toList());
-
-      // Remove champion team from the contender list
-      title
-          .getCurrentReign()
-          .ifPresent(
-              reign -> {
-                List<Wrestler> champions = reign.getChampions();
-                contenders.removeIf(
-                    contender -> new ArrayList<>(contender.getMembers()).equals(champions));
-              });
-
-      AtomicInteger rank = new AtomicInteger(1);
-      return contenders.stream()
-          .sorted(
-              Comparator.comparing(
-                      (Faction faction) ->
-                          faction.getMembers().stream().mapToLong(Wrestler::getFans).sum())
                   .reversed())
           .map(t -> toRankedTeamDTO(t, rank.getAndIncrement()))
           .collect(Collectors.toList());

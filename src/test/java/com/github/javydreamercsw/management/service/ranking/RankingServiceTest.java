@@ -24,6 +24,8 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -52,14 +54,9 @@ class RankingServiceTest {
 
   @Mock private TitleRepository titleRepository;
   @Mock private WrestlerRepository wrestlerRepository;
-
-  @Mock
-  private com.github.javydreamercsw.management.domain.faction.FactionRepository factionRepository;
-
+  @Mock private FactionRepository factionRepository;
   @Mock private TeamRepository teamRepository;
-
   @Mock private TierBoundaryService tierBoundaryService;
-
   @InjectMocks private RankingService rankingService;
 
   private Title title;
@@ -208,20 +205,23 @@ class RankingServiceTest {
     team2member1.setName("Team 2 Member 1");
     team2member1.setFans(700L);
     team2member1.setGender(Gender.MALE);
+    team2member1.setTier(WrestlerTier.fromFanCount(team2member1.getFans()));
 
     Wrestler team2member2 = new Wrestler();
     team2member2.setId(7L);
     team2member2.setName("Team 2 Member 2");
     team2member2.setFans(800L);
     team2member2.setGender(Gender.MALE);
+    team2member2.setTier(WrestlerTier.fromFanCount(team2member2.getFans()));
 
-    Faction contenderTeam = new Faction();
+    Team contenderTeam = new Team();
     contenderTeam.setId(2L);
     contenderTeam.setName("The Contenders");
-    contenderTeam.setMembers(Set.of(team2member1, team2member2));
+    contenderTeam.setWrestler1(team2member1);
+    contenderTeam.setWrestler2(team2member2);
 
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    when(factionRepository.findAll()).thenReturn(List.of(championTeam, contenderTeam));
+    when(teamRepository.findAll()).thenReturn(List.of(contenderTeam));
 
     List<?> contenders = rankingService.getRankedContenders(1L);
 

@@ -18,11 +18,5 @@ package com.github.javydreamercsw.management.domain.title;
 
 public enum ChampionshipType {
   SINGLE,
-  /**
-   * @deprecated use TAG_TEAM instead.
-   */
-  @Deprecated
-  TEAM,
-  TAG_TEAM,
-  FACTION
+  TEAM
 }
