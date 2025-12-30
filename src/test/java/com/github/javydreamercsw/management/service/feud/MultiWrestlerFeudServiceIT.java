@@ -76,8 +76,10 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(
       username = "feud_admin",
-      roles = {"ADMIN", "PLAYER"})
+      roles = {"ADMIN"})
   void testAdminCanCreateFeud() {
+    Assertions.assertNotNull(wrestler1.getId());
+    Assertions.assertNotNull(wrestler2.getId());
     Optional<MultiWrestlerFeud> feud =
         multiWrestlerFeudService.createFeud(
             "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId()));
@@ -90,6 +92,8 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
       username = "feud_booker",
       roles = {"BOOKER", "PLAYER"})
   void testBookerCanCreateFeud() {
+    Assertions.assertNotNull(wrestler1.getId());
+    Assertions.assertNotNull(wrestler2.getId());
     Optional<MultiWrestlerFeud> feud =
         multiWrestlerFeudService.createFeud(
             "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId()));
@@ -141,7 +145,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(
       username = "feud_admin",
-      roles = {"ADMIN", "PLAYER"})
+      roles = {"ADMIN"})
   void testAdminCanRemoveParticipant() {
     Optional<MultiWrestlerFeud> feud =
         multiWrestlerFeudService.createFeud(
@@ -195,7 +199,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(
       username = "feud_admin",
-      roles = {"ADMIN", "PLAYER"})
+      roles = {"ADMIN"})
   void testAdminCanEndFeud() {
     Optional<MultiWrestlerFeud> feud =
         multiWrestlerFeudService.createFeud(
@@ -222,9 +226,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(
-      username = "feud_admin",
-      roles = {"ADMIN", "PLAYER"})
+  @WithCustomMockUser(username = "feud_admin", roles = "ADMIN")
   void testAdminCanDeleteFeud() {
     final Long[] feudId = new Long[1];
     TestUtils.runAsAdmin(
@@ -304,7 +306,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(
       username = "feud_admin",
-      roles = {"ADMIN", "PLAYER"})
+      roles = {"ADMIN"})
   void testAdminCanAddHeat() {
     Optional<MultiWrestlerFeud> feud =
         multiWrestlerFeudService.createFeud(
