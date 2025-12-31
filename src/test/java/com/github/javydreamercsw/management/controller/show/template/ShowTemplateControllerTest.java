@@ -41,7 +41,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DisplayName("ShowTemplate Controller Tests")
-@WebMvcTest(ShowTemplateController.class)
 class ShowTemplateControllerTest extends AbstractControllerTest {
 
   @MockitoBean private ShowTemplateService showTemplateService;
