@@ -26,7 +26,6 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -193,9 +192,7 @@ class SeasonControllerIT extends AbstractControllerTest {
     Season season = createTestSeason("Test Season");
     // Add some data for stats if needed
 
-    mockMvc
-        .perform(get("/api/seasons/{id}/stats", season.getId()))
-        .andExpect(status().isOk());
+    mockMvc.perform(get("/api/seasons/{id}/stats", season.getId())).andExpect(status().isOk());
 
     // Test getting statistics for a non-existent season (should return 404)
     mockMvc.perform(get("/api/seasons/{id}/stats", 999L)).andExpect(status().isNotFound());

@@ -31,17 +31,13 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningSe
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(ShowPlanningController.class)
 class ShowPlanningControllerTest extends AbstractControllerTest {
 
   @MockitoBean private ShowPlanningService showPlanningService;
-
   @MockitoBean private ShowPlanningAiService showPlanningAiService;
-
   @MockitoBean private ShowService showService;
 
   @Test
