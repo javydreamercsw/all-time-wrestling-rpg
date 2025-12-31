@@ -28,13 +28,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 
 /**
  * Integration tests for SeasonController. Tests the complete REST API functionality for season
  * management.
  */
-@SpringBootTest
 @DisplayName("SeasonController Integration Tests")
+@WithMockUser(roles = "ADMIN")
 class SeasonControllerIT extends AbstractControllerTest {
 
   @BeforeEach
@@ -81,8 +82,8 @@ class SeasonControllerIT extends AbstractControllerTest {
   @DisplayName("Should get all seasons with pagination")
   void shouldGetAllSeasonsWithPagination() throws Exception {
     // Create test seasons
-    createTestSeason("Season 1", 1);
-    createTestSeason("Season 2", 2);
+    createTestSeason("Season 1");
+    createTestSeason("Season 2");
 
     mockMvc
         .perform(get("/api/seasons").param("page", "0").param("size", "10"))
@@ -94,14 +95,13 @@ class SeasonControllerIT extends AbstractControllerTest {
   @DisplayName("Should get season by ID")
   void shouldGetSeasonById() throws Exception {
     // Create a season and get its actual ID from the response
+    Season season = createTestSeason("Test Season");
+
+    // Test getting the created season
     mockMvc
-        .perform(
-            post("/api/seasons")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    objectMapper.writeValueAsString(
-                        new CreateSeasonRequest("Test Season", "Test description", 5))))
-        .andExpect(status().isCreated());
+        .perform(get("/api/seasons/{id}", season.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Test Season"));
 
     // Test getting a non-existent season (should return 404)
     mockMvc.perform(get("/api/seasons/{id}", 999L)).andExpect(status().isNotFound());
@@ -117,7 +117,7 @@ class SeasonControllerIT extends AbstractControllerTest {
   @DisplayName("Should get active season")
   void shouldGetActiveSeason() throws Exception {
     // Create a season first
-    createTestSeason("Active Season", 1);
+    createTestSeason("Active Season");
 
     mockMvc.perform(get("/api/seasons/active")).andExpect(status().isOk());
   }
@@ -132,7 +132,7 @@ class SeasonControllerIT extends AbstractControllerTest {
   @DisplayName("Should end current season")
   void shouldEndCurrentSeason() throws Exception {
     // Create a season first
-    createTestSeason("Active Season", 1);
+    createTestSeason("Active Season");
 
     mockMvc.perform(post("/api/seasons/end-current")).andExpect(status().isOk());
   }
@@ -140,9 +140,20 @@ class SeasonControllerIT extends AbstractControllerTest {
   @Test
   @DisplayName("Should update season")
   void shouldUpdateSeason() throws Exception {
-    // Test updating a non-existent season (should return 404)
+    // Create a season to update
+    Season season = createTestSeason("Original Name");
+
     UpdateSeasonRequest request = new UpdateSeasonRequest("Updated Name", "Updated description", 4);
 
+    mockMvc
+        .perform(
+            put("/api/seasons/{id}", season.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Updated Name"));
+
+    // Test updating a non-existent season (should return 404)
     mockMvc
         .perform(
             put("/api/seasons/{id}", 999L)
@@ -161,7 +172,7 @@ class SeasonControllerIT extends AbstractControllerTest {
   @Test
   @DisplayName("Should not delete active season")
   void shouldNotDeleteActiveSeason() throws Exception {
-    Season season = createTestSeason("Active Season", 1);
+    Season season = createTestSeason("Active Season");
 
     mockMvc.perform(delete("/api/seasons/{id}", season.getId())).andExpect(status().isConflict());
   }
@@ -179,6 +190,13 @@ class SeasonControllerIT extends AbstractControllerTest {
   @Test
   @DisplayName("Should get season statistics")
   void shouldGetSeasonStatistics() throws Exception {
+    Season season = createTestSeason("Test Season");
+    // Add some data for stats if needed
+
+    mockMvc
+        .perform(get("/api/seasons/{id}/stats", season.getId()))
+        .andExpect(status().isOk());
+
     // Test getting statistics for a non-existent season (should return 404)
     mockMvc.perform(get("/api/seasons/{id}/stats", 999L)).andExpect(status().isNotFound());
   }
@@ -208,7 +226,7 @@ class SeasonControllerIT extends AbstractControllerTest {
         .andExpect(jsonPath("$.showsPerPpv").value(5));
   }
 
-  private Season createTestSeason(String name, Integer seasonNumber) throws Exception {
+  private Season createTestSeason(String name) throws Exception {
     CreateSeasonRequest request = new CreateSeasonRequest(name, "Test description", 5);
     String responseContent =
         mockMvc
