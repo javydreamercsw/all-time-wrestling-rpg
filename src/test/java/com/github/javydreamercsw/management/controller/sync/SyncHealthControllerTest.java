@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.ISyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncHealthSummary;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncMetric;
 import java.time.LocalDateTime;
@@ -34,8 +34,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class SyncHealthControllerTest extends AbstractControllerTest {
 
-  @MockitoBean private CommandLineRunner commandLineRunner;
-  @MockitoBean private SyncHealthMonitor healthMonitor;
+  @MockitoBean(name = "testUserInitializer")
+  private CommandLineRunner testUserInitializer;
+
+  @MockitoBean(name = "recalculateRanking")
+  private CommandLineRunner recalculateRanking;
+
+  @MockitoBean private ISyncHealthMonitor healthMonitor;
 
   @Test
   void shouldReturnHealthStatus() throws Exception {
