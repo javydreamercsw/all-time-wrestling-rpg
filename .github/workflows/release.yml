@@ -17,8 +17,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Create Release Branch
-        run: git checkout -b release/${{ github.event.inputs.version }}
+      - name: Create and push release branch
+        run: |
+          git checkout -b release/${{ github.event.inputs.version }}
+          git push -u origin release/${{ github.event.inputs.version }}
 
   update_pom:
     needs: create_release_branch
