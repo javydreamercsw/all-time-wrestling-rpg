@@ -16,12 +16,10 @@
 */
 package com.github.javydreamercsw.management.controller;
 
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.security.CustomUserDetailsService;
+import com.github.javydreamercsw.management.config.TestAIConfiguration;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.vaadin.flow.spring.security.RequestUtil;
@@ -37,7 +35,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-@Import(TestSecurityConfig.class)
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+
+@Import({TestSecurityConfig.class, TestAIConfiguration.class})
 @ActiveProfiles("test")
 @WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN", "ROLE_BOOKER"})
 @TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
@@ -51,7 +51,6 @@ public abstract class AbstractControllerTest extends AbstractIntegrationTest {
   @MockitoBean protected CustomUserDetailsService customUserDetailsService;
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
-  @MockitoBean protected SegmentNarrationServiceFactory serviceFactory;
   @MockitoBean protected TierRecalculationService tierRecalculationService;
 
   @BeforeEach

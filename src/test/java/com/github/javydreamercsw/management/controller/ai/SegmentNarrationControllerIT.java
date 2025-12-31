@@ -55,8 +55,8 @@ class SegmentNarrationControllerIT extends AbstractControllerTest {
   }
 
   @Test
-  @DisplayName("POST /api/segment-narration/sample should generate sample segment narration")
-  void shouldGenerateSampleMatchNarration() throws Exception {
+  @DisplayName("POST /api/segment-narration/test/mock should generate sample segment narration")
+  void shouldGenerateSampleSegmentNarration() throws Exception {
     mockMvc
         .perform(post("/api/segment-narration/test/mock"))
         .andExpect(status().isOk())
