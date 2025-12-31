@@ -20,7 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.config.LocalAIContainerConfig;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +38,8 @@ import org.springframework.test.context.ActiveProfiles;
     classes = {
       LocalAISegmentNarrationService.class,
       LocalAIContainerConfig.class,
+      AiBaseProperties.class,
+      LocalAIConfigProperties.class,
       LocalAIStatusService.class
     })
 @EnableConfigurationProperties(SegmentNarrationConfig.class)
@@ -39,7 +47,7 @@ import org.springframework.test.context.ActiveProfiles;
 class LocalAISegmentNarrationServiceIT {
 
   @Autowired private LocalAISegmentNarrationService localAIService;
-  @Autowired private LocalAIStatusService statusService;
+  @Autowired private LocalAIConfigProperties config;
 
   @Test
   void testGenerateText() {
@@ -61,19 +69,29 @@ class LocalAISegmentNarrationServiceIT {
   private void waitForLocalAI() {
     long startTime = System.currentTimeMillis();
     long timeout = Duration.ofMinutes(15).toMillis(); // 15 minutes timeout
+    try (HttpClient client = HttpClient.newHttpClient()) {
+      HttpRequest request =
+          HttpRequest.newBuilder().uri(URI.create(config.getBaseUrl() + "/readyz")).build();
 
-    while (!statusService.isReady()) {
-      if (System.currentTimeMillis() - startTime > timeout) {
-        fail(
-            "Timeout waiting for LocalAI to be ready. Current status: "
-                + statusService.getStatus());
+      while (System.currentTimeMillis() - startTime < timeout) {
+        try {
+          HttpResponse<String> response =
+              client.send(request, HttpResponse.BodyHandlers.ofString());
+          if (response.statusCode() == 200) {
+            System.out.println("LocalAI is ready!");
+            return;
+          }
+        } catch (IOException | InterruptedException e) {
+          // Ignore and retry
+        }
+        try {
+          Thread.sleep(1000); // Check every second
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          fail("Interrupted while waiting for LocalAI");
+        }
       }
-      try {
-        Thread.sleep(1000); // Check every second
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        fail("Interrupted while waiting for LocalAI");
-      }
+      fail("Timeout waiting for LocalAI to be ready.");
     }
   }
 }
