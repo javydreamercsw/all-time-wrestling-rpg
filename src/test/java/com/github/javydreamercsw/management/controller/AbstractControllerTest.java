@@ -16,16 +16,17 @@
 */
 package com.github.javydreamercsw.management.controller;
 
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetailsService;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -33,15 +34,17 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 @Import(TestSecurityConfig.class)
 @ActiveProfiles("test")
-@WithMockUser(roles = "ADMIN")
+@WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN", "ROLE_BOOKER"})
 @TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
-public abstract class AbstractControllerTest {
+public abstract class AbstractControllerTest extends AbstractIntegrationTest {
 
-  @Autowired protected MockMvc mockMvc;
-
+  @Autowired private WebApplicationContext context;
+  protected MockMvc mockMvc;
   @Autowired protected ObjectMapper objectMapper;
 
   // Infrastructure mocks likely needed by multiple controllers or security
@@ -49,8 +52,10 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
   @MockitoBean protected SegmentNarrationServiceFactory serviceFactory;
-  @MockitoBean protected RankingService rankingService;
-  @MockitoBean protected WrestlerRepository wrestlerRepository;
-  @MockitoBean private AccountRepository accountRepository;
-  @MockitoBean private RoleRepository roleRepository;
+  @MockitoBean protected TierRecalculationService tierRecalculationService;
+
+  @BeforeEach
+  public void setup() {
+    mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+  }
 }

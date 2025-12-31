@@ -22,31 +22,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
-import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Integration tests for MatchNarrationController. Tests the complete flow from REST endpoints to AI
  * services using the mock provider.
  */
 @SpringBootTest
-@AutoConfigureMockMvc
 @DisplayName("Segment Narration Controller Integration Tests")
 @TestPropertySource(properties = "notion.sync.enabled=true")
-class SegmentNarrationControllerIntegrationTest extends AbstractMockUserIntegrationTest {
-
-  @Autowired private MockMvc mockMvc;
-
-  @Autowired private ObjectMapper objectMapper;
+class SegmentNarrationControllerIT extends AbstractControllerTest {
 
   @Test
   @DisplayName("GET /api/segment-narration/limits should return provider information")

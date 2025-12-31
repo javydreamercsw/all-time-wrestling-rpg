@@ -46,7 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.stefan.fullcalendar.Entry;
 import org.vaadin.stefan.fullcalendar.dataprovider.EntryQuery;
 
-class ShowStyleUIIntegrationTest extends ManagementIntegrationTest {
+class ShowStyleUIIT extends ManagementIntegrationTest {
 
   private Show pleShow;
   private Show weeklyShow;

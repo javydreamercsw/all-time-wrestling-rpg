@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
@@ -131,7 +132,7 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
     // Then - Verify sync was successful
     assertThat(result).isNotNull();
     assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getEntityType()).isEqualTo("Injuries");
+    assertThat(result.getEntityType()).isEqualTo(SyncEntityType.INJURIES.getKey());
     assertThat(result.getSyncedCount()).isEqualTo(2);
     assertThat(result.getErrorCount()).isEqualTo(0);
     assertThat(result.getErrorMessage()).isNull();

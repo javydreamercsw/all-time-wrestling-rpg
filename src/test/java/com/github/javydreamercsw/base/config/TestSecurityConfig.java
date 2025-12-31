@@ -26,7 +26,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -35,8 +34,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @TestConfiguration
-@EnableWebSecurity // Add this to enable web security for the test configuration
-@EnableMethodSecurity
+@EnableWebSecurity
 @Profile("test")
 @Import(InboxEventTypeConfig.class)
 public class TestSecurityConfig {
@@ -56,8 +54,9 @@ public class TestSecurityConfig {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(AbstractHttpConfigurer::disable) // Disable CSRF for easier testing
-        .headers(AbstractHttpConfigurer::disable); // Disable security headers for easier testing
+    http.csrf(AbstractHttpConfigurer::disable)
+        .headers(AbstractHttpConfigurer::disable)
+        .authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
 
     return http.build();
   }
