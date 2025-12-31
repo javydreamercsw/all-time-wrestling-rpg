@@ -67,8 +67,8 @@ class NotionSyncControllerTest extends AbstractControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.enabled").value(true))
         .andExpect(jsonPath("$.schedulerEnabled").value(true))
-        .andExpect(jsonPath("$.entities[0]").value("SHOWS"))
-        .andExpect(jsonPath("$.entities[1]").value("WRESTLERS"))
+        .andExpect(jsonPath("$.entities[0]").value(SyncEntityType.SHOWS.name()))
+        .andExpect(jsonPath("$.entities[1]").value(SyncEntityType.WRESTLERS.name()))
         .andExpect(jsonPath("$.backupEnabled").value(true));
   }
 
@@ -78,7 +78,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
   void shouldTriggerManualSyncSuccessfully() throws Exception {
     // Given
     List<NotionSyncService.SyncResult> results =
-        List.of(NotionSyncService.SyncResult.success("Shows", 5, 0, 0));
+        List.of(NotionSyncService.SyncResult.success(SyncEntityType.SHOWS.getKey(), 5, 0, 0));
     when(notionSyncScheduler.triggerManualSync()).thenReturn(results);
 
     // When & Then
@@ -100,8 +100,9 @@ class NotionSyncControllerTest extends AbstractControllerTest {
     // Given
     List<NotionSyncService.SyncResult> results =
         List.of(
-            NotionSyncService.SyncResult.success("Shows", 3, 0, 0),
-            NotionSyncService.SyncResult.failure("Wrestlers", "Connection error"));
+            NotionSyncService.SyncResult.success(SyncEntityType.SHOWS.getKey(), 3, 0, 0),
+            NotionSyncService.SyncResult.failure(
+                SyncEntityType.WRESTLERS.getKey(), "Connection error"));
     when(notionSyncScheduler.triggerManualSync()).thenReturn(results);
 
     // When & Then
@@ -123,16 +124,16 @@ class NotionSyncControllerTest extends AbstractControllerTest {
     // Given
     when(dependencyAnalyzer.getAutomaticSyncOrder())
         .thenReturn(List.of(SyncEntityType.SHOWS, SyncEntityType.WRESTLERS));
-    when(notionSyncScheduler.triggerEntitySync("shows"))
-        .thenReturn(NotionSyncService.SyncResult.success("Shows", 8, 0, 0));
+    when(notionSyncScheduler.triggerEntitySync(SyncEntityType.SHOWS.getKey()))
+        .thenReturn(NotionSyncService.SyncResult.success(SyncEntityType.SHOWS.getKey(), 8, 0, 0));
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/trigger/shows").with(csrf()))
+        .perform(post("/api/sync/notion/trigger/Shows").with(csrf()))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.success").value(true))
-        .andExpect(jsonPath("$.entity").value("Shows"))
+        .andExpect(jsonPath("$.entity").value(SyncEntityType.SHOWS.getKey()))
         .andExpect(jsonPath("$.itemsSynced").value(8))
         .andExpect(jsonPath("$.errorCount").value(0));
   }
@@ -154,8 +155,8 @@ class NotionSyncControllerTest extends AbstractControllerTest {
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.error").value("Invalid entity name: invalid"))
-        .andExpect(jsonPath("$.validEntities[0]").value("shows"))
-        .andExpect(jsonPath("$.validEntities[1]").value("wrestlers"));
+        .andExpect(jsonPath("$.validEntities[0]").value(SyncEntityType.SHOWS.getKey()))
+        .andExpect(jsonPath("$.validEntities[1]").value(SyncEntityType.WRESTLERS.getKey()));
   }
 
   @Test
@@ -164,7 +165,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
   void shouldSyncShowsSuccessfully() throws Exception {
     // Given
     when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
-        .thenReturn(NotionSyncService.SyncResult.success("Shows", 12, 0, 0));
+        .thenReturn(NotionSyncService.SyncResult.success(SyncEntityType.SHOWS.getKey(), 12, 0, 0));
 
     // When & Then
     mockMvc
@@ -209,8 +210,8 @@ class NotionSyncControllerTest extends AbstractControllerTest {
         .perform(get("/api/sync/notion/entities"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.configuredEntities[0]").value("shows"))
-        .andExpect(jsonPath("$.configuredEntities[1]").value("wrestlers"))
+        .andExpect(jsonPath("$.configuredEntities[0]").value("Shows"))
+        .andExpect(jsonPath("$.configuredEntities[1]").value("Wrestlers"))
         .andExpect(jsonPath("$.syncEntities").isArray())
         .andExpect(jsonPath("$.description").isMap());
   }

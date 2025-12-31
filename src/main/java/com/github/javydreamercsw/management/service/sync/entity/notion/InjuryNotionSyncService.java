@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
@@ -176,12 +177,15 @@ public class InjuryNotionSyncService implements INotionSyncService {
                   "✅ Completed database save: %d injuries saved/updated, %d errors",
                   created + updated, errors));
           return errors > 0
-              ? BaseSyncService.SyncResult.failure("injuries", "Error syncing injuries!")
-              : BaseSyncService.SyncResult.success("injuries", created, updated, errors);
+              ? BaseSyncService.SyncResult.failure(
+                  SyncEntityType.INJURIES.getKey(), "Error syncing injuries!")
+              : BaseSyncService.SyncResult.success(
+                  SyncEntityType.INJURIES.getKey(), created, updated, errors);
         }
       }
     }
     progressTracker.failOperation(operationId, "Error syncing injuries!");
-    return BaseSyncService.SyncResult.failure("injuries", "Error syncing injuries!");
+    return BaseSyncService.SyncResult.failure(
+        SyncEntityType.INJURIES.getKey(), "Error syncing injuries!");
   }
 }

@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.util.List;
@@ -61,7 +62,7 @@ public class FactionRivalrySyncService extends BaseSyncService {
         .getSyncSessionManager()
         .isAlreadySyncedInSession("faction-rivalries")) {
       log.info("⏭️ Faction Rivalries already synced in current session, skipping");
-      return SyncResult.success("Faction Rivalries", 0, 0, 0);
+      return SyncResult.success(SyncEntityType.FACTION_RIVALRIES.getKey(), 0, 0, 0);
     }
 
     log.info("🔥 Starting faction rivalries synchronization from Notion...");
@@ -69,13 +70,17 @@ public class FactionRivalrySyncService extends BaseSyncService {
     try {
       SyncResult result = performFactionRivalriesSync(operationId);
       if (result.isSuccess()) {
-        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("faction-rivalries");
+        syncServiceDependencies
+            .getSyncSessionManager()
+            .markAsSyncedInSession(SyncEntityType.FACTION_RIVALRIES.getKey());
       }
       return result;
     } catch (Exception e) {
       log.error("Failed to sync faction rivalries", e);
-      syncServiceDependencies.getHealthMonitor().recordFailure("Faction Rivalries", e.getMessage());
-      return SyncResult.failure("Faction Rivalries", e.getMessage());
+      syncServiceDependencies
+          .getHealthMonitor()
+          .recordFailure(SyncEntityType.FACTION_RIVALRIES.getKey(), e.getMessage());
+      return SyncResult.failure(SyncEntityType.FACTION_RIVALRIES.getKey(), e.getMessage());
     }
   }
 
@@ -133,11 +138,12 @@ public class FactionRivalrySyncService extends BaseSyncService {
     syncServiceDependencies
         .getHealthMonitor()
         .recordSuccess(
-            "Faction Rivalries",
+            SyncEntityType.FACTION_RIVALRIES.getKey(),
             System.currentTimeMillis() - System.currentTimeMillis(),
             createdCount.get() + updatedCount.get());
 
-    return SyncResult.success("Faction Rivalries", createdCount.get(), updatedCount.get(), 0);
+    return SyncResult.success(
+        SyncEntityType.FACTION_RIVALRIES.getKey(), createdCount.get(), updatedCount.get(), 0);
   }
 
   private FactionRivalryDTO toDto(FactionRivalryPage page) {

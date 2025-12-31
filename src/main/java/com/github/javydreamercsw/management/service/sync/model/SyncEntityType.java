@@ -14,7 +14,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.sync;
+package com.github.javydreamercsw.management.service.sync.model;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -28,20 +28,20 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum SyncEntityType {
-  SHOWS("Shows", "Show"),
-  WRESTLERS("Wrestlers", "Wrestler"),
-  FACTIONS("Factions", "Faction"),
-  TEAMS("Teams", "Team"),
-  TEMPLATES("Templates", "ShowTemplate"),
-  SEASONS("Seasons", "Season"),
-  SHOW_TYPES("Show-types", "ShowType"),
-  INJURIES("Injuries", "InjuryType"),
-  NPCS("Npcs", "Npc"),
-  TITLES("Titles", "Title"),
-  RIVALRIES("Rivalries", "Rivalry"),
-  FACTION_RIVALRIES("Faction-rivalries", "FactionRivalry"),
-  SEGMENTS("Segments", "Segment"),
-  TITLE_REIGN("Title-reigns", "TitleReign");
+  SHOWS("shows", "Show"),
+  WRESTLERS("wrestlers", "Wrestler"),
+  FACTIONS("factions", "Faction"),
+  TEAMS("teams", "Team"),
+  TEMPLATES("templates", "ShowTemplate"),
+  SEASONS("seasons", "Season"),
+  SHOW_TYPES("show-types", "ShowType"),
+  INJURIES("injuries", "InjuryType"),
+  NPCS("npcs", "Npc"),
+  TITLES("titles", "Title"),
+  RIVALRIES("rivalries", "Rivalry"),
+  FACTION_RIVALRIES("faction-rivalries", "FactionRivalry"),
+  SEGMENTS("segments", "Segment"),
+  TITLE_REIGN("title-reigns", "TitleReign");
 
   /** The string key used for configuration and logging */
   private final String key;

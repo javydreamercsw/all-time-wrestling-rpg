@@ -76,10 +76,18 @@ public class RetryConfig {
   public static class EntityRetryConfig {
     private EntityConfig shows = new EntityConfig();
     private EntityConfig wrestlers = new EntityConfig();
-    private EntityConfig factions = new EntityConfig();
+    private EntityConfig Factions = new EntityConfig();
     private EntityConfig teams = new EntityConfig();
     private EntityConfig segments = new EntityConfig();
     private EntityConfig templates = new EntityConfig();
+    private EntityConfig seasons = new EntityConfig();
+    private EntityConfig showTypes = new EntityConfig();
+    private EntityConfig Injuries = new EntityConfig();
+    private EntityConfig npcs = new EntityConfig();
+    private EntityConfig titles = new EntityConfig();
+    private EntityConfig rivalries = new EntityConfig();
+    private EntityConfig factionRivalries = new EntityConfig();
+    private EntityConfig titleReigns = new EntityConfig();
   }
 
   @Data
@@ -145,6 +153,14 @@ public class RetryConfig {
       case TEAMS -> entities.getTeams();
       case SEGMENTS -> entities.getSegments();
       case TEMPLATES -> entities.getTemplates();
+      case SEASONS -> entities.getSeasons();
+      case SHOW_TYPES -> entities.getShowTypes();
+      case INJURIES -> entities.getInjuries();
+      case NPCS -> entities.getNpcs();
+      case TITLES -> entities.getTitles();
+      case RIVALRIES -> entities.getRivalries();
+      case FACTION_RIVALRIES -> entities.getFactionRivalries();
+      case TITLE_REIGN -> entities.getTitleReigns();
       default -> new EntityConfig(); // Default config
     };
   }

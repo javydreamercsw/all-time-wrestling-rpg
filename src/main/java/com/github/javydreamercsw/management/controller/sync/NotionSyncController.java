@@ -180,7 +180,7 @@ public class NotionSyncController {
       // Validate entity name against automatically determined entities
       List<String> validEntities =
           dependencyAnalyzer.getAutomaticSyncOrder().stream().map(SyncEntityType::getKey).toList();
-      if (!validEntities.contains(entity.toLowerCase())) {
+      if (validEntities.stream().noneMatch(e -> e.equalsIgnoreCase(entity))) {
         return ResponseEntity.badRequest()
             .body(
                 Map.of("error", "Invalid entity name: " + entity, "validEntities", validEntities));

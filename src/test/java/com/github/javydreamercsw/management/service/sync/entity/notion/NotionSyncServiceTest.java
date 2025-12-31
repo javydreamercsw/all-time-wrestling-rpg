@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.service.sync.CircuitBreakerService;
 import com.github.javydreamercsw.management.service.sync.DataIntegrityChecker;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.RetryService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
@@ -172,7 +173,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success("Show Types", 1, 0, 0);
+        BaseSyncService.SyncResult.success(SyncEntityType.SHOW_TYPES.getKey(), 1, 0, 0);
     when(showTypeSyncService.syncShowTypes(anyString())).thenReturn(expectedResult);
 
     // When - Sync show types from Notion
@@ -192,7 +193,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success("Wrestlers", 1, 0, 0);
+        BaseSyncService.SyncResult.success(SyncEntityType.WRESTLERS.getKey(), 1, 0, 0);
     when(wrestlerSyncService.syncWrestlers(anyString())).thenReturn(expectedResult);
 
     // When - Sync wrestlers from Notion
@@ -212,7 +213,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success("Seasons", 1, 0, 0);
+        BaseSyncService.SyncResult.success(SyncEntityType.SEASONS.getKey(), 1, 0, 0);
     when(seasonSyncService.syncSeasons(anyString())).thenReturn(expectedResult);
 
     // When - Sync seasons from Notion
@@ -232,7 +233,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success("Show Templates", 1, 0, 0);
+        BaseSyncService.SyncResult.success(SyncEntityType.TEMPLATES.getKey(), 1, 0, 0);
     when(showTemplateNotionSyncService.syncToNotion(anyString())).thenReturn(expectedResult);
 
     // When - Sync show templates to Notion
@@ -252,7 +253,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success("Factions", 1, 0, 0);
+        BaseSyncService.SyncResult.success(SyncEntityType.FACTIONS.getKey(), 1, 0, 0);
     when(factionSyncService.syncFactions(anyString())).thenReturn(expectedResult);
 
     // When - Sync factions from Notion
@@ -272,7 +273,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success("Shows", 1, 0, 0);
+        BaseSyncService.SyncResult.success(SyncEntityType.SHOWS.getKey(), 1, 0, 0);
     when(showSyncService.syncShows(anyString())).thenReturn(expectedResult);
 
     // When - Sync shows from Notion
@@ -292,7 +293,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success("Injury Types", 1, 0, 0);
+        BaseSyncService.SyncResult.success(SyncEntityType.INJURIES.getKey(), 1, 0, 0);
     when(injurySyncService.syncInjuryTypes(anyString())).thenReturn(expectedResult);
 
     // When - Sync injury types from Notion
@@ -311,7 +312,8 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     log.info("🤖 Testing NPCs sync from Notion to database");
 
     // Given
-    BaseSyncService.SyncResult expectedResult = BaseSyncService.SyncResult.success("NPCs", 1, 0, 0);
+    BaseSyncService.SyncResult expectedResult =
+        BaseSyncService.SyncResult.success(SyncEntityType.NPCS.getKey(), 1, 0, 0);
     when(npcSyncService.syncNpcs(anyString(), any(SyncDirection.class))).thenReturn(expectedResult);
 
     // When - Sync NPCs from Notion
@@ -331,7 +333,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success("Titles", 1, 0, 0);
+        BaseSyncService.SyncResult.success(SyncEntityType.TITLES.getKey(), 1, 0, 0);
     when(titleSyncService.syncTitles(anyString())).thenReturn(expectedResult);
 
     // When - Sync titles from Notion
@@ -351,7 +353,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success("Title Reigns", 1, 0, 0);
+        BaseSyncService.SyncResult.success(SyncEntityType.TITLE_REIGN.getKey(), 1, 0, 0);
     when(titleReignSyncService.syncTitleReigns(anyString())).thenReturn(expectedResult);
 
     // When - Sync title reigns from Notion
@@ -371,7 +373,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success("Rivalries", 1, 0, 0);
+        BaseSyncService.SyncResult.success(SyncEntityType.RIVALRIES.getKey(), 1, 0, 0);
     when(rivalrySyncService.syncRivalries(anyString())).thenReturn(expectedResult);
 
     // When - Sync rivalries from Notion
@@ -391,7 +393,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // Given
     BaseSyncService.SyncResult expectedResult =
-        BaseSyncService.SyncResult.success("Faction Rivalries", 1, 0, 0);
+        BaseSyncService.SyncResult.success(SyncEntityType.FACTION_RIVALRIES.getKey(), 1, 0, 0);
     when(factionRivalryNotionSyncService.syncToNotion(anyString())).thenReturn(expectedResult);
 
     // When - Sync faction rivalries from Notion

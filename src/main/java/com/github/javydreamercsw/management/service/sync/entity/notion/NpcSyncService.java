@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NpcPage;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
@@ -49,25 +50,30 @@ public class NpcSyncService extends BaseSyncService {
 
   public SyncResult syncNpcs(@NonNull String operationId, @NonNull SyncDirection direction) {
     if (direction == SyncDirection.OUTBOUND) {
-      return SyncResult.success("NPCs", 0, 0, 0);
+      return SyncResult.success(SyncEntityType.NPCS.getKey(), 0, 0, 0);
     }
-    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("npcs")) {
+    if (syncServiceDependencies
+        .getSyncSessionManager()
+        .isAlreadySyncedInSession(SyncEntityType.NPCS.getKey())) {
       log.info("⏭️ NPCs already synced in current session, skipping");
-      return SyncResult.success("NPCs", 0, 0, 0);
+      return SyncResult.success(SyncEntityType.NPCS.getKey(), 0, 0, 0);
     }
 
     log.info("Starting NPCs synchronization from Notion...");
     long startTime = System.currentTimeMillis();
 
     try {
-      if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("npcs")) {
+      if (!syncServiceDependencies
+          .getNotionSyncProperties()
+          .isEntityEnabled(SyncEntityType.NPCS.getKey())) {
         log.info("NPCs sync is disabled in configuration");
-        return SyncResult.success("NPCs", 0, 0, 0);
+        return SyncResult.success(SyncEntityType.NPCS.getKey(), 0, 0, 0);
       }
 
       if (!isNotionHandlerAvailable()) {
         log.warn("NotionHandler not available. Cannot sync NPCs from Notion.");
-        return SyncResult.failure("NPCs", "NotionHandler is not available for sync operations");
+        return SyncResult.failure(
+            SyncEntityType.NPCS.getKey(), "NotionHandler is not available for sync operations");
       }
 
       List<NpcPage> npcPages =
@@ -104,12 +110,14 @@ public class NpcSyncService extends BaseSyncService {
       long totalTime = System.currentTimeMillis() - startTime;
       log.info("Successfully synchronized {} NPCs in {}ms total", savedCount, totalTime);
 
-      syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("npcs");
-      return SyncResult.success("NPCs", savedCount, 0, 0);
+      syncServiceDependencies
+          .getSyncSessionManager()
+          .markAsSyncedInSession(SyncEntityType.NPCS.getKey());
+      return SyncResult.success(SyncEntityType.NPCS.getKey(), savedCount, 0, 0);
 
     } catch (Exception e) {
       log.error("Failed to sync NPCs", e);
-      return SyncResult.failure("NPCs", e.getMessage());
+      return SyncResult.failure(SyncEntityType.NPCS.getKey(), e.getMessage());
     }
   }
 
