@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -123,14 +124,14 @@ public class SegmentNarrationController {
 
   @PostMapping("/narrate")
   public ResponseEntity<Map<String, Object>> narrateSegment(
-      @RequestBody SegmentNarrationContext context) {
+      @RequestBody @Valid SegmentNarrationContext context) {
     return narrateSegmentWithProvider(null, context);
   }
 
   @PostMapping("/narrate/{provider}")
   public ResponseEntity<Map<String, Object>> narrateSegmentWithProvider(
       @PathVariable(required = false) String provider,
-      @RequestBody SegmentNarrationContext context) {
+      @RequestBody @Valid SegmentNarrationContext context) {
 
     try {
       context = segmentOutcomeService.determineOutcomeIfNeeded(context);

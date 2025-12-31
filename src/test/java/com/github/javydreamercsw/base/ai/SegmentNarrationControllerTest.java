@@ -26,20 +26,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
+import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(SegmentNarrationController.class)
-@EnableConfigurationProperties(SegmentNarrationConfig.class)
 @WithMockUser(roles = {"ADMIN", "BOOKER"})
 class SegmentNarrationControllerTest extends AbstractControllerTest {
 
   @MockitoBean private SegmentOutcomeProvider segmentOutcomeProvider;
-  @MockitoBean private SegmentNarrationConfig segmentNarrationConfig;
+  @MockitoBean private SegmentNarrationServiceFactory serviceFactory;
 
   @Test
   void testNarrateMatch() throws Exception {
@@ -52,6 +49,7 @@ class SegmentNarrationControllerTest extends AbstractControllerTest {
 
     SegmentNarrationContext context = new SegmentNarrationContext();
     context.setSegmentType(new SegmentNarrationService.SegmentTypeContext());
+    context.setWrestlers(new ArrayList<>());
 
     // When & Then
     mockMvc
