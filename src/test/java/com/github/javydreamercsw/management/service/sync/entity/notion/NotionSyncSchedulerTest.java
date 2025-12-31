@@ -207,10 +207,7 @@ class NotionSyncSchedulerTest extends BaseTest {
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(syncProperties.getScheduler()).thenReturn(createMockScheduler());
     when(dependencyAnalyzer.getAutomaticSyncOrder())
-        .thenReturn(
-            List.of(
-                com.github.javydreamercsw.management.service.sync.SyncEntityType.SHOWS,
-                com.github.javydreamercsw.management.service.sync.SyncEntityType.WRESTLERS));
+        .thenReturn(List.of(SyncEntityType.SHOWS, SyncEntityType.WRESTLERS));
     when(syncProperties.isBackupEnabled()).thenReturn(true);
     when(syncProperties.getBackup()).thenReturn(createMockBackup());
 
@@ -222,7 +219,13 @@ class NotionSyncSchedulerTest extends BaseTest {
     assertTrue(status.contains("Notion Sync Status:"));
     assertTrue(status.contains("Sync Enabled: true"));
     assertTrue(status.contains("Scheduler Enabled: true"));
-    assertTrue(status.contains("Entities: shows, wrestlers"));
+    assertTrue(
+        status.contains(
+            "Entities: "
+                + SyncEntityType.SHOWS.getKey()
+                + ", "
+                + SyncEntityType.WRESTLERS.getKey()),
+        status);
     assertTrue(status.contains("Backup Enabled: true"));
   }
 
