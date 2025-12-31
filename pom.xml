@@ -552,6 +552,7 @@
               <!-- You have to set the target manually -->
               <include>**/*.md</include>
             </includes>
+            <flexmark/>
             <excludes>
               <exclude>node_modules/**</exclude>
             </excludes>
