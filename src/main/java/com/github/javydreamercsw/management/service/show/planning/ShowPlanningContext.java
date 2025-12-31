@@ -16,8 +16,10 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.List;
 import lombok.Data;
@@ -30,7 +32,8 @@ public class ShowPlanningContext {
   private ShowTemplate showTemplate;
   private List<ShowPlanningChampionship> championships;
   private ShowPlanningPle nextPle;
-  private List<com.github.javydreamercsw.management.domain.wrestler.Wrestler> fullRoster;
-  private List<com.github.javydreamercsw.management.domain.faction.Faction> factions;
+  private List<Wrestler> fullRoster;
+  private List<ShowPlanningWrestlerHeat> wrestlerHeats;
+  private List<Faction> factions;
   private Instant showDate;
 }

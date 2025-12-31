@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.dto;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import lombok.Data;
 
 @Data
@@ -27,4 +28,5 @@ public class TitleDTO {
   private WrestlerTier tier;
   private Gender gender;
   private String currentChampionName;
+  private ChampionshipType championshipType;
 }

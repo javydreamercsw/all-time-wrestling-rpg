@@ -18,7 +18,10 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
@@ -27,9 +30,9 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -41,6 +44,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,14 +63,14 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private ShowTypeService showTypeService;
   @Autowired private InboxService inboxService;
   @Autowired private InboxRepository inboxRepository;
+  @Autowired private DataInitializer dataInitializer;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.wrestler.TierBoundaryRepository
-      tierBoundaryRepository;
+  @Autowired private TierBoundaryRepository tierBoundaryRepository;
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   void setUp() {
     tierBoundaryRepository.deleteAll();
+    dataInitializer.init();
   }
 
   @Test
@@ -101,7 +105,9 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     segmentService.updateSegment(lossSegment);
 
     // Create a title and have the wrestler win it
-    Title title = titleService.createTitle("Test Title", "Test Title", WrestlerTier.ROOKIE);
+    Title title =
+        titleService.createTitle(
+            "Test Title", "Test Title", WrestlerTier.ROOKIE, ChampionshipType.SINGLE);
     titleService.awardTitleTo(title, List.of(wrestler));
     wrestlerRepository.flush();
 
@@ -306,6 +312,7 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     assertThat(inboxRepository.count()).isEqualTo(initialInboxItemCount + 1);
     InboxItem inboxItem = inboxRepository.findAll().get(0);
     assertThat(inboxItem.getDescription()).contains("Inbox Test Wrestler gained 1000 fans");
-    assertThat(inboxItem.getReferenceId()).isEqualTo(wrestler.getId().toString());
+    assertThat(inboxItem.getTargets()).hasSize(1);
+    assertThat(inboxItem.getTargets().get(0).getTargetId()).isEqualTo(wrestler.getId().toString());
   }
 }

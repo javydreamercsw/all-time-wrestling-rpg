@@ -43,7 +43,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "deck")
 @Getter
 @Setter
-public class Deck extends AbstractEntity<Long> {
+public class Deck extends AbstractEntity<Long> { // Removed implements Ownable
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "deck_id")
@@ -80,4 +80,6 @@ public class Deck extends AbstractEntity<Long> {
     getCards().remove(newDeckCard);
     getCards().add(newDeckCard);
   }
+
+  // Removed @Override methods getAccount() and isPlayerOwned()
 }

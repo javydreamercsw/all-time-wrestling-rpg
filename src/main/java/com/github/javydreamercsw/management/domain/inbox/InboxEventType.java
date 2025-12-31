@@ -16,23 +16,41 @@
 */
 package com.github.javydreamercsw.management.domain.inbox;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import java.util.Objects;
+import org.jspecify.annotations.NonNull;
 
-@RequiredArgsConstructor
-@Getter
-public enum InboxEventType {
-  RIVALRY_HEAT_CHANGE("Rivalry Heat Change"),
-  FAN_ADJUDICATION("Fan Adjudication"),
-  WRESTLER_INJURY_HEALED("Wrestler Injury Healed"),
-  WRESTLER_INJURY_OBTAINED("Wrestler Injury Obtained"),
-  WRESTLER_BUMP("Wrestler Bump"),
-  WRESTLER_BUMP_HEALED("Wrestler Bump Healed");
+public final class InboxEventType {
+  private final @NonNull String name;
+  private final @NonNull String friendlyName;
 
-  private final String friendlyName;
+  public InboxEventType(@NonNull String name, @NonNull String friendlyName) {
+    this.name = name;
+    this.friendlyName = friendlyName;
+  }
+
+  public @NonNull String getName() {
+    return name;
+  }
+
+  public @NonNull String getFriendlyName() {
+    return friendlyName;
+  }
 
   @Override
-  public String toString() {
+  public @NonNull String toString() {
     return friendlyName;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    InboxEventType that = (InboxEventType) o;
+    return Objects.equals(name, that.name);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name);
   }
 }

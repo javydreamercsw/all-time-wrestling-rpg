@@ -17,44 +17,27 @@
 package com.github.javydreamercsw.management.controller.sync;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.base.test.BaseControllerTest;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncHealthSummary;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncMetric;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(
-    controllers = SyncHealthController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
-@TestPropertySource(properties = "notion.sync.enabled=true")
-class SyncHealthControllerTest extends BaseControllerTest {
+@WebMvcTest(SyncHealthController.class)
+class SyncHealthControllerTest extends AbstractControllerTest {
 
   @MockitoBean private CommandLineRunner commandLineRunner;
-
-  @Autowired private MockMvc mockMvc;
-
   @MockitoBean private SyncHealthMonitor healthMonitor;
-  @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
-
-  @Autowired private ObjectMapper objectMapper;
 
   @Test
   void shouldReturnHealthStatus() throws Exception {
@@ -152,7 +135,7 @@ class SyncHealthControllerTest extends BaseControllerTest {
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/health/reset"))
+        .perform(post("/api/sync/health/reset").with(csrf()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("success"))
         .andExpect(jsonPath("$.message").value("Health metrics reset successfully"));
@@ -266,7 +249,7 @@ class SyncHealthControllerTest extends BaseControllerTest {
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/health/reset"))
+        .perform(post("/api/sync/health/reset").with(csrf()))
         .andExpect(status().isInternalServerError())
         .andExpect(jsonPath("$.status").value("error"))
         .andExpect(jsonPath("$.message").value("Failed to reset metrics: Reset failed"));

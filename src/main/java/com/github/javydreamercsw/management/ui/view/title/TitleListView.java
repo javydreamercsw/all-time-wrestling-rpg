@@ -16,14 +16,17 @@
 */
 package com.github.javydreamercsw.management.ui.view.title;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -55,12 +58,22 @@ public class TitleListView extends Main {
 
   private final TitleService titleService;
   private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
+  private final TierRecalculationService tierRecalculationService;
+  private final SecurityUtils securityUtils;
   public final Grid<Title> grid = new Grid<>(Title.class, false);
 
   public TitleListView(
-      @NonNull TitleService titleService, @NonNull WrestlerService wrestlerService) {
+      @NonNull TitleService titleService,
+      @NonNull WrestlerService wrestlerService,
+      @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull TierRecalculationService tierRecalculationService,
+      @NonNull SecurityUtils securityUtils) {
     this.titleService = titleService;
     this.wrestlerService = wrestlerService;
+    this.wrestlerRepository = wrestlerRepository;
+    this.tierRecalculationService = tierRecalculationService;
+    this.securityUtils = securityUtils;
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -73,7 +86,8 @@ public class TitleListView extends Main {
 
     Button createButton = new Button("Create Title", new Icon(VaadinIcon.PLUS));
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    createButton.addClickListener(e -> openCreateDialog());
+    createButton.addClickListener(e -> openCreateDialog().open());
+    createButton.setVisible(securityUtils.canCreate());
 
     add(new ViewToolbar("Title List", ViewToolbar.group(createButton)));
 
@@ -87,80 +101,74 @@ public class TitleListView extends Main {
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.addColumn(Title::getName).setHeader("Name").setSortable(true);
     grid.addColumn(Title::getTier).setHeader("Tier").setSortable(true);
+    grid.addColumn(Title::getChampionshipType).setHeader("Championship Type").setSortable(true);
     grid.addColumn(Title::getChampionNames).setHeader("Champion(s)").setSortable(true);
     grid.addColumn(Title::getIsActive).setHeader("Active").setSortable(true);
 
-    // Add ComboBox for #1 Contender
     grid.addComponentColumn(
             title -> {
-              ComboBox<Wrestler> contenderComboBox = new ComboBox<>("Contender");
+              MultiSelectComboBox<Wrestler> challengerComboBox =
+                  new MultiSelectComboBox<>("Challengers");
               assert title.getId() != null;
-              contenderComboBox.setItems(
+              List<Wrestler> eligibleChallengers =
                   titleService.getEligibleChallengers(title.getId()).stream()
                       .sorted(Comparator.comparing(Wrestler::getName))
-                      .collect(Collectors.toList()));
-              contenderComboBox.setItemLabelGenerator(Wrestler::getName);
-              contenderComboBox.setWidthFull();
-              contenderComboBox.setClearButtonVisible(true); // Allow clearing the field
+                      .collect(Collectors.toList());
+              challengerComboBox.setItems(eligibleChallengers);
+              challengerComboBox.setItemLabelGenerator(Wrestler::getName);
+              challengerComboBox.setWidthFull();
+              challengerComboBox.setClearButtonVisible(true); // Allow clearing the field
+              challengerComboBox.setEnabled(securityUtils.canEdit());
 
-              // Set initial value if a contender exists
-              title.getContender().stream().findFirst().ifPresent(contenderComboBox::setValue);
+              // Set initial value to the current challengers
+              List<Wrestler> currentChallengers = title.getChallengers();
+              challengerComboBox.setValue(
+                  eligibleChallengers.stream()
+                      .filter(currentChallengers::contains)
+                      .collect(Collectors.toSet()));
 
-              contenderComboBox.addValueChangeListener(
+              challengerComboBox.addValueChangeListener(
                   event -> {
-                    if (event.getValue() != null) {
-                      assert event.getValue().getId() != null;
-                      titleService
-                          .updateNumberOneContender(title.getId(), event.getValue().getId())
-                          .ifPresentOrElse(
-                              updatedTitle -> {
-                                Notification.show(
-                                        "Contender updated for " + title.getName(),
-                                        3000,
-                                        Notification.Position.BOTTOM_END)
-                                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                                refreshGrid(); // Refresh grid to reflect changes
-                              },
-                              () ->
-                                  Notification.show(
-                                          "Failed to update contender",
-                                          5000,
-                                          Notification.Position.BOTTOM_END)
-                                      .addThemeVariants(NotificationVariant.LUMO_ERROR));
-                    } else {
-                      // Handle clearing the contender
-                      titleService
-                          .clearNumberOneContender(title.getId())
-                          .ifPresentOrElse(
-                              updatedTitle -> {
-                                Notification.show(
-                                        "Contender cleared for " + title.getName(),
-                                        3000,
-                                        Notification.Position.BOTTOM_END)
-                                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                                refreshGrid(); // Refresh grid to reflect changes
-                              },
-                              () ->
-                                  Notification.show(
-                                          "Failed to clear contender",
-                                          5000,
-                                          Notification.Position.BOTTOM_END)
-                                      .addThemeVariants(NotificationVariant.LUMO_ERROR));
-                    }
+                    // Determine added and removed challengers
+                    var selected = event.getValue();
+                    var old =
+                        eligibleChallengers.stream()
+                            .filter(currentChallengers::contains)
+                            .collect(Collectors.toSet());
+
+                    var added =
+                        selected.stream().filter(w -> !old.contains(w)).collect(Collectors.toSet());
+                    var removed =
+                        old.stream().filter(w -> !selected.contains(w)).collect(Collectors.toSet());
+
+                    added.forEach(
+                        wrestler -> {
+                          assert wrestler.getId() != null;
+                          titleService.addChallengerToTitle(title.getId(), wrestler.getId());
+                        });
+
+                    removed.forEach(
+                        wrestler -> {
+                          assert wrestler.getId() != null;
+                          titleService.removeChallengerFromTitle(title.getId(), wrestler.getId());
+                        });
+                    refreshGrid();
                   });
-              return contenderComboBox;
+              return challengerComboBox;
             })
-        .setHeader("Contender");
+        .setHeader("Challengers");
 
     grid.addComponentColumn(
             title -> {
               Button editButton = new Button("Edit", new Icon(VaadinIcon.EDIT));
               editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-              editButton.addClickListener(e -> openEditDialog(title));
+              editButton.addClickListener(e -> openEditDialog(title).open());
+              editButton.setVisible(securityUtils.canEdit());
 
               Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
               deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
               deleteButton.addClickListener(e -> deleteTitle(title));
+              deleteButton.setVisible(securityUtils.canDelete());
 
               return new HorizontalLayout(editButton, deleteButton);
             })
@@ -172,20 +180,32 @@ public class TitleListView extends Main {
     grid.setItems(titles);
   }
 
-  private void openCreateDialog() {
+  TitleFormDialog openCreateDialog() {
     Title newTitle = new Title();
     newTitle.setIsActive(true);
     TitleFormDialog dialog =
-        new TitleFormDialog(titleService, wrestlerService, newTitle, this::refreshGrid);
+        new TitleFormDialog(
+            titleService,
+            wrestlerRepository,
+            tierRecalculationService,
+            newTitle,
+            this::refreshGrid,
+            securityUtils);
     dialog.setHeaderTitle("Create New Title");
-    dialog.open();
+    return dialog;
   }
 
-  private void openEditDialog(@NonNull Title title) {
+  TitleFormDialog openEditDialog(@NonNull Title title) {
     TitleFormDialog dialog =
-        new TitleFormDialog(titleService, wrestlerService, title, this::refreshGrid);
+        new TitleFormDialog(
+            titleService,
+            wrestlerRepository,
+            tierRecalculationService,
+            title,
+            this::refreshGrid,
+            securityUtils);
     dialog.setHeaderTitle("Edit Title: " + title.getName());
-    dialog.open();
+    return dialog;
   }
 
   private void deleteTitle(@NonNull Title title) {

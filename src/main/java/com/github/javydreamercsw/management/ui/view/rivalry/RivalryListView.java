@@ -18,10 +18,12 @@ package com.github.javydreamercsw.management.ui.view.rivalry;
 
 import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -42,6 +44,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.Comparator;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.springframework.transaction.annotation.Transactional;
 
 @Route("rivalry-list")
@@ -53,26 +56,34 @@ public class RivalryListView extends Main {
 
   private final RivalryService rivalryService;
   private final RivalryRepository rivalryRepository;
+  private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
+  private final SecurityUtils securityUtils;
 
   final Grid<Rivalry> rivalryGrid;
 
   public RivalryListView(
-      RivalryService rivalryService,
-      RivalryRepository rivalryRepository,
-      WrestlerService wrestlerService) {
+      @NonNull RivalryService rivalryService,
+      @NonNull RivalryRepository rivalryRepository,
+      @NonNull WrestlerService wrestlerService,
+      @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull SecurityUtils securityUtils) {
     this.rivalryService = rivalryService;
     this.rivalryRepository = rivalryRepository;
+    this.wrestlerService = wrestlerService;
+    this.wrestlerRepository = wrestlerRepository;
+    this.securityUtils = securityUtils;
 
     ComboBox<Wrestler> wrestler1ComboBox = new ComboBox<>("Wrestler 1");
     wrestler1ComboBox.setItems(
-        wrestlerService.findAll().stream()
+        wrestlerRepository.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
     wrestler1ComboBox.setItemLabelGenerator(Wrestler::getName);
 
     ComboBox<Wrestler> wrestler2ComboBox = new ComboBox<>("Wrestler 2");
     wrestler2ComboBox.setItems(
-        wrestlerService.findAll().stream()
+        wrestlerRepository.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
     wrestler2ComboBox.setItemLabelGenerator(Wrestler::getName);
@@ -97,6 +108,8 @@ public class RivalryListView extends Main {
                   .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             });
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    createButton.setVisible(securityUtils.canCreate());
+
     rivalryGrid.setItems(
         query -> rivalryService.getAllRivalriesWithWrestlers(toSpringPageRequest(query)).stream());
     rivalryGrid
@@ -146,9 +159,11 @@ public class RivalryListView extends Main {
                               dialog.close();
                               rivalryGrid.getDataProvider().refreshAll();
                             });
+                    saveButton.setVisible(securityUtils.canEdit());
                     dialog.add(new VerticalLayout(heatField, saveButton));
                     dialog.open();
                   });
+              addHeatButton.setVisible(securityUtils.canEdit());
               return addHeatButton;
             })
         .setHeader("Actions");
@@ -165,6 +180,7 @@ public class RivalryListView extends Main {
                     Notification.show("Rivalry deleted", 2000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
                   });
+              deleteButton.setVisible(securityUtils.canDelete());
               return deleteButton;
             })
         .setHeader("Delete");
@@ -179,10 +195,15 @@ public class RivalryListView extends Main {
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Gap.SMALL);
 
-    add(
-        new ViewToolbar(
-            "Rivalry List",
-            ViewToolbar.group(wrestler1ComboBox, wrestler2ComboBox, storylineNotes, createButton)));
+    if (securityUtils.canCreate()) {
+      add(
+          new ViewToolbar(
+              "Rivalry List",
+              ViewToolbar.group(
+                  wrestler1ComboBox, wrestler2ComboBox, storylineNotes, createButton)));
+    } else {
+      add(new ViewToolbar("Rivalry List"));
+    }
     add(rivalryGrid);
   }
 }

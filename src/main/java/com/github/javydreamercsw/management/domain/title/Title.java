@@ -61,6 +61,10 @@ public class Title extends AbstractEntity<Long> {
   @Enumerated(EnumType.STRING)
   private Gender gender;
 
+  @Column(name = "championship_type", nullable = false)
+  @Enumerated(EnumType.STRING)
+  private ChampionshipType championshipType;
+
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 
@@ -72,7 +76,7 @@ public class Title extends AbstractEntity<Long> {
       name = "title_contender",
       joinColumns = @JoinColumn(name = "title_id"),
       inverseJoinColumns = @JoinColumn(name = "wrestler_id"))
-  private List<Wrestler> contender = new ArrayList<>();
+  private List<Wrestler> challengers = new ArrayList<>();
 
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
@@ -144,8 +148,8 @@ public class Title extends AbstractEntity<Long> {
     return getCurrentChampions().stream().map(Wrestler::getName).collect(Collectors.joining(" & "));
   }
 
-  public String getContenderNames() {
-    return getContender().stream().map(Wrestler::getName).collect(Collectors.joining(" & "));
+  public String getChallengerNames() {
+    return getChallengers().stream().map(Wrestler::getName).collect(Collectors.joining(" & "));
   }
 
   public String getStatusEmoji() {
@@ -175,16 +179,14 @@ public class Title extends AbstractEntity<Long> {
     return getCurrentChampions().isEmpty();
   }
 
-  /** Sets the #1 contender for the title. Clears any existing contenders. */
-  public void setNumberOneContender(@Nullable Wrestler wrestler) {
-    this.contender.clear();
-    if (wrestler != null) {
-      this.contender.add(wrestler);
+  /**
+   * Adds a challenger to the title.
+   *
+   * @param wrestler Wrestler to add as a challenger.
+   */
+  public void addChallenger(@NonNull Wrestler wrestler) {
+    if (!this.challengers.contains(wrestler)) {
+      this.challengers.add(wrestler);
     }
-  }
-
-  /** Gets the #1 contender for the title, or null if none is set. */
-  @Nullable public Wrestler getNumberOneContender() {
-    return this.contender.isEmpty() ? null : this.contender.get(0);
   }
 }

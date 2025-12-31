@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -177,8 +178,9 @@ public class NotionSyncController {
 
     try {
       // Validate entity name against automatically determined entities
-      List<String> validEntities = dependencyAnalyzer.getAutomaticSyncOrder();
-      if (!validEntities.contains(entity.toLowerCase())) {
+      List<String> validEntities =
+          dependencyAnalyzer.getAutomaticSyncOrder().stream().map(SyncEntityType::getKey).toList();
+      if (validEntities.stream().noneMatch(e -> e.equalsIgnoreCase(entity))) {
         return ResponseEntity.badRequest()
             .body(
                 Map.of("error", "Invalid entity name: " + entity, "validEntities", validEntities));
@@ -269,7 +271,8 @@ public class NotionSyncController {
       })
   @GetMapping("/entities")
   public ResponseEntity<Map<String, Object>> getSupportedEntities() {
-    List<String> automaticEntities = dependencyAnalyzer.getAutomaticSyncOrder();
+    List<String> automaticEntities =
+        dependencyAnalyzer.getAutomaticSyncOrder().stream().map(SyncEntityType::getKey).toList();
     Map<String, Object> response =
         Map.of(
             "syncEntities",

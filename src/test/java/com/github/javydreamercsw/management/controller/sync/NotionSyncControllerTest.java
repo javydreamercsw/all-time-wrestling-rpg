@@ -17,44 +17,35 @@
 package com.github.javydreamercsw.management.controller.sync;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.base.test.BaseControllerTest;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(
-    controllers = NotionSyncController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
-class NotionSyncControllerTest extends BaseControllerTest {
+@WebMvcTest(NotionSyncController.class)
+class NotionSyncControllerTest extends AbstractControllerTest {
 
   @MockitoBean private CommandLineRunner commandLineRunner;
-
-  @Autowired private MockMvc mockMvc;
 
   @MockitoBean private NotionSyncService notionSyncService;
   @MockitoBean private NotionSyncScheduler notionSyncScheduler;
   @MockitoBean private NotionSyncProperties syncProperties;
   @MockitoBean private EntityDependencyAnalyzer dependencyAnalyzer;
-  @MockitoBean private RankingService rankingService;
-  @MockitoBean private WrestlerRepository wrestlerRepository;
 
   @Test
   @DisplayName("Should return sync status")
@@ -63,7 +54,8 @@ class NotionSyncControllerTest extends BaseControllerTest {
     when(syncProperties.isEnabled()).thenReturn(true);
     when(syncProperties.isSchedulerEnabled()).thenReturn(true);
     when(syncProperties.isBackupEnabled()).thenReturn(true);
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder())
+        .thenReturn(List.of(SyncEntityType.SHOWS, SyncEntityType.WRESTLERS));
     when(syncProperties.getScheduler()).thenReturn(createMockScheduler());
     when(syncProperties.getBackup()).thenReturn(createMockBackup());
     when(notionSyncScheduler.getSyncStatus()).thenReturn("Mock status");
@@ -75,22 +67,23 @@ class NotionSyncControllerTest extends BaseControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.enabled").value(true))
         .andExpect(jsonPath("$.schedulerEnabled").value(true))
-        .andExpect(jsonPath("$.entities[0]").value("shows"))
-        .andExpect(jsonPath("$.entities[1]").value("wrestlers"))
+        .andExpect(jsonPath("$.entities[0]").value(SyncEntityType.SHOWS.name()))
+        .andExpect(jsonPath("$.entities[1]").value(SyncEntityType.WRESTLERS.name()))
         .andExpect(jsonPath("$.backupEnabled").value(true));
   }
 
   @Test
   @DisplayName("Should trigger manual sync successfully")
+  @WithMockUser(roles = "ADMIN")
   void shouldTriggerManualSyncSuccessfully() throws Exception {
     // Given
     List<NotionSyncService.SyncResult> results =
-        List.of(NotionSyncService.SyncResult.success("Shows", 5, 0, 0));
+        List.of(NotionSyncService.SyncResult.success(SyncEntityType.SHOWS.getKey(), 5, 0, 0));
     when(notionSyncScheduler.triggerManualSync()).thenReturn(results);
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/trigger"))
+        .perform(post("/api/sync/notion/trigger").with(csrf()))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.success").value(true))
@@ -102,17 +95,19 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should handle manual sync failures")
+  @WithMockUser(roles = "ADMIN")
   void shouldHandleManualSyncFailures() throws Exception {
     // Given
     List<NotionSyncService.SyncResult> results =
         List.of(
-            NotionSyncService.SyncResult.success("Shows", 3, 0, 0),
-            NotionSyncService.SyncResult.failure("Wrestlers", "Connection error"));
+            NotionSyncService.SyncResult.success(SyncEntityType.SHOWS.getKey(), 3, 0, 0),
+            NotionSyncService.SyncResult.failure(
+                SyncEntityType.WRESTLERS.getKey(), "Connection error"));
     when(notionSyncScheduler.triggerManualSync()).thenReturn(results);
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/trigger"))
+        .perform(post("/api/sync/notion/trigger").with(csrf()))
         .andExpect(status().isInternalServerError())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.success").value(false))
@@ -124,49 +119,57 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should trigger entity sync successfully")
+  @WithMockUser(roles = "ADMIN")
   void shouldTriggerEntitySyncSuccessfully() throws Exception {
     // Given
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
-    when(notionSyncScheduler.triggerEntitySync("shows"))
-        .thenReturn(NotionSyncService.SyncResult.success("Shows", 8, 0, 0));
+    when(dependencyAnalyzer.getAutomaticSyncOrder())
+        .thenReturn(List.of(SyncEntityType.SHOWS, SyncEntityType.WRESTLERS));
+    when(notionSyncScheduler.triggerEntitySync(SyncEntityType.SHOWS.getKey()))
+        .thenReturn(NotionSyncService.SyncResult.success(SyncEntityType.SHOWS.getKey(), 8, 0, 0));
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/trigger/shows"))
+        .perform(post("/api/sync/notion/trigger/Shows").with(csrf()))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.success").value(true))
-        .andExpect(jsonPath("$.entity").value("Shows"))
+        .andExpect(jsonPath("$.entity").value(SyncEntityType.SHOWS.getKey()))
         .andExpect(jsonPath("$.itemsSynced").value(8))
         .andExpect(jsonPath("$.errorCount").value(0));
   }
 
   @Test
   @DisplayName("Should reject invalid entity name")
+  @WithMockUser(roles = "ADMIN")
   void shouldRejectInvalidEntityName() throws Exception {
     // Given
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder())
+        .thenReturn(
+            List.of(
+                com.github.javydreamercsw.management.service.sync.SyncEntityType.SHOWS,
+                com.github.javydreamercsw.management.service.sync.SyncEntityType.WRESTLERS));
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/trigger/invalid"))
+        .perform(post("/api/sync/notion/trigger/invalid").with(csrf()))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.error").value("Invalid entity name: invalid"))
-        .andExpect(jsonPath("$.validEntities[0]").value("shows"))
-        .andExpect(jsonPath("$.validEntities[1]").value("wrestlers"));
+        .andExpect(jsonPath("$.validEntities[0]").value(SyncEntityType.SHOWS.getKey()))
+        .andExpect(jsonPath("$.validEntities[1]").value(SyncEntityType.WRESTLERS.getKey()));
   }
 
   @Test
   @DisplayName("Should sync shows successfully")
+  @WithMockUser(roles = "ADMIN")
   void shouldSyncShowsSuccessfully() throws Exception {
     // Given
     when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
-        .thenReturn(NotionSyncService.SyncResult.success("Shows", 12, 0, 0));
+        .thenReturn(NotionSyncService.SyncResult.success(SyncEntityType.SHOWS.getKey(), 12, 0, 0));
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/shows"))
+        .perform(post("/api/sync/notion/shows").with(csrf()))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.success").value(true))
@@ -176,6 +179,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should handle shows sync failure")
+  @WithMockUser(roles = "ADMIN")
   void shouldHandleShowsSyncFailure() throws Exception {
     // Given
     when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
@@ -183,7 +187,7 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
     // When & Then
     mockMvc
-        .perform(post("/api/sync/notion/shows"))
+        .perform(post("/api/sync/notion/shows").with(csrf()))
         .andExpect(status().isInternalServerError())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.success").value(false))
@@ -192,23 +196,29 @@ class NotionSyncControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("Should return supported entities")
+  @WithMockUser(roles = "ADMIN")
   void shouldReturnSupportedEntities() throws Exception {
     // Given
-    when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of("shows", "wrestlers"));
+    when(dependencyAnalyzer.getAutomaticSyncOrder())
+        .thenReturn(
+            List.of(
+                com.github.javydreamercsw.management.service.sync.SyncEntityType.SHOWS,
+                com.github.javydreamercsw.management.service.sync.SyncEntityType.WRESTLERS));
 
     // When & Then
     mockMvc
         .perform(get("/api/sync/notion/entities"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.configuredEntities[0]").value("shows"))
-        .andExpect(jsonPath("$.configuredEntities[1]").value("wrestlers"))
+        .andExpect(jsonPath("$.configuredEntities[0]").value("Shows"))
+        .andExpect(jsonPath("$.configuredEntities[1]").value("Wrestlers"))
         .andExpect(jsonPath("$.syncEntities").isArray())
         .andExpect(jsonPath("$.description").isMap());
   }
 
   @Test
   @DisplayName("Should return health status")
+  @WithMockUser(roles = "ADMIN")
   void shouldReturnHealthStatus() throws Exception {
     // Given
     when(syncProperties.isEnabled()).thenReturn(true);

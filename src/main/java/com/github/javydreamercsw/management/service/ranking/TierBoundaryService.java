@@ -17,12 +17,13 @@
 package com.github.javydreamercsw.management.service.ranking;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
-import com.github.javydreamercsw.management.domain.wrestler.TierBoundaryRepository;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -31,22 +32,27 @@ public class TierBoundaryService {
 
   private final TierBoundaryRepository tierBoundaryRepository;
 
+  @PreAuthorize("isAuthenticated()")
   public Optional<TierBoundary> findByTierAndGender(WrestlerTier tier, Gender gender) {
     return tierBoundaryRepository.findByTierAndGender(tier, gender);
   }
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public TierBoundary save(TierBoundary tierBoundary) {
     return tierBoundaryRepository.save(tierBoundary);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<TierBoundary> findAll() {
-    return (List<TierBoundary>) tierBoundaryRepository.findAll();
+    return tierBoundaryRepository.findAll();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<TierBoundary> findAllByGender(Gender gender) {
     return tierBoundaryRepository.findAllByGender(gender);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public WrestlerTier findTierForFans(long fans, Gender gender) {
     List<TierBoundary> boundaries =
         findAllByGender(gender).stream()

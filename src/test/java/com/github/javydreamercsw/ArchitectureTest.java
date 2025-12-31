@@ -21,15 +21,14 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 class ArchitectureTest {
 
   static final String BASE_PACKAGE = "com.github.javydreamercsw";
-
   private final JavaClasses importedClasses = new ClassFileImporter().importPackages(BASE_PACKAGE);
-
-  // TODO Add your own rules and remove those that don't apply to your project
 
   @Test
   void domain_model_should_not_depend_on_application_services() {

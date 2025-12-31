@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -78,8 +79,8 @@ class TitleServiceTest {
         .thenAnswer(
             invocation -> {
               WrestlerTier tier = invocation.getArgument(0);
-              com.github.javydreamercsw.management.domain.wrestler.TierBoundary boundary =
-                  new com.github.javydreamercsw.management.domain.wrestler.TierBoundary();
+              com.github.javydreamercsw.base.domain.wrestler.TierBoundary boundary =
+                  new com.github.javydreamercsw.base.domain.wrestler.TierBoundary();
               boundary.setTier(tier);
               boundary.setMinFans(tier.getMinFans());
               boundary.setMaxFans(tier.getMaxFans());
@@ -107,10 +108,15 @@ class TitleServiceTest {
     newTitle.setDescription("Top title");
     newTitle.setTier(WrestlerTier.MAIN_EVENTER);
     newTitle.setCreationDate(Instant.now(clock));
+    newTitle.setChampionshipType(ChampionshipType.SINGLE);
 
     // When
     Title result =
-        titleService.createTitle(newTitle.getName(), newTitle.getDescription(), newTitle.getTier());
+        titleService.createTitle(
+            newTitle.getName(),
+            newTitle.getDescription(),
+            newTitle.getTier(),
+            newTitle.getChampionshipType());
 
     // Then
     assertThat(result.getName()).isEqualTo(newTitle.getName());
@@ -355,26 +361,27 @@ class TitleServiceTest {
   void shouldGetEligibleChallengers() {
     // Given
     Title title = createTitle(1L, "World Championship", WrestlerTier.MAIN_EVENTER);
-    Wrestler eligible1 = createWrestler("Eligible 1", 120000L);
-    Wrestler eligible2 =
-        createWrestler(
-            "Eligible 2", 140000L); // Changed from 150000L (ICON) to 140000L (MAIN_EVENTER)
-    Wrestler ineligible = createWrestler("Ineligible", 50000L);
+    Wrestler eligible1 = createWrestler("Eligible 1", 120000L); // MAIN_EVENTER
+    Wrestler eligible2 = createWrestler("Eligible 2", 140000L); // MAIN_EVENTER
+    Wrestler eligible3 = createWrestler("Eligible 3", 150000L); // ICON
+    Wrestler ineligible = createWrestler("Ineligible", 50000L); // CONTENDER
     eligible1.setId(2L);
     eligible2.setId(3L);
+    eligible3.setId(5L);
     ineligible.setId(4L);
 
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    when(wrestlerRepository.findAll()).thenReturn(Arrays.asList(eligible1, eligible2, ineligible));
+    when(wrestlerRepository.findAll())
+        .thenReturn(Arrays.asList(eligible1, eligible2, eligible3, ineligible));
 
     // When
     List<Wrestler> result = titleService.getEligibleChallengers(1L);
 
     // Then
-    assertThat(result).hasSize(2);
+    assertThat(result).hasSize(3);
     assertThat(result)
         .extracting(Wrestler::getName)
-        .containsExactlyInAnyOrder("Eligible 1", "Eligible 2");
+        .containsExactlyInAnyOrder("Eligible 1", "Eligible 2", "Eligible 3");
   }
 
   @Test
@@ -399,21 +406,77 @@ class TitleServiceTest {
   }
 
   @Test
-  @DisplayName("Should update title information")
-  void shouldUpdateTitleInformation() {
+  @DisplayName("Should add a challenger to a title")
+  void testAddChallenger() {
     // Given
-    Title title = createTitle(1L, "Old Name", WrestlerTier.MAIN_EVENTER);
+    Title title = createTitle(1L, "Test Title", WrestlerTier.MAIN_EVENTER);
+    Wrestler wrestler = createWrestler("Test Wrestler", 120000L);
+    wrestler.setId(1L);
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
 
     // When
-    Optional<Title> result = titleService.updateTitle(1L, "New Name", "New description", false);
+    TitleService.ChallengeResult result = titleService.addChallengerToTitle(1L, 1L);
 
     // Then
-    assertThat(result).isPresent();
-    assertThat(title.getName()).isEqualTo("New Name");
-    assertThat(title.getDescription()).isEqualTo("New description");
-    assertThat(title.getIsActive()).isFalse();
+    assertThat(result.success()).isTrue();
+    assertThat(title.getChallengers()).contains(wrestler);
     verify(titleRepository).save(title);
+  }
+
+  @Test
+  @DisplayName("Should not add an ineligible challenger to a title")
+  void testAddIneligibleChallenger() {
+    // Given
+    Title title = createTitle(1L, "Test Title", WrestlerTier.MAIN_EVENTER);
+    Wrestler wrestler = createWrestler("Test Wrestler", 1000L);
+    wrestler.setId(1L);
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    // When
+    TitleService.ChallengeResult result = titleService.addChallengerToTitle(1L, 1L);
+
+    // Then
+    assertThat(result.success()).isFalse();
+    assertThat(title.getChallengers()).doesNotContain(wrestler);
+  }
+
+  @Test
+  @DisplayName("Should remove a challenger from a title")
+  void testRemoveChallenger() {
+    // Given
+    Title title = createTitle(1L, "Test Title", WrestlerTier.MAIN_EVENTER);
+    Wrestler wrestler = createWrestler("Test Wrestler", 120000L);
+    wrestler.setId(1L);
+    title.addChallenger(wrestler);
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    // When
+    TitleService.ChallengeResult result = titleService.removeChallengerFromTitle(1L, 1L);
+
+    // Then
+    assertThat(result.success()).isTrue();
+    assertThat(title.getChallengers()).doesNotContain(wrestler);
+    verify(titleRepository).save(title);
+  }
+
+  @Test
+  @DisplayName("Should not remove a wrestler who is not a challenger")
+  void testRemoveNonChallenger() {
+    // Given
+    Title title = createTitle(1L, "Test Title", WrestlerTier.MAIN_EVENTER);
+    Wrestler wrestler = createWrestler("Test Wrestler", 120000L);
+    wrestler.setId(1L);
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    // When
+    TitleService.ChallengeResult result = titleService.removeChallengerFromTitle(1L, 1L);
+
+    // Then
+    assertThat(result.success()).isFalse();
   }
 
   @Test

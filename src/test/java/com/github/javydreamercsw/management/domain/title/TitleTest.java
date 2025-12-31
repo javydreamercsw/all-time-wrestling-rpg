@@ -20,11 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,14 +35,13 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 /** Unit tests for Title entity. Tests the ATW RPG championship system functionality. */
 @DisplayName("Title Tests")
 @DataJpaTest
-class TitleTest {
+class TitleTest extends AbstractJpaTest {
   @Autowired private WrestlerRepository wrestlerRepository;
 
   private Title title;
   private Wrestler wrestler1;
   private Wrestler wrestler2;
   private final Instant fixedInstant = Instant.parse("2024-01-01T00:00:00Z");
-  private final Clock clock = Clock.fixed(fixedInstant, ZoneId.systemDefault());
 
   @BeforeEach
   void setUp() {

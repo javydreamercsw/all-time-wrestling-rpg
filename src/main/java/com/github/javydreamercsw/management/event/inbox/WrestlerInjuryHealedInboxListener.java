@@ -19,29 +19,46 @@ package com.github.javydreamercsw.management.event.inbox;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
-import lombok.RequiredArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
-public class WrestlerInjuryHealedInboxListener {
+public class WrestlerInjuryHealedInboxListener
+    implements ApplicationListener<WrestlerInjuryHealedEvent> {
 
   private final InboxService inboxService;
+  private final InboxEventType wrestlerInjuryHealed;
+  private final ApplicationEventPublisher eventPublisher;
+  private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
-  @EventListener
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void handleWrestlerInjuryHealedEvent(WrestlerInjuryHealedEvent event) {
-    String message =
-        String.format(
-            "%s's injury (%s) has been healed!",
-            event.getWrestler().getName(), event.getInjury().getName());
+  public WrestlerInjuryHealedInboxListener(
+      @NonNull InboxService inboxService,
+      @NonNull @Qualifier("wrestlerInjuryHealed") InboxEventType wrestlerInjuryHealed,
+      @NonNull ApplicationEventPublisher eventPublisher,
+      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+    this.inboxService = inboxService;
+    this.wrestlerInjuryHealed = wrestlerInjuryHealed;
+    this.eventPublisher = eventPublisher;
+    this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
+  }
+
+  @Override
+  public void onApplicationEvent(@NonNull WrestlerInjuryHealedEvent event) {
+    log.info("Received WrestlerInjuryHealedEvent for wrestler: {}", event.getWrestler().getName());
     inboxService.createInboxItem(
-        InboxEventType.WRESTLER_INJURY_HEALED, message, event.getWrestler().getId().toString());
-    log.info("Inbox item created for WrestlerInjuryHealedEvent: {}", message);
+        wrestlerInjuryHealed,
+        String.format(
+            "Wrestler %s's %s injury has healed. New total: %d",
+            event.getWrestler().getName(),
+            event.getInjury().getDescription(),
+            event.getWrestler().getInjuries().size()),
+        event.getWrestler().getId().toString());
+    eventPublisher.publishEvent(new InboxUpdateEvent(this));
+    inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }
 }

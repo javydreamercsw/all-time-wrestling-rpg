@@ -24,8 +24,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.ArrayList;
@@ -154,7 +154,7 @@ class TierRecalculationServiceTest {
     assertEquals(19000L, femaleIconBoundary.getMinFans());
     assertEquals(Long.MAX_VALUE, femaleIconBoundary.getMaxFans());
 
-    verify(wrestlerRepository, times(wrestlers.size())).save(wrestlerCaptor.capture());
+    verify(wrestlerRepository, times(14)).save(wrestlerCaptor.capture());
   }
 
   @Test

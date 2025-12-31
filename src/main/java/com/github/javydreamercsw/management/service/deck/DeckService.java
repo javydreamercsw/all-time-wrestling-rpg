@@ -24,6 +24,7 @@ import java.time.Clock;
 import java.util.List;
 import lombok.NonNull;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,7 @@ public class DeckService {
     this.clock = clock;
   }
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#wrestler)")
   public Deck createDeck(@NonNull Wrestler wrestler) {
     Deck deck = new Deck();
     deck.setWrestler(wrestler);
@@ -47,33 +49,42 @@ public class DeckService {
     return deck;
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Deck> list(Pageable pageable) {
     return deckRepository.findAllBy(pageable).toList();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public long count() {
     return deckRepository.count();
   }
 
+  @PreAuthorize(
+      "hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#deck.wrestler)")
   public Deck save(@NonNull Deck deck) {
     deck.setCreationDate(clock.instant());
     return deckRepository.saveAndFlush(deck);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Deck> findAll() {
     return deckRepository.findAll();
   }
 
+  @PreAuthorize(
+      "hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#deck.wrestler)")
   public void delete(Deck deck) {
     deckRepository.delete(deck);
   }
 
+  @PreAuthorize("isAuthenticated()")
   public Deck findById(@NonNull Long id) {
     return deckRepository
         .findById(id)
         .orElseThrow(() -> new EntityNotFoundException("Deck with id " + id + " not found"));
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<Deck> findByWrestler(Wrestler wrestler) {
     return deckRepository.findByWrestler(wrestler);
   }

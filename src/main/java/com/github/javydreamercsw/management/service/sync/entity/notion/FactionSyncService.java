@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.FactionDTO;
@@ -50,9 +51,11 @@ public class FactionSyncService extends BaseSyncService {
   }
 
   public SyncResult syncFactions(@NonNull String operationId) {
-    if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("factions")) {
+    if (syncServiceDependencies
+        .getSyncSessionManager()
+        .isAlreadySyncedInSession(SyncEntityType.FACTIONS.getKey())) {
       log.info("⏭️ Factions already synced in current session, skipping");
-      return SyncResult.success("Factions", 0, 0, 0);
+      return SyncResult.success(SyncEntityType.FACTIONS.getKey(), 0, 0, 0);
     }
 
     log.info("🛡️ Starting factions synchronization from Notion...");
@@ -61,20 +64,24 @@ public class FactionSyncService extends BaseSyncService {
     try {
       SyncResult result = performFactionsSync(operationId, startTime);
       if (result.isSuccess()) {
-        syncServiceDependencies.getSyncSessionManager().markAsSyncedInSession("factions");
+        syncServiceDependencies
+            .getSyncSessionManager()
+            .markAsSyncedInSession(SyncEntityType.FACTIONS.getKey());
       }
       return result;
     } catch (Exception e) {
       log.error("Failed to sync factions", e);
-      return SyncResult.failure("Factions", e.getMessage());
+      return SyncResult.failure(SyncEntityType.FACTIONS.getKey(), e.getMessage());
     }
   }
 
   private SyncResult performFactionsSync(@NonNull String operationId, long startTime) {
     try {
-      if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("factions")) {
+      if (!syncServiceDependencies
+          .getNotionSyncProperties()
+          .isEntityEnabled(SyncEntityType.FACTIONS.getKey())) {
         log.info("Factions sync is disabled in configuration");
-        return SyncResult.success("Factions", 0, 0, 0);
+        return SyncResult.success(SyncEntityType.FACTIONS.getKey(), 0, 0, 0);
       }
 
       syncServiceDependencies.getProgressTracker().startOperation(operationId, "Sync Factions", 3);
@@ -87,7 +94,8 @@ public class FactionSyncService extends BaseSyncService {
 
       if (!isNotionHandlerAvailable()) {
         log.warn("NotionHandler not available. Cannot sync factions from Notion.");
-        return SyncResult.failure("Factions", "NotionHandler is not available for sync operations");
+        return SyncResult.failure(
+            SyncEntityType.FACTIONS.getKey(), "NotionHandler is not available for sync operations");
       }
 
       List<FactionPage> factionPages =
@@ -161,13 +169,14 @@ public class FactionSyncService extends BaseSyncService {
 
       syncServiceDependencies
           .getHealthMonitor()
-          .recordSuccess("Factions", totalTime, factionDTOs.size());
+          .recordSuccess(SyncEntityType.FACTIONS.getKey(), totalTime, factionDTOs.size());
 
       if (skippedCount > 0) {
         return SyncResult.failure(
-            "Factions", "Some factions failed to sync. Check logs for details.");
+            SyncEntityType.FACTIONS.getKey(),
+            "Some factions failed to sync. Check logs for details.");
       } else {
-        return SyncResult.success("Factions", factionDTOs.size(), 0, 0);
+        return SyncResult.success(SyncEntityType.FACTIONS.getKey(), factionDTOs.size(), 0, 0);
       }
 
     } catch (Exception e) {
@@ -178,9 +187,11 @@ public class FactionSyncService extends BaseSyncService {
           .getProgressTracker()
           .failOperation(operationId, "Sync failed: " + e.getMessage());
 
-      syncServiceDependencies.getHealthMonitor().recordFailure("Factions", e.getMessage());
+      syncServiceDependencies
+          .getHealthMonitor()
+          .recordFailure(SyncEntityType.FACTIONS.getKey(), e.getMessage());
 
-      return SyncResult.failure("Factions", e.getMessage());
+      return SyncResult.failure(SyncEntityType.FACTIONS.getKey(), e.getMessage());
     }
   }
 

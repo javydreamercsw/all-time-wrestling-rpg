@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,14 +65,14 @@ class FactionSyncServiceTest extends AbstractSyncTest {
   @Test
   void syncFactions_WhenDisabled_ShouldReturnSuccessWithoutSync() {
     // Given
-    when(syncProperties.isEntityEnabled("factions")).thenReturn(false);
+    when(syncProperties.isEntityEnabled(SyncEntityType.FACTIONS.getKey())).thenReturn(false);
 
     // When
     SyncResult result = factionSyncService.syncFactions("test-operation");
 
     // Then
     assertTrue(result.isSuccess());
-    assertEquals("Factions", result.getEntityType());
+    assertEquals(SyncEntityType.FACTIONS.getKey(), result.getEntityType());
     verify(notionHandler, never()).loadAllFactions();
   }
 

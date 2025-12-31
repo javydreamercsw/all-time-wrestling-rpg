@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
@@ -132,7 +133,7 @@ public class FactionRivalryNotionSyncService implements NotionSyncService {
             } catch (Exception ex) {
               errors++;
               processedCount++;
-              log.error("Error syncing faction rivalry: " + entity.getDisplayName(), ex);
+              log.error("Error syncing faction rivalry: {}", entity.getDisplayName(), ex);
             }
           }
           progressTracker.updateProgress(
@@ -144,12 +145,13 @@ public class FactionRivalryNotionSyncService implements NotionSyncService {
           return errors > 0
               ? BaseSyncService.SyncResult.failure(
                   "faction rivalries", "Error syncing faction rivalries!")
-              : BaseSyncService.SyncResult.success("faction rivalries", created, updated, errors);
+              : BaseSyncService.SyncResult.success(
+                  SyncEntityType.FACTION_RIVALRIES.getKey(), created, updated, errors);
         }
       }
     }
     progressTracker.failOperation(operationId, "Error syncing faction rivalries!");
     return BaseSyncService.SyncResult.failure(
-        "faction rivalries", "Error syncing faction rivalries!");
+        SyncEntityType.FACTION_RIVALRIES.getKey(), "Error syncing faction rivalries!");
   }
 }

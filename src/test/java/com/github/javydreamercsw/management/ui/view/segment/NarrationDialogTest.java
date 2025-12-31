@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.ui.view.segment;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -26,9 +28,11 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,13 +40,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.core.env.Environment;
+import org.springframework.web.reactive.function.client.WebClient;
 
 class NarrationDialogTest {
 
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
-  @Mock private TitleService titleService;
+  @Mock private WrestlerRepository wrestlerRepository;
   @Mock private ShowService showService;
+  @Mock private SegmentService segmentService;
+  @Mock private RivalryService rivalryService;
+  @Mock private LocalAIStatusService localAIStatusService;
+  @Mock private SegmentNarrationConfig segmentNarrationConfig;
+  @Mock private Environment env;
 
   private NarrationDialog narrationDialog;
 
@@ -78,10 +89,27 @@ class NarrationDialogTest {
     segments.add(segment);
 
     when(showService.getSegments(show)).thenReturn(segments);
+    when(localAIStatusService.isReady()).thenReturn(true);
+    when(env.getActiveProfiles()).thenReturn(new String[] {});
+    WebClient.Builder webClientBuilder = mock(WebClient.Builder.class);
+    WebClient webClient = mock(WebClient.class);
+    when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
+    when(webClientBuilder.build()).thenReturn(webClient);
 
     narrationDialog =
         new NarrationDialog(
-            segment, npcService, wrestlerService, titleService, showService, s -> {});
+            segment,
+            npcService,
+            wrestlerService,
+            mock(WrestlerRepository.class),
+            showService,
+            segmentService,
+            s -> {},
+            rivalryService,
+            localAIStatusService,
+            segmentNarrationConfig,
+            webClientBuilder,
+            env);
   }
 
   @Test

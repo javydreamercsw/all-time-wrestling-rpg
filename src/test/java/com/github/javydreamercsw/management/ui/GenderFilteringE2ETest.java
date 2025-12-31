@@ -20,6 +20,7 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -90,6 +91,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
     womensTitle.setName("Women's World Championship");
     womensTitle.setGender(Gender.FEMALE);
     womensTitle.setTier(WrestlerTier.MIDCARDER);
+    womensTitle.setChampionshipType(ChampionshipType.SINGLE);
     titleRepository.save(womensTitle);
 
     tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerRepository.findAll()));
@@ -117,6 +119,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       log.info("Filtering by FEMALE");
       WebElement genderComboBox =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("gender-selection")));
+      Assertions.assertNotNull(genderComboBox);
       selectFromVaadinComboBox(genderComboBox, "FEMALE");
 
       // Verify only the female wrestler is displayed
@@ -155,6 +158,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       log.info("Filtering by MALE");
       WebElement genderComboBox =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("gender-selection")));
+      Assertions.assertNotNull(genderComboBox);
       selectFromVaadinComboBox(genderComboBox, "MALE");
 
       // Verify only the male wrestler is displayed
@@ -197,9 +201,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       // Open the "Tier Boundaries" dialog
       log.info("Opening tier boundaries dialog");
       WebElement showTierBoundariesButton =
-          wait.until(ExpectedConditions.elementToBeClickable(By.tagName("vaadin-button")));
+          wait.until(ExpectedConditions.elementToBeClickable(By.id("show-tier-boundaries-button")));
       Assertions.assertNotNull(showTierBoundariesButton);
-      clickAndScrollIntoView(showTierBoundariesButton);
+      clickElement(showTierBoundariesButton);
 
       // Wait for the dialog to appear
       log.info("Waiting for dialog");

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.card;
 
 import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
@@ -42,10 +43,9 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import java.time.Clock;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.NonNull;
 
 @Route("card-list")
@@ -55,7 +55,6 @@ import lombok.NonNull;
 public class CardListView extends Main {
 
   private final CardService cardService;
-  private final CardSetService cardSetService;
 
   final TextField name;
   final Button createBtn;
@@ -64,9 +63,8 @@ public class CardListView extends Main {
   public CardListView(
       @NonNull CardService cardService,
       @NonNull CardSetService cardSetService,
-      @NonNull Clock clock) {
+      @NonNull SecurityUtils securityUtils) {
     this.cardService = cardService;
-    this.cardSetService = cardSetService;
 
     name = new TextField();
     name.setPlaceholder("What do you want the card name to be?");
@@ -76,6 +74,7 @@ public class CardListView extends Main {
 
     createBtn = new Button("Create", event -> createTask());
     createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    createBtn.setVisible(securityUtils.canCreate());
 
     cardGrid = new Grid<>();
     // Enable grid editor
@@ -92,7 +91,9 @@ public class CardListView extends Main {
 
     // Create and set the binder
     Binder<Card> binder = new Binder<>(Card.class);
-    editor.setBinder(binder);
+    if (securityUtils.canEdit()) {
+      editor.setBinder(binder);
+    }
 
     // Editor fields
     TextField nameField = new TextField();
@@ -108,9 +109,7 @@ public class CardListView extends Main {
     Checkbox pinField = new Checkbox();
     ComboBox<String> typeField = new ComboBox<>();
     typeField.setItems(
-        Arrays.asList("Strike", "Grapple", "Aerial", "Throw").stream()
-            .sorted()
-            .collect(Collectors.toList()));
+        Stream.of("Strike", "Grapple", "Aerial", "Throw").sorted().collect(Collectors.toList()));
     typeField.setPlaceholder("Select type");
 
     ComboBox<CardSet> setField = new ComboBox<>();
@@ -203,9 +202,11 @@ public class CardListView extends Main {
                   e -> {
                     cardGrid.getEditor().editItem(card);
                   });
+              editButton.setVisible(securityUtils.canEdit());
               Button deleteButton = new Button("Delete");
               deleteButton.getElement().setAttribute("data-testid", "delete-button");
               deleteButton.addClickListener(e -> deleteCard(card));
+              deleteButton.setVisible(securityUtils.canDelete());
               return new HorizontalLayout(editButton, deleteButton);
             })
         .setHeader("Actions");
@@ -249,9 +250,14 @@ public class CardListView extends Main {
     Button saveButton = new Button("Save", e -> editor.save());
     Button cancelButton = new Button("Cancel", e -> editor.cancel());
     HorizontalLayout actions = new HorizontalLayout(saveButton, cancelButton);
+    actions.setVisible(securityUtils.canEdit());
     cardGrid.getElement().appendChild(actions.getElement());
 
-    add(new ViewToolbar("Card List", ViewToolbar.group(name, createBtn)));
+    if (securityUtils.canCreate()) {
+      add(new ViewToolbar("Card List", ViewToolbar.group(name, createBtn)));
+    } else {
+      add(new ViewToolbar("Card List"));
+    }
     add(cardGrid, actions);
   }
 

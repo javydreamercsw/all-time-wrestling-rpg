@@ -18,8 +18,10 @@ package com.github.javydreamercsw.management.service.show.planning.dto;
 
 import lombok.Data;
 
+/** DTO representing the heat (rivalry intensity) between two wrestlers. */
 @Data
 public class ShowPlanningWrestlerHeatDTO {
   private String wrestlerName;
+  private String opponentName;
   private int heat;
 }

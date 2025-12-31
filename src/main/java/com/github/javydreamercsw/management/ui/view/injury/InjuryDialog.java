@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.injury;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
@@ -31,12 +32,17 @@ public class InjuryDialog extends Dialog {
   private final InjuryService injuryService;
   private final Runnable onSave;
   private final Grid<Injury> injuryGrid = new Grid<>(Injury.class);
+  private final SecurityUtils securityUtils;
 
   public InjuryDialog(
-      @NonNull Wrestler wrestler, @NonNull InjuryService injuryService, @NonNull Runnable onSave) {
+      @NonNull Wrestler wrestler,
+      @NonNull InjuryService injuryService,
+      @NonNull Runnable onSave,
+      @NonNull SecurityUtils securityUtils) {
     this.wrestler = wrestler;
     this.injuryService = injuryService;
     this.onSave = onSave;
+    this.securityUtils = securityUtils;
 
     setHeaderTitle("Manage Injuries for " + wrestler.getName());
     setWidth("80vw");
@@ -55,11 +61,13 @@ public class InjuryDialog extends Dialog {
                       () -> {
                         updateGrid();
                         onSave.run();
-                      });
+                      },
+                      securityUtils);
               createDialog.setId("create-injury-dialog");
               createDialog.open();
             });
     createButton.setId("create-injury-button");
+    createButton.setVisible(securityUtils.canCreate());
 
     add(new VerticalLayout(createButton, injuryGrid));
   }
@@ -85,6 +93,7 @@ public class InjuryDialog extends Dialog {
                     updateGrid();
                     onSave.run();
                   });
+              healButton.setVisible(securityUtils.canEdit(injury));
               return healButton;
             })
         .setHeader("Actions");

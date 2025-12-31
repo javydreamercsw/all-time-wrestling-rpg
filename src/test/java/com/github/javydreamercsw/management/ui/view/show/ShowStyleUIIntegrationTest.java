@@ -20,15 +20,18 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinSession;
 import java.time.Clock;
 import java.time.Instant;
@@ -39,6 +42,7 @@ import java.util.Locale;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.stefan.fullcalendar.Entry;
 import org.vaadin.stefan.fullcalendar.dataprovider.EntryQuery;
 
@@ -47,6 +51,7 @@ class ShowStyleUIIntegrationTest extends ManagementIntegrationTest {
   private Show pleShow;
   private Show weeklyShow;
   private Show otherShow;
+  @Autowired GameSettingService gameSettingService;
 
   @BeforeEach
   void setUp() {
@@ -114,8 +119,14 @@ class ShowStyleUIIntegrationTest extends ManagementIntegrationTest {
   void shouldApplyCorrectStylesInShowListView() {
     SeasonService seasonService = mock(SeasonService.class);
     Clock clock = mock(Clock.class);
+    SecurityUtils securityUtils = mock(SecurityUtils.class); // Mock SecurityUtils
+    when(securityUtils.canCreate()).thenReturn(true); // Default to true for tests
+    when(securityUtils.canEdit()).thenReturn(true); // Default to true for tests
+    when(securityUtils.canDelete()).thenReturn(true); // Default to true for tests
+
     ShowListView showListView =
-        new ShowListView(showService, showTypeService, seasonService, showTemplateService, clock);
+        new ShowListView(
+            showService, showTypeService, seasonService, showTemplateService, securityUtils, clock);
     Grid<Show> grid = showListView.showGrid;
 
     // Test the part name generator
@@ -147,9 +158,10 @@ class ShowStyleUIIntegrationTest extends ManagementIntegrationTest {
     UI.setCurrent(ui);
     VaadinSession session = mock(VaadinSession.class);
     when(session.getLocale()).thenReturn(Locale.US);
+    when(session.getService()).thenReturn(mock(VaadinService.class));
     ui.getInternals().setSession(session);
 
-    ShowCalendarView showCalendarView = new ShowCalendarView(showService);
+    ShowCalendarView showCalendarView = new ShowCalendarView(showService, gameSettingService);
 
     // The calendar is populated in the constructor, so we can get the entries right away.
     Instant start = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();

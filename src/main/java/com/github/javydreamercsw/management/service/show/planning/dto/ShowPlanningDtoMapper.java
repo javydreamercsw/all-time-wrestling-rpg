@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
@@ -61,13 +62,18 @@ public class ShowPlanningDtoMapper {
     if (context.getFullRoster() != null) {
       dto.setFullRoster(
           context.getFullRoster().stream()
-              .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO::new)
+              .map(WrestlerDTO::new)
               .peek(wrestlerDto -> wrestlerDto.setMoveSet(null))
               .collect(Collectors.toList()));
+    }
+    if (context.getWrestlerHeats() != null) {
+      dto.setWrestlerHeats(
+          context.getWrestlerHeats().stream().map(this::toDto).collect(Collectors.toList()));
     }
     if (context.getFactions() != null) {
       dto.setFactions(context.getFactions().stream().map(this::toDto).collect(Collectors.toList()));
     }
+    dto.setShowDate(context.getShowDate());
     return dto;
   }
 
@@ -176,6 +182,16 @@ public class ShowPlanningDtoMapper {
       dto.setDisbandedDate(faction.getDisbandedDate().toString());
     }
     dto.setExternalId(faction.getExternalId());
+    return dto;
+  }
+
+  public ShowPlanningWrestlerHeatDTO toDto(
+      @NonNull com.github.javydreamercsw.management.service.show.planning.ShowPlanningWrestlerHeat
+              heat) {
+    ShowPlanningWrestlerHeatDTO dto = new ShowPlanningWrestlerHeatDTO();
+    dto.setWrestlerName(heat.getWrestlerName());
+    dto.setOpponentName(heat.getOpponentName());
+    dto.setHeat(heat.getHeat());
     return dto;
   }
 }

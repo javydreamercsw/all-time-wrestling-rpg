@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.dto.SegmentDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -111,7 +112,7 @@ public class SegmentSyncService extends BaseSyncService {
       syncServiceDependencies
           .getProgressTracker()
           .completeOperation(operationId, true, "No new segments to sync.", 0);
-      return SyncResult.success("Segments", 0, 0, 0);
+      return SyncResult.success(SyncEntityType.SEGMENTS.getKey(), 0, 0, 0);
     }
     log.info("Found {} new segments to sync from Notion.", newSegmentIds.size());
 

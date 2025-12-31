@@ -35,9 +35,7 @@ import org.springframework.boot.actuate.health.Status;
 class SyncHealthMonitorTest {
 
   @Mock private NotionSyncProperties syncProperties;
-
   @Mock private SyncProgressTracker progressTracker;
-
   private SyncHealthMonitor healthMonitor;
 
   @BeforeEach

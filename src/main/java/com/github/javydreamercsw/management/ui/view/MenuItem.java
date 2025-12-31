@@ -16,8 +16,10 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,6 +31,7 @@ public class MenuItem {
   private VaadinIcon icon;
   private String path;
   private List<MenuItem> children = new ArrayList<>();
+  private List<RoleName> requiredRoles = new ArrayList<>();
 
   public MenuItem(String title, VaadinIcon icon, String path) {
     this.title = title;
@@ -36,7 +39,20 @@ public class MenuItem {
     this.path = path;
   }
 
+  public MenuItem(String title, VaadinIcon icon, String path, RoleName... roles) {
+    this.title = title;
+    this.icon = icon;
+    this.path = path;
+    if (roles != null && roles.length > 0) {
+      this.requiredRoles = Arrays.asList(roles);
+    }
+  }
+
   public void addChild(MenuItem child) {
     children.add(child);
+  }
+
+  public boolean hasRequiredRoles() {
+    return !requiredRoles.isEmpty();
   }
 }

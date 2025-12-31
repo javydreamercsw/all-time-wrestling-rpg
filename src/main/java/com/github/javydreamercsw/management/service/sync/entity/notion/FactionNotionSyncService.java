@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
@@ -67,7 +68,7 @@ public class FactionNotionSyncService implements NotionSyncService {
             int created = 0;
             int updated = 0;
             int errors = 0;
-            progressTracker.startOperation(operationId, "Sync Factions", 1);
+            progressTracker.startOperation(operationId, SyncEntityType.FACTIONS.getKey(), 1);
             List<Faction> entities = factionRepository.findAll();
             for (Faction entity : entities) {
               // Update progress every 5 entities
@@ -76,8 +77,8 @@ public class FactionNotionSyncService implements NotionSyncService {
                     operationId,
                     1,
                     String.format(
-                        "Saving factions to Notion... (%d/%d processedCount)",
-                        processedCount, entities.size()));
+                        "Saving %s to Notion... (%%d/%%d processedCount)",
+                        SyncEntityType.FACTIONS.getKey(), processedCount, entities.size()));
               }
               try {
                 Map<String, PageProperty> properties = new HashMap<>();
@@ -203,16 +204,20 @@ public class FactionNotionSyncService implements NotionSyncService {
                 operationId,
                 1,
                 String.format(
-                    "✅ Completed Notion sync: %d factions saved/updated, %d errors",
-                    created + updated, errors));
+                    "✅ Completed Notion sync: %%d %s saved/updated, %%d errors",
+                    SyncEntityType.FACTIONS.getKey(), created + updated, errors));
             return errors > 0
-                ? BaseSyncService.SyncResult.failure("factions", "Error syncing factions!")
-                : BaseSyncService.SyncResult.success("factions", created, updated, errors);
+                ? BaseSyncService.SyncResult.failure(
+                    SyncEntityType.FACTIONS.getKey(), "Error syncing factions!")
+                : BaseSyncService.SyncResult.success(
+                    SyncEntityType.FACTIONS.getKey(), created, updated, errors);
           }
         }
       }
     }
-    progressTracker.failOperation(operationId, "Error syncing factions!");
-    return BaseSyncService.SyncResult.failure("factions", "Error syncing factions!");
+    progressTracker.failOperation(
+        operationId, String.format("Error syncing %s!", SyncEntityType.FACTIONS.getKey()));
+    return BaseSyncService.SyncResult.failure(
+        SyncEntityType.FACTIONS.getKey(), "Error syncing factions!");
   }
 }

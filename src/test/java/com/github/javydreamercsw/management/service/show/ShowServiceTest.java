@@ -25,11 +25,13 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +46,7 @@ class ShowServiceTest {
   @Mock private ShowRepository showRepository;
   @Mock private SegmentRepository segmentRepository;
   @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SegmentAdjudicationService segmentAdjudicationService;
   @Mock private ApplicationEventPublisher eventPublisher; // Needed to avoid NPE
 
@@ -111,19 +114,23 @@ class ShowServiceTest {
   @Test
   void testAdjudicateShow_HealsNonParticipatingWrestlers() {
     // Given
+    segment.getSegmentType().setName("Match");
     segment.addParticipant(wrestler1);
     segment.addParticipant(wrestler2);
 
     when(showRepository.findById(1L)).thenReturn(Optional.of(show));
     when(segmentRepository.findByShow(show)).thenReturn(List.of(segment));
-    when(wrestlerService.findAll()).thenReturn(List.of(wrestler1, wrestler2, wrestler3));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(wrestler1, wrestler2, wrestler3));
 
     // When
     showService.adjudicateShow(1L);
 
     // Then
+    Assertions.assertNotNull(wrestler3.getId());
     verify(wrestlerService, times(1)).healChance(wrestler3.getId());
+    Assertions.assertNotNull(wrestler1.getId());
     verify(wrestlerService, never()).healChance(wrestler1.getId());
+    Assertions.assertNotNull(wrestler2.getId());
     verify(wrestlerService, never()).healChance(wrestler2.getId());
   }
 }

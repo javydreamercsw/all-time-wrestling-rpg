@@ -31,12 +31,15 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -57,6 +60,8 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private ShowRepository showRepository;
+  @Autowired private SegmentTypeService segmentTypeService;
+  @Autowired private SegmentRuleRepository segmentRuleRepository;
 
   private Wrestler testWrestler;
 
@@ -88,7 +93,16 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
       ShowType showType = new ShowType();
       showType.setName("Weekly");
       showType.setDescription("A weekly show");
-      showTypeRepository.save(showType);
+      showTypeRepository.saveAndFlush(showType);
+    }
+    if (segmentTypeService.findByName("One on One").isEmpty()) {
+      segmentTypeService.createOrUpdateSegmentType("One on One", "1 vs 1 match");
+    }
+    if (segmentRuleRepository.findByName("Normal").isEmpty()) {
+      SegmentRule rule = new SegmentRule();
+      rule.setName("Normal");
+      rule.setDescription("Normal match rules.");
+      segmentRuleRepository.save(rule);
     }
   }
 
@@ -175,7 +189,9 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     wrestler1.setFans(1000L);
     wrestlerRepository.saveAndFlush(wrestler1);
 
-    Title title = titleService.createTitle("Test Title", "Test Title", WrestlerTier.ROOKIE);
+    Title title =
+        titleService.createTitle(
+            "Test Title", "Test Title", WrestlerTier.ROOKIE, ChampionshipType.SINGLE);
 
     Season season = seasonService.createSeason("Test Season", "Test Season", 5);
     Show show =

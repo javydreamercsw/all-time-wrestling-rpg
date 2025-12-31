@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.base.ai;
 
 import java.util.List;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,100 @@ import org.springframework.stereotype.Component;
 public class SegmentNarrationServiceFactory {
 
   private final List<SegmentNarrationService> availableServices;
+
+  /**
+   * Narrates a segment using the best available AI service with fallback.
+   *
+   * @param segmentContext The context for the segment narration.
+   * @return The AI-generated segment narration.
+   * @throws AIServiceException if all available services fail.
+   */
+  public String narrateSegment(
+      @NonNull SegmentNarrationService.SegmentNarrationContext segmentContext) {
+    List<SegmentNarrationService> services = getAvailableServicesInPriorityOrder();
+    Exception lastException = null;
+
+    for (SegmentNarrationService service : services) {
+      try {
+        log.debug("Attempting to narrate segment with provider: {}", service.getProviderName());
+        return service.narrateSegment(segmentContext);
+      } catch (AIServiceException e) {
+        lastException = e;
+        log.warn(
+            "AI service provider {} failed to narrate segment: {}",
+            service.getProviderName(),
+            e.getMessage());
+      }
+    }
+    throw new AIServiceException(
+        503,
+        "Service Unavailable",
+        "All",
+        "All AI providers failed to narrate the segment.",
+        lastException);
+  }
+
+  /**
+   * Summarizes a narration using the best available AI service with fallback.
+   *
+   * @param narration The narration to summarize.
+   * @return The AI-generated summary.
+   * @throws AIServiceException if all available services fail.
+   */
+  public String summarizeNarration(@NonNull String narration) {
+    List<SegmentNarrationService> services = getAvailableServicesInPriorityOrder();
+    Exception lastException = null;
+
+    for (SegmentNarrationService service : services) {
+      try {
+        log.debug("Attempting to summarize narration with provider: {}", service.getProviderName());
+        return service.summarizeNarration(narration);
+      } catch (AIServiceException e) {
+        lastException = e;
+        log.warn(
+            "AI service provider {} failed to summarize narration: {}",
+            service.getProviderName(),
+            e.getMessage());
+      }
+    }
+    throw new AIServiceException(
+        503,
+        "Service Unavailable",
+        "All",
+        "All AI providers failed to summarize the narration.",
+        lastException);
+  }
+
+  /**
+   * Generates text using the best available AI service with fallback.
+   *
+   * @param prompt The prompt to generate text from.
+   * @return The AI-generated text.
+   * @throws AIServiceException if all available services fail.
+   */
+  public String generateText(@NonNull String prompt) {
+    List<SegmentNarrationService> services = getAvailableServicesInPriorityOrder();
+    Exception lastException = null;
+
+    for (SegmentNarrationService service : services) {
+      try {
+        log.debug("Attempting to generate text with provider: {}", service.getProviderName());
+        return service.generateText(prompt);
+      } catch (AIServiceException e) {
+        lastException = e;
+        log.warn(
+            "AI service provider {} failed to generate text: {}",
+            service.getProviderName(),
+            e.getMessage());
+      }
+    }
+    throw new AIServiceException(
+        503,
+        "Service Unavailable",
+        "All",
+        "All AI providers failed to generate text.",
+        lastException);
+  }
 
   /**
    * Gets the best available segment narration service based on cost-effectiveness and quality.
@@ -71,6 +166,7 @@ public class SegmentNarrationServiceFactory {
       new ProviderPriority("Gemini", 1, 0.0, "FREE tier with excellent quality"),
       new ProviderPriority("Claude", 2, 0.25, "Claude Haiku - good quality, reasonable cost"),
       new ProviderPriority("OpenAI", 3, 0.50, "GPT-3.5 - good quality, moderate cost"),
+      new ProviderPriority("LocalAI", 9, 0.0, "Local AI, free and private"),
       new ProviderPriority("Mock", 10, 0.0, "Mock AI for testing and development")
     };
 
@@ -167,7 +263,9 @@ public class SegmentNarrationServiceFactory {
   private CostInfo getCostInfo(String providerName) {
     String lowerName = providerName.toLowerCase();
 
-    if (lowerName.contains("gemini")) {
+    if (lowerName.contains("localai")) {
+      return new CostInfo(0, 0.0, "FREE", "Local AI, free and private");
+    } else if (lowerName.contains("gemini")) {
       return new CostInfo(1, 0.0, "FREE", "Free tier: 15 req/min, 1.5K req/day, excellent quality");
     } else if (lowerName.contains("claude")) {
       return new CostInfo(

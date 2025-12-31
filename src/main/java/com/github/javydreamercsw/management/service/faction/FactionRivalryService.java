@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,30 +56,32 @@ public class FactionRivalryService {
 
   /** Get all faction rivalries with pagination. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<FactionRivalry> getAllFactionRivalries(Pageable pageable) {
     return factionRivalryRepository.findAllBy(pageable);
   }
 
   /** Get all faction rivalries with factions eagerly loaded. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Page<FactionRivalry> getAllFactionRivalriesWithFactions(Pageable pageable) {
     return factionRivalryRepository.findAllWithFactions(pageable);
   }
 
-  /** Get faction rivalry by ID. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<FactionRivalry> getFactionRivalryById(Long id) {
     return factionRivalryRepository.findById(id);
   }
 
-  /** Get all active faction rivalries. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<FactionRivalry> getActiveFactionRivalries() {
     return factionRivalryRepository.findByIsActiveTrue();
   }
 
-  /** Get active rivalries for a specific faction. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<FactionRivalry> getActiveRivalriesForFaction(Long factionId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
 
@@ -89,7 +92,7 @@ public class FactionRivalryService {
     return factionRivalryRepository.findActiveRivalriesForFaction(factionOpt.get());
   }
 
-  /** Create a new faction rivalry. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<FactionRivalry> createFactionRivalry(
       Long faction1Id, Long faction2Id, String storylineNotes) {
     Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
@@ -136,7 +139,7 @@ public class FactionRivalryService {
     return Optional.of(savedRivalry);
   }
 
-  /** Add heat to a faction rivalry. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<FactionRivalry> addHeat(Long rivalryId, int heatGain, String reason) {
     return factionRivalryRepository
         .findById(rivalryId)
@@ -174,7 +177,7 @@ public class FactionRivalryService {
             });
   }
 
-  /** Add heat between two specific factions. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<FactionRivalry> addHeatBetweenFactions(
       Long faction1Id, Long faction2Id, int heatGain, String reason) {
     Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
@@ -196,7 +199,7 @@ public class FactionRivalryService {
     return rivalryOpt.flatMap(rivalry -> addHeat(rivalry.getId(), heatGain, reason));
   }
 
-  /** Attempt to resolve a faction rivalry with dice rolls. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ResolutionResult<FactionRivalry> attemptResolution(
       Long rivalryId, Integer faction1Roll, Integer faction2Roll) {
     Optional<FactionRivalry> rivalryOpt = factionRivalryRepository.findById(rivalryId);
@@ -253,7 +256,7 @@ public class FactionRivalryService {
         total);
   }
 
-  /** End a faction rivalry. */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<FactionRivalry> endFactionRivalry(Long rivalryId, String reason) {
     Optional<FactionRivalry> rivalryOpt = factionRivalryRepository.findById(rivalryId);
 
@@ -275,50 +278,44 @@ public class FactionRivalryService {
     return Optional.of(savedRivalry);
   }
 
-  /** Get faction rivalries requiring matches at next show. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<FactionRivalry> getRivalriesRequiringMatches() {
     return factionRivalryRepository.findRivalriesRequiringMatches();
   }
 
-  /** Get faction rivalries eligible for resolution. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<FactionRivalry> getRivalriesEligibleForResolution() {
     return factionRivalryRepository.findRivalriesEligibleForResolution();
   }
 
-  /** Get faction rivalries requiring rule matches. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<FactionRivalry> getRivalriesRequiringStipulationMatches() {
     return factionRivalryRepository.findRivalriesRequiringStipulationMatches();
   }
 
-  /** Get hottest faction rivalries. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<FactionRivalry> getHottestRivalries(int limit) {
     return factionRivalryRepository.findHottestRivalries(Pageable.ofSize(limit));
   }
 
-  /** Get tag team rivalries. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<FactionRivalry> getTagTeamRivalries() {
     return factionRivalryRepository.findTagTeamRivalries();
   }
 
-  /** Get rivalries involving stables. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<FactionRivalry> getRivalriesInvolvingStables() {
     return factionRivalryRepository.findRivalriesInvolvingStables();
   }
 
-  /**
-   * Get rivalry between two factions.
-   *
-   * @param faction1Id ID of the first faction
-   * @param faction2Id ID of the second faction
-   * @return Optional of FactionRivalry
-   */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<FactionRivalry> getFactionRivalryBetweenFactions(
       @NonNull Long faction1Id, @NonNull Long faction2Id) {
     Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
@@ -347,24 +344,26 @@ public class FactionRivalryService {
     return faction1.getMemberCount() != 0 && faction2.getMemberCount() != 0;
   }
 
-  /** Get total wrestlers involved in faction rivalries. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Long getTotalWrestlersInRivalries() {
     Long total = factionRivalryRepository.countTotalWrestlersInRivalries();
     return total != null ? total : 0L;
   }
 
-  /** Get rivalries with the most wrestlers involved. */
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public List<FactionRivalry> getRivalriesWithMostWrestlers(int limit) {
     return factionRivalryRepository.findRivalriesWithMostWrestlers(Pageable.ofSize(limit));
   }
 
   @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
   public Optional<FactionRivalry> findByExternalId(@NonNull String externalId) {
     return factionRivalryRepository.findByExternalId(externalId);
   }
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public FactionRivalry save(@NonNull FactionRivalry rivalry) {
     return factionRivalryRepository.saveAndFlush(rivalry);
   }

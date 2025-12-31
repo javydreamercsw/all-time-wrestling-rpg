@@ -91,7 +91,10 @@ public class Faction extends AbstractEntity<Long> {
   private Instant lastSync;
 
   // Faction members
-  @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @OneToMany(
+      mappedBy = "faction",
+      cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH, CascadeType.DETACH},
+      fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"faction", "rivalries", "injuries", "deck", "titleReigns"})
   @Builder.Default
   @ToString.Exclude

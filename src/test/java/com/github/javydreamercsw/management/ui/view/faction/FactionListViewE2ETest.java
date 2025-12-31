@@ -54,7 +54,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-faction-button")));
     Assertions.assertNotNull(createButton);
     wait.until(ExpectedConditions.elementToBeClickable(createButton));
-    clickAndScrollIntoView(createButton);
+    clickElement(createButton);
 
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
@@ -69,7 +69,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("save-button")));
     Assertions.assertNotNull(saveButton);
-    clickAndScrollIntoView(saveButton);
+    clickElement(saveButton);
 
     wait.until(
         ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
@@ -100,7 +100,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     scrollIntoView(editButton);
     wait.until(ExpectedConditions.elementToBeClickable(editButton));
 
-    clickAndScrollIntoView(editButton);
+    clickElement(editButton);
 
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
@@ -115,7 +115,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("save-button")));
     Assertions.assertNotNull(saveButton);
-    clickAndScrollIntoView(saveButton);
+    clickElement(saveButton);
 
     // Verify that the faction is updated in the grid
     wait.until(
@@ -148,7 +148,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     scrollIntoView(deleteButton);
     wait.until(ExpectedConditions.elementToBeClickable(deleteButton));
 
-    clickAndScrollIntoView(deleteButton);
+    clickElement(deleteButton);
 
     // Confirm the deletion in the dialog
 
@@ -160,7 +160,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(confirmDialogOverlay);
     WebElement dialogDeleteButton =
         confirmDialogOverlay.findElement(By.xpath(".//vaadin-button[text()='Delete']"));
-    clickAndScrollIntoView(dialogDeleteButton);
+    clickElement(dialogDeleteButton);
 
     wait.until(
         ExpectedConditions.invisibilityOfElementLocated(
@@ -188,7 +188,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     scrollIntoView(membersButton);
     wait.until(ExpectedConditions.elementToBeClickable(membersButton));
 
-    clickAndScrollIntoView(membersButton);
+    clickElement(membersButton);
 
     // Wait for the members dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
@@ -198,14 +198,13 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(By.id("add-member-wrestler-combo")));
     Assertions.assertNotNull(wrestlerComboBox);
-    wrestlerComboBox.sendKeys(wrestler.getName());
-    wrestlerComboBox.sendKeys(Keys.ENTER);
+    selectFromVaadinComboBox(wrestlerComboBox, wrestler.getName());
 
     // Click the "Add Member" button
     WebElement addMemberButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("add-member-button")));
     Assertions.assertNotNull(addMemberButton);
-    clickAndScrollIntoView(addMemberButton);
+    clickElement(addMemberButton);
 
     // Verify the wrestler is added to the members grid
     wait.until(
@@ -244,7 +243,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     scrollIntoView(membersButton);
     wait.until(ExpectedConditions.elementToBeClickable(membersButton));
 
-    clickAndScrollIntoView(membersButton);
+    clickElement(membersButton);
 
     // Wait for the members dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
@@ -254,7 +253,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("remove-member-" + wrestler.getId())));
     Assertions.assertNotNull(removeButton);
-    clickAndScrollIntoView(removeButton);
+    clickElement(removeButton);
 
     // Verify the wrestler is removed from the members grid
     wait.until(

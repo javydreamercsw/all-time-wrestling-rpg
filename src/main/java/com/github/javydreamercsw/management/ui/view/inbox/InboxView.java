@@ -16,13 +16,17 @@
 */
 package com.github.javydreamercsw.management.ui.view.inbox;
 
-import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridMultiSelectionModel;
 import com.vaadin.flow.component.html.Div;
@@ -31,25 +35,29 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.Query;
-import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import java.util.ArrayList;
-import java.util.Arrays;
+import jakarta.annotation.security.PermitAll;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Sort;
 
 @Route(value = "inbox", layout = MainLayout.class)
 @PageTitle("Inbox")
+@PermitAll
 public class InboxView extends VerticalLayout {
 
   private final InboxService inboxService;
+  private final InboxEventTypeRegistry eventTypeRegistry;
+  private final WrestlerRepository wrestlerRepository;
   private final Grid<InboxItem> grid = new Grid<>(InboxItem.class);
-  private final TextField filterText = new TextField();
+  private final MultiSelectComboBox<Wrestler> targetFilter = new MultiSelectComboBox<>("Targets");
   private final ComboBox<String> readStatusFilter = new ComboBox<>("Read Status");
   private final ComboBox<String> eventTypeFilter = new ComboBox<>("Event Type");
   private final Div detailsView = new Div();
@@ -59,9 +67,17 @@ public class InboxView extends VerticalLayout {
   private final Checkbox hideReadCheckbox = new Checkbox("Hide Read");
   private final Button deleteSelectedButton = new Button("Delete Selected");
   private final Set<InboxItem> selectedItems = new HashSet<>();
+  private final SecurityUtils securityUtils;
 
-  public InboxView(InboxService inboxService) {
+  public InboxView(
+      InboxService inboxService,
+      InboxEventTypeRegistry eventTypeRegistry,
+      WrestlerRepository wrestlerRepository,
+      SecurityUtils securityUtils) {
     this.inboxService = inboxService;
+    this.eventTypeRegistry = eventTypeRegistry;
+    this.wrestlerRepository = wrestlerRepository;
+    this.securityUtils = securityUtils;
 
     addClassName("inbox-view");
     setSizeFull();
@@ -73,14 +89,31 @@ public class InboxView extends VerticalLayout {
     splitLayout.addToSecondary(detailsView);
 
     add(splitLayout);
+    configureForUser();
     updateList();
   }
 
+  private void configureForUser() {
+    // If the user is a player but not an admin or booker, default to their wrestler
+    if (securityUtils.isPlayer() && !securityUtils.isAdmin() && !securityUtils.isBooker()) {
+      securityUtils
+          .getAuthenticatedUser()
+          .ifPresent(
+              user -> {
+                Wrestler wrestler = user.getWrestler();
+                if (wrestler != null) {
+                  targetFilter.setValue(wrestler);
+                  targetFilter.setReadOnly(true);
+                }
+              });
+    }
+  }
+
   private HorizontalLayout getToolbar() {
-    filterText.setPlaceholder("Filter by description...");
-    filterText.setClearButtonVisible(true);
-    filterText.setValueChangeMode(ValueChangeMode.LAZY);
-    filterText.addValueChangeListener(e -> updateList());
+    targetFilter.setItems(wrestlerRepository.findAll(Sort.by(Sort.Direction.ASC, "name")));
+    targetFilter.setItemLabelGenerator(Wrestler::getName);
+    targetFilter.addValueChangeListener(e -> updateList());
+    targetFilter.setId("inbox-target-filter");
 
     readStatusFilter.setItems("All", "Read", "Unread");
     readStatusFilter.setValue("All");
@@ -89,12 +122,11 @@ public class InboxView extends VerticalLayout {
     hideReadCheckbox.addValueChangeListener(e -> updateList());
 
     List<String> eventTypes =
-        new ArrayList<>(
-            Arrays.stream(InboxEventType.values())
-                .map(InboxEventType::getFriendlyName)
-                .sorted()
-                .collect(Collectors.toList()));
-    eventTypes.add(0, "All");
+        eventTypeRegistry.getEventTypes().stream()
+            .map(Object::toString)
+            .sorted()
+            .collect(Collectors.toList());
+    eventTypes.addFirst("All");
     eventTypeFilter.setItems(eventTypes);
     eventTypeFilter.setPlaceholder("All");
     eventTypeFilter.setValue("All");
@@ -149,11 +181,24 @@ public class InboxView extends VerticalLayout {
           updateSelectedButtonsState();
         });
 
+    markSelectedReadButton.setVisible(securityUtils.canEdit());
+    markSelectedUnreadButton.setVisible(securityUtils.canEdit());
+    deleteSelectedButton.setVisible(securityUtils.canDelete());
+    selectAllCheckbox.setVisible(securityUtils.canEdit());
     updateSelectedButtonsState();
 
+    Button clearTargetFilter = new Button("Clear");
+    clearTargetFilter.addClickListener(
+        event -> {
+          targetFilter.clear();
+          updateList();
+        });
+    // Hide clear target filter button if the target filter is read-only
+    clearTargetFilter.setVisible(securityUtils.canEdit() && !targetFilter.isReadOnly());
     HorizontalLayout toolbar =
         new HorizontalLayout(
-            filterText,
+            targetFilter,
+            clearTargetFilter,
             readStatusFilter,
             eventTypeFilter,
             hideReadCheckbox,
@@ -179,6 +224,7 @@ public class InboxView extends VerticalLayout {
     grid.addClassName("inbox-grid");
     grid.setSizeFull();
     grid.setColumns("eventType", "description", "eventTimestamp");
+    grid.addColumn(this::getTargetNames).setHeader("Targets");
     grid.addComponentColumn(this::createReadToggleButton).setHeader("Mark as Read/Unread");
     grid.getColumns().forEach(col -> col.setAutoWidth(true));
     grid.setSelectionMode(Grid.SelectionMode.MULTI);
@@ -192,6 +238,35 @@ public class InboxView extends VerticalLayout {
             });
 
     grid.addItemClickListener(event -> showDetails(event.getItem()));
+  }
+
+  private String getTargetNames(InboxItem item) {
+    if (item.getTargets() == null || item.getTargets().isEmpty()) {
+      // This is for backward compatibility with old data that had the target in the
+      // description.
+      Pattern pattern = Pattern.compile("(\\d+)$"); // NOSONAR
+      Matcher matcher = pattern.matcher(item.getDescription());
+      if (matcher.find()) {
+        String id = matcher.group(1);
+        try {
+          Optional<Wrestler> w = wrestlerRepository.findById(Long.parseLong(id));
+          if (w.isPresent()) {
+            return w.get().getName();
+          }
+        } catch (NumberFormatException e) {
+          // Ignore, not a number
+        }
+      }
+      return "N/A";
+    }
+    return item.getTargets().stream()
+        .map(
+            target ->
+                wrestlerRepository
+                    .findById(Long.parseLong(target.getTargetId()))
+                    .map(Wrestler::getName)
+                    .orElse("Unknown"))
+        .collect(Collectors.joining(", "));
   }
 
   private void showDetails(InboxItem item) {
@@ -209,13 +284,14 @@ public class InboxView extends VerticalLayout {
           inboxService.toggleReadStatus(item);
           updateList();
         });
+    button.setVisible(securityUtils.canEdit(item));
     return button;
   }
 
   private void updateList() {
     grid.setItems(
         inboxService.search(
-            filterText.getValue(),
+            targetFilter.getValue(),
             readStatusFilter.getValue(),
             eventTypeFilter.getValue(),
             hideReadCheckbox.getValue()));

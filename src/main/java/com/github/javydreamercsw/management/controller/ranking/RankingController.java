@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.controller.ranking;
 
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
-import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,7 +45,7 @@ public class RankingController {
 
   @GetMapping("/championships/{id}/contenders")
   @Operation(summary = "Get ranked contenders for a championship")
-  public List<RankedWrestlerDTO> getRankedContenders(@PathVariable Long id) {
+  public List<?> getRankedContenders(@PathVariable Long id) {
     return rankingService.getRankedContenders(id);
   }
 

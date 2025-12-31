@@ -19,13 +19,15 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLERS_CACHE;
 import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_STATS_CACHE;
 
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
@@ -39,12 +41,14 @@ import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +58,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WrestlerService {
 
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private AccountRepository accountRepository;
   @Autowired private DramaEventRepository dramaEventRepository;
   @Autowired private Clock clock;
   @Autowired private InjuryService injuryService;
@@ -62,14 +67,118 @@ public class WrestlerService {
   @Autowired private TitleService titleService;
   @Autowired private TierRecalculationService tierRecalculationService;
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void createWrestler(@NonNull String name) {
-    createWrestler(name, false, "", WrestlerTier.ROOKIE);
+    createWrestler(name, false, "", WrestlerTier.ROOKIE, null);
   }
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
+    return createWrestler(name, isPlayer, description, WrestlerTier.ROOKIE, null);
+  }
+
+  /**
+   * Create a new wrestler with ATW RPG defaults.
+   *
+   * @param name Wrestler name
+   * @param isPlayer Whether this is a player-controlled wrestler
+   * @param description Character description
+   * @return The created wrestler
+   */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  public Wrestler createWrestler(
+      @NonNull String name, boolean isPlayer, String description, @NonNull WrestlerTier tier) {
+    return createWrestler(name, isPlayer, description, tier, null);
+  }
+
+  /**
+   * Create a new wrestler with ATW RPG defaults, optionally linking to an account.
+   *
+   * @param name Wrestler name
+   * @param isPlayer Whether this is a player-controlled wrestler
+   * @param description Character description
+   * @param tier The tier of the wrestler
+   * @param account The account to link to this wrestler (optional)
+   * @return The created wrestler
+   */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  public Wrestler createWrestler(
+      @NonNull String name,
+      boolean isPlayer,
+      String description,
+      @NonNull WrestlerTier tier,
+      @Nullable Account account) {
+    Wrestler wrestler =
+        Wrestler.builder()
+            .name(name)
+            .description(description == null ? "Default Description" : description)
+            .deckSize(15)
+            .startingHealth(15)
+            .lowHealth(0)
+            .startingStamina(0)
+            .lowStamina(0)
+            .fans(0L)
+            .gender(Gender.MALE)
+            .isPlayer(isPlayer)
+            .bumps(0)
+            .tier(tier)
+            .account(account) // Set account here
+            .build();
+
+    return save(wrestler);
+  }
+
+  /**
+   * Assigns an account to an existing wrestler.
+   *
+   * @param wrestlerId The ID of the wrestler.
+   * @param accountId The ID of the account to assign, or null to unassign.
+   * @return The updated wrestler, or empty if wrestler not found.
+   */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  public Optional<Wrestler> setAccountForWrestler(
+      @NonNull Long wrestlerId, @Nullable Long accountId) {
+    return wrestlerRepository
+        .findById(wrestlerId)
+        .map(
+            wrestler -> {
+              Account account = null;
+              if (accountId != null) {
+                account =
+                    accountRepository
+                        .findById(accountId)
+                        .orElseThrow(
+                            () ->
+                                new IllegalArgumentException(
+                                    "Account not found with ID: " + accountId));
+              }
+
+              // Check if the account is already assigned to another wrestler
+              if (account != null) {
+                Optional<Wrestler> existingPlayerWrestler =
+                    wrestlerRepository.findByAccount(account);
+                if (existingPlayerWrestler.isPresent()
+                    && !existingPlayerWrestler.get().getId().equals(wrestlerId)) {
+                  throw new IllegalArgumentException(
+                      "Account "
+                          + account.getUsername()
+                          + " is already assigned to another wrestler: "
+                          + existingPlayerWrestler.get().getName());
+                }
+              }
+
+              wrestler.setAccount(account);
+              wrestler.setIsPlayer(account != null); // Set isPlayer based on account presence
+              return wrestlerRepository.saveAndFlush(wrestler);
+            });
+  }
+
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> list(@NonNull Pageable pageable) {
     return wrestlerRepository.findAllBy(pageable).toList();
   }
 
+  @PreAuthorize("isAuthenticated()")
   public long count() {
     return wrestlerRepository.count();
   }
@@ -77,48 +186,65 @@ public class WrestlerService {
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#wrestler)")
   public Wrestler save(@NonNull Wrestler wrestler) {
     wrestler.setCreationDate(clock.instant());
     return wrestlerRepository.saveAndFlush(wrestler);
   }
 
   @Transactional
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void delete(@NonNull Wrestler wrestler) {
     dramaEventRepository.deleteByPrimaryWrestlerOrSecondaryWrestler(wrestler, wrestler);
     wrestlerRepository.delete(wrestler);
-    log.info("Deleted wrestler: {}", wrestler.getName());
+    log.debug("Deleted wrestler: {}", wrestler.getName());
   }
 
   // @Cacheable(value = WRESTLERS_CACHE, key = "'all'")
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAll() {
     return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans"));
   }
 
   /** Get wrestler by ID. */
+  @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> getWrestlerById(Long id) {
     return wrestlerRepository.findById(id);
   }
 
   /** Find wrestler by ID (alias for getWrestlerById for consistency). */
+  @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findById(Long id) {
     return getWrestlerById(id);
   }
 
   /** Find wrestler by ID and fetch injuries. */
+  @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findByIdWithInjuries(Long id) {
     return wrestlerRepository.findByIdWithInjuries(id);
   }
 
   /** Get all wrestlers (alias for findAll for UI compatibility). */
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getAllWrestlers() {
     return findAll();
   }
 
   @Cacheable(value = WRESTLERS_CACHE, key = "'name:' + #name")
+  @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findByName(String name) {
     return wrestlerRepository.findByName(name);
   }
 
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Wrestler> findByAccount(@NonNull Account account) {
+    return wrestlerRepository.findByAccount(account);
+  }
+
+  @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findByExternalId(String externalId) {
     return wrestlerRepository.findByExternalId(externalId);
   }
@@ -126,6 +252,7 @@ public class WrestlerService {
   // ==================== ATW RPG METHODS ====================
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fans) {
     return updateFans(wrestlerId, fans);
   }
@@ -142,10 +269,18 @@ public class WrestlerService {
               long tempFans = fanChange;
               if (fanChange > 0) {
                 switch (wrestler.getTier()) {
-                  case ICON -> tempFans = tempFans * 90 / 100;
-                  case MAIN_EVENTER -> tempFans = tempFans * 93 / 100;
-                  case MIDCARDER -> tempFans = tempFans * 95 / 100;
-                  case CONTENDER -> tempFans = tempFans * 97 / 100;
+                  case ICON:
+                    tempFans = tempFans * 90 / 100;
+                    break;
+                  case MAIN_EVENTER:
+                    tempFans = tempFans * 93 / 100;
+                    break;
+                  case MIDCARDER:
+                    tempFans = tempFans * 95 / 100;
+                    break;
+                  case CONTENDER:
+                    tempFans = tempFans * 97 / 100;
+                    break;
                 }
                 tempFans = Math.round(tempFans / 1000.0) * 1000;
               }
@@ -164,6 +299,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Wrestler> addBump(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -186,6 +322,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Wrestler> healBump(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -210,6 +347,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Wrestler> healChance(@NonNull Long wrestlerId, @NonNull DiceBag diceBag) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -246,6 +384,7 @@ public class WrestlerService {
             });
   }
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Wrestler> healChance(@NonNull Long wrestlerId) {
     return healChance(wrestlerId, new DiceBag(6));
   }
@@ -256,6 +395,7 @@ public class WrestlerService {
    * @param tier The wrestler tier
    * @return List of wrestlers in that tier
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getWrestlersByTier(@NonNull WrestlerTier tier) {
     return wrestlerRepository.findAll().stream()
         .filter(wrestler -> wrestler.getTier() == tier)
@@ -267,6 +407,7 @@ public class WrestlerService {
    *
    * @return List of player wrestlers
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getPlayerWrestlers() {
     return wrestlerRepository.findAll().stream().filter(Wrestler::getIsPlayer).toList();
   }
@@ -276,6 +417,7 @@ public class WrestlerService {
    *
    * @return List of NPC wrestlers
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getNpcWrestlers() {
     return wrestlerRepository.findAll().stream()
         .filter(wrestler -> !wrestler.getIsPlayer())
@@ -289,52 +431,12 @@ public class WrestlerService {
    * @param cost The fan cost
    * @return true if successful, false if wrestler not found or insufficient fans
    */
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public boolean spendFans(@NonNull Long wrestlerId, @NonNull Long cost) {
     return updateFans(wrestlerId, -cost).isPresent();
   }
 
-  /**
-   * Create a new wrestler with ATW RPG defaults.
-   *
-   * @param name Wrestler name
-   * @param isPlayer Whether this is a player-controlled wrestler
-   * @param description Character description
-   * @return The created wrestler
-   */
-  public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
-    return createWrestler(name, isPlayer, description, WrestlerTier.ROOKIE);
-  }
-
-  /**
-   * Create a new wrestler with ATW RPG defaults.
-   *
-   * @param name Wrestler name
-   * @param isPlayer Whether this is a player-controlled wrestler
-   * @param description Character description
-   * @param tier The tier of the wrestler
-   * @return The created wrestler
-   */
-  public Wrestler createWrestler(
-      @NonNull String name, boolean isPlayer, String description, @NonNull WrestlerTier tier) {
-    Wrestler wrestler =
-        Wrestler.builder()
-            .name(name)
-            .description(description == null ? "Default Description" : description)
-            .deckSize(15)
-            .startingHealth(15)
-            .lowHealth(0)
-            .startingStamina(0)
-            .lowStamina(0)
-            .fans(0L)
-            .gender(Gender.MALE)
-            .isPlayer(isPlayer)
-            .bumps(0)
-            .tier(tier)
-            .build();
-
-    return save(wrestler);
-  }
-
+  @PreAuthorize("isAuthenticated()")
   public List<WrestlerDTO> findAllAsDTO() {
     return findAll().stream().map(WrestlerDTO::new).toList();
   }
@@ -346,6 +448,7 @@ public class WrestlerService {
    * @return An Optional containing WrestlerStats if the wrestler is found, otherwise empty.
    */
   @Cacheable(value = WRESTLER_STATS_CACHE, key = "#wrestlerId")
+  @PreAuthorize("isAuthenticated()")
   public Optional<WrestlerStats> getWrestlerStats(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)

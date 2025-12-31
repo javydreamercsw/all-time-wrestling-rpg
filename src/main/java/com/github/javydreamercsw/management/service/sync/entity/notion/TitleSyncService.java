@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.TitlePage;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
@@ -55,7 +56,7 @@ public class TitleSyncService extends BaseSyncService {
   @Transactional
   public SyncResult syncTitles(@NonNull String operationId) {
     if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("titles")) {
-      return SyncResult.success("Titles", 0, 0, 0);
+      return SyncResult.success("titles", 0, 0, 0);
     }
 
     log.info("🏆 Starting titles synchronization from Notion...");
@@ -69,19 +70,25 @@ public class TitleSyncService extends BaseSyncService {
       return result;
     } catch (Exception e) {
       log.error("Failed to sync titles", e);
-      return SyncResult.failure("Titles", e.getMessage());
+      return SyncResult.failure("titles", e.getMessage());
     }
   }
 
   private SyncResult performTitlesSync(@NonNull String operationId, long startTime) {
     if (!syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("titles")) {
       log.info("Titles sync is disabled in configuration");
-      return SyncResult.success("Titles", 0, 0, 0);
+      return SyncResult.success("titles", 0, 0, 0);
     }
 
     if (!isNotionHandlerAvailable()) {
       log.warn("NotionHandler not available. Cannot sync titles from Notion.");
-      return SyncResult.failure("Titles", "NotionHandler is not available for sync operations");
+      syncServiceDependencies
+          .getProgressTracker()
+          .failOperation(operationId, "NotionHandler is not available for sync operations");
+      syncServiceDependencies
+          .getHealthMonitor()
+          .recordFailure("titles", "NotionHandler is not available for sync operations");
+      return SyncResult.failure("titles", "NotionHandler is not available for sync operations");
     }
 
     try {
@@ -137,6 +144,7 @@ public class TitleSyncService extends BaseSyncService {
                   }
                 };
             title.setTier(mappedTier);
+            title.setChampionshipType(ChampionshipType.SINGLE);
           } catch (IllegalArgumentException e) {
             log.warn("Invalid tier '{}' for title '{}'", tierString, titleName);
           }
@@ -153,14 +161,14 @@ public class TitleSyncService extends BaseSyncService {
       log.info("🎉 Successfully synchronized titles in {}ms total", totalTime);
       syncServiceDependencies
           .getHealthMonitor()
-          .recordSuccess("Titles", totalTime, titlePages.size());
-      return SyncResult.success("Titles", titlePages.size(), 0, 0);
+          .recordSuccess("titles", totalTime, titlePages.size());
+      return SyncResult.success("titles", titlePages.size(), 0, 0);
 
     } catch (Exception e) {
       long totalTime = System.currentTimeMillis() - startTime;
       log.error("❌ Failed to synchronize titles from Notion after {}ms", totalTime, e);
       syncServiceDependencies.getHealthMonitor().recordFailure("Titles", e.getMessage());
-      return SyncResult.failure("Titles", e.getMessage());
+      return SyncResult.failure("titles", e.getMessage());
     }
   }
 
@@ -288,20 +296,21 @@ public class TitleSyncService extends BaseSyncService {
           newContenders.stream().map(w -> w.getName() + " (" + w.getExternalId() + ")").toList());
       if (!newContenders.isEmpty()) {
         // Only update if contenders have changed
-        if (!newContenders.equals(title.getContender())) {
+        if (!newContenders.equals(title.getChallengers())) {
           log.info(
               "Setting contenders for title '{}' to '{}'",
               title.getName(),
               newContenders.stream()
                   .map(Wrestler::getName)
                   .collect(java.util.stream.Collectors.joining(", ")));
-          title.setContender(newContenders);
+          title.getChallengers().clear();
+          newContenders.forEach(title::addChallenger);
           syncServiceDependencies.getTitleRepository().saveAndFlush(title);
         }
       }
-    } else if (title.getContender() != null && !title.getContender().isEmpty()) {
+    } else if (title.getChallengers() != null && !title.getChallengers().isEmpty()) {
       log.info("Removing contenders from title: {}", title.getName());
-      title.setContender(new java.util.ArrayList<>());
+      title.getChallengers().clear();
       syncServiceDependencies.getTitleRepository().saveAndFlush(title);
     }
   }

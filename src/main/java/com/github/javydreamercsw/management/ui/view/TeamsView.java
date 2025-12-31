@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.dto.TeamDTO;
 import com.github.javydreamercsw.management.service.team.TeamService;
@@ -51,14 +52,17 @@ import org.springframework.data.domain.PageRequest;
 public class TeamsView extends VerticalLayout {
 
   private final TeamService teamService;
+  private final SecurityUtils securityUtils;
   private final Grid<TeamDTO> grid;
   private final TextField searchField;
 
   private TeamFormDialog teamFormDialog;
 
-  public TeamsView(TeamService teamService, TeamFormDialog teamFormDialog) {
+  public TeamsView(
+      TeamService teamService, TeamFormDialog teamFormDialog, SecurityUtils securityUtils) {
     this.teamService = teamService;
     this.teamFormDialog = teamFormDialog;
+    this.securityUtils = securityUtils;
     this.grid = new Grid<>(TeamDTO.class, false);
     this.searchField = new TextField();
 
@@ -114,18 +118,24 @@ public class TeamsView extends VerticalLayout {
   }
 
   private HorizontalLayout createActionsLayout(TeamDTO team) {
+    Optional<Team> teamEntityOptional = teamService.getTeamById(team.getId());
+    Team teamEntity = teamEntityOptional.orElse(null);
+
     Button editButton = new Button(VaadinIcon.EDIT.create());
     editButton.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_SMALL);
     editButton.setTooltipText("Edit team");
     editButton.addClickListener(e -> editTeam(team));
+    editButton.setVisible(securityUtils.canEdit(teamEntity));
 
     Button deleteButton = new Button(VaadinIcon.TRASH.create());
     deleteButton.addThemeVariants(
         ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
     deleteButton.setTooltipText("Delete team");
     deleteButton.addClickListener(e -> confirmDeleteTeam(team));
+    deleteButton.setVisible(securityUtils.canDelete(teamEntity));
 
     Button statusButton = createStatusButton(team);
+    statusButton.setVisible(securityUtils.canEdit(teamEntity));
 
     HorizontalLayout actions = new HorizontalLayout(editButton, statusButton, deleteButton);
     actions.setSpacing(false);
@@ -170,6 +180,7 @@ public class TeamsView extends VerticalLayout {
     Button addButton = new Button("Add Team", VaadinIcon.PLUS.create());
     addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     addButton.addClickListener(e -> addTeam());
+    addButton.setVisible(securityUtils.canCreate());
 
     Button refreshButton = new Button(VaadinIcon.REFRESH.create());
     refreshButton.addThemeVariants(ButtonVariant.LUMO_ICON);

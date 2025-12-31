@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.segment.rule;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -56,6 +57,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @PermitAll
 public class SegmentRuleListView extends Main {
   @Autowired private SegmentRuleService segmentRuleService;
+  @Autowired private SecurityUtils securityUtils;
 
   private Grid<SegmentRule> segmentRuleGrid;
   private Dialog editDialog;
@@ -80,6 +82,7 @@ public class SegmentRuleListView extends Main {
     Button createButton = new Button("Create Segment Rule", new Icon(VaadinIcon.PLUS));
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     createButton.addClickListener(e -> openCreateDialog());
+    createButton.setVisible(securityUtils.canCreate());
 
     HorizontalLayout toolbar = new HorizontalLayout(createButton);
     toolbar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
@@ -126,11 +129,13 @@ public class SegmentRuleListView extends Main {
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editButton.setTooltipText("Edit Segment Rule");
     editButton.addClickListener(e -> openEditDialog(segmentRule));
+    editButton.setVisible(securityUtils.canEdit());
 
     Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
     deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
     deleteButton.setTooltipText("Delete Segment Rule");
     deleteButton.addClickListener(e -> confirmDelete(segmentRule));
+    deleteButton.setVisible(securityUtils.canDelete());
 
     HorizontalLayout actions = new HorizontalLayout(editButton, deleteButton);
     actions.setSpacing(true);
@@ -186,6 +191,7 @@ public class SegmentRuleListView extends Main {
 
     Button saveButton = new Button("Save", e -> saveSegmentRule());
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    saveButton.setVisible(securityUtils.canEdit());
     Button cancelButton = new Button("Cancel", e -> editDialog.close());
 
     HorizontalLayout buttons = new HorizontalLayout(saveButton, cancelButton);

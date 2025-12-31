@@ -16,12 +16,14 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -43,6 +45,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,10 +65,12 @@ public class ShowPlanningService {
       segmentSummaryService;
   private final SegmentTypeService segmentTypeService;
   private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
   private final FactionService factionService;
   private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
     ShowPlanningContext context = new ShowPlanningContext();
 
@@ -131,7 +136,7 @@ public class ShowPlanningService {
         championship.getChampions().addAll(title.getCurrentChampions());
       }
       // Use only the current #1 contender(s) for this title
-      List<Wrestler> numberOneContenders = title.getContender();
+      List<Wrestler> numberOneContenders = title.getChallengers();
       if (numberOneContenders != null && !numberOneContenders.isEmpty()) {
         championship.getContenders().addAll(numberOneContenders);
       }
@@ -140,21 +145,22 @@ public class ShowPlanningService {
     context.setChampionships(championships);
 
     // Get all wrestlers
-    List<Wrestler> allWrestlers = wrestlerService.findAll();
+    List<Wrestler> allWrestlers = wrestlerRepository.findAll();
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);
 
+    // Build wrestler heat map based on rivalries
+    List<ShowPlanningWrestlerHeat> wrestlerHeats = buildWrestlerHeats(allWrestlers);
+    context.setWrestlerHeats(wrestlerHeats);
+
     // Get all factions
-    List<com.github.javydreamercsw.management.domain.faction.Faction> allFactions =
-        factionService.findAll();
+    List<Faction> allFactions = factionService.findAll();
     log.debug("Found {} factions", allFactions.size());
     context.setFactions(allFactions);
 
     // Get next PLE
     Optional<Show> nextPle =
-        showService.getUpcomingShows(show.getShowDate(), 10).stream()
-            .filter(Show::isPremiumLiveEvent)
-            .findFirst();
+        showService.getUpcomingShows(10).stream().filter(Show::isPremiumLiveEvent).findFirst();
     if (nextPle.isPresent()) {
       ShowPlanningPle ple = new ShowPlanningPle();
       ple.setPle(nextPle.get());
@@ -165,6 +171,7 @@ public class ShowPlanningService {
   }
 
   @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void approveSegments(@NonNull Show show, @NonNull List<ProposedSegment> proposedSegments) {
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();
@@ -181,7 +188,7 @@ public class ShowPlanningService {
       segmentTypeService.findByName(proposedSegment.getType()).ifPresent(segment::setSegmentType);
 
       for (String participantName : proposedSegment.getParticipants()) {
-        wrestlerService.findByName(participantName).ifPresent(segment::addParticipant);
+        wrestlerRepository.findByName(participantName).ifPresent(segment::addParticipant);
       }
 
       segmentsToSave.add(segment);
@@ -189,5 +196,28 @@ public class ShowPlanningService {
     segmentRepository.saveAll(segmentsToSave);
     log.info("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
+  }
+
+  /**
+   * Builds wrestler heat information based on their active rivalries. For each wrestler, this
+   * creates entries for each opponent they're feuding with and the heat level of that feud.
+   */
+  private List<ShowPlanningWrestlerHeat> buildWrestlerHeats(@NonNull List<Wrestler> wrestlers) {
+    List<ShowPlanningWrestlerHeat> wrestlerHeats = new ArrayList<>();
+
+    for (Wrestler wrestler : wrestlers) {
+      List<Rivalry> rivalries = rivalryService.getRivalriesForWrestler(wrestler.getId());
+      for (Rivalry rivalry : rivalries) {
+        Wrestler opponent = rivalry.getOpponent(wrestler);
+        ShowPlanningWrestlerHeat heat = new ShowPlanningWrestlerHeat();
+        heat.setWrestlerName(wrestler.getName());
+        heat.setOpponentName(opponent.getName());
+        heat.setHeat(rivalry.getHeat());
+        wrestlerHeats.add(heat);
+      }
+    }
+
+    log.debug("Built {} wrestler heat entries from rivalries", wrestlerHeats.size());
+    return wrestlerHeats;
   }
 }

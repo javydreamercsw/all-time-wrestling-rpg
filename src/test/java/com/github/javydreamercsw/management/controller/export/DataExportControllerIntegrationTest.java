@@ -16,12 +16,20 @@
 */
 package com.github.javydreamercsw.management.controller.export;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -32,7 +40,8 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.dto.ShowDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,64 +49,114 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-/**
- * Integration tests for DataExportController. Tests the full export functionality with real
- * database and file system operations.
- */
-@SpringBootTest
-@AutoConfigureMockMvc
-class DataExportControllerIntegrationTest extends AbstractIntegrationTest {
+@WebMvcTest(
+    controllers = DataExportController.class,
+    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
+class DataExportControllerIntegrationTest extends AbstractControllerTest {
 
-  @Autowired private MockMvc mockMvc;
-  @Autowired private ShowRepository showRepository;
-  @Autowired private ShowTemplateRepository showTemplateRepository;
-  @Autowired private ShowTypeRepository showTypeRepository;
-  @Autowired private SeasonRepository seasonRepository;
-  @Autowired private ObjectMapper objectMapper;
+  @MockitoBean private ShowTemplateRepository showTemplateRepository;
+  @MockitoBean private ShowTypeRepository showTypeRepository;
+  @MockitoBean private SeasonRepository seasonRepository;
+
+  @MockitoBean private ShowService showService;
+  @MockitoBean private ShowTemplateService showTemplateService;
+  @MockitoBean private ShowRepository showRepository;
+
+  private Show testShow;
+  private ShowTemplate testShowTemplate;
+  private ShowType testShowType;
+  private Season testSeason;
 
   @BeforeEach
-  void setUp() {
-    showRepository.deleteAll();
-    showTemplateRepository.deleteAll();
-    showTypeRepository.deleteAll();
-    seasonRepository.deleteAll();
+  void setUp() throws IOException {
+    // Clear the exports directory
+    Path exportsDir = Paths.get("target/exports");
+    if (Files.exists(exportsDir)) {
+      Files.walk(exportsDir)
+          .sorted(Comparator.reverseOrder())
+          .forEach(
+              path -> {
+                try {
+                  Files.deleteIfExists(path);
+                } catch (IOException e) {
+                  // Ignore
+                }
+              });
+    }
+    Files.createDirectories(exportsDir);
 
-    ShowType showType = new ShowType();
-    showType.setName("Integration Test Show Type");
-    showType.setDescription("Integration test description");
-    showTypeRepository.save(showType);
+    // Reset mocks for a clean slate for each test
+    reset(
+        showTemplateRepository,
+        showTypeRepository,
+        seasonRepository,
+        showService,
+        showTemplateService,
+        showRepository);
 
-    Season season = new Season();
-    season.setName("Integration Test Season");
-    season.setDescription("Integration test description");
-    season.setShowsPerPpv(5);
-    season.setIsActive(true);
-    seasonRepository.save(season);
+    // --- Setup common test data ---
+    testShowType = mock(ShowType.class);
+    when(testShowType.getId()).thenReturn(1L);
+    when(testShowType.getName()).thenReturn("Integration Test Show Type");
+    when(testShowType.getDescription()).thenReturn("Integration test description");
 
-    Show show = new Show();
-    show.setName("Integration Test Show");
-    show.setDescription("Integration test description");
-    show.setType(showType);
-    show.setShowDate(LocalDate.of(2024, 6, 15));
-    show.setSeason(season);
-    show.setExternalId("integration-test-123");
-    showRepository.save(show);
+    testSeason = mock(Season.class);
+    when(testSeason.getId()).thenReturn(1L);
+    when(testSeason.getName()).thenReturn("Integration Test Season");
+    when(testSeason.getDescription()).thenReturn("Integration test description");
+    when(testSeason.getShowsPerPpv()).thenReturn(5);
+    when(testSeason.getIsActive()).thenReturn(true);
 
-    ShowTemplate showTemplate = new ShowTemplate();
-    showTemplate.setName("Integration Test Template");
-    showTemplate.setDescription("Integration test template description");
-    showTemplate.setShowType(showType);
-    showTemplate.setNotionUrl("https://notion.so/integration-test");
-    showTemplate.setExternalId("template-integration-456");
-    showTemplateRepository.save(showTemplate);
+    testShow = mock(Show.class);
+    when(testShow.getId()).thenReturn(1L);
+    when(testShow.getName()).thenReturn("Integration Test Show");
+    when(testShow.getDescription()).thenReturn("Integration test description");
+    when(testShow.getType()).thenReturn(testShowType);
+    when(testShow.getShowDate()).thenReturn(LocalDate.of(2024, 6, 15));
+    when(testShow.getSeason()).thenReturn(testSeason);
+    when(testShow.getExternalId()).thenReturn("integration-test-123");
+
+    testShowTemplate = mock(ShowTemplate.class);
+    when(testShowTemplate.getId()).thenReturn(1L);
+    when(testShowTemplate.getName()).thenReturn("Integration Test Template");
+    when(testShowTemplate.getDescription()).thenReturn("Integration test template description");
+    when(testShowTemplate.getShowType()).thenReturn(testShowType);
+    when(testShowTemplate.getNotionUrl()).thenReturn("https://notion.so/integration-test");
+    when(testShowTemplate.getExternalId()).thenReturn("template-integration-456");
+
+    // --- Mock repository and service behavior ---
+    // Mock save methods to return the entity (important for services that return saved entities)
+    when(showTypeRepository.save(any(ShowType.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(seasonRepository.save(any(Season.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(showRepository.save(any(Show.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(showTemplateRepository.save(any(ShowTemplate.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // Mock findById for repositories
+    when(showTypeRepository.findById(1L)).thenReturn(Optional.of(testShowType));
+    when(seasonRepository.findById(1L)).thenReturn(Optional.of(testSeason));
+    when(showTemplateRepository.findById(1L)).thenReturn(Optional.of(testShowTemplate));
+
+    // Mock service findAll methods to return our test data
+    when(showService.findAllWithRelationships()).thenReturn(List.of(testShow));
+    when(showTemplateService.findAll()).thenReturn(List.of(testShowTemplate));
+
+    // Mock save for services - these are the ones called in the test @BeforeEach (implicitly by
+    // controller, but we need to mock it)
+    when(showService.save(any(Show.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(showTemplateService.save(any(ShowTemplate.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
   }
 
   @Test
@@ -169,9 +228,9 @@ class DataExportControllerIntegrationTest extends AbstractIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(
             content()
-                .string(org.hamcrest.Matchers.containsString("Successfully exported all data")))
-        .andExpect(
-            content().string(org.hamcrest.Matchers.containsString("target/exports/ directory")));
+                .string(
+                    org.hamcrest.Matchers.containsString(
+                        "Successfully exported all data to target/exports/ directory in")));
 
     // Assert - Check both files were created
     Path showsFile = Paths.get("target/exports/shows.json");
@@ -193,8 +252,9 @@ class DataExportControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Test
   void exportShows_EmptyDatabase_CreatesEmptyFile() throws Exception {
-    // Arrange - Clear all shows
+    // Arrange - Clear all shows and mock service to return empty list
     showRepository.deleteAll();
+    when(showService.findAllWithRelationships()).thenReturn(List.of());
 
     // Act
     mockMvc
@@ -216,8 +276,9 @@ class DataExportControllerIntegrationTest extends AbstractIntegrationTest {
 
   @Test
   void exportShowTemplates_EmptyDatabase_CreatesEmptyFile() throws Exception {
-    // Arrange - Clear all show templates
+    // Arrange - Clear all show templates and mock service to return empty list
     showTemplateRepository.deleteAll();
+    when(showTemplateService.findAll()).thenReturn(List.of());
 
     // Act
     mockMvc

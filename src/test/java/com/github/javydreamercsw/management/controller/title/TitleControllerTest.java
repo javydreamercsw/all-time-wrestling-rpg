@@ -18,34 +18,25 @@ package com.github.javydreamercsw.management.controller.title;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.base.service.ranking.RankingService;
+import com.github.javydreamercsw.management.controller.AbstractControllerTest;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(TitleController.class)
-class TitleControllerTest {
-
-  @Autowired private MockMvc mockMvc;
+class TitleControllerTest extends AbstractControllerTest {
 
   @MockitoBean private TitleService titleService;
-
-  @MockitoBean private WrestlerRepository wrestlerRepository;
-  @MockitoBean private RankingService rankingService;
-
-  @Autowired private ObjectMapper objectMapper;
 
   @Test
   void createTitle() throws Exception {
@@ -55,14 +46,16 @@ class TitleControllerTest {
     title.setTier(WrestlerTier.MIDCARDER);
 
     when(titleService.titleNameExists(any())).thenReturn(false);
-    when(titleService.createTitle(any(), any(), any())).thenReturn(title);
+    when(titleService.createTitle(any(), any(), any(), any())).thenReturn(title);
 
     TitleController.CreateTitleRequest request =
-        new TitleController.CreateTitleRequest("Test Title", "Description", WrestlerTier.MIDCARDER);
+        new TitleController.CreateTitleRequest(
+            "Test Title", "Description", WrestlerTier.MIDCARDER, ChampionshipType.SINGLE);
 
     mockMvc
         .perform(
             post("/api/titles")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())

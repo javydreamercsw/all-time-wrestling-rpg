@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
@@ -179,13 +180,15 @@ public class NpcNotionSyncService implements NotionSyncService {
                     "✅ Completed Notion sync: %d NPCs saved/updated, %d errors",
                     created + updated, errors));
             return errors > 0
-                ? BaseSyncService.SyncResult.failure("NPCs", "Error syncing NPCs!")
-                : BaseSyncService.SyncResult.success("NPCs", created, updated, errors);
+                ? BaseSyncService.SyncResult.failure(
+                    SyncEntityType.NPCS.getKey(), "Error syncing NPCs!")
+                : BaseSyncService.SyncResult.success(
+                    SyncEntityType.NPCS.getKey(), created, updated, errors);
           }
         }
       }
     }
     progressTracker.failOperation(operationId, "Error syncing NPCs!");
-    return BaseSyncService.SyncResult.failure("NPCs", "Error syncing NPCs!");
+    return BaseSyncService.SyncResult.failure(SyncEntityType.NPCS.getKey(), "Error syncing NPCs!");
   }
 }

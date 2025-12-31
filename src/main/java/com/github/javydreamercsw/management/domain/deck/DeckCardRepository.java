@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.deck;
 
 import com.github.javydreamercsw.management.domain.card.Card;
+import com.github.javydreamercsw.management.domain.card.CardSet;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,6 +29,8 @@ public interface DeckCardRepository extends JpaRepository<DeckCard, Long> {
   Optional<DeckCard> findByDeckAndCard(Deck deck, Card card);
 
   Optional<DeckCard> findByDeckIdAndCardIdAndSetId(Long deckId, Long cardId, Long setId);
+
+  Optional<DeckCard> findByDeckAndCardAndSet(Deck deck, Card card, CardSet cardSet);
 
   @Modifying
   @Transactional

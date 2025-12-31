@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
@@ -107,7 +108,10 @@ class NpcSyncIntegrationTest extends ManagementIntegrationTest {
 
     // Then - Verify the sync result
     assertNotNull(result, "Sync result should not be null");
-    assertEquals("NPCs", result.getEntityType(), "Entity type should be 'NPCs'");
+    assertEquals(
+        SyncEntityType.NPCS.getKey(),
+        result.getEntityType(),
+        String.format("Entity type should be '%s'", SyncEntityType.SHOWS.getKey()));
     assertTrue(result.isSuccess(), "Sync should be successful");
     assertEquals(1, result.getSyncedCount(), "Should have synced 1 NPCs");
 

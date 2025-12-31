@@ -21,13 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
+import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
+import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
-import com.github.mvysny.kaributesting.v10.MockVaadin;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -39,19 +40,18 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-class RankingViewTest extends ManagementIntegrationTest {
+class RankingViewTest extends AbstractViewTest {
 
   @Mock private RankingService rankingService;
   @Mock private TierBoundaryService tierBoundaryService;
+  @MockitoBean private InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   private ChampionshipDTO championshipDTO;
 
   @BeforeEach
   void setUp() {
-    MockitoAnnotations.openMocks(this);
-    MockVaadin.setup();
     championshipDTO = new ChampionshipDTO(1L, "Test Title", "test.png");
     when(rankingService.getChampionships()).thenReturn(List.of(championshipDTO));
     when(rankingService.getCurrentChampions(championshipDTO.getId()))
@@ -59,7 +59,8 @@ class RankingViewTest extends ManagementIntegrationTest {
     List<RankedWrestlerDTO> contenders = new ArrayList<>();
     contenders.add(new RankedWrestlerDTO(2L, "Contender 2", 700L, 1));
     contenders.add(new RankedWrestlerDTO(3L, "Contender 1", 500L, 2));
-    when(rankingService.getRankedContenders(championshipDTO.getId())).thenReturn(contenders);
+    when(rankingService.getRankedContenders(championshipDTO.getId()))
+        .thenAnswer(invocation -> contenders);
   }
 
   @Test
@@ -77,7 +78,8 @@ class RankingViewTest extends ManagementIntegrationTest {
 
     comboBox.setValue(championshipDTO);
 
-    Grid<RankedWrestlerDTO> grid = _get(view, Grid.class);
+    Grid<RankedWrestlerDTO> grid =
+        _get(view, Grid.class, spec -> spec.withId("wrestler-contenders-grid"));
     List<RankedWrestlerDTO> items = grid.getGenericDataView().getItems().toList();
     assertEquals(2, items.size());
     assertEquals("Contender 2", items.get(0).getName());
@@ -85,9 +87,31 @@ class RankingViewTest extends ManagementIntegrationTest {
   }
 
   @Test
+  void testTeamRankings() {
+    List<RankedTeamDTO> teamContenders = new ArrayList<>();
+    teamContenders.add(new RankedTeamDTO(1L, "Team 1", 1500L, 1));
+    teamContenders.add(new RankedTeamDTO(2L, "Team 2", 1200L, 2));
+    when(rankingService.getRankedContenders(championshipDTO.getId()))
+        .thenAnswer(invocation -> teamContenders);
+
+    RankingView view = new RankingView(rankingService, tierBoundaryService);
+    ComboBox<ChampionshipDTO> comboBox = _get(view, ComboBox.class);
+    comboBox.setValue(championshipDTO);
+
+    Grid<RankedTeamDTO> teamGrid =
+        _get(view, Grid.class, spec -> spec.withId("team-contenders-grid"));
+
+    assertNotNull(teamGrid);
+    List<RankedTeamDTO> items = teamGrid.getGenericDataView().getItems().toList();
+    assertEquals(2, items.size());
+    assertEquals("Team 1", items.get(0).getName());
+    assertEquals("Team 2", items.get(1).getName());
+  }
+
+  @Test
   void testShowTierBoundariesButton() {
     RankingView view = new RankingView(rankingService, tierBoundaryService);
-    Button button = _get(view, Button.class, spec -> spec.withText("Show Tier Boundaries"));
+    Button button = _get(view, Button.class, spec -> spec.withId("show-tier-boundaries-button"));
     assertNotNull(button);
     button.click();
     assertNotNull(_get(Dialog.class));

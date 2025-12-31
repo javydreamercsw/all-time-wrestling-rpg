@@ -166,6 +166,10 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
                 0,
                 "Special Effects",
                 "Cannot use headbutts. Dizzy."));
+
+    // Need to mock loadAllInjuries again for the second call
+    when(notionHandler.loadAllInjuries()).thenReturn(List.of(injuryPage1, injuryPage2));
+
     BaseSyncService.SyncResult secondResult =
         notionSyncService.syncInjuryTypes("second-sync-operation", SyncDirection.INBOUND);
     assertThat(secondResult.isSuccess()).isTrue();

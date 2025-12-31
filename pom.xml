@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>1.1.2</version>
+  <version>1.2.0</version>
 
   <packaging>war</packaging>
   <name>All Time Wrestling RPG</name>
@@ -24,12 +24,12 @@
     <jacoco.integration.coverage.minimum>0.80</jacoco.integration.coverage.minimum>
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.version>0.8.14</jacoco.version>
-    <java.version>17</java.version>
+    <java.version>25</java.version>
     <jib.to.tags>${project.version}</jib.to.tags>
     <lombok.version>1.18.42</lombok.version>
     <surefireArgLine/>
-    <testcontainers.version>1.21.3</testcontainers.version>
-    <vaadin.version>24.9.7</vaadin.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
+    <vaadin.version>24.9.8</vaadin.version>
   </properties>
 
   <dependencyManagement>
@@ -52,10 +52,23 @@
         <artifactId>notion-sdk-jvm-core</artifactId>
         <version>1.11.1</version>
       </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-aop</artifactId>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
+    <dependency>
+      <groupId>org.springframework.data</groupId>
+      <artifactId>spring-data-rest-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-dev</artifactId>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>com.github.seratch</groupId>
       <artifactId>notion-sdk-jvm-core</artifactId>
@@ -80,6 +93,12 @@
       <groupId>com.vaadin</groupId>
       <!-- Replace artifactId with vaadin-core to use only free components -->
       <artifactId>vaadin</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.vaadin.external.google</groupId>
+          <artifactId>android-json</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -89,20 +108,24 @@
     <dependency>
       <groupId>com.vaadin</groupId>
       <artifactId>vaadin-spring-boot-starter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.vaadin.external.google</groupId>
+          <artifactId>android-json</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.vaadin.stefan</groupId>
       <artifactId>fullcalendar2</artifactId>
       <version>6.3.1</version>
     </dependency>
-
     <!-- Persistence -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
     <dependency>
-      <!-- Replace with the database you will be using in production -->
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <scope>runtime</scope>
@@ -124,6 +147,19 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
+    <!-- Security -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
@@ -135,18 +171,40 @@
     </dependency>
     <!-- AspectJ for Performance Monitoring -->
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-aop</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.mapstruct</groupId>
       <artifactId>mapstruct</artifactId>
-      <version>1.5.5.Final</version>
+      <version>1.6.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20251224</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.2</version>
     </dependency>
     <!-- Testing -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.vaadin.external.google</groupId>
+          <artifactId>android-json</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test-autoconfigure</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -158,12 +216,16 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-testcontainers</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.tngtech.archunit</groupId>
       <artifactId>archunit-junit5</artifactId>
       <version>${archunit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-testbench-junit5</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -186,7 +248,7 @@
     </dependency>
     <dependency>
       <groupId>com.github.mvysny.kaributesting</groupId>
-      <artifactId>karibu-testing-v10</artifactId>
+      <artifactId>karibu-testing-v24</artifactId>
       <version>2.5.0</version>
       <scope>test</scope>
     </dependency>
@@ -219,6 +281,21 @@
       <artifactId>resilience4j-retry</artifactId>
       <version>2.3.0</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations</artifactId>
+      <version>2.2.41</version>
+    </dependency>
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-models</artifactId>
+      <version>2.2.41</version>
+    </dependency>
+    <dependency>
+      <groupId>org.passay</groupId>
+      <artifactId>passay</artifactId>
+      <version>1.6.6</version>
     </dependency>
   </dependencies>
 
@@ -262,6 +339,7 @@
             </goals>
             <phase>compile</phase>
             <configuration>
+              <release>${java.version}</release>
               <annotationProcessorPaths>
                 <path>
                   <groupId>org.projectlombok</groupId>
@@ -271,12 +349,12 @@
                 <path>
                   <groupId>org.mapstruct</groupId>
                   <artifactId>mapstruct-processor</artifactId>
-                  <version>1.5.5.Final</version>
+                  <version>1.6.3</version>
                 </path>
                 <path>
                   <groupId>org.mapstruct.extensions.spring</groupId>
                   <artifactId>mapstruct-spring-extensions</artifactId>
-                  <version>1.1.3</version>
+                  <version>2.0.0</version>
                 </path>
               </annotationProcessorPaths>
             </configuration>
@@ -288,6 +366,7 @@
             </goals>
             <phase>test-compile</phase>
             <configuration>
+              <release>${java.version}</release>
               <annotationProcessorPaths>
                 <path>
                   <groupId>org.projectlombok</groupId>
@@ -297,12 +376,12 @@
                 <path>
                   <groupId>org.mapstruct</groupId>
                   <artifactId>mapstruct-processor</artifactId>
-                  <version>1.5.5.Final</version>
+                  <version>1.6.3</version>
                 </path>
                 <path>
                   <groupId>org.mapstruct.extensions.spring</groupId>
                   <artifactId>mapstruct-spring-extensions</artifactId>
-                  <version>1.1.3</version>
+                  <version>2.0.0</version>
                 </path>
               </annotationProcessorPaths>
             </configuration>
@@ -400,6 +479,9 @@
               <file>${project.basedir}/LICENSE.template</file>
               <delimiter>package</delimiter>
             </licenseHeader>
+            <excludes>
+              <exclude>src/test/java/com/github/javydreamercsw/management/config/DatabaseIndexValidationTest.java</exclude>
+            </excludes>
           </java>
           <groovy>
             <!-- These are the defaults, you can override if you want -->
@@ -534,7 +616,7 @@
         <version>3.5.1</version>
         <configuration>
           <from>
-            <image>eclipse-temurin:21-jre</image>
+            <image>eclipse-temurin:25-jre</image>
           </from>
           <to>
             <image>javydreamercsw/all-time-wrestling-rpg</image>

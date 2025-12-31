@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.service.show.planning;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -33,6 +32,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -45,9 +45,9 @@ public class ShowPlanningAiService {
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
 
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ProposedShow planShow(@NonNull ShowPlanningContextDTO context) {
-    SegmentNarrationService aiService = narrationServiceFactory.getBestAvailableService();
-    if (aiService == null) {
+    if (narrationServiceFactory.getBestAvailableService() == null) {
       log.warn("No AI service available for show planning.");
       return new ProposedShow();
     }
@@ -55,7 +55,7 @@ public class ShowPlanningAiService {
     String prompt = buildShowPlanningPrompt(context);
     log.debug("Sending prompt to AI: {}", prompt);
 
-    String aiResponse = aiService.generateText(prompt);
+    String aiResponse = narrationServiceFactory.generateText(prompt);
     log.debug("Received response from AI: {}", aiResponse);
 
     if (aiResponse == null || aiResponse.trim().isEmpty()) {

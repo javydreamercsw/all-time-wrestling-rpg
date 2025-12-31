@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.InjurySyncService;
@@ -143,15 +144,16 @@ class ParallelSyncOrchestratorTest {
     // Given
     setupAllSyncServices();
     when(entityConfig.isEntityEnabled(anyString())).thenReturn(false); // Default to false
-    when(entityConfig.isEntityEnabled("shows")).thenReturn(true);
-    when(entityConfig.isEntityEnabled("wrestlers")).thenReturn(true);
-    when(entityConfig.isEntityEnabled("showtypes")).thenReturn(true);
+    when(entityConfig.isEntityEnabled(SyncEntityType.SHOWS.getKey())).thenReturn(true);
+    when(entityConfig.isEntityEnabled(SyncEntityType.WRESTLERS.getKey())).thenReturn(true);
+    when(entityConfig.isEntityEnabled(SyncEntityType.SHOW_TYPES.getKey())).thenReturn(true);
 
-    when(showSyncService.syncShows(anyString())).thenReturn(SyncResult.success("Shows", 5, 0, 0));
+    when(showSyncService.syncShows(anyString()))
+        .thenReturn(SyncResult.success(SyncEntityType.SHOWS.getKey(), 5, 0, 0));
     when(wrestlerSyncService.syncWrestlers(anyString()))
-        .thenReturn(SyncResult.success("Wrestlers", 10, 0, 0));
+        .thenReturn(SyncResult.success(SyncEntityType.WRESTLERS.getKey(), 10, 0, 0));
     when(showTypeSyncService.syncShowTypes(anyString()))
-        .thenReturn(SyncResult.success("ShowTypes", 4, 0, 0));
+        .thenReturn(SyncResult.success(SyncEntityType.SHOW_TYPES.getKey(), 4, 0, 0));
 
     // When
     ParallelSyncResult result = orchestrator.executeParallelSync("test-operation");
