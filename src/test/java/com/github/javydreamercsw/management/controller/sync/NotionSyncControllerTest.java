@@ -67,8 +67,8 @@ class NotionSyncControllerTest extends AbstractControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.enabled").value(true))
         .andExpect(jsonPath("$.schedulerEnabled").value(true))
-        .andExpect(jsonPath("$.entities[0]").value(SyncEntityType.SHOWS.name()))
-        .andExpect(jsonPath("$.entities[1]").value(SyncEntityType.WRESTLERS.name()))
+        .andExpect(jsonPath("$.entities[0]").value(SyncEntityType.SHOWS.getKey()))
+        .andExpect(jsonPath("$.entities[1]").value(SyncEntityType.WRESTLERS.getKey()))
         .andExpect(jsonPath("$.backupEnabled").value(true));
   }
 
