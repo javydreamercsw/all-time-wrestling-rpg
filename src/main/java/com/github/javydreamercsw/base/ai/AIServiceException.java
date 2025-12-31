@@ -28,14 +28,14 @@ public class AIServiceException extends RuntimeException {
 
   public AIServiceException(
       int statusCode, String statusText, String provider, String message, Throwable cause) {
-    super(message, cause);
+    super(String.format("[%s] %s", provider, message), cause);
     this.statusCode = statusCode;
     this.statusText = statusText;
     this.provider = provider;
   }
 
   public AIServiceException(int statusCode, String statusText, String provider, String message) {
-    super(message);
+    super(String.format("[%s] %s", provider, message));
     this.statusCode = statusCode;
     this.statusText = statusText;
     this.provider = provider;
