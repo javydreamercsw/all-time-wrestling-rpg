@@ -53,11 +53,8 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Apply code formatting
-      run: mvn spotless:apply
-
     - name: Run unit tests with coverage
-      run: mvn -B verify -Pcoverage
+      run: mvn -B spotless:apply verify -Pcoverage
 
     - name: Upload unit test coverage data
       uses: actions/upload-artifact@v4
