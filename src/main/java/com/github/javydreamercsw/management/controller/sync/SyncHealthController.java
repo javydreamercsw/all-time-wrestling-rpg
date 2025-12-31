@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.health.contributor.Health;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
