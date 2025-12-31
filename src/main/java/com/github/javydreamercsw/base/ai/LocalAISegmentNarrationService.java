@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.base.ai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ai.prompt.PromptGenerator;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -28,7 +29,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 /** Segment narration service using a local AI provider. */
@@ -38,8 +38,7 @@ import org.springframework.stereotype.Service;
 @Profile("localai")
 public class LocalAISegmentNarrationService implements SegmentNarrationService {
 
-  private final SegmentNarrationConfig config;
-  private final Environment environment;
+  private final LocalAIConfigProperties config;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
@@ -49,18 +48,11 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
 
   @Override
   public boolean isAvailable() {
-    return getBaseUrl() != null && config.getAi().getLocalai() != null;
+    return getBaseUrl() != null && !getBaseUrl().isEmpty();
   }
 
   private String getBaseUrl() {
-    String dynamicUrl = environment.getProperty("segment-narration.ai.localai.base-url");
-    if (dynamicUrl != null && !dynamicUrl.isEmpty()) {
-      return dynamicUrl;
-    }
-    if (config.getAi().getLocalai() != null) {
-      return config.getAi().getLocalai().getBaseUrl();
-    }
-    return null;
+    return config.getBaseUrl();
   }
 
   @Override
@@ -113,7 +105,7 @@ public class LocalAISegmentNarrationService implements SegmentNarrationService {
       Map<String, Object> requestBodyMap =
           Map.of(
               "model",
-              config.getAi().getLocalai().getModel(),
+              config.getModel(),
               "messages",
               List.of(systemMessage, userMessage),
               "temperature",

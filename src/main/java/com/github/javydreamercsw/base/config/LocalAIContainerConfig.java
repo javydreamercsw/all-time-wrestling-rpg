@@ -41,7 +41,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 @RequiredArgsConstructor
 public class LocalAIContainerConfig {
 
-  @Value("${segment-narration.ai.localai.model}")
+  @Value("${ai.localai.model}")
   private String modelName;
 
   private final LocalAIStatusService statusService;
@@ -86,8 +86,8 @@ public class LocalAIContainerConfig {
       String baseUrl =
           String.format(
               "http://%s:%d", localAiContainer.getHost(), localAiContainer.getMappedPort(8080));
-      System.setProperty("segment-narration.ai.localai.base-url", baseUrl);
-      System.setProperty("segment-narration.ai.localai.model", modelName);
+      System.setProperty("ai.localai.base-url", baseUrl);
+      System.setProperty("ai.localai.model", modelName);
 
       statusService.setStatus(LocalAIStatusService.Status.READY);
       statusService.setMessage("LocalAI is ready.");
