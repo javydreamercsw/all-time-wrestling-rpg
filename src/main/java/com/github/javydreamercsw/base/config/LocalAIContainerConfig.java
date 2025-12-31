@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import java.io.File;
 import java.time.Duration;
 import javax.annotation.PreDestroy;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,7 +46,7 @@ public class LocalAIContainerConfig {
   private String modelName;
 
   private final LocalAIStatusService statusService;
-  private GenericContainer<?> localAiContainer;
+  @Getter private GenericContainer<?> localAiContainer;
 
   @EventListener(ApplicationReadyEvent.class)
   public void startLocalAiContainer() {

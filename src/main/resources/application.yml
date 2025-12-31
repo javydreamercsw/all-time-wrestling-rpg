@@ -10,7 +10,6 @@ ai:
     api-url: https://api.openai.com/v1/chat/completions
     default-model: gpt-3.5-turbo
   localai:
-    base-url: http://localhost:8088
     model: llama-3.2-1b-instruct:q4_k_m
 
 # Entity-specific sync configuration example

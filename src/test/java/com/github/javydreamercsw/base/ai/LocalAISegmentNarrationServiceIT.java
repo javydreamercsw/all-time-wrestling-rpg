@@ -18,21 +18,19 @@ package com.github.javydreamercsw.base.ai;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.config.LocalAIContainerConfig;
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.containers.GenericContainer;
 
 @SpringBootTest(
     classes = {
@@ -48,12 +46,45 @@ class LocalAISegmentNarrationServiceIT {
 
   @Autowired private LocalAISegmentNarrationService localAIService;
   @Autowired private LocalAIConfigProperties config;
+  @Autowired private LocalAIContainerConfig containerConfig;
+  @Autowired private LocalAIStatusService statusService;
+
+  @BeforeEach
+  void setUp() {
+    // Wait for the container to be ready
+    long startTime = System.currentTimeMillis();
+    long timeout = Duration.ofMinutes(15).toMillis(); // Match container startup timeout
+
+    while (statusService.getStatus() != LocalAIStatusService.Status.READY) {
+      if (System.currentTimeMillis() - startTime > timeout) {
+        fail(
+            "Timeout waiting for LocalAI container to be ready. Status: "
+                + statusService.getStatus()
+                + ", Message: "
+                + statusService.getMessage());
+      }
+      if (statusService.getStatus() == LocalAIStatusService.Status.FAILED) {
+        fail("LocalAI container failed to start. Message: " + statusService.getMessage());
+      }
+      try {
+        Thread.sleep(1_000); // Check every second
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        fail("Interrupted while waiting for LocalAI container");
+      }
+    }
+    GenericContainer<?> localAiContainer = containerConfig.getLocalAiContainer();
+    assertNotNull(localAiContainer, "Container from config should not be null");
+    assertTrue(localAiContainer.isRunning(), "Container should be running");
+
+    String baseUrl =
+        String.format(
+            "http://%s:%d", localAiContainer.getHost(), localAiContainer.getMappedPort(8080));
+    config.setBaseUrl(baseUrl);
+  }
 
   @Test
   void testGenerateText() {
-    // Wait for LocalAI to be ready
-    waitForLocalAI();
-
     // Given
     String prompt = "Who is the best wrestler of all time?";
 
@@ -64,34 +95,5 @@ class LocalAISegmentNarrationServiceIT {
     assertNotNull(response);
     assertFalse(response.isEmpty());
     System.out.println("LocalAI Response: " + response);
-  }
-
-  private void waitForLocalAI() {
-    long startTime = System.currentTimeMillis();
-    long timeout = Duration.ofMinutes(15).toMillis(); // 15 minutes timeout
-    try (HttpClient client = HttpClient.newHttpClient()) {
-      HttpRequest request =
-          HttpRequest.newBuilder().uri(URI.create(config.getBaseUrl() + "/readyz")).build();
-
-      while (System.currentTimeMillis() - startTime < timeout) {
-        try {
-          HttpResponse<String> response =
-              client.send(request, HttpResponse.BodyHandlers.ofString());
-          if (response.statusCode() == 200) {
-            System.out.println("LocalAI is ready!");
-            return;
-          }
-        } catch (IOException | InterruptedException e) {
-          // Ignore and retry
-        }
-        try {
-          Thread.sleep(1000); // Check every second
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          fail("Interrupted while waiting for LocalAI");
-        }
-      }
-      fail("Timeout waiting for LocalAI to be ready.");
-    }
   }
 }
