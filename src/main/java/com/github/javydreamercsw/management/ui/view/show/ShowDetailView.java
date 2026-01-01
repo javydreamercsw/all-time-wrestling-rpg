@@ -237,7 +237,10 @@ public class ShowDetailView extends Main
             buttonText = "Back to Calendar";
             yield "show-calendar";
           }
-
+          case "booker" -> {
+            buttonText = "Back to Booker View";
+            yield "booker";
+          }
           default -> {
             buttonText = "Back to Shows";
             yield "show-list";
