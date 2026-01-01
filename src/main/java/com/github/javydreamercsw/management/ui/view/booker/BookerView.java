@@ -133,6 +133,22 @@ public class BookerView extends VerticalLayout {
     grid.addColumn(show -> show.getType().getName()).setHeader("Brand");
 
     grid.setItems(showService.getUpcomingShows(5));
+    grid.addComponentColumn(
+            show -> {
+              Button viewDetailsButton = new Button("View Details");
+              viewDetailsButton.addClickListener(
+                  e ->
+                      getUI()
+                          .ifPresent(
+                              ui -> {
+                                String showDetailPath =
+                                    "show-detail/" + show.getId() + "?ref=booker";
+                                ui.navigate(showDetailPath);
+                              }));
+              return viewDetailsButton;
+            })
+        .setHeader("Actions");
+
     layout.add(grid);
 
     RouterLink calendarLink = new RouterLink("View Full Calendar", ShowListView.class);
