@@ -19,8 +19,8 @@ package com.github.javydreamercsw.management.ui.view.segment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
-import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -79,7 +79,7 @@ public class NarrationDialog extends Dialog {
   private final SegmentService segmentService;
   private final RivalryService rivalryService;
   private final LocalAIStatusService localAIStatusService;
-  private final SegmentNarrationConfig segmentNarrationConfig;
+  private final LocalAIConfigProperties localAIConfigProperties;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -107,7 +107,7 @@ public class NarrationDialog extends Dialog {
       Consumer<Segment> onSaveCallback,
       RivalryService rivalryService,
       LocalAIStatusService localAIStatusService,
-      SegmentNarrationConfig segmentNarrationConfig,
+      LocalAIConfigProperties localAIConfigProperties,
       WebClient.Builder webClientBuilder,
       Environment env) {
     this.segment = segment;
@@ -120,7 +120,7 @@ public class NarrationDialog extends Dialog {
     this.onSaveCallback = onSaveCallback;
     this.rivalryService = rivalryService;
     this.localAIStatusService = localAIStatusService;
-    this.segmentNarrationConfig = segmentNarrationConfig;
+    this.localAIConfigProperties = localAIConfigProperties;
     if (Arrays.asList(env.getActiveProfiles()).contains("e2e")) {
       this.webClient = webClientBuilder.filter(logRequest()).build();
     } else {
@@ -351,13 +351,13 @@ public class NarrationDialog extends Dialog {
   }
 
   private boolean isLocalAiConfigured() {
-    SegmentNarrationConfig.LocalAI localai = segmentNarrationConfig.getAi().getLocalai();
     boolean configured =
-        localai != null && localai.getBaseUrl() != null && !localai.getBaseUrl().isEmpty();
+        localAIConfigProperties != null
+            && localAIConfigProperties.getBaseUrl() != null
+            && !localAIConfigProperties.getBaseUrl().isEmpty();
     log.debug(
-        "LocalAI Config Check: localai={}, baseUrl={}, configured={}",
-        localai,
-        localai != null ? localai.getBaseUrl() : "null",
+        "LocalAI Config Check: baseUrl={}, configured={}",
+        localAIConfigProperties != null ? localAIConfigProperties.getBaseUrl() : "null",
         configured);
     return configured;
   }
