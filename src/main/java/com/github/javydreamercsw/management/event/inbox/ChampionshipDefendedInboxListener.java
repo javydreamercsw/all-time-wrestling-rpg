@@ -17,8 +17,12 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -36,28 +40,34 @@ public class ChampionshipDefendedInboxListener
   private final InboxEventType championshipDefended;
   private final ApplicationEventPublisher eventPublisher;
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
+  private final TitleRepository titleRepository;
 
   public ChampionshipDefendedInboxListener(
       @NonNull InboxService inboxService,
       @NonNull @Qualifier("championshipDefended") InboxEventType championshipDefended,
       @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster,
+      @NonNull TitleRepository titleRepository) {
     this.inboxService = inboxService;
     this.championshipDefended = championshipDefended;
     this.eventPublisher = eventPublisher;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
+    this.titleRepository = titleRepository;
   }
 
   @Override
   public void onApplicationEvent(@NonNull ChampionshipDefendedEvent event) {
-    log.info("Received ChampionshipDefendedEvent for title ID: {}", event.getTitleId());
+    log.debug("Received ChampionshipDefendedEvent for title ID: {}", event.getTitleId());
 
     String champions =
-        event.getChampions().stream().map(w -> w.getName()).collect(Collectors.joining(", "));
+        event.getChampions().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
+
+    Optional<Title> title = titleRepository.findById(event.getTitleId());
+    String titleName = title.isPresent() ? title.get().getName() : "a";
 
     String message =
         String.format(
-            "Champions %s successfully defended title ID %d", champions, event.getTitleId());
+            "Champions %s successfully defended the %s title!", champions, titleName);
 
     inboxService.createInboxItem(championshipDefended, message, event.getTitleId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
