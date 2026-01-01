@@ -86,7 +86,7 @@ class LocalAISegmentNarrationServiceIT {
 
     when(aiSettingsService.isLocalAIEnabled()).thenReturn(true);
     when(aiSettingsService.getLocalAIBaseUrl()).thenReturn(baseUrl);
-    when(aiSettingsService.getLocalAIModel()).thenReturn("ggml-gpt4all-j");
+    when(aiSettingsService.getLocalAIModel()).thenReturn("llama-3.2-1b-instruct:q4_k_m");
   }
 
   @Test
