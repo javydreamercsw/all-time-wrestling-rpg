@@ -21,6 +21,8 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
@@ -29,7 +31,6 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
@@ -66,9 +67,6 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ShowService showService;
   private final ShowPlanningService showPlanningService;
   private final ShowPlanningAiService showPlanningAiService;
-  private final WrestlerService wrestlerService;
-  private final TitleService titleService;
-  private final WrestlerRepository wrestlerRepository;
   private final ObjectMapper objectMapper;
 
   private final ComboBox<Show> showComboBox;
@@ -84,17 +82,15 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       ShowService showService,
       ShowPlanningService showPlanningService,
       ShowPlanningAiService showPlanningAiService,
-      WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       TitleService titleService,
+      SegmentTypeRepository segmentTypeRepository,
+      SegmentRuleRepository segmentRuleRepository,
       ObjectMapper objectMapper) {
 
     this.showService = showService;
     this.showPlanningService = showPlanningService;
     this.showPlanningAiService = showPlanningAiService;
-    this.wrestlerService = wrestlerService;
-    this.wrestlerRepository = wrestlerRepository;
-    this.titleService = titleService;
     this.objectMapper = objectMapper;
 
     showComboBox = new ComboBox<>("Select Show");
@@ -158,9 +154,10 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                 EditSegmentDialog dialog =
                     new EditSegmentDialog(
                         segment,
-                        wrestlerService,
                         wrestlerRepository,
                         titleService,
+                        segmentTypeRepository,
+                        segmentRuleRepository,
                         () -> proposedSegmentsGrid.getDataProvider().refreshAll());
                 dialog.open();
               });

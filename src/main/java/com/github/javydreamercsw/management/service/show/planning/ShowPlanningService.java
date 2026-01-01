@@ -180,7 +180,13 @@ public class ShowPlanningService {
       log.debug("Processing segment: {}", proposedSegment);
       Segment segment = new Segment();
       segment.setShow(show);
-      segment.setSegmentType(segmentTypeService.findByName(proposedSegment.getType()).get());
+      Optional<com.github.javydreamercsw.management.domain.show.segment.type.SegmentType>
+          segmentTypeOpt = segmentTypeService.findByName(proposedSegment.getType());
+      if (segmentTypeOpt.isEmpty()) {
+        log.warn("Segment type not found: {}. Skipping segment.", proposedSegment.getType());
+        continue;
+      }
+      segment.setSegmentType(segmentTypeOpt.get());
       segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
       segment.setNarration(proposedSegment.getDescription());
       segment.setSegmentOrder(currentSegmentCount + i + 1);
