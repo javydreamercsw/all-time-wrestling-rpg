@@ -66,8 +66,7 @@ public class ChampionshipDefendedInboxListener
     String titleName = title.isPresent() ? title.get().getName() : "a";
 
     String message =
-        String.format(
-            "Champions %s successfully defended the %s title!", champions, titleName);
+        String.format("Champions %s successfully defended the %s title!", champions, titleName);
 
     inboxService.createInboxItem(championshipDefended, message, event.getTitleId().toString());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
