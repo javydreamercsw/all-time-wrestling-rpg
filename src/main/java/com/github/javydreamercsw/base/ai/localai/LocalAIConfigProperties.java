@@ -17,17 +17,33 @@
 package com.github.javydreamercsw.base.ai.localai;
 
 import com.github.javydreamercsw.base.ai.AiBaseProperties;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "ai.localai")
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class LocalAIConfigProperties extends AiBaseProperties {
-  private String baseUrl;
-  private String model;
-  private String modelUrl;
+  private final AiSettingsService aiSettingsService;
+
+  @Autowired
+  public LocalAIConfigProperties(AiSettingsService aiSettingsService) {
+    super(aiSettingsService);
+    this.aiSettingsService = aiSettingsService;
+  }
+
+  public boolean isEnabled() {
+    return aiSettingsService.isLocalAIEnabled();
+  }
+
+  public String getBaseUrl() {
+    return aiSettingsService.getLocalAIBaseUrl();
+  }
+
+  public String getModel() {
+    return aiSettingsService.getLocalAIModel();
+  }
+
+  public String getModelUrl() {
+    return aiSettingsService.getLocalAIModelUrl();
+  }
 }

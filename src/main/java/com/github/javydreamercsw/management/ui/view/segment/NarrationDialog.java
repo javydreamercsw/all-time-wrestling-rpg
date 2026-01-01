@@ -35,7 +35,6 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -73,7 +72,6 @@ public class NarrationDialog extends Dialog {
 
   private final Segment segment;
   private final ObjectMapper objectMapper;
-  private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final ShowService showService;
   private final SegmentService segmentService;
@@ -101,7 +99,6 @@ public class NarrationDialog extends Dialog {
   public NarrationDialog(
       Segment segment,
       NpcService npcService,
-      WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       ShowService showService,
       SegmentService segmentService,
@@ -114,7 +111,6 @@ public class NarrationDialog extends Dialog {
       Environment env) {
     this.segment = segment;
     this.objectMapper = new ObjectMapper();
-    this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.showService = showService;
     this.segmentService = segmentService;
@@ -354,7 +350,8 @@ public class NarrationDialog extends Dialog {
     boolean configured =
         localAIConfigProperties != null
             && localAIConfigProperties.getBaseUrl() != null
-            && !localAIConfigProperties.getBaseUrl().isEmpty();
+            && !localAIConfigProperties.getBaseUrl().isEmpty()
+            && localAIConfigProperties.isEnabled();
     log.debug(
         "LocalAI Config Check: baseUrl={}, configured={}",
         localAIConfigProperties != null ? localAIConfigProperties.getBaseUrl() : "null",

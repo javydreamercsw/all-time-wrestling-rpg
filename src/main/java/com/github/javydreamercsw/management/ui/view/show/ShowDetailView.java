@@ -770,7 +770,6 @@ public class ShowDetailView extends Main
               new NarrationDialog(
                   segment,
                   npcService,
-                  wrestlerService,
                   wrestlerRepository,
                   showService,
                   segmentService,

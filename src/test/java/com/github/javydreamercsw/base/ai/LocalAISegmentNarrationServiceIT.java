@@ -20,8 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.config.LocalAIContainerConfig;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.GenericContainer;
 
 @SpringBootTest(
@@ -45,7 +48,7 @@ import org.testcontainers.containers.GenericContainer;
 class LocalAISegmentNarrationServiceIT {
 
   @Autowired private LocalAISegmentNarrationService localAIService;
-  @Autowired private LocalAIConfigProperties config;
+  @MockitoBean private AiSettingsService aiSettingsService;
   @Autowired private LocalAIContainerConfig containerConfig;
   @Autowired private LocalAIStatusService statusService;
 
@@ -80,7 +83,10 @@ class LocalAISegmentNarrationServiceIT {
     String baseUrl =
         String.format(
             "http://%s:%d", localAiContainer.getHost(), localAiContainer.getMappedPort(8080));
-    config.setBaseUrl(baseUrl);
+
+    when(aiSettingsService.isLocalAIEnabled()).thenReturn(true);
+    when(aiSettingsService.getLocalAIBaseUrl()).thenReturn(baseUrl);
+    when(aiSettingsService.getLocalAIModel()).thenReturn("llama-3.2-1b-instruct:q4_k_m");
   }
 
   @Test
