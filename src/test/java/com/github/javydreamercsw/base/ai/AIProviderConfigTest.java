@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.ai.gemini.GeminiConfigProperties;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ai.openai.OpenAIConfigProperties;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
+import com.github.javydreamercsw.base.security.WithMockAdmin;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,6 +34,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles({"test"})
 @SpringBootTest
 @Import(TestSecurityConfig.class)
+@WithMockAdmin
 class AIProviderConfigTest {
 
   @Autowired private AiBaseProperties aiBaseProperties;
@@ -74,6 +76,6 @@ class AIProviderConfigTest {
   void testLocalAIConfig() {
     assertNotNull(localAIConfigProperties);
     assertEquals("http://localhost:8088", localAIConfigProperties.getBaseUrl());
-    assertEquals("google-gemma-3-27b-it-qat-q4_0-small", localAIConfigProperties.getModel());
+    assertEquals("llama-3.2-1b-instruct:q4_k_m", localAIConfigProperties.getModel());
   }
 }

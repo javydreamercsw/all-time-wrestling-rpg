@@ -19,11 +19,11 @@ package com.github.javydreamercsw.base.ai.gemini;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
@@ -48,21 +48,18 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class GeminiSegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
-  private final String apiKey;
   private final GeminiConfigProperties geminiConfigProperties;
   private final Environment environment;
+  private final AiSettingsService aiSettingsService;
 
   @Autowired // Autowire the configuration properties
   public GeminiSegmentNarrationService(
-      GeminiConfigProperties geminiConfigProperties, Environment environment) {
-    this.httpClient =
-        HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(geminiConfigProperties.getTimeout()))
-            .build();
+      GeminiConfigProperties geminiConfigProperties,
+      Environment environment,
+      AiSettingsService aiSettingsService) {
+    this.aiSettingsService = aiSettingsService;
     this.objectMapper = new ObjectMapper();
-    this.apiKey = System.getenv("GEMINI_API_KEY");
     this.geminiConfigProperties = geminiConfigProperties;
     this.environment = environment;
   }
@@ -79,9 +76,13 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
 
   @Override
   public boolean isAvailable() {
+    if (!aiSettingsService.isGeminiEnabled()) {
+      return false;
+    }
     if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
       return false;
     }
+    String apiKey = geminiConfigProperties.getApiKey();
     return apiKey != null && !apiKey.trim().isEmpty();
   }
 
@@ -98,7 +99,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
           geminiConfigProperties.getApiUrl()
               + geminiConfigProperties.getModelName()
               + ":generateContent";
-      String url = fullApiUrl + "?key=" + apiKey;
+      String url = fullApiUrl + "?key=" + geminiConfigProperties.getApiKey();
 
       // Create request body for Gemini API
       Map<String, Object> requestBody =
@@ -156,7 +157,8 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
 
       // Send request and get response
       HttpResponse<InputStream> response =
-          httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+          getHttpClient(geminiConfigProperties.getTimeout())
+              .send(request, HttpResponse.BodyHandlers.ofInputStream());
 
       if (response.statusCode() == 200) {
         try (InputStream responseBody = response.body()) {

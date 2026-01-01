@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.ai;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -28,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class AbstractSegmentNarrationService implements SegmentNarrationService {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private HttpClient httpClient;
 
   protected String getSystemMessage(@NonNull String prompt) {
     if (prompt.contains("Summarize the following segment narration")) {
@@ -259,5 +261,12 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
   protected Duration calculateRetryDelay(
       @NonNull Exception exception, @NonNull Duration defaultDelay) {
     return defaultDelay;
+  }
+
+  protected HttpClient getHttpClient(int timeout) {
+    if (httpClient == null) {
+      httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(timeout)).build();
+    }
+    return httpClient;
   }
 }

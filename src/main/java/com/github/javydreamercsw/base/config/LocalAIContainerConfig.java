@@ -31,6 +31,7 @@ import org.springframework.context.event.EventListener;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 
 /**
  * Manages a LocalAI container for development using Testcontainers. This configuration is only
@@ -73,8 +74,11 @@ public class LocalAIContainerConfig {
               .withCommand("run", modelName)
               .withEnv("MODELS_PATH", "/build/models")
               .waitingFor(
-                  Wait.forHttp("/readyz")
-                      .forStatusCode(200)
+                  new WaitAllStrategy()
+                      .withStrategy(Wait.forHttp("/readyz").forStatusCode(200))
+                      .withStrategy(
+                          Wait.forLogMessage(
+                              ".*GRPC Service Started.*", 1)) // Wait for the model to be loaded
                       .withStartupTimeout(Duration.ofMinutes(15)));
 
       log.info(

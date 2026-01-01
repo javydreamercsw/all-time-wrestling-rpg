@@ -16,13 +16,16 @@
 */
 package com.github.javydreamercsw.base.ai;
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@Data
 @Component
-@ConfigurationProperties(prefix = "ai")
+@RequiredArgsConstructor
 public class AiBaseProperties {
-  private int timeout = 300;
+  private final AiSettingsService aiSettingsService;
+
+  public int getTimeout() {
+    return aiSettingsService.getAiTimeout();
+  }
 }
