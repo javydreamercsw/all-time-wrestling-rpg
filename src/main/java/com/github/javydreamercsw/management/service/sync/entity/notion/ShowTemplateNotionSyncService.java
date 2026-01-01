@@ -101,12 +101,6 @@ public class ShowTemplateNotionSyncService implements NotionSyncService {
                         entity.getShowType().getExternalId()));
               }
 
-              // Notion URL (URL property)
-              if (entity.getNotionUrl() != null && !entity.getNotionUrl().isBlank()) {
-                properties.put(
-                    "Notion URL", NotionPropertyBuilder.createUrlProperty(entity.getNotionUrl()));
-              }
-
               if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
                 log.debug("Updating existing show template page: {}", entity.getName());
                 UpdatePageRequest updatePageRequest =
