@@ -14,9 +14,21 @@
   </GlobalNamingResources>
 
   <Service name="Catalina">
+    <!-- The HTTP Connector -->
     <Connector port="9090" protocol="HTTP/1.1"
                connectionTimeout="20000"
                redirectPort="8443" />
+
+    <!-- The HTTPS Connector -->
+    <Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+               maxThreads="150" SSLEnabled="true">
+        <SSLHostConfig>
+            <Certificate certificateKeystoreFile="conf/keystore.jks"
+                         certificateKeystorePassword="changeit"
+                         type="RSA" />
+        </SSLHostConfig>
+    </Connector>
+
     <Engine name="Catalina" defaultHost="localhost">
       <Realm className="org.apache.catalina.realm.LockOutRealm">
         <Realm className="org.apache.catalina.realm.UserDatabaseRealm"

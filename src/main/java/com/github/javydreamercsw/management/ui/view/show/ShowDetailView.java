@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.show;
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -117,6 +118,7 @@ public class ShowDetailView extends Main
   private final ShowTemplateService showTemplateService;
   private final RivalryService rivalryService;
   private final LocalAIStatusService localAIStatusService;
+  private final LocalAIConfigProperties localAIConfigProperties;
   private final SegmentNarrationConfig segmentNarrationConfig;
   private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   private final WebClient.Builder webClientBuilder;
@@ -144,6 +146,7 @@ public class ShowDetailView extends Main
       ShowTemplateService showTemplateService,
       RivalryService rivalryService,
       LocalAIStatusService localAIStatusService,
+      LocalAIConfigProperties localAIConfigProperties,
       SegmentNarrationConfig segmentNarrationConfig,
       SegmentNarrationServiceFactory segmentNarrationServiceFactory,
       WebClient.Builder webClientBuilder,
@@ -162,6 +165,7 @@ public class ShowDetailView extends Main
     this.showTemplateService = showTemplateService;
     this.rivalryService = rivalryService;
     this.localAIStatusService = localAIStatusService;
+    this.localAIConfigProperties = localAIConfigProperties;
     this.segmentNarrationConfig = segmentNarrationConfig;
     this.segmentNarrationServiceFactory = segmentNarrationServiceFactory;
     this.webClientBuilder = webClientBuilder;
@@ -769,7 +773,7 @@ public class ShowDetailView extends Main
                   updatedSegment -> refreshSegmentsGrid(),
                   rivalryService,
                   localAIStatusService,
-                  segmentNarrationConfig,
+                  localAIConfigProperties,
                   webClientBuilder,
                   env); // Call refreshSegmentsGrid
           dialog.open();

@@ -90,7 +90,8 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
     return "OpenAI "
         + (model == null
             ? "Unknown"
-            : model.contains(openAIConfigProperties.getPremiumModel())
+            : (openAIConfigProperties.getPremiumModel() != null
+                    && model.contains(openAIConfigProperties.getPremiumModel()))
                 ? "GPT-4"
                 : "GPT-3.5"); // Use configured premium model
   }
@@ -211,7 +212,8 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
    * @return true if using GPT-4, false if using GPT-3.5
    */
   public boolean isUsingPremiumModel() {
-    return model.contains(openAIConfigProperties.getPremiumModel());
+    return openAIConfigProperties.getPremiumModel() != null
+        && model.contains(openAIConfigProperties.getPremiumModel());
   }
 
   /**
@@ -220,7 +222,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
    * @return Cost per 1K input tokens in USD
    */
   public double getCostPer1KTokens() {
-    if (model.contains(openAIConfigProperties.getPremiumModel())) {
+    if (isUsingPremiumModel()) {
       return 10.0; // GPT-4: $10/1K input, $30/1K output
     } else {
       return 0.50; // GPT-3.5: $0.50/1K input, $1.50/1K output

@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Configuration;
 
 /** Configuration properties for segment narration AI services. */
 @Configuration
-@ConfigurationProperties(prefix = "segment-narration")
+@ConfigurationProperties(prefix = "ai")
 @Data
 public class SegmentNarrationConfig {
 
@@ -31,16 +31,7 @@ public class SegmentNarrationConfig {
   private AI ai = new AI();
 
   @Data
-  public static class LocalAI {
-    private String baseUrl;
-    private String model;
-    private String modelUrl;
-  }
-
-  @Data
   public static class AI {
-    /** LocalAI provider settings. */
-    private LocalAI localai;
 
     /**
      * Maximum output tokens for segment narration. Gemini: Up to 8,192 tokens (~6,000 words) OpenAI

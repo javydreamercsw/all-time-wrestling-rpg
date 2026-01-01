@@ -19,6 +19,7 @@ All Time Wrestling (ATW) RPG is a web-based wrestling RPG simulator that allows 
 	- [Building the Docker Image](#building-the-docker-image)
 	- [Running the Application with Docker](#running-the-application-with-docker)
 - [Running with a Standalone Tomcat Server](#running-with-a-standalone-tomcat-server)
+- [Configuring Tomcat for HTTPS](#configuring-tomcat-for-https)
 - [Code Quality](#code-quality)
 - [Code Coverage](#code-coverage)
 - [Code Formatting](#code-formatting)
@@ -218,6 +219,54 @@ You can also deploy the application to a standalone Tomcat server.
 	Run `startup.sh` or `startup.bat` from the `bin` directory of your Tomcat installation.
 
 The application will be accessible at `http://localhost:8080/atw-rpg` (assuming Tomcat is running on the default port 8080).
+
+### Configuring Tomcat for HTTPS
+
+The production profile for this application enforces HTTPS. If you are deploying to a standalone Tomcat server, you must configure it to handle HTTPS traffic.
+
+1.  **Generate a Keystore:**
+	A keystore is a file that contains a certificate used by the server to enable HTTPS. For development, you can generate a self-signed certificate.
+
+	Navigate to the `conf` directory of your Tomcat installation and run the following command:
+	```sh
+	keytool -genkeypair -alias tomcat -keyalg RSA -keysize 2048 -storetype JKS -keystore localhost-rsa.jks -validity 36500
+	```
+	You will be prompted for several pieces of information:
+	*   **Password:** Enter `changeit` and confirm it. This password must match the one in the server configuration.
+	*   **First and Last Name:** Use `localhost`. This is the "Common Name" and should match the domain you are using to access the server.
+	*   **Other fields:** You can fill these in as you see fit.
+	*   **Confirmation:** Type `yes` to confirm.
+
+	This will create a `localhost-rsa.jks` file in the `conf` directory, valid for 100 years.
+
+2.  **Edit `server.xml`:**
+	Open the `server.xml` file located in your Tomcat `conf` directory and ensure the connectors are configured correctly. You need one connector for HTTP that redirects to HTTPS, and another for HTTPS itself.
+
+	Find and replace the existing `<Connector>` configurations with the following:
+	```xml
+	<!-- Define a non-SSL/TLS HTTP/1.1 Connector on port 8080 -->
+	<Connector port="8080" protocol="HTTP/1.1"
+			connectionTimeout="20000"
+			redirectPort="8443" />
+
+	<!-- Define an SSL/TLS HTTP/1.1 Connector on port 8443 -->
+	<Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+			maxThreads="150" SSLEnabled="true">
+		<SSLHostConfig>
+			<Certificate certificateKeystoreFile="conf/localhost-rsa.jks"
+						certificateKeystorePassword="changeit" type="RSA" />
+		</SSLHostConfig>
+	</Connector>
+	```
+	This configuration sets up an HTTP listener on port `8080` that automatically redirects to the HTTPS port `8443`.
+
+3.  **Restart Tomcat:**
+	After saving the changes to `server.xml`, restart your Tomcat server.
+
+The application will now be accessible at `https://localhost:8443/atw-rpg`. Accessing the `http://localhost:8080` address will automatically redirect you to the secure HTTPS address.
+
+**Note on Browser Warnings:**
+When using a self-signed certificate, your browser will display a security warning. This is expected. You can safely bypass this warning for development by clicking "Advanced" and then "Proceed to localhost (unsafe)". For a public-facing production server, you should obtain a certificate from a trusted Certificate Authority (CA) like Let's Encrypt.
 
 ### Code Quality
 
