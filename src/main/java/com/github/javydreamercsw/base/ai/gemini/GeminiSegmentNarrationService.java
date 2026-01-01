@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.ai.gemini;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -53,10 +54,14 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
   private final String apiKey;
   private final GeminiConfigProperties geminiConfigProperties;
   private final Environment environment;
+  private final AiSettingsService aiSettingsService;
 
   @Autowired // Autowire the configuration properties
   public GeminiSegmentNarrationService(
-      GeminiConfigProperties geminiConfigProperties, Environment environment) {
+      GeminiConfigProperties geminiConfigProperties,
+      Environment environment,
+      AiSettingsService aiSettingsService) {
+    this.aiSettingsService = aiSettingsService;
     this.httpClient =
         HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(geminiConfigProperties.getTimeout()))
@@ -79,6 +84,9 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
 
   @Override
   public boolean isAvailable() {
+    if (!aiSettingsService.isGeminiEnabled()) {
+      return false;
+    }
     if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
       return false;
     }

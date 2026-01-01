@@ -17,18 +17,41 @@
 package com.github.javydreamercsw.base.ai.openai;
 
 import com.github.javydreamercsw.base.ai.AiBaseProperties;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "ai.openai")
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class OpenAIConfigProperties extends AiBaseProperties {
-  private String apiUrl;
-  private String defaultModel;
-  private String premiumModel;
-  private int maxTokens;
+  private final AiSettingsService aiSettingsService;
+
+  @Autowired
+  public OpenAIConfigProperties(AiSettingsService aiSettingsService) {
+    super(aiSettingsService);
+    this.aiSettingsService = aiSettingsService;
+  }
+
+  public boolean isEnabled() {
+    return aiSettingsService.isOpenAIEnabled();
+  }
+
+  public String getApiUrl() {
+    return aiSettingsService.getOpenAIApiUrl();
+  }
+
+  public String getDefaultModel() {
+    return aiSettingsService.getOpenAIDefaultModel();
+  }
+
+  public String getPremiumModel() {
+    return aiSettingsService.getOpenAIPremiumModel();
+  }
+
+  public int getMaxTokens() {
+    return aiSettingsService.getOpenAIMaxTokens();
+  }
+
+  public float getTemperature() {
+    return aiSettingsService.getOpenAITemperature();
+  }
 }

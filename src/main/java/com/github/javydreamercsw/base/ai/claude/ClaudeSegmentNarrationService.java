@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.ai.claude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -48,10 +49,14 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
   private final String apiKey;
   private final ClaudeConfigProperties claudeConfigProperties;
   private final Environment environment;
+  private final AiSettingsService aiSettingsService;
 
   @Autowired
   public ClaudeSegmentNarrationService(
-      ClaudeConfigProperties claudeConfigProperties, Environment environment) {
+      ClaudeConfigProperties claudeConfigProperties,
+      Environment environment,
+      AiSettingsService aiSettingsService) {
+    this.aiSettingsService = aiSettingsService;
     this.httpClient =
         HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(claudeConfigProperties.getTimeout()))
@@ -74,6 +79,9 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
 
   @Override
   public boolean isAvailable() {
+    if (!aiSettingsService.isClaudeEnabled()) {
+      return false;
+    }
     if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
       return false;
     }

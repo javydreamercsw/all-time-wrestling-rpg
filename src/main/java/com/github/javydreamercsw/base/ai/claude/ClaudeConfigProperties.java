@@ -17,16 +17,29 @@
 package com.github.javydreamercsw.base.ai.claude;
 
 import com.github.javydreamercsw.base.ai.AiBaseProperties;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "ai.claude")
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class ClaudeConfigProperties extends AiBaseProperties {
-  private String modelName;
-  private String apiUrl;
+  private final AiSettingsService aiSettingsService;
+
+  @Autowired
+  public ClaudeConfigProperties(AiSettingsService aiSettingsService) {
+    super(aiSettingsService);
+    this.aiSettingsService = aiSettingsService;
+  }
+
+  public boolean isEnabled() {
+    return aiSettingsService.isClaudeEnabled();
+  }
+
+  public String getModelName() {
+    return aiSettingsService.getClaudeModelName();
+  }
+
+  public String getApiUrl() {
+    return aiSettingsService.getClaudeApiUrl();
+  }
 }

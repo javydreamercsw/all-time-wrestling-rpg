@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.ai.openai;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -56,12 +57,15 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   private final OpenAIConfigProperties openAIConfigProperties;
   private final Environment environment;
   private final SegmentNarrationConfig segmentNarrationConfig;
+  private final AiSettingsService aiSettingsService;
 
   @Autowired
   public OpenAISegmentNarrationService(
       OpenAIConfigProperties openAIConfigProperties,
       Environment environment,
-      SegmentNarrationConfig segmentNarrationConfig) {
+      SegmentNarrationConfig segmentNarrationConfig,
+      AiSettingsService aiSettingsService) {
+    this.aiSettingsService = aiSettingsService;
     this.httpClient =
         HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(segmentNarrationConfig.getAi().getTimeout()))
@@ -98,6 +102,9 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
 
   @Override
   public boolean isAvailable() {
+    if (!aiSettingsService.isOpenAIEnabled()) {
+      return false;
+    }
     if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
       return false;
     }

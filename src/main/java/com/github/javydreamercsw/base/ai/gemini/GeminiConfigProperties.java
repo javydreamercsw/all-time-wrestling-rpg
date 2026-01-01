@@ -17,16 +17,29 @@
 package com.github.javydreamercsw.base.ai.gemini;
 
 import com.github.javydreamercsw.base.ai.AiBaseProperties;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "ai.gemini")
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class GeminiConfigProperties extends AiBaseProperties {
-  private String modelName;
-  private String apiUrl;
+  private final AiSettingsService aiSettingsService;
+
+  @Autowired
+  public GeminiConfigProperties(AiSettingsService aiSettingsService) {
+    super(aiSettingsService);
+    this.aiSettingsService = aiSettingsService;
+  }
+
+  public boolean isEnabled() {
+    return aiSettingsService.isGeminiEnabled();
+  }
+
+  public String getModelName() {
+    return aiSettingsService.getGeminiModelName();
+  }
+
+  public String getApiUrl() {
+    return aiSettingsService.getGeminiApiUrl();
+  }
 }
