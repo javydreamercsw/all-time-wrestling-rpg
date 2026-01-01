@@ -1321,7 +1321,7 @@ public class ShowDetailView extends Main
                       .anyMatch(
                           component ->
                               component instanceof HorizontalLayout
-                                  && ((HorizontalLayout) component)
+                                  && component
                                       .getChildren()
                                       .anyMatch(
                                           btn ->
