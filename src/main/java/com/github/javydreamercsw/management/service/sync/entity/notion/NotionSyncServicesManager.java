@@ -34,7 +34,7 @@ public class NotionSyncServicesManager {
   @Autowired private SeasonSyncService seasonSyncService;
   @Autowired private ShowTypeSyncService showTypeSyncService;
   @Autowired private ShowTemplateSyncService showTemplateSyncService;
-  @Autowired private InjurySyncService injurySyncService;
+  @Autowired private InjuryTypeSyncService injuryTypeSyncService;
   @Autowired private NpcSyncService npcSyncService;
   @Autowired private TitleSyncService titleSyncService;
   @Autowired private TitleReignSyncService titleReignSyncService;
@@ -55,5 +55,6 @@ public class NotionSyncServicesManager {
   @Autowired private ShowTemplateNotionSyncService showTemplateNotionSyncService;
   @Autowired private ShowTypeNotionSyncService showTypeNotionSyncService;
   @Autowired private InjuryNotionSyncService injuryNotionSyncService;
+  @Autowired private InjuryTypeNotionSyncService injuryTypeNotionSyncService;
   @Autowired private WrestlerRepository wrestlerRepository;
 }
