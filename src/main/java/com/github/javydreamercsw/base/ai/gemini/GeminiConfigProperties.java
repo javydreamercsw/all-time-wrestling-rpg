@@ -42,4 +42,8 @@ public class GeminiConfigProperties extends AiBaseProperties {
   public String getApiUrl() {
     return aiSettingsService.getGeminiApiUrl();
   }
+
+  public String getApiKey() {
+    return aiSettingsService.getGeminiApiKey();
+  }
 }

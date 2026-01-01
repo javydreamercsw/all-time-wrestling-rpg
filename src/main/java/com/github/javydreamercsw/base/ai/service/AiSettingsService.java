@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai.service;
 
+import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -52,21 +53,25 @@ public class AiSettingsService {
   public String getOpenAIApiUrl() {
     return gameSettingService
         .findById("AI_OPENAI_API_URL")
-        .map(gs -> gs.getValue())
+        .map(GameSetting::getValue)
         .orElse("https://api.openai.com/v1/chat/completions");
+  }
+
+  public String getOpenAIApiKey() {
+    return gameSettingService.findById("AI_OPENAI_API_KEY").map(GameSetting::getValue).orElse("");
   }
 
   public String getOpenAIDefaultModel() {
     return gameSettingService
         .findById("AI_OPENAI_DEFAULT_MODEL")
-        .map(gs -> gs.getValue())
+        .map(GameSetting::getValue)
         .orElse("gpt-3.5-turbo");
   }
 
   public String getOpenAIPremiumModel() {
     return gameSettingService
         .findById("AI_OPENAI_PREMIUM_MODEL")
-        .map(gs -> gs.getValue())
+        .map(GameSetting::getValue)
         .orElse("gpt-4");
   }
 
@@ -95,14 +100,18 @@ public class AiSettingsService {
   public String getClaudeApiUrl() {
     return gameSettingService
         .findById("AI_CLAUDE_API_URL")
-        .map(gs -> gs.getValue())
+        .map(GameSetting::getValue)
         .orElse("https://api.anthropic.com/v1/messages/");
+  }
+
+  public String getClaudeApiKey() {
+    return gameSettingService.findById("AI_CLAUDE_API_KEY").map(GameSetting::getValue).orElse("");
   }
 
   public String getClaudeModelName() {
     return gameSettingService
         .findById("AI_CLAUDE_MODEL_NAME")
-        .map(gs -> gs.getValue())
+        .map(GameSetting::getValue)
         .orElse("claude-3-haiku-20240307");
   }
 
@@ -117,14 +126,18 @@ public class AiSettingsService {
   public String getGeminiApiUrl() {
     return gameSettingService
         .findById("AI_GEMINI_API_URL")
-        .map(gs -> gs.getValue())
+        .map(GameSetting::getValue)
         .orElse("https://generativelanguage.googleapis.com/v1beta/models/");
+  }
+
+  public String getGeminiApiKey() {
+    return gameSettingService.findById("AI_GEMINI_API_KEY").map(GameSetting::getValue).orElse("");
   }
 
   public String getGeminiModelName() {
     return gameSettingService
         .findById("AI_GEMINI_MODEL_NAME")
-        .map(gs -> gs.getValue())
+        .map(GameSetting::getValue)
         .orElse("gemini-2.5-flash");
   }
 
@@ -139,18 +152,21 @@ public class AiSettingsService {
   public String getLocalAIBaseUrl() {
     return gameSettingService
         .findById("AI_LOCALAI_BASE_URL")
-        .map(gs -> gs.getValue())
+        .map(GameSetting::getValue)
         .orElse("http://localhost:8088");
   }
 
   public String getLocalAIModel() {
     return gameSettingService
         .findById("AI_LOCALAI_MODEL")
-        .map(gs -> gs.getValue())
+        .map(GameSetting::getValue)
         .orElse("llama-3.2-1b-instruct:q4_k_m");
   }
 
   public String getLocalAIModelUrl() {
-    return gameSettingService.findById("AI_LOCALAI_MODEL_URL").map(gs -> gs.getValue()).orElse("");
+    return gameSettingService
+        .findById("AI_LOCALAI_MODEL_URL")
+        .map(GameSetting::getValue)
+        .orElse("");
   }
 }

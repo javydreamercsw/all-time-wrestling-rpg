@@ -26,6 +26,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -46,6 +47,7 @@ public class AiSettingsView extends VerticalLayout {
   // OpenAI fields
   private Checkbox openAIEnabled;
   private TextField openAIApiUrl;
+  private PasswordField openAIApiKey;
   private TextField openAIDefaultModel;
   private TextField openAIPremiumModel;
   private NumberField openAIMaxTokens;
@@ -54,11 +56,13 @@ public class AiSettingsView extends VerticalLayout {
   // Claude fields
   private Checkbox claudeEnabled;
   private TextField claudeApiUrl;
+  private PasswordField claudeApiKey;
   private TextField claudeModelName;
 
   // Gemini fields
   private Checkbox geminiEnabled;
   private TextField geminiApiUrl;
+  private PasswordField geminiApiKey;
   private TextField geminiModelName;
 
   // LocalAI fields
@@ -96,6 +100,11 @@ public class AiSettingsView extends VerticalLayout {
     openAIApiUrl = new TextField("API URL", aiSettingsService.getOpenAIApiUrl(), "");
     openAIApiUrl.addValueChangeListener(
         event -> saveSetting("AI_OPENAI_API_URL", event.getValue()));
+    openAIApiKey =
+        new PasswordField(
+            "API KEY",
+            aiSettingsService.getOpenAIApiKey(),
+            event -> saveSetting("AI_OPENAI_API_KEY", event.getValue()));
     openAIDefaultModel =
         new TextField("Default Model", aiSettingsService.getOpenAIDefaultModel(), "");
     openAIDefaultModel.addValueChangeListener(
@@ -129,6 +138,11 @@ public class AiSettingsView extends VerticalLayout {
     claudeApiUrl = new TextField("API URL", aiSettingsService.getClaudeApiUrl(), "");
     claudeApiUrl.addValueChangeListener(
         event -> saveSetting("AI_CLAUDE_API_URL", event.getValue()));
+    claudeApiKey =
+        new PasswordField(
+            "API KEY",
+            aiSettingsService.getClaudeApiKey(),
+            event -> saveSetting("AI_CLAUDE_API_KEY", event.getValue()));
     claudeModelName = new TextField("Model Name", aiSettingsService.getClaudeModelName(), "");
     claudeModelName.addValueChangeListener(
         event -> saveSetting("AI_CLAUDE_MODEL_NAME", event.getValue()));
@@ -143,6 +157,11 @@ public class AiSettingsView extends VerticalLayout {
     geminiApiUrl = new TextField("API URL", aiSettingsService.getGeminiApiUrl(), "");
     geminiApiUrl.addValueChangeListener(
         event -> saveSetting("AI_GEMINI_API_URL", event.getValue()));
+    geminiApiKey =
+        new PasswordField(
+            "API KEY",
+            aiSettingsService.getGeminiApiKey(),
+            event -> saveSetting("AI_GEMINI_API_KEY", event.getValue()));
     geminiModelName = new TextField("Model Name", aiSettingsService.getGeminiModelName(), "");
     geminiModelName.addValueChangeListener(
         event -> saveSetting("AI_GEMINI_MODEL_NAME", event.getValue()));

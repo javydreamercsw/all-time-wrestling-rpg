@@ -54,4 +54,8 @@ public class OpenAIConfigProperties extends AiBaseProperties {
   public float getTemperature() {
     return aiSettingsService.getOpenAITemperature();
   }
+
+  public String getApiKey() {
+    return aiSettingsService.getOpenAIApiKey();
+  }
 }

@@ -8,14 +8,17 @@ INSERT INTO game_setting (setting_key, setting_value) VALUES
 ('AI_OPENAI_PREMIUM_MODEL', 'gpt-4'),
 ('AI_OPENAI_MAX_TOKENS', '1000'),
 ('AI_OPENAI_TEMPERATURE', '0.7'),
+('AI_OPENAI_API_KEY', ''),
 
 ('AI_CLAUDE_ENABLED', 'false'),
 ('AI_CLAUDE_API_URL', 'https://api.anthropic.com/v1/messages/'),
 ('AI_CLAUDE_MODEL_NAME', 'claude-3-haiku-20240307'),
+('AI_CLAUDE_API_KEY', ''),
 
 ('AI_GEMINI_ENABLED', 'false'),
 ('AI_GEMINI_API_URL', 'https://generativelanguage.googleapis.com/v1beta/models/'),
 ('AI_GEMINI_MODEL_NAME', 'gemini-2.5-flash'),
+('AI_GEMINI_API_KEY', ''),
 
 ('AI_LOCALAI_ENABLED', 'false'),
 ('AI_LOCALAI_BASE_URL', 'http://localhost:8088'),
