@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
@@ -54,6 +55,7 @@ class NarrationDialogTest {
   @Mock private LocalAIStatusService localAIStatusService;
   @Mock private LocalAIConfigProperties localAIConfigProperties;
   @Mock private Environment env;
+  @Mock private SegmentNarrationController segmentNarrationController;
 
   private NarrationDialog narrationDialog;
 
@@ -109,6 +111,7 @@ class NarrationDialogTest {
             localAIStatusService,
             localAIConfigProperties,
             webClientBuilder,
+            segmentNarrationController,
             env);
   }
 

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
+import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
@@ -123,6 +124,7 @@ public class ShowDetailView extends Main
   private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   private final WebClient.Builder webClientBuilder;
   private final Environment env;
+  private final SegmentNarrationController segmentNarrationController;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -150,6 +152,7 @@ public class ShowDetailView extends Main
       SegmentNarrationConfig segmentNarrationConfig,
       SegmentNarrationServiceFactory segmentNarrationServiceFactory,
       WebClient.Builder webClientBuilder,
+      SegmentNarrationController segmentNarrationController,
       Environment env) {
     this.showService = showService;
     this.segmentService = segmentService;
@@ -170,6 +173,7 @@ public class ShowDetailView extends Main
     this.segmentNarrationServiceFactory = segmentNarrationServiceFactory;
     this.webClientBuilder = webClientBuilder;
     this.env = env;
+    this.segmentNarrationController = segmentNarrationController;
     initializeComponents();
   }
 
@@ -775,6 +779,7 @@ public class ShowDetailView extends Main
                   localAIStatusService,
                   localAIConfigProperties,
                   webClientBuilder,
+                  segmentNarrationController,
                   env); // Call refreshSegmentsGrid
           dialog.open();
         });

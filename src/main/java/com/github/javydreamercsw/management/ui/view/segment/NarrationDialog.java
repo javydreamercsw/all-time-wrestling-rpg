@@ -16,9 +16,11 @@
 */
 package com.github.javydreamercsw.management.ui.view.segment;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -34,7 +36,6 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -56,13 +57,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -71,7 +72,6 @@ import reactor.core.publisher.Mono;
 public class NarrationDialog extends Dialog {
 
   private final Segment segment;
-  private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
@@ -96,6 +96,7 @@ public class NarrationDialog extends Dialog {
   private final VerticalLayout teamsLayout;
   private final Consumer<Segment> onSaveCallback;
   private final WebClient webClient;
+  private final SegmentNarrationController segmentNarrationController;
 
   public NarrationDialog(
       Segment segment,
@@ -109,9 +110,9 @@ public class NarrationDialog extends Dialog {
       LocalAIStatusService localAIStatusService,
       LocalAIConfigProperties localAIConfigProperties,
       WebClient.Builder webClientBuilder,
+      SegmentNarrationController segmentNarrationController,
       Environment env) {
     this.segment = segment;
-    this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
@@ -121,6 +122,7 @@ public class NarrationDialog extends Dialog {
     this.rivalryService = rivalryService;
     this.localAIStatusService = localAIStatusService;
     this.localAIConfigProperties = localAIConfigProperties;
+    this.segmentNarrationController = segmentNarrationController;
     if (Arrays.asList(env.getActiveProfiles()).contains("e2e")) {
       this.webClient = webClientBuilder.filter(logRequest()).build();
     } else {
@@ -320,27 +322,25 @@ public class NarrationDialog extends Dialog {
       SegmentNarrationService.SegmentNarrationContext context = buildSegmentContext();
       log.debug("Sending narration context to AI: {}", context);
 
-      String baseUrl = UrlUtil.getBaseUrl();
-      ResponseEntity<String> response =
-          restTemplate.postForEntity(
-              baseUrl + "/api/segment-narration/narrate", context, String.class);
+      ResponseEntity<Map<String, Object>> response =
+          segmentNarrationController.narrateSegment(context);
 
-      handleNarrationResponse(response.getBody());
-
-    } catch (org.springframework.web.client.HttpClientErrorException e) {
-      log.error("HTTP Client Error generating segment narration", e);
-      try {
-        JsonNode errorResponse = objectMapper.readTree(e.getResponseBodyAsString());
-        if (errorResponse.has("alternativeProviders")) {
-          showRetryDialog(errorResponse);
-        } else {
-          showError(
-              "Failed to generate narration: "
-                  + errorResponse.path("error").asText("Unknown error"));
+      if (response.getStatusCode().isError()) {
+        try {
+          JsonNode errorResponse = objectMapper.valueToTree(response.getBody());
+          if (errorResponse.has("alternativeProviders")) {
+            showRetryDialog(errorResponse);
+          } else {
+            showError(
+                "Failed to generate narration: "
+                    + errorResponse.path("error").asText("Unknown error"));
+          }
+        } catch (Exception ex) {
+          log.error("Error parsing error response", ex);
+          showError("Failed to generate narration: " + response);
         }
-      } catch (Exception ex) {
-        log.error("Error parsing error response", ex);
-        showError("Failed to generate narration: " + e.getMessage());
+      } else {
+        handleNarrationResponse(objectMapper.writeValueAsString(response.getBody()));
       }
     } catch (Exception e) {
       log.error("Error generating segment narration", e);
@@ -678,30 +678,34 @@ public class NarrationDialog extends Dialog {
       SegmentNarrationService.SegmentNarrationContext context = buildSegmentContext();
       log.info("Retrying narration with provider {} and context: {}", provider, context);
 
-      String baseUrl = UrlUtil.getBaseUrl();
-      ResponseEntity<String> response =
-          restTemplate.postForEntity(
-              baseUrl + "/api/segment-narration/narrate/" + provider, context, String.class);
+      ResponseEntity<Map<String, Object>> response =
+          segmentNarrationController.narrateSegmentWithProvider(provider, context);
 
-      if (response.getBody() != null) {
-        handleNarrationResponse(response.getBody());
-      } else {
-        log.warn("GOt an empty response from provider!");
-      }
-    } catch (org.springframework.web.client.HttpClientErrorException e) {
-      log.error("HTTP Client Error retrying with provider {}: {}", provider, e.getMessage(), e);
-      try {
-        JsonNode errorResponse = objectMapper.readTree(e.getResponseBodyAsString());
-        if (errorResponse.has("alternativeProviders")) {
-          showRetryDialog(errorResponse);
-        } else {
-          showError(
-              "Failed to generate narration: "
-                  + errorResponse.path("error").asText("Unknown error"));
+      if (response.getStatusCode().isError()) {
+        try {
+          JsonNode errorResponse = objectMapper.valueToTree(response.getBody());
+          if (errorResponse.has("alternativeProviders")) {
+            showRetryDialog(errorResponse);
+          } else {
+            showError(
+                "Failed to generate narration: "
+                    + errorResponse.path("error").asText("Unknown error"));
+          }
+        } catch (Exception ex) {
+          log.error("Error parsing error response", ex);
+          showError("Failed to generate narration: " + response.toString());
         }
-      } catch (Exception ex) {
-        log.error("Error parsing error response", ex);
-        showError("Failed to generate narration: " + e.getMessage());
+      } else {
+        if (response.getBody() != null) {
+          try {
+            handleNarrationResponse(objectMapper.writeValueAsString(response.getBody()));
+          } catch (JsonProcessingException e) {
+            log.error("Error processing response", e);
+            showError("Failed to process narration response.");
+          }
+        } else {
+          log.warn("Got an empty response from provider!");
+        }
       }
     } catch (Exception e) {
       log.error("Error retrying with provider: {}", provider, e);

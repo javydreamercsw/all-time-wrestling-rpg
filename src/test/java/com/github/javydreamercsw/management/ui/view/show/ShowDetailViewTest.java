@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
+import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
@@ -90,6 +91,7 @@ class ShowDetailViewTest {
   @Mock private SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   @Mock private Environment env;
   @Mock private LocalAIConfigProperties localAIConfigProperties;
+  @Mock private SegmentNarrationController segmentNarrationController;
 
   @BeforeEach
   void setUp() {
@@ -152,6 +154,7 @@ class ShowDetailViewTest {
               segmentNarrationConfig,
               segmentNarrationServiceFactory,
               mock(WebClient.Builder.class),
+              segmentNarrationController,
               env);
 
       ReflectionTestUtils.invokeMethod(
@@ -229,6 +232,7 @@ class ShowDetailViewTest {
               segmentNarrationConfig,
               segmentNarrationServiceFactory,
               mock(WebClient.Builder.class),
+              segmentNarrationController,
               env);
 
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
