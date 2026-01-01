@@ -8,47 +8,46 @@ spring:
     # active: local-ai-embedded
     active:
 
-segment-narration:
-  ai:
-    # AI provider selection: "auto", "openai", "notion"
-    # "auto" will automatically select the first available service
-    provider: auto
-    
-    # Request timeout in seconds. Increased for local models running on CPU.
-    timeout-seconds: 300
-    
-    # OpenAI configuration
-    openai:
-      # API key - can also be set via OPENAI_API_KEY environment variable
-      # Get your API key from: https://platform.openai.com/api-keys
-      api-key: ${OPENAI_API_KEY:}
-      
-      # Model to use for requests
-      model: gpt-3.5-turbo
-      # Alternative models: gpt-4, gpt-4-turbo-preview, gpt-3.5-turbo-16k
-      
-      # Maximum tokens for responses (affects cost and response length)
-      max-tokens: 1000
-      
-      # Temperature (0.0 to 2.0) - higher values make output more creative/random
-      temperature: 0.7
-      
-    # Notion AI configuration (for future use)
-    notion:
-      # Enable when Notion AI API becomes available
-      enabled: false
-      
-      # API key (when available)
-      api-key: ${NOTION_AI_API_KEY:}
-      
-    # LocalAI configuration
-    localai:
-      # When using the "local-ai-embedded" profile, the base-url is set automatically.
-      # Otherwise, set the base URL of your LocalAI instance.
-      base-url: http://localhost:8088
-      
-      # Model to use for requests. This should match a model file in your ./models directory.
-      model: llama-3.2-1b-instruct:q4_k_m
+ai:
+  # AI provider selection: "auto", "openai", "notion"
+  # "auto" will automatically select the first available service
+  provider: auto
+
+  # Request timeout in seconds. Increased for local models running on CPU.
+  timeout-seconds: 300
+
+  # OpenAI configuration
+  openai:
+    # API key - can also be set via OPENAI_API_KEY environment variable
+    # Get your API key from: https://platform.openai.com/api-keys
+    api-key: ${OPENAI_API_KEY:}
+
+    # Model to use for requests
+    default-model: gpt-3.5-turbo
+    # Alternative models: gpt-4, gpt-4-turbo-preview, gpt-3.5-turbo-16k
+
+    # Maximum tokens for responses (affects cost and response length)
+    max-tokens: 1000
+
+    # Temperature (0.0 to 2.0) - higher values make output more creative/random
+    temperature: 0.7
+
+  # Notion AI configuration (for future use)
+  notion:
+    # Enable when Notion AI API becomes available
+    enabled: false
+
+    # API key (when available)
+    api-key: ${NOTION_AI_API_KEY:}
+
+  # LocalAI configuration
+  localai:
+    # When using the "local-ai-embedded" profile, the base-url is set automatically.
+    # Otherwise, set the base URL of your LocalAI instance.
+    base-url: http://localhost:8088
+
+    # Model to use for requests. This should match a model file in your ./models directory.
+    model: llama-3.2-1b-instruct:q4_k_m
 
 # Logging configuration for AI services
 logging:

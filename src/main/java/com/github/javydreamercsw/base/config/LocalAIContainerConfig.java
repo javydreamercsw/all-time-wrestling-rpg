@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import java.io.File;
 import java.time.Duration;
 import javax.annotation.PreDestroy;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,11 +42,11 @@ import org.testcontainers.containers.wait.strategy.Wait;
 @RequiredArgsConstructor
 public class LocalAIContainerConfig {
 
-  @Value("${segment-narration.ai.localai.model}")
+  @Value("${ai.localai.model}")
   private String modelName;
 
   private final LocalAIStatusService statusService;
-  private GenericContainer<?> localAiContainer;
+  @Getter private GenericContainer<?> localAiContainer;
 
   @EventListener(ApplicationReadyEvent.class)
   public void startLocalAiContainer() {
@@ -86,8 +87,8 @@ public class LocalAIContainerConfig {
       String baseUrl =
           String.format(
               "http://%s:%d", localAiContainer.getHost(), localAiContainer.getMappedPort(8080));
-      System.setProperty("segment-narration.ai.localai.base-url", baseUrl);
-      System.setProperty("segment-narration.ai.localai.model", modelName);
+      System.setProperty("ai.localai.base-url", baseUrl);
+      System.setProperty("ai.localai.model", modelName);
 
       statusService.setStatus(LocalAIStatusService.Status.READY);
       statusService.setMessage("LocalAI is ready.");
