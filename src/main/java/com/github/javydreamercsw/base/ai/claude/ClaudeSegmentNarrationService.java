@@ -21,7 +21,6 @@ import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -44,9 +43,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
-  private final String apiKey;
   private final ClaudeConfigProperties claudeConfigProperties;
   private final Environment environment;
   private final AiSettingsService aiSettingsService;
@@ -57,12 +54,7 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
       Environment environment,
       AiSettingsService aiSettingsService) {
     this.aiSettingsService = aiSettingsService;
-    this.httpClient =
-        HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(claudeConfigProperties.getTimeout()))
-            .build();
     this.objectMapper = new ObjectMapper();
-    this.apiKey = System.getenv("ANTHROPIC_API_KEY");
     this.claudeConfigProperties = claudeConfigProperties;
     this.environment = environment;
   }
@@ -85,6 +77,7 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
     if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
       return false;
     }
+    String apiKey = claudeConfigProperties.getApiKey();
     return apiKey != null && !apiKey.trim().isEmpty();
   }
 
@@ -115,14 +108,15 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
           HttpRequest.newBuilder()
               .uri(URI.create(fullApiUrl))
               .header("Content-Type", "application/json")
-              .header("x-api-key", apiKey)
+              .header("x-api-key", claudeConfigProperties.getApiKey())
               .header("anthropic-version", "2023-06-01")
               .timeout(Duration.ofSeconds(claudeConfigProperties.getTimeout()))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
 
       HttpResponse<String> response =
-          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+          getHttpClient(claudeConfigProperties.getTimeout())
+              .send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
         return extractContentFromResponse(response.body());

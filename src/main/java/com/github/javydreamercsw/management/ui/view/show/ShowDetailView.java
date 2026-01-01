@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
+import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
@@ -130,6 +131,7 @@ public class ShowDetailView extends Main
   private Long currentShowId;
   private Show currentShow;
   private Grid<Segment> segmentsGrid;
+  private SegmentNarrationController segmentNarrationController;
 
   public ShowDetailView(
       ShowService showService,
@@ -150,7 +152,9 @@ public class ShowDetailView extends Main
       SegmentNarrationConfig segmentNarrationConfig,
       SegmentNarrationServiceFactory segmentNarrationServiceFactory,
       WebClient.Builder webClientBuilder,
-      Environment env) {
+      Environment env,
+      SegmentNarrationController segmentNarrationController) {
+    this.segmentNarrationController = segmentNarrationController;
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -766,7 +770,6 @@ public class ShowDetailView extends Main
               new NarrationDialog(
                   segment,
                   npcService,
-                  wrestlerService,
                   wrestlerRepository,
                   showService,
                   segmentService,
@@ -774,8 +777,7 @@ public class ShowDetailView extends Main
                   rivalryService,
                   localAIStatusService,
                   localAIConfigProperties,
-                  webClientBuilder,
-                  env); // Call refreshSegmentsGrid
+                  segmentNarrationController); // Call refreshSegmentsGrid
           dialog.open();
         });
 

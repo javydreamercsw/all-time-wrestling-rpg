@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.segment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -33,8 +34,6 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -52,28 +51,24 @@ import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 @Slf4j
 public class NarrationDialog extends Dialog {
 
   private final Segment segment;
-  private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
-  private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final ShowService showService;
   private final SegmentService segmentService;
@@ -95,12 +90,11 @@ public class NarrationDialog extends Dialog {
   private final MultiSelectComboBox<Npc> otherNpcsField;
   private final VerticalLayout teamsLayout;
   private final Consumer<Segment> onSaveCallback;
-  private final WebClient webClient;
+  private final SegmentNarrationController segmentNarrationController;
 
   public NarrationDialog(
       Segment segment,
       NpcService npcService,
-      WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       ShowService showService,
       SegmentService segmentService,
@@ -108,12 +102,9 @@ public class NarrationDialog extends Dialog {
       RivalryService rivalryService,
       LocalAIStatusService localAIStatusService,
       LocalAIConfigProperties localAIConfigProperties,
-      WebClient.Builder webClientBuilder,
-      Environment env) {
+      SegmentNarrationController segmentNarrationController) {
     this.segment = segment;
-    this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
-    this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.showService = showService;
     this.segmentService = segmentService;
@@ -121,11 +112,7 @@ public class NarrationDialog extends Dialog {
     this.rivalryService = rivalryService;
     this.localAIStatusService = localAIStatusService;
     this.localAIConfigProperties = localAIConfigProperties;
-    if (Arrays.asList(env.getActiveProfiles()).contains("e2e")) {
-      this.webClient = webClientBuilder.filter(logRequest()).build();
-    } else {
-      this.webClient = webClientBuilder.filter(logRequest()).build();
-    }
+    this.segmentNarrationController = segmentNarrationController;
 
     setHeaderTitle("Generate Narration for: " + segment.getSegmentType().getName());
     setWidth("800px");
@@ -320,14 +307,12 @@ public class NarrationDialog extends Dialog {
       SegmentNarrationService.SegmentNarrationContext context = buildSegmentContext();
       log.debug("Sending narration context to AI: {}", context);
 
-      String baseUrl = UrlUtil.getBaseUrl();
-      ResponseEntity<String> response =
-          restTemplate.postForEntity(
-              baseUrl + "/api/segment-narration/narrate", context, String.class);
+      ResponseEntity<Map<String, Object>> response =
+          segmentNarrationController.narrateSegment(context);
 
-      handleNarrationResponse(response.getBody());
-
-    } catch (org.springframework.web.client.HttpClientErrorException e) {
+      narrationDisplay.setText((String) response.getBody().get("narration"));
+      saveButton.setEnabled(true);
+    } catch (HttpClientErrorException e) {
       log.error("HTTP Client Error generating segment narration", e);
       try {
         JsonNode errorResponse = objectMapper.readTree(e.getResponseBodyAsString());
@@ -354,7 +339,8 @@ public class NarrationDialog extends Dialog {
     boolean configured =
         localAIConfigProperties != null
             && localAIConfigProperties.getBaseUrl() != null
-            && !localAIConfigProperties.getBaseUrl().isEmpty();
+            && !localAIConfigProperties.getBaseUrl().isEmpty()
+            && localAIConfigProperties.isEnabled();
     log.debug(
         "LocalAI Config Check: baseUrl={}, configured={}",
         localAIConfigProperties != null ? localAIConfigProperties.getBaseUrl() : "null",
@@ -611,23 +597,6 @@ public class NarrationDialog extends Dialog {
     return context;
   }
 
-  private void handleNarrationResponse(String response) {
-    if (response == null || response.isEmpty()) {
-      showError("Received an empty response from the AI service.");
-      return;
-    }
-    try {
-      JsonNode jsonResponse = objectMapper.readTree(response);
-      String narration =
-          jsonResponse.has("narration") ? jsonResponse.get("narration").asText() : response;
-      narrationDisplay.setText(narration);
-      saveButton.setEnabled(true);
-    } catch (Exception e) {
-      log.error("Error parsing narration response", e);
-      narrationDisplay.setText(response);
-    }
-  }
-
   private void showProgress(boolean show) {
     progressBar.setVisible(show);
     generateButton.setEnabled(!show);
@@ -678,13 +647,12 @@ public class NarrationDialog extends Dialog {
       SegmentNarrationService.SegmentNarrationContext context = buildSegmentContext();
       log.info("Retrying narration with provider {} and context: {}", provider, context);
 
-      String baseUrl = UrlUtil.getBaseUrl();
-      ResponseEntity<String> response =
-          restTemplate.postForEntity(
-              baseUrl + "/api/segment-narration/narrate/" + provider, context, String.class);
+      ResponseEntity<Map<String, Object>> response =
+          segmentNarrationController.narrateSegmentWithProvider(provider, context);
 
       if (response.getBody() != null) {
-        handleNarrationResponse(response.getBody());
+        narrationDisplay.setText((String) response.getBody().get("narration"));
+        saveButton.setEnabled(true);
       } else {
         log.warn("GOt an empty response from provider!");
       }

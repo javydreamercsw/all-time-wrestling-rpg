@@ -124,6 +124,7 @@ public class AiSettingsView extends VerticalLayout {
     openAISettingsLayout.add(
         openAIEnabled,
         openAIApiUrl,
+        openAIApiKey,
         openAIDefaultModel,
         openAIPremiumModel,
         openAIMaxTokens,
@@ -146,7 +147,7 @@ public class AiSettingsView extends VerticalLayout {
     claudeModelName = new TextField("Model Name", aiSettingsService.getClaudeModelName(), "");
     claudeModelName.addValueChangeListener(
         event -> saveSetting("AI_CLAUDE_MODEL_NAME", event.getValue()));
-    claudeSettingsLayout.add(claudeEnabled, claudeApiUrl, claudeModelName);
+    claudeSettingsLayout.add(claudeEnabled, claudeApiUrl, claudeApiKey, claudeModelName);
     add(claudeSettingsLayout);
 
     add(new H3("Gemini Settings"));
@@ -165,7 +166,7 @@ public class AiSettingsView extends VerticalLayout {
     geminiModelName = new TextField("Model Name", aiSettingsService.getGeminiModelName(), "");
     geminiModelName.addValueChangeListener(
         event -> saveSetting("AI_GEMINI_MODEL_NAME", event.getValue()));
-    geminiSettingsLayout.add(geminiEnabled, geminiApiUrl, geminiModelName);
+    geminiSettingsLayout.add(geminiEnabled, geminiApiUrl, geminiApiKey, geminiModelName);
     add(geminiSettingsLayout);
 
     add(new H3("LocalAI Settings"));
