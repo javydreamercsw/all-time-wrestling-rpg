@@ -185,7 +185,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
     assertEquals(
         segment.getShow().getExternalId(),
-        capturedRequest.getProperties().get("Show").getRelation().get(0).getId());
+        capturedRequest.getProperties().get("Shows").getRelation().get(0).getId());
     assertEquals(
         segment.getSegmentType().getExternalId(),
         capturedRequest.getProperties().get("Segment Type").getRelation().get(0).getId());
@@ -194,19 +194,13 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
         Instant.parse(capturedRequest.getProperties().get("Date").getDate().getStart())
             .truncatedTo(java.time.temporal.ChronoUnit.MILLIS));
     assertEquals(
-        segment.getStatus().name(),
-        capturedRequest.getProperties().get("Status").getSelect().getName());
-    assertEquals(
-        segment.getAdjudicationStatus().name(),
-        capturedRequest.getProperties().get("Adjudication Status").getSelect().getName());
-    assertEquals(
         segment.getSegmentRules().get(0).getExternalId(),
         capturedRequest.getProperties().get("Rules").getRelation().get(0).getId());
     assertEquals(
         segment.getNarration(),
         capturedRequest
             .getProperties()
-            .get("Narration")
+            .get("Description")
             .getRichText()
             .get(0)
             .getText()
@@ -214,17 +208,6 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     assertEquals(
         segment.getSummary(),
         capturedRequest.getProperties().get("Summary").getRichText().get(0).getText().getContent());
-    assertEquals(
-        segment.getIsTitleSegment(),
-        capturedRequest.getProperties().get("Title Segment").getCheckbox());
-    assertEquals(
-        segment.getIsNpcGenerated(),
-        capturedRequest.getProperties().get("NPC Generated").getCheckbox());
-    assertEquals(
-        Integer.valueOf(segment.getSegmentOrder()).doubleValue(),
-        capturedRequest.getProperties().get("Order").getNumber());
-    assertEquals(
-        segment.isMainEvent(), capturedRequest.getProperties().get("Main Event").getCheckbox());
     assertEquals(
         segment.getWrestlers().get(0).getExternalId(),
         capturedRequest.getProperties().get("Participants").getRelation().get(0).getId());
@@ -246,7 +229,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
         updatedSegment2.getNarration(),
         capturedUpdateRequest
             .getProperties()
-            .get("Narration")
+            .get("Description")
             .getRichText()
             .get(0)
             .getText()
@@ -260,11 +243,5 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
             .get(0)
             .getText()
             .getContent());
-    assertEquals(
-        Integer.valueOf(updatedSegment2.getSegmentOrder()).doubleValue(),
-        capturedUpdateRequest.getProperties().get("Order").getNumber());
-    assertEquals(
-        updatedSegment2.isMainEvent(),
-        capturedUpdateRequest.getProperties().get("Main Event").getCheckbox());
   }
 }

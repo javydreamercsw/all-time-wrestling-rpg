@@ -94,7 +94,7 @@ public class SegmentNotionSyncService implements NotionSyncService {
               // Show (Relation property)
               if (entity.getShow() != null && entity.getShow().getExternalId() != null) {
                 properties.put(
-                    "Show",
+                    "Shows",
                     NotionPropertyBuilder.createRelationProperty(entity.getShow().getExternalId()));
               }
 
@@ -114,36 +114,21 @@ public class SegmentNotionSyncService implements NotionSyncService {
                     NotionPropertyBuilder.createDateProperty(entity.getSegmentDate().toString()));
               }
 
-              // Status (Select property)
-              if (entity.getStatus() != null) {
-                properties.put(
-                    "Status",
-                    NotionPropertyBuilder.createSelectProperty(entity.getStatus().name()));
-              }
-
-              // Adjudication Status (Select property)
-              if (entity.getAdjudicationStatus() != null) {
-                properties.put(
-                    "Adjudication Status",
-                    NotionPropertyBuilder.createSelectProperty(
-                        entity.getAdjudicationStatus().name()));
-              }
-
               // Segment Rules (Multi-relation)
               if (entity.getSegmentRules() != null && !entity.getSegmentRules().isEmpty()) {
                 properties.put(
                     "Rules",
                     NotionPropertyBuilder.createRelationProperty(
                         entity.getSegmentRules().stream()
-                            .filter(rule -> rule.getExternalId() != null)
-                            .map(rule -> rule.getExternalId())
+                            .map(AbstractEntity::getExternalId)
+                            .filter(externalId -> externalId != null)
                             .collect(Collectors.toList())));
               }
 
               // Narration (Rich Text property)
               if (entity.getNarration() != null && !entity.getNarration().isBlank()) {
                 properties.put(
-                    "Narration",
+                    "Description",
                     NotionPropertyBuilder.createRichTextProperty(entity.getNarration()));
               }
 
@@ -152,26 +137,6 @@ public class SegmentNotionSyncService implements NotionSyncService {
                 properties.put(
                     "Summary", NotionPropertyBuilder.createRichTextProperty(entity.getSummary()));
               }
-
-              // Is Title Segment (Checkbox property)
-              properties.put(
-                  "Title Segment",
-                  NotionPropertyBuilder.createCheckboxProperty(entity.getIsTitleSegment()));
-
-              // Is NPC Generated (Checkbox property)
-              properties.put(
-                  "NPC Generated",
-                  NotionPropertyBuilder.createCheckboxProperty(entity.getIsNpcGenerated()));
-
-              // Segment Order (Number property)
-              properties.put(
-                  "Order",
-                  NotionPropertyBuilder.createNumberProperty(
-                      Integer.valueOf(entity.getSegmentOrder()).doubleValue()));
-
-              // Is Main Event (Checkbox property)
-              properties.put(
-                  "Main Event", NotionPropertyBuilder.createCheckboxProperty(entity.isMainEvent()));
 
               // Participants (Multi-relation to Wrestler - via SegmentParticipant)
               if (entity.getParticipants() != null && !entity.getParticipants().isEmpty()) {

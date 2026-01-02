@@ -206,15 +206,15 @@ public class ParallelSyncOrchestrator {
                               .syncShowTemplates(baseOperationId + "-showtemplates"))));
     }
 
-    if (entityConfig.isEntityEnabled(SyncEntityType.INJURIES.getKey())) {
+    if (entityConfig.isEntityEnabled(SyncEntityType.INJURY_TYPES.getKey())) {
       futures.add(
           executor.submit(
               () ->
                   syncEntity(
-                      SyncEntityType.INJURIES.getKey(),
+                      SyncEntityType.INJURY_TYPES.getKey(),
                       () ->
                           notionSyncServicesManager
-                              .getInjurySyncService()
+                              .getInjuryTypeSyncService()
                               .syncInjuryTypes(baseOperationId + "-injuries"))));
     }
 

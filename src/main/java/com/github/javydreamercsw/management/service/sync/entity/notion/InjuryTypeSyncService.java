@@ -36,12 +36,12 @@ import org.springframework.stereotype.Service;
 /** Service responsible for synchronizing injuries from Notion to the database. */
 @Service
 @Slf4j
-public class InjurySyncService extends BaseSyncService {
+public class InjuryTypeSyncService extends BaseSyncService {
 
   @Autowired private InjuryTypeService injuryTypeService;
 
   @Autowired
-  public InjurySyncService(
+  public InjuryTypeSyncService(
       ObjectMapper objectMapper,
       SyncServiceDependencies syncServiceDependencies,
       InjuryTypeService injuryTypeService,
@@ -60,16 +60,16 @@ public class InjurySyncService extends BaseSyncService {
     // Check if already synced in current session
     if (syncServiceDependencies
         .getSyncSessionManager()
-        .isAlreadySyncedInSession(SyncEntityType.INJURIES.getKey())) {
+        .isAlreadySyncedInSession(SyncEntityType.INJURY_TYPES.getKey())) {
       log.info("⏭️ Injury types already synced in current session, skipping");
-      return SyncResult.success(SyncEntityType.INJURIES.getKey(), 0, 0, 0);
+      return SyncResult.success(SyncEntityType.INJURY_TYPES.getKey(), 0, 0, 0);
     }
 
     if (!syncServiceDependencies
         .getNotionSyncProperties()
-        .isEntityEnabled(SyncEntityType.INJURIES.getKey())) {
+        .isEntityEnabled(SyncEntityType.INJURY_TYPES.getKey())) {
       log.debug("Injuries synchronization is disabled in configuration");
-      return SyncResult.success(SyncEntityType.INJURIES.getKey(), 0, 0, 0);
+      return SyncResult.success(SyncEntityType.INJURY_TYPES.getKey(), 0, 0, 0);
     }
 
     try {
@@ -77,12 +77,12 @@ public class InjurySyncService extends BaseSyncService {
       if (result.isSuccess()) {
         syncServiceDependencies
             .getSyncSessionManager()
-            .markAsSyncedInSession(SyncEntityType.INJURIES.getKey());
+            .markAsSyncedInSession(SyncEntityType.INJURY_TYPES.getKey());
       }
       return result;
     } catch (Exception e) {
       log.error("Failed to sync injury types", e);
-      return SyncResult.failure(SyncEntityType.INJURIES.getKey(), e.getMessage());
+      return SyncResult.failure(SyncEntityType.INJURY_TYPES.getKey(), e.getMessage());
     }
   }
 
@@ -101,16 +101,15 @@ public class InjurySyncService extends BaseSyncService {
       if (!isNotionHandlerAvailable()) {
         String errorMsg = "NotionHandler is not available for injuries sync";
         log.error(errorMsg);
-        return SyncResult.failure(SyncEntityType.INJURIES.getKey(), errorMsg);
+        return SyncResult.failure(SyncEntityType.INJURY_TYPES.getKey(), errorMsg);
       }
 
       // Perform the actual sync
       return performInjuriesSync(operationId, startTime);
-
     } catch (Exception e) {
       log.error("Failed to sync injuries from Notion", e);
       return SyncResult.failure(
-          SyncEntityType.INJURIES.getKey(), "Failed to sync injuries: " + e.getMessage());
+          SyncEntityType.INJURY_TYPES.getKey(), "Failed to sync injuries: " + e.getMessage());
     }
   }
 
@@ -139,7 +138,7 @@ public class InjurySyncService extends BaseSyncService {
         syncServiceDependencies
             .getProgressTracker()
             .completeOperation(operationId, true, "No injuries to sync", 0);
-        return SyncResult.success(SyncEntityType.INJURIES.getKey(), 0, 0, 0);
+        return SyncResult.success(SyncEntityType.INJURY_TYPES.getKey(), 0, 0, 0);
       }
 
       // Convert to DTOs with parallel processing
@@ -164,7 +163,7 @@ public class InjurySyncService extends BaseSyncService {
 
       if (!validationPassed) {
         return SyncResult.failure(
-            SyncEntityType.INJURIES.getKey(), "Injury sync validation failed");
+            SyncEntityType.INJURY_TYPES.getKey(), "Injury sync validation failed");
       }
 
       long totalTime = System.currentTimeMillis() - startTime;
@@ -178,9 +177,9 @@ public class InjurySyncService extends BaseSyncService {
       // Record success in health monitor
       syncServiceDependencies
           .getHealthMonitor()
-          .recordSuccess(SyncEntityType.INJURIES.getKey(), totalTime, syncedCount);
+          .recordSuccess(SyncEntityType.INJURY_TYPES.getKey(), totalTime, syncedCount);
 
-      return SyncResult.success(SyncEntityType.INJURIES.getKey(), syncedCount, 0, 0);
+      return SyncResult.success(SyncEntityType.INJURY_TYPES.getKey(), syncedCount, 0, 0);
 
     } catch (Exception e) {
       log.error("Failed to perform injuries sync", e);
@@ -189,9 +188,9 @@ public class InjurySyncService extends BaseSyncService {
           .failOperation(operationId, "Failed to sync injuries: " + e.getMessage());
       syncServiceDependencies
           .getHealthMonitor()
-          .recordFailure(SyncEntityType.INJURIES.getKey(), e.getMessage());
+          .recordFailure(SyncEntityType.INJURY_TYPES.getKey(), e.getMessage());
       return SyncResult.failure(
-          SyncEntityType.INJURIES.getKey(), "Failed to sync injuries: " + e.getMessage());
+          SyncEntityType.INJURY_TYPES.getKey(), "Failed to sync injuries: " + e.getMessage());
     }
   }
 

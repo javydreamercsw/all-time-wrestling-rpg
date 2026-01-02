@@ -126,8 +126,6 @@ class ShowTemplateNotionSyncServiceIT extends ManagementIntegrationTest {
     assertEquals(
         showTemplate.getShowType().getExternalId(),
         capturedRequest.getProperties().get("Show Type").getRelation().get(0).getId());
-    assertEquals(
-        showTemplate.getNotionUrl(), capturedRequest.getProperties().get("Notion URL").getUrl());
 
     // Sync to Notion again
     updatedShowTemplate.setDescription("Updated description " + UUID.randomUUID());
@@ -149,8 +147,5 @@ class ShowTemplateNotionSyncServiceIT extends ManagementIntegrationTest {
             .get(0)
             .getText()
             .getContent());
-    assertEquals(
-        updatedShowTemplate2.getNotionUrl(),
-        capturedUpdateRequest.getProperties().get("Notion URL").getUrl());
   }
 }

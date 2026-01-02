@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.segment;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
@@ -60,9 +61,6 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
-import reactor.core.publisher.Mono;
 
 @Slf4j
 public class NarrationDialog extends Dialog {
@@ -310,22 +308,22 @@ public class NarrationDialog extends Dialog {
       ResponseEntity<Map<String, Object>> response =
           segmentNarrationController.narrateSegment(context);
 
-      narrationDisplay.setText((String) response.getBody().get("narration"));
-      saveButton.setEnabled(true);
-    } catch (HttpClientErrorException e) {
-      log.error("HTTP Client Error generating segment narration", e);
-      try {
-        JsonNode errorResponse = objectMapper.readTree(e.getResponseBodyAsString());
-        if (errorResponse.has("alternativeProviders")) {
-          showRetryDialog(errorResponse);
-        } else {
-          showError(
-              "Failed to generate narration: "
-                  + errorResponse.path("error").asText("Unknown error"));
+      if (response.getStatusCode().isError()) {
+        try {
+          JsonNode errorResponse = objectMapper.valueToTree(response.getBody());
+          if (errorResponse.has("alternativeProviders")) {
+            showRetryDialog(errorResponse);
+          } else {
+            showError(
+                "Failed to generate narration: "
+                    + errorResponse.path("error").asText("Unknown error"));
+          }
+        } catch (Exception ex) {
+          log.error("Error parsing error response", ex);
+          showError("Failed to generate narration: " + response);
         }
-      } catch (Exception ex) {
-        log.error("Error parsing error response", ex);
-        showError("Failed to generate narration: " + e.getMessage());
+      } else {
+        handleNarrationResponse(objectMapper.writeValueAsString(response.getBody()));
       }
     } catch (Exception e) {
       log.error("Error generating segment narration", e);
@@ -650,26 +648,31 @@ public class NarrationDialog extends Dialog {
       ResponseEntity<Map<String, Object>> response =
           segmentNarrationController.narrateSegmentWithProvider(provider, context);
 
-      if (response.getBody() != null) {
-        narrationDisplay.setText((String) response.getBody().get("narration"));
-        saveButton.setEnabled(true);
-      } else {
-        log.warn("GOt an empty response from provider!");
-      }
-    } catch (org.springframework.web.client.HttpClientErrorException e) {
-      log.error("HTTP Client Error retrying with provider {}: {}", provider, e.getMessage(), e);
-      try {
-        JsonNode errorResponse = objectMapper.readTree(e.getResponseBodyAsString());
-        if (errorResponse.has("alternativeProviders")) {
-          showRetryDialog(errorResponse);
-        } else {
-          showError(
-              "Failed to generate narration: "
-                  + errorResponse.path("error").asText("Unknown error"));
+      if (response.getStatusCode().isError()) {
+        try {
+          JsonNode errorResponse = objectMapper.valueToTree(response.getBody());
+          if (errorResponse.has("alternativeProviders")) {
+            showRetryDialog(errorResponse);
+          } else {
+            showError(
+                "Failed to generate narration: "
+                    + errorResponse.path("error").asText("Unknown error"));
+          }
+        } catch (Exception ex) {
+          log.error("Error parsing error response", ex);
+          showError("Failed to generate narration: " + response.toString());
         }
-      } catch (Exception ex) {
-        log.error("Error parsing error response", ex);
-        showError("Failed to generate narration: " + e.getMessage());
+      } else {
+        if (response.getBody() != null) {
+          try {
+            handleNarrationResponse(objectMapper.writeValueAsString(response.getBody()));
+          } catch (JsonProcessingException e) {
+            log.error("Error processing response", e);
+            showError("Failed to process narration response.");
+          }
+        } else {
+          log.warn("Got an empty response from provider!");
+        }
       }
     } catch (Exception e) {
       log.error("Error retrying with provider: {}", provider, e);
@@ -705,12 +708,20 @@ public class NarrationDialog extends Dialog {
     }
   }
 
-  private ExchangeFilterFunction logRequest() {
-    return ExchangeFilterFunction.ofRequestProcessor(
-        clientRequest -> {
-          log.info("Request: {} {}", clientRequest.method(), clientRequest.url());
-          log.info("Request Headers: {}", clientRequest.headers());
-          return Mono.just(clientRequest);
-        });
+  private void handleNarrationResponse(String response) {
+    if (response == null || response.isEmpty()) {
+      showError("Received an empty response from the AI service.");
+      return;
+    }
+    try {
+      JsonNode jsonResponse = objectMapper.readTree(response);
+      String narration =
+          jsonResponse.has("narration") ? jsonResponse.get("narration").asText() : response;
+      narrationDisplay.setText(narration);
+      saveButton.setEnabled(true);
+    } catch (Exception e) {
+      log.error("Error parsing narration response", e);
+      narrationDisplay.setText(response);
+    }
   }
 }

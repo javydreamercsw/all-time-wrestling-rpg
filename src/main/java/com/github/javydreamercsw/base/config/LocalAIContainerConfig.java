@@ -50,9 +50,17 @@ public class LocalAIContainerConfig {
   private final AiSettingsService aiSettingsService;
   private final LocalAIStatusService statusService;
   @Getter private GenericContainer<?> localAiContainer;
+  private boolean started = false;
 
   @EventListener(ApplicationReadyEvent.class)
+  public void onApplicationReady() {
+    startLocalAiContainer();
+  }
+
   public void startLocalAiContainer() {
+    if (started) {
+      return;
+    }
     // Temporarily grant system-level privileges to fetch the model name
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
     try {
@@ -66,6 +74,7 @@ public class LocalAIContainerConfig {
         if (modelName != null && !modelName.isEmpty()) {
           new Thread(() -> initializeAndStartContainer(modelName)).start();
         }
+        started = true;
       }
     } finally {
       SecurityContextHolder.getContext().setAuthentication(originalAuth);
@@ -92,14 +101,11 @@ public class LocalAIContainerConfig {
               .withExposedPorts(8080)
               .withFileSystemBind(modelsDir.getAbsolutePath(), "/build/models", BindMode.READ_WRITE)
               .withEnv("MODELS_PATH", "/build/models")
-              .withEnv("PRELOAD_MODELS", preloadModelsJson)
+              .withCommand("run", modelName)
               .waitingFor(
                   new WaitAllStrategy()
                       .withStrategy(Wait.forHttp("/readyz").forStatusCode(200))
-                      .withStrategy(
-                          Wait.forLogMessage(
-                              ".*GRPC Service Started.*", 1)) // Wait for the model to be loaded
-                      .withStartupTimeout(Duration.ofMinutes(15)));
+                      .withStartupTimeout(Duration.ofMinutes(30)));
 
       log.info(
           "Starting LocalAI container. This may take a while for the initial model download...");

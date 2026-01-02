@@ -23,14 +23,12 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.NonNull;
 import notion.api.v1.model.pages.PageProperty;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 @Service
 public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
-  @Autowired @Lazy private NotionSyncServicesManager notionSyncServicesManager;
 
   public WrestlerNotionSyncService(
       WrestlerRepository repository,
@@ -40,7 +38,7 @@ public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(Wrestler entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull Wrestler entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
     if (entity.getStartingStamina() != null) {
