@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
@@ -157,13 +158,16 @@ public class ShowNotionSyncService implements NotionSyncService {
                     "✅ Completed Notion sync: %d shows saved/updated, %d errors",
                     created + updated, errors));
             return errors > 0
-                ? BaseSyncService.SyncResult.failure("shows", "Error syncing shows!")
-                : BaseSyncService.SyncResult.success("shows", created, updated, errors);
+                ? BaseSyncService.SyncResult.failure(
+                    SyncEntityType.SHOWS.getKey(), "Error syncing shows!")
+                : BaseSyncService.SyncResult.success(
+                    SyncEntityType.SHOWS.getKey(), created, updated, errors);
           }
         }
       }
     }
     progressTracker.failOperation(operationId, "Error syncing shows!");
-    return BaseSyncService.SyncResult.failure("shows", "Error syncing shows!");
+    return BaseSyncService.SyncResult.failure(
+        SyncEntityType.SHOWS.getKey(), "Error syncing shows!");
   }
 }
