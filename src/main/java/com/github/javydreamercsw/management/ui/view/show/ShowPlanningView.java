@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
@@ -71,6 +72,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   private final ComboBox<Show> showComboBox;
   private final Button loadContextButton;
+  private final Button viewDetailsButton;
   private final TextArea contextArea;
   private final Grid<ProposedSegment> proposedSegmentsGrid;
   private final Button approveButton;
@@ -105,8 +107,15 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     loadContextButton.addClickListener(e -> loadContext());
     loadContextButton.setEnabled(false);
 
+    viewDetailsButton = new Button("View Details");
+    viewDetailsButton.addClickListener(e -> navigateToShowDetails());
+    viewDetailsButton.setEnabled(false);
+
     showComboBox.addValueChangeListener(
-        event -> loadContextButton.setEnabled(event.getValue() != null));
+        event -> {
+          loadContextButton.setEnabled(event.getValue() != null);
+          viewDetailsButton.setEnabled(event.getValue() != null);
+        });
 
     contextArea = new TextArea("Show Planning Context");
     contextArea.setWidthFull();
@@ -183,11 +192,19 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
         new VerticalLayout(
             showComboBox,
             loadContextButton,
+            viewDetailsButton, // Added here
             proposeSegmentsButton,
             contextArea,
             proposedSegmentsGrid,
             approveButton);
     add(layout);
+  }
+
+  private void navigateToShowDetails() {
+    Show selectedShow = showComboBox.getValue();
+    if (selectedShow != null) {
+      UI.getCurrent().navigate(ShowDetailView.class, selectedShow.getId());
+    }
   }
 
   private void loadContext() {

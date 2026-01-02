@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -33,7 +34,6 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -64,9 +64,9 @@ public class ShowPlanningService {
   private final com.github.javydreamercsw.management.service.segment.SegmentSummaryService
       segmentSummaryService;
   private final SegmentTypeService segmentTypeService;
-  private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final FactionService factionService;
+  private final SegmentRuleRepository segmentRuleRepository;
   private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
@@ -189,14 +189,47 @@ public class ShowPlanningService {
       segment.setSegmentType(segmentTypeOpt.get());
       segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
       segment.setNarration(proposedSegment.getDescription());
+      segment.setSummary(proposedSegment.getSummary());
       segment.setSegmentOrder(currentSegmentCount + i + 1);
-
-      segmentTypeService.findByName(proposedSegment.getType()).ifPresent(segment::setSegmentType);
-
-      for (String participantName : proposedSegment.getParticipants()) {
-        wrestlerRepository.findByName(participantName).ifPresent(segment::addParticipant);
+      segment.setIsTitleSegment(proposedSegment.getIsTitleSegment());
+      if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {
+        segment.setTitles(proposedSegment.getTitles());
       }
 
+      // First, clear existing participants if any, to re-sync
+      segment.getParticipants().clear();
+
+      // Add all participants
+      List<Wrestler> actualParticipants = new ArrayList<>();
+      for (String participantName : proposedSegment.getParticipants()) {
+        wrestlerRepository
+            .findByName(participantName)
+            .ifPresent(
+                wrestler -> {
+                  segment.addParticipant(wrestler);
+                  actualParticipants.add(wrestler);
+                });
+      }
+
+      // Set winners based on the actual participants list
+      List<Wrestler> actualWinners = new ArrayList<>();
+      if (proposedSegment.getWinners() != null && !proposedSegment.getWinners().isEmpty()) {
+        for (String winnerName : proposedSegment.getWinners()) {
+          wrestlerRepository.findByName(winnerName).ifPresent(actualWinners::add);
+        }
+      }
+      segment.setWinners(actualWinners);
+
+      if (proposedSegment.getRules() != null && !proposedSegment.getRules().isEmpty()) {
+        List<com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule>
+            newSegmentRules =
+                proposedSegment.getRules().stream()
+                    .map(ruleName -> segmentRuleRepository.findByName(ruleName))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(Collectors.toList());
+        segment.syncSegmentRules(newSegmentRules);
+      }
       segmentsToSave.add(segment);
     }
     segmentRepository.saveAll(segmentsToSave);
