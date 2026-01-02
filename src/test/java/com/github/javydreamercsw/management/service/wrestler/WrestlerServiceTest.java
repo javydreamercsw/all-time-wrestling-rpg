@@ -16,14 +16,19 @@
 */
 package com.github.javydreamercsw.management.service.wrestler;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
-import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.utils.DiceBag;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,8 +43,8 @@ import org.springframework.context.ApplicationEventPublisher;
 class WrestlerServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private InjuryService injuryService;
   @Mock private ApplicationEventPublisher eventPublisher;
+  @Mock private TierBoundaryRepository tierBoundaryRepository;
 
   @InjectMocks private WrestlerService wrestlerService;
 
@@ -84,5 +89,31 @@ class WrestlerServiceTest {
     ArgumentCaptor<WrestlerBumpHealedEvent> eventCaptor =
         ArgumentCaptor.forClass(WrestlerBumpHealedEvent.class);
     verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+  }
+
+  @Test
+  void testResetFanCounts() {
+    // Given
+    WrestlerTier tier = WrestlerTier.CONTENDER;
+    wrestler.setTier(tier);
+    wrestler.setFans(500_000L);
+
+    TierBoundary boundary = new TierBoundary();
+    boundary.setTier(tier);
+    boundary.setMinFans(40000L);
+
+    when(wrestlerRepository.findAll()).thenReturn(Collections.singletonList(wrestler));
+    when(tierBoundaryRepository.findAll()).thenReturn(Collections.singletonList(boundary));
+
+    // When
+    wrestlerService.resetFanCounts();
+
+    // Then
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Wrestler>> captor = ArgumentCaptor.forClass(List.class);
+    verify(wrestlerRepository).saveAll(captor.capture());
+    List<Wrestler> savedWrestlers = captor.getValue();
+    assertEquals(1, savedWrestlers.size());
+    assertEquals(40000L, savedWrestlers.get(0).getFans());
   }
 }

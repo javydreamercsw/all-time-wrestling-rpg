@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
@@ -33,7 +34,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -53,7 +54,7 @@ import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.transaction.annotation.Transactional;
 
 @DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
-class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
+class WrestlerServiceIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentService segmentService;
   @Autowired private TitleService titleService;
@@ -61,15 +62,17 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private SeasonService seasonService;
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private ShowTypeService showTypeService;
-  @Autowired private InboxService inboxService;
   @Autowired private InboxRepository inboxRepository;
   @Autowired private DataInitializer dataInitializer;
 
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
 
+  @Autowired private TierBoundaryService tierBoundaryService;
+
   @BeforeEach
   void setUp() {
-    tierBoundaryRepository.deleteAll();
+    tierBoundaryRepository.deleteAllInBatch();
+    tierBoundaryService.resetTierBoundaries();
     dataInitializer.init();
   }
 
@@ -314,5 +317,56 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     assertThat(inboxItem.getDescription()).contains("Inbox Test Wrestler gained 1000 fans");
     assertThat(inboxItem.getTargets()).hasSize(1);
     assertThat(inboxItem.getTargets().get(0).getTargetId()).isEqualTo(wrestler.getId().toString());
+  }
+
+  @Test
+  @DisplayName("Should reset fan counts")
+  @Transactional
+  void shouldResetFanCounts() {
+    // Given
+    Wrestler wrestler =
+        wrestlerService.createWrestler("Reset Test", false, "Wrestler for fan reset test");
+    Assertions.assertNotNull(wrestler.getId());
+    wrestlerService.awardFans(
+        wrestler.getId(), WrestlerTier.MAIN_EVENTER.getMinFans() + 1_000); // Main Eventer tier
+
+    Wrestler updatedWrestler = wrestlerService.findById(wrestler.getId()).orElseThrow();
+    assertThat(updatedWrestler.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
+    assertThat(updatedWrestler.getFans()).isGreaterThan(WrestlerTier.MAIN_EVENTER.getMinFans());
+
+    // When
+    wrestlerService.resetFanCounts();
+
+    // Then
+    Wrestler fromDb = wrestlerService.findById(wrestler.getId()).orElseThrow();
+    assertThat(fromDb.getFans()).isEqualTo(WrestlerTier.MAIN_EVENTER.getMinFans());
+    assertThat(fromDb.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
+  }
+
+  @Test
+  @DisplayName("Should reset ICON to MAIN_EVENTER")
+  @Transactional
+  void shouldResetIconToMainEventer() {
+    // Given
+    Wrestler icon = wrestlerService.createWrestler("Icon Wrestler", true, null);
+    Assertions.assertNotNull(icon.getId());
+    wrestlerService.awardFans(icon.getId(), 1_000_000L); // ICON tier
+
+    Wrestler updatedWrestler = wrestlerService.findById(icon.getId()).orElseThrow();
+    assertThat(updatedWrestler.getTier()).isEqualTo(WrestlerTier.ICON);
+
+    // When
+    wrestlerService.resetFanCounts();
+
+    // Then
+    Wrestler fromDb = wrestlerService.findById(icon.getId()).orElseThrow();
+    assertThat(fromDb.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
+
+    // Get min fans for MAIN_EVENTER from tier boundaries
+    TierBoundary mainEventerBoundary =
+        tierBoundaryRepository
+            .findByTierAndGender(WrestlerTier.MAIN_EVENTER, fromDb.getGender())
+            .get();
+    assertThat(fromDb.getFans()).isEqualTo(mainEventerBoundary.getMinFans());
   }
 }

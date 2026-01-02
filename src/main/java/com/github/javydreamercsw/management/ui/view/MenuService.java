@@ -102,6 +102,9 @@ public class MenuService {
         new MenuItem("Game Settings", VaadinIcon.COGS, "game-settings", RoleName.ADMIN));
     configuration.addChild(
         new MenuItem("AI Settings", VaadinIcon.TOOLS, "ai-settings", RoleName.ADMIN));
+    configuration.addChild(
+        new MenuItem(
+            "Season Settings", VaadinIcon.CALENDAR_CLOCK, "season/settings", RoleName.ADMIN));
 
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);

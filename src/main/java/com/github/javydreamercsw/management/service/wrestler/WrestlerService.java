@@ -22,6 +22,8 @@ import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_S
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
@@ -66,6 +68,7 @@ public class WrestlerService {
   @Autowired private SegmentService segmentService;
   @Autowired private TitleService titleService;
   @Autowired private TierRecalculationService tierRecalculationService;
+  @Autowired private TierBoundaryRepository tierBoundaryRepository;
 
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void createWrestler(@NonNull String name) {
@@ -268,20 +271,14 @@ public class WrestlerService {
               }
               long tempFans = fanChange;
               if (fanChange > 0) {
-                switch (wrestler.getTier()) {
-                  case ICON:
-                    tempFans = tempFans * 90 / 100;
-                    break;
-                  case MAIN_EVENTER:
-                    tempFans = tempFans * 93 / 100;
-                    break;
-                  case MIDCARDER:
-                    tempFans = tempFans * 95 / 100;
-                    break;
-                  case CONTENDER:
-                    tempFans = tempFans * 97 / 100;
-                    break;
-                }
+                tempFans =
+                    switch (wrestler.getTier()) {
+                      case ICON -> tempFans * 90 / 100;
+                      case MAIN_EVENTER -> tempFans * 93 / 100;
+                      case MIDCARDER -> tempFans * 95 / 100;
+                      case CONTENDER -> tempFans * 97 / 100;
+                      default -> tempFans;
+                    };
                 tempFans = Math.round(tempFans / 1000.0) * 1000;
               }
               wrestler.addFans(tempFans);
@@ -461,5 +458,34 @@ public class WrestlerService {
 
               return new WrestlerStats(wins, losses, titlesHeld);
             });
+  }
+
+  /** Resets the fan counts of all wrestlers to the minimum of their respective tiers. */
+  @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
+  public void resetFanCounts() {
+    List<Wrestler> wrestlers = wrestlerRepository.findAll();
+    List<TierBoundary> boundaries = tierBoundaryRepository.findAll();
+
+    for (Wrestler wrestler : wrestlers) {
+      if (wrestler.getTier() != null && wrestler.getGender() != null) {
+        WrestlerTier targetTier = wrestler.getTier();
+        if (targetTier == WrestlerTier.ICON) {
+          targetTier = WrestlerTier.MAIN_EVENTER;
+          wrestler.setTier(targetTier);
+        }
+
+        final WrestlerTier finalTargetTier = targetTier;
+        boundaries.stream()
+            .filter(b -> b.getTier() == finalTargetTier && b.getGender() == wrestler.getGender())
+            .findFirst()
+            .ifPresent(boundary -> wrestler.setFans(boundary.getMinFans()));
+      }
+    }
+    wrestlerRepository.saveAll(wrestlers);
+    log.info("Reset fan counts for all wrestlers. Icons are reset to Main Eventer.");
   }
 }
