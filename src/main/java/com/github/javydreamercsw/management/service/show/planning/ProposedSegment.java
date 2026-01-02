@@ -30,13 +30,10 @@ public class ProposedSegment {
   private List<String> winners;
   private Boolean isTitleSegment = false;
   private Set<Title> titles = new java.util.HashSet<>();
+  private List<String> rules;
 
   public void setTitles(Set<Title> titles) {
     this.titles = titles;
     this.isTitleSegment = !titles.isEmpty();
-  }
-
-  public Set<Title> getTitles() {
-    return titles;
   }
 }

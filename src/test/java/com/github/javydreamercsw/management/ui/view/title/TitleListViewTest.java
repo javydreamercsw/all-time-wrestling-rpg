@@ -112,9 +112,6 @@ class TitleListViewTest extends AbstractViewTest {
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.canDelete()).thenReturn(true);
 
-    // Mock UI
-    UI.setCurrent(new UI());
-
     titleListView =
         new TitleListView(
             titleService,
@@ -262,31 +259,36 @@ class TitleListViewTest extends AbstractViewTest {
 
   @Test
   void testChampionDropdownIsPopulatedBasedOnTier() {
-    TitleFormDialog dialog = titleListView.openCreateDialog();
-    dialog.open();
+    UI.getCurrent()
+        .access(
+            () -> {
+              TitleFormDialog dialog = titleListView.openCreateDialog();
+              dialog.open();
 
-    // Get components from dialog
-    ComboBox<WrestlerTier> tierComboBox =
-        (ComboBox<WrestlerTier>) ReflectionTestUtils.getField(dialog, "tier");
-    assertNotNull(tierComboBox);
-    MultiSelectComboBox<Wrestler> championComboBox =
-        (MultiSelectComboBox<Wrestler>) ReflectionTestUtils.getField(dialog, "champion");
-    assertNotNull(championComboBox);
+              // Get components from dialog
+              ComboBox<WrestlerTier> tierComboBox =
+                  (ComboBox<WrestlerTier>) ReflectionTestUtils.getField(dialog, "tier");
+              assertNotNull(tierComboBox);
+              MultiSelectComboBox<Wrestler> championComboBox =
+                  (MultiSelectComboBox<Wrestler>) ReflectionTestUtils.getField(dialog, "champion");
+              assertNotNull(championComboBox);
 
-    // Simulate selecting a tier
-    tierComboBox.setValue(WrestlerTier.MIDCARDER);
+              // Simulate selecting a tier
+              tierComboBox.setValue(WrestlerTier.MIDCARDER);
 
-    // Verify the champion dropdown is populated correctly
-    List<Wrestler> championItems =
-        new ArrayList<>(championComboBox.getDataProvider().fetch(new Query<>()).toList());
-    assertEquals(2, championItems.size()); // Main Eventer and Midcarder
-    assertTrue(championItems.contains(testWrestler));
-    assertTrue(championItems.contains(otherWrestler));
+              // Verify the champion dropdown is populated correctly
+              List<Wrestler> championItems =
+                  new ArrayList<>(championComboBox.getDataProvider().fetch(new Query<>()).toList());
+              assertEquals(2, championItems.size()); // Main Eventer and Midcarder
+              assertTrue(championItems.contains(testWrestler));
+              assertTrue(championItems.contains(otherWrestler));
 
-    // Simulate selecting a lower tier
-    tierComboBox.setValue(WrestlerTier.ROOKIE);
-    championItems =
-        new ArrayList<>(championComboBox.getDataProvider().fetch(new Query<>()).toList());
-    assertEquals(2, championItems.size()); // All wrestlers are eligible for a rookie title
+              // Simulate selecting a lower tier
+              tierComboBox.setValue(WrestlerTier.ROOKIE);
+              championItems =
+                  new ArrayList<>(championComboBox.getDataProvider().fetch(new Query<>()).toList());
+              assertEquals(
+                  2, championItems.size()); // All wrestlers are eligible for a rookie title
+            });
   }
 }

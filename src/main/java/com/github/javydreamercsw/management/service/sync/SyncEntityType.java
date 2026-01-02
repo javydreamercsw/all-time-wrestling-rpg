@@ -35,7 +35,7 @@ public enum SyncEntityType {
   TEMPLATES("Templates", "ShowTemplate"),
   SEASONS("Seasons", "Season"),
   SHOW_TYPES("Show-types", "ShowType"),
-  INJURIES("Injuries", "InjuryType"),
+  INJURY_TYPES("Injuries", "InjuryType"),
   NPCS("Npcs", "Npc"),
   TITLES("Titles", "Title"),
   RIVALRIES("Rivalries", "Rivalry"),

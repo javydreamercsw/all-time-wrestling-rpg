@@ -18,9 +18,11 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
+import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -44,7 +46,6 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
-import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -90,7 +91,6 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
@@ -123,6 +123,8 @@ public class ShowDetailView extends Main
   private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   private final WebClient.Builder webClientBuilder;
   private final Environment env;
+  private final SegmentNarrationController segmentNarrationController;
+  private final ShowController showController;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -150,6 +152,8 @@ public class ShowDetailView extends Main
       SegmentNarrationConfig segmentNarrationConfig,
       SegmentNarrationServiceFactory segmentNarrationServiceFactory,
       WebClient.Builder webClientBuilder,
+      SegmentNarrationController segmentNarrationController,
+      ShowController showController,
       Environment env) {
     this.showService = showService;
     this.segmentService = segmentService;
@@ -170,6 +174,8 @@ public class ShowDetailView extends Main
     this.segmentNarrationServiceFactory = segmentNarrationServiceFactory;
     this.webClientBuilder = webClientBuilder;
     this.env = env;
+    this.segmentNarrationController = segmentNarrationController;
+    this.showController = showController;
     initializeComponents();
   }
 
@@ -231,7 +237,10 @@ public class ShowDetailView extends Main
             buttonText = "Back to Calendar";
             yield "show-calendar";
           }
-
+          case "booker" -> {
+            buttonText = "Back to Booker View";
+            yield "booker";
+          }
           default -> {
             buttonText = "Back to Shows";
             yield "show-list";
@@ -766,7 +775,6 @@ public class ShowDetailView extends Main
               new NarrationDialog(
                   segment,
                   npcService,
-                  wrestlerService,
                   wrestlerRepository,
                   showService,
                   segmentService,
@@ -775,6 +783,7 @@ public class ShowDetailView extends Main
                   localAIStatusService,
                   localAIConfigProperties,
                   webClientBuilder,
+                  segmentNarrationController,
                   env); // Call refreshSegmentsGrid
           dialog.open();
         });
@@ -1263,9 +1272,7 @@ public class ShowDetailView extends Main
   }
 
   private void adjudicateShow(Show show) {
-    String baseUrl = UrlUtil.getBaseUrl();
-    new RestTemplate()
-        .postForObject(baseUrl + "/api/shows/" + show.getId() + "/adjudicate", null, Void.class);
+    showController.adjudicateShow(show.getId());
     Notification.show("Fan adjudication completed!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
@@ -1321,7 +1328,7 @@ public class ShowDetailView extends Main
                       .anyMatch(
                           component ->
                               component instanceof HorizontalLayout
-                                  && ((HorizontalLayout) component)
+                                  && component
                                       .getChildren()
                                       .anyMatch(
                                           btn ->

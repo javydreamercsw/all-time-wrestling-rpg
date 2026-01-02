@@ -167,7 +167,7 @@ public class InjuryNotionSyncService implements INotionSyncService {
             } catch (Exception ex) {
               errors++;
               processedCount++;
-              log.error("Error syncing injury: " + entity.getName(), ex);
+              log.error("Error syncing injury: {}", entity.getName(), ex);
             }
           }
           progressTracker.updateProgress(
@@ -178,14 +178,14 @@ public class InjuryNotionSyncService implements INotionSyncService {
                   created + updated, errors));
           return errors > 0
               ? BaseSyncService.SyncResult.failure(
-                  SyncEntityType.INJURIES.getKey(), "Error syncing injuries!")
+                  SyncEntityType.INJURY_TYPES.getKey(), "Error syncing injuries!")
               : BaseSyncService.SyncResult.success(
-                  SyncEntityType.INJURIES.getKey(), created, updated, errors);
+                  SyncEntityType.INJURY_TYPES.getKey(), created, updated, errors);
         }
       }
     }
     progressTracker.failOperation(operationId, "Error syncing injuries!");
     return BaseSyncService.SyncResult.failure(
-        SyncEntityType.INJURIES.getKey(), "Error syncing injuries!");
+        SyncEntityType.INJURY_TYPES.getKey(), "Error syncing injuries!");
   }
 }

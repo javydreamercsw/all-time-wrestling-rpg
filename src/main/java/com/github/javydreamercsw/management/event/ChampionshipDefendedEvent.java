@@ -26,11 +26,13 @@ import org.springframework.context.ApplicationEvent;
 public class ChampionshipDefendedEvent extends ApplicationEvent {
 
   private final Long titleId;
+  private final String titleName;
   private final List<Wrestler> champions;
 
   public ChampionshipDefendedEvent(Object source, Title title, List<Wrestler> champions) {
     super(source);
     this.titleId = title.getId();
+    this.titleName = title.getName();
     this.champions = champions;
   }
 }

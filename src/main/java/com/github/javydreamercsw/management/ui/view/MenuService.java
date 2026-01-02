@@ -100,6 +100,8 @@ public class MenuService {
     configuration.addChild(new MenuItem("Admin", VaadinIcon.TOOLS, "admin", RoleName.ADMIN));
     configuration.addChild(
         new MenuItem("Game Settings", VaadinIcon.COGS, "game-settings", RoleName.ADMIN));
+    configuration.addChild(
+        new MenuItem("AI Settings", VaadinIcon.TOOLS, "ai-settings", RoleName.ADMIN));
 
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);

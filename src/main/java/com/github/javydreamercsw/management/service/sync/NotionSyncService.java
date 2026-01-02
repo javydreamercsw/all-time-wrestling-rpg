@@ -235,8 +235,8 @@ public class NotionSyncService extends BaseSyncService {
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public SyncResult syncInjuryTypes(@NonNull String operationId, @NonNull SyncDirection direction) {
     return direction.equals(SyncDirection.INBOUND)
-        ? notionSyncServicesManager.getInjurySyncService().syncInjuryTypes(operationId)
-        : notionSyncServicesManager.getInjuryNotionSyncService().syncToNotion(operationId);
+        ? notionSyncServicesManager.getInjuryTypeSyncService().syncInjuryTypes(operationId)
+        : notionSyncServicesManager.getInjuryTypeNotionSyncService().syncToNotion(operationId);
   }
 
   /**

@@ -285,7 +285,8 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(championshipDefended, eventTypeCaptor.getValue());
     String expectedMessage =
         String.format(
-            "Champions %s successfully defended title ID %d", wrestler1.getName(), title.getId());
+            "Champion(s) %s successfully defended the %s title!",
+            wrestler1.getName(), title.getName());
     assertEquals(expectedMessage, messageCaptor.getValue());
     Assertions.assertNotNull(title.getId());
     assertEquals(title.getId().toString(), referenceIdCaptor.getValue());

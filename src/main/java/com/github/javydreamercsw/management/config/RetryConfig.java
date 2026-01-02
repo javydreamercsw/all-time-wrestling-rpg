@@ -155,7 +155,7 @@ public class RetryConfig {
       case TEMPLATES -> entities.getTemplates();
       case SEASONS -> entities.getSeasons();
       case SHOW_TYPES -> entities.getShowTypes();
-      case INJURIES -> entities.getInjuries();
+      case INJURY_TYPES -> entities.getInjuries();
       case NPCS -> entities.getNpcs();
       case TITLES -> entities.getTitles();
       case RIVALRIES -> entities.getRivalries();

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,9 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryType;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
+import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
@@ -37,108 +38,116 @@ import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class ShowTemplateNotionSyncService implements NotionSyncService {
+public class InjuryTypeNotionSyncService implements INotionSyncService {
+  @Autowired private InjuryTypeRepository injuryTypeRepository;
 
-  private final ShowTemplateRepository showTemplateRepository;
   private final NotionHandler notionHandler;
-  private final SyncProgressTracker progressTracker;
+  // Enhanced sync infrastructure services - autowired
+  @Autowired public SyncProgressTracker progressTracker;
 
   @Autowired
-  public ShowTemplateNotionSyncService(
-      ShowTemplateRepository showTemplateRepository,
+  public InjuryTypeNotionSyncService(
+      InjuryTypeRepository injuryTypeRepository,
       NotionHandler notionHandler,
       SyncProgressTracker progressTracker) {
-    this.showTemplateRepository = showTemplateRepository;
+    this.injuryTypeRepository = injuryTypeRepository;
     this.notionHandler = notionHandler;
     this.progressTracker = progressTracker;
   }
 
   @Override
-  @Transactional
   public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
     Optional<NotionClient> clientOptional = notionHandler.createNotionClient();
     if (clientOptional.isPresent()) {
       try (NotionClient client = clientOptional.get()) {
-        String databaseId = notionHandler.getDatabaseId("Show Templates");
+        String databaseId = notionHandler.getDatabaseId("Injuries");
         if (databaseId != null) {
           int processedCount = 0;
           int created = 0;
           int updated = 0;
           int errors = 0;
-          progressTracker.startOperation(operationId, "Sync Show Templates", 1);
-          List<ShowTemplate> showTemplates = showTemplateRepository.findAll();
-          for (ShowTemplate entity : showTemplates) {
+          progressTracker.startOperation(operationId, "Sync Injury Types", 1);
+          List<InjuryType> types = injuryTypeRepository.findAll();
+          for (InjuryType type : types) {
             if (processedCount % 5 == 0) {
               progressTracker.updateProgress(
                   operationId,
                   1,
                   String.format(
-                      "Saving show templates to Notion... (%d/%d processed)",
-                      processedCount, showTemplates.size()));
+                      "Saving injury types to Notion... (%d/%d processed)",
+                      processedCount, types.size()));
             }
             try {
               Map<String, PageProperty> properties = new HashMap<>();
 
               // Name (Title property)
-              properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
+              properties.put(
+                  "Name", NotionPropertyBuilder.createTitleProperty(type.getInjuryName()));
+
+              // Health Effect (Number property)
+              properties.put(
+                  "Health Effect",
+                  NotionPropertyBuilder.createNumberProperty(type.getHealthEffect().doubleValue()));
+
+              // Stamina Effect (Number property)
+              properties.put(
+                  "Stamina Effect",
+                  NotionPropertyBuilder.createNumberProperty(
+                      type.getStaminaEffect().doubleValue()));
+
+              // Card Effect (Number property)
+              properties.put(
+                  "Card Effect",
+                  NotionPropertyBuilder.createNumberProperty(type.getCardEffect().doubleValue()));
 
               // Description (Rich Text property)
-              if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
+              if (type.getSpecialEffects() != null && !type.getSpecialEffects().isBlank()) {
                 properties.put(
                     "Description",
-                    NotionPropertyBuilder.createRichTextProperty(entity.getDescription()));
+                    NotionPropertyBuilder.createRichTextProperty(type.getSpecialEffects()));
               }
 
-              // Show Type (Relation property)
-              if (entity.getShowType() != null && entity.getShowType().getExternalId() != null) {
-                properties.put(
-                    "Show Type",
-                    NotionPropertyBuilder.createRelationProperty(
-                        entity.getShowType().getExternalId()));
-              }
-
-              if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {
-                log.debug("Updating existing show template page: {}", entity.getName());
+              if (type.getExternalId() != null && !type.getExternalId().isBlank()) {
+                log.debug("Updating existing injury type page: {}", type.getInjuryName());
                 UpdatePageRequest updatePageRequest =
-                    new UpdatePageRequest(entity.getExternalId(), properties, false, null, null);
+                    new UpdatePageRequest(type.getExternalId(), properties, false, null, null);
                 notionHandler.executeWithRetry(() -> client.updatePage(updatePageRequest));
                 updated++;
               } else {
-                log.debug("Creating a new show template page for: {}", entity.getName());
+                log.debug("Creating a new injury type page for: {}", type.getInjuryName());
                 CreatePageRequest createPageRequest =
                     new CreatePageRequest(new PageParent(null, databaseId), properties, null, null);
                 Page page =
                     notionHandler.executeWithRetry(() -> client.createPage(createPageRequest));
-                entity.setExternalId(page.getId());
+                type.setExternalId(page.getId());
                 created++;
               }
-              entity.setLastSync(Instant.now());
-              showTemplateRepository.save(entity);
+              type.setLastSync(Instant.now());
+              injuryTypeRepository.save(type);
               processedCount++;
             } catch (Exception ex) {
               errors++;
               processedCount++;
-              log.error("Error syncing show template: " + entity.getName(), ex);
+              log.error("Error syncing injury type: {}", type.getInjuryName(), ex);
             }
           }
           progressTracker.updateProgress(
               operationId,
               1,
               String.format(
-                  "✅ Completed database save: %d show templates saved/updated, %d errors",
+                  "✅ Completed database save: %d injury types saved/updated, %d errors",
                   created + updated, errors));
           return errors > 0
               ? BaseSyncService.SyncResult.failure(
-                  "show templates", "Error syncing show templates!")
-              : BaseSyncService.SyncResult.success("show templates", created, updated, errors);
+                  SyncEntityType.INJURY_TYPES.getKey(), "Error syncing injury types!")
+              : BaseSyncService.SyncResult.success(
+                  SyncEntityType.INJURY_TYPES.getKey(), created, updated, errors);
         }
       }
     }
-    progressTracker.failOperation(operationId, "Error syncing show templates!");
-    return BaseSyncService.SyncResult.failure("show templates", "Error syncing show templates!");
+    return null;
   }
 }
