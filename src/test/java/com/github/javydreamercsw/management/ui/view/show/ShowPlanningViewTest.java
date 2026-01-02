@@ -117,11 +117,11 @@ class ShowPlanningViewTest {
     ProposedShow proposedShow = new ProposedShow();
     ProposedSegment segment1 = new ProposedSegment();
     segment1.setType("Match");
-    segment1.setDescription("A vs B");
+    segment1.setNarration("A vs B");
     segment1.setParticipants(Arrays.asList("A", "B"));
     ProposedSegment segment2 = new ProposedSegment();
     segment2.setType("Promo");
-    segment2.setDescription("C talks");
+    segment2.setNarration("C talks");
     segment2.setParticipants(List.of("C"));
     proposedShow.setSegments(Arrays.asList(segment1, segment2));
 
@@ -174,7 +174,7 @@ class ShowPlanningViewTest {
     ProposedShow proposedShow = new ProposedShow();
     ProposedSegment segment1 = new ProposedSegment();
     segment1.setType("Match");
-    segment1.setDescription("A vs B");
+    segment1.setNarration("A vs B");
     segment1.setParticipants(Arrays.asList("A", "B"));
     proposedShow.setSegments(List.of(segment1));
 

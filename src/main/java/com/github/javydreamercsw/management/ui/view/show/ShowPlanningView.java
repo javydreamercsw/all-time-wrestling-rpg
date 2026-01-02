@@ -130,7 +130,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     proposedSegmentsGrid = new Grid<>(ProposedSegment.class, false);
     proposedSegmentsGrid.addColumn(ProposedSegment::getType).setHeader("Type");
     Grid.Column<ProposedSegment> descriptionColumn =
-        proposedSegmentsGrid.addColumn(ProposedSegment::getDescription).setHeader("Description");
+        proposedSegmentsGrid.addColumn(ProposedSegment::getNarration).setHeader("Description");
     proposedSegmentsGrid
         .addColumn(segment -> String.join(", ", segment.getParticipants()))
         .setHeader("Participants");
@@ -141,7 +141,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     editor.setBinder(binder);
 
     TextField descriptionField = new TextField();
-    binder.bind(descriptionField, "description");
+    binder.bind(descriptionField, "narration");
     descriptionColumn.setEditorComponent(descriptionField);
 
     proposedSegmentsGrid.addItemDoubleClickListener(

@@ -75,7 +75,7 @@ class ShowPlanningServiceTest {
 
     ProposedSegment proposedSegment = new ProposedSegment();
     proposedSegment.setType("Singles Match");
-    proposedSegment.setDescription("A great match");
+    proposedSegment.setNarration("A great match");
     proposedSegment.setSummary("A summary of the match");
     proposedSegment.setParticipants(List.of("Wrestler A", "Wrestler B"));
     proposedSegment.setWinners(List.of("Wrestler A"));

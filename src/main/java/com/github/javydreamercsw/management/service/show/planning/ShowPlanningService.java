@@ -188,7 +188,7 @@ public class ShowPlanningService {
       }
       segment.setSegmentType(segmentTypeOpt.get());
       segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
-      segment.setNarration(proposedSegment.getDescription());
+      segment.setNarration(proposedSegment.getNarration());
       segment.setSummary(proposedSegment.getSummary());
       segment.setSegmentOrder(currentSegmentCount + i + 1);
       segment.setIsTitleSegment(proposedSegment.getIsTitleSegment());

@@ -134,11 +134,11 @@ class ShowPlanningAiServiceTest {
 
     ProposedSegment segment1 = proposedShow.getSegments().get(0);
     assertEquals("One on One", segment1.getType());
-    assertEquals("Main Event: John Cena vs Randy Orton", segment1.getDescription());
+    assertEquals("Main Event: John Cena vs Randy Orton", segment1.getNarration());
 
     ProposedSegment segment2 = proposedShow.getSegments().get(1);
     assertEquals("Promo", segment2.getType());
-    assertEquals("CM Punk cuts a promo on the Authority", segment2.getDescription());
+    assertEquals("CM Punk cuts a promo on the Authority", segment2.getNarration());
 
     // Verify that the AI service was called and capture the prompt
     ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);

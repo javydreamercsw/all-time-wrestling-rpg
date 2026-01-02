@@ -97,6 +97,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             .collect(Collectors.toList());
 
     add(new Paragraph("Your Wrestler: " + playerWrestler.getName()));
+    add(createPlayerSummary(playerWrestler));
     add(
         new Paragraph(
             "Opponents: "
@@ -140,6 +141,34 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       summary.add(new Paragraph("No current injuries."));
     } else {
       opponentWithInjuries
+          .getInjuries()
+          .forEach(
+              injury -> {
+                summary.add(new Paragraph("- " + injury.getDisplayString()));
+              });
+    }
+
+    return summary;
+  }
+
+  private VerticalLayout createPlayerSummary(Wrestler player) {
+    VerticalLayout summary = new VerticalLayout();
+    summary.add(new H3("Your Summary: " + player.getName()));
+
+    Optional<WrestlerStats> stats = wrestlerService.getWrestlerStats(player.getId());
+    if (stats.isPresent()) {
+      WrestlerStats wrestlerStats = stats.get();
+      summary.add(new Paragraph("Wins: " + wrestlerStats.getWins()));
+      summary.add(new Paragraph("Losses: " + wrestlerStats.getLosses()));
+    }
+
+    Wrestler playerWithInjuries = wrestlerService.findByIdWithInjuries(player.getId()).get();
+
+    summary.add(new Paragraph("Bumps: " + playerWithInjuries.getBumps()));
+    if (playerWithInjuries.getInjuries().isEmpty()) {
+      summary.add(new Paragraph("No current injuries."));
+    } else {
+      playerWithInjuries
           .getInjuries()
           .forEach(
               injury -> {
