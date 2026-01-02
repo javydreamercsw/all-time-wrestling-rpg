@@ -31,7 +31,7 @@ class NotionHandlerTest {
         Mockito.mockStatic(EnvironmentVariableUtil.class)) {
       envMock.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(false);
       NotionHandler handler = new NotionHandler();
-      assertTrue(handler.databaseMap.isEmpty());
+      assertTrue(handler.getDatabaseMap().isEmpty());
     }
   }
 
@@ -44,7 +44,7 @@ class NotionHandlerTest {
       // mocking the NotionClient and throwing an exception.
       // For now, we just ensure that the constructor doesn't throw an
       // unhandled exception.
-      assertDoesNotThrow(() -> new NotionHandler());
+      assertDoesNotThrow(NotionHandler::new);
     }
   }
 }
