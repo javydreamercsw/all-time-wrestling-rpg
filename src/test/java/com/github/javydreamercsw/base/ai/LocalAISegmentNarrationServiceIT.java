@@ -59,7 +59,7 @@ class LocalAISegmentNarrationServiceIT {
     containerConfig.startLocalAiContainer();
     // Wait for the container to be ready
     long startTime = System.currentTimeMillis();
-    long timeout = Duration.ofMinutes(15).toMillis(); // Match container startup timeout
+    long timeout = Duration.ofMinutes(30).toMillis(); // Match container startup timeout
 
     log.info("Starting Container...");
     while (statusService.getStatus() != LocalAIStatusService.Status.READY) {

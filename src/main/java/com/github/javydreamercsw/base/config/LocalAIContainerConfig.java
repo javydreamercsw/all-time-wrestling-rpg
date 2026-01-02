@@ -91,24 +91,17 @@ public class LocalAIContainerConfig {
         modelsDir.mkdirs();
       }
 
-      // This tells the container to load the specified model config file at startup.
-      String preloadModelsJson =
-          String.format("[{\"path\": \"/build/models/%s.yaml\"}]", modelName);
-
       // Using the official LocalAI image
       localAiContainer =
           new GenericContainer<>("localai/localai:latest")
               .withExposedPorts(8080)
               .withFileSystemBind(modelsDir.getAbsolutePath(), "/build/models", BindMode.READ_WRITE)
               .withEnv("MODELS_PATH", "/build/models")
-              .withEnv("PRELOAD_MODELS", preloadModelsJson)
+              .withCommand("run", modelName)
               .waitingFor(
                   new WaitAllStrategy()
                       .withStrategy(Wait.forHttp("/readyz").forStatusCode(200))
-                      .withStrategy(
-                          Wait.forLogMessage(
-                              ".*GRPC Service Started.*", 1)) // Wait for the model to be loaded
-                      .withStartupTimeout(Duration.ofMinutes(15)));
+                      .withStartupTimeout(Duration.ofMinutes(30)));
 
       log.info(
           "Starting LocalAI container. This may take a while for the initial model download...");
