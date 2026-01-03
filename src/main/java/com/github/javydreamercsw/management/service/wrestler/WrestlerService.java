@@ -206,10 +206,15 @@ public class WrestlerService {
     log.debug("Deleted wrestler: {}", wrestler.getName());
   }
 
-  // @Cacheable(value = WRESTLERS_CACHE, key = "'all'")
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> findAllIncludingInactive() {
+    return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans"));
+  }
+
+  @Cacheable(value = WRESTLERS_CACHE, key = "'all'")
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAll() {
-    return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans"));
+    return wrestlerRepository.findAllByActiveTrue();
   }
 
   /** Get wrestler by ID. */
@@ -394,9 +399,7 @@ public class WrestlerService {
    */
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getWrestlersByTier(@NonNull WrestlerTier tier) {
-    return wrestlerRepository.findAll().stream()
-        .filter(wrestler -> wrestler.getTier() == tier)
-        .toList();
+    return findAll().stream().filter(wrestler -> wrestler.getTier() == tier).toList();
   }
 
   /**
@@ -406,7 +409,7 @@ public class WrestlerService {
    */
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getPlayerWrestlers() {
-    return wrestlerRepository.findAll().stream().filter(Wrestler::getIsPlayer).toList();
+    return findAll().stream().filter(Wrestler::getIsPlayer).toList();
   }
 
   /**
@@ -416,9 +419,7 @@ public class WrestlerService {
    */
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getNpcWrestlers() {
-    return wrestlerRepository.findAll().stream()
-        .filter(wrestler -> !wrestler.getIsPlayer())
-        .toList();
+    return findAll().stream().filter(wrestler -> !wrestler.getIsPlayer()).toList();
   }
 
   /**

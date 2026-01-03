@@ -28,7 +28,9 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.utils.DiceBag;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,15 +52,65 @@ class WrestlerServiceTest {
   @InjectMocks private WrestlerService wrestlerService;
 
   private Wrestler wrestler;
+  private List<Wrestler> wrestlers;
 
   @Mock private DiceBag diceBag;
 
   @BeforeEach
   void setUp() {
+    init();
     wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
     wrestler.setGender(Gender.MALE);
+    wrestler.setActive(true);
+  }
+
+  private void init() {
+    wrestlers =
+        new ArrayList<>(
+            List.of(
+                Wrestler.builder()
+                    .id(1L)
+                    .name("Active Player")
+                    .active(true)
+                    .isPlayer(true)
+                    .tier(WrestlerTier.MAIN_EVENTER)
+                    .fans(1000L)
+                    .build(),
+                Wrestler.builder()
+                    .id(2L)
+                    .name("Active NPC")
+                    .active(true)
+                    .isPlayer(false)
+                    .tier(WrestlerTier.MAIN_EVENTER)
+                    .fans(900L)
+                    .build(),
+                Wrestler.builder()
+                    .id(3L)
+                    .name("Inactive Player")
+                    .active(false)
+                    .isPlayer(true)
+                    .tier(WrestlerTier.MIDCARDER)
+                    .fans(800L)
+                    .build(),
+                Wrestler.builder()
+                    .id(4L)
+                    .name("Inactive NPC")
+                    .active(false)
+                    .isPlayer(false)
+                    .tier(WrestlerTier.MIDCARDER)
+                    .fans(700L)
+                    .build(),
+                Wrestler.builder()
+                    .id(5L)
+                    .name("Active Midcarder")
+                    .active(true)
+                    .isPlayer(false)
+                    .tier(WrestlerTier.MIDCARDER)
+                    .fans(600L)
+                    .build()));
+    wrestlers.sort(Comparator.comparing(Wrestler::getFans).reversed());
   }
 
   @Test
@@ -147,5 +199,74 @@ class WrestlerServiceTest {
     assertEquals(1, savedWrestlers.size());
     assertEquals(WrestlerTier.MAIN_EVENTER, savedWrestlers.get(0).getTier());
     assertEquals(500_000L, savedWrestlers.get(0).getFans());
+  }
+
+  @Test
+  void testFindAll() {
+    // Given
+    when(wrestlerRepository.findAllByActiveTrue())
+        .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
+
+    // When
+    List<Wrestler> result = wrestlerService.findAll();
+
+    // Then
+    assertEquals(3, result.size());
+    result.forEach(w -> assertEquals(true, w.getActive()));
+  }
+
+  @Test
+  void testFindAllIncludingInactive() {
+    // Given
+    when(wrestlerRepository.findAll(any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(wrestlers);
+
+    // When
+    List<Wrestler> result = wrestlerService.findAllIncludingInactive();
+
+    // Then
+    assertEquals(5, result.size());
+  }
+
+  @Test
+  void testGetPlayerWrestlers() {
+    // Given
+    when(wrestlerRepository.findAllByActiveTrue())
+        .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
+
+    // When
+    List<Wrestler> result = wrestlerService.getPlayerWrestlers();
+
+    // Then
+    assertEquals(1, result.size());
+    assertEquals("Active Player", result.get(0).getName());
+  }
+
+  @Test
+  void testGetNpcWrestlers() {
+    // Given
+    when(wrestlerRepository.findAllByActiveTrue())
+        .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
+
+    // When
+    List<Wrestler> result = wrestlerService.getNpcWrestlers();
+
+    // Then
+    assertEquals(2, result.size());
+    result.forEach(w -> assertEquals(false, w.getIsPlayer()));
+  }
+
+  @Test
+  void testGetWrestlersByTier() {
+    // Given
+    when(wrestlerRepository.findAllByActiveTrue())
+        .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
+
+    // When
+    List<Wrestler> result = wrestlerService.getWrestlersByTier(WrestlerTier.MAIN_EVENTER);
+
+    // Then
+    assertEquals(2, result.size());
+    result.forEach(w -> assertEquals(WrestlerTier.MAIN_EVENTER, w.getTier()));
   }
 }

@@ -108,6 +108,10 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Builder.Default
   private Boolean isPlayer = false;
 
+  @Column(name = "active", nullable = false)
+  @Builder.Default
+  private Boolean active = true;
+
   @Column(name = "description", length = 4000)
   private String description;
 

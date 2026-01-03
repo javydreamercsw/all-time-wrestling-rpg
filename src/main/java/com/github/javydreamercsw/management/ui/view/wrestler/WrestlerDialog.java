@@ -68,6 +68,7 @@ public class WrestlerDialog extends Dialog {
         .bumps(0)
         .gender(Gender.MALE)
         .tier(WrestlerTier.ROOKIE)
+        .active(true)
         .build();
   }
 
@@ -122,6 +123,10 @@ public class WrestlerDialog extends Dialog {
     isPlayerField.setId("wrestler-dialog-is-player-field");
     isPlayerField.setReadOnly(!(securityUtils.isAdmin() || securityUtils.isBooker()));
 
+    Checkbox activeField = new Checkbox("Active");
+    activeField.setId("wrestler-dialog-active-field");
+    activeField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+
     ComboBox<Account> accountComboBox = new ComboBox<>("Player Account");
     accountComboBox.setId("wrestler-dialog-account-combo-box");
     accountComboBox.setPlaceholder("Select Account");
@@ -154,6 +159,7 @@ public class WrestlerDialog extends Dialog {
         lowStaminaField,
         imageUrlField,
         isPlayerField,
+        activeField,
         accountComboBox);
 
     binder.forField(nameField).bind(Wrestler::getName, Wrestler::setName);
@@ -180,6 +186,7 @@ public class WrestlerDialog extends Dialog {
         .bind(Wrestler::getLowStamina, Wrestler::setLowStamina);
     binder.forField(imageUrlField).bind(Wrestler::getImageUrl, Wrestler::setImageUrl);
     binder.forField(isPlayerField).bind(Wrestler::getIsPlayer, Wrestler::setIsPlayer);
+    binder.forField(activeField).bind(Wrestler::getActive, Wrestler::setActive);
 
     binder.readBean(this.wrestler);
 

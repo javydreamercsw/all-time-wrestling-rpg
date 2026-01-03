@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
-import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
-
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
@@ -71,7 +69,7 @@ public class WrestlerListView extends Main {
     this.accountService = accountService;
     this.securityUtils = securityUtils;
     wrestlerGrid = new Grid<>();
-    wrestlerGrid.setItems(query -> wrestlerRepository.findAll(toSpringPageRequest(query)).stream());
+    wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
 
     Set<Long> injuredWrestlerIds =
         injuryService.getWrestlersWithActiveInjuries().stream()
@@ -83,6 +81,17 @@ public class WrestlerListView extends Main {
             wrestler -> {
               HorizontalLayout nameLayout = new HorizontalLayout();
               nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+              if (wrestler.getActive()) {
+                Icon activeIcon = new Icon(VaadinIcon.CHECK);
+                activeIcon.setColor("green");
+                activeIcon.getStyle().set("margin-right", "5px");
+                nameLayout.add(activeIcon);
+              } else {
+                Icon inactiveIcon = new Icon(VaadinIcon.MINUS_CIRCLE);
+                inactiveIcon.setColor("red");
+                inactiveIcon.getStyle().set("margin-right", "5px");
+                nameLayout.add(inactiveIcon);
+              }
               if (injuredWrestlerIds.contains(wrestler.getId())) {
                 Icon injuryIcon = new Icon(VaadinIcon.AMBULANCE);
                 injuryIcon.setColor("red");
