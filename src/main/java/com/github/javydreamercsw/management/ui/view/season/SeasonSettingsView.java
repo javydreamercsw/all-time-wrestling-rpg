@@ -24,6 +24,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -74,45 +75,55 @@ public class SeasonSettingsView extends VerticalLayout {
             });
     resetBoundariesButton.setId("reset-boundaries-button");
 
-    Button resetFansButton =
+    Button recalibrateFansButton =
         new Button(
-            "Reset Fan Counts",
+            "Recalibrate Fan Counts",
             click -> {
               Dialog dialog = new Dialog();
-              dialog.setHeaderTitle("Confirm Reset");
+              dialog.setHeaderTitle("Confirm Fan Count Recalibration");
               dialog.add(
                   new Paragraph(
-                      "Are you sure you want to reset all wrestler fan counts to their tier's"
-                          + " default? This action cannot be undone."));
+                      "'Recalibration' means wrestler fan counts will be reset to the minimum of"
+                          + " their current tier. Any Icon tiered wrestler will be downgraded to"
+                          + " Main Eventer."));
+              dialog.add(new Paragraph("This will also trigger a Tier boundary reset."));
+              dialog.add(
+                  new Paragraph(
+                      "Are you sure you want to recalibrate all wrestler fan counts to their tier's"
+                          + " minimum? This action cannot be undone."));
 
               Button confirmButton =
                   new Button(
                       "Confirm",
                       event -> {
-                        resetFans();
+                        recalibrateFans();
                         resetTiers();
                         dialog.close();
                       });
-              confirmButton.setId("confirm-reset-fans-button");
+              confirmButton.setId("confirm-recalibrate-fans-button");
 
               Button cancelButton = new Button("Cancel", event -> dialog.close());
-              cancelButton.setId("cancel-reset-fans-button");
+              cancelButton.setId("cancel-recalibrate-fans-button");
 
               dialog.getFooter().add(cancelButton, confirmButton);
               dialog.open();
             });
-    resetFansButton.setId("reset-fans-button");
+    recalibrateFansButton.setId("recalibrate-fans-button");
 
-    add(resetFansButton, resetBoundariesButton);
+    add(recalibrateFansButton, resetBoundariesButton);
   }
 
-  private void resetFans() {
-    wrestlerService.resetFanCounts();
-    Notification.show("Fan counts reset successfully.");
+  private void recalibrateFans() {
+    wrestlerService.recalibrateFanCounts();
+    Notification.show(
+            "Fan counts recalibrated successfully.", 3000, Notification.Position.BOTTOM_START)
+        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
   private void resetTiers() {
     tierBoundaryService.resetTierBoundaries();
-    Notification.show("Tier boundaries reset successfully.");
+    Notification.show(
+            "Tier boundaries reset successfully.", 3000, Notification.Position.BOTTOM_START)
+        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 }

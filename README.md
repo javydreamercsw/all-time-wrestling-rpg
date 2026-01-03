@@ -57,7 +57,7 @@ You can now reorder segments within a show and designate one segment as the main
 
 **How to use:**
 
-1.  **Navigate to the Show Details page:** From the "Show List" view, click on a show to open its details.
+1.  **Navigate to the Show Details page:** From the "ShowList" view, click on a show to open its details.
 2.  **Drag and drop to reorder:** In the "Segments" grid, you can now drag and drop segment rows to change their order.
 3.  **Set the main event:** Each segment row has a "Main Event" checkbox. Select the checkbox for the segment you want to mark as the main event.
 
@@ -76,6 +76,25 @@ Crucially, wrestlers who have surpassed the typical fan cap for a given title's 
 Fan acquisition and loss mechanics have been refined to ensure a more balanced and realistic progression for wrestlers:
 *   **Gaining Fans:** Wrestlers gain fans by winning matches and delivering successful promos. The amount of fans gained can be influenced by the wrestler's current tier, with higher tiers potentially experiencing diminishing returns to prevent runaway fan inflation.
 *   **Losing Fans:** A significant change is the introduction of fan loss for match losers. Previously, all participants would gain fans. Now, wrestlers who lose a match may experience a decrease in their fan count, or at best a minimal gain, depending on the match quality and their performance. This adds a layer of consequence to match outcomes and helps to naturally regulate fan numbers across the roster.
+
+### Season Management
+
+At the end of each season, you have the option to perform a "soft reset" of your roster's fan standings and tier definitions. This helps keep the game balanced and provides a fresh start for the new season. These actions are available in the **Season Settings** view.
+
+#### Fan Recalibration
+
+The fan recalibration process adjusts wrestler fan counts to prepare for the next season:
+
+-   **Icons Demoted:** Wrestlers in the "Icon" tier are demoted to the "Main Eventer" tier.
+-   **Fan Count Reset:** All wrestlers, including the demoted Icons, will have their fan counts reset to a baseline value, giving everyone a fresh start for the new season.
+
+This process helps to prevent fan counts from becoming excessively inflated over time and ensures that the top tiers of the roster remain competitive.
+
+#### Tier Boundary Reset
+
+You can reset the fan count boundaries for each wrestler tier back to their default values. This is useful if you have made adjustments to the tier boundaries during a season and want to revert to the standard configuration for the next season.
+
+This ensures that the progression through the tiers remains consistent from season to season, unless you choose to make specific adjustments.
 
 ### Segment Rules
 

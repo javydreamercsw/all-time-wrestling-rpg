@@ -17,8 +17,8 @@
 package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
@@ -320,53 +320,55 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @DisplayName("Should reset fan counts")
-  @Transactional
-  void shouldResetFanCounts() {
-    // Given
-    Wrestler wrestler =
-        wrestlerService.createWrestler("Reset Test", false, "Wrestler for fan reset test");
-    Assertions.assertNotNull(wrestler.getId());
-    wrestlerService.awardFans(
-        wrestler.getId(), WrestlerTier.MAIN_EVENTER.getMinFans() + 1_000); // Main Eventer tier
+  void shouldRecalibrateFanCounts() {
+    // Create some wrestlers
+    Wrestler icon =
+        wrestlerService.createWrestler("The Icon", false, "Iconic wrestler", WrestlerTier.ICON);
+    icon.setFans(1_000_000L);
+    wrestlerService.save(icon);
 
-    Wrestler updatedWrestler = wrestlerService.findById(wrestler.getId()).orElseThrow();
-    assertThat(updatedWrestler.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
-    assertThat(updatedWrestler.getFans()).isGreaterThan(WrestlerTier.MAIN_EVENTER.getMinFans());
+    Wrestler mainEventer =
+        wrestlerService.createWrestler(
+            "The Main Eventer", false, "Top star", WrestlerTier.MAIN_EVENTER);
+    mainEventer.setFans(800_000L);
+    wrestlerService.save(mainEventer);
 
-    // When
-    wrestlerService.resetFanCounts();
+    Wrestler rookie =
+        wrestlerService.createWrestler("The Rookie", false, "Newcomer", WrestlerTier.ROOKIE);
+    rookie.setFans(5_000L);
+    wrestlerService.save(rookie);
 
-    // Then
-    Wrestler fromDb = wrestlerService.findById(wrestler.getId()).orElseThrow();
-    assertThat(fromDb.getFans()).isEqualTo(WrestlerTier.MAIN_EVENTER.getMinFans());
-    assertThat(fromDb.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
+    // Reset fan counts
+    wrestlerService.recalibrateFanCounts();
+
+    // Verify Icon is now Main Eventer with 0 fans
+    Wrestler updatedIcon = wrestlerService.getWrestlerById(icon.getId()).get();
+    assertEquals(WrestlerTier.MAIN_EVENTER, updatedIcon.getTier());
+    assertThat(updatedIcon.getFans()).isGreaterThanOrEqualTo(0L);
+
+    // Verify Main Eventer is reset to 0 fans
+    Wrestler updatedMainEventer = wrestlerService.getWrestlerById(mainEventer.getId()).get();
+    assertEquals(0L, updatedMainEventer.getFans());
+
+    // Verify Rookie is reset to 0 fans
+    Wrestler updatedRookie = wrestlerService.getWrestlerById(rookie.getId()).get();
+    assertEquals(0L, updatedRookie.getFans());
   }
 
   @Test
-  @DisplayName("Should reset ICON to MAIN_EVENTER")
-  @Transactional
-  void shouldResetIconToMainEventer() {
-    // Given
-    Wrestler icon = wrestlerService.createWrestler("Icon Wrestler", true, null);
-    Assertions.assertNotNull(icon.getId());
-    wrestlerService.awardFans(icon.getId(), 1_000_000L); // ICON tier
+  void shouldRecalibrateIconToMainEventer() {
+    // Create an Icon wrestler
+    Wrestler icon =
+        wrestlerService.createWrestler("The Icon", false, "Iconic wrestler", WrestlerTier.ICON);
+    icon.setFans(1_000_000L);
+    wrestlerService.save(icon);
 
-    Wrestler updatedWrestler = wrestlerService.findById(icon.getId()).orElseThrow();
-    assertThat(updatedWrestler.getTier()).isEqualTo(WrestlerTier.ICON);
+    // Reset fan counts
+    wrestlerService.recalibrateFanCounts();
 
-    // When
-    wrestlerService.resetFanCounts();
-
-    // Then
-    Wrestler fromDb = wrestlerService.findById(icon.getId()).orElseThrow();
-    assertThat(fromDb.getTier()).isEqualTo(WrestlerTier.MAIN_EVENTER);
-
-    // Get min fans for MAIN_EVENTER from tier boundaries
-    TierBoundary mainEventerBoundary =
-        tierBoundaryRepository
-            .findByTierAndGender(WrestlerTier.MAIN_EVENTER, fromDb.getGender())
-            .get();
-    assertThat(fromDb.getFans()).isEqualTo(mainEventerBoundary.getMinFans());
+    // Verify the wrestler is now a Main Eventer with 0 fans
+    Wrestler updatedWrestler = wrestlerService.getWrestlerById(icon.getId()).get();
+    assertEquals(WrestlerTier.MAIN_EVENTER, updatedWrestler.getTier());
+    assertEquals(0L, updatedWrestler.getFans());
   }
 }

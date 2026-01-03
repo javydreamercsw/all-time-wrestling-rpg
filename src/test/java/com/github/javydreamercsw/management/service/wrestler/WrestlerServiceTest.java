@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.wrestler;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
@@ -57,6 +58,7 @@ class WrestlerServiceTest {
     wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
+    wrestler.setGender(Gender.MALE);
   }
 
   @Test
@@ -92,7 +94,7 @@ class WrestlerServiceTest {
   }
 
   @Test
-  void testResetFanCounts() {
+  void testRecalibrateFanCounts() {
     // Given
     WrestlerTier tier = WrestlerTier.CONTENDER;
     wrestler.setTier(tier);
@@ -101,12 +103,13 @@ class WrestlerServiceTest {
     TierBoundary boundary = new TierBoundary();
     boundary.setTier(tier);
     boundary.setMinFans(40000L);
+    boundary.setGender(Gender.MALE);
 
     when(wrestlerRepository.findAll()).thenReturn(Collections.singletonList(wrestler));
     when(tierBoundaryRepository.findAll()).thenReturn(Collections.singletonList(boundary));
 
     // When
-    wrestlerService.resetFanCounts();
+    wrestlerService.recalibrateFanCounts();
 
     // Then
     @SuppressWarnings("unchecked")
@@ -115,5 +118,34 @@ class WrestlerServiceTest {
     List<Wrestler> savedWrestlers = captor.getValue();
     assertEquals(1, savedWrestlers.size());
     assertEquals(40000L, savedWrestlers.get(0).getFans());
+  }
+
+  @Test
+  void testRecalibrateFanCountsForIcon() {
+    // Given
+    wrestler.setTier(WrestlerTier.ICON);
+    wrestler.setFans(1_000_000L);
+
+    TierBoundary mainEventerBoundary = new TierBoundary();
+    mainEventerBoundary.setTier(WrestlerTier.MAIN_EVENTER);
+    mainEventerBoundary.setMinFans(500_000L);
+    mainEventerBoundary.setGender(Gender.MALE);
+
+    when(wrestlerRepository.findAll()).thenReturn(Collections.singletonList(wrestler));
+    when(tierBoundaryRepository.findAll())
+        .thenReturn(Collections.singletonList(mainEventerBoundary));
+
+    // When
+    wrestlerService.recalibrateFanCounts();
+
+    // Then
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Wrestler>> captor = ArgumentCaptor.forClass(List.class);
+    verify(wrestlerRepository).saveAll(captor.capture());
+
+    List<Wrestler> savedWrestlers = captor.getValue();
+    assertEquals(1, savedWrestlers.size());
+    assertEquals(WrestlerTier.MAIN_EVENTER, savedWrestlers.get(0).getTier());
+    assertEquals(500_000L, savedWrestlers.get(0).getFans());
   }
 }

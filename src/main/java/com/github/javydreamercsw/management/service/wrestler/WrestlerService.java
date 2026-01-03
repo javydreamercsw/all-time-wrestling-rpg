@@ -460,13 +460,13 @@ public class WrestlerService {
             });
   }
 
-  /** Resets the fan counts of all wrestlers to the minimum of their respective tiers. */
+  /** Recalibrates the fan counts of all wrestlers to the minimum of their respective tiers. */
   @Transactional
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
-  public void resetFanCounts() {
+  public void recalibrateFanCounts() {
     List<Wrestler> wrestlers = wrestlerRepository.findAll();
     List<TierBoundary> boundaries = tierBoundaryRepository.findAll();
 
@@ -486,6 +486,6 @@ public class WrestlerService {
       }
     }
     wrestlerRepository.saveAll(wrestlers);
-    log.info("Reset fan counts for all wrestlers. Icons are reset to Main Eventer.");
+    log.info("Recalibrated fan counts for all wrestlers. Icons are reset to Main Eventer.");
   }
 }
