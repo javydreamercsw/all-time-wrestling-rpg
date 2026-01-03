@@ -46,8 +46,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   void setUp() {
-    segmentRepository.deleteAll();
-    wrestlerRepository.deleteAll();
+    databaseCleaner.clearRepositories();
     // Create some wrestlers for the tests
     for (int i = 0; i < 4; i++) {
       wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler " + i));
@@ -106,7 +105,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testEditWrestler() {
     // Create a wrestler to edit
-    Wrestler wrestler = wrestlerRepository.save(createTestWrestler("Wrestler to Edit"));
+    Wrestler wrestler = wrestlerRepository.saveAndFlush(createTestWrestler("Wrestler to Edit"));
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     // Find the menu for the wrestler and click it
@@ -166,7 +165,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testDeleteWrestler() {
     // Create a wrestler to delete
-    Wrestler wrestler = wrestlerRepository.save(createTestWrestler("Wrestler to Delete"));
+    Wrestler wrestler = wrestlerRepository.saveAndFlush(createTestWrestler("Wrestler to Delete"));
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));

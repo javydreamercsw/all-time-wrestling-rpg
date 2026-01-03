@@ -62,6 +62,7 @@ public class TestUtils {
     wrestler.setTier(WrestlerTier.ROOKIE);
     wrestler.setCreationDate(Instant.now());
     wrestler.setFans(10_00L); // Default fan count
+    wrestler.setActive(true);
     return wrestler;
   }
 
