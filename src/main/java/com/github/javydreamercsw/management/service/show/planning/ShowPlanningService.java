@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -65,6 +66,7 @@ public class ShowPlanningService {
       segmentSummaryService;
   private final SegmentTypeService segmentTypeService;
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
   private final FactionService factionService;
   private final SegmentRuleRepository segmentRuleRepository;
   private final ApplicationEventPublisher eventPublisher;
@@ -145,7 +147,7 @@ public class ShowPlanningService {
     context.setChampionships(championships);
 
     // Get all wrestlers
-    List<Wrestler> allWrestlers = wrestlerRepository.findAll();
+    List<Wrestler> allWrestlers = wrestlerService.findAll();
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);
 

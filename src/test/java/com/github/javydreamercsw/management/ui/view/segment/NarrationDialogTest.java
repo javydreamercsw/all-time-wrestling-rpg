@@ -102,7 +102,7 @@ class NarrationDialogTest {
         new NarrationDialog(
             segment,
             npcService,
-            mock(WrestlerRepository.class),
+            wrestlerService,
             showService,
             segmentService,
             s -> {},

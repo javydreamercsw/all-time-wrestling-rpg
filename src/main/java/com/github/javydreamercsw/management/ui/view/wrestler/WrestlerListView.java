@@ -69,7 +69,7 @@ public class WrestlerListView extends Main {
     this.accountService = accountService;
     this.securityUtils = securityUtils;
     wrestlerGrid = new Grid<>();
-    wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
+    reloadGrid();
 
     Set<Long> injuredWrestlerIds =
         injuryService.getWrestlersWithActiveInjuries().stream()
@@ -127,7 +127,7 @@ public class WrestlerListView extends Main {
                       wrestler,
                       wrestlerService,
                       injuryService,
-                      wrestlerGrid.getDataProvider()::refreshAll,
+                      this::reloadGrid,
                       false,
                       securityUtils,
                       accountService);
@@ -163,15 +163,16 @@ public class WrestlerListView extends Main {
             e -> {
               WrestlerDialog dialog =
                   new WrestlerDialog(
-                      wrestlerService,
-                      accountService,
-                      wrestlerGrid.getDataProvider()::refreshAll,
-                      securityUtils);
+                      wrestlerService, accountService, this::reloadGrid, securityUtils);
               dialog.open();
             });
     button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     button.setId("create-wrestler-button");
     button.setVisible(securityUtils.canCreate());
     return button;
+  }
+
+  private void reloadGrid() {
+    wrestlerGrid.setItems(wrestlerService.findAll());
   }
 }

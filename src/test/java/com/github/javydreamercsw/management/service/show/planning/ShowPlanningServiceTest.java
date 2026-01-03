@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.show.planning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -26,12 +27,16 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -54,10 +59,30 @@ class ShowPlanningServiceTest {
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private Clock clock;
   @Mock private ApplicationEventPublisher eventPublisher;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private com.github.javydreamercsw.management.service.rivalry.RivalryService rivalryService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.show.PromoBookingService promoBookingService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper
+      mapper;
+
+  @Mock private com.github.javydreamercsw.management.service.title.TitleService titleService;
+  @Mock private com.github.javydreamercsw.management.service.show.ShowService showService;
+  @Mock private com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.segment.SegmentSummaryService
+      segmentSummaryService;
+
+  @Mock private com.github.javydreamercsw.management.service.faction.FactionService factionService;
 
   @InjectMocks private ShowPlanningService showPlanningService;
 
   @Captor private ArgumentCaptor<List<Segment>> segmentsCaptor;
+  @Captor private ArgumentCaptor<ShowPlanningContext> showPlanningContextCaptor;
 
   @BeforeEach
   void setUp() {
@@ -111,7 +136,7 @@ class ShowPlanningServiceTest {
     showPlanningService.approveSegments(show, List.of(proposedSegment));
 
     // Verify
-    org.mockito.Mockito.verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
     List<Segment> capturedSegments = segmentsCaptor.getValue();
     assertEquals(1, capturedSegments.size());
     Segment capturedSegment = capturedSegments.get(0);
@@ -126,5 +151,37 @@ class ShowPlanningServiceTest {
     assertEquals(2, capturedSegment.getParticipants().size());
     assertEquals(1, capturedSegment.getWinners().size());
     assertEquals("Wrestler A", capturedSegment.getWinners().get(0).getName());
+  }
+
+  @Test
+  void testGetShowPlanningContext_FiltersInactiveWrestlers() {
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+    ShowType showType = new ShowType();
+    showType.setExpectedMatches(5);
+    showType.setExpectedPromos(2);
+    show.setType(showType);
+
+    Wrestler activeWrestler = new Wrestler();
+    activeWrestler.setId(1L);
+    activeWrestler.setName("Active Wrestler");
+    activeWrestler.setActive(true);
+
+    when(wrestlerService.findAll()).thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+
+    when(mapper.toDto(showPlanningContextCaptor.capture()))
+        .thenReturn(new ShowPlanningContextDTO());
+
+    showPlanningService.getShowPlanningContext(show);
+
+    ShowPlanningContext capturedContext = showPlanningContextCaptor.getValue();
+    assertEquals(1, capturedContext.getFullRoster().size());
+    assertEquals("Active Wrestler", capturedContext.getFullRoster().get(0).getName());
   }
 }
