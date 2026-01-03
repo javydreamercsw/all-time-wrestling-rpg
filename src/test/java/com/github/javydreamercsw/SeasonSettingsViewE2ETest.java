@@ -125,6 +125,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     Wrestler icon = new Wrestler();
     icon.setName("Test Icon");
     icon.setFans(WrestlerTier.ICON.getMinFans());
+    icon.setTier(WrestlerTier.ICON);
     icon.setGender(Gender.MALE);
     wrestlerService.save(icon);
 
