@@ -88,7 +88,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
   }
 
   @Test
-  void testResetFans() {
+  void testRecalibrateFans() {
     // Make sure there is at least one wrestler with fans > minFans
     Wrestler wrestler = wrestlerService.findAll().get(0);
     WrestlerTier tier = wrestler.getTier();
@@ -98,22 +98,90 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/season/settings");
 
     // Wait for view to load
-    WebElement resetFansButton = waitForVaadinElement(driver, By.id("reset-fans-button"));
-    clickElement(resetFansButton);
+    WebElement recalibrateFansButton =
+        waitForVaadinElement(driver, By.id("recalibrate-fans-button"));
+    clickElement(recalibrateFansButton);
 
     // Wait for dialog
     WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
     assertTrue(dialog.isDisplayed());
 
-    WebElement confirmButton = waitForVaadinElement(driver, By.id("confirm-reset-fans-button"));
+    WebElement confirmButton =
+        waitForVaadinElement(driver, By.id("confirm-recalibrate-fans-button"));
     clickElement(confirmButton);
 
     // Wait for notification
     WebElement notification = waitForVaadinElement(driver, By.tagName("vaadin-notification-card"));
-    assertEquals("Fan counts reset successfully.", notification.getText());
+    assertEquals("Fan counts recalibrated successfully.", notification.getText());
 
     // Verify fan counts were reset
     Wrestler updatedWrestler = wrestlerService.findById(wrestler.getId()).get();
     assertEquals(tier.getMinFans(), updatedWrestler.getFans());
+  }
+
+  @Test
+  void testRecalibrateIconFans() {
+    // Create an Icon wrestler
+    Wrestler icon = new Wrestler();
+    icon.setName("Test Icon");
+    icon.setFans(WrestlerTier.ICON.getMinFans());
+    icon.setGender(Gender.MALE);
+    wrestlerService.save(icon);
+
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/season/settings");
+
+    // Wait for view to load
+    WebElement recalibrateFansButton =
+        waitForVaadinElement(driver, By.id("recalibrate-fans-button"));
+    clickElement(recalibrateFansButton);
+
+    // Wait for dialog
+    WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
+    assertTrue(dialog.isDisplayed());
+
+    WebElement confirmButton =
+        waitForVaadinElement(driver, By.id("confirm-recalibrate-fans-button"));
+    clickElement(confirmButton);
+
+    // Wait for notification
+    WebElement notification = waitForVaadinElement(driver, By.tagName("vaadin-notification-card"));
+    assertEquals("Fan counts recalibrated successfully.", notification.getText());
+
+    // Verify fan counts were reset and tier was demoted
+    Wrestler updatedWrestler = wrestlerService.findById(icon.getId()).get();
+    assertEquals(WrestlerTier.MAIN_EVENTER, updatedWrestler.getTier());
+    assertEquals(WrestlerTier.MAIN_EVENTER.getMinFans(), updatedWrestler.getFans());
+  }
+
+  @Test
+  void testResetFans() {
+    // Create an Icon wrestler
+    Wrestler icon = new Wrestler();
+    icon.setName("Test Icon");
+    icon.setFans(WrestlerTier.ICON.getMinFans());
+    icon.setGender(Gender.MALE);
+    wrestlerService.save(icon);
+
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/season/settings");
+
+    // Wait for view to load
+    WebElement recalibrateFansButton = waitForVaadinElement(driver, By.id("full-reset-button"));
+    clickElement(recalibrateFansButton);
+
+    // Wait for dialog
+    WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
+    assertTrue(dialog.isDisplayed());
+
+    WebElement confirmButton = waitForVaadinElement(driver, By.id("confirm-full-reset-button"));
+    clickElement(confirmButton);
+
+    // Wait for notification
+    WebElement notification = waitForVaadinElement(driver, By.tagName("vaadin-notification-card"));
+    assertEquals("All wrestler fan counts have been reset to 0.", notification.getText());
+
+    // Verify fan counts were reset and tier was demoted
+    Wrestler updatedWrestler = wrestlerService.findById(icon.getId()).get();
+    assertEquals(WrestlerTier.ROOKIE, updatedWrestler.getTier());
+    assertEquals(0L, updatedWrestler.getFans());
   }
 }

@@ -488,4 +488,21 @@ public class WrestlerService {
     wrestlerRepository.saveAll(wrestlers);
     log.info("Recalibrated fan counts for all wrestlers. Icons are reset to Main Eventer.");
   }
+
+  /** Resets the fan counts of all wrestlers to 0 and their tier to ROOKIE. */
+  @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
+  public void resetAllFanCountsToZero() {
+    List<Wrestler> wrestlers = wrestlerRepository.findAll();
+
+    for (Wrestler wrestler : wrestlers) {
+      wrestler.setFans(0L);
+      wrestler.setTier(WrestlerTier.ROOKIE);
+    }
+    wrestlerRepository.saveAll(wrestlers);
+    log.info("Reset all wrestler fan counts to 0 and tier to ROOKIE.");
+  }
 }

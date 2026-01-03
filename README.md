@@ -85,8 +85,8 @@ At the end of each season, you have the option to perform a "soft reset" of your
 
 The fan recalibration process adjusts wrestler fan counts to prepare for the next season:
 
--   **Icons Demoted:** Wrestlers in the "Icon" tier are demoted to the "Main Eventer" tier.
--   **Fan Count Reset:** All wrestlers, including the demoted Icons, will have their fan counts reset to a baseline value, giving everyone a fresh start for the new season.
+*   **Icons Demoted:** Wrestlers in the "Icon" tier are demoted to the "Main Eventer" tier.
+*   **Fan Count Adjustment:** All wrestlers, including the demoted Icons, will have their fan counts recalibrated to the minimum fan count required for their new or existing tier. This ensures that wrestlers are appropriately positioned within their tiers at the start of a new season.
 
 This process helps to prevent fan counts from becoming excessively inflated over time and ensures that the top tiers of the roster remain competitive.
 
@@ -95,6 +95,10 @@ This process helps to prevent fan counts from becoming excessively inflated over
 You can reset the fan count boundaries for each wrestler tier back to their default values. This is useful if you have made adjustments to the tier boundaries during a season and want to revert to the standard configuration for the next season.
 
 This ensures that the progression through the tiers remains consistent from season to season, unless you choose to make specific adjustments.
+
+#### Full Fan Count Reset
+
+For a more drastic reset, you can use the "Full Fan Count Reset" option. This will reset all wrestler fan counts to 0 and their tier to ROOKIE. This is useful for starting a completely new game or when you want to level the playing field entirely.
 
 ### Segment Rules
 

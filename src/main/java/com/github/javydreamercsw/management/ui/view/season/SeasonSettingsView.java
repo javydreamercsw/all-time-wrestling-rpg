@@ -110,7 +110,42 @@ public class SeasonSettingsView extends VerticalLayout {
             });
     recalibrateFansButton.setId("recalibrate-fans-button");
 
-    add(recalibrateFansButton, resetBoundariesButton);
+    Button fullResetButton =
+        new Button(
+            "Full Fan Count Reset",
+            click -> {
+              Dialog dialog = new Dialog();
+              dialog.setHeaderTitle("Confirm Full Fan Count Reset");
+              dialog.add(
+                  new Paragraph(
+                      "This will reset all wrestler fan counts to 0 and their tier to ROOKIE."
+                          + " This action cannot be undone."));
+              dialog.add(new Paragraph("This will also trigger a Tier boundary reset."));
+
+              Button confirmButton =
+                  new Button(
+                      "Confirm",
+                      event -> {
+                        wrestlerService.resetAllFanCountsToZero();
+                        Notification.show(
+                                "All wrestler fan counts have been reset to 0.",
+                                3000,
+                                Notification.Position.BOTTOM_START)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                        resetTiers();
+                        dialog.close();
+                      });
+              confirmButton.setId("confirm-full-reset-button");
+
+              Button cancelButton = new Button("Cancel", event -> dialog.close());
+              cancelButton.setId("cancel-full-reset-button");
+
+              dialog.getFooter().add(cancelButton, confirmButton);
+              dialog.open();
+            });
+    fullResetButton.setId("full-reset-button");
+
+    add(recalibrateFansButton, resetBoundariesButton, fullResetButton);
   }
 
   private void recalibrateFans() {

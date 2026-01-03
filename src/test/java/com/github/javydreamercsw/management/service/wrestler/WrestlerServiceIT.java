@@ -348,7 +348,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
 
     // Verify Main Eventer is reset to 0 fans
     Wrestler updatedMainEventer = wrestlerService.getWrestlerById(mainEventer.getId()).get();
-    assertEquals(0L, updatedMainEventer.getFans());
+    assertEquals(WrestlerTier.MAIN_EVENTER.getMinFans(), updatedMainEventer.getFans());
 
     // Verify Rookie is reset to 0 fans
     Wrestler updatedRookie = wrestlerService.getWrestlerById(rookie.getId()).get();
@@ -369,6 +369,42 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     // Verify the wrestler is now a Main Eventer with 0 fans
     Wrestler updatedWrestler = wrestlerService.getWrestlerById(icon.getId()).get();
     assertEquals(WrestlerTier.MAIN_EVENTER, updatedWrestler.getTier());
-    assertEquals(0L, updatedWrestler.getFans());
+    assertEquals(WrestlerTier.MAIN_EVENTER.getMinFans(), updatedWrestler.getFans());
+  }
+
+  @Test
+  void shouldResetAllFanCountsToZero() {
+    // Create some wrestlers
+    Wrestler icon =
+        wrestlerService.createWrestler("The Icon", false, "Iconic wrestler", WrestlerTier.ICON);
+    icon.setFans(1_000_000L);
+    wrestlerService.save(icon);
+
+    Wrestler mainEventer =
+        wrestlerService.createWrestler(
+            "The Main Eventer", false, "Top star", WrestlerTier.MAIN_EVENTER);
+    mainEventer.setFans(800_000L);
+    wrestlerService.save(mainEventer);
+
+    Wrestler rookie =
+        wrestlerService.createWrestler("The Rookie", false, "Newcomer", WrestlerTier.ROOKIE);
+    rookie.setFans(5_000L);
+    wrestlerService.save(rookie);
+
+    // Reset fan counts
+    wrestlerService.resetAllFanCountsToZero();
+
+    // Verify all wrestlers are now rookies with 0 fans
+    Wrestler updatedIcon = wrestlerService.getWrestlerById(icon.getId()).get();
+    assertEquals(WrestlerTier.ROOKIE, updatedIcon.getTier());
+    assertEquals(0L, updatedIcon.getFans());
+
+    Wrestler updatedMainEventer = wrestlerService.getWrestlerById(mainEventer.getId()).get();
+    assertEquals(WrestlerTier.ROOKIE, updatedMainEventer.getTier());
+    assertEquals(0L, updatedMainEventer.getFans());
+
+    Wrestler updatedRookie = wrestlerService.getWrestlerById(rookie.getId()).get();
+    assertEquals(WrestlerTier.ROOKIE, updatedRookie.getTier());
+    assertEquals(0L, updatedRookie.getFans());
   }
 }
