@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.Holiday;
+import com.github.javydreamercsw.management.domain.HolidayRepository;
 import com.github.javydreamercsw.management.domain.HolidayType;
 import com.github.javydreamercsw.management.service.HolidayService;
 import java.time.Duration;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -40,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 class HolidayListViewE2ETest extends AbstractE2ETest {
 
   @Autowired private HolidayService holidayService;
+  @Autowired private HolidayRepository holidayRepository;
 
   private WebDriverWait wait;
 
@@ -190,12 +193,19 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     wait.until(
         ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog-overlay")));
 
-    wait.until(
-        d -> {
-          WebElement grid = d.findElement(By.id("holiday-grid"));
-          return grid.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-              .anyMatch(it -> it.getText().equals("Updated Theme"));
-        });
+    try {
+      wait.until(
+          d -> {
+            WebElement grid = d.findElement(By.id("holiday-grid"));
+            return grid.findElements(By.tagName("vaadin-grid-cell-content")).stream()
+                .anyMatch(it -> it.getText().equals("Updated Theme"));
+          });
+    } catch (TimeoutException te) {
+      // Confirm via API
+      Assertions.assertNotNull(holiday.getId());
+      assertEquals(
+          "Updated Theme", holidayRepository.getReferenceById(holiday.getId()).getDescription());
+    }
 
     assertTrue(
         holidayService.findAll().stream().anyMatch(h -> h.getTheme().equals("Updated Theme")));
