@@ -477,8 +477,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected void clearField(@NonNull WebElement field) {
     takeSequencedScreenshot("before-clear");
+
+    // Determine the correct modifier key for the current OS
+    String os = System.getProperty("os.name").toLowerCase();
+    Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
+
     // Use keyboard shortcuts to clear the field, as .clear() is unreliable with Vaadin
-    String selectAll = Keys.chord(Keys.COMMAND, "a");
+    String selectAll = Keys.chord(modifier, "a");
     field.sendKeys(selectAll);
     field.sendKeys(Keys.BACK_SPACE);
     takeSequencedScreenshot("after-clear");
