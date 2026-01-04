@@ -1,0 +1,35 @@
+[
+  {
+    "name": "Desolation's Smile",
+    "leader": "Daemon",
+    "members": [
+      "Kamala",
+      "OMZ"
+    ]
+  },
+  {
+    "name": "Team USA",
+    "leader": "Kurt Angle",
+    "manager": "Colonel Mustafa",
+    "members": [
+      "Junkyard Dog",
+      "Sgt. Slaughter"
+    ]
+  },
+  {
+    "name": "Trail Blazers",
+    "leader": "Johnny All Time",
+    "members": [
+      "Rey Jaguar",
+      "Jax Felix"
+    ]
+  },
+  {
+    "name": "Calgary Collective",
+    "leader": "Brian Pillman",
+    "members": [
+      "The British Bulldog",
+      "Nick Aldis"
+    ]
+  }
+]
