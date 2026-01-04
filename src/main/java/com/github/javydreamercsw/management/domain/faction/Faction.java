@@ -20,6 +20,7 @@ import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_M
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
@@ -69,6 +70,10 @@ public class Faction extends AbstractEntity<Long> {
   @JoinColumn(name = "leader_id")
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns", "faction"})
   private Wrestler leader;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "manager_id")
+  private Npc manager;
 
   @Column(name = "is_active", nullable = false)
   @Builder.Default

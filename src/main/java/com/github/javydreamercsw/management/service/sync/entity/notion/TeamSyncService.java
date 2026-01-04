@@ -571,7 +571,7 @@ public class TeamSyncService extends BaseSyncService {
         // Use TeamService to create the team
         Optional<Team> createdTeam =
             teamService.createTeam(
-                dto.getName(), dto.getDescription(), wrestler1Id, wrestler2Id, factionId);
+                dto.getName(), dto.getDescription(), wrestler1Id, wrestler2Id, factionId, null);
 
         if (createdTeam.isPresent()) {
           Team newTeam = createdTeam.get();

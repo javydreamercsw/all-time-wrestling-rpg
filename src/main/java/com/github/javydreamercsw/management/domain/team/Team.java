@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.team;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -69,6 +70,10 @@ public class Team extends AbstractEntity<Long> {
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "wrestler2_id", nullable = false)
   private Wrestler wrestler2;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "manager_id")
+  private Npc manager;
 
   // Optional faction association
   @ManyToOne(fetch = FetchType.LAZY)

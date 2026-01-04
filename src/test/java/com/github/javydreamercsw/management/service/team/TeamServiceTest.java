@@ -66,7 +66,8 @@ class TeamServiceTest extends ManagementIntegrationTest {
             "Test team description",
             wrestler1.getId(),
             wrestler2.getId(),
-            faction.getId());
+            faction.getId(),
+            null);
 
     // Then
     assertThat(result).isPresent();
@@ -90,12 +91,12 @@ class TeamServiceTest extends ManagementIntegrationTest {
   void shouldNotCreateDuplicateTeamNames() {
     // Given - create first team
     teamService.createTeam(
-        "Duplicate Name", "Description 1", wrestler1.getId(), wrestler2.getId(), null);
+        "Duplicate Name", "Description 1", wrestler1.getId(), wrestler2.getId(), null, null);
 
     // When - try to create team with same name
     Optional<Team> result =
         teamService.createTeam(
-            "Duplicate Name", "Description 2", wrestler1.getId(), wrestler3.getId(), null);
+            "Duplicate Name", "Description 2", wrestler1.getId(), wrestler3.getId(), null, null);
 
     // Then
     assertThat(result).isEmpty();
@@ -110,12 +111,13 @@ class TeamServiceTest extends ManagementIntegrationTest {
   @DisplayName("Should not create team with same wrestlers twice")
   void shouldNotCreateTeamWithSameWrestlersTwice() {
     // Given - create first team
-    teamService.createTeam("Team 1", "Description 1", wrestler1.getId(), wrestler2.getId(), null);
+    teamService.createTeam(
+        "Team 1", "Description 1", wrestler1.getId(), wrestler2.getId(), null, null);
 
     // When - try to create team with same wrestlers (different order)
     Optional<Team> result =
         teamService.createTeam(
-            "Team 2", "Description 2", wrestler2.getId(), wrestler1.getId(), null);
+            "Team 2", "Description 2", wrestler2.getId(), wrestler1.getId(), null, null);
 
     // Then
     assertThat(result).isEmpty();
@@ -132,14 +134,19 @@ class TeamServiceTest extends ManagementIntegrationTest {
     // Given - create team
     Optional<Team> created =
         teamService.createTeam(
-            "Original Name", "Original Description", wrestler1.getId(), wrestler2.getId(), null);
+            "Original Name",
+            "Original Description",
+            wrestler1.getId(),
+            wrestler2.getId(),
+            null,
+            null);
     assertThat(created).isPresent();
     Long teamId = created.get().getId();
 
     // When - update team
     Optional<Team> result =
         teamService.updateTeam(
-            teamId, "Updated Name", "Updated Description", TeamStatus.ACTIVE, null);
+            teamId, "Updated Name", "Updated Description", TeamStatus.ACTIVE, null, null);
 
     // Then
     assertThat(result).isPresent();
@@ -161,7 +168,7 @@ class TeamServiceTest extends ManagementIntegrationTest {
     // Given - create team
     Optional<Team> created =
         teamService.createTeam(
-            "Test Team", "Description", wrestler1.getId(), wrestler2.getId(), null);
+            "Test Team", "Description", wrestler1.getId(), wrestler2.getId(), null, null);
     assertThat(created).isPresent();
     Long teamId = created.get().getId();
 
@@ -188,7 +195,7 @@ class TeamServiceTest extends ManagementIntegrationTest {
     // Given - create team
     Optional<Team> created =
         teamService.createTeam(
-            "Team to Delete", "Description", wrestler1.getId(), wrestler2.getId(), null);
+            "Team to Delete", "Description", wrestler1.getId(), wrestler2.getId(), null, null);
     assertThat(created).isPresent();
     Long teamId = created.get().getId();
 
@@ -208,9 +215,12 @@ class TeamServiceTest extends ManagementIntegrationTest {
   @DisplayName("Should get teams with pagination")
   void shouldGetTeamsWithPagination() {
     // Given - create multiple teams
-    teamService.createTeam("Team 1", "Description 1", wrestler1.getId(), wrestler2.getId(), null);
-    teamService.createTeam("Team 2", "Description 2", wrestler1.getId(), wrestler3.getId(), null);
-    teamService.createTeam("Team 3", "Description 3", wrestler2.getId(), wrestler3.getId(), null);
+    teamService.createTeam(
+        "Team 1", "Description 1", wrestler1.getId(), wrestler2.getId(), null, null);
+    teamService.createTeam(
+        "Team 2", "Description 2", wrestler1.getId(), wrestler3.getId(), null, null);
+    teamService.createTeam(
+        "Team 3", "Description 3", wrestler2.getId(), wrestler3.getId(), null, null);
 
     // When - get first page
     Page<Team> page = teamService.getAllTeams(PageRequest.of(0, 2));
@@ -225,9 +235,12 @@ class TeamServiceTest extends ManagementIntegrationTest {
   @DisplayName("Should find teams by wrestler")
   void shouldFindTeamsByWrestler() {
     // Given - create teams
-    teamService.createTeam("Team 1", "Description 1", wrestler1.getId(), wrestler2.getId(), null);
-    teamService.createTeam("Team 2", "Description 2", wrestler1.getId(), wrestler3.getId(), null);
-    teamService.createTeam("Team 3", "Description 3", wrestler2.getId(), wrestler3.getId(), null);
+    teamService.createTeam(
+        "Team 1", "Description 1", wrestler1.getId(), wrestler2.getId(), null, null);
+    teamService.createTeam(
+        "Team 2", "Description 2", wrestler1.getId(), wrestler3.getId(), null, null);
+    teamService.createTeam(
+        "Team 3", "Description 3", wrestler2.getId(), wrestler3.getId(), null, null);
 
     // When - find teams for wrestler1
     List<Team> wrestler1Teams = teamService.getTeamsByWrestler(wrestler1);
@@ -250,10 +263,10 @@ class TeamServiceTest extends ManagementIntegrationTest {
     // Given - create teams with different statuses
     Optional<Team> team1 =
         teamService.createTeam(
-            "Active Team", "Description", wrestler1.getId(), wrestler2.getId(), null);
+            "Active Team", "Description", wrestler1.getId(), wrestler2.getId(), null, null);
     Optional<Team> team2 =
         teamService.createTeam(
-            "Team to Disband", "Description", wrestler1.getId(), wrestler3.getId(), null);
+            "Team to Disband", "Description", wrestler1.getId(), wrestler3.getId(), null, null);
 
     assertThat(team1).isPresent();
     assertThat(team2).isPresent();
@@ -274,10 +287,13 @@ class TeamServiceTest extends ManagementIntegrationTest {
   @DisplayName("Should count active teams correctly")
   void shouldCountActiveTeamsCorrectly() {
     // Given - create teams
-    teamService.createTeam("Team 1", "Description", wrestler1.getId(), wrestler2.getId(), null);
+    teamService.createTeam(
+        "Team 1", "Description", wrestler1.getId(), wrestler2.getId(), null, null);
     Optional<Team> team2 =
-        teamService.createTeam("Team 2", "Description", wrestler1.getId(), wrestler3.getId(), null);
-    teamService.createTeam("Team 3", "Description", wrestler2.getId(), wrestler3.getId(), null);
+        teamService.createTeam(
+            "Team 2", "Description", wrestler1.getId(), wrestler3.getId(), null, null);
+    teamService.createTeam(
+        "Team 3", "Description", wrestler2.getId(), wrestler3.getId(), null, null);
 
     // Disband one team
     assertThat(team2).isPresent();
@@ -296,7 +312,7 @@ class TeamServiceTest extends ManagementIntegrationTest {
     // Given - create team
     Optional<Team> created =
         teamService.createTeam(
-            "Test Team", "Description", wrestler1.getId(), wrestler2.getId(), null);
+            "Test Team", "Description", wrestler1.getId(), wrestler2.getId(), null, null);
     assertThat(created).isPresent();
 
     // When - find by wrestlers in different order

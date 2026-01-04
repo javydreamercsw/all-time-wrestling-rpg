@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -93,6 +94,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final RivalryService rivalryService;
   private final InjuryService injuryService;
   private final AccountService accountService;
+  private final NpcService npcService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -122,6 +124,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       RivalryService rivalryService,
       SeasonService seasonService,
       InjuryService injuryService,
+      NpcService npcService,
       @Qualifier("baseAccountService") AccountService accountService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
@@ -130,6 +133,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.multiWrestlerFeudService = multiWrestlerFeudService;
     this.rivalryService = rivalryService;
     this.injuryService = injuryService;
+    this.npcService = npcService;
     this.accountService = accountService;
 
     wrestlerName.setId("wrestler-name");
@@ -235,6 +239,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               wrestler,
               wrestlerService,
               injuryService,
+              npcService,
               this::updateView,
               true,
               securityUtils,

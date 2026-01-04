@@ -33,6 +33,8 @@ public class TeamDTO {
   private String wrestler2Name;
   private Long factionId;
   private String factionName;
+  private Long managerId;
+  private String managerName;
   private TeamStatus status;
   private Instant formedDate;
   private Instant disbandedDate;
@@ -68,6 +70,12 @@ public class TeamDTO {
     if (team.getFaction() != null) {
       dto.setFactionId(team.getFaction().getId());
       dto.setFactionName(team.getFaction().getName());
+    }
+
+    // Manager information
+    if (team.getManager() != null) {
+      dto.setManagerId(team.getManager().getId());
+      dto.setManagerName(team.getManager().getName());
     }
 
     // Computed fields

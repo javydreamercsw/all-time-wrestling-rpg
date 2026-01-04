@@ -19,9 +19,11 @@ package com.github.javydreamercsw.management.ui.view.faction;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -72,6 +74,7 @@ public class FactionListView extends Main {
 
   private final FactionService factionService;
   private final WrestlerService wrestlerService;
+  private final NpcService npcService;
   private final WrestlerRepository wrestlerRepository;
   private final SecurityUtils securityUtils;
   private Dialog editDialog;
@@ -84,10 +87,12 @@ public class FactionListView extends Main {
   public FactionListView(
       @NonNull FactionService factionService,
       @NonNull WrestlerService wrestlerService,
+      @NonNull NpcService npcService,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull SecurityUtils securityUtils) {
     this.factionService = factionService;
     this.wrestlerService = wrestlerService;
+    this.npcService = npcService;
     this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
 
@@ -143,6 +148,12 @@ public class FactionListView extends Main {
         .addColumn(
             faction -> faction.getLeader() != null ? faction.getLeader().getName() : "No Leader")
         .setHeader("Leader")
+        .setSortable(true);
+
+    factionGrid
+        .addColumn(
+            faction -> faction.getManager() != null ? faction.getManager().getName() : "No Manager")
+        .setHeader("Manager")
         .setSortable(true);
 
     // Members column - show wrestler names instead of count
@@ -243,6 +254,14 @@ public class FactionListView extends Main {
     editLeader.setId("edit-leader");
     editLeader.setItemLabelGenerator(Wrestler::getName);
 
+    ComboBox<Npc> editManager = new ComboBox<>("Manager");
+    editManager.setItems(
+        npcService.findAllByType("Manager").stream()
+            .sorted(Comparator.comparing(Npc::getName))
+            .collect(Collectors.toList()));
+    editManager.setId("edit-manager");
+    editManager.setItemLabelGenerator(Npc::getName);
+
     DatePicker editFormedDate = new DatePicker("Formed Date");
     editFormedDate.setId("edit-formed-date");
     DatePicker editDisbandedDate = new DatePicker("Disbanded Date");
@@ -250,7 +269,8 @@ public class FactionListView extends Main {
 
     // Form layout
     FormLayout formLayout = new FormLayout();
-    formLayout.add(editName, editLeader, editFormedDate, editDisbandedDate, editDescription);
+    formLayout.add(
+        editName, editLeader, editManager, editFormedDate, editDisbandedDate, editDescription);
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
     formLayout.setColspan(editDescription, 2);
@@ -278,6 +298,7 @@ public class FactionListView extends Main {
     binder.forField(editDescription).bind(Faction::getDescription, Faction::setDescription);
 
     binder.forField(editLeader).bind(Faction::getLeader, Faction::setLeader);
+    binder.forField(editManager).bind(Faction::getManager, Faction::setManager);
     binder
         .forField(editFormedDate)
         .bind(

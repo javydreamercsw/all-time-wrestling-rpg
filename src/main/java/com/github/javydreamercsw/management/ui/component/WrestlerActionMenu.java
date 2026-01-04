@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.injury.InjuryDialog;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerDialog;
@@ -51,6 +52,7 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull Wrestler wrestler,
       @NonNull WrestlerService wrestlerService,
       @NonNull InjuryService injuryService,
+      @NonNull NpcService npcService,
       @NonNull Runnable refreshProvider,
       boolean isProfileView,
       @NonNull SecurityUtils securityUtils,
@@ -76,7 +78,12 @@ public class WrestlerActionMenu extends MenuBar {
             e -> {
               WrestlerDialog dialog =
                   new WrestlerDialog(
-                      wrestlerService, accountService, wrestler, refreshProvider, securityUtils);
+                      wrestlerService,
+                      accountService,
+                      npcService,
+                      wrestler,
+                      refreshProvider,
+                      securityUtils);
               dialog.open();
             });
     editItem.addComponentAsFirst(new Icon(VaadinIcon.EDIT));
