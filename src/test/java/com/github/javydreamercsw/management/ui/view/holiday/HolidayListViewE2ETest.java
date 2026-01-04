@@ -192,12 +192,9 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
 
     wait.until(
         d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Updated Theme"));
-          } catch (Exception e) {
-            return false;
-          }
+          WebElement grid = d.findElement(By.id("holiday-grid"));
+          return grid.findElements(By.tagName("vaadin-grid-cell-content")).stream()
+              .anyMatch(it -> it.getText().equals("Updated Theme"));
         });
 
     assertTrue(

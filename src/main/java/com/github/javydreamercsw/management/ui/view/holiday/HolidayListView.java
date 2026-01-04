@@ -70,6 +70,7 @@ public class HolidayListView extends Main {
     this.holidayService = holidayService;
     this.securityUtils = securityUtils;
     this.grid = new Grid<>(Holiday.class, false);
+    grid.setId("holiday-grid");
     this.searchField = new TextField();
     this.createButton = new Button("Create Holiday", VaadinIcon.PLUS.create());
     createButton.setId("create-holiday-button");
