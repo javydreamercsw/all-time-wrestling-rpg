@@ -2,7 +2,7 @@ CREATE TABLE holiday (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     description VARCHAR(255) NOT NULL UNIQUE,
     theme VARCHAR(255) NOT NULL,
-    decorations VARCHAR(255),
+    decorations TEXT,
     day_of_month INT,
     holiday_month VARCHAR(255),
     day_of_week VARCHAR(255),
