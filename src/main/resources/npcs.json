@@ -1,5 +1,9 @@
 [ {
   "name": "Colonel Mustafa",
-  "description": "Manager of Sgt. Slaughter",
+  "description": "He was presented as a mysterious, powerful Iraqi officer who allied with Slaughter against American heroes.",
   "type": "Manager"
+}, {
+  "name": "Charles",
+  "description": "The mysterious owner of ATW.",
+  "type": "Owner"
 } ]
