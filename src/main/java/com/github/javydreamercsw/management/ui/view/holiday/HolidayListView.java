@@ -27,6 +27,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -93,18 +94,18 @@ public class HolidayListView extends Main {
 
     grid.addColumn(Holiday::getTheme).setHeader("Theme").setSortable(true).setFlexGrow(1);
 
-    grid.addColumn(
+    grid.addComponentColumn(
             holiday -> {
-              TextField decorations = new TextField();
+              Span decorations = new Span();
               if (holiday.getDecorations() != null && !holiday.getDecorations().trim().isEmpty()) {
                 String effect = holiday.getDecorations();
                 if (effect.length() > 50) {
                   effect = effect.substring(0, 47) + "...";
                 }
-                decorations.setValue(effect);
+                decorations.setText(effect);
                 decorations.setTitle(holiday.getDecorations()); // Full text on hover
               } else {
-                decorations.setValue("None");
+                decorations.setText("None");
                 decorations.addClassNames(LumoUtility.TextColor.SECONDARY);
               }
               return decorations;
@@ -194,10 +195,9 @@ public class HolidayListView extends Main {
                   .limit(limit);
             },
             query ->
-                (int)
-                    holidayService
-                        .findAll()
-                        .size())); // This count also needs adjustment for filtering/sorting
+                holidayService
+                    .findAll()
+                    .size())); // This count also needs adjustment for filtering/sorting
   }
 
   private void configureToolbar() {

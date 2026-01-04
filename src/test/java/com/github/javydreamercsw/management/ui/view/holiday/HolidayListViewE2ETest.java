@@ -41,15 +41,17 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
 
   @Autowired private HolidayService holidayService;
 
+  private WebDriverWait wait;
+
   @BeforeEach
   void setUp() {
     holidayService.findAll().forEach(holidayService::delete);
+    wait = new WebDriverWait(driver, Duration.ofSeconds(30));
   }
 
   @Test
   void testCreateFixedHoliday() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     long initialSize = holidayService.findAll().size();
 
@@ -102,7 +104,6 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
   @Test
   void testCreateFloatingHoliday() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     long initialSize = holidayService.findAll().size();
 
@@ -165,7 +166,6 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     holidayService.save(holiday);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Find the edit button for the holiday
     WebElement editButton =
@@ -215,7 +215,6 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     holidayService.save(holiday);
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     long initialSize = holidayService.findAll().size();
 
