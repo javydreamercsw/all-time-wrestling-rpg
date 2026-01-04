@@ -21,9 +21,11 @@ import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRe
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.npc.NpcType;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Main;
@@ -37,6 +39,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.stream.Stream;
 import lombok.NonNull;
 
 @Route("npc-list")
@@ -48,7 +51,7 @@ public class NpcListView extends Main {
   private final NpcService npcService;
 
   final TextField name;
-  final TextField npcType;
+  final ComboBox<NpcType> npcType;
   final Button createBtn;
   final Grid<Npc> npcGrid;
 
@@ -60,7 +63,9 @@ public class NpcListView extends Main {
     name.setAriaLabel("NPC Name");
     name.setMinWidth("15em");
 
-    npcType = new TextField();
+    npcType = new ComboBox<>();
+    npcType.setItems(NpcType.values());
+    npcType.setItemLabelGenerator(NpcType::getName);
     npcType.setPlaceholder("NPC Type");
     npcType.setAriaLabel("NPC Type");
     npcType.setMinWidth("10em");
@@ -78,7 +83,8 @@ public class NpcListView extends Main {
     }
 
     TextField nameField = new TextField();
-    TextField npcTypeField = new TextField();
+    ComboBox<String> npcTypeField = new ComboBox<>();
+    npcTypeField.setItems(Stream.of(NpcType.values()).map(NpcType::getName).toList());
 
     npcGrid.setItems(query -> npcService.findAll(toSpringPageRequest(query)).stream());
     npcGrid
@@ -155,9 +161,14 @@ public class NpcListView extends Main {
   }
 
   private void createNpc() {
+    if (name.getValue().isBlank() || npcType.getValue() == null) {
+      Notification.show("Name and type are required.", 3000, Notification.Position.BOTTOM_END)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+      return;
+    }
     Npc npc = new Npc();
     npc.setName(name.getValue());
-    npc.setNpcType(npcType.getValue());
+    npc.setNpcType(npcType.getValue().getName());
     npcService.save(npc);
     npcGrid.getDataProvider().refreshAll();
     name.clear();
