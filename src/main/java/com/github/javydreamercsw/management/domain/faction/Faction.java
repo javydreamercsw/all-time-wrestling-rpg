@@ -77,7 +77,7 @@ public class Faction extends AbstractEntity<Long> {
 
   @Column(name = "is_active", nullable = false)
   @Builder.Default
-  private Boolean isActive = true;
+  private boolean isActive = true;
 
   @Column(name = "formed_date", nullable = false)
   private Instant formedDate;

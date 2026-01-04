@@ -80,9 +80,9 @@ public class FactionNotionSyncService implements NotionSyncService {
                 Map<String, PageProperty> properties = new HashMap<>();
                 properties.put(
                     "Name", NotionPropertyBuilder.createRichTextProperty(entity.getName()));
-                if (entity.getIsActive() != null) {
+                if (entity.isActive()) {
                   properties.put(
-                      "Active", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
+                      "Active", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
                 }
                 if (entity.getLeader() != null && entity.getLeader().getExternalId() != null) {
                   properties.put(

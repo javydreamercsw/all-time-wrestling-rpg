@@ -1,35 +1,17 @@
-[
-  {
-    "name": "Desolation's Smile",
-    "leader": "Daemon",
-    "members": [
-      "Kamala",
-      "OMZ"
-    ]
-  },
-  {
-    "name": "Team USA",
-    "leader": "Kurt Angle",
-    "manager": "Colonel Mustafa",
-    "members": [
-      "Junkyard Dog",
-      "Sgt. Slaughter"
-    ]
-  },
-  {
-    "name": "Trail Blazers",
-    "leader": "Johnny All Time",
-    "members": [
-      "Rey Jaguar",
-      "Jax Felix"
-    ]
-  },
-  {
-    "name": "Calgary Collective",
-    "leader": "Brian Pillman",
-    "members": [
-      "The British Bulldog",
-      "Nick Aldis"
-    ]
-  }
-]
+[ {
+  "name": "Desolation's Smile",
+  "leader": "Daemon",
+  "members": [ "Daemon", "Kamala", "OMZ" ]
+}, {
+  "name": "Team USA",
+  "leader": "Kurt Angle",
+  "members": [ "Kurt Angle", "Junkyard Dog", "Sgt. Slaughter" ]
+}, {
+  "name": "Trail Blazers",
+  "leader": "Johnny All Time",
+  "members": [ "Johnny All Time", "Rey Jaguar", "Jax Felix" ]
+}, {
+  "name": "Calgary Collective",
+  "leader": "Brian Pillman",
+  "members": [ "Brian Pillman", "The British Bulldog", "Nick Aldis" ]
+} ]

@@ -95,12 +95,12 @@ class FactionFormValidationTest {
     Faction validFaction = Faction.builder().build();
     validFaction.setName("Valid Faction");
     validFaction.setDescription("A valid test faction");
-    validFaction.setIsActive(true);
+    validFaction.setActive(true);
     validFaction.setCreationDate(Instant.now());
 
     // When/Then - Valid data should not cause validation errors
     assertNotNull(validFaction.getName());
-    assertTrue(validFaction.getName().length() > 0);
+    assertFalse(validFaction.getName().isEmpty());
   }
 
   @Test
@@ -178,23 +178,23 @@ class FactionFormValidationTest {
     // Given - Active faction (no disbanded date)
     Faction activeFaction = Faction.builder().build();
     activeFaction.setName("Active Faction");
-    activeFaction.setIsActive(true);
+    activeFaction.setActive(true);
     activeFaction.setFormedDate(Instant.now().minusSeconds(365 * 24 * 60 * 60)); // 1 year ago
 
     // When/Then - Should be active
-    assertTrue(activeFaction.getIsActive());
+    assertTrue(activeFaction.isActive());
     assertNull(activeFaction.getDisbandedDate());
 
     // Given - Disbanded faction (has disbanded date)
     Faction disbandedFaction = Faction.builder().build();
     disbandedFaction.setName("Disbanded Faction");
-    disbandedFaction.setIsActive(false);
+    disbandedFaction.setActive(false);
     disbandedFaction.setFormedDate(Instant.now().minusSeconds(365 * 24 * 60 * 60)); // 1 year ago
     disbandedFaction.setDisbandedDate(
         Instant.now().minusSeconds(180 * 24 * 60 * 60)); // 6 months ago
 
     // When/Then - Should be disbanded
-    assertFalse(disbandedFaction.getIsActive());
+    assertFalse(disbandedFaction.isActive());
     assertNotNull(disbandedFaction.getDisbandedDate());
     assertTrue(disbandedFaction.getDisbandedDate().isAfter(disbandedFaction.getFormedDate()));
   }

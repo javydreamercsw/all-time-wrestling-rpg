@@ -60,14 +60,14 @@ class FactionCrudTest {
     Faction newFaction = Faction.builder().build();
     newFaction.setName("New Test Faction");
     newFaction.setDescription("A newly created faction");
-    newFaction.setIsActive(true);
+    newFaction.setActive(true);
     newFaction.setCreationDate(Instant.now());
 
     Faction savedFaction = Faction.builder().build();
     savedFaction.setId(99L);
     savedFaction.setName(newFaction.getName());
     savedFaction.setDescription(newFaction.getDescription());
-    savedFaction.setIsActive(newFaction.getIsActive());
+    savedFaction.setActive(newFaction.isActive());
     savedFaction.setCreationDate(newFaction.getCreationDate());
 
     when(factionService.save(any(Faction.class))).thenReturn(savedFaction);
@@ -79,7 +79,7 @@ class FactionCrudTest {
     assertNotNull(result);
     assertEquals(99L, result.getId());
     assertEquals("New Test Faction", result.getName());
-    assertTrue(result.getIsActive());
+    assertTrue(result.isActive());
     verify(factionService).save(newFaction);
   }
 

@@ -29,6 +29,8 @@ import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -522,11 +524,13 @@ public class TeamSyncService extends BaseSyncService {
         }
 
         if (dto.getFormedDate() != null) {
-          existingTeam.setFormedDate(dto.getFormedDate());
+          existingTeam.setFormedDate(
+              LocalDate.parse(dto.getFormedDate()).atStartOfDay(ZoneOffset.UTC).toInstant());
         }
 
         if (dto.getDisbandedDate() != null) {
-          existingTeam.setDisbandedDate(dto.getDisbandedDate());
+          existingTeam.setDisbandedDate(
+              LocalDate.parse(dto.getDisbandedDate()).atStartOfDay(ZoneOffset.UTC).toInstant());
         }
 
         // Find and set faction if specified
@@ -584,11 +588,13 @@ public class TeamSyncService extends BaseSyncService {
           }
 
           if (dto.getFormedDate() != null) {
-            newTeam.setFormedDate(dto.getFormedDate());
+            newTeam.setFormedDate(
+                LocalDate.parse(dto.getFormedDate()).atStartOfDay(ZoneOffset.UTC).toInstant());
           }
 
           if (dto.getDisbandedDate() != null) {
-            newTeam.setDisbandedDate(dto.getDisbandedDate());
+            newTeam.setDisbandedDate(
+                LocalDate.parse(dto.getDisbandedDate()).atStartOfDay(ZoneOffset.UTC).toInstant());
           }
 
           // Save additional properties

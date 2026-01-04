@@ -19,10 +19,8 @@ package com.github.javydreamercsw.management.dto;
 import lombok.Data;
 
 @Data
-public class TeamDTO {
+public class NpcDTO {
   private String name;
   private String description;
-  private String wrestler1;
-  private String wrestler2;
-  private String manager;
+  private String type;
 }

@@ -606,6 +606,5 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.elementToBeClickable(By.id("main-event-checkbox")));
     Assertions.assertNotNull(mainEventCheckbox);
     clickElement(mainEventCheckbox);
-    scrollIntoView(mainEventCheckbox);
   }
 }

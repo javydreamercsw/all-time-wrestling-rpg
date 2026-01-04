@@ -300,7 +300,7 @@ class FactionErrorHandlingTest {
       Faction faction = Faction.builder().build();
       faction.setId((long) i);
       faction.setName("Faction " + i);
-      faction.setIsActive(i % 2 == 0);
+      faction.setActive(i % 2 == 0);
       faction.setCreationDate(Instant.now());
       largeFactionList.add(faction);
 

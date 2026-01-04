@@ -207,7 +207,7 @@ class FactionListViewTest {
     evolution.setId(1L);
     evolution.setName("Evolution");
     evolution.setDescription("A dominant faction in WWE");
-    evolution.setIsActive(false);
+    evolution.setActive(false);
     evolution.setCreationDate(Instant.now());
     evolution.setFormedDate(Instant.now().minusSeconds(365 * 24 * 60 * 60)); // 1 year ago
     evolution.setDisbandedDate(Instant.now().minusSeconds(180 * 24 * 60 * 60)); // 6 months ago
@@ -223,7 +223,7 @@ class FactionListViewTest {
     dx.setId(2L);
     dx.setName("D-Generation X");
     dx.setDescription("Rebellious faction");
-    dx.setIsActive(true);
+    dx.setActive(true);
     dx.setCreationDate(Instant.now());
     dx.setFormedDate(Instant.now().minusSeconds(200 * 24 * 60 * 60)); // ~7 months ago
 

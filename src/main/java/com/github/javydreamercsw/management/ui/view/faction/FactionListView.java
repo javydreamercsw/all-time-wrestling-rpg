@@ -172,7 +172,7 @@ public class FactionListView extends Main {
         .setFlexGrow(2); // Give more space for member names
 
     factionGrid
-        .addColumn(faction -> faction.getIsActive() ? "Active" : "Disbanded")
+        .addColumn(faction -> faction.isActive() ? "Active" : "Disbanded")
         .setHeader("Status")
         .setSortable(true);
 
@@ -323,7 +323,7 @@ public class FactionListView extends Main {
 
   private void openCreateDialog() {
     editingFaction = Faction.builder().build();
-    editingFaction.setIsActive(true); // Default to active
+    editingFaction.setActive(true); // Default to active
     editDialog.setHeaderTitle("Create Faction");
     binder.readBean(editingFaction);
     editDialog.open();
@@ -341,7 +341,7 @@ public class FactionListView extends Main {
       binder.writeBean(editingFaction);
 
       // Update status based on disbanded date
-      editingFaction.setIsActive(editingFaction.getDisbandedDate() == null);
+      editingFaction.setActive(editingFaction.getDisbandedDate() == null);
 
       factionService.save(editingFaction);
       refreshGrid();
@@ -419,7 +419,7 @@ public class FactionListView extends Main {
     Div basicInfo = new Div();
     basicInfo.add(new H3("Basic Information"));
     basicInfo.add(new Div("Name: " + loadedFaction.getName()));
-    basicInfo.add(new Div("Status: " + (loadedFaction.getIsActive() ? "Active" : "Disbanded")));
+    basicInfo.add(new Div("Status: " + (loadedFaction.isActive() ? "Active" : "Disbanded")));
     basicInfo.add(
         new Div(
             "Leader: "

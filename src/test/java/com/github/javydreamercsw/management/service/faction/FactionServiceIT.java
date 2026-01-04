@@ -211,7 +211,7 @@ class FactionServiceIT extends ManagementIntegrationTest {
   void testAdminCanDisbandFaction() {
     Optional<Faction> disbandedFaction = factionService.disbandFaction(faction.getId(), "Test");
     Assertions.assertTrue(disbandedFaction.isPresent());
-    Assertions.assertFalse(disbandedFaction.get().getIsActive());
+    Assertions.assertFalse(disbandedFaction.get().isActive());
   }
 
   @Test
