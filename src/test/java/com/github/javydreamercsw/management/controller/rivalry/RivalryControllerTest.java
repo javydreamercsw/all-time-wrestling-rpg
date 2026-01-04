@@ -26,8 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
-import com.github.javydreamercsw.management.dto.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.mapper.RivalryMapper;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import java.time.Instant;
