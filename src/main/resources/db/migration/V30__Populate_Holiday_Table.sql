@@ -1,15 +1,20 @@
-INSERT INTO holiday (description, theme, day_of_month, holiday_month, type, creation_date) VALUES
-('New Year''s Day', 'New Year''s Day', 1, 'JANUARY', 'FIXED', NOW()),
-('Valentine''s Day', 'Valentine''s Day', 14, 'FEBRUARY', 'FIXED', NOW()),
-('St. Patrick''s Day', 'St. Patrick''s Day', 17, 'MARCH', 'FIXED', NOW()),
-('Independence Day', 'Independence Day', 4, 'JULY', 'FIXED', NOW()),
-('Halloween', 'Halloween', 31, 'OCTOBER', 'FIXED', NOW()),
-('Veterans Day', 'Veterans Day', 11, 'NOVEMBER', 'FIXED', NOW()),
-('Christmas Day', 'Christmas Day', 25, 'DECEMBER', 'FIXED', NOW());
+INSERT INTO holiday (description, theme, decorations, day_of_month, holiday_month, type, creation_date) VALUES
+('New Year''s Day', 'New Year''s Day', 'New Year’s Day decorations are typically clean, festive, and hopeful in tone. They often feature metallic accents like gold, silver, and champagne, paired with white or soft neutrals to suggest a fresh start. Banners and signage display the new year, while streamers, balloons, and confetti add energy without feeling heavy. Clocks, stars, and fireworks motifs symbolize time, renewal, and celebration. Table settings may include sparkling centerpieces, candles, and subtle glitter, creating a bright, optimistic atmosphere that feels celebratory but calm—marking both reflection and new beginnings.', 1, 'JANUARY', 'FIXED', NOW()),
+('Valentine''s Day', 'Valentine''s Day', 'Valentine’s Day decorations create a warm, romantic atmosphere centered on **reds, pinks, and soft whites**. Common elements include **hearts, roses, and love-themed banners**, often accented with **lace, ribbons, and soft lighting** like candles or string lights. **Floral arrangements, plush accents, and subtle metallic touches** add elegance, while table settings may feature **romantic centerpieces and themed place cards**, setting a cozy, intimate mood focused on love and affection.
+', 14, 'FEBRUARY', 'FIXED', NOW()),
+('St. Patrick''s Day', 'St. Patrick''s Day','St. Patrick’s Day decorations are bright and festive, dominated by **shades of green** with accents of **gold and white**. Common elements include **shamrocks, leprechauns, rainbows, and pots of gold**, often paired with **Irish flags or Celtic patterns**. **Banners, garlands, and themed table décor** add a playful touch, while touches of **gold foil or glitter** bring a sense of luck and celebration, creating a cheerful, lively atmosphere rooted in Irish tradition.
+', 17, 'MARCH', 'FIXED', NOW()),
+('Independence Day', 'Independence Day','USA Independence Day decorations are bold and patriotic, featuring **red, white, and blue** throughout. Common elements include **American flags, stars, stripes, and bunting**, often paired with **fireworks imagery**. **Banners, balloons, and table décor** showcase patriotic patterns, while **rustic or outdoor accents** like lanterns and string lights enhance the celebratory feel. The overall atmosphere is energetic and proud, reflecting national unity and summer celebration.
+', 4, 'JULY', 'FIXED', NOW()),
+('Halloween', 'Halloween','Halloween decorations create a spooky yet playful atmosphere using **black, orange, and purple** as the primary colors. Common elements include **pumpkins, jack-o’-lanterns, ghosts, bats, spiders, and cobwebs**, often paired with **dim lighting, candles, or colored lights**. **Haunted house props, eerie silhouettes, and fog effects** add drama, while whimsical touches keep the mood fun and festive rather than frightening.
+', 31, 'OCTOBER', 'FIXED', NOW()),
+('Christmas Day', 'Christmas Day','Christmas Day decorations create a warm, joyful atmosphere centered on **reds, greens, golds, and whites**. Common elements include **Christmas trees adorned with ornaments, lights, and garlands**, along with **wreaths, stockings, and nativity scenes**. **Twinkling lights, candles, and festive table settings** add warmth and sparkle, while touches of **pine, holly, and ribbon** evoke tradition, togetherness, and holiday cheer.
+', 25, 'DECEMBER', 'FIXED', NOW());
 
-INSERT INTO holiday (description, theme, day_of_week, week_of_month, holiday_month, type, creation_date) VALUES
-('Martin Luther King Jr. Day', 'Martin Luther King Jr. Day', 'MONDAY', 3, 'JANUARY', 'FLOATING', NOW()),
-('Presidents'' Day', 'Presidents'' Day', 'MONDAY', 3, 'FEBRUARY', 'FLOATING', NOW()),
-('Memorial Day', 'Memorial Day', 'MONDAY', -1, 'MAY', 'FLOATING', NOW()),
-('Labor Day', 'Labor Day', 'MONDAY', 1, 'SEPTEMBER', 'FLOATING', NOW()),
-('Thanksgiving', 'Thanksgiving', 'THURSDAY', 4, 'NOVEMBER', 'FLOATING', NOW());
+INSERT INTO holiday (description, theme, decorations, day_of_week, week_of_month, holiday_month, type, creation_date) VALUES
+('Memorial Day', 'Memorial Day','Memorial Day decorations are respectful and patriotic, featuring **red, white, and blue** with a more subdued tone than other holidays. Common elements include **American flags, banners, and bunting**, often paired with **stars, ribbons, and wreaths**. **Floral arrangements**, especially red and white flowers, and **simple table décor** reflect remembrance and honor, creating an atmosphere that balances national pride with solemn respect.
+', 'MONDAY', -1, 'MAY', 'FLOATING', NOW()),
+('Labor Day', 'Labor Day','Labor Day decorations are casual and patriotic, reflecting both national pride and the spirit of the working community. They often feature **red, white, and blue** with simple, relaxed elements like **flags, banners, and bunting**. **Outdoor-friendly décor**, such as table coverings, string lights, and picnic accents, is common, creating a laid-back, celebratory atmosphere that marks the end of summer and honors workers’ contributions.
+', 'MONDAY', 1, 'SEPTEMBER', 'FLOATING', NOW()),
+('Thanksgiving', 'Thanksgiving','Thanksgiving decorations create a warm, welcoming atmosphere inspired by the **fall harvest**. They feature **earthy tones** like orange, brown, gold, and deep red, with elements such as **pumpkins, gourds, autumn leaves, and cornucopias**. **Rustic table settings, candles, and natural textures** like wood and burlap add coziness, emphasizing gratitude, abundance, and togetherness.
+', 'THURSDAY', 4, 'NOVEMBER', 'FLOATING', NOW());

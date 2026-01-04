@@ -34,6 +34,7 @@ import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.shared.Registration;
 import java.time.DayOfWeek;
 import java.time.Month;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -138,16 +139,13 @@ public class HolidayFormDialog extends Div {
   }
 
   // Events
+  @Getter
   public abstract static class HolidayFormEvent extends ComponentEvent<HolidayFormDialog> {
-    private Holiday holiday;
+    private final Holiday holiday;
 
     protected HolidayFormEvent(HolidayFormDialog source, Holiday holiday) {
       super(source, false);
       this.holiday = holiday;
-    }
-
-    public Holiday getHoliday() {
-      return holiday;
     }
   }
 
