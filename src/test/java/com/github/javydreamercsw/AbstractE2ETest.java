@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -96,6 +97,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     options.addArguments("--reduce-security-for-testing");
 
     driver = new ChromeDriver(options);
+    login();
+  }
+
+  protected void login() {
     login(getUsername(), getPassword());
   }
 
@@ -427,5 +432,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     waitForVaadinElement(driver, By.id("logout-button"));
     WebElement logoutButton = driver.findElement(By.id("logout-button"));
     clickElement(logoutButton);
+  }
+
+  protected void clearField(@NonNull WebElement field) {
+    // Use keyboard shortcuts to clear the field, as .clear() is unreliable with Vaadin
+    String selectAll = Keys.chord(Keys.COMMAND, "a");
+    field.sendKeys(selectAll);
+    field.sendKeys(Keys.BACK_SPACE);
   }
 }

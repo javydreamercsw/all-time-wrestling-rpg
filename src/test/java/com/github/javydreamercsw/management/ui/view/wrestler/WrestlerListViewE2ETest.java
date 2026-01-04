@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
@@ -43,11 +44,15 @@ import org.springframework.transaction.annotation.Transactional;
 class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Autowired private InjuryService injuryService;
+  @Autowired private InjuryRepository injuryRepository;
 
   @BeforeEach
   void setUp() {
+    injuryRepository.deleteAll();
     segmentRepository.deleteAll();
     wrestlerRepository.deleteAll();
+    wrestlerService.findAll().forEach(wrestler -> wrestlerService.delete(wrestler));
+
     // Create some wrestlers for the tests
     for (int i = 0; i < 4; i++) {
       wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler " + i));
@@ -106,7 +111,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testEditWrestler() {
     // Create a wrestler to edit
-    Wrestler wrestler = wrestlerRepository.save(createTestWrestler("Wrestler to Edit"));
+    Wrestler wrestler = wrestlerService.save(createTestWrestler("Edit"));
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     // Find the menu for the wrestler and click it
@@ -152,21 +157,20 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Wrestler to Edit Updated"));
+                .anyMatch(it -> it.getText().equals("Edit Updated"));
           } catch (Exception e) {
             return false;
           }
         });
 
     assertTrue(
-        wrestlerRepository.findAll().stream()
-            .anyMatch(w -> w.getName().equals("Wrestler to Edit Updated")));
+        wrestlerRepository.findAll().stream().anyMatch(w -> w.getName().equals("Edit Updated")));
   }
 
   @Test
   void testDeleteWrestler() {
     // Create a wrestler to delete
-    Wrestler wrestler = wrestlerRepository.save(createTestWrestler("Wrestler to Delete"));
+    Wrestler wrestler = wrestlerService.save(createTestWrestler("Delete"));
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -195,7 +199,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .noneMatch(it -> it.getText().equals("Wrestler to Delete"));
+                .noneMatch(it -> it.getText().equals("Delete"));
           } catch (Exception e) {
             return false;
           }
@@ -206,8 +210,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testAddBump() {
     // Create a wrestler
-    Wrestler wrestler =
-        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler for Bump"));
+    Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Bump"));
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
@@ -246,8 +249,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testHealBump() {
     // Create a wrestler with a bump
-    Wrestler wrestler =
-        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler to Heal Bump"));
+    Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Heal Bump"));
     wrestler.addBump();
     wrestlerRepository.save(wrestler);
     driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
@@ -287,8 +289,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @Test
   void testManageInjuries() {
     // Create a wrestler
-    Wrestler wrestler =
-        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler for Injuries"));
+    Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Injuries"));
     // Create a couple of injuries for the wrestler
     injuryService.createInjury(
         wrestler.getId(),

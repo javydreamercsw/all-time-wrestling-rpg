@@ -105,6 +105,9 @@ public class MenuService {
     configuration.addChild(
         new MenuItem(
             "Season Settings", VaadinIcon.CALENDAR_CLOCK, "season/settings", RoleName.ADMIN));
+    configuration.addChild(
+        new MenuItem(
+            "Holiday Settings", VaadinIcon.CALENDAR_BRIEFCASE, "holidays", RoleName.ADMIN));
 
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);

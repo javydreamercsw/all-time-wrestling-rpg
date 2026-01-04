@@ -24,6 +24,8 @@ import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 import lombok.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -52,7 +54,7 @@ public class TestUtils {
   public static Wrestler createWrestler(@NonNull String name) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
-    wrestler.setExternalId(java.util.UUID.randomUUID().toString());
+    wrestler.setExternalId(UUID.randomUUID().toString());
     wrestler.setDescription("Test Wrestler");
     wrestler.setDeckSize(15);
     wrestler.setStartingHealth(15);
@@ -62,10 +64,11 @@ public class TestUtils {
     wrestler.setTier(WrestlerTier.ROOKIE);
     wrestler.setCreationDate(Instant.now());
     wrestler.setFans(10_00L); // Default fan count
+    wrestler.setActive(true);
     return wrestler;
   }
 
-  public static void runAsAdmin(Runnable runnable) {
+  public static void runAsAdmin(@NonNull Runnable runnable) {
     // Save the current security context
     SecurityContext originalContext = SecurityContextHolder.getContext();
 
@@ -93,7 +96,7 @@ public class TestUtils {
     }
   }
 
-  public static <T> T runAsAdmin(java.util.concurrent.Callable<T> callable) {
+  public static <T> T runAsAdmin(@NonNull Callable<T> callable) {
     SecurityContext originalContext = SecurityContextHolder.getContext();
     try {
       Account account = new Account("admin", "admin", "admin@localhost.com");

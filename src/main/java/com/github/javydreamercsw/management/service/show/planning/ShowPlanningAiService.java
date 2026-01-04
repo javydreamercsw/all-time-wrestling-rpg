@@ -21,11 +21,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.AiGeneratedSegmentDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
-import com.github.javydreamercsw.management.util.HolidayUtils;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -44,6 +44,7 @@ public class ShowPlanningAiService {
   private final ObjectMapper objectMapper;
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
+  private final HolidayService holidayService;
 
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public ProposedShow planShow(@NonNull ShowPlanningContextDTO context) {
@@ -130,7 +131,7 @@ public class ShowPlanningAiService {
     }
 
     if (context.getShowDate() != null) {
-      Optional<String> holidayTheme = HolidayUtils.getHolidayTheme(context.getShowDate());
+      Optional<String> holidayTheme = holidayService.getHolidayTheme(context.getShowDate());
       holidayTheme.ifPresent(
           theme ->
               prompt
