@@ -49,14 +49,9 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
   @BeforeEach
   void setUp() {
     injuryRepository.deleteAll();
-    wrestlerRepository.deleteAll();
     segmentRepository.deleteAll();
-    wrestlerService
-        .findAll()
-        .forEach(
-            wrestler -> {
-              wrestlerService.delete(wrestler);
-            });
+    wrestlerRepository.deleteAll();
+    wrestlerService.findAll().forEach(wrestler -> wrestlerService.delete(wrestler));
 
     // Create some wrestlers for the tests
     for (int i = 0; i < 4; i++) {
