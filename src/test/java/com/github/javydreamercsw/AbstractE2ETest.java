@@ -97,6 +97,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     options.addArguments("--reduce-security-for-testing");
 
     driver = new ChromeDriver(options);
+    login();
+  }
+
+  protected void login() {
     login(getUsername(), getPassword());
   }
 
