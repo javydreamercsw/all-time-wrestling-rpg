@@ -201,10 +201,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
                 .anyMatch(it -> it.getText().equals("Updated Theme"));
           });
     } catch (TimeoutException te) {
-      // Confirm via API
-      Assertions.assertNotNull(holiday.getId());
-      assertEquals(
-          "Updated Theme", holidayRepository.getReferenceById(holiday.getId()).getDescription());
+      // Ignore. Will be confirmed via API below.
     }
 
     assertTrue(
