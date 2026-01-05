@@ -86,6 +86,8 @@ public class TeamsView extends VerticalLayout {
 
     grid.addColumn(TeamDTO::getFactionName).setHeader("Faction").setSortable(true).setFlexGrow(1);
 
+    grid.addColumn(TeamDTO::getManagerName).setHeader("Manager").setSortable(true).setFlexGrow(1);
+
     grid.addColumn(dto -> dto.getStatus().getDisplayName())
         .setHeader("Status")
         .setSortable(true)

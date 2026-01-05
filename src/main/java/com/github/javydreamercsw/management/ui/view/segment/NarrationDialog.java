@@ -227,7 +227,6 @@ public class NarrationDialog extends Dialog {
       narrationDisplay.setText(segment.getNarration());
       saveButton.setEnabled(true);
     }
-
     for (Wrestler wrestler : segment.getWrestlers()) {
       addTeamSelector(new WrestlerDTO(wrestler));
     }
@@ -459,19 +458,31 @@ public class NarrationDialog extends Dialog {
     return context;
   }
 
-  private List<SegmentNarrationService.WrestlerContext> buildWrestlerContexts() {
+  protected List<SegmentNarrationService.WrestlerContext> buildWrestlerContexts() {
+
     List<SegmentNarrationService.WrestlerContext> wrestlerContexts = new ArrayList<>();
+
     for (int i = 0; i < teamsLayout.getComponentCount(); i++) {
+
       HorizontalLayout teamSelector = (HorizontalLayout) teamsLayout.getComponentAt(i);
+
       MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
           (MultiSelectComboBox<WrestlerDTO>) teamSelector.getComponentAt(0);
       for (WrestlerDTO wrestler : wrestlersCombo.getValue()) {
         SegmentNarrationService.WrestlerContext wc = new SegmentNarrationService.WrestlerContext();
         wc.setName(wrestler.getName());
         wc.setDescription(wrestler.getDescription());
+        wrestlerService
+            .findByName(wrestler.getName())
+            .ifPresent(
+                w -> {
+                  if (w.getManager() != null) {
+                    wc.setManagerName(w.getManager().getName());
+                  }
+                });
         wc.setTeam("Team " + (i + 1));
         wc.setGender(wrestler.getGender());
-        wc.setTier(wrestler.getTier());
+        wc.setTier(wrestler.getTier().name());
         wc.setMoveSet(wrestler.getMoveSet());
         List<String> feuds = new ArrayList<>();
         wrestlerService
@@ -565,7 +576,7 @@ public class NarrationDialog extends Dialog {
       wc.setDescription(wrestler.getDescription());
       wc.setTeam("Team " + (wrestlerContexts.size() + 1));
       wc.setGender(wrestler.getGender());
-      wc.setTier(wrestler.getTier());
+      wc.setTier(wrestler.getTier().name());
       wc.setMoveSet(wrestler.getMoveSet());
       List<String> feuds = new ArrayList<>();
       wrestlerService

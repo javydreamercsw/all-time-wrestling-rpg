@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,21 +14,13 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.dto.rivalry;
+package com.github.javydreamercsw.management.dto;
 
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
-import java.io.Serializable;
-import java.time.Instant;
 import lombok.Data;
 
 @Data
-public class RivalryDTO implements Serializable {
-  private Long id;
-  private WrestlerDTO wrestler1;
-  private WrestlerDTO wrestler2;
-  private int heat;
-  private Boolean isActive;
-  private String storylineNotes;
-  private Instant startedDate;
-  private Instant endedDate;
+public class NpcDTO {
+  private String name;
+  private String description;
+  private String type;
 }

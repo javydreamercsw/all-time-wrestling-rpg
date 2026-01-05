@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
 import com.vaadin.flow.component.button.Button;
@@ -52,6 +53,7 @@ public class WrestlerListView extends Main {
 
   private final WrestlerService wrestlerService;
   private final InjuryService injuryService;
+  private final NpcService npcService;
   private final WrestlerRepository wrestlerRepository;
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
@@ -60,11 +62,13 @@ public class WrestlerListView extends Main {
   public WrestlerListView(
       @NonNull WrestlerService wrestlerService,
       @NonNull InjuryService injuryService,
+      @NonNull NpcService npcService,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull SecurityUtils securityUtils) {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
+    this.npcService = npcService;
     this.wrestlerRepository = wrestlerRepository;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
@@ -127,6 +131,7 @@ public class WrestlerListView extends Main {
                       wrestler,
                       wrestlerService,
                       injuryService,
+                      npcService,
                       this::reloadGrid,
                       false,
                       securityUtils,
@@ -163,7 +168,7 @@ public class WrestlerListView extends Main {
             e -> {
               WrestlerDialog dialog =
                   new WrestlerDialog(
-                      wrestlerService, accountService, this::reloadGrid, securityUtils);
+                      wrestlerService, accountService, npcService, this::reloadGrid, securityUtils);
               dialog.open();
             });
     button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);

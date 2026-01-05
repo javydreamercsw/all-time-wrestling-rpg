@@ -21,7 +21,9 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -31,9 +33,9 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
-import com.vaadin.flow.data.converter.StringToIntegerConverter;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -41,6 +43,7 @@ public class WrestlerDialog extends Dialog {
 
   private final WrestlerService wrestlerService;
   private final AccountService accountService;
+  private final NpcService npcService;
   private final Wrestler wrestler;
   private final Binder<Wrestler> binder = new Binder<>(Wrestler.class);
   private final SecurityUtils securityUtils;
@@ -48,9 +51,16 @@ public class WrestlerDialog extends Dialog {
   public WrestlerDialog(
       @NonNull WrestlerService wrestlerService,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
+      @NonNull NpcService npcService,
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
-    this(wrestlerService, accountService, createDefaultWrestler(), onSave, securityUtils);
+    this(
+        wrestlerService,
+        accountService,
+        npcService,
+        createDefaultWrestler(),
+        onSave,
+        securityUtils);
     setHeaderTitle("Create Wrestler");
   }
 
@@ -75,11 +85,13 @@ public class WrestlerDialog extends Dialog {
   public WrestlerDialog(
       @NonNull WrestlerService wrestlerService,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
+      @NonNull NpcService npcService,
       @NonNull Wrestler wrestler,
       @NonNull Runnable onSave,
       @NonNull SecurityUtils securityUtils) {
     this.wrestlerService = wrestlerService;
     this.accountService = accountService;
+    this.npcService = npcService;
     this.wrestler = wrestler;
     this.securityUtils = securityUtils;
 
@@ -95,25 +107,35 @@ public class WrestlerDialog extends Dialog {
     genderField.setId("wrestler-dialog-gender-field");
     genderField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
-    TextField deckSizeField = new TextField("Deck Size");
+    ComboBox<Npc> managerField = new ComboBox<>("Manager");
+    managerField.setItems(npcService.findAllByType("Manager"));
+    managerField.setItemLabelGenerator(Npc::getName);
+    managerField.setId("wrestler-dialog-manager-field");
+    managerField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+
+    IntegerField deckSizeField = new IntegerField("Deck Size");
     deckSizeField.setId("wrestler-dialog-deck-size-field");
     deckSizeField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
-    TextField startingHealthField = new TextField("Starting Health");
+    IntegerField startingHealthField = new IntegerField("Starting Health");
     startingHealthField.setId("wrestler-dialog-starting-health-field");
     startingHealthField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
-    TextField lowHealthField = new TextField("Low Health");
+    IntegerField lowHealthField = new IntegerField("Low Health");
     lowHealthField.setId("wrestler-dialog-low-health-field");
     lowHealthField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
-    TextField startingStaminaField = new TextField("Starting Stamina");
+    IntegerField startingStaminaField = new IntegerField("Starting Stamina");
     startingStaminaField.setId("wrestler-dialog-starting-stamina-field");
     startingStaminaField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
-    TextField lowStaminaField = new TextField("Low Stamina");
+    IntegerField lowStaminaField = new IntegerField("Low Stamina");
     lowStaminaField.setId("wrestler-dialog-low-stamina-field");
     lowStaminaField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+
+    TextField descriptionField = new TextField("Description");
+    descriptionField.setId("wrestler-dialog-description-field");
+    descriptionField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
     TextField imageUrlField = new TextField("Image URL");
     imageUrlField.setId("wrestler-dialog-image-url-field");
@@ -152,11 +174,13 @@ public class WrestlerDialog extends Dialog {
     formLayout.add(
         nameField,
         genderField,
+        managerField,
         deckSizeField,
         startingHealthField,
         lowHealthField,
         startingStaminaField,
         lowStaminaField,
+        descriptionField,
         imageUrlField,
         isPlayerField,
         activeField,
@@ -164,26 +188,18 @@ public class WrestlerDialog extends Dialog {
 
     binder.forField(nameField).bind(Wrestler::getName, Wrestler::setName);
     binder.forField(genderField).bind(Wrestler::getGender, Wrestler::setGender);
-    binder
-        .forField(deckSizeField)
-        .withConverter(new StringToIntegerConverter(0, "Must be a number"))
-        .bind(Wrestler::getDeckSize, Wrestler::setDeckSize);
+    binder.forField(managerField).bind(Wrestler::getManager, Wrestler::setManager);
+    binder.forField(imageUrlField).bind(Wrestler::getImageUrl, Wrestler::setImageUrl);
+    binder.forField(deckSizeField).bind(Wrestler::getDeckSize, Wrestler::setDeckSize);
     binder
         .forField(startingHealthField)
-        .withConverter(new StringToIntegerConverter(0, "Must be a number"))
         .bind(Wrestler::getStartingHealth, Wrestler::setStartingHealth);
-    binder
-        .forField(lowHealthField)
-        .withConverter(new StringToIntegerConverter(0, "Must be a number"))
-        .bind(Wrestler::getLowHealth, Wrestler::setLowHealth);
+    binder.forField(lowHealthField).bind(Wrestler::getLowHealth, Wrestler::setLowHealth);
     binder
         .forField(startingStaminaField)
-        .withConverter(new StringToIntegerConverter(0, "Must be a number"))
         .bind(Wrestler::getStartingStamina, Wrestler::setStartingStamina);
-    binder
-        .forField(lowStaminaField)
-        .withConverter(new StringToIntegerConverter(0, "Must be a number"))
-        .bind(Wrestler::getLowStamina, Wrestler::setLowStamina);
+    binder.forField(lowStaminaField).bind(Wrestler::getLowStamina, Wrestler::setLowStamina);
+    binder.forField(descriptionField).bind(Wrestler::getDescription, Wrestler::setDescription);
     binder.forField(imageUrlField).bind(Wrestler::getImageUrl, Wrestler::setImageUrl);
     binder.forField(isPlayerField).bind(Wrestler::getIsPlayer, Wrestler::setIsPlayer);
     binder.forField(activeField).bind(Wrestler::getActive, Wrestler::setActive);

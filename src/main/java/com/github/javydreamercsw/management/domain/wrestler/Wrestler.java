@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import jakarta.persistence.*;
@@ -116,9 +117,14 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   private String description;
 
   @Column(name = "image_url")
-  @Size(max = 255) private String imageUrl;
+  private String imageUrl;
 
   // ==================== ATW RPG RELATIONSHIPS ====================
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "manager_id")
+  @JsonIgnore
+  private Npc manager;
+
   @OneToOne
   @JoinColumn(name = "account_id")
   private Account account;

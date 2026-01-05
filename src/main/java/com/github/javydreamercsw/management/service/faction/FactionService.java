@@ -128,7 +128,7 @@ public class FactionService {
     Faction faction = Faction.builder().build();
     faction.setName(name);
     faction.setDescription(description);
-    faction.setIsActive(true);
+    faction.setActive(true);
     faction.setFormedDate(clock.instant());
     faction.setCreationDate(clock.instant());
 
@@ -165,7 +165,7 @@ public class FactionService {
     Faction faction = factionOpt.get();
     Wrestler wrestler = wrestlerOpt.get();
 
-    if (!faction.getIsActive()) {
+    if (!faction.isActive()) {
       log.warn("Cannot add member to inactive faction: {}", faction.getName());
       return Optional.empty();
     }
@@ -276,7 +276,7 @@ public class FactionService {
 
     Faction faction = factionOpt.get();
 
-    if (!faction.getIsActive()) {
+    if (!faction.isActive()) {
       log.warn("Faction {} is already disbanded", faction.getName());
       return Optional.of(faction);
     }
@@ -343,7 +343,7 @@ public class FactionService {
     Faction faction2 = faction2Opt.get();
 
     // Both factions must be active
-    if (!faction1.getIsActive() || !faction2.getIsActive()) {
+    if (!faction1.isActive() || !faction2.isActive()) {
       return false;
     }
 

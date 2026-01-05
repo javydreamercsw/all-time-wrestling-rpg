@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,15 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.domain.wrestler;
+package com.github.javydreamercsw.management.dto;
 
-// This file is intentionally left empty to force migration to the new package.
-// Please update your imports to com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO
+import lombok.Data;
+
+@Data
+public class TeamImportDTO {
+  private String name;
+  private String description;
+  private String wrestler1;
+  private String wrestler2;
+  private String manager;
+}

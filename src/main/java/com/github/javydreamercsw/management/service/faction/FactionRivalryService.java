@@ -331,7 +331,7 @@ public class FactionRivalryService {
   /** Check if two factions can have a rivalry. */
   private boolean canHaveRivalry(Faction faction1, Faction faction2) {
     // Both factions must be active
-    if (!faction1.getIsActive() || !faction2.getIsActive()) {
+    if (!faction1.isActive() || !faction2.isActive()) {
       return false;
     }
 

@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.npc;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +46,11 @@ public class NpcService {
   @PreAuthorize("isAuthenticated()")
   public List<Npc> findAllByType(String type) {
     return npcRepository.findAllByNpcType(type);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Npc> findById(Long id) {
+    return npcRepository.findById(id);
   }
 
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")

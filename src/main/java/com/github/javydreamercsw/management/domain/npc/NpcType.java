@@ -14,21 +14,20 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.dto.rivalry;
+package com.github.javydreamercsw.management.domain.npc;
 
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
-import java.io.Serializable;
-import java.time.Instant;
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-@Data
-public class RivalryDTO implements Serializable {
-  private Long id;
-  private WrestlerDTO wrestler1;
-  private WrestlerDTO wrestler2;
-  private int heat;
-  private Boolean isActive;
-  private String storylineNotes;
-  private Instant startedDate;
-  private Instant endedDate;
+/** Npc Type. */
+@RequiredArgsConstructor
+@Getter
+public enum NpcType {
+  MANAGER("Manager"),
+  ANNOUNCER("Announcer"),
+  REFEREE("Referee"),
+  OWNER("Owner"),
+  BACKSTAGE_PERSONNEL("Backstage Personnel");
+
+  private final String name;
 }

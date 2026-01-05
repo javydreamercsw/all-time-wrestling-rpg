@@ -8,7 +8,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "The Whole F'n Show - High-flying innovator with extreme attitude and unmatched charisma",
   "gender": "MALE"
 }, {
@@ -21,7 +20,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Lucha libre master with incredible agility and high-flying prowess",
   "gender": "MALE"
 }, {
@@ -34,7 +32,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Olympic Hero turned ruthless champion - Technical wrestling machine with legitimate amateur background",
   "gender": "MALE"
 }, {
@@ -47,7 +44,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Mysterious warrior with ancient fighting techniques and unwavering honor",
   "gender": "MALE"
 }, {
@@ -60,7 +56,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "The Eighth Wonder of the World - Legendary giant with unmatched presence and power",
   "gender": "MALE"
 }, {
@@ -73,7 +68,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Ooh yeah! The cream of the crop with unmatched intensity and charisma",
   "gender": "MALE"
 }, {
@@ -86,7 +80,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Rising star with incredible speed and innovative offense",
   "gender": "MALE"
 }, {
@@ -99,7 +92,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Powerful warrior with incredible strength and African fighting heritage",
   "gender": "MALE"
 }, {
@@ -112,7 +104,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "The pride of England with incredible power and technical skill",
   "gender": "MALE"
 }, {
@@ -125,9 +116,9 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "That's an order",
-  "gender": "MALE"
+  "gender": "MALE",
+  "manager": "Colonel Mustafa"
 }, {
   "name": "Daemon",
   "deckSize": 15,
@@ -138,7 +129,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "All the world needs is a touch of madness",
   "gender": "MALE"
 }, {
@@ -151,7 +141,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Quote the Raven, Nevermore",
   "gender": "MALE"
 }, {
@@ -164,7 +153,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "I respect you, Bookerman!",
   "gender": "MALE"
 }, {
@@ -177,7 +165,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "The Homicidal, Suicidal, Genocidal, Death-defying Maniac",
   "gender": "MALE"
 }, {
@@ -190,7 +177,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Are you tough enough?",
   "gender": "MALE"
 }, {
@@ -203,7 +189,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "I will make a lasting name... I will stamp my fame on men's minds forever",
   "gender": "MALE"
 }, {
@@ -216,7 +201,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "The National Treasure",
   "gender": "MALE"
 }, {
@@ -229,7 +213,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Grab them cakes!",
   "gender": "MALE"
 }, {
@@ -242,7 +225,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Viva La Raza",
   "gender": "MALE"
 }, {
@@ -255,7 +237,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "The Deathmatch King",
   "gender": "MALE"
 }, {
@@ -268,7 +249,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Tap or get Knocked Out",
   "gender": "MALE"
 }, {
@@ -281,7 +261,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "The Ugandan Giant",
   "gender": "MALE"
 }, {
@@ -294,7 +273,6 @@
   "fans": 0,
   "isPlayer": false,
   "bumps": 0,
-  "faction": null,
   "description": "Mayor of Slamtown",
   "gender": "MALE"
 } ]

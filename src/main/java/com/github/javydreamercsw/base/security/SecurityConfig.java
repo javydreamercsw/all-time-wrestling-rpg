@@ -54,7 +54,10 @@ public class SecurityConfig {
             auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**").permitAll());
 
     // Disable CSRF for API endpoints
-    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"));
+    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"));
+
+    // Allow framing for H2 console
+    http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
 
     // Apply Vaadin security configurer and set the login view
     http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));

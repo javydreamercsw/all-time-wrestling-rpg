@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -60,10 +61,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -74,16 +73,7 @@ import org.springframework.transaction.annotation.Transactional;
 @PermitAll
 public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
-  @Getter
-  private static class FeudHistoryItem {
-    private final String name;
-    private final int heat;
-
-    public FeudHistoryItem(String name, int heat) {
-      this.name = name;
-      this.heat = heat;
-    }
-  }
+  private record FeudHistoryItem(String name, int heat) {}
 
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
@@ -93,6 +83,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final RivalryService rivalryService;
   private final InjuryService injuryService;
   private final AccountService accountService;
+  private final NpcService npcService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -108,7 +99,6 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final Grid<Segment> recentMatchesGrid = new Grid<>(Segment.class);
   private final HorizontalLayout header;
   private final Image wrestlerImage = new Image();
-  private final VerticalLayout nameDetailsAndStatsLayout = new VerticalLayout();
 
   @Autowired private SecurityUtils securityUtils;
 
@@ -122,6 +112,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       RivalryService rivalryService,
       SeasonService seasonService,
       InjuryService injuryService,
+      NpcService npcService,
       @Qualifier("baseAccountService") AccountService accountService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
@@ -130,6 +121,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.multiWrestlerFeudService = multiWrestlerFeudService;
     this.rivalryService = rivalryService;
     this.injuryService = injuryService;
+    this.npcService = npcService;
     this.accountService = accountService;
 
     wrestlerName.setId("wrestler-name");
@@ -147,6 +139,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         new ViewToolbar(
             "Wrestler Profile", new RouterLink("Back to List", WrestlerListView.class)));
 
+    VerticalLayout nameDetailsAndStatsLayout = new VerticalLayout();
     nameDetailsAndStatsLayout.add(wrestlerName, wrestlerDetails, statsLayout);
     header = new HorizontalLayout(wrestlerImage, nameDetailsAndStatsLayout);
     header.setAlignItems(Alignment.CENTER);
@@ -164,8 +157,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
           selectedSeason = event.getValue();
           updateMatchAndFeudHistory();
         });
-    seasonFilter.setValue(
-        seasons.isEmpty() ? null : seasons.get(seasons.size() - 1)); // Default to latest season
+    if (!seasons.isEmpty()) {
+      seasonFilter.setValue(seasons.getLast()); // Default to latest season
+    }
 
     recentMatchesGrid.removeAllColumns();
     recentMatchesGrid.addColumn(segment -> segment.getShow().getName()).setHeader("Show");
@@ -235,6 +229,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               wrestler,
               wrestlerService,
               injuryService,
+              npcService,
               this::updateView,
               true,
               securityUtils,
@@ -270,6 +265,12 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       // Populate biography
       biographyLayout.removeAll();
       biographyLayout.add(new H3("Biography"));
+      if (wrestler.getManager() != null) {
+        Paragraph managerParagraph =
+            new Paragraph("Managed by: " + wrestler.getManager().getName());
+        managerParagraph.setId("manager-name");
+        biographyLayout.add(managerParagraph);
+      }
       if (wrestler.getDescription() != null && !wrestler.getDescription().isEmpty()) {
         biographyLayout.add(new Paragraph(wrestler.getDescription()));
       } else {
@@ -283,10 +284,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       if (titlesWon.isEmpty()) {
         careerHighlightsLayout.add(new Paragraph("No titles won yet."));
       } else {
-        titlesWon.forEach(
-            title -> {
-              careerHighlightsLayout.add(new Paragraph(title.getName()));
-            });
+        titlesWon.forEach(title -> careerHighlightsLayout.add(new Paragraph(title.getName())));
       }
 
       // Bumps and Injuries
@@ -298,10 +296,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       } else {
         wrestler
             .getInjuries()
-            .forEach(
-                injury -> {
-                  injuriesLayout.add(new Paragraph("- " + injury.getDisplayString()));
-                });
+            .forEach(injury -> injuriesLayout.add(new Paragraph("- " + injury.getDisplayString())));
       }
 
       updateMatchAndFeudHistory(); // Initial call to populate match and feud history
@@ -323,17 +318,18 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
     recentMatchesGrid.setDataProvider(
         DataProvider.fromCallbacks(
-            query -> {
-              Page<Segment> page =
-                  segmentService.getSegmentsByWrestlerParticipation(
-                      wrestler,
-                      PageRequest.of(
-                          query.getPage(),
-                          query.getPageSize(),
-                          Sort.by("segmentDate").descending()));
-              return page.stream();
-            },
-            query -> (int) segmentService.countSegmentsByWrestler(wrestler)));
+            query ->
+                segmentService
+                    .getSegmentsByWrestlerParticipationAndSeason(
+                        wrestler,
+                        selectedSeason,
+                        PageRequest.of(
+                            query.getPage(),
+                            query.getPageSize(),
+                            Sort.by("segmentDate").descending()))
+                    .stream(),
+            query ->
+                (int) segmentService.countSegmentsByWrestlerAndSeason(wrestler, selectedSeason)));
 
     // Feud History
     feudHistoryLayout.add(new H3("Feud History"));
@@ -358,11 +354,11 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     if (feudHistoryItems.isEmpty()) {
       feudHistoryLayout.add(new Paragraph("No active feuds or rivalries found."));
     } else {
-      feudHistoryItems.sort(Comparator.comparingInt(FeudHistoryItem::getHeat).reversed());
+      feudHistoryItems.sort(Comparator.comparingInt(FeudHistoryItem::heat).reversed());
       feudHistoryItems.forEach(
           item ->
               feudHistoryLayout.add(
-                  new Paragraph(String.format("%s (Heat: %d)", item.getName(), item.getHeat()))));
+                  new Paragraph(String.format("%s (Heat: %d)", item.name(), item.heat()))));
     }
   }
 }
