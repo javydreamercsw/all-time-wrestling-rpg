@@ -26,6 +26,9 @@ jobs:
       - name: Update POM version
         run: mvn versions:set -DnewVersion=${{ github.event.inputs.version }}
 
+      - name: Commit changes to POM version
+        run: mvn versions:commit
+
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
@@ -52,7 +55,7 @@ jobs:
             --project all-time-wrestling-rpg \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --output CHANGELOG.md \
-            --branch release/${{ github.event.inputs.version }}
+            --release-branch release/${{ github.event.inputs.version }}
       - name: Commit changelog
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
