@@ -1,1 +1,6 @@
-[ ]
+[ {
+  "name": "The British Bulldogs",
+  "description": "The legendary professional wrestling tag team of cousins Davey Boy Smith (The British Bulldog) and Dynamite Kid (Tom Billington), known for their high-impact style in the 1980s",
+  "wrestler1": "The British Bulldog",
+  "wrestler2": "Dynamite Kid"
+} ]
