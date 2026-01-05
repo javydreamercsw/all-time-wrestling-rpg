@@ -55,7 +55,7 @@ jobs:
             --project all-time-wrestling-rpg \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --output CHANGELOG.md \
-            --release-branch release/${{ github.event.inputs.version }}
+            --branch release/${{ github.event.inputs.version }}
       - name: Commit changelog
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
@@ -119,3 +119,24 @@ jobs:
 
       - name: Build and Publish Docker Image
         run: mvn clean package jib:build -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }}
+  merge_release:
+    needs: build_and_publish_docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          # Fetch all history for all branches and tags
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge release branch to main
+        run: |
+          git fetch origin main
+          git checkout main
+          git merge --no-ff "release/${{ github.event.inputs.version }}" -m "Merge release/${{ github.event.inputs.version }}"
+          git push origin main
