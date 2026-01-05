@@ -144,15 +144,35 @@ public interface SegmentRepository
   List<Segment> findByShowOrderBySegmentOrderAsc(Show show);
 
   @Query(
+      value =
+          """
+          SELECT s FROM Segment s
+          JOIN FETCH s.show sh
+          JOIN s.participants p
+          JOIN sh.season se
+          WHERE p.wrestler = :wrestler AND se = :season
+          ORDER BY s.segmentDate DESC
+          """,
+      countQuery =
+          """
+          SELECT COUNT(s) FROM Segment s
+          JOIN s.participants p
+          JOIN s.show sh
+          JOIN sh.season se
+          WHERE p.wrestler = :wrestler AND se = :season
+          """)
+  Page<Segment> findByWrestlerParticipationAndSeason(
+      @Param("wrestler") Wrestler wrestler, @Param("season") Season season, Pageable pageable);
+
+  @Query(
       """
-      SELECT s FROM Segment s
+      SELECT COUNT(s) FROM Segment s
       JOIN s.participants p
       JOIN s.show sh
       JOIN sh.season se
       WHERE p.wrestler = :wrestler AND se = :season
-      ORDER BY s.segmentDate DESC
       """)
-  List<Segment> findByWrestlerParticipationAndSeason(
+  long countByWrestlerParticipationAndSeason(
       @Param("wrestler") Wrestler wrestler, @Param("season") Season season);
 
   @Query(

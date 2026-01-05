@@ -117,7 +117,7 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   private String description;
 
   @Column(name = "image_url")
-  @Size(max = 255) private String imageUrl;
+  private String imageUrl;
 
   // ==================== ATW RPG RELATIONSHIPS ====================
   @ManyToOne(fetch = FetchType.EAGER)
