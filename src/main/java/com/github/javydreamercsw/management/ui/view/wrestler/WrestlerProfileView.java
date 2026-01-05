@@ -265,6 +265,12 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       // Populate biography
       biographyLayout.removeAll();
       biographyLayout.add(new H3("Biography"));
+      if (wrestler.getManager() != null) {
+        Paragraph managerParagraph =
+            new Paragraph("Managed by: " + wrestler.getManager().getName());
+        managerParagraph.setId("manager-name");
+        biographyLayout.add(managerParagraph);
+      }
       if (wrestler.getDescription() != null && !wrestler.getDescription().isEmpty()) {
         biographyLayout.add(new Paragraph(wrestler.getDescription()));
       } else {

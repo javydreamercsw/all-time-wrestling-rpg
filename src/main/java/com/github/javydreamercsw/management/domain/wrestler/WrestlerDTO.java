@@ -40,6 +40,7 @@ public class WrestlerDTO implements Serializable {
   private Long fans;
   private String externalId;
   private String imageUrl;
+  private String managerName;
 
   public WrestlerDTO(@NonNull Wrestler wrestler) {
     this.id = wrestler.getId(); // Initialize id
@@ -51,6 +52,9 @@ public class WrestlerDTO implements Serializable {
     this.fans = wrestler.getFans();
     this.externalId = wrestler.getExternalId();
     this.imageUrl = wrestler.getImageUrl();
+    if (wrestler.getManager() != null) {
+      this.managerName = wrestler.getManager().getName();
+    }
   }
 
   private MoveSet convertToMoveSet(Wrestler wrestler) {
