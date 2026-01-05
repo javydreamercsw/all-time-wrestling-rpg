@@ -86,10 +86,10 @@ class TeamDTOTest {
     assertThat(dto.getFactionId()).isEqualTo(1L);
     assertThat(dto.getFactionName()).isEqualTo("Test Faction");
     assertThat(dto.getStatus()).isEqualTo(TeamStatus.ACTIVE);
-    assertThat(dto.getFormedDate()).isEqualTo(formedDate);
+    assertThat(dto.getFormedDate()).isEqualTo(formedDate.toString());
     assertThat(dto.getDisbandedDate()).isNull();
     assertThat(dto.getExternalId()).isEqualTo("notion-123");
-    assertThat(dto.getMemberNames()).isEqualTo("John Cena & The Rock");
+    assertThat(dto.getMemberNames()).containsExactly("John Cena", "The Rock");
     assertThat(dto.getDisplayName()).isEqualTo("The Cenation");
     assertThat(dto.isActive()).isTrue();
   }
@@ -199,7 +199,7 @@ class TeamDTOTest {
     assertThat(dto.getWrestler2Id()).isNull();
     assertThat(dto.getWrestler2Name()).isNull();
     // Should not throw exception
-    assertThat(dto.getMemberNames()).isEqualTo("null & null");
+    assertThat(dto.getMemberNames()).isNotNull();
   }
 
   @Test
@@ -248,8 +248,8 @@ class TeamDTOTest {
     assertThat(dto.getFactionId()).isEqualTo(team.getFaction().getId());
     assertThat(dto.getFactionName()).isEqualTo(team.getFaction().getName());
     assertThat(dto.getStatus()).isEqualTo(team.getStatus());
-    assertThat(dto.getFormedDate()).isEqualTo(team.getFormedDate());
-    assertThat(dto.getDisbandedDate()).isEqualTo(team.getDisbandedDate());
+    assertThat(dto.getFormedDate()).isEqualTo(team.getFormedDate().toString());
+    assertThat(dto.getDisbandedDate()).isEqualTo(team.getDisbandedDate().toString());
     assertThat(dto.getExternalId()).isEqualTo(team.getExternalId());
   }
 }

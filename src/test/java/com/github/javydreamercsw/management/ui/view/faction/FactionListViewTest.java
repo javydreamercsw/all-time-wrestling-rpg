@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.grid.Grid;
 import java.time.Instant;
@@ -49,6 +50,7 @@ class FactionListViewTest {
 
   @Mock private FactionService factionService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private NpcService npcService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SecurityUtils securityUtils;
 
@@ -74,7 +76,8 @@ class FactionListViewTest {
 
     // Create the view
     factionListView =
-        new FactionListView(factionService, wrestlerService, wrestlerRepository, securityUtils);
+        new FactionListView(
+            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
   }
 
   @Test
@@ -128,11 +131,12 @@ class FactionListViewTest {
   @DisplayName("Should handle empty faction list")
   void shouldHandleEmptyFactionList() {
     // Given
-    when(factionService.findAllWithMembers()).thenReturn(new ArrayList<>());
+    when(factionService.findAllWithMembersAndTeams()).thenReturn(new ArrayList<>());
 
     // When
     FactionListView emptyView =
-        new FactionListView(factionService, wrestlerService, wrestlerRepository, securityUtils);
+        new FactionListView(
+            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
 
     // Then
     assertNotNull(emptyView);
@@ -184,7 +188,8 @@ class FactionListViewTest {
 
     // When
     FactionListView view =
-        new FactionListView(factionService, wrestlerService, wrestlerRepository, securityUtils);
+        new FactionListView(
+            factionService, wrestlerService, npcService, wrestlerRepository, securityUtils);
 
     // Then
     assertNotNull(view);
@@ -202,7 +207,7 @@ class FactionListViewTest {
     evolution.setId(1L);
     evolution.setName("Evolution");
     evolution.setDescription("A dominant faction in WWE");
-    evolution.setIsActive(false);
+    evolution.setActive(false);
     evolution.setCreationDate(Instant.now());
     evolution.setFormedDate(Instant.now().minusSeconds(365 * 24 * 60 * 60)); // 1 year ago
     evolution.setDisbandedDate(Instant.now().minusSeconds(180 * 24 * 60 * 60)); // 6 months ago
@@ -218,7 +223,7 @@ class FactionListViewTest {
     dx.setId(2L);
     dx.setName("D-Generation X");
     dx.setDescription("Rebellious faction");
-    dx.setIsActive(true);
+    dx.setActive(true);
     dx.setCreationDate(Instant.now());
     dx.setFormedDate(Instant.now().minusSeconds(200 * 24 * 60 * 60)); // ~7 months ago
 

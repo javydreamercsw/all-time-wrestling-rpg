@@ -14,18 +14,29 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.dto.wrestler;
+package com.github.javydreamercsw.management.dto;
 
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import java.io.Serializable;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-public class WrestlerDTO implements Serializable {
-  private Long id;
+@AllArgsConstructor
+@NoArgsConstructor
+public class WrestlerImportDTO {
   private String name;
+  private Integer deckSize;
+  private Integer startingHealth;
+  private Integer lowHealth;
+  private Integer startingStamina;
+  private Integer lowStamina;
   private Long fans;
-  private WrestlerTier tier;
+  private Boolean isPlayer;
+  private Integer bumps;
+  private String description;
+  private Gender gender;
+  private String manager;
   private String externalId;
-  // Add other fields as needed for API response
+  private String imageUrl;
 }

@@ -215,7 +215,7 @@ public class FactionRivalry extends AbstractEntity<Long> {
 
   /** Check if both factions are still active. */
   public boolean areBothFactionsActive() {
-    return faction1.getIsActive() && faction2.getIsActive();
+    return faction1.isActive() && faction2.isActive();
   }
 
   /** Get total number of wrestlers involved in this rivalry. */

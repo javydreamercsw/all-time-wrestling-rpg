@@ -111,6 +111,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
   private void breakCircularDependencies() {
     log.info("💔 Breaking circular dependencies...");
     try {
+      entityManager.createNativeQuery("DELETE FROM heat_event").executeUpdate();
       entityManager.createNativeQuery("UPDATE wrestler SET faction_id = NULL").executeUpdate();
       log.debug("✅ Nullified wrestler.faction_id");
     } catch (Exception e) {
@@ -132,6 +133,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
    */
   private void clearJoinTables() {
     Set<String> joinTableNames = new HashSet<>();
+    joinTableNames.add("heat_event");
     Set<EntityType<?>> entities = entityManager.getMetamodel().getEntities();
 
     for (EntityType<?> entity : entities) {

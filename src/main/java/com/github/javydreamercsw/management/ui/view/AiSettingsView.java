@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import com.github.javydreamercsw.base.config.LocalAIContainerConfig;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -40,6 +41,7 @@ public class AiSettingsView extends VerticalLayout {
 
   private final AiSettingsService aiSettingsService;
   private final GameSettingService gameSettingService;
+  private final LocalAIContainerConfig localAIContainerConfig;
 
   private Checkbox aiProviderAuto;
   private NumberField aiTimeout;
@@ -73,9 +75,12 @@ public class AiSettingsView extends VerticalLayout {
 
   @Autowired
   public AiSettingsView(
-      AiSettingsService aiSettingsService, GameSettingService gameSettingService) {
+      AiSettingsService aiSettingsService,
+      GameSettingService gameSettingService,
+      LocalAIContainerConfig localAIContainerConfig) {
     this.aiSettingsService = aiSettingsService;
     this.gameSettingService = gameSettingService;
+    this.localAIContainerConfig = localAIContainerConfig;
     init();
   }
 
@@ -173,7 +178,14 @@ public class AiSettingsView extends VerticalLayout {
     FormLayout localAISettingsLayout = new FormLayout();
     localAIEnabled = new Checkbox("Enabled", aiSettingsService.isLocalAIEnabled());
     localAIEnabled.addValueChangeListener(
-        event -> saveSetting("AI_LOCALAI_ENABLED", String.valueOf(event.getValue())));
+        event -> {
+          saveSetting("AI_LOCALAI_ENABLED", String.valueOf(event.getValue()));
+          if (event.getValue()) {
+            localAIContainerConfig.startLocalAiContainer();
+          } else {
+            localAIContainerConfig.stopLocalAiContainer();
+          }
+        });
     localAIBaseUrl = new TextField("Base URL", aiSettingsService.getLocalAIBaseUrl(), "");
     localAIBaseUrl.addValueChangeListener(
         event -> saveSetting("AI_LOCALAI_BASE_URL", event.getValue()));

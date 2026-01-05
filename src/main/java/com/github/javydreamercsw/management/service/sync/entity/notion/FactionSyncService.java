@@ -336,7 +336,7 @@ public class FactionSyncService extends BaseSyncService {
 
         faction.setName(dto.getName());
         faction.setExternalId(dto.getExternalId());
-        faction.setIsActive(dto.getIsActive());
+        faction.setActive(dto.getIsActive());
 
         if (dto.getLeader() != null) {
           Optional<Wrestler> leader =

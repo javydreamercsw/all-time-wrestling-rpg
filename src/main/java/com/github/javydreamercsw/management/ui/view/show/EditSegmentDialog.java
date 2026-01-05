@@ -160,7 +160,7 @@ public class EditSegmentDialog extends Dialog {
 
     narrationArea = new TextArea("Narration");
     narrationArea.setWidthFull();
-    narrationArea.setValue(segment.getDescription());
+    narrationArea.setValue(segment.getNarration());
     narrationArea.setId("edit-narration-text-area");
     formLayout.setColspan(narrationArea, 2);
 
@@ -204,7 +204,7 @@ public class EditSegmentDialog extends Dialog {
 
   public void save() {
     segment.setType(segmentTypeCombo.getValue().getName());
-    segment.setDescription(narrationArea.getValue());
+    segment.setNarration(narrationArea.getValue());
     segment.setSummary(summaryArea.getValue());
     segment.setParticipants(
         participantsCombo.getValue().stream().map(Wrestler::getName).collect(Collectors.toList()));

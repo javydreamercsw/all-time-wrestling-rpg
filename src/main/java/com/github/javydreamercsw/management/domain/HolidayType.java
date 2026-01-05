@@ -14,7 +14,9 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.domain.wrestler;
+package com.github.javydreamercsw.management.domain;
 
-// This file is intentionally left empty to force migration to the new package.
-// Please update your imports to com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO
+public enum HolidayType {
+  FIXED,
+  FLOATING
+}

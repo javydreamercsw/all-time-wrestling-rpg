@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.team;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
@@ -44,6 +45,7 @@ public class TeamService {
   @Autowired private TeamRepository teamRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private FactionRepository factionRepository;
+  @Autowired private NpcRepository npcRepository;
 
   // ==================== CRUD OPERATIONS ====================
 
@@ -78,7 +80,12 @@ public class TeamService {
   /** Create a new team. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> createTeam(
-      String name, String description, Long wrestler1Id, Long wrestler2Id, Long factionId) {
+      String name,
+      String description,
+      Long wrestler1Id,
+      Long wrestler2Id,
+      Long factionId,
+      Long managerId) {
     if (wrestler1Id == null || wrestler2Id == null) {
       log.warn("Cannot create team: Wrestler IDs cannot be null");
       return Optional.empty();
@@ -135,6 +142,11 @@ public class TeamService {
       team.setFaction(factionRepository.findById(factionId).orElse(null));
     }
 
+    // Set manager if provided
+    if (managerId != null) {
+      team.setManager(npcRepository.findById(managerId).orElse(null));
+    }
+
     Team savedTeam = teamRepository.saveAndFlush(team);
     log.info(
         "Created team: {} with members {} & {}",
@@ -148,7 +160,12 @@ public class TeamService {
   /** Update an existing team. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> updateTeam(
-      Long teamId, String name, String description, TeamStatus status, Long factionId) {
+      Long teamId,
+      String name,
+      String description,
+      TeamStatus status,
+      Long factionId,
+      Long managerId) {
     Optional<Team> teamOpt = teamRepository.findById(teamId);
     if (teamOpt.isEmpty()) {
       return Optional.empty();
@@ -171,6 +188,11 @@ public class TeamService {
       } else if (status == TeamStatus.ACTIVE && team.getDisbandedDate() != null) {
         team.reactivate();
       }
+    }
+
+    // Set manager if provided
+    if (managerId != null) {
+      team.setManager(npcRepository.findById(managerId).orElse(null));
     }
 
     Team savedTeam = teamRepository.saveAndFlush(team);
@@ -247,12 +269,12 @@ public class TeamService {
   /** Disband a team. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> disbandTeam(Long teamId) {
-    return updateTeam(teamId, null, null, TeamStatus.DISBANDED, null);
+    return updateTeam(teamId, null, null, TeamStatus.DISBANDED, null, null);
   }
 
   /** Reactivate a disbanded team. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Team> reactivateTeam(Long teamId) {
-    return updateTeam(teamId, null, null, TeamStatus.ACTIVE, null);
+    return updateTeam(teamId, null, null, TeamStatus.ACTIVE, null, null);
   }
 }

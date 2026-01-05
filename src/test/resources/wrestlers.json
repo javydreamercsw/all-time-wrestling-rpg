@@ -1,0 +1,23 @@
+[ {
+  "name": "Test Wrestler",
+  "deckSize": 12,
+  "startingHealth": 12,
+  "lowHealth": 2,
+  "startingStamina": 12,
+  "lowStamina": 2,
+  "isPlayer": false,
+  "description": "A test wrestler.",
+  "gender": "MALE"
+}, {
+  "name": "Rob Van Dam",
+  "deckSize": 16,
+  "startingHealth": 15,
+  "lowHealth": 4,
+  "startingStamina": 16,
+  "lowStamina": 2,
+  "fans": 0,
+  "isPlayer": false,
+  "bumps": 0,
+  "description": "The Whole F'n Show - High-flying innovator with extreme attitude and unmatched charisma",
+  "gender": "MALE"
+} ]

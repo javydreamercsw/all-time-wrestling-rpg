@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
@@ -33,7 +34,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -53,7 +54,7 @@ import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.transaction.annotation.Transactional;
 
 @DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
-class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
+class WrestlerServiceIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentService segmentService;
   @Autowired private TitleService titleService;
@@ -61,15 +62,17 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
   @Autowired private SeasonService seasonService;
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private ShowTypeService showTypeService;
-  @Autowired private InboxService inboxService;
   @Autowired private InboxRepository inboxRepository;
   @Autowired private DataInitializer dataInitializer;
 
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
 
+  @Autowired private TierBoundaryService tierBoundaryService;
+
   @BeforeEach
   void setUp() {
-    tierBoundaryRepository.deleteAll();
+    tierBoundaryRepository.deleteAllInBatch();
+    tierBoundaryService.resetTierBoundaries();
     dataInitializer.init();
   }
 
@@ -314,5 +317,94 @@ class WrestlerServiceIntegrationTest extends ManagementIntegrationTest {
     assertThat(inboxItem.getDescription()).contains("Inbox Test Wrestler gained 1000 fans");
     assertThat(inboxItem.getTargets()).hasSize(1);
     assertThat(inboxItem.getTargets().get(0).getTargetId()).isEqualTo(wrestler.getId().toString());
+  }
+
+  @Test
+  void shouldRecalibrateFanCounts() {
+    // Create some wrestlers
+    Wrestler icon =
+        wrestlerService.createWrestler("The Icon", false, "Iconic wrestler", WrestlerTier.ICON);
+    icon.setFans(1_000_000L);
+    wrestlerService.save(icon);
+
+    Wrestler mainEventer =
+        wrestlerService.createWrestler(
+            "The Main Eventer", false, "Top star", WrestlerTier.MAIN_EVENTER);
+    mainEventer.setFans(800_000L);
+    wrestlerService.save(mainEventer);
+
+    Wrestler rookie =
+        wrestlerService.createWrestler("The Rookie", false, "Newcomer", WrestlerTier.ROOKIE);
+    rookie.setFans(5_000L);
+    wrestlerService.save(rookie);
+
+    // Reset fan counts
+    wrestlerService.recalibrateFanCounts();
+
+    // Verify Icon is now Main Eventer with 0 fans
+    Wrestler updatedIcon = wrestlerService.getWrestlerById(icon.getId()).get();
+    assertEquals(WrestlerTier.MAIN_EVENTER, updatedIcon.getTier());
+    assertThat(updatedIcon.getFans()).isGreaterThanOrEqualTo(0L);
+
+    // Verify Main Eventer is reset to 0 fans
+    Wrestler updatedMainEventer = wrestlerService.getWrestlerById(mainEventer.getId()).get();
+    assertEquals(WrestlerTier.MAIN_EVENTER.getMinFans(), updatedMainEventer.getFans());
+
+    // Verify Rookie is reset to 0 fans
+    Wrestler updatedRookie = wrestlerService.getWrestlerById(rookie.getId()).get();
+    assertEquals(0L, updatedRookie.getFans());
+  }
+
+  @Test
+  void shouldRecalibrateIconToMainEventer() {
+    // Create an Icon wrestler
+    Wrestler icon =
+        wrestlerService.createWrestler("The Icon", false, "Iconic wrestler", WrestlerTier.ICON);
+    icon.setFans(1_000_000L);
+    wrestlerService.save(icon);
+
+    // Reset fan counts
+    wrestlerService.recalibrateFanCounts();
+
+    // Verify the wrestler is now a Main Eventer with 0 fans
+    Wrestler updatedWrestler = wrestlerService.getWrestlerById(icon.getId()).get();
+    assertEquals(WrestlerTier.MAIN_EVENTER, updatedWrestler.getTier());
+    assertEquals(WrestlerTier.MAIN_EVENTER.getMinFans(), updatedWrestler.getFans());
+  }
+
+  @Test
+  void shouldResetAllFanCountsToZero() {
+    // Create some wrestlers
+    Wrestler icon =
+        wrestlerService.createWrestler("The Icon", false, "Iconic wrestler", WrestlerTier.ICON);
+    icon.setFans(1_000_000L);
+    wrestlerService.save(icon);
+
+    Wrestler mainEventer =
+        wrestlerService.createWrestler(
+            "The Main Eventer", false, "Top star", WrestlerTier.MAIN_EVENTER);
+    mainEventer.setFans(800_000L);
+    wrestlerService.save(mainEventer);
+
+    Wrestler rookie =
+        wrestlerService.createWrestler("The Rookie", false, "Newcomer", WrestlerTier.ROOKIE);
+    rookie.setFans(5_000L);
+    wrestlerService.save(rookie);
+
+    // Reset fan counts
+    wrestlerService.resetAllFanCountsToZero();
+
+    // Verify all wrestlers are now rookies with 0 fans
+    Wrestler updatedIcon = wrestlerService.getWrestlerById(icon.getId()).get();
+    assertEquals(WrestlerTier.ROOKIE, updatedIcon.getTier());
+    assertEquals(0L, updatedIcon.getFans());
+
+    Wrestler updatedMainEventer = wrestlerService.getWrestlerById(mainEventer.getId()).get();
+    assertEquals(WrestlerTier.ROOKIE, updatedMainEventer.getTier());
+    assertEquals(0L, updatedMainEventer.getFans());
+
+    Wrestler updatedRookie = wrestlerService.getWrestlerById(rookie.getId()).get();
+    assertEquals(WrestlerTier.ROOKIE, updatedRookie.getTier());
+    assertEquals(0L, updatedRookie.getFans());
   }
 }

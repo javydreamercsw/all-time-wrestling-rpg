@@ -47,6 +47,8 @@ public interface WrestlerRepository
 
   List<Wrestler> findByFansGreaterThanEqual(long minFans);
 
+  List<Wrestler> findAllByActiveTrue();
+
   Optional<Wrestler> findByAccountUsername(String username);
 
   Optional<Wrestler> findByAccountId(Long accountId);

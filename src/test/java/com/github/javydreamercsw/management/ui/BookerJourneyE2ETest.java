@@ -329,10 +329,10 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           wait.until(
               ExpectedConditions.visibilityOfElementLocated(By.id("edit-wrestlers-combo-box")));
       Assertions.assertNotNull(wrestlersComboBox);
-      //      selectFromVaadinMultiSelectComboBox(
-      //          wrestlersComboBox, wrestlerRepository.findAll().get(0).getName());
-      //      selectFromVaadinMultiSelectComboBox(
-      //          wrestlersComboBox, wrestlerRepository.findAll().get(1).getName());
+      selectFromVaadinMultiSelectComboBox(
+          wrestlersComboBox, wrestlerRepository.findAll().get(0).getName());
+      selectFromVaadinMultiSelectComboBox(
+          wrestlersComboBox, wrestlerRepository.findAll().get(1).getName());
 
       // Click the save button
       log.info("Clicking save button");
@@ -606,6 +606,5 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.elementToBeClickable(By.id("main-event-checkbox")));
     Assertions.assertNotNull(mainEventCheckbox);
     clickElement(mainEventCheckbox);
-    scrollIntoView(mainEventCheckbox);
   }
 }
