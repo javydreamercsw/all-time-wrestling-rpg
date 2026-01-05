@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.3.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.3.0) (2024-05-22)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.2.3...v1.3.0)
+
+**Implemented enhancements:**
+
+- Enhance wrestler descriptions for improved storytelling and character depth [784166541](https://github.com/javydreamercsw/all-time-wrestling-rpg/commit/784166541)
+- Add Docker build and publish step to release workflow [98f4e3aa9](https://github.com/javydreamercsw/all-time-wrestling-rpg/commit/98f4e3aa9)
+
+**Merged pull requests:**
+
+- Minor enhancements [\#103](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/103) ([javydreamercsw](https://github.com/javydreamercsw))
+- Refactor: Split NotionHandler into entity-specific handlers [\#102](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/102) ([javydreamercsw](https://github.com/javydreamercsw))
+
 ## [v1.2.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.2.3) (2026-01-02)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.2.1...v1.2.3)
@@ -45,19 +59,7 @@
 - Inbox enhancements [\#55](https://github.com/javydreamercsw/all-time-wrestling-rpg/issues/55)
 - Create App-\> Notion sync [\#37](https://github.com/javydreamercsw/all-time-wrestling-rpg/issues/37)
 - Prepare for release [\#67](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/67) ([javydreamercsw](https://github.com/javydreamercsw))
--  Bugfix: Handle incomplete AI responses and increase timeouts [\#66](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/66) ([javydreamercsw](https://github.com/javydreamercsw))
-
-**Fixed bugs:**
-
-- 500 Error planning a show on Gemini [\#65](https://github.com/javydreamercsw/all-time-wrestling-rpg/issues/65)
-
-## [v1.1.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.1.0) (2025-12-12)
-
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.0.0...v1.1.0)
-
-**Merged pull requests:**
-
-- Feature: Gender-based rankings and filtering.   [\#53](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/53) ([javydreamercsw](https://github.com/javydreamercsw))
+-  Bugfix: Handle incomplete AI responses and increase timeouts [\#66](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/66) ([javydreamercsw](https://github.com.
 - Bump org.springframework.boot:spring-boot-starter-parent from 3.5.7 to 3.5.8 [\#46](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/46) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Bump com.diffplug.spotless:spotless-maven-plugin from 3.0.0 to 3.1.0 [\#45](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/45) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Bump vaadin.version from 24.9.5 to 24.9.6 [\#44](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/44) ([dependabot[bot]](https://github.com/apps/dependabot))
