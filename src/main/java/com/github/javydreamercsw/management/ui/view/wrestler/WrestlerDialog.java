@@ -33,6 +33,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import lombok.NonNull;
@@ -112,25 +113,29 @@ public class WrestlerDialog extends Dialog {
     managerField.setId("wrestler-dialog-manager-field");
     managerField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
-    TextField deckSizeField = new TextField("Deck Size");
+    IntegerField deckSizeField = new IntegerField("Deck Size");
     deckSizeField.setId("wrestler-dialog-deck-size-field");
     deckSizeField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
-    TextField startingHealthField = new TextField("Starting Health");
+    IntegerField startingHealthField = new IntegerField("Starting Health");
     startingHealthField.setId("wrestler-dialog-starting-health-field");
     startingHealthField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
-    TextField lowHealthField = new TextField("Low Health");
+    IntegerField lowHealthField = new IntegerField("Low Health");
     lowHealthField.setId("wrestler-dialog-low-health-field");
     lowHealthField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
-    TextField startingStaminaField = new TextField("Starting Stamina");
+    IntegerField startingStaminaField = new IntegerField("Starting Stamina");
     startingStaminaField.setId("wrestler-dialog-starting-stamina-field");
     startingStaminaField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
-    TextField lowStaminaField = new TextField("Low Stamina");
+    IntegerField lowStaminaField = new IntegerField("Low Stamina");
     lowStaminaField.setId("wrestler-dialog-low-stamina-field");
     lowStaminaField.setReadOnly(!securityUtils.canEdit(this.wrestler));
+
+    TextField descriptionField = new TextField("Description");
+    descriptionField.setId("wrestler-dialog-description-field");
+    descriptionField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
     TextField imageUrlField = new TextField("Image URL");
     imageUrlField.setId("wrestler-dialog-image-url-field");
@@ -175,6 +180,7 @@ public class WrestlerDialog extends Dialog {
         lowHealthField,
         startingStaminaField,
         lowStaminaField,
+        descriptionField,
         imageUrlField,
         isPlayerField,
         activeField,
@@ -183,6 +189,20 @@ public class WrestlerDialog extends Dialog {
     binder.forField(nameField).bind(Wrestler::getName, Wrestler::setName);
     binder.forField(genderField).bind(Wrestler::getGender, Wrestler::setGender);
     binder.forField(managerField).bind(Wrestler::getManager, Wrestler::setManager);
+    binder.forField(imageUrlField).bind(Wrestler::getImageUrl, Wrestler::setImageUrl);
+    binder.forField(deckSizeField).bind(Wrestler::getDeckSize, Wrestler::setDeckSize);
+    binder
+        .forField(startingHealthField)
+        .bind(Wrestler::getStartingHealth, Wrestler::setStartingHealth);
+    binder.forField(lowHealthField).bind(Wrestler::getLowHealth, Wrestler::setLowHealth);
+    binder
+        .forField(startingStaminaField)
+        .bind(Wrestler::getStartingStamina, Wrestler::setStartingStamina);
+    binder.forField(lowStaminaField).bind(Wrestler::getLowStamina, Wrestler::setLowStamina);
+    binder.forField(descriptionField).bind(Wrestler::getDescription, Wrestler::setDescription);
+    binder.forField(imageUrlField).bind(Wrestler::getImageUrl, Wrestler::setImageUrl);
+    binder.forField(isPlayerField).bind(Wrestler::getIsPlayer, Wrestler::setIsPlayer);
+    binder.forField(activeField).bind(Wrestler::getActive, Wrestler::setActive);
 
     binder.readBean(this.wrestler);
 

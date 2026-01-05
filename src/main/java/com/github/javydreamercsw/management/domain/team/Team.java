@@ -113,6 +113,11 @@ public class Team extends AbstractEntity<Long> {
     return status == TeamStatus.ACTIVE;
   }
 
+  /** Check if the team is disbanded. */
+  public boolean isDisbanded() {
+    return status == TeamStatus.DISBANDED;
+  }
+
   /** Disband the team. */
   public void disband() {
     this.status = TeamStatus.DISBANDED;

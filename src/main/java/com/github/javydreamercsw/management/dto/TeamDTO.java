@@ -16,13 +16,95 @@
 */
 package com.github.javydreamercsw.management.dto;
 
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamStatus;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class TeamDTO {
+  private Long id;
   private String name;
   private String description;
-  private String wrestler1;
-  private String wrestler2;
-  private String manager;
+  private String externalId;
+  private Long wrestler1Id;
+  private String wrestler1Name;
+  private Long wrestler2Id;
+  private String wrestler2Name;
+  private String formedDate;
+  private String disbandedDate;
+  private TeamStatus status;
+  private Long factionId;
+  private String factionName;
+  private Long managerId;
+  private String managerName;
+  private boolean active;
+  private boolean disbanded;
+
+  public static TeamDTO fromEntity(Team team) {
+    TeamDTO dto = new TeamDTO();
+    dto.setId(team.getId());
+    dto.setName(team.getName());
+    dto.setDescription(team.getDescription());
+    dto.setExternalId(team.getExternalId());
+    if (team.getWrestler1() != null) {
+      dto.setWrestler1Id(team.getWrestler1().getId());
+      dto.setWrestler1Name(team.getWrestler1().getName());
+    }
+    if (team.getWrestler2() != null) {
+      dto.setWrestler2Id(team.getWrestler2().getId());
+      dto.setWrestler2Name(team.getWrestler2().getName());
+    }
+    if (team.getFormedDate() != null) {
+      dto.setFormedDate(team.getFormedDate().toString());
+    }
+    if (team.getDisbandedDate() != null) {
+      dto.setDisbandedDate(team.getDisbandedDate().toString());
+    }
+    dto.setStatus(team.getStatus());
+    if (team.getFaction() != null) {
+      dto.setFactionId(team.getFaction().getId());
+      dto.setFactionName(team.getFaction().getName());
+    }
+    if (team.getManager() != null) {
+      dto.setManagerId(team.getManager().getId());
+      dto.setManagerName(team.getManager().getName());
+    }
+    dto.setActive(team.isActive());
+    dto.setDisbanded(team.isDisbanded());
+    return dto;
+  }
+
+  public List<String> getMemberNames() {
+    List<String> names = new ArrayList<>();
+    if (wrestler1Name != null) {
+      names.add(wrestler1Name);
+    }
+    if (wrestler2Name != null) {
+      names.add(wrestler2Name);
+    }
+    return names;
+  }
+
+  public String getDisplayName() {
+    String baseName = name != null ? name : String.join(" & ", getMemberNames());
+    if (status == TeamStatus.DISBANDED) {
+      return baseName + " (Disbanded)";
+    }
+    return baseName;
+  }
+
+  public boolean isInactive() {
+    return status == TeamStatus.INACTIVE;
+  }
+
+  public String getStatusDisplayName() {
+    if (status == null) {
+      return "Unknown";
+    }
+    return status.getDisplayName();
+  }
 }
