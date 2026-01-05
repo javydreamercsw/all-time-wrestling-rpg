@@ -42,7 +42,7 @@ jobs:
           git commit -m "chore: Update version to ${{ github.event.inputs.version }}"
       
       - name: Push changes
-        run: git push --set-upstream origin release/${{ github.event.inputs.version }}
+        run: git push --force --set-upstream origin release/${{ github.event.inputs.version }}
 
   generate_changelog:
     needs: update_pom
