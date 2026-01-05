@@ -359,7 +359,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
     }
   }
 
-  private void syncWrestlersFromFile() {
+  protected void syncWrestlersFromFile() {
     ClassPathResource resource = new ClassPathResource("wrestlers.json");
     if (resource.exists()) {
       log.info("Loading wrestlers from file: {}", resource.getPath());
@@ -393,12 +393,6 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
             existingWrestler.setLowStamina(w.getLowStamina());
             existingWrestler.setDescription(w.getDescription());
             existingWrestler.setGender(w.getGender());
-            if (w.getFans() != null) {
-              existingWrestler.setFans(w.getFans());
-            }
-            if (w.getBumps() != null) {
-              existingWrestler.setBumps(w.getBumps());
-            }
 
             if (w.getImageUrl() != null) {
               existingWrestler.setImageUrl(w.getImageUrl());
