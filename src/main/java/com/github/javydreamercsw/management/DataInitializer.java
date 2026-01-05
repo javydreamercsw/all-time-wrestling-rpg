@@ -393,8 +393,12 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
             existingWrestler.setLowStamina(w.getLowStamina());
             existingWrestler.setDescription(w.getDescription());
             existingWrestler.setGender(w.getGender());
-            existingWrestler.setFans(w.getFans());
-            existingWrestler.setBumps(w.getBumps());
+            if (w.getFans() != null) {
+              existingWrestler.setFans(w.getFans());
+            }
+            if (w.getBumps() != null) {
+              existingWrestler.setBumps(w.getBumps());
+            }
 
             if (w.getImageUrl() != null) {
               existingWrestler.setImageUrl(w.getImageUrl());
