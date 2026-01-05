@@ -55,7 +55,8 @@ jobs:
             --project all-time-wrestling-rpg \
             --token ${{ secrets.GITHUB_TOKEN }} \
             --output CHANGELOG.md \
-            --branch release/${{ github.event.inputs.version }}
+            --release-branch release/${{ github.event.inputs.version }} \
+            --future-release v${{ github.event.inputs.version }}
       - name: Commit changelog
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
