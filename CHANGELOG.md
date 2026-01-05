@@ -1,18 +1,8 @@
 # Changelog
 
-## [v1.3.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.3.0) (2024-05-22)
+## [v1.3.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.3.0) (2026-01-05)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.2.3...v1.3.0)
-
-**Implemented enhancements:**
-
-- Enhance wrestler descriptions for improved storytelling and character depth [784166541](https://github.com/javydreamercsw/all-time-wrestling-rpg/commit/784166541)
-- Add Docker build and publish step to release workflow [98f4e3aa9](https://github.com/javydreamercsw/all-time-wrestling-rpg/commit/98f4e3aa9)
-
-**Merged pull requests:**
-
-- Minor enhancements [\#103](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/103) ([javydreamercsw](https://github.com/javydreamercsw))
-- Refactor: Split NotionHandler into entity-specific handlers [\#102](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/102) ([javydreamercsw](https://github.com/javydreamercsw))
 
 ## [v1.2.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.2.3) (2026-01-02)
 
