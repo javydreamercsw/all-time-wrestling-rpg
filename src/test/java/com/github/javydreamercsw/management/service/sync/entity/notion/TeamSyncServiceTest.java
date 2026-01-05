@@ -88,7 +88,8 @@ class TeamSyncServiceTest extends AbstractSyncTest {
     // Mock team service
     when(teamService.getTeamByExternalId(anyString())).thenReturn(Optional.empty());
     when(teamService.getTeamByName(anyString())).thenReturn(Optional.empty());
-    when(teamService.createTeam(anyString(), nullable(String.class), anyLong(), anyLong(), any()))
+    when(teamService.createTeam(
+            anyString(), nullable(String.class), anyLong(), anyLong(), any(), any()))
         .thenReturn(Optional.of(createMockTeam()));
 
     // When
@@ -105,7 +106,12 @@ class TeamSyncServiceTest extends AbstractSyncTest {
     verify(notionHandler).loadAllTeams();
     verify(teamService)
         .createTeam(
-            anyString(), nullable(String.class), anyLong(), anyLong(), nullable(Long.class));
+            anyString(),
+            nullable(String.class),
+            anyLong(),
+            anyLong(),
+            nullable(Long.class),
+            nullable(Long.class));
   }
 
   @Test
@@ -174,7 +180,12 @@ class TeamSyncServiceTest extends AbstractSyncTest {
 
     verify(teamService, never())
         .createTeam(
-            anyString(), nullable(String.class), anyLong(), anyLong(), nullable(Long.class));
+            anyString(),
+            nullable(String.class),
+            anyLong(),
+            anyLong(),
+            nullable(Long.class),
+            nullable(Long.class));
   }
 
   @Test
@@ -215,7 +226,12 @@ class TeamSyncServiceTest extends AbstractSyncTest {
     verify(syncServiceDependencies.getTeamRepository()).saveAndFlush(existingTeam);
     verify(teamService, never())
         .createTeam(
-            anyString(), nullable(String.class), anyLong(), anyLong(), nullable(Long.class));
+            anyString(),
+            nullable(String.class),
+            anyLong(),
+            anyLong(),
+            nullable(Long.class),
+            nullable(Long.class));
   }
 
   private List<TeamPage> createMockTeamPages() {

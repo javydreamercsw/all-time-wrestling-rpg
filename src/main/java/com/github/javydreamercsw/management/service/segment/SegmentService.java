@@ -331,9 +331,9 @@ public class SegmentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Segment> getSegmentsByWrestlerAndSeason(
-      @NonNull Wrestler wrestler, @NonNull Season season) {
-    return segmentRepository.findByWrestlerParticipationAndSeason(wrestler, season);
+  public Page<Segment> getSegmentsByWrestlerParticipationAndSeason(
+      @NonNull Wrestler wrestler, @NonNull Season season, @NonNull Pageable pageable) {
+    return segmentRepository.findByWrestlerParticipationAndSeason(wrestler, season, pageable);
   }
 
   /**
@@ -356,6 +356,11 @@ public class SegmentService {
   @PreAuthorize("isAuthenticated()")
   public long countMatchSegmentsByWrestler(Wrestler wrestler) {
     return segmentRepository.countMatchSegmentsByWrestler(wrestler);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public long countSegmentsByWrestlerAndSeason(Wrestler wrestler, Season season) {
+    return segmentRepository.countByWrestlerParticipationAndSeason(wrestler, season);
   }
 
   /**

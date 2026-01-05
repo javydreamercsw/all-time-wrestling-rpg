@@ -24,7 +24,7 @@ import lombok.Data;
 @Data
 public class ProposedSegment {
   private String type; // "segment" or "promo"
-  private String description;
+  private String narration;
   private String summary;
   private List<String> participants;
   private List<String> winners;

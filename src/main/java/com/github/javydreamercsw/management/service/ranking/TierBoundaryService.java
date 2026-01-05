@@ -23,11 +23,14 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TierBoundaryService {
 
   private final TierBoundaryRepository tierBoundaryRepository;
@@ -65,5 +68,27 @@ public class TierBoundaryService {
       }
     }
     return null; // Or throw an exception if a tier should always be found
+  }
+
+  @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN')")
+  public void resetTierBoundaries() {
+    log.info("Current boundaries: {}", tierBoundaryRepository.count());
+    tierBoundaryRepository.deleteAllInBatch();
+    log.info("Boundaries after delete: {}", tierBoundaryRepository.count());
+    List<TierBoundary> boundaries = new java.util.ArrayList<>();
+    for (Gender gender : Gender.values()) {
+      for (WrestlerTier tier : WrestlerTier.values()) {
+        TierBoundary boundary = new TierBoundary();
+        boundary.setTier(tier);
+        boundary.setGender(gender);
+        boundary.setMinFans(tier.getMinFans());
+        boundary.setMaxFans(tier.getMaxFans());
+        boundary.setChallengeCost(tier.getChallengeCost());
+        boundary.setContenderEntryFee(tier.getContenderEntryFee());
+        boundaries.add(boundary);
+      }
+    }
+    tierBoundaryRepository.saveAll(boundaries);
   }
 }

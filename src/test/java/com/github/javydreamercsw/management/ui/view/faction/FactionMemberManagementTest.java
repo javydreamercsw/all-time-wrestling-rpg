@@ -159,7 +159,7 @@ class FactionMemberManagementTest {
     Faction emptyFaction = Faction.builder().build();
     emptyFaction.setId(99L);
     emptyFaction.setName("Empty Faction");
-    emptyFaction.setIsActive(true);
+    emptyFaction.setActive(true);
     emptyFaction.setCreationDate(Instant.now());
     emptyFaction.setMembers(new HashSet<>());
 
@@ -272,7 +272,7 @@ class FactionMemberManagementTest {
     faction.setId(1L);
     faction.setName("Test Faction");
     faction.setDescription("A faction for testing member management");
-    faction.setIsActive(true);
+    faction.setActive(true);
     faction.setCreationDate(Instant.now());
     faction.setMembers(new HashSet<>(factionMembers));
     faction.setLeader(new ArrayList<>(factionMembers).get(0)); // First member is leader

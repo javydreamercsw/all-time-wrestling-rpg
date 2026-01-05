@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -36,6 +37,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -47,12 +49,14 @@ class ShowPlanningAiServiceTest {
   private SegmentNarrationServiceFactory narrationServiceFactory;
   private SegmentNarrationService segmentNarrationService;
   private SegmentRuleService segmentRuleService;
+  private HolidayService holidayService;
 
   @BeforeEach
   void setUp() {
     narrationServiceFactory = mock(SegmentNarrationServiceFactory.class);
     segmentNarrationService = mock(SegmentNarrationService.class);
     segmentRuleService = mock(SegmentRuleService.class);
+    holidayService = mock(HolidayService.class);
     ObjectMapper objectMapper = new ObjectMapper(); // Use real ObjectMapper for JSON parsing
     SegmentTypeService segmentTypeService = mock(SegmentTypeService.class);
 
@@ -61,6 +65,8 @@ class ShowPlanningAiServiceTest {
     // This is the new change to mock the generateText method
     when(narrationServiceFactory.generateText(anyString()))
         .thenAnswer(invocation -> segmentNarrationService.generateText(invocation.getArgument(0)));
+    when(holidayService.getHolidayTheme(any(Instant.class)))
+        .thenReturn(Optional.of("Christmas Day"));
 
     SegmentType segmentType = new SegmentType();
     segmentType.setName("One on One");
@@ -69,7 +75,11 @@ class ShowPlanningAiServiceTest {
 
     showPlanningAiService =
         new ShowPlanningAiService(
-            narrationServiceFactory, objectMapper, segmentTypeService, segmentRuleService);
+            narrationServiceFactory,
+            objectMapper,
+            segmentTypeService,
+            segmentRuleService,
+            holidayService);
   }
 
   @Test
@@ -134,11 +144,11 @@ class ShowPlanningAiServiceTest {
 
     ProposedSegment segment1 = proposedShow.getSegments().get(0);
     assertEquals("One on One", segment1.getType());
-    assertEquals("Main Event: John Cena vs Randy Orton", segment1.getDescription());
+    assertEquals("Main Event: John Cena vs Randy Orton", segment1.getNarration());
 
     ProposedSegment segment2 = proposedShow.getSegments().get(1);
     assertEquals("Promo", segment2.getType());
-    assertEquals("CM Punk cuts a promo on the Authority", segment2.getDescription());
+    assertEquals("CM Punk cuts a promo on the Authority", segment2.getNarration());
 
     // Verify that the AI service was called and capture the prompt
     ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);

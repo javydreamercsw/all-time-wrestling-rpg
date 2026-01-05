@@ -775,16 +775,14 @@ public class ShowDetailView extends Main
               new NarrationDialog(
                   segment,
                   npcService,
-                  wrestlerRepository,
+                  wrestlerService,
                   showService,
                   segmentService,
                   updatedSegment -> refreshSegmentsGrid(),
                   rivalryService,
                   localAIStatusService,
                   localAIConfigProperties,
-                  webClientBuilder,
-                  segmentNarrationController,
-                  env); // Call refreshSegmentsGrid
+                  segmentNarrationController); // Call refreshSegmentsGrid
           dialog.open();
         });
 
@@ -855,7 +853,7 @@ public class ShowDetailView extends Main
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
     wrestlersCombo.setItems(
-        wrestlerRepository.findAll().stream()
+        wrestlerService.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
@@ -1021,7 +1019,7 @@ public class ShowDetailView extends Main
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
     wrestlersCombo.setItems(
-        wrestlerRepository.findAll().stream()
+        wrestlerService.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);

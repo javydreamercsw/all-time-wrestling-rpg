@@ -77,7 +77,7 @@ class FactionSyncTest {
     testFaction.setName("Evolution");
     testFaction.setDescription("A dominant faction in WWE");
 
-    testFaction.setIsActive(true);
+    testFaction.setActive(true);
     testFaction.setCreationDate(Instant.now());
   }
 

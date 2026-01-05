@@ -26,7 +26,7 @@ public class TeamPage extends NotionPage {
 
   @Data
   @EqualsAndHashCode(callSuper = false)
-  static class NotionProperties extends NotionPage.BaseNotionProperties {
+  public static class NotionProperties extends NotionPage.BaseNotionProperties {
     // Team-specific properties only (common properties inherited from base)
     private Property Members;
     private Property Leader;

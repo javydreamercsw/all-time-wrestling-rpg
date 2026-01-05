@@ -40,6 +40,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -68,6 +69,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
   @MockitoBean private SegmentTypeRepository segmentTypeRepository;
   @MockitoBean private WrestlerRepository wrestlerRepository;
   @MockitoBean private FactionService factionService;
+  @MockitoBean private WrestlerService wrestlerService;
 
   @MockitoSpyBean
   private ShowPlanningDtoMapper showPlanningDtoMapper; // IDE shows no usages, but it is needed.
@@ -153,7 +155,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(contender));
 
-    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     ShowType pleShowType = new ShowType();
@@ -231,7 +233,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(promoBookingService.isPromoSegment(any())).thenReturn(false);
     when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
     when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
-    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
@@ -306,7 +308,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(promoBookingService.isPromoSegment(any())).thenReturn(false);
     when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
     when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
-    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
@@ -361,7 +363,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(titleService.getActiveTitles()).thenReturn(Collections.singletonList(title));
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(numberOneContender));
-    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAll()).thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
@@ -425,7 +427,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     rivalry2.setHeat(50);
 
     // Mock the wrestler service to return our wrestlers
-    when(wrestlerRepository.findAll())
+    when(wrestlerService.findAll())
         .thenReturn(Arrays.asList(wrestler1, wrestler2, wrestler3, wrestler4));
 
     // Mock the rivalry service to return appropriate rivalries for each wrestler
@@ -508,7 +510,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     wrestler1.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
 
     // Mock the wrestler service to return our wrestler
-    when(wrestlerRepository.findAll()).thenReturn(Collections.singletonList(wrestler1));
+    when(wrestlerService.findAll()).thenReturn(Collections.singletonList(wrestler1));
 
     // Mock the rivalry service to return empty list (no rivalries)
     when(rivalryService.getRivalriesForWrestler(1L)).thenReturn(Collections.emptyList());

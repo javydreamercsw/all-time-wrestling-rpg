@@ -210,7 +210,7 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
 
     // When
     Optional<Team> createdTeam =
-        teamService.createTeam(teamName, description, wrestler1Id, wrestler2Id, null);
+        teamService.createTeam(teamName, description, wrestler1Id, wrestler2Id, null, null);
 
     // Then
     assertThat(createdTeam).isPresent();
@@ -235,7 +235,8 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
     Wrestler wrestler1 = createTestWrestler("Wrestler 1");
     wrestlerRepository.save(wrestler1);
     Optional<Team> invalidTeam =
-        teamService.createTeam("Invalid Team", "Missing wrestler", wrestler1.getId(), null, null);
+        teamService.createTeam(
+            "Invalid Team", "Missing wrestler", wrestler1.getId(), null, null, null);
 
     // Should fail validation (depending on TeamService implementation)
     // This test verifies the service handles invalid input appropriately

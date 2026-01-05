@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.show;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,6 +31,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -115,11 +117,11 @@ class ShowPlanningViewTest {
     ProposedShow proposedShow = new ProposedShow();
     ProposedSegment segment1 = new ProposedSegment();
     segment1.setType("Match");
-    segment1.setDescription("A vs B");
+    segment1.setNarration("A vs B");
     segment1.setParticipants(Arrays.asList("A", "B"));
     ProposedSegment segment2 = new ProposedSegment();
     segment2.setType("Promo");
-    segment2.setDescription("C talks");
+    segment2.setNarration("C talks");
     segment2.setParticipants(List.of("C"));
     proposedShow.setSegments(Arrays.asList(segment1, segment2));
 
@@ -172,7 +174,7 @@ class ShowPlanningViewTest {
     ProposedShow proposedShow = new ProposedShow();
     ProposedSegment segment1 = new ProposedSegment();
     segment1.setType("Match");
-    segment1.setDescription("A vs B");
+    segment1.setNarration("A vs B");
     segment1.setParticipants(Arrays.asList("A", "B"));
     proposedShow.setSegments(List.of(segment1));
 
@@ -206,5 +208,32 @@ class ShowPlanningViewTest {
     List<ProposedSegment> items = proposedSegmentsGrid.getGenericDataView().getItems().toList();
     assertEquals(1, items.size());
     assertEquals("Match", items.get(0).getType());
+  }
+
+  @Test
+  void testNavigateToShowDetails() {
+    // Create a mock Show
+    long showId = 1L;
+    Show show = new Show();
+    show.setId(showId);
+    show.setName("Test Show");
+
+    // Mock the ComboBox to return the mock Show
+    @SuppressWarnings("unchecked")
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    showComboBox.setValue(show);
+
+    // Mock the UI to capture the navigation call
+    UI ui = mock(UI.class);
+    UI.setCurrent(ui);
+
+    // Get the button and click it
+    Button viewDetailsButton =
+        (Button) ReflectionTestUtils.getField(showPlanningView, "viewDetailsButton");
+    viewDetailsButton.click();
+
+    // Verify that navigate was called with the correct parameters
+    verify(ui).navigate(ShowDetailView.class, showId);
   }
 }

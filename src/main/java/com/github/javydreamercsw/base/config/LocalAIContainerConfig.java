@@ -91,6 +91,10 @@ public class LocalAIContainerConfig {
         modelsDir.mkdirs();
       }
 
+      // This tells the container to load the specified model config file at startup.
+      String preloadModelsJson =
+          String.format("[{\"path\": \"/build/models/%s.yaml\"}]", modelName);
+
       // Using the official LocalAI image
       localAiContainer =
           new GenericContainer<>("localai/localai:latest")

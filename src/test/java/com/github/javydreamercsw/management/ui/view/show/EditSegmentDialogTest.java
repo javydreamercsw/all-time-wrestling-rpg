@@ -58,7 +58,7 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
   void setUp() {
     segment = new ProposedSegment();
     segment.setType("One on One");
-    segment.setDescription("Old Description");
+    segment.setNarration("Old Description");
     segment.setParticipants(new ArrayList<>(List.of("Wrestler 1")));
 
     Wrestler wrestler1 = new Wrestler();
@@ -102,7 +102,7 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
 
     // Simulate user input
     dialog.getNarrationArea().setValue("New Description");
-    segment.setDescription("New Description");
+    segment.setNarration("New Description");
     Set<Wrestler> selectedParticipants = Set.of(wrestlerService.findByName("Wrestler 2").get());
     dialog.getParticipantsCombo().setValue(selectedParticipants);
     SegmentType segmentType = new SegmentType();
@@ -117,7 +117,7 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
 
     // Verify segment is updated
     ProposedSegment updatedSegment = dialog.getSegment();
-    assertEquals("New Description", updatedSegment.getDescription());
+    assertEquals("New Description", updatedSegment.getNarration());
     assertEquals(1, updatedSegment.getParticipants().size());
     assertEquals("Wrestler 2", updatedSegment.getParticipants().get(0));
     // Verify that no titles were selected if it's not a title segment

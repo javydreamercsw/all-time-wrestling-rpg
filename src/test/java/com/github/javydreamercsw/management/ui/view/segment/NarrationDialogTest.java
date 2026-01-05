@@ -24,18 +24,24 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +54,6 @@ class NarrationDialogTest {
 
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
-  @Mock private WrestlerRepository wrestlerRepository;
   @Mock private ShowService showService;
   @Mock private SegmentService segmentService;
   @Mock private RivalryService rivalryService;
@@ -56,10 +61,11 @@ class NarrationDialogTest {
   @Mock private LocalAIConfigProperties localAIConfigProperties;
   @Mock private Environment env;
   @Mock private SegmentNarrationController segmentNarrationController;
+  @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
 
   private NarrationDialog narrationDialog;
-
   private Segment segment;
+  private Wrestler wrestler;
 
   @BeforeEach
   void setUp() {
@@ -86,6 +92,18 @@ class NarrationDialogTest {
     segment.setShow(show);
     segment.setSegmentType(segmentType);
 
+    // Given
+    Npc manager = new Npc();
+    manager.setName("Paul Heyman");
+
+    wrestler = new Wrestler();
+    wrestler.setName("Roman Reigns");
+    wrestler.setManager(manager);
+    segment.getWrestlers().add(wrestler);
+    when(wrestlerService.findByName(wrestler.getName()))
+        .thenReturn(java.util.Optional.of(wrestler));
+    when(wrestlerService.findAll()).thenReturn(List.of(wrestler));
+
     List<Segment> segments = new ArrayList<>();
     segments.add(segment1);
     segments.add(segment);
@@ -95,23 +113,45 @@ class NarrationDialogTest {
     when(env.getActiveProfiles()).thenReturn(new String[] {});
     WebClient.Builder webClientBuilder = mock(WebClient.Builder.class);
     WebClient webClient = mock(WebClient.class);
-    when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
     when(webClientBuilder.build()).thenReturn(webClient);
 
     narrationDialog =
         new NarrationDialog(
             segment,
             npcService,
-            mock(WrestlerRepository.class),
+            wrestlerService,
             showService,
             segmentService,
             s -> {},
             rivalryService,
             localAIStatusService,
             localAIConfigProperties,
-            webClientBuilder,
-            segmentNarrationController,
-            env);
+            segmentNarrationController);
+
+    // Create mocks for the UI components that teamsLayout would contain
+    VerticalLayout mockTeamsLayout = mock(VerticalLayout.class);
+    HorizontalLayout mockTeamSelector = mock(HorizontalLayout.class);
+
+    // Configure the mocked MultiSelectComboBox to return our wrestler
+    WrestlerDTO wrestlerDTO = new WrestlerDTO(wrestler);
+
+    when(mockWrestlersCombo.getValue()).thenReturn(new HashSet<>(List.of(wrestlerDTO)));
+
+    // Configure the mocked HorizontalLayout to contain the MultiSelectComboBox
+    when(mockTeamSelector.getComponentAt(0)).thenReturn(mockWrestlersCombo);
+
+    // Configure the mocked teamsLayout to contain the HorizontalLayout
+    when(mockTeamsLayout.getComponentCount()).thenReturn(1);
+    when(mockTeamsLayout.getComponentAt(0)).thenReturn(mockTeamSelector);
+
+    // Use reflection to set the private final teamsLayout field in narrationDialog
+    try {
+      Field teamsLayoutField = NarrationDialog.class.getDeclaredField("teamsLayout");
+      teamsLayoutField.setAccessible(true);
+      teamsLayoutField.set(narrationDialog, mockTeamsLayout);
+    } catch (NoSuchFieldException | IllegalAccessException e) {
+      fail("Failed to inject mock teamsLayout into NarrationDialog", e);
+    }
   }
 
   @Test
@@ -150,5 +190,22 @@ class NarrationDialogTest {
     assertEquals("World Championship", titleContext.getName());
     assertEquals("John Cena", titleContext.getCurrentHolderName());
     assertEquals("MAIN_EVENTER", titleContext.getTier());
+  }
+
+  @Test
+  void testBuildWrestlerContexts_withManager() {
+    when(wrestlerService.findByName(wrestler.getName()))
+        .thenReturn(java.util.Optional.of(wrestler));
+
+    // When
+    List<SegmentNarrationService.WrestlerContext> wrestlerContexts =
+        narrationDialog.buildWrestlerContexts();
+
+    // Then
+    assertNotNull(wrestlerContexts);
+    assertEquals(1, wrestlerContexts.size());
+    SegmentNarrationService.WrestlerContext wrestlerContext = wrestlerContexts.get(0);
+    assertEquals("Roman Reigns", wrestlerContext.getName());
+    assertEquals("Paul Heyman", wrestlerContext.getManagerName());
   }
 }

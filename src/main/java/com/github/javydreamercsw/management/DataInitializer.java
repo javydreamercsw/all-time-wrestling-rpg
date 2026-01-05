@@ -23,26 +23,37 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckCardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
+import com.github.javydreamercsw.management.dto.FactionImportDTO;
+import com.github.javydreamercsw.management.dto.NpcDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
+import com.github.javydreamercsw.management.dto.TeamImportDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
+import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
+import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
@@ -79,6 +90,10 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
   private final TitleService titleService;
   private final DeckService deckService;
   private final GameSettingService gameSettingService;
+  private final NpcService npcService;
+  private final FactionService factionService;
+  private final TeamService teamService;
+  private final TeamRepository teamRepository;
 
   @Autowired
   public DataInitializer(
@@ -93,7 +108,11 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       CardService cardService,
       TitleService titleService,
       DeckService deckService,
-      GameSettingService gameSettingService) {
+      GameSettingService gameSettingService,
+      NpcService npcService,
+      FactionService factionService,
+      TeamService teamService,
+      TeamRepository teamRepository) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
     this.wrestlerService = wrestlerService;
@@ -106,6 +125,10 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
     this.titleService = titleService;
     this.deckService = deckService;
     this.gameSettingService = gameSettingService;
+    this.npcService = npcService;
+    this.factionService = factionService;
+    this.teamService = teamService;
+    this.teamRepository = teamRepository;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -121,6 +144,9 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       syncWrestlersFromFile();
       syncChampionshipsFromFile();
       syncDecksFromFile();
+      syncNpcsFromFile();
+      syncFactionsFromFile();
+      syncTeamsFromFile();
     }
   }
 
@@ -340,14 +366,15 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       // Load wrestlers from JSON file
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
-        var wrestlersFromFile = mapper.readValue(is, new TypeReference<List<Wrestler>>() {});
+        var wrestlersFromFile =
+            mapper.readValue(is, new TypeReference<List<WrestlerImportDTO>>() {});
         // Map existing wrestlers by name (handle duplicates by keeping the first one)
         Map<String, Wrestler> existing =
             wrestlerRepository.findAll().stream()
                 .collect(
                     Collectors.toMap(
                         Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
-        for (Wrestler w : wrestlersFromFile) {
+        for (WrestlerImportDTO w : wrestlersFromFile) {
           // Smart duplicate handling - prefer external ID, fallback to name
           Wrestler existingWrestler = null;
           if (w.getExternalId() != null && !w.getExternalId().trim().isEmpty()) {
@@ -358,23 +385,62 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
           }
 
           if (existingWrestler != null) {
-            // Update card game fields
+            // Update fields
             existingWrestler.setDeckSize(w.getDeckSize());
             existingWrestler.setStartingHealth(w.getStartingHealth());
             existingWrestler.setLowHealth(w.getLowHealth());
             existingWrestler.setStartingStamina(w.getStartingStamina());
             existingWrestler.setLowStamina(w.getLowStamina());
+            existingWrestler.setDescription(w.getDescription());
+            existingWrestler.setGender(w.getGender());
+            if (w.getFans() != null) {
+              existingWrestler.setFans(w.getFans());
+            }
+            if (w.getBumps() != null) {
+              existingWrestler.setBumps(w.getBumps());
+            }
+
+            if (w.getImageUrl() != null) {
+              existingWrestler.setImageUrl(w.getImageUrl());
+            }
 
             if (w.getExternalId() != null) {
               existingWrestler.setExternalId(w.getExternalId());
+            }
+            if (w.getManager() != null) {
+              Npc manager = npcService.findByName(w.getManager());
+              if (manager != null) {
+                existingWrestler.setManager(manager);
+              }
             }
 
             wrestlerRepository.save(existingWrestler);
             log.debug("Updated existing wrestler: {}", existingWrestler.getName());
           } else {
-            w.setTier(WrestlerTier.ROOKIE);
-            wrestlerRepository.save(w);
-            log.debug("Saved new wrestler: {}", w.getName());
+            Wrestler newWrestler = new Wrestler();
+            newWrestler.setName(w.getName());
+            newWrestler.setDeckSize(w.getDeckSize());
+            newWrestler.setStartingHealth(w.getStartingHealth());
+            newWrestler.setLowHealth(w.getLowHealth());
+            newWrestler.setStartingStamina(w.getStartingStamina());
+            newWrestler.setLowStamina(w.getLowStamina());
+            newWrestler.setDescription(w.getDescription());
+            newWrestler.setGender(w.getGender());
+            newWrestler.setFans(w.getFans());
+            newWrestler.setBumps(w.getBumps());
+            newWrestler.setImageUrl(w.getImageUrl());
+            newWrestler.setTier(WrestlerTier.ROOKIE);
+            if (w.getExternalId() != null) {
+              newWrestler.setExternalId(w.getExternalId());
+            }
+            if (w.getManager() != null) {
+              Npc manager = npcService.findByName(w.getManager());
+              if (manager != null) {
+                newWrestler.setManager(manager);
+              }
+            }
+            wrestlerRepository.save(newWrestler);
+            log.debug("Saved new wrestler: {}", newWrestler.getName());
           }
         }
       } catch (IOException e) {
@@ -559,6 +625,121 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
     if (gameSettingService.findById(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
       log.info("In-game date not set. Initializing to current date.");
       gameSettingService.saveCurrentGameDate(LocalDate.now());
+    }
+  }
+
+  private void syncNpcsFromFile() {
+    ClassPathResource resource = new ClassPathResource("npcs.json");
+    if (resource.exists()) {
+      log.info("Loading npcs from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var dtos = mapper.readValue(is, new TypeReference<List<NpcDTO>>() {});
+        for (NpcDTO dto : dtos) {
+          Npc npc = npcService.findByName(dto.getName());
+          if (npc == null) {
+            npc = new Npc();
+            npc.setName(dto.getName());
+          }
+          npc.setDescription(dto.getDescription());
+          npc.setNpcType(dto.getType());
+          npcService.save(npc);
+          log.debug("Loaded npc: {}", dto.getName());
+        }
+        log.info("Npc loading completed - {} npcs loaded", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading npcs from file", e);
+      }
+    } else {
+      log.warn("Npcs file not found: {}", resource.getPath());
+    }
+  }
+
+  private void syncFactionsFromFile() {
+    ClassPathResource resource = new ClassPathResource("factions.json");
+    if (resource.exists()) {
+      log.info("Loading factions from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var dtos = mapper.readValue(is, new TypeReference<List<FactionImportDTO>>() {});
+        for (FactionImportDTO dto : dtos) {
+          Optional<Wrestler> leaderOpt = wrestlerRepository.findByName(dto.getLeader());
+          if (leaderOpt.isPresent()) {
+            Optional<Faction> factionOpt = factionService.getFactionByName(dto.getName());
+            if (factionOpt.isEmpty()) {
+              factionOpt =
+                  factionService.createFaction(
+                      dto.getName(), dto.getDescription(), leaderOpt.get().getId());
+            }
+            if (factionOpt.isPresent()) {
+              Faction faction = factionOpt.get();
+              for (String memberName : dto.getMembers()) {
+                Optional<Wrestler> memberOpt = wrestlerRepository.findByName(memberName);
+                if (memberOpt.isPresent()) {
+                  factionService.addMemberToFaction(faction.getId(), memberOpt.get().getId());
+                }
+              }
+              if (dto.getManager() != null) {
+                Npc manager = npcService.findByName(dto.getManager());
+                if (manager != null) {
+                  faction.setManager(manager);
+                  factionService.save(faction);
+                }
+              }
+            }
+          }
+          log.debug("Loaded faction: {}", dto.getName());
+        }
+        log.info("Faction loading completed - {} factions loaded", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading factions from file", e);
+      }
+    } else {
+      log.warn("Factions file not found: {}", resource.getPath());
+    }
+  }
+
+  private void syncTeamsFromFile() {
+    ClassPathResource resource = new ClassPathResource("teams.json");
+    if (resource.exists()) {
+      log.info("Loading teams from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var dtos = mapper.readValue(is, new TypeReference<List<TeamImportDTO>>() {});
+        for (TeamImportDTO dto : dtos) {
+          Optional<Wrestler> wrestler1Opt = wrestlerRepository.findByName(dto.getWrestler1());
+          Optional<Wrestler> wrestler2Opt = wrestlerRepository.findByName(dto.getWrestler2());
+          if (wrestler1Opt.isPresent() && wrestler2Opt.isPresent()) {
+            Optional<Team> teamOpt = teamService.getTeamByName(dto.getName());
+            if (teamOpt.isEmpty()) {
+              teamOpt =
+                  teamService.createTeam(
+                      dto.getName(),
+                      dto.getDescription(),
+                      wrestler1Opt.get().getId(),
+                      wrestler2Opt.get().getId(),
+                      null,
+                      null);
+            }
+            if (teamOpt.isPresent()) {
+              Team team = teamOpt.get();
+              if (dto.getManager() != null) {
+                Npc manager = npcService.findByName(dto.getManager());
+                if (manager != null) {
+                  team.setManager(manager);
+                  teamRepository.save(team);
+                }
+              }
+            }
+          }
+          log.debug("Loaded team: {}", dto.getName());
+        }
+        log.info("Team loading completed - {} teams loaded", dtos.size());
+      } catch (IOException e) {
+        log.error("Error loading teams from file", e);
+      }
+    } else {
+      log.warn("Teams file not found: {}", resource.getPath());
     }
   }
 }
