@@ -5,7 +5,6 @@
   "lowHealth": 2,
   "startingStamina": 12,
   "lowStamina": 2,
-  "isPlayer": false,
   "description": "A test wrestler.",
   "gender": "MALE"
 }, {
@@ -15,9 +14,6 @@
   "lowHealth": 4,
   "startingStamina": 16,
   "lowStamina": 2,
-  "fans": 0,
-  "isPlayer": false,
-  "bumps": 0,
   "description": "The Whole F'n Show - High-flying innovator with extreme attitude and unmatched charisma",
   "gender": "MALE"
 } ]

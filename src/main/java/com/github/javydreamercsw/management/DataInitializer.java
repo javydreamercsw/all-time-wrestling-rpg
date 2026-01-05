@@ -394,6 +394,18 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
             existingWrestler.setDescription(w.getDescription());
             existingWrestler.setGender(w.getGender());
 
+            if (w.getFans() != null) {
+              if (w.getFans() > existingWrestler.getFans()) {
+                existingWrestler.setFans(w.getFans());
+              }
+            }
+
+            if (w.getBumps() != null) {
+              if (w.getBumps() > existingWrestler.getBumps()) {
+                existingWrestler.setBumps(w.getBumps());
+              }
+            }
+
             if (w.getImageUrl() != null) {
               existingWrestler.setImageUrl(w.getImageUrl());
             }
@@ -401,6 +413,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
             if (w.getExternalId() != null) {
               existingWrestler.setExternalId(w.getExternalId());
             }
+
             if (w.getManager() != null) {
               Npc manager = npcService.findByName(w.getManager());
               if (manager != null) {
