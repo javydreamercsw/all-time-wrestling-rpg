@@ -23,15 +23,21 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -48,6 +54,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final WrestlerService wrestlerService;
   private final SecurityUtils securityUtils;
   private Segment segment;
+  private TextArea narrationArea;
+  private MultiSelectComboBox<Wrestler> winnersComboBox;
 
   @Autowired
   public MatchView(
@@ -121,6 +129,41 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     } else {
       segment.getTitles().forEach(title -> add(new Paragraph("- " + title.getName())));
     }
+
+    add(new H3("Match Winners"));
+    winnersComboBox = new MultiSelectComboBox<>();
+    winnersComboBox.setItems(segment.getWrestlers());
+    winnersComboBox.setItemLabelGenerator(Wrestler::getName);
+    winnersComboBox.setValue(new HashSet<>(segment.getWinners()));
+    winnersComboBox.setId("winners-combobox");
+    add(winnersComboBox);
+
+    Button saveWinnersButton = new Button("Save Winners", event -> saveWinners());
+    saveWinnersButton.setId("save-winners-button");
+    add(saveWinnersButton);
+
+    add(new H3("Match Narration"));
+    narrationArea = new TextArea();
+    narrationArea.setWidthFull();
+    narrationArea.setValue(segment.getNarration() == null ? "" : segment.getNarration());
+    narrationArea.setId("narration-area");
+    add(narrationArea);
+
+    Button saveButton = new Button("Save Narration", event -> saveNarration());
+    saveButton.setId("save-narration-button");
+    add(saveButton);
+  }
+
+  private void saveWinners() {
+    segment.setWinners(new ArrayList<>(winnersComboBox.getValue()));
+    segmentService.updateSegment(segment);
+    Notification.show("Winners saved!");
+  }
+
+  private void saveNarration() {
+    segment.setNarration(narrationArea.getValue());
+    segmentService.updateSegment(segment);
+    Notification.show("Narration saved!");
   }
 
   private VerticalLayout createOpponentSummary(Wrestler opponent) {
@@ -164,7 +207,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     Wrestler playerWithInjuries = wrestlerService.findByIdWithInjuries(player.getId()).get();
 
-    summary.add(new Paragraph("Bumps: " + playerWithInjuries.getBumps()));
+    summary.add(new Paragraph("Bumps: ".concat(String.valueOf(playerWithInjuries.getBumps()))));
     if (playerWithInjuries.getInjuries().isEmpty()) {
       summary.add(new Paragraph("No current injuries."));
     } else {
