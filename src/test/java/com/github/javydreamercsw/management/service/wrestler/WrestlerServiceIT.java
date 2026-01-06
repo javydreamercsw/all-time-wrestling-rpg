@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -64,6 +65,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @Autowired private ShowTypeService showTypeService;
   @Autowired private InboxRepository inboxRepository;
   @Autowired private DataInitializer dataInitializer;
+  @Autowired private InjuryService injuryService;
 
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
 
@@ -406,5 +408,86 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     Wrestler updatedRookie = wrestlerService.getWrestlerById(rookie.getId()).get();
     assertEquals(WrestlerTier.ROOKIE, updatedRookie.getTier());
     assertEquals(0L, updatedRookie.getFans());
+  }
+
+  @Test
+  @DisplayName("Should award fans and persist changes")
+  void testAwardFans_PersistsChanges() {
+    // Given
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    Assertions.assertNotNull(wrestler.getId());
+    wrestler.setFans(100L);
+    wrestler.setTier(
+        com.github.javydreamercsw.base.domain.wrestler.WrestlerTier
+            .ROOKIE); // No fan modification for ROOKIE
+    wrestlerService.save(wrestler); // Save initial state
+
+    long fansToAdd = 1234;
+    long expectedFans = 100L + 1000L; // It rounds to nearest 1000. 1234 -> 1000
+
+    // When
+    wrestlerService.awardFans(wrestler.getId(), fansToAdd);
+
+    // Then
+    // Using `findById` from a new transaction or after clearing context effectively tests
+    // persistence
+    Wrestler updatedWrestler = wrestlerService.findById(wrestler.getId()).orElseThrow();
+    assertEquals(expectedFans, updatedWrestler.getFans());
+  }
+
+  @Test
+  @DisplayName("Should add bump and persist changes")
+  void testAddBump_PersistsChanges_Increment() {
+    // Given
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    Assertions.assertNotNull(wrestler.getId());
+    wrestler.setBumps(1);
+    wrestlerService.save(wrestler); // Save initial state
+
+    // When
+    wrestlerService.addBump(wrestler.getId());
+
+    // Then
+    Wrestler updatedWrestler = wrestlerService.findById(wrestler.getId()).orElseThrow();
+    assertEquals(2, updatedWrestler.getBumps());
+  }
+
+  @Test
+  @DisplayName("Should add bump and reset to 0 and create an injury after 3 bumps")
+  void testAddBump_PersistsChanges() {
+    // Given
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    Assertions.assertNotNull(wrestler.getId());
+    wrestler.setBumps(2);
+    wrestlerService.save(wrestler); // Save initial state
+    long initialInjuryCount = injuryService.getAllInjuriesForWrestler(wrestler.getId()).size();
+
+    // When
+    wrestlerService.addBump(wrestler.getId());
+
+    // Then
+    Wrestler updatedWrestler = wrestlerService.findById(wrestler.getId()).orElseThrow();
+    assertEquals(0, updatedWrestler.getBumps());
+
+    // Verify an injury was created
+    long newInjuryCount = injuryService.getAllInjuriesForWrestler(wrestler.getId()).size();
+    assertEquals(initialInjuryCount + 1, newInjuryCount);
+  }
+
+  @Test
+  @DisplayName("Should heal bump and persist changes")
+  void testHealBump_PersistsChanges() {
+    // Given
+    Wrestler wrestler = wrestlerService.createWrestler("Test Wrestler", true, null);
+    Assertions.assertNotNull(wrestler.getId());
+    wrestler.setBumps(2);
+    wrestlerService.save(wrestler); // Save initial state
+
+    // When
+    wrestlerService.healBump(wrestler.getId());
+
+    // Then
+    Wrestler updatedWrestler = wrestlerService.findById(wrestler.getId()).orElseThrow();
+    assertEquals(1, updatedWrestler.getBumps());
   }
 }

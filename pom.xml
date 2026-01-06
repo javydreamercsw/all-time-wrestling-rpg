@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>1.3.1</version>
+  <version>1.3.2-SNAPSHOT</version>
 
   <packaging>war</packaging>
   <name>All Time Wrestling RPG</name>
@@ -224,11 +224,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-testbench-junit5</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>io.github.bonigarcia</groupId>
       <artifactId>webdrivermanager</artifactId>
       <version>6.3.3</version>
@@ -312,6 +307,10 @@
       <id>spring-milestones</id>
       <name>Spring Milestones</name>
       <url>https://repo.spring.io/milestone</url>
+    </repository>
+    <repository>
+      <id>central</id>
+      <url>https://repo.maven.apache.org/maven2</url>
     </repository>
   </repositories>
 
@@ -460,15 +459,11 @@
           <!-- define a language-specific format -->
           <java>
             <toggleOffOn/>
-            <eclipse>
-              <version>4.35</version>
-              <file>${project.basedir}/eclipse-formatter.xml</file>
-            </eclipse>
             <!-- no need to specify files, inferred automatically, but you can if you want -->
             <cleanthat/>
             <!-- apply a specific flavor of google-java-format and reflow long strings -->
             <googleJavaFormat>
-              <version>1.28.0</version>
+              <version>1.33.0</version>
               <style>GOOGLE</style>
               <reflowLongStrings>true</reflowLongStrings>
             </googleJavaFormat>
@@ -602,12 +597,14 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <version>3.9.0</version>
         <executions>
-          <execution>
-            <id>getClasspathFilenames</id>
+          <!--<execution>
+            <id>dependency-analyze</id>
             <goals>
-              <goal>properties</goal>
+              <goal>analyze</goal>
             </goals>
-          </execution>
+            <phase>package</phase>
+            <configuration/>
+          </execution>-->
         </executions>
       </plugin>
       <plugin>

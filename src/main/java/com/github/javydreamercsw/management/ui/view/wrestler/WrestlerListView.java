@@ -178,6 +178,6 @@ public class WrestlerListView extends Main {
   }
 
   private void reloadGrid() {
-    wrestlerGrid.setItems(wrestlerService.findAll());
+    wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
   }
 }

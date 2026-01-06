@@ -18,10 +18,13 @@ package com.github.javydreamercsw.management;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,6 +67,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -175,12 +179,11 @@ class DataInitializerTest {
         .when(wrestlerRepository.save(any(Wrestler.class)))
         .thenAnswer(i -> i.getArguments()[0]);
     lenient().doNothing().when(gameSettingService).saveCurrentGameDate(any());
-
-    dataInitializer.init();
   }
 
   @Test
   void testDeckImportIsIdempotentAndNoDuplicates() {
+    dataInitializer.init();
     long initialDeckCount = deckService.count();
     dataInitializer.init();
     assertEquals(initialDeckCount, deckService.count());
@@ -316,5 +319,37 @@ class DataInitializerTest {
                   new ClassPathResource("teams.json").getInputStream(),
                   new TypeReference<List<TeamImportDTO>>() {});
         });
+  }
+
+  @Test
+  void testSyncWrestlersFromFile_existingWrestler() {
+    // Given
+    Wrestler existingWrestler = new Wrestler();
+    existingWrestler.setName("Rob Van Dam");
+    existingWrestler.setFans(100L);
+    existingWrestler.setBumps(100);
+
+    lenient().when(wrestlerService.count()).thenReturn(1L);
+    lenient()
+        .when(wrestlerRepository.findByName("Rob Van Dam"))
+        .thenReturn(Optional.of(existingWrestler));
+    lenient().when(wrestlerRepository.findAll()).thenReturn(List.of(existingWrestler));
+
+    // When
+    dataInitializer.syncWrestlersFromFile();
+
+    // Then
+    ArgumentCaptor<Wrestler> wrestlerCaptor = ArgumentCaptor.forClass(Wrestler.class);
+    verify(wrestlerRepository, atLeastOnce()).save(wrestlerCaptor.capture());
+
+    Wrestler savedWrestler =
+        wrestlerCaptor.getAllValues().stream()
+            .filter(w -> w.getName().equals("Rob Van Dam"))
+            .findFirst()
+            .orElse(null);
+
+    assertNotNull(savedWrestler);
+    assertEquals(100, (long) savedWrestler.getFans());
+    assertEquals(100, (int) savedWrestler.getBumps());
   }
 }
