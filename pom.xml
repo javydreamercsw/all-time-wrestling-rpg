@@ -455,15 +455,11 @@
           <!-- define a language-specific format -->
           <java>
             <toggleOffOn/>
-            <eclipse>
-              <version>4.35</version>
-              <file>${project.basedir}/eclipse-formatter.xml</file>
-            </eclipse>
             <!-- no need to specify files, inferred automatically, but you can if you want -->
             <cleanthat/>
             <!-- apply a specific flavor of google-java-format and reflow long strings -->
             <googleJavaFormat>
-              <version>1.28.0</version>
+              <version>1.33.0</version>
               <style>GOOGLE</style>
               <reflowLongStrings>true</reflowLongStrings>
             </googleJavaFormat>
