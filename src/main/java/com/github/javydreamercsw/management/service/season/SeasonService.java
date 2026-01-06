@@ -43,6 +43,9 @@ public class SeasonService {
   @Autowired private Clock clock;
 
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      allEntries = true)
   public Season createOrUpdateSeason(
       @NonNull String name, @NonNull Instant startDate, boolean isActive) {
     Optional<Season> existingSeason = seasonRepository.findByName(name);
@@ -55,6 +58,9 @@ public class SeasonService {
 
   /** Create a new season. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      allEntries = true)
   public Season createSeason(
       @NonNull String name, @NonNull String description, Integer showsPerPpv) {
     // End any currently active season
@@ -76,6 +82,9 @@ public class SeasonService {
   /** Get the currently active season. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      key = "'active'")
   public Optional<Season> getActiveSeason() {
     return seasonRepository.findActiveSeason();
   }
@@ -83,6 +92,9 @@ public class SeasonService {
   /** Get season by ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      key = "#seasonId")
   public Optional<Season> getSeasonById(@NonNull Long seasonId) {
     return seasonRepository.findById(seasonId);
   }
@@ -90,6 +102,9 @@ public class SeasonService {
   /** Find season by name. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      key = "#name")
   public Season findByName(@NonNull String name) {
     return seasonRepository.findByName(name).orElse(null);
   }
@@ -103,6 +118,9 @@ public class SeasonService {
 
   /** Save a season. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      allEntries = true)
   public Season save(@NonNull Season season) {
     return seasonRepository.saveAndFlush(season);
   }
@@ -116,6 +134,9 @@ public class SeasonService {
 
   /** End the current season. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      allEntries = true)
   public Optional<Season> endCurrentSeason() {
     Optional<Season> activeSeason = seasonRepository.findActiveSeason();
     activeSeason.ifPresent(this::endSeason);
@@ -124,6 +145,9 @@ public class SeasonService {
 
   /** End a specific season. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      allEntries = true)
   public Season endSeason(@NonNull Season season) {
     season.endSeason();
     return seasonRepository.saveAndFlush(season);
@@ -131,6 +155,9 @@ public class SeasonService {
 
   /** Add a show to the active season. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      allEntries = true)
   public Optional<Season> addShowToActiveSeason(@NonNull Show show) {
     Optional<Season> activeSeason = seasonRepository.findActiveSeason();
     if (activeSeason.isPresent()) {
@@ -161,6 +188,9 @@ public class SeasonService {
 
   /** Update season settings. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      allEntries = true)
   public Optional<Season> updateSeason(
       @NonNull Long seasonId,
       @NonNull String name,
@@ -179,6 +209,9 @@ public class SeasonService {
 
   /** Update season with Season object. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      allEntries = true)
   public Season updateSeason(@NonNull Season season) {
     return seasonRepository.saveAndFlush(season);
   }
@@ -193,6 +226,9 @@ public class SeasonService {
 
   /** Delete a season (only if not active and has no shows). */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      allEntries = true)
   public boolean deleteSeason(@NonNull Long seasonId) {
     return seasonRepository
         .findById(seasonId)
@@ -241,6 +277,9 @@ public class SeasonService {
   /** Get the latest season by creation date. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEASONS_CACHE,
+      key = "'latest'")
   public Optional<Season> getLatestSeason() {
     return seasonRepository.findLatestSeason();
   }
