@@ -37,17 +37,11 @@ public class SegmentTypeService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_TYPES_CACHE,
-      key = "#name")
   public Optional<SegmentType> findByName(@NonNull String name) {
     return segmentTypeRepository.findByName(name);
   }
 
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_TYPES_CACHE,
-      key = "'all'")
   public List<SegmentType> findAll() {
     return segmentTypeRepository.findAll();
   }
