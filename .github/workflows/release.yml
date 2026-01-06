@@ -2,6 +2,7 @@ name: Create Release
 
 permissions:
   contents: write
+  pull-requests: write
 
 on:
   workflow_dispatch:
@@ -101,7 +102,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Build with Maven
-        run: mvn -B package --file pom.xml -DskipTests=true
+        run: mvn -B package --file pom.xml
 
       - name: Create Release
         id: create_release
@@ -142,25 +143,26 @@ jobs:
 
       - name: Build and Publish Docker Image
         run: mvn clean package jib:build -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }}
-  merge_release:
+  create_pull_request:
+    name: Create and Merge Pull Request
     needs: build_and_publish_docker
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          # Fetch all history for all branches and tags
-          fetch-depth: 0
-
-      - name: Configure Git
+      - name: Create Pull Request
+        id: cpr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          PR_URL=$(gh pr create \
+            --base main \
+            --head "release/${{ github.event.inputs.version }}" \
+            --title "chore: Merge release v${{ github.event.inputs.version }}" \
+            --body "This PR merges release v${{ github.event.inputs.version }}.")
+          echo "PR_URL=${PR_URL}" >> $GITHUB_OUTPUT
 
-      - name: Merge release branch to main
+      - name: Enable auto-merge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ steps.cpr.outputs.PR_URL }}
         run: |
-          git fetch origin main
-          git fetch origin "release/${{ github.event.inputs.version }}"
-          git checkout main
-          git merge --no-ff "FETCH_HEAD" -m "Merge release/${{ github.event.inputs.version }}"
-          git push origin main
+          gh pr merge --auto --merge "$PR_URL"
