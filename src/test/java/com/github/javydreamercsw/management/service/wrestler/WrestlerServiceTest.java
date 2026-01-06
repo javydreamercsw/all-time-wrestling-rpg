@@ -117,7 +117,7 @@ class WrestlerServiceTest {
   void testAddBump_PublishesEvent() {
     // Given
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    when(wrestlerRepository.saveAndFlush(wrestler)).thenReturn(wrestler);
+    when(wrestlerRepository.save(wrestler)).thenReturn(wrestler);
 
     // When
     wrestlerService.addBump(1L);
