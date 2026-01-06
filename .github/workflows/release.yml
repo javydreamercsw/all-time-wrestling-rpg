@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: main
 
@@ -42,15 +42,16 @@ jobs:
           git commit -m "chore: Update version to ${{ github.event.inputs.version }}"
       
       - name: Push changes
-        run: git push --force --set-upstream origin release/${{ github.event.inputs.version }}
+        run: git push --set-upstream origin release/${{ github.event.inputs.version }}
 
   generate_changelog:
     needs: update_pom
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: release/${{ github.event.inputs.version }}
+          fetch-depth: 0
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -77,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: release/${{ github.event.inputs.version }}
 
@@ -117,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: release/${{ github.event.inputs.version }}
 
@@ -134,7 +135,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # Fetch all history for all branches and tags
           fetch-depth: 0
