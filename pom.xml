@@ -597,14 +597,14 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <version>3.9.0</version>
         <executions>
-          <execution>
+          <!--<execution>
             <id>dependency-analyze</id>
             <goals>
               <goal>analyze</goal>
             </goals>
             <phase>package</phase>
             <configuration/>
-          </execution>
+          </execution>-->
         </executions>
       </plugin>
       <plugin>
