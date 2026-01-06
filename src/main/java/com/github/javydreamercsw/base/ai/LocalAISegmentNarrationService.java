@@ -28,12 +28,14 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 /** Segment narration service using a local AI provider. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Profile("!test & !e2e")
 public class LocalAISegmentNarrationService implements SegmentNarrationService {
 
   private final LocalAIConfigProperties config;
