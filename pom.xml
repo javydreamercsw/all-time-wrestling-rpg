@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>1.3.2-SNAPSHIT</version>
+  <version>1.3.2</version>
 
   <packaging>war</packaging>
   <name>All Time Wrestling RPG</name>
