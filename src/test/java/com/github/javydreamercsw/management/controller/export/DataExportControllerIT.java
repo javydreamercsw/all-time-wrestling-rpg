@@ -52,16 +52,10 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(
-    controllers = DataExportController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
-class DataExportControllerIntegrationTest extends AbstractControllerTest {
+class DataExportControllerIT extends AbstractControllerTest {
 
   @MockitoBean private ShowTemplateRepository showTemplateRepository;
   @MockitoBean private ShowTypeRepository showTypeRepository;

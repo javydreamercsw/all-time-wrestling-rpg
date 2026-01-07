@@ -24,13 +24,13 @@ import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 class SeasonServiceIT extends ManagementIntegrationTest {
 
   @Autowired private SeasonService seasonService;
 
-  @SpyBean private SeasonRepository seasonRepository;
+  @MockitoSpyBean private SeasonRepository seasonRepository;
 
   @Test
   @DisplayName("Test that createSeason evicts cache")

@@ -16,21 +16,16 @@
         <cve>CVE-2021-23382</cve>
         <cve>CVE-2021-23424</cve>
     </suppress>
-    
-    <!-- Suppress test-only dependencies that don't affect production -->
     <suppress>
         <notes><![CDATA[
-        Test dependencies are not included in the production build and therefore don't pose a security risk.
+        CVE-2024-23743 is a vulnerability in the Notion Desktop application, not the notion-sdk-jvm library. 
+        This is a false positive from the dependency checker.
         ]]></notes>
-        <gav regex="true">.*:.*:.*:test</gav>
+        <packageUrl regex="true">^pkg:maven/com\.github\.seratch/notion-sdk-jvm.*@.*$</packageUrl>
+        <cve>CVE-2024-23743</cve>
     </suppress>
     
-    <!-- Suppress provided scope dependencies that are managed by the runtime environment -->
-    <suppress>
-        <notes><![CDATA[
-        Provided scope dependencies are managed by the runtime environment (e.g., application server)
-        and are not bundled with the application.
-        ]]></notes>
-        <gav regex="true">.*:.*:.*:provided</gav>
-    </suppress>
+    <!-- 
+    Test and provided scope dependencies are skipped via plugin configuration in pom.xml.
+    -->
 </suppressions>

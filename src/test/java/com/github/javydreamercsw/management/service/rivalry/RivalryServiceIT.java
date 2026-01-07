@@ -26,7 +26,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 class RivalryServiceIT extends ManagementIntegrationTest {
 
@@ -34,7 +34,7 @@ class RivalryServiceIT extends ManagementIntegrationTest {
 
   @Autowired private WrestlerService wrestlerService;
 
-  @SpyBean private RivalryRepository rivalryRepository;
+  @MockitoSpyBean private RivalryRepository rivalryRepository;
 
   @Test
   @DisplayName("Test that createRivalry evicts cache")

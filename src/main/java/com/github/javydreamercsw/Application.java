@@ -33,6 +33,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -40,6 +41,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 @SpringBootApplication
 @EnableScheduling
+@EnableJpaRepositories(basePackages = "com.github.javydreamercsw")
 @Slf4j
 public class Application extends SpringBootServletInitializer {
 

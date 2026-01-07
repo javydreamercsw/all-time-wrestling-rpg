@@ -25,13 +25,13 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 class SegmentTypeServiceIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentTypeService segmentTypeService;
 
-  @SpyBean private SegmentTypeRepository segmentTypeRepository;
+  @MockitoSpyBean private SegmentTypeRepository segmentTypeRepository;
 
   @Test
   @DisplayName("Test that createSegmentType evicts cache")

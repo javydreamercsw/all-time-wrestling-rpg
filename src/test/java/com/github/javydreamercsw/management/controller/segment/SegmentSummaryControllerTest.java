@@ -30,13 +30,11 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.exception.RestExceptionHandler;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Import(RestExceptionHandler.class)
-@WebMvcTest(SegmentSummaryController.class)
 class SegmentSummaryControllerTest extends AbstractControllerTest {
 
   @MockitoBean private SegmentSummaryService segmentSummaryService;
