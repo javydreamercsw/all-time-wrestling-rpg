@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.ui.view.holiday;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.Holiday;
 import com.github.javydreamercsw.management.service.HolidayService;
-import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -36,23 +35,23 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.SortDirection;
-import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 
 /**
  * View for managing holidays in the ATW RPG system. Provides CRUD operations for holiday reference
  * data.
  */
-@Route(value = "holidays", layout = MainLayout.class)
 @PageTitle("Holidays | ATW RPG")
-@Menu(order = 6, icon = "vaadin:calendar", title = "Holidays")
 @PermitAll
 @Slf4j
+@Component
+@Lazy
 public class HolidayListView extends Main {
 
   private final HolidayService holidayService;

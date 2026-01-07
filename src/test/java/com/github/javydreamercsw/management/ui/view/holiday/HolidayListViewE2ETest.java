@@ -54,7 +54,12 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateFixedHoliday() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+
+    WebElement holidayTab =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(By.xpath("//vaadin-tab[text()='Holidays']")));
+    holidayTab.click();
 
     long initialSize = holidayService.findAll().size();
 
@@ -106,7 +111,12 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateFloatingHoliday() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+
+    WebElement holidayTab =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(By.xpath("//vaadin-tab[text()='Holidays']")));
+    holidayTab.click();
 
     long initialSize = holidayService.findAll().size();
 
@@ -168,7 +178,12 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     holiday.setDayOfMonth(1);
     holidayService.save(holiday);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+
+    WebElement holidayTab =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(By.xpath("//vaadin-tab[text()='Holidays']")));
+    holidayTab.click();
 
     // Find the edit button for the holiday
     WebElement editButton =
@@ -218,7 +233,12 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     holiday.setDayOfMonth(2);
     holidayService.save(holiday);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+
+    WebElement holidayTab =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(By.xpath("//vaadin-tab[text()='Holidays']")));
+    holidayTab.click();
 
     long initialSize = holidayService.findAll().size();
 
