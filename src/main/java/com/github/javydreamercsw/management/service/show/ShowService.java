@@ -37,10 +37,11 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.NonNull;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -419,7 +420,7 @@ public class ShowService {
             .findById(showId)
             .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
 
-    List<Wrestler> participatingWrestlers = new ArrayList<>();
+    Set<Long> participatingWrestlerIds = new HashSet<>();
 
     segmentRepository.findByShow(show).stream()
         .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
@@ -427,13 +428,14 @@ public class ShowService {
             segment -> {
               segmentAdjudicationService.adjudicateMatch(segment);
               if (!segment.getSegmentType().getName().equals("Promo")) {
-                participatingWrestlers.addAll(segment.getWrestlers());
+                segment.getWrestlers().forEach(w -> participatingWrestlerIds.add(w.getId()));
               }
               segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
               segmentRepository.save(segment);
             });
 
-    getNonParticipatingWrestlers(participatingWrestlers)
+    wrestlerRepository.findAll().stream()
+        .filter(w -> !participatingWrestlerIds.contains(w.getId()))
         .forEach(resting -> wrestlerService.healChance(resting.getId()));
 
     gameSettingService.saveCurrentGameDate(show.getShowDate());
@@ -444,19 +446,5 @@ public class ShowService {
   @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegments(@NonNull Show show) {
     return segmentRepository.findByShow(show);
-  }
-
-  /**
-   * Returns a list of Wrestlers not in the provided participatingWrestlers list.
-   *
-   * @param participatingWrestlers List of currently participating wrestlers
-   * @return List of Wrestlers not participating
-   */
-  @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> getNonParticipatingWrestlers(
-      @NonNull List<Wrestler> participatingWrestlers) {
-    List<Wrestler> allWrestlers = new ArrayList<>(wrestlerRepository.findAll());
-    allWrestlers.removeAll(participatingWrestlers);
-    return allWrestlers;
   }
 }

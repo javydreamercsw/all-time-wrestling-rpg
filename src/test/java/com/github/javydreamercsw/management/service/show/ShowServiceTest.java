@@ -108,6 +108,7 @@ class ShowServiceTest {
     when(showRepository.findById(1L)).thenReturn(Optional.of(show));
     when(segmentRepository.findByShow(show))
         .thenReturn(Arrays.asList(pendingSegment, adjudicatedSegment));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(wrestler1, wrestler2, wrestler3));
 
     // When
     showService.adjudicateShow(1L);
@@ -196,23 +197,5 @@ class ShowServiceTest {
         Assertions.assertThrows(
             IllegalArgumentException.class, () -> showService.adjudicateShow(1L));
     Assertions.assertEquals("Show not found: 1", exception.getMessage());
-  }
-
-  @Test
-  void testGetNonParticipatingWrestlers() {
-    // Given
-    List<Wrestler> allWrestlers = List.of(wrestler1, wrestler2, wrestler3);
-    List<Wrestler> participatingWrestlers = List.of(wrestler1);
-    when(wrestlerRepository.findAll()).thenReturn(allWrestlers);
-
-    // When
-    List<Wrestler> nonParticipants =
-        showService.getNonParticipatingWrestlers(participatingWrestlers);
-
-    // Then
-    Assertions.assertEquals(2, nonParticipants.size());
-    Assertions.assertTrue(nonParticipants.contains(wrestler2));
-    Assertions.assertTrue(nonParticipants.contains(wrestler3));
-    Assertions.assertFalse(nonParticipants.contains(wrestler1));
   }
 }
