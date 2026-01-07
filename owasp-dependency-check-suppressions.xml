@@ -16,6 +16,14 @@
         <cve>CVE-2021-23382</cve>
         <cve>CVE-2021-23424</cve>
     </suppress>
+    <suppress>
+        <notes><![CDATA[
+        CVE-2024-23743 is a vulnerability in the Notion Desktop application, not the notion-sdk-jvm library. 
+        This is a false positive from the dependency checker.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.github\.seratch/notion-sdk-jvm.*@.*$</packageUrl>
+        <cve>CVE-2024-23743</cve>
+    </suppress>
     
     <!-- 
     Test and provided scope dependencies are skipped via plugin configuration in pom.xml.
