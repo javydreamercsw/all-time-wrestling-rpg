@@ -38,9 +38,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -53,11 +50,8 @@ import org.springframework.web.context.WebApplicationContext;
  * Integration tests for TitleController. Tests the complete REST API functionality for title
  * management.
  */
-@WebMvcTest(
-    controllers = TitleController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 @DisplayName("TitleController Integration Tests")
-class TitleControllerIntegrationTest extends AbstractControllerTest {
+class TitleControllerIT extends AbstractControllerTest {
 
   @Autowired private WebApplicationContext webApplicationContext;
   @MockitoBean private TitleService titleService;

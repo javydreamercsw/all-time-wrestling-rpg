@@ -22,22 +22,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
+import com.github.javydreamercsw.management.service.sync.ISyncHealthMonitor;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncHealthSummary;
 import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncMetric;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(SyncHealthController.class)
 class SyncHealthControllerTest extends AbstractControllerTest {
 
-  @MockitoBean private CommandLineRunner commandLineRunner;
-  @MockitoBean private SyncHealthMonitor healthMonitor;
+  @MockitoBean private ISyncHealthMonitor healthMonitor;
 
   @Test
   void shouldReturnHealthStatus() throws Exception {

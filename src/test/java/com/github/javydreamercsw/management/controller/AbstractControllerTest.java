@@ -18,15 +18,21 @@ package com.github.javydreamercsw.management.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetailsService;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationScheduler;
+import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -38,10 +44,11 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("test")
 @WithMockUser(roles = "ADMIN")
 @TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
+@SpringBootTest
+@AutoConfigureMockMvc
 public abstract class AbstractControllerTest {
 
   @Autowired protected MockMvc mockMvc;
-
   @Autowired protected ObjectMapper objectMapper;
 
   // Infrastructure mocks likely needed by multiple controllers or security
@@ -51,6 +58,15 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected SegmentNarrationServiceFactory serviceFactory;
   @MockitoBean protected RankingService rankingService;
   @MockitoBean protected WrestlerRepository wrestlerRepository;
-  @MockitoBean private AccountRepository accountRepository;
-  @MockitoBean private RoleRepository roleRepository;
+  @MockitoBean protected AccountRepository accountRepository;
+  @MockitoBean protected RoleRepository roleRepository;
+  @MockitoBean protected NotionApiExecutor notionApiExecutor;
+  @MockitoBean protected TierRecalculationService tierRecalculationService;
+  @MockitoBean protected TierRecalculationScheduler tierRecalculationScheduler;
+
+  @MockitoBean(name = "testUserInitializer")
+  protected CommandLineRunner testUserInitializer;
+
+  @MockitoBean(name = "recalculateRanking")
+  protected CommandLineRunner recalculateRanking;
 }

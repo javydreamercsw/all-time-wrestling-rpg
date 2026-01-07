@@ -27,14 +27,10 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarratio
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(SegmentNarrationController.class)
-@EnableConfigurationProperties(SegmentNarrationConfig.class)
 @WithMockUser(roles = {"ADMIN", "BOOKER"})
 class SegmentNarrationControllerTest extends AbstractControllerTest {
 

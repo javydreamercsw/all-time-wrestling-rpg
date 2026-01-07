@@ -27,12 +27,10 @@ import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(SeasonController.class)
 class SeasonControllerTest extends AbstractControllerTest {
 
   @MockitoBean private SeasonService seasonService;
