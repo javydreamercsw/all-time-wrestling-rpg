@@ -17,20 +17,7 @@
         <cve>CVE-2021-23424</cve>
     </suppress>
     
-    <!-- Suppress test-only dependencies that don't affect production -->
-    <suppress>
-        <notes><![CDATA[
-        Test dependencies are not included in the production build and therefore don't pose a security risk.
-        ]]></notes>
-        <gav regex="true">.*:.*:.*:test</gav>
-    </suppress>
-    
-    <!-- Suppress provided scope dependencies that are managed by the runtime environment -->
-    <suppress>
-        <notes><![CDATA[
-        Provided scope dependencies are managed by the runtime environment (e.g., application server)
-        and are not bundled with the application.
-        ]]></notes>
-        <gav regex="true">.*:.*:.*:provided</gav>
-    </suppress>
+    <!-- 
+    Test and provided scope dependencies are skipped via plugin configuration in pom.xml.
+    -->
 </suppressions>
