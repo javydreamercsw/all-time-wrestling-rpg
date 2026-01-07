@@ -211,7 +211,6 @@ public class WrestlerService {
     return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans"));
   }
 
-  @Cacheable(value = WRESTLERS_CACHE, key = "'all'")
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAll() {
     return wrestlerRepository.findAllByActiveTrue();
@@ -241,7 +240,6 @@ public class WrestlerService {
     return findAll();
   }
 
-  @Cacheable(value = WRESTLERS_CACHE, key = "'name:' + #name")
   @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findByName(String name) {
     return wrestlerRepository.findByName(name);
