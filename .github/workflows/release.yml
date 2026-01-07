@@ -143,26 +143,3 @@ jobs:
 
       - name: Build and Publish Docker Image
         run: mvn clean package jib:build -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }}
-  create_pull_request:
-    name: Create and Merge Pull Request
-    needs: build_and_publish_docker
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create Pull Request
-        id: cpr
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PR_URL=$(gh pr create \
-            --base main \
-            --head "release/${{ github.event.inputs.version }}" \
-            --title "chore: Merge release v${{ github.event.inputs.version }}" \
-            --body "This PR merges release v${{ github.event.inputs.version }}.")
-          echo "PR_URL=${PR_URL}" >> $GITHUB_OUTPUT
-
-      - name: Enable auto-merge
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ steps.cpr.outputs.PR_URL }}
-        run: |
-          gh pr merge --auto --merge "$PR_URL"
