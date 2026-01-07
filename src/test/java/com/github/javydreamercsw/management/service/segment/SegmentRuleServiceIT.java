@@ -25,13 +25,13 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 class SegmentRuleServiceIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentRuleService segmentRuleService;
 
-  @SpyBean private SegmentRuleRepository segmentRuleRepository;
+  @MockitoSpyBean private SegmentRuleRepository segmentRuleRepository;
 
   @Test
   @DisplayName("Test that createSegmentRule evicts cache")

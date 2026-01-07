@@ -26,13 +26,13 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 class TitleServiceIT extends ManagementIntegrationTest {
 
   @Autowired private TitleService titleService;
 
-  @SpyBean private TitleRepository titleRepository;
+  @MockitoSpyBean private TitleRepository titleRepository;
 
   @Test
   @DisplayName("Test that createTitle evicts cache")

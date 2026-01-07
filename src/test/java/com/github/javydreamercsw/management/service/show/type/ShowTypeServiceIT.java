@@ -24,13 +24,13 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 class ShowTypeServiceIT extends ManagementIntegrationTest {
 
   @Autowired private ShowTypeService showTypeService;
 
-  @SpyBean private ShowTypeRepository showTypeRepository;
+  @MockitoSpyBean private ShowTypeRepository showTypeRepository;
 
   @Test
   @DisplayName("Test that createShowType evicts cache")

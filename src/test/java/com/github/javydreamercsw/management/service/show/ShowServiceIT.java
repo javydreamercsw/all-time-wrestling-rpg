@@ -26,7 +26,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 class ShowServiceIT extends ManagementIntegrationTest {
 
@@ -34,7 +34,7 @@ class ShowServiceIT extends ManagementIntegrationTest {
 
   @Autowired private ShowTypeService showTypeService;
 
-  @SpyBean private ShowRepository showRepository;
+  @MockitoSpyBean private ShowRepository showRepository;
 
   @Test
   @DisplayName("Test that createShow evicts cache")
