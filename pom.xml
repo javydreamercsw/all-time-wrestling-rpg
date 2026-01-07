@@ -29,7 +29,7 @@
     <lombok.version>1.18.42</lombok.version>
     <surefireArgLine/>
     <testcontainers.version>1.21.4</testcontainers.version>
-    <vaadin.version>24.9.9</vaadin.version>
+    <vaadin.version>24.9.8</vaadin.version>
   </properties>
 
   <dependencyManagement>
@@ -313,6 +313,12 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-webflux</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+      <version>2.4</version>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat</groupId>
