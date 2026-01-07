@@ -113,6 +113,9 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+      key = "'all'")
   public List<Show> findAll() {
     return showRepository.findAll();
   }
@@ -124,6 +127,9 @@ public class ShowService {
    * @return List of all shows with eagerly loaded relationships
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+      key = "'allWithRelationships'")
   public List<Show> findAllWithRelationships() {
     return showRepository.findAllWithRelationships();
   }
@@ -173,6 +179,9 @@ public class ShowService {
    * @return Optional containing the show if found
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+      key = "#id")
   public Optional<Show> getShowById(Long id) {
     return showRepository.findById(id);
   }
@@ -185,6 +194,9 @@ public class ShowService {
    * @return List of shows in the date range
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE,
+      key = "#startDate + '-' + #endDate")
   public List<Show> getShowsByDateRange(LocalDate startDate, LocalDate endDate) {
     return showRepository.findByShowDateBetweenOrderByShowDate(startDate, endDate);
   }
@@ -254,6 +266,12 @@ public class ShowService {
    * @return Created show
    */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
+      },
+      allEntries = true)
   public Show createShow(
       String name,
       String description,
@@ -309,6 +327,12 @@ public class ShowService {
    * @return Updated show if found
    */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
+      },
+      allEntries = true)
   public Optional<Show> updateShow(
       Long id,
       String name,
@@ -370,6 +394,12 @@ public class ShowService {
    * @return true if deleted, false if not found
    */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
+      },
+      allEntries = true)
   public boolean deleteShow(Long id) {
     if (showRepository.existsById(id)) {
       showRepository.deleteById(id);
@@ -379,6 +409,12 @@ public class ShowService {
   }
 
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
+      },
+      allEntries = true)
   public void adjudicateShow(Long showId) {
     Show show =
         showRepository
