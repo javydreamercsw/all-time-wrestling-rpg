@@ -229,7 +229,7 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void updateBackButton(String referrer) {
+  private void updateBackButton(@NonNull String referrer) {
     String buttonText;
     String navigationTarget =
         switch (referrer) {
@@ -256,7 +256,7 @@ public class ShowDetailView extends Main
         backButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(navigationTarget)));
   }
 
-  private void loadShow(Long showId) {
+  private void loadShow(@NonNull Long showId) {
     Optional<Show> showOpt = showService.getShowById(showId);
     if (showOpt.isPresent()) {
       currentShow = showOpt.get(); // Store the show object
@@ -289,7 +289,7 @@ public class ShowDetailView extends Main
     contentLayout.add(segmentsCard);
   }
 
-  private Div createHeaderCard(Show show) {
+  private Div createHeaderCard(@NonNull Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -613,7 +613,7 @@ public class ShowDetailView extends Main
     return card;
   }
 
-  private Grid<Segment> createSegmentsGrid(List<Segment> segments) {
+  private Grid<Segment> createSegmentsGrid(@NonNull List<Segment> segments) {
     Grid<Segment> grid = new Grid<>(Segment.class, false);
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.setItems(segments);
@@ -700,10 +700,6 @@ public class ShowDetailView extends Main
 
     grid.addComponentColumn(this::createMainEventCheckbox).setHeader("Main Event").setFlexGrow(1);
     return grid;
-  }
-
-  Grid<Segment> getSegmentsGrid(List<Segment> segments) {
-    return createSegmentsGrid(segments);
   }
 
   private Component createOrderButtons(@NonNull Segment segment) {
@@ -1269,7 +1265,7 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void adjudicateShow(Show show) {
+  private void adjudicateShow(@NonNull Show show) {
     showController.adjudicateShow(show.getId());
     Notification.show("Fan adjudication completed!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);

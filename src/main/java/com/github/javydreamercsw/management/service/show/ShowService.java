@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
-import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -35,7 +34,6 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.utils.DiceBag;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -400,7 +398,7 @@ public class ShowService {
         com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
       },
       allEntries = true)
-  public boolean deleteShow(Long id) {
+  public boolean deleteShow(@NonNull Long id) {
     if (showRepository.existsById(id)) {
       showRepository.deleteById(id);
       return true;
@@ -415,7 +413,7 @@ public class ShowService {
         com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
       },
       allEntries = true)
-  public void adjudicateShow(Long showId) {
+  public void adjudicateShow(@NonNull Long showId) {
     Show show =
         showRepository
             .findById(showId)
@@ -438,21 +436,14 @@ public class ShowService {
     getNonParticipatingWrestlers(participatingWrestlers)
         .forEach(resting -> wrestlerService.healChance(resting.getId()));
 
+    gameSettingService.saveCurrentGameDate(show.getShowDate());
+
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }
 
   @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegments(@NonNull Show show) {
     return segmentRepository.findByShow(show);
-  }
-
-  private void attemptRivalryResolution(@NonNull Wrestler w1, @NonNull Wrestler w2) {
-    DiceBag diceBag = new DiceBag(20);
-    Optional<Rivalry> rivalryBetweenWrestlers =
-        rivalryService.getRivalryBetweenWrestlers(w1.getId(), w2.getId());
-    rivalryBetweenWrestlers.ifPresent(
-        rivalry ->
-            rivalryService.attemptResolution(rivalry.getId(), diceBag.roll(), diceBag.roll()));
   }
 
   /**
