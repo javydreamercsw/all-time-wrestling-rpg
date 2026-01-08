@@ -273,9 +273,15 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void click(@NonNull String tagName, @NonNull String text) {
-    WebElement element =
-        waitForVaadinElement(driver, By.xpath("//" + tagName + "[text()='" + text + "']"));
-    clickElement(element);
+    try {
+      WebElement element =
+          waitForVaadinElement(driver, By.xpath("//" + tagName + "[text()='" + text + "']"));
+      clickElement(element);
+    } catch (Exception e) {
+      WebElement element =
+          waitForVaadinElement(driver, By.xpath("//div[@role='tab'][text()='" + text + "']"));
+      clickElement(element);
+    }
   }
 
   /**
