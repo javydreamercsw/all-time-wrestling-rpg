@@ -58,9 +58,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
     // Click the tab
-    WebElement seasonSettingsTab =
-        waitForVaadinElement(driver, By.xpath("//vaadin-tab[text()='Season Settings']"));
-    clickElement(seasonSettingsTab);
+    click("vaadin-tab", "Season Settings");
 
     // Wait for view to load
     WebElement resetBoundariesButton =
@@ -101,9 +99,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
     // Click the tab
-    WebElement seasonSettingsTab =
-        waitForVaadinElement(driver, By.xpath("//vaadin-tab[text()='Season Settings']"));
-    clickElement(seasonSettingsTab);
+    click("vaadin-tab", "Season Settings");
 
     // Wait for view to load
     WebElement recalibrateFansButton =
@@ -140,9 +136,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
     // Click the tab
-    WebElement seasonSettingsTab =
-        waitForVaadinElement(driver, By.xpath("//vaadin-tab[text()='Season Settings']"));
-    clickElement(seasonSettingsTab);
+    click("vaadin-tab", "Season Settings");
 
     // Wait for view to load
     WebElement recalibrateFansButton =
@@ -179,9 +173,7 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
     // Click the tab
-    WebElement seasonSettingsTab =
-        waitForVaadinElement(driver, By.xpath("//vaadin-tab[text()='Season Settings']"));
-    clickElement(seasonSettingsTab);
+    click("vaadin-tab", "Season Settings");
 
     // Wait for view to load
     WebElement recalibrateFansButton = waitForVaadinElement(driver, By.id("full-reset-button"));
