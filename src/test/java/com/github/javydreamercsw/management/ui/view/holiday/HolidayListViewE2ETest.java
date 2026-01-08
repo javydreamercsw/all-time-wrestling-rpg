@@ -56,10 +56,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
   void testCreateFixedHoliday() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
-    WebElement holidayTab =
-        wait.until(
-            ExpectedConditions.elementToBeClickable(By.xpath("//vaadin-tab[text()='Holidays']")));
-    holidayTab.click();
+    click("vaadin-tab", "Holidays");
 
     long initialSize = holidayService.findAll().size();
 
@@ -113,10 +110,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
   void testCreateFloatingHoliday() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
-    WebElement holidayTab =
-        wait.until(
-            ExpectedConditions.elementToBeClickable(By.xpath("//vaadin-tab[text()='Holidays']")));
-    holidayTab.click();
+    click("vaadin-tab", "Holidays");
 
     long initialSize = holidayService.findAll().size();
 
@@ -180,10 +174,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
-    WebElement holidayTab =
-        wait.until(
-            ExpectedConditions.elementToBeClickable(By.xpath("//vaadin-tab[text()='Holidays']")));
-    holidayTab.click();
+    click("vaadin-tab", "Holidays");
 
     // Find the edit button for the holiday
     WebElement editButton =
@@ -235,10 +226,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
 
     driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
-    WebElement holidayTab =
-        wait.until(
-            ExpectedConditions.elementToBeClickable(By.xpath("//vaadin-tab[text()='Holidays']")));
-    holidayTab.click();
+    click("vaadin-tab", "Holidays");
 
     long initialSize = holidayService.findAll().size();
 
