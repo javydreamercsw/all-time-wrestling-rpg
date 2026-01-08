@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.Holiday;
-import com.github.javydreamercsw.management.domain.HolidayRepository;
 import com.github.javydreamercsw.management.domain.HolidayType;
 import com.github.javydreamercsw.management.service.HolidayService;
 import java.time.Duration;
@@ -42,7 +41,6 @@ import org.springframework.transaction.annotation.Transactional;
 class HolidayListViewE2ETest extends AbstractE2ETest {
 
   @Autowired private HolidayService holidayService;
-  @Autowired private HolidayRepository holidayRepository;
 
   private WebDriverWait wait;
 
