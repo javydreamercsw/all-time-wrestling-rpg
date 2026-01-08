@@ -45,7 +45,8 @@ You can also start the application from the command line by running:
 
 The application will be available at `http://localhost:8080/atw-rpg`.
 
-For more detailed instructions, see the [Vaadin Getting Started Guide](https://vaadin.com/docs/latest/getting-started).
+For project-specific startup instructions, see the [Application Startup Guide](./docs/STARTUP_GUIDE.md).
+For general Vaadin information, see the [Vaadin Getting Started Guide](https://vaadin.com/docs/latest/getting-started).
 
 ## Features
 
@@ -144,6 +145,8 @@ notion.sync.backup.enabled=true
 ```
 
 To enable the feature, you need to provide a Notion API token via the `NOTION_TOKEN` environment variable.
+
+For troubleshooting assistance, please refer to the [Notion Sync Troubleshooting Guide](./docs/SYNC_TROUBLESHOOTING.md).
 
 ## Development
 
