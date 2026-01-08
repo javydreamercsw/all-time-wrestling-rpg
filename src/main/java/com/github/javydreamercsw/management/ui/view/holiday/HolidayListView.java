@@ -36,6 +36,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.SortDirection;
 import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.spring.annotation.UIScope;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import lombok.NonNull;
@@ -52,6 +53,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @Lazy
+@UIScope
 public class HolidayListView extends Main {
 
   private final HolidayService holidayService;
