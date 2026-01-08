@@ -24,6 +24,13 @@
         <packageUrl regex="true">^pkg:maven/com\.github\.seratch/notion-sdk-jvm.*@.*$</packageUrl>
         <cve>CVE-2024-23743</cve>
     </suppress>
+    <suppress>
+        <notes><![CDATA[
+        CVE-2023-29827 is a vulnerability in ejs versions prior to 3.1.9. The project uses a newer version, so this is a false positive.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:npm/ejs@.*$</packageUrl>
+        <cve>CVE-2023-29827</cve>
+    </suppress>
     
     <!-- 
     Test and provided scope dependencies are skipped via plugin configuration in pom.xml.
