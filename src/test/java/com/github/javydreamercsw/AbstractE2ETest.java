@@ -272,6 +272,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     takeSequencedScreenshot("after-click");
   }
 
+  protected void click(@NonNull String tagName, @NonNull String text) {
+    WebElement element =
+        waitForVaadinElement(driver, By.xpath("//" + tagName + "[text()='" + text + "']"));
+    clickElement(element);
+  }
+
   /**
    * Scrolls the given WebElement into view using JavaScript.
    *
