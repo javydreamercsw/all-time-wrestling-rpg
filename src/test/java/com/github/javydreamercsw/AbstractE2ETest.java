@@ -222,11 +222,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    * @param driver the WebDriver instance
    */
   protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
+    takeSequencedScreenshot("before-wait-for-element");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
@@ -314,6 +314,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     if (item != null) {
       clickElement(item);
     }
+    takeSequencedScreenshot("after-select");
   }
 
   /**
