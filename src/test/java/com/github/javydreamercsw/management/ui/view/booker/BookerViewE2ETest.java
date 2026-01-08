@@ -92,7 +92,7 @@ public class BookerViewE2ETest extends AbstractE2ETest {
           // Click on the "Upcoming Shows" tab
           click("vaadin-tab", "Upcoming Shows");
           assertFalse(getGridRows("upcoming-shows-grid").isEmpty());
-            assertGridContains("upcoming-shows-grid", "Test Show");
+          assertGridContains("upcoming-shows-grid", "Test Show");
 
           // Click on the "Active Rivalries" tab
           click("vaadin-tab", "Active Rivalries");
