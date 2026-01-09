@@ -4,7 +4,7 @@
 - [x] Task: Create failing tests for database connection [d737bc7]
 - [x] Task: Implement a database abstraction layer to support multiple database engines. [fec3270]
 - [x] Task: Refactor existing H2 database connection to use the new abstraction layer. [cca0c25]
-- [ ] Task: Create failing tests for MySQL connection
+- [x] Task: Create failing tests for MySQL connection [51bb177]
 - [ ] Task: Implement MySQL-specific connection logic.
 - [ ] Task: Configure the application to use MySQL.
 - [ ] Task: Create failing tests for data migration
