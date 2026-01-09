@@ -224,6 +224,7 @@ public class RankingService {
         .id(title.getId())
         .name(title.getName())
         .imageName(toImageName(title.getName()))
+        .tier(title.getTier())
         .build();
   }
 
@@ -233,6 +234,7 @@ public class RankingService {
         .name(wrestler.getName())
         .fans(wrestler.getFans())
         .rank(rank)
+        .tier(wrestler.getTier())
         .build();
   }
 

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto.ranking;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,4 +32,5 @@ public class ChampionshipDTO {
   private Long id;
   private String name;
   private String imageName;
+  private WrestlerTier tier;
 }
