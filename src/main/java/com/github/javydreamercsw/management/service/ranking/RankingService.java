@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class RankingService {
 
   private final TitleRepository titleRepository;
@@ -112,20 +114,87 @@ public class RankingService {
           .map(t -> toRankedTeamDTO(t, rank.getAndIncrement()))
           .collect(Collectors.toList());
     } else {
+      log.debug(
+          "Entering getRankedContenders for single championship. Title tier ordinal: {}",
+          tier.ordinal());
+      List<Wrestler> initialContenders =
+          wrestlerRepository.findAllByGenderAndActive(gender, true).stream().toList();
+      log.debug(
+          "After findAllByGenderAndActive. Count: {}, Names: {}",
+          initialContenders.size(),
+          initialContenders.stream().map(Wrestler::getName).collect(Collectors.joining(", ")));
+
       List<Wrestler> contenders =
-          wrestlerRepository.findAllByGenderAndActive(gender, true).stream()
-              .filter(wrestler -> wrestler.getTier().ordinal() <= tier.ordinal())
+          initialContenders.stream()
+              .filter(
+                  wrestler -> {
+                    boolean passesFilter = wrestler.getTier().ordinal() >= tier.ordinal();
+                    log.debug(
+                        "Wrestler {} (Tier: {}, Ordinal: {}) vs Title Tier {} (Ordinal: {})."
+                            + " Passes: {}",
+                        wrestler.getName(),
+                        wrestler.getTier(),
+                        wrestler.getTier().ordinal(),
+                        tier,
+                        tier.ordinal(),
+                        passesFilter);
+                    return passesFilter;
+                  })
               .collect(Collectors.toList());
+      log.debug(
+          "After tier filter. Count: {}, Names: {}",
+          contenders.size(),
+          contenders.stream().map(Wrestler::getName).collect(Collectors.joining(", ")));
 
       // Remove champions from the contender list
-      title.getCurrentReign().ifPresent(reign -> contenders.removeAll(reign.getChampions()));
+      title
+          .getCurrentReign()
+          .ifPresent(
+              reign -> {
+                log.debug(
+                    "Champion removal stage. Current champions: {}",
+                    reign.getChampions().stream()
+                        .map(Wrestler::getName)
+                        .collect(Collectors.joining(", ")));
+                contenders.removeAll(reign.getChampions());
+                log.debug(
+                    "After champion removal. Count: {}, Names: {}",
+                    contenders.size(),
+                    contenders.stream().map(Wrestler::getName).collect(Collectors.joining(", ")));
+              });
 
       AtomicInteger rank = new AtomicInteger(1);
       return contenders.stream()
           .sorted(
-              Comparator.comparing(Wrestler::getTier).thenComparing(Wrestler::getFans).reversed())
+              (w1, w2) -> {
+                // Primary sort: wrestlers in the exact title tier come first
+                boolean w1IsTitleTier = w1.getTier() == tier;
+                boolean w2IsTitleTier = w2.getTier() == tier;
+
+                if (w1IsTitleTier && !w2IsTitleTier) {
+                  return -1; // w1 is in title tier, w2 is not, so w1 comes first
+                }
+                if (!w1IsTitleTier && w2IsTitleTier) {
+                  return 1; // w2 is in title tier, w1 is not, so w2 comes first
+                }
+
+                // Secondary sort: if both are in title tier or both are not, sort by tier (highest
+                // first)
+                // WrestlerTier ordinal: ICON(0), MAIN_EVENTER(1), MIDCARDER(2), CONTENDER(3),
+                // RISER(4), ROOKIE(5)
+                // So, lower ordinal means higher tier.
+                int tierComparison =
+                    Integer.compare(w1.getTier().ordinal(), w2.getTier().ordinal());
+                if (tierComparison != 0) {
+                  return tierComparison
+                      * -1; // Invert to sort by highest tier (highest ordinal) first
+                }
+
+                // Tertiary sort: if tiers are the same, sort by fans (descending)
+                return Long.compare(w2.getFans(), w1.getFans());
+              })
           .map(w -> toRankedWrestlerDTO(w, rank.getAndIncrement()))
-          .collect(Collectors.toList());
+          .toList();
     }
   }
 
