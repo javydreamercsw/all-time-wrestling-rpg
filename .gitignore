@@ -44,4 +44,3 @@ replay_pid*
 /data-backup/
 /.run/
 /models/
-/conductor/
