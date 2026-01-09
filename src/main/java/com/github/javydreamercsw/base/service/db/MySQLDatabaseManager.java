@@ -22,18 +22,18 @@ import java.sql.SQLException;
 
 public class MySQLDatabaseManager implements DatabaseManager {
 
-    private final String url;
-    private final String user;
-    private final String password;
+  private final String url;
+  private final String user;
+  private final String password;
 
-    public MySQLDatabaseManager(String url, String user, String password) {
-        this.url = url;
-        this.user = user;
-        this.password = password;
-    }
+  public MySQLDatabaseManager(String url, String user, String password) {
+    this.url = url;
+    this.user = user;
+    this.password = password;
+  }
 
-    @Override
-    public Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(url, user, password);
-    }
+  @Override
+  public Connection getConnection() throws SQLException {
+    return DriverManager.getConnection(url, user, password);
+  }
 }

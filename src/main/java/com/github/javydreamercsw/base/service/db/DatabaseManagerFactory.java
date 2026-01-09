@@ -16,15 +16,37 @@
 */
 package com.github.javydreamercsw.base.service.db;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class DatabaseManagerFactory {
+
+  private static final Map<String, DatabaseManager> overrides = new HashMap<>();
 
   private DatabaseManagerFactory() {
     // Private constructor to prevent instantiation
   }
 
+  public static void overrideDatabaseManager(String dbType, DatabaseManager manager) {
+    overrides.put(dbType.toUpperCase(), manager);
+  }
+
+  public static void reset() {
+    overrides.clear();
+  }
+
   public static DatabaseManager getDatabaseManager(String dbType) {
+    if (overrides.containsKey(dbType.toUpperCase())) {
+      return overrides.get(dbType.toUpperCase());
+    }
     if ("H2".equalsIgnoreCase(dbType)) {
       return new H2DatabaseManager();
+    } else if ("MySQL".equalsIgnoreCase(dbType)) {
+      // Placeholder values - these will be replaced with proper configuration
+      String url = "jdbc:mysql://localhost:3306/alltimewrestlingrpg";
+      String user = "user";
+      String password = "password";
+      return new MySQLDatabaseManager(url, user, password);
     } else {
       throw new IllegalArgumentException("Unsupported database type: " + dbType);
     }
