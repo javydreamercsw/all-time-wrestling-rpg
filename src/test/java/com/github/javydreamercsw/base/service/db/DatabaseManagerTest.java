@@ -21,7 +21,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
+@ActiveProfiles("h2")
 class DatabaseManagerTest {
 
   @Test

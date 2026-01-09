@@ -3,7 +3,7 @@
 ## Phase 1: Backend - MySQL Integration
 - [x] Task: Create failing tests for database connection [d737bc7]
 - [x] Task: Implement a database abstraction layer to support multiple database engines. [fec3270]
-- [ ] Task: Refactor existing H2 database connection to use the new abstraction layer.
+- [~] Task: Refactor existing H2 database connection to use the new abstraction layer.
 - [ ] Task: Create failing tests for MySQL connection
 - [ ] Task: Implement MySQL-specific connection logic.
 - [ ] Task: Configure the application to use MySQL.

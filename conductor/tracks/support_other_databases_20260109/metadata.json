@@ -1,0 +1,8 @@
+{
+  "track_id": "support_other_databases_20260109",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-01-09T00:00:00Z",
+  "updated_at": "2026-01-09T00:00:00Z",
+  "description": "## Support Other Databases - [ ] Allow multiple databases besides the current H2. - [ ] Support MySQL - [ ] Have a process (via UI) to transfer data to the new Database."
+}

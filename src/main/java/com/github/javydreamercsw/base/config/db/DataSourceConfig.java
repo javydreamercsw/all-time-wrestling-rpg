@@ -14,16 +14,10 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.service.db;
+package com.github.javydreamercsw.base.config.db;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import javax.sql.DataSource;
 
-public class H2DatabaseManager implements DatabaseManager {
-
-  @Override
-  public Connection getConnection() throws SQLException {
-    return DriverManager.getConnection("jdbc:h2:mem:testdb", "sa", "");
-  }
+public interface DataSourceConfig {
+  DataSource dataSource();
 }
