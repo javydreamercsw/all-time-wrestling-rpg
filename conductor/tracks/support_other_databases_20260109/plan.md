@@ -6,7 +6,7 @@
 - [x] Task: Refactor existing H2 database connection to use the new abstraction layer. [cca0c25]
 - [x] Task: Create failing tests for MySQL connection [51bb177]
 - [x] Task: Implement MySQL-specific connection logic. [eeea9e5]
-- [ ] Task: Configure the application to use MySQL.
+- [x] Task: Configure the application to use MySQL. [91b25a4]
 - [ ] Task: Create failing tests for data migration
 - [ ] Task: Implement a data migration service to transfer data from H2 to MySQL.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Backend - MySQL Integration' (Protocol in workflow.md)
