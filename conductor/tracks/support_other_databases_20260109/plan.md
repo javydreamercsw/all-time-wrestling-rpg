@@ -7,7 +7,7 @@
 - [x] Task: Create failing tests for MySQL connection [51bb177]
 - [x] Task: Implement MySQL-specific connection logic. [eeea9e5]
 - [x] Task: Configure the application to use MySQL. [91b25a4]
-- [ ] Task: Create failing tests for data migration
+- [x] Task: Create failing tests for data migration [9d66499]
 - [ ] Task: Implement a data migration service to transfer data from H2 to MySQL.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Backend - MySQL Integration' (Protocol in workflow.md)
 
