@@ -16,23 +16,14 @@
 */
 package com.github.javydreamercsw.base.service.db;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.sql.Connection;
-import org.junit.jupiter.api.Test;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
-class DatabaseManagerTest {
+public class H2DatabaseManager implements DatabaseManager {
 
-  @Test
-  void testGetConnection() {
-    try {
-      DatabaseManager dbManager = DatabaseManagerFactory.getDatabaseManager("H2");
-      assertNotNull(dbManager);
-      Connection connection = dbManager.getConnection();
-      assertNotNull(connection);
-    } catch (Exception e) {
-      fail("Should not have thrown any exception");
-    }
+  @Override
+  public Connection getConnection() throws SQLException {
+    return DriverManager.getConnection("jdbc:h2:mem:testdb", "sa", "");
   }
 }

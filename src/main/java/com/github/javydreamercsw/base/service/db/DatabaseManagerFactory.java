@@ -16,23 +16,18 @@
 */
 package com.github.javydreamercsw.base.service.db;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import java.util.HashMap;
+import java.util.Map;
 
-import java.sql.Connection;
-import org.junit.jupiter.api.Test;
+public class DatabaseManagerFactory {
 
-class DatabaseManagerTest {
+  private static final Map<String, DatabaseManager> dbManagers = new HashMap<>();
 
-  @Test
-  void testGetConnection() {
-    try {
-      DatabaseManager dbManager = DatabaseManagerFactory.getDatabaseManager("H2");
-      assertNotNull(dbManager);
-      Connection connection = dbManager.getConnection();
-      assertNotNull(connection);
-    } catch (Exception e) {
-      fail("Should not have thrown any exception");
-    }
+  static {
+    dbManagers.put("H2", new H2DatabaseManager());
+  }
+
+  public static DatabaseManager getDatabaseManager(String dbType) {
+    return dbManagers.get(dbType.toUpperCase());
   }
 }
