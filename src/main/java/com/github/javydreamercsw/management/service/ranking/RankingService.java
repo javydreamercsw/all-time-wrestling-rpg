@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.service.ranking;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
-import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -33,7 +32,6 @@ import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -61,6 +59,7 @@ public class RankingService {
   @PreAuthorize("isAuthenticated()")
   public List<ChampionshipDTO> getChampionships() {
     return titleRepository.findAll().stream()
+        .filter(Title::getIncludeInRankings)
         .map(this::toChampionshipDTO)
         .collect(Collectors.toList());
   }
@@ -82,7 +81,9 @@ public class RankingService {
           teamRepository.findAll().stream()
               .filter(
                   team ->
-                      team.getWrestler1().getGender() == gender
+                      team.getWrestler1().getActive()
+                          && team.getWrestler2().getActive()
+                          && team.getWrestler1().getGender() == gender
                           && team.getWrestler2().getGender() == gender)
               .collect(Collectors.toList());
 
@@ -111,38 +112,18 @@ public class RankingService {
           .map(t -> toRankedTeamDTO(t, rank.getAndIncrement()))
           .collect(Collectors.toList());
     } else {
-      Optional<TierBoundary> tierBoundaryOpt =
-          tierBoundaryService.findByTierAndGender(tier, gender);
-
-      long minFans;
-      long maxFans;
-
-      if (tierBoundaryOpt.isPresent()) {
-        TierBoundary tierBoundary = tierBoundaryOpt.get();
-        minFans = tierBoundary.getMinFans();
-        maxFans = tierBoundary.getMaxFans();
-      } else {
-        // Fallback to static values if dynamic boundaries are not yet calculated
-        minFans = tier.getMinFans();
-        maxFans = tier.getMaxFans();
-      }
-
-      List<Wrestler> contenders;
-      if (tier.equals(WrestlerTier.MAIN_EVENTER)) {
-        contenders = new ArrayList<>(wrestlerRepository.findByFansGreaterThanEqual(minFans));
-      } else {
-        contenders = new ArrayList<>(wrestlerRepository.findByFansBetween(minFans, maxFans));
-      }
+      List<Wrestler> contenders =
+          wrestlerRepository.findAllByGenderAndActive(gender, true).stream()
+              .filter(wrestler -> wrestler.getTier().ordinal() <= tier.ordinal())
+              .collect(Collectors.toList());
 
       // Remove champions from the contender list
       title.getCurrentReign().ifPresent(reign -> contenders.removeAll(reign.getChampions()));
 
-      // Filter by gender
-      contenders.removeIf(wrestler -> wrestler.getGender() != gender);
-
       AtomicInteger rank = new AtomicInteger(1);
       return contenders.stream()
-          .sorted(Comparator.comparing(Wrestler::getFans).reversed())
+          .sorted(
+              Comparator.comparing(Wrestler::getTier).thenComparing(Wrestler::getFans).reversed())
           .map(w -> toRankedWrestlerDTO(w, rank.getAndIncrement()))
           .collect(Collectors.toList());
     }
