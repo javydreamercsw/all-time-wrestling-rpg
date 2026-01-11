@@ -35,17 +35,18 @@ public class DatabaseManagerFactory {
     overrides.clear();
   }
 
-  public static DatabaseManager getDatabaseManager(String dbType) {
+  public static DatabaseManager getDatabaseManager(
+      String dbType, String url, String user, String password) {
     if (overrides.containsKey(dbType.toUpperCase())) {
       return overrides.get(dbType.toUpperCase());
     }
     if ("H2".equalsIgnoreCase(dbType)) {
       return new H2DatabaseManager();
+    } else if ("H2_FILE".equalsIgnoreCase(dbType)) {
+      // Extract the file path from the URL
+      String filePath = url.substring("jdbc:h2:".length());
+      return new H2FileDatabaseManager(filePath);
     } else if ("MySQL".equalsIgnoreCase(dbType)) {
-      // Placeholder values - these will be replaced with proper configuration
-      String url = "jdbc:mysql://localhost:3306/alltimewrestlingrpg";
-      String user = "user";
-      String password = "password";
       return new MySQLDatabaseManager(url, user, password);
     } else {
       throw new IllegalArgumentException("Unsupported database type: " + dbType);

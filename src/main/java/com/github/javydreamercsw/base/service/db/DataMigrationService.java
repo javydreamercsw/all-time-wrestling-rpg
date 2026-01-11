@@ -24,9 +24,34 @@ import java.sql.Statement;
 
 public class DataMigrationService {
 
+  private final DatabaseManager source;
+  private final DatabaseManager target;
+
+  public DataMigrationService() {
+    this.source = null; // Will be initialized by migrateData
+    this.target = null; // Will be initialized by migrateData
+  }
+
+  public DataMigrationService(DatabaseManager source, DatabaseManager target) {
+    this.source = source;
+    this.target = target;
+  }
+
   public void migrateData(String sourceDbType, String targetDbType) throws SQLException {
-    DatabaseManager sourceManager = DatabaseManagerFactory.getDatabaseManager(sourceDbType);
-    DatabaseManager targetManager = DatabaseManagerFactory.getDatabaseManager(targetDbType);
+    if (source == null || target == null) {
+      // Fallback for default constructor or non-injected managers
+      DatabaseManager sourceManager =
+          DatabaseManagerFactory.getDatabaseManager(sourceDbType, null, null, null);
+      DatabaseManager targetManager =
+          DatabaseManagerFactory.getDatabaseManager(targetDbType, null, null, null);
+      migrateDataInternal(sourceManager, targetManager);
+    } else {
+      migrateDataInternal(source, target);
+    }
+  }
+
+  private void migrateDataInternal(DatabaseManager sourceManager, DatabaseManager targetManager)
+      throws SQLException {
 
     try (Connection sourceConnection = sourceManager.getConnection();
         Connection targetConnection = targetManager.getConnection()) {

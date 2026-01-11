@@ -35,7 +35,7 @@ class DatabaseManagerTest {
   @Test
   void testGetConnection() {
     try {
-      DatabaseManager dbManager = DatabaseManagerFactory.getDatabaseManager("H2");
+      DatabaseManager dbManager = DatabaseManagerFactory.getDatabaseManager("H2", null, null, null);
       assertNotNull(dbManager);
       try (Connection connection = dbManager.getConnection()) {
         assertNotNull(connection);
@@ -49,7 +49,8 @@ class DatabaseManagerTest {
   void testMySQLConnection() {
     try {
       DatabaseManager dbManager =
-          new MySQLDatabaseManager(
+          DatabaseManagerFactory.getDatabaseManager(
+              "MySQL",
               mySQLContainer.getJdbcUrl(),
               mySQLContainer.getUsername(),
               mySQLContainer.getPassword());
