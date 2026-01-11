@@ -27,12 +27,15 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 class DataMigrationServiceTest {
 
   @Container
-  private static final MySQLContainer<?> mySQLContainer = new MySQLContainer<>("mysql:8.0.26");
+  private static final MySQLContainer<?> mySQLContainer =
+      new MySQLContainer<>(
+          DockerImageName.parse("mysql/mysql-server:8.0.26").asCompatibleSubstituteFor("mysql"));
 
   @Test
   void testMigrateData() throws Exception {
@@ -64,6 +67,10 @@ class DataMigrationServiceTest {
       statement.execute("DELETE FROM injury_type");
       statement.execute("DELETE FROM injury");
       statement.execute("DELETE FROM team");
+      statement.execute("DELETE FROM card_set");
+      statement.execute("DELETE FROM card");
+      statement.execute("DELETE FROM deck");
+      statement.execute("DELETE FROM deck_card");
     }
 
     // H2 in-memory database setup
@@ -174,6 +181,42 @@ class DataMigrationServiceTest {
             "INSERT INTO team (TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, FACTION_ID,"
                 + " STATUS, FORMED_DATE, EXTERNAL_ID) VALUES (1, 'Mega Powers', 'Hogan and Savage',"
                 + " 1, 2, 1, 'ACTIVE', NOW(), 'TEAM1')");
+
+        // Setup for card_set table in H2
+        statement.execute(
+            "CREATE TABLE card_set (SET_ID BIGINT PRIMARY KEY AUTO_INCREMENT, SET_CODE"
+                + " VARCHAR(255), DESCRIPTION LONGTEXT, RELEASE_DATE DATE, CREATION_DATE"
+                + " TIMESTAMP)");
+        statement.execute(
+            "INSERT INTO card_set (SET_ID, SET_CODE, DESCRIPTION, RELEASE_DATE, CREATION_DATE)"
+                + " VALUES (1, 'BASE', 'Base set', '2026-01-01', NOW())");
+
+        // Setup for card table in H2
+        statement.execute(
+            "CREATE TABLE card (CARD_ID BIGINT PRIMARY KEY AUTO_INCREMENT, NAME VARCHAR(255), TYPE"
+                + " VARCHAR(100), DAMAGE INT, STAMINA INT, MOMENTUM INT, TARGET INT, NUMBER INT,"
+                + " FINISHER BOOLEAN, SIGNATURE BOOLEAN, PIN BOOLEAN, TAUNT BOOLEAN, RECOVER"
+                + " BOOLEAN, CREATION_DATE TIMESTAMP, SET_ID BIGINT)");
+        statement.execute(
+            "INSERT INTO card (CARD_ID, NAME, TYPE, DAMAGE, STAMINA, MOMENTUM, TARGET, NUMBER,"
+                + " FINISHER, SIGNATURE, PIN, TAUNT, RECOVER, CREATION_DATE, SET_ID) VALUES (1,"
+                + " 'Clothesline', 'STRIKE', 5, 0, 1, 1, 1, FALSE, FALSE, FALSE, FALSE, FALSE,"
+                + " NOW(), 1)");
+
+        // Setup for deck table in H2
+        statement.execute(
+            "CREATE TABLE deck (DECK_ID BIGINT PRIMARY KEY AUTO_INCREMENT, WRESTLER_ID BIGINT,"
+                + " CREATION_DATE TIMESTAMP)");
+        statement.execute(
+            "INSERT INTO deck (DECK_ID, WRESTLER_ID, CREATION_DATE) VALUES (1, 1, NOW())");
+
+        // Setup for deck_card table in H2
+        statement.execute(
+            "CREATE TABLE deck_card (ID BIGINT PRIMARY KEY AUTO_INCREMENT, DECK_ID BIGINT, CARD_ID"
+                + " BIGINT, AMOUNT INT, CREATION_DATE TIMESTAMP, SET_ID BIGINT)");
+        statement.execute(
+            "INSERT INTO deck_card (ID, DECK_ID, CARD_ID, AMOUNT, CREATION_DATE, SET_ID) VALUES (1,"
+                + " 1, 1, 2, NOW(), 1)");
       }
     }
 
@@ -307,6 +350,54 @@ class DataMigrationServiceTest {
         ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM team")) {
       resultSet.next();
       assertEquals(1, resultSet.getInt(1)); // 1 team inserted
+    }
+
+    // Verification for card_set table in MySQL
+    try (Connection mySqlConnection =
+            DriverManager.getConnection(
+                mySQLContainer.getJdbcUrl(),
+                mySQLContainer.getUsername(),
+                mySQLContainer.getPassword());
+        Statement statement = mySqlConnection.createStatement();
+        ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM card_set")) {
+      resultSet.next();
+      assertEquals(1, resultSet.getInt(1)); // 1 card_set inserted
+    }
+
+    // Verification for card table in MySQL
+    try (Connection mySqlConnection =
+            DriverManager.getConnection(
+                mySQLContainer.getJdbcUrl(),
+                mySQLContainer.getUsername(),
+                mySQLContainer.getPassword());
+        Statement statement = mySqlConnection.createStatement();
+        ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM card")) {
+      resultSet.next();
+      assertEquals(1, resultSet.getInt(1)); // 1 card inserted
+    }
+
+    // Verification for deck table in MySQL
+    try (Connection mySqlConnection =
+            DriverManager.getConnection(
+                mySQLContainer.getJdbcUrl(),
+                mySQLContainer.getUsername(),
+                mySQLContainer.getPassword());
+        Statement statement = mySqlConnection.createStatement();
+        ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM deck")) {
+      resultSet.next();
+      assertEquals(1, resultSet.getInt(1)); // 1 deck inserted
+    }
+
+    // Verification for deck_card table in MySQL
+    try (Connection mySqlConnection =
+            DriverManager.getConnection(
+                mySQLContainer.getJdbcUrl(),
+                mySQLContainer.getUsername(),
+                mySQLContainer.getPassword());
+        Statement statement = mySqlConnection.createStatement();
+        ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM deck_card")) {
+      resultSet.next();
+      assertEquals(1, resultSet.getInt(1)); // 1 deck_card inserted
     }
   }
 }

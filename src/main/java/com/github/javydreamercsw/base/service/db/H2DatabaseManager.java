@@ -17,11 +17,12 @@
 package com.github.javydreamercsw.base.service.db;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class H2DatabaseManager implements DatabaseManager {
   @Override
   public Connection getConnection() throws SQLException {
-    throw new UnsupportedOperationException("H2 Database connection not yet implemented.");
+    return DriverManager.getConnection("jdbc:h2:mem:testdb", "sa", "");
   }
 }

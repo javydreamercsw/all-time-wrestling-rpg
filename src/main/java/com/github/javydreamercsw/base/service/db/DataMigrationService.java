@@ -35,6 +35,7 @@ public class DataMigrationService {
       migrateRoles(sourceConnection, targetConnection);
       migrateFactions(sourceConnection, targetConnection);
       migrateInjuryTypes(sourceConnection, targetConnection);
+      migrateCardSets(sourceConnection, targetConnection); // New
 
       // Dependent tables
       migrateAccounts(sourceConnection, targetConnection);
@@ -42,6 +43,9 @@ public class DataMigrationService {
       migrateWrestlers(sourceConnection, targetConnection);
       migrateInjuries(sourceConnection, targetConnection);
       migrateTeams(sourceConnection, targetConnection);
+      migrateCards(sourceConnection, targetConnection); // New
+      migrateDecks(sourceConnection, targetConnection); // New
+      migrateDeckCards(sourceConnection, targetConnection); // New
 
     } catch (SQLException e) {
       throw new SQLException("Error during data migration: " + e.getMessage(), e);
@@ -197,9 +201,9 @@ public class DataMigrationService {
 
         String insertSql =
             String.format(
-                "INSERT INTO faction (FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, FORMED_DATE,"
-                    + " DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID) VALUES (%d, '%s', %s, %b, %s,"
-                    + " %s, '%s', %s)",
+                "INSERT INTO faction (FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID,"
+                    + " FORMED_DATE, DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID) VALUES (%d, '%s',"
+                    + " %s, %b, NULL, %s, %s, '%s', %s)",
                 factionId,
                 name.replace("'", "''"),
                 description != null ? "'" + description.replace("'", "''") + "'" : "NULL",
@@ -231,7 +235,7 @@ public class DataMigrationService {
 
         String insertSql =
             String.format(
-                "INSERT INTO wrestler (WRESTLER_ID, NAME, GENDER, EXTERNAL_ID, BUMPS, ACTIVE,"
+                "INSERT INTO wrestler (wrestler_id, NAME, GENDER, EXTERNAL_ID, BUMPS, ACTIVE,"
                     + " DECK_SIZE, IS_PLAYER, LOW_HEALTH, LOW_STAMINA, STARTING_HEALTH,"
                     + " STARTING_STAMINA, FANS, TIER, CREATION_DATE, FACTION_ID) VALUES (%d, '%s',"
                     + " '%s', %s, 0, TRUE, 0, FALSE, 0, 0, 0, 0, 0, 'ROOKIE', NOW(), %s)",
@@ -372,6 +376,138 @@ public class DataMigrationService {
                 formedDate,
                 disbandedDate,
                 externalId != null ? "'" + externalId.replace("'", "''") + "'" : "NULL");
+        targetStatement.executeUpdate(insertSql);
+      }
+    }
+  }
+
+  private void migrateCardSets(Connection sourceConnection, Connection targetConnection)
+      throws SQLException {
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet =
+            sourceStatement.executeQuery(
+                "SELECT SET_ID, SET_CODE, DESCRIPTION, RELEASE_DATE, CREATION_DATE FROM card_set");
+        Statement targetStatement = targetConnection.createStatement()) {
+
+      while (resultSet.next()) {
+        long setId = resultSet.getLong("SET_ID");
+        String setCode = resultSet.getString("SET_CODE");
+        String description = resultSet.getString("DESCRIPTION");
+        String releaseDate =
+            resultSet.getDate("RELEASE_DATE") != null
+                ? "'" + resultSet.getDate("RELEASE_DATE").toString() + "'"
+                : "NULL";
+        String creationDate = resultSet.getTimestamp("CREATION_DATE").toString();
+
+        String insertSql =
+            String.format(
+                "INSERT INTO card_set (SET_ID, SET_CODE, NAME, DESCRIPTION, RELEASE_DATE,"
+                    + " CREATION_DATE) VALUES (%d, '%s', '%s', %s, %s, '%s')",
+                setId,
+                setCode.replace("'", "''"),
+                setCode.replace("'", "''"), // Use set_code for name
+                description != null ? "'" + description.replace("'", "''") + "'" : "NULL",
+                releaseDate,
+                creationDate);
+        targetStatement.executeUpdate(insertSql);
+      }
+    }
+  }
+
+  private void migrateCards(Connection sourceConnection, Connection targetConnection)
+      throws SQLException {
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet =
+            sourceStatement.executeQuery(
+                "SELECT CARD_ID, NAME, TYPE, DAMAGE, STAMINA, MOMENTUM, TARGET, NUMBER,"
+                    + " FINISHER, SIGNATURE, PIN, TAUNT, RECOVER, CREATION_DATE, SET_ID FROM card");
+        Statement targetStatement = targetConnection.createStatement()) {
+
+      while (resultSet.next()) {
+        long cardId = resultSet.getLong("CARD_ID");
+        String name = resultSet.getString("NAME");
+        String type = resultSet.getString("TYPE");
+        int damage = resultSet.getInt("DAMAGE");
+        int stamina = resultSet.getInt("STAMINA");
+        int momentum = resultSet.getInt("MOMENTUM");
+        int target = resultSet.getInt("TARGET");
+        int number = resultSet.getInt("NUMBER");
+        boolean finisher = resultSet.getBoolean("FINISHER");
+        boolean signature = resultSet.getBoolean("SIGNATURE");
+        boolean pin = resultSet.getBoolean("PIN");
+        boolean taunt = resultSet.getBoolean("TAUNT");
+        boolean recover = resultSet.getBoolean("RECOVER");
+        String creationDate = resultSet.getTimestamp("CREATION_DATE").toString();
+        long setId = resultSet.getLong("SET_ID");
+
+        String insertSql =
+            String.format(
+                "INSERT INTO card (CARD_ID, NAME, TYPE, DAMAGE, STAMINA, MOMENTUM, TARGET,"
+                    + " NUMBER, FINISHER, SIGNATURE, PIN, TAUNT, RECOVER, CREATION_DATE, SET_ID)"
+                    + " VALUES (%d, '%s', '%s', %d, %d, %d, %d, %d, %b, %b, %b, %b, %b, '%s', %d)",
+                cardId,
+                name.replace("'", "''"),
+                type.replace("'", "''"),
+                damage,
+                stamina,
+                momentum,
+                target,
+                number,
+                finisher,
+                signature,
+                pin,
+                taunt,
+                recover,
+                creationDate,
+                setId);
+        targetStatement.executeUpdate(insertSql);
+      }
+    }
+  }
+
+  private void migrateDecks(Connection sourceConnection, Connection targetConnection)
+      throws SQLException {
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet =
+            sourceStatement.executeQuery("SELECT DECK_ID, WRESTLER_ID, CREATION_DATE FROM deck");
+        Statement targetStatement = targetConnection.createStatement()) {
+
+      while (resultSet.next()) {
+        long deckId = resultSet.getLong("DECK_ID");
+        long wrestlerId = resultSet.getLong("WRESTLER_ID");
+        String creationDate = resultSet.getTimestamp("CREATION_DATE").toString();
+
+        String insertSql =
+            String.format(
+                "INSERT INTO deck (DECK_ID, WRESTLER_ID, CREATION_DATE) VALUES (%d, %d, '%s')",
+                deckId, wrestlerId, creationDate);
+        targetStatement.executeUpdate(insertSql);
+      }
+    }
+  }
+
+  private void migrateDeckCards(Connection sourceConnection, Connection targetConnection)
+      throws SQLException {
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet =
+            sourceStatement.executeQuery(
+                "SELECT d.ID, d.DECK_ID, d.CARD_ID, d.AMOUNT, d.CREATION_DATE, c.SET_ID FROM"
+                    + " deck_card d JOIN card c ON d.CARD_ID = c.CARD_ID");
+        Statement targetStatement = targetConnection.createStatement()) {
+
+      while (resultSet.next()) {
+        long id = resultSet.getLong("ID");
+        long deckId = resultSet.getLong("DECK_ID");
+        long cardId = resultSet.getLong("CARD_ID");
+        int amount = resultSet.getInt("AMOUNT");
+        String creationDate = resultSet.getTimestamp("CREATION_DATE").toString();
+        long setId = resultSet.getLong("SET_ID");
+
+        String insertSql =
+            String.format(
+                "INSERT INTO deck_card (ID, DECK_ID, CARD_ID, AMOUNT, CREATION_DATE, SET_ID) VALUES"
+                    + " (%d, %d, %d, %d, '%s', %d)",
+                id, deckId, cardId, amount, creationDate, setId);
         targetStatement.executeUpdate(insertSql);
       }
     }
