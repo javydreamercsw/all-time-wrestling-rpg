@@ -934,18 +934,23 @@
                 <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-data-jpa</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>jakarta.transaction:jakarta.transaction-api</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>jakarta.inject:jakarta.inject-api</ignoredUnusedDeclaredDependency>
-                <ignoredUnusedDeclaredDependency>com.h2database:h2</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.flywaydb:flyway-core</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.yaml:snakeyaml</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.json:json</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>com.github.mvysny.kaributesting:karibu-testing-v24</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>org.apache.tomcat.embed:tomcat-embed-core</ignoredUnusedDeclaredDependency>
                 <ignoredUnusedDeclaredDependency>jakarta.annotation:jakarta.annotation-api</ignoredUnusedDeclaredDependency>
+                <!--Only used with MySQL-->
+                <ignoredUnusedDeclaredDependency>com.mysql:mysql-connector-j</ignoredUnusedDeclaredDependency>
+                <ignoredUnusedDeclaredDependency>org.flywaydb:flyway-mysql</ignoredUnusedDeclaredDependency>
+                <!--Only used with H2-->
+                <ignoredUnusedDeclaredDependency>com.h2database:h2</ignoredUnusedDeclaredDependency>
               </ignoredUnusedDeclaredDependencies>
               <ignoredNonTestScopedDependencies>
                 <ignoredNonTestScopedDependency>ch.qos.logback:logback-classic</ignoredNonTestScopedDependency>
                 <ignoredNonTestScopedDependency>junit:junit</ignoredNonTestScopedDependency>
                 <ignoredNonTestScopedDependency>commons-io:commons-io</ignoredNonTestScopedDependency>
+                <ignoredNonTestScopedDependency>org.flywaydb:flyway-core</ignoredNonTestScopedDependency>
               </ignoredNonTestScopedDependencies>
             </configuration>
           </execution>
