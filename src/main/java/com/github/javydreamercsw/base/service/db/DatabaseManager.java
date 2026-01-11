@@ -21,4 +21,10 @@ import java.sql.SQLException;
 
 public interface DatabaseManager {
   Connection getConnection() throws SQLException;
+
+  String getURL();
+
+  String getUser();
+
+  String getPassword();
 }

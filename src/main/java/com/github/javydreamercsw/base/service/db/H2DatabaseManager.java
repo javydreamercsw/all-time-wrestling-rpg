@@ -19,10 +19,29 @@ package com.github.javydreamercsw.base.service.db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import lombok.Getter;
+import lombok.NonNull;
 
+@Getter
 public class H2DatabaseManager implements DatabaseManager {
+
+  private final String dbFilePath;
+  @NonNull private final String user;
+  @NonNull private final String password;
+
+  public H2DatabaseManager(
+      @NonNull String dbFilePath, @NonNull String user, @NonNull String password) {
+    this.dbFilePath = dbFilePath;
+    this.user = user;
+    this.password = password;
+  }
+
+  public String getURL() {
+    return dbFilePath + ";DB_CLOSE_DELAY=-1";
+  }
+
   @Override
   public Connection getConnection() throws SQLException {
-    return DriverManager.getConnection("jdbc:h2:mem:testdb", "sa", "");
+    return DriverManager.getConnection(getURL(), user, password);
   }
 }

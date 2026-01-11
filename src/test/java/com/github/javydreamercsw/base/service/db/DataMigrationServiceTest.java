@@ -21,6 +21,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -31,7 +32,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-class DataMigrationServiceTest  {
+@Slf4j
+class DataMigrationServiceTest {
 
   @Container
   private static final MySQLContainer<?> MYSQL_CONTAINER =
@@ -40,7 +42,7 @@ class DataMigrationServiceTest  {
           .withUsername("test")
           .withPassword("test");
 
-  private static final String H2_URL = "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1";
+  private static final String H2_URL = "jdbc:h2:./src/test/resources/db/sample";
   private static final String H2_USER = "sa";
   private static final String H2_PASSWORD = "";
 
@@ -54,25 +56,6 @@ class DataMigrationServiceTest  {
             .cleanDisabled(false)
             .load();
     h2Flyway.migrate(); // Migrate H2 schema
-    
-    // Clean up roles and accounts from H2 to avoid conflicts
-    try (Connection h2Connection = DriverManager.getConnection(H2_URL, H2_USER, H2_PASSWORD);
-        Statement stmt = h2Connection.createStatement()) {
-        stmt.execute("DELETE FROM account_roles");
-        stmt.execute("DELETE FROM role");
-    }
-
-    // Configure and run Flyway for MySQL Testcontainer
-    Flyway mysqlFlyway =
-        Flyway.configure()
-            .dataSource(
-                MYSQL_CONTAINER.getJdbcUrl(),
-                MYSQL_CONTAINER.getUsername(),
-                MYSQL_CONTAINER.getPassword())
-            .locations("filesystem:src/main/resources/db/migration/mysql")
-            .cleanDisabled(false)
-            .load();
-    mysqlFlyway.clean(); // Clean MySQL before migration
   }
 
   @AfterEach
@@ -83,7 +66,7 @@ class DataMigrationServiceTest  {
 
   @Test
   void testMigrateData() throws SQLException {
-    H2FileDatabaseManager h2Manager = new H2FileDatabaseManager(H2_URL);
+    H2FileDatabaseManager h2Manager = new H2FileDatabaseManager(H2_URL, H2_USER, H2_PASSWORD);
     MySQLDatabaseManager mySQLManager =
         new MySQLDatabaseManager(
             MYSQL_CONTAINER.getJdbcUrl(),
@@ -99,27 +82,213 @@ class DataMigrationServiceTest  {
                 MYSQL_CONTAINER.getJdbcUrl(),
                 MYSQL_CONTAINER.getUsername(),
                 MYSQL_CONTAINER.getPassword());
-        Statement stmt = mySqlConnection.createStatement()) {
+        Statement stmt = mySqlConnection.createStatement();
+        Connection sourceConnection = h2Manager.getConnection();
+        Statement sourceStatement = sourceConnection.createStatement()) {
 
-      ResultSet rs = stmt.executeQuery("SELECT count(*) FROM role");
-      rs.next();
-      int count = rs.getInt(1);
-      Assertions.assertTrue(count > 0, "No roles were migrated!");
+      Assertions.assertAll(
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM role");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No roles were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM wrestler");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No wrestlers were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM faction");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No factions were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM npc");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No NPCs were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM season");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No seasons were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM show_type");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No show_types were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM show_template");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No show_templates were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM `show`");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No shows were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment_type");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No segment_types were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment_rule");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No segment_rules were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No segments were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment_participant");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No segment_participants were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment_segment_rule");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No segment_segment_rules were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM title");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No titles were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM segment_title");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No segment_titles were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM title_champion");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No title_champions were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM title_contender");
+            rs.next();
+            int count = rs.getInt(1);
+            if (count == 0) {
+              System.out.println("Warning: No title_contenders were migrated!");
+            }
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM title_reign");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No title_reigns were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM title_reign_champion");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No title_reign_champions were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM rivalry");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No rivalries were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM heat_event");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No heat_events were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM faction_rivalry");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No faction_rivalries were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM faction_heat_event");
+            rs.next();
+            int count = rs.getInt(1);
+            Assertions.assertTrue(count > 0, "No faction_heat_events were migrated!");
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM drama_event");
+            rs.next();
+            int count = rs.getInt(1);
+            if (count == 0) {
+              log.warn("Warning: No drama_events were migrated!");
+            }
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM multi_wrestler_feud");
+            rs.next();
+            int count = rs.getInt(1);
+            if (count == 0) {
+              log.warn("Warning: No multi_wrestler_feuds were migrated!");
+            }
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM feud_participant");
+            rs.next();
+            int count = rs.getInt(1);
+            if (count == 0) {
+              log.warn("Warning: No feud_participants were migrated!");
+            }
+          },
+          () -> {
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM feud_heat_event");
+            rs.next();
+            int count = rs.getInt(1);
+            if (count == 0) {
+              log.warn("Warning: No feud_heat_events were migrated!");
+            }
+          });
 
-      rs = stmt.executeQuery("SELECT count(*) FROM wrestler");
-      rs.next();
-      count = rs.getInt(1);
-      Assertions.assertTrue(count > 0, "No wrestlers were migrated!");
+      ResultSet tables = sourceStatement.executeQuery("SHOW TABLES");
+      Assertions.assertAll(
+          "Verify row counts for all tables",
+          () -> {
+            while (tables.next()) {
+              String tableName = tables.getString(1);
+              if (tableName.equalsIgnoreCase("flyway_schema_history")) {
+                continue;
+              }
+              try (Statement innerSourceStatement = sourceConnection.createStatement();
+                  Statement innerTargetStatement = mySqlConnection.createStatement()) {
+                final ResultSet sourceRs =
+                    innerSourceStatement.executeQuery("SELECT count(*) FROM " + tableName);
+                sourceRs.next();
+                final int sourceCount = sourceRs.getInt(1);
 
-      rs = stmt.executeQuery("SELECT count(*) FROM faction");
-      rs.next();
-      count = rs.getInt(1);
-      Assertions.assertTrue(count > 0, "No factions were migrated!");
+                final ResultSet targetRs =
+                    innerTargetStatement.executeQuery(
+                        "SELECT count(*) FROM `" + tableName.toLowerCase() + "`");
+                targetRs.next();
+                final int targetCount = targetRs.getInt(1);
 
-      rs = stmt.executeQuery("SELECT count(*) FROM npc");
-      rs.next();
-      count = rs.getInt(1);
-      Assertions.assertTrue(count > 0, "No NPCs were migrated!");
+                Assertions.assertEquals(
+                    sourceCount,
+                    targetCount,
+                    "Row count for table " + tableName + " should match!");
+              }
+            }
+          });
     }
   }
 }

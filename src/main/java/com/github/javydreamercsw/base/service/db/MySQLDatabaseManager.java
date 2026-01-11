@@ -19,7 +19,9 @@ package com.github.javydreamercsw.base.service.db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import lombok.Getter;
 
+@Getter
 public class MySQLDatabaseManager implements DatabaseManager {
 
   private final String url;
@@ -30,6 +32,10 @@ public class MySQLDatabaseManager implements DatabaseManager {
     this.url = url;
     this.user = user;
     this.password = password;
+  }
+
+  public String getURL() {
+    return url;
   }
 
   @Override

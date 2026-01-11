@@ -41,11 +41,11 @@ public class DatabaseManagerFactory {
       return overrides.get(dbType.toUpperCase());
     }
     if ("H2".equalsIgnoreCase(dbType)) {
-      return new H2DatabaseManager();
+      return new H2DatabaseManager(url, user, password);
     } else if ("H2_FILE".equalsIgnoreCase(dbType)) {
       // Extract the file path from the URL
       String filePath = url.substring("jdbc:h2:".length());
-      return new H2FileDatabaseManager(filePath);
+      return new H2FileDatabaseManager(filePath, user, password);
     } else if ("MySQL".equalsIgnoreCase(dbType)) {
       return new MySQLDatabaseManager(url, user, password);
     } else {
