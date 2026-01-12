@@ -367,49 +367,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return getGridRows(grid);
   }
 
-  protected boolean elementExists(@NonNull By selector) {
-    takeSequencedScreenshot("before-element-exists-check");
-    // Convert By locator to JavaScript selector string
-    String selectorType;
-    String selectorValue;
-
-    if (selector instanceof By.ById) {
-      selectorType = "id";
-      selectorValue = selector.toString().substring(selector.toString().indexOf(": ") + 2);
-      return (Boolean)
-          ((JavascriptExecutor) driver)
-              .executeScript(
-                  "return document.getElementById(arguments[0]) != null;", selectorValue);
-    } else if (selector instanceof By.ByCssSelector) {
-      selectorType = "css selector";
-      selectorValue = selector.toString().substring(selector.toString().indexOf(": ") + 2);
-      return (Boolean)
-          ((JavascriptExecutor) driver)
-              .executeScript("return document.querySelector(arguments[0]) != null;", selectorValue);
-    } else if (selector instanceof By.ByTagName) {
-      selectorType = "tag name";
-      selectorValue = selector.toString().substring(selector.toString().indexOf(": ") + 2);
-      return (Boolean)
-          ((JavascriptExecutor) driver)
-              .executeScript(
-                  "return document.getElementsByTagName(arguments[0]).length > 0;", selectorValue);
-    } else if (selector instanceof By.ByXPath) {
-      // XPath can be complex, for this diagnostic, we'll keep it simple
-      // and only check if an element can be found via general XPath
-      selectorType = "xpath";
-      selectorValue = selector.toString().substring(selector.toString().indexOf(": ") + 2);
-      return (Boolean)
-          ((JavascriptExecutor) driver)
-              .executeScript(
-                  "return document.evaluate(arguments[0], document, null, XPathResult.ANY_TYPE,"
-                      + " null).iterateNext() != null;",
-                  selectorValue);
-    } else {
-      log.warn("Unsupported selector type for elementExists: {}", selector.getClass().getName());
-      return false;
-    }
-  }
-
   protected void takeSequencedScreenshot(@NonNull String context) {
     if (driver != null && testArtifactsDir != null) {
       screenshotCounter++;
