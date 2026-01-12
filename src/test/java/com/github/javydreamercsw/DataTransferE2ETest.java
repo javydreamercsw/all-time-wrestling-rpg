@@ -16,11 +16,14 @@
 */
 package com.github.javydreamercsw;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -152,5 +155,71 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     WebElement dataTransferProcessStep =
         waitForVaadinElement(driver, By.id("data-transfer-process-step"));
     assertNotNull(dataTransferProcessStep);
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  public void testRollbackFailureMechanism() {
+    System.setProperty("simulateFailure", "true"); // Simulate data transfer failure first
+    System.setProperty("simulateRollbackFailure", "true"); // Simulate rollback failure
+
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
+    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
+
+    // Step 1: Connection Configuration
+    // Fill in valid connection parameters
+    WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
+    hostField.sendKeys("localhost");
+    WebElement portField = waitForVaadinElement(driver, By.id("port-field"));
+    portField.sendKeys("3306");
+    WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
+    usernameField.sendKeys("testuser");
+    WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
+    passwordField.sendKeys("testpassword");
+
+    // Click the next button to advance to Data Selection step
+    nextButton.click();
+
+    // Assert that the data selection step is displayed
+    WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
+    assertNotNull(dataSelectionStep);
+
+    // Click the next button again to advance to Data Transfer Process step (simulates failure)
+    nextButton.click();
+
+    // Assert that the data transfer process step is displayed
+    WebElement dataTransferProcessStep =
+        waitForVaadinElement(driver, By.id("data-transfer-process-step"));
+    assertNotNull(dataTransferProcessStep);
+
+    // Assert that a Rollback button is present
+    WebElement rollbackButton = waitForVaadinElement(driver, By.id("rollback-button"));
+    assertNotNull(rollbackButton);
+
+    // Click the Rollback button (simulates rollback failure)
+    rollbackButton.click();
+
+    // Assert that we are *not* back to the connection configuration step
+    // Instead, we should remain on the data transfer process step
+    // and see a message indicating rollback failure.
+    WebElement statusLabel = waitForVaadinElement(driver, By.id("status-label"));
+    assertNotNull(statusLabel);
+    // This assertion will make the test FAIL, as expected for a failing test scenario
+    assertTrue(
+        statusLabel.getText().contains("Rollback failed."), "Expected rollback failure message.");
+
+    // Also assert that connection-config-step is not visible
+    // This will initially FAIL because element is likely present but hidden
+    // We expect it to be NOT visible. Let's look for element presence.
+    try {
+      WebElement connectionConfigStep = driver.findElement(By.id("connection-config-step"));
+      // If element is found, check if it's displayed, and assert that it's NOT displayed
+      assertFalse(
+          connectionConfigStep.isDisplayed(),
+          "Connection config step should not be displayed after failed rollback.");
+    } catch (NoSuchElementException e) {
+      // If element is not found, it means it's not even in the DOM, which is also good.
+      // So, do nothing here.
+    }
   }
 }
