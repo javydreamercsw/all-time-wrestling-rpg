@@ -280,14 +280,23 @@ public class DataTransferView extends Div {
 
     rollbackButton.addClickListener(
         event -> {
-          Notification.show("Rolling back data transfer...");
-          statusLabel.setText("Rolling back...");
-          statusLabel.setVisible(true);
-          // Reset to the first step (Connection Configuration)
-          currentStep = 0;
-          showStep(currentStep);
-          Notification.show("Rollback complete.");
-          statusLabel.setText("Rollback complete. Please reconfigure connection.");
+          // Simulate rollback failure
+          boolean simulateRollbackFailure = Boolean.getBoolean("simulateRollbackFailure");
+          if (simulateRollbackFailure) {
+            Notification.show("Rollback failed unexpectedly!");
+            statusLabel.setText("Rollback failed.");
+            // Keep on current step, perhaps show an error state
+            // For now, just show the message and leave on the dataTransferProcessStep
+          } else {
+            Notification.show("Rolling back data transfer...");
+            statusLabel.setText("Rolling back...");
+            statusLabel.setVisible(true);
+            // Reset to the first step (Connection Configuration)
+            currentStep = 0;
+            showStep(currentStep);
+            Notification.show("Rollback complete.");
+            statusLabel.setText("Rollback complete. Please reconfigure connection.");
+          }
         });
 
     previousButton.addClickListener(
