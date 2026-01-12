@@ -1,6 +1,6 @@
 # Implementation Plan: Support for Multiple Databases
 
-## Phase 1: Backend - MySQL Integration
+## Phase 1: Backend - MySQL Integration [checkpoint: be0d8f25]
 - [x] Task: Create failing tests for database connection [d737bc7]
 - [x] Task: Implement a database abstraction layer to support multiple database engines. [fec3270]
 - [x] Task: Refactor existing H2 database connection to use the new abstraction layer. [cca0c25]
