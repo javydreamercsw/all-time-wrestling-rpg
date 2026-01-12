@@ -105,6 +105,9 @@ public class DataTransferView extends Div {
     dataSelectionStep.setId("data-selection-step");
     dataSelectionStep.setSizeFull();
     dataSelectionStep.add(new Div(new Label("Data Selection options will go here.")));
+    Button startTransferButton = new Button("Start Transfer");
+    startTransferButton.setId("start-transfer-button");
+    dataSelectionStep.add(startTransferButton);
     dataSelectionStep.setVisible(false); // Hidden initially
 
     // Data Transfer Process Step
@@ -167,43 +170,89 @@ public class DataTransferView extends Div {
 
     nextButton.addClickListener(
         event -> {
-          try {
-            binder.writeBean(connectionParameters);
-            Notification.show(
-                "Validation successful. Host: "
-                    + connectionParameters.getHost()
-                    + ", Port: "
-                    + connectionParameters.getPort());
-            statusLabel.setText("Validation successful.");
+          if (currentStep == 0) { // Connection Configuration Step
+            try {
+              binder.writeBean(connectionParameters);
+              Notification.show(
+                  "Validation successful. Host: "
+                      + connectionParameters.getHost()
+                      + ", Port: "
+                      + connectionParameters.getPort());
+              statusLabel.setText("Validation successful.");
+              statusLabel.setVisible(true);
+
+              // Advance to the next step (Data Selection)
+              currentStep++;
+              showStep(currentStep);
+            } catch (ValidationException e) {
+              Notification.show("Validation failed: " + e.getMessage());
+              statusLabel.setText("Validation failed.");
+              statusLabel.setVisible(true);
+              // Explicitly mark fields as invalid and set error messages
+              e.getFieldValidationErrors()
+                  .forEach(
+                      error -> {
+                        // Assuming the component is a HasValidation (e.g., TextField, IntegerField,
+                        // PasswordField)
+                        if (error.getField() instanceof TextField) {
+                          ((TextField) error.getField()).setInvalid(true);
+                          ((TextField) error.getField())
+                              .setErrorMessage(error.getMessage().orElse(""));
+                        } else if (error.getField() instanceof IntegerField) {
+                          ((IntegerField) error.getField()).setInvalid(true);
+                          ((IntegerField) error.getField())
+                              .setErrorMessage(error.getMessage().orElse(""));
+                        } else if (error.getField() instanceof PasswordField) {
+                          ((PasswordField) error.getField()).setInvalid(true);
+                          ((PasswordField) error.getField())
+                              .setErrorMessage(error.getMessage().orElse(""));
+                        }
+                      });
+            }
+          } else if (currentStep == 1) { // Data Selection Step - Start transfer
+            // Simulate data transfer process
+            Notification.show("Starting data transfer...");
+            statusLabel.setText("Data transfer in progress...");
             statusLabel.setVisible(true);
 
-            // Advance to the next step
-            currentStep++;
-            showStep(currentStep);
-          } catch (ValidationException e) {
-            Notification.show("Validation failed: " + e.getMessage());
-            statusLabel.setText("Validation failed.");
-            statusLabel.setVisible(true);
-            // Explicitly mark fields as invalid and set error messages
-            e.getFieldValidationErrors()
-                .forEach(
-                    error -> {
-                      // Assuming the component is a HasValidation (e.g., TextField, IntegerField,
-                      // PasswordField)
-                      if (error.getField() instanceof TextField) {
-                        ((TextField) error.getField()).setInvalid(true);
-                        ((TextField) error.getField())
-                            .setErrorMessage(error.getMessage().orElse(""));
-                      } else if (error.getField() instanceof IntegerField) {
-                        ((IntegerField) error.getField()).setInvalid(true);
-                        ((IntegerField) error.getField())
-                            .setErrorMessage(error.getMessage().orElse(""));
-                      } else if (error.getField() instanceof PasswordField) {
-                        ((PasswordField) error.getField()).setInvalid(true);
-                        ((PasswordField) error.getField())
-                            .setErrorMessage(error.getMessage().orElse(""));
+            // Disable next button during transfer
+            nextButton.setEnabled(false);
+            previousButton.setEnabled(false);
+
+            // Simulate a long-running task
+            new Thread(
+                    () -> {
+                      try {
+                        Thread.sleep(3000); // Simulate 3 seconds of transfer
+                        getUI()
+                            .ifPresent(
+                                ui ->
+                                    ui.access(
+                                        () -> {
+                                          Notification.show("Data transfer complete!");
+                                          statusLabel.setText("Data transfer complete.");
+                                          statusLabel.setVisible(true);
+                                          // Advance to the next step (or a completion step)
+                                          currentStep++;
+                                          showStep(currentStep);
+                                        }));
+                      } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                        getUI()
+                            .ifPresent(
+                                ui ->
+                                    ui.access(
+                                        () -> {
+                                          Notification.show(
+                                              "Data transfer interrupted: " + ex.getMessage());
+                                          statusLabel.setText("Data transfer interrupted.");
+                                          statusLabel.setVisible(true);
+                                          nextButton.setEnabled(true);
+                                          previousButton.setEnabled(true);
+                                        }));
                       }
-                    });
+                    })
+                .start();
           }
         });
 
