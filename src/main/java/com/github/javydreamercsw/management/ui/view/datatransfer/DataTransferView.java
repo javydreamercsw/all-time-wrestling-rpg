@@ -19,11 +19,15 @@ package com.github.javydreamercsw.management.ui.view.datatransfer;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
@@ -38,6 +42,15 @@ public class DataTransferView extends Div {
   private final Button previousButton;
   private final Button nextButton;
   private final Button cancelButton;
+  private final TextField hostField;
+  private final IntegerField portField;
+  private final TextField usernameField;
+  private final PasswordField passwordField;
+  private final Button testConnectionButton;
+  private final Label statusLabel;
+
+  private final Binder<ConnectionParameters> binder;
+  private final ConnectionParameters connectionParameters;
 
   public DataTransferView() {
     setId("data-transfer-wizard");
@@ -52,24 +65,34 @@ public class DataTransferView extends Div {
     stepContent.setId("connection-config-step");
     stepContent.setSizeFull();
 
-    TextField hostField = new TextField("Database Host");
+    hostField = new TextField("Database Host");
     hostField.setId("host-field");
     hostField.setValue("localhost");
+    hostField.setRequiredIndicatorVisible(true);
 
-    IntegerField portField = new IntegerField("Port");
+    portField = new IntegerField("Port");
     portField.setId("port-field");
     portField.setValue(3306); // Default MySQL port
+    portField.setRequiredIndicatorVisible(true);
 
-    TextField usernameField = new TextField("Username");
+    portField.setErrorMessage("Port must be a number");
+
+    usernameField = new TextField("Username");
     usernameField.setId("username-field");
+    usernameField.setRequiredIndicatorVisible(true);
 
-    PasswordField passwordField = new PasswordField("Password");
+    passwordField = new PasswordField("Password");
     passwordField.setId("password-field");
+    passwordField.setRequiredIndicatorVisible(true);
 
-    Button testConnectionButton = new Button("Test Connection");
+    testConnectionButton = new Button("Test Connection");
     testConnectionButton.setId("test-connection-button");
 
-    stepContent.add(hostField, portField, usernameField, passwordField, testConnectionButton);
+    statusLabel = new Label();
+    statusLabel.setId("status-label");
+
+    stepContent.add(
+        hostField, portField, usernameField, passwordField, testConnectionButton, statusLabel);
 
     previousButton = new Button("Previous");
     previousButton.setId("previous-button");
@@ -83,5 +106,73 @@ public class DataTransferView extends Div {
 
     contentLayout.add(stepContent, buttonLayout);
     add(contentLayout);
+
+    // Initialize Binder
+    binder = new Binder<>(ConnectionParameters.class);
+    connectionParameters = new ConnectionParameters();
+
+    binder
+        .forField(hostField)
+        .asRequired("Host cannot be empty")
+        .bind(ConnectionParameters::getHost, ConnectionParameters::setHost);
+
+    binder
+        .forField(portField)
+        .asRequired("Port cannot be empty")
+        .withValidator(
+            port -> port != null && port >= 0 && port <= 65535, "Port must be between 0 and 65535")
+        .bind(ConnectionParameters::getPort, ConnectionParameters::setPort);
+
+    binder
+        .forField(usernameField)
+        .asRequired("Username cannot be empty")
+        .bind(ConnectionParameters::getUsername, ConnectionParameters::setUsername);
+
+    binder
+        .forField(passwordField)
+        .asRequired("Password cannot be empty")
+        .bind(ConnectionParameters::getPassword, ConnectionParameters::setPassword);
+
+    // Set initial values to binder
+    binder.readBean(connectionParameters);
+
+    nextButton.addClickListener(
+        event -> {
+          try {
+            binder.writeBean(connectionParameters);
+            Notification.show(
+                "Validation successful. Host: "
+                    + connectionParameters.getHost()
+                    + ", Port: "
+                    + connectionParameters.getPort());
+            statusLabel.setText("Validation successful.");
+            statusLabel.setVisible(true);
+            // In a real wizard, here you would advance to the next step
+          } catch (ValidationException e) {
+            Notification.show("Validation failed: " + e.getMessage());
+            statusLabel.setText("Validation failed.");
+            statusLabel.setVisible(true);
+            // Explicitly mark fields as invalid and set error messages
+            e.getFieldValidationErrors()
+                .forEach(
+                    error -> {
+                      // Assuming the component is a HasValidation (e.g., TextField, IntegerField,
+                      // PasswordField)
+                      if (error.getField() instanceof TextField) {
+                        ((TextField) error.getField()).setInvalid(true);
+                        ((TextField) error.getField())
+                            .setErrorMessage(error.getMessage().orElse(""));
+                      } else if (error.getField() instanceof IntegerField) {
+                        ((IntegerField) error.getField()).setInvalid(true);
+                        ((IntegerField) error.getField())
+                            .setErrorMessage(error.getMessage().orElse(""));
+                      } else if (error.getField() instanceof PasswordField) {
+                        ((PasswordField) error.getField()).setInvalid(true);
+                        ((PasswordField) error.getField())
+                            .setErrorMessage(error.getMessage().orElse(""));
+                      }
+                    });
+          }
+        });
   }
 }

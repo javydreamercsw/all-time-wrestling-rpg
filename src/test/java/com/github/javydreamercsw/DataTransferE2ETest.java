@@ -18,9 +18,12 @@ package com.github.javydreamercsw;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.security.test.context.support.WithMockUser;
 
 public class DataTransferE2ETest extends AbstractE2ETest {
@@ -31,5 +34,49 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement dataTransferWizard = waitForVaadinElement(driver, By.id("data-transfer-wizard"));
     assertNotNull(dataTransferWizard);
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  public void testConnectionConfigurationView() {
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
+    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
+    nextButton.click();
+
+    WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
+    assertNotNull(hostField);
+    WebElement portField = waitForVaadinElement(driver, By.id("port-field"));
+    assertNotNull(portField);
+    WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
+    assertNotNull(usernameField);
+    WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
+    assertNotNull(passwordField);
+    WebElement testConnectionButton = waitForVaadinElement(driver, By.id("test-connection-button"));
+    assertNotNull(testConnectionButton);
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  public void testConnectionParametersValidation() {
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
+    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
+    nextButton.click();
+
+    // Clear the host field to trigger validation error
+    WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
+    clearField(hostField);
+
+    // Attempt to click next button, should not proceed
+    nextButton.click();
+
+    // Assert that the wizard is still on the connection configuration step
+    WebElement connectionConfigStep = waitForVaadinElement(driver, By.id("connection-config-step"));
+    assertNotNull(connectionConfigStep);
+
+    // Assert that a validation failed notification is displayed
+    new WebDriverWait(driver, Duration.ofSeconds(10))
+        .until(
+            ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//vaadin-notification-card[contains(., 'Validation failed')]")));
   }
 }
