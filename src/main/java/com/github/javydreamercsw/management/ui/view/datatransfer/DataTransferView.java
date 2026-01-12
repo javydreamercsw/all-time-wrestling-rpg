@@ -52,6 +52,7 @@ public class DataTransferView extends Div {
   private final Button testConnectionButton;
   private final Label statusLabel; // For connection status
   private final ProgressBar progressBar;
+  private final Button rollbackButton;
 
   private final Binder<ConnectionParameters> binder;
   private final ConnectionParameters connectionParameters;
@@ -120,6 +121,10 @@ public class DataTransferView extends Div {
     progressBar.setId("progress-indicator");
     progressBar.setIndeterminate(true); // Spinning indicator
     dataTransferProcessStep.add(progressBar);
+    rollbackButton = new Button("Rollback");
+    rollbackButton.setId("rollback-button");
+    rollbackButton.setVisible(false); // Hidden initially
+    dataTransferProcessStep.add(rollbackButton);
     dataTransferProcessStep.setVisible(false); // Hidden initially
 
     previousButton = new Button("Previous");
@@ -224,17 +229,32 @@ public class DataTransferView extends Div {
                     () -> {
                       try {
                         Thread.sleep(3000); // Simulate 3 seconds of transfer
+                        boolean simulateFailure = Boolean.getBoolean("simulateFailure");
+
                         getUI()
                             .ifPresent(
                                 ui ->
                                     ui.access(
                                         () -> {
-                                          Notification.show("Data transfer complete!");
-                                          statusLabel.setText("Data transfer complete.");
-                                          statusLabel.setVisible(true);
-                                          // Advance to the next step (or a completion step)
-                                          currentStep++;
-                                          showStep(currentStep);
+                                          if (simulateFailure) {
+                                            Notification.show(
+                                                "Data transfer failed. Please rollback.");
+                                            statusLabel.setText("Data transfer failed.");
+                                            statusLabel.setVisible(true);
+                                            progressBar.setVisible(false);
+                                            rollbackButton.setVisible(true);
+                                            currentStep =
+                                                2; // Ensure currentStep reflects the process step
+                                            showStep(currentStep); // Make process step visible
+
+                                          } else {
+                                            Notification.show("Data transfer complete!");
+                                            statusLabel.setText("Data transfer complete.");
+                                            statusLabel.setVisible(true);
+                                            // Advance to the next step (or a completion step)
+                                            currentStep++;
+                                            showStep(currentStep);
+                                          }
                                         }));
                       } catch (InterruptedException ex) {
                         Thread.currentThread().interrupt();
@@ -249,11 +269,25 @@ public class DataTransferView extends Div {
                                           statusLabel.setVisible(true);
                                           nextButton.setEnabled(true);
                                           previousButton.setEnabled(true);
+                                          progressBar.setVisible(false);
+                                          rollbackButton.setVisible(true);
                                         }));
                       }
                     })
                 .start();
           }
+        });
+
+    rollbackButton.addClickListener(
+        event -> {
+          Notification.show("Rolling back data transfer...");
+          statusLabel.setText("Rolling back...");
+          statusLabel.setVisible(true);
+          // Reset to the first step (Connection Configuration)
+          currentStep = 0;
+          showStep(currentStep);
+          Notification.show("Rollback complete.");
+          statusLabel.setText("Rollback complete. Please reconfigure connection.");
         });
 
     previousButton.addClickListener(

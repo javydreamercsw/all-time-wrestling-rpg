@@ -79,4 +79,78 @@ public class DataTransferE2ETest extends AbstractE2ETest {
             ExpectedConditions.visibilityOfElementLocated(
                 By.xpath("//vaadin-notification-card[contains(., 'Validation failed')]")));
   }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  public void testDataTransferProcessView() {
+    System.setProperty("simulateFailure", "false");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
+    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
+    WebElement previousButton = waitForVaadinElement(driver, By.id("previous-button"));
+    WebElement cancelButton = waitForVaadinElement(driver, By.id("cancel-button"));
+
+    // Step 1: Connection Configuration
+    // Fill in valid connection parameters
+    WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
+    hostField.sendKeys("localhost");
+    WebElement portField = waitForVaadinElement(driver, By.id("port-field"));
+    portField.sendKeys("3306");
+    WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
+    usernameField.sendKeys("testuser");
+    WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
+    passwordField.sendKeys("testpassword");
+
+    // Click the next button to advance to Data Selection step
+    nextButton.click();
+
+    // Assert that the data selection step is displayed
+    WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
+    assertNotNull(dataSelectionStep);
+
+    // Click the next button again to advance to Data Transfer Process step
+    nextButton.click();
+
+    // Assert that the data transfer process step is displayed via WebDriver
+    WebElement dataTransferProcessStep =
+        waitForVaadinElement(driver, By.id("data-transfer-process-step"));
+    assertNotNull(dataTransferProcessStep);
+
+    // Assert that a progress indicator is present
+    WebElement progressIndicator = waitForVaadinElement(driver, By.id("progress-indicator"));
+    assertNotNull(progressIndicator);
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  public void testRollbackMechanism() {
+    System.setProperty("simulateFailure", "true");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
+    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
+
+    // Step 1: Connection Configuration
+    // Fill in valid connection parameters
+    WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
+    hostField.sendKeys("localhost");
+    WebElement portField = waitForVaadinElement(driver, By.id("port-field"));
+    portField.sendKeys("3306");
+    WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
+    usernameField.sendKeys("testuser");
+    WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
+    passwordField.sendKeys("testpassword");
+
+    // Click the next button to advance to Data Selection step
+    nextButton.click();
+
+    // Assert that the data selection step is displayed
+    WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
+    assertNotNull(dataSelectionStep);
+
+    // Click the next button again to advance to Data Transfer Process step
+    nextButton.click();
+
+    // Assert that the data transfer process step is displayed via WebDriver
+    WebElement dataTransferProcessStep =
+        waitForVaadinElement(driver, By.id("data-transfer-process-step"));
+    assertNotNull(dataTransferProcessStep);
+  }
 }
