@@ -24,9 +24,12 @@
     <jacoco.integration.coverage.minimum>0.80</jacoco.integration.coverage.minimum>
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.version>0.8.14</jacoco.version>
-    <java.version>25</java.version>
+    <java.version>${maven.compiler.release}</java.version>
     <jib.to.tags>${project.version}</jib.to.tags>
     <lombok.version>1.18.42</lombok.version>
+    <maven.compiler.release>25</maven.compiler.release>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
     <surefireArgLine/>
     <testcontainers.version>1.21.4</testcontainers.version>
     <vaadin.version>24.9.8</vaadin.version>
@@ -755,6 +758,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>
+        <version>2.20.1</version>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
@@ -986,7 +990,7 @@
           <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>8.0.33</version>
+            <version>9.5.0</version>
           </dependency>
         </dependencies>
       </plugin>
