@@ -28,8 +28,8 @@
     <jib.to.tags>${project.version}</jib.to.tags>
     <lombok.version>1.18.42</lombok.version>
     <surefireArgLine/>
-    <testcontainers.version>1.21.4</testcontainers.version>
-    <vaadin.version>24.9.8</vaadin.version>
+    <testcontainers.version>2.0.3</testcontainers.version>
+    <vaadin.version>24.9.9</vaadin.version>
   </properties>
 
   <dependencyManagement>
