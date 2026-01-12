@@ -19,7 +19,7 @@ package com.github.javydreamercsw.management.ui.view.datatransfer;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.NativeLabel;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -50,7 +50,7 @@ public class DataTransferView extends Div {
   private final TextField usernameField;
   private final PasswordField passwordField;
   private final Button testConnectionButton;
-  private final Label statusLabel; // For connection status
+  private final NativeLabel statusLabel; // For connection status
   private final ProgressBar progressBar;
   private final Button rollbackButton;
 
@@ -95,7 +95,7 @@ public class DataTransferView extends Div {
     testConnectionButton = new Button("Test Connection");
     testConnectionButton.setId("test-connection-button");
 
-    statusLabel = new Label();
+    statusLabel = new NativeLabel();
     statusLabel.setId("status-label");
 
     connectionConfigStep.add(
@@ -105,7 +105,7 @@ public class DataTransferView extends Div {
     dataSelectionStep = new VerticalLayout();
     dataSelectionStep.setId("data-selection-step");
     dataSelectionStep.setSizeFull();
-    dataSelectionStep.add(new Div(new Label("Data Selection options will go here.")));
+    dataSelectionStep.add(new Div(new NativeLabel("Data Selection options will go here.")));
     Button startTransferButton = new Button("Start Transfer");
     startTransferButton.setId("start-transfer-button");
     dataSelectionStep.add(startTransferButton);
@@ -116,7 +116,7 @@ public class DataTransferView extends Div {
     dataTransferProcessStep.setId("data-transfer-process-step");
     dataTransferProcessStep.setSizeFull();
     // Placeholder for progress indicator
-    dataTransferProcessStep.add(new Div(new Label("Data transfer in progress...")));
+    dataTransferProcessStep.add(new Div(new NativeLabel("Data transfer in progress...")));
     progressBar = new ProgressBar();
     progressBar.setId("progress-indicator");
     progressBar.setIndeterminate(true); // Spinning indicator
