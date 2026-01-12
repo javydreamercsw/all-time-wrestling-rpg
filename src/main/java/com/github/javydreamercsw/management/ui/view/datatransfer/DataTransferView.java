@@ -23,6 +23,7 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -38,7 +39,9 @@ import jakarta.annotation.security.RolesAllowed;
 public class DataTransferView extends Div {
 
   private final VerticalLayout contentLayout;
-  private final VerticalLayout stepContent;
+  private final VerticalLayout connectionConfigStep;
+  private final VerticalLayout dataSelectionStep; // New step for data selection
+  private final VerticalLayout dataTransferProcessStep; // New step for data transfer process
   private final Button previousButton;
   private final Button nextButton;
   private final Button cancelButton;
@@ -47,10 +50,13 @@ public class DataTransferView extends Div {
   private final TextField usernameField;
   private final PasswordField passwordField;
   private final Button testConnectionButton;
-  private final Label statusLabel;
+  private final Label statusLabel; // For connection status
+  private final ProgressBar progressBar;
 
   private final Binder<ConnectionParameters> binder;
   private final ConnectionParameters connectionParameters;
+
+  private int currentStep = 0; // 0: Connection Config, 1: Data Selection, 2: Data Transfer Process
 
   public DataTransferView() {
     setId("data-transfer-wizard");
@@ -61,9 +67,10 @@ public class DataTransferView extends Div {
     contentLayout.setPadding(false);
     contentLayout.setSpacing(false);
 
-    stepContent = new VerticalLayout();
-    stepContent.setId("connection-config-step");
-    stepContent.setSizeFull();
+    // Connection Configuration Step
+    connectionConfigStep = new VerticalLayout();
+    connectionConfigStep.setId("connection-config-step");
+    connectionConfigStep.setSizeFull();
 
     hostField = new TextField("Database Host");
     hostField.setId("host-field");
@@ -74,7 +81,6 @@ public class DataTransferView extends Div {
     portField.setId("port-field");
     portField.setValue(3306); // Default MySQL port
     portField.setRequiredIndicatorVisible(true);
-
     portField.setErrorMessage("Port must be a number");
 
     usernameField = new TextField("Username");
@@ -91,8 +97,27 @@ public class DataTransferView extends Div {
     statusLabel = new Label();
     statusLabel.setId("status-label");
 
-    stepContent.add(
+    connectionConfigStep.add(
         hostField, portField, usernameField, passwordField, testConnectionButton, statusLabel);
+
+    // Data Selection Step
+    dataSelectionStep = new VerticalLayout();
+    dataSelectionStep.setId("data-selection-step");
+    dataSelectionStep.setSizeFull();
+    dataSelectionStep.add(new Div(new Label("Data Selection options will go here.")));
+    dataSelectionStep.setVisible(false); // Hidden initially
+
+    // Data Transfer Process Step
+    dataTransferProcessStep = new VerticalLayout();
+    dataTransferProcessStep.setId("data-transfer-process-step");
+    dataTransferProcessStep.setSizeFull();
+    // Placeholder for progress indicator
+    dataTransferProcessStep.add(new Div(new Label("Data transfer in progress...")));
+    progressBar = new ProgressBar();
+    progressBar.setId("progress-indicator");
+    progressBar.setIndeterminate(true); // Spinning indicator
+    dataTransferProcessStep.add(progressBar);
+    dataTransferProcessStep.setVisible(false); // Hidden initially
 
     previousButton = new Button("Previous");
     previousButton.setId("previous-button");
@@ -104,7 +129,8 @@ public class DataTransferView extends Div {
     buttonLayout.setWidthFull();
     buttonLayout.setJustifyContentMode(HorizontalLayout.JustifyContentMode.END);
 
-    contentLayout.add(stepContent, buttonLayout);
+    contentLayout.add(
+        connectionConfigStep, dataSelectionStep, dataTransferProcessStep, buttonLayout);
     add(contentLayout);
 
     // Initialize Binder
@@ -136,6 +162,9 @@ public class DataTransferView extends Div {
     // Set initial values to binder
     binder.readBean(connectionParameters);
 
+    // Configure button visibility and click listeners
+    previousButton.setEnabled(false); // First step has no previous
+
     nextButton.addClickListener(
         event -> {
           try {
@@ -147,7 +176,10 @@ public class DataTransferView extends Div {
                     + connectionParameters.getPort());
             statusLabel.setText("Validation successful.");
             statusLabel.setVisible(true);
-            // In a real wizard, here you would advance to the next step
+
+            // Advance to the next step
+            currentStep++;
+            showStep(currentStep);
           } catch (ValidationException e) {
             Notification.show("Validation failed: " + e.getMessage());
             statusLabel.setText("Validation failed.");
@@ -174,5 +206,52 @@ public class DataTransferView extends Div {
                     });
           }
         });
+
+    previousButton.addClickListener(
+        event -> {
+          currentStep--;
+          showStep(currentStep);
+        });
+
+    cancelButton.addClickListener(
+        event -> {
+          Notification.show("Data transfer cancelled.");
+          // In a real application, you would navigate away or close the wizard
+          // For now, we'll just go back to the first step
+          currentStep = 0;
+          showStep(currentStep);
+        });
+
+    showStep(currentStep); // Initialize view to the first step
+  }
+
+  private void showStep(int stepIndex) {
+    connectionConfigStep.setVisible(false);
+    dataSelectionStep.setVisible(false);
+    dataTransferProcessStep.setVisible(false);
+
+    switch (stepIndex) {
+      case 0:
+        connectionConfigStep.setVisible(true);
+        previousButton.setEnabled(false);
+        nextButton.setEnabled(true);
+        break;
+      case 1:
+        dataSelectionStep.setVisible(true);
+        previousButton.setEnabled(true);
+        nextButton.setEnabled(true);
+        break;
+      case 2:
+        dataTransferProcessStep.setVisible(true);
+        previousButton.setEnabled(true); // Allow going back from process step
+        nextButton.setEnabled(false); // No next step after starting process
+        break;
+      default:
+        // Handle invalid step, maybe show an error or go back to first step
+        connectionConfigStep.setVisible(true);
+        previousButton.setEnabled(false);
+        nextButton.setEnabled(true);
+        currentStep = 0;
+    }
   }
 }
