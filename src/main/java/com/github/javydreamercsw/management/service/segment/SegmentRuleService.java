@@ -47,6 +47,9 @@ public class SegmentRuleService {
    * @return List of active segment rules
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      key = "'allActive'")
   public List<SegmentRule> getAllActiveRules() {
     return segmentRuleRepository.findAll();
   }
@@ -58,6 +61,9 @@ public class SegmentRuleService {
    * @return Optional containing the segment rule if found
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      key = "#name")
   public Optional<SegmentRule> findByName(String name) {
     return segmentRuleRepository.findByName(name);
   }
@@ -68,6 +74,9 @@ public class SegmentRuleService {
    * @return List of segment rules appropriate for intense rivalries
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      key = "'highHeat'")
   public List<SegmentRule> getHighHeatRules() {
     return segmentRuleRepository.findSuitableForHighHeat();
   }
@@ -78,6 +87,9 @@ public class SegmentRuleService {
    * @return List of standard segment rules
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      key = "'standard'")
   public List<SegmentRule> getStandardRules() {
     return segmentRuleRepository.findStandardRules();
   }
@@ -92,6 +104,9 @@ public class SegmentRuleService {
    */
   @Transactional
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      allEntries = true)
   public SegmentRule createRule(
       @NonNull String name, @NonNull String description, boolean requiresHighHeat) {
     if (segmentRuleRepository.existsByName(name)) {
@@ -119,6 +134,9 @@ public class SegmentRuleService {
    */
   @Transactional
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      allEntries = true)
   public SegmentRule updateRule(
       @NonNull Long id,
       @NonNull String name,
@@ -164,6 +182,9 @@ public class SegmentRuleService {
    * @return Optional containing the segment rule if found
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      key = "#id")
   public Optional<SegmentRule> findById(@NonNull Long id) {
     return segmentRuleRepository.findById(id);
   }
@@ -174,6 +195,9 @@ public class SegmentRuleService {
    * @return List of all segment rules
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      key = "'all'")
   public List<SegmentRule> getAllRules() {
     return segmentRuleRepository.findAll();
   }
@@ -188,6 +212,9 @@ public class SegmentRuleService {
    */
   @Transactional
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      allEntries = true)
   public SegmentRule createOrUpdateRule(
       @NonNull String name,
       String description,
@@ -213,6 +240,9 @@ public class SegmentRuleService {
   }
 
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      key = "'all'")
   public List<SegmentRule> findAll() {
     return segmentRuleRepository.findAll();
   }

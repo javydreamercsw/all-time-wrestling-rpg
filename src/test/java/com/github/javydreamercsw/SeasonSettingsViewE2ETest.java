@@ -55,9 +55,12 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
 
     long originalMinFans = boundary.getMinFans();
     boundary.setMinFans(originalMinFans + 100);
-    tierBoundaryService.save(boundary);
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/season/settings");
+    // Click the tab
+    WebElement seasonSettingsTab =
+        waitForVaadinElement(driver, By.xpath("//vaadin-tab[text()='Season Settings']"));
+    clickElement(seasonSettingsTab);
 
     // Wait for view to load
     WebElement resetBoundariesButton =
@@ -95,7 +98,12 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     wrestler.setFans(tier.getMinFans() + 100);
     wrestlerService.save(wrestler);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/season/settings");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+
+    // Click the tab
+    WebElement seasonSettingsTab =
+        waitForVaadinElement(driver, By.xpath("//vaadin-tab[text()='Season Settings']"));
+    clickElement(seasonSettingsTab);
 
     // Wait for view to load
     WebElement recalibrateFansButton =
@@ -129,7 +137,12 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     icon.setGender(Gender.MALE);
     wrestlerService.save(icon);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/season/settings");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+
+    // Click the tab
+    WebElement seasonSettingsTab =
+        waitForVaadinElement(driver, By.xpath("//vaadin-tab[text()='Season Settings']"));
+    clickElement(seasonSettingsTab);
 
     // Wait for view to load
     WebElement recalibrateFansButton =
@@ -163,7 +176,12 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     icon.setGender(Gender.MALE);
     wrestlerService.save(icon);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/season/settings");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+
+    // Click the tab
+    WebElement seasonSettingsTab =
+        waitForVaadinElement(driver, By.xpath("//vaadin-tab[text()='Season Settings']"));
+    clickElement(seasonSettingsTab);
 
     // Wait for view to load
     WebElement recalibrateFansButton = waitForVaadinElement(driver, By.id("full-reset-button"));

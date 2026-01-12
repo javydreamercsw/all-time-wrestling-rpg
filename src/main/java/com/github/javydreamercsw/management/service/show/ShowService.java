@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
-import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -35,14 +34,14 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.utils.DiceBag;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.NonNull;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -113,6 +112,9 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+      key = "'all'")
   public List<Show> findAll() {
     return showRepository.findAll();
   }
@@ -124,6 +126,9 @@ public class ShowService {
    * @return List of all shows with eagerly loaded relationships
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+      key = "'allWithRelationships'")
   public List<Show> findAllWithRelationships() {
     return showRepository.findAllWithRelationships();
   }
@@ -173,6 +178,9 @@ public class ShowService {
    * @return Optional containing the show if found
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+      key = "#id")
   public Optional<Show> getShowById(Long id) {
     return showRepository.findById(id);
   }
@@ -185,6 +193,9 @@ public class ShowService {
    * @return List of shows in the date range
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE,
+      key = "#startDate + '-' + #endDate")
   public List<Show> getShowsByDateRange(LocalDate startDate, LocalDate endDate) {
     return showRepository.findByShowDateBetweenOrderByShowDate(startDate, endDate);
   }
@@ -254,6 +265,12 @@ public class ShowService {
    * @return Created show
    */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
+      },
+      allEntries = true)
   public Show createShow(
       String name,
       String description,
@@ -309,6 +326,12 @@ public class ShowService {
    * @return Updated show if found
    */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
+      },
+      allEntries = true)
   public Optional<Show> updateShow(
       Long id,
       String name,
@@ -370,7 +393,13 @@ public class ShowService {
    * @return true if deleted, false if not found
    */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
-  public boolean deleteShow(Long id) {
+  @org.springframework.cache.annotation.CacheEvict(
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
+      },
+      allEntries = true)
+  public boolean deleteShow(@NonNull Long id) {
     if (showRepository.existsById(id)) {
       showRepository.deleteById(id);
       return true;
@@ -379,13 +408,19 @@ public class ShowService {
   }
 
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
-  public void adjudicateShow(Long showId) {
+  @org.springframework.cache.annotation.CacheEvict(
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
+      },
+      allEntries = true)
+  public void adjudicateShow(@NonNull Long showId) {
     Show show =
         showRepository
             .findById(showId)
             .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
 
-    List<Wrestler> participatingWrestlers = new ArrayList<>();
+    Set<Long> participatingWrestlerIds = new HashSet<>();
 
     segmentRepository.findByShow(show).stream()
         .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
@@ -393,14 +428,17 @@ public class ShowService {
             segment -> {
               segmentAdjudicationService.adjudicateMatch(segment);
               if (!segment.getSegmentType().getName().equals("Promo")) {
-                participatingWrestlers.addAll(segment.getWrestlers());
+                segment.getWrestlers().forEach(w -> participatingWrestlerIds.add(w.getId()));
               }
               segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
               segmentRepository.save(segment);
             });
 
-    getNonParticipatingWrestlers(participatingWrestlers)
+    wrestlerRepository.findAll().stream()
+        .filter(w -> !participatingWrestlerIds.contains(w.getId()))
         .forEach(resting -> wrestlerService.healChance(resting.getId()));
+
+    gameSettingService.saveCurrentGameDate(show.getShowDate());
 
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
   }
@@ -408,28 +446,5 @@ public class ShowService {
   @PreAuthorize("isAuthenticated()")
   public List<Segment> getSegments(@NonNull Show show) {
     return segmentRepository.findByShow(show);
-  }
-
-  private void attemptRivalryResolution(@NonNull Wrestler w1, @NonNull Wrestler w2) {
-    DiceBag diceBag = new DiceBag(20);
-    Optional<Rivalry> rivalryBetweenWrestlers =
-        rivalryService.getRivalryBetweenWrestlers(w1.getId(), w2.getId());
-    rivalryBetweenWrestlers.ifPresent(
-        rivalry ->
-            rivalryService.attemptResolution(rivalry.getId(), diceBag.roll(), diceBag.roll()));
-  }
-
-  /**
-   * Returns a list of Wrestlers not in the provided participatingWrestlers list.
-   *
-   * @param participatingWrestlers List of currently participating wrestlers
-   * @return List of Wrestlers not participating
-   */
-  @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> getNonParticipatingWrestlers(
-      @NonNull List<Wrestler> participatingWrestlers) {
-    List<Wrestler> allWrestlers = new ArrayList<>(wrestlerRepository.findAll());
-    allWrestlers.removeAll(participatingWrestlers);
-    return allWrestlers;
   }
 }

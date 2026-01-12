@@ -16,7 +16,6 @@
     "@vaadin/common-frontend": "0.0.19",
     "@vaadin/polymer-legacy-adapter": "24.9.7",
     "@vaadin/react-components": "24.9.7",
-    "@vaadin/react-components-pro": "24.9.7",
     "@vaadin/vaadin-development-mode-detector": "2.0.7",
     "@vaadin/vaadin-lumo-styles": "24.9.7",
     "@vaadin/vaadin-material-styles": "24.9.7",
@@ -27,10 +26,9 @@
     "lit": "3.3.1",
     "moment": "2.29.4",
     "moment-timezone": "0.5.40",
-    "proj4": "2.15.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router": "7.6.3"
+    "react-router": "7.12.0"
   },
   "devDependencies": {
     "@babel/preset-react": "7.27.1",
@@ -68,7 +66,6 @@
       "@vaadin/common-frontend": "0.0.19",
       "@vaadin/polymer-legacy-adapter": "24.9.7",
       "@vaadin/react-components": "24.9.7",
-      "@vaadin/react-components-pro": "24.9.7",
       "@vaadin/vaadin-development-mode-detector": "2.0.7",
       "@vaadin/vaadin-lumo-styles": "24.9.7",
       "@vaadin/vaadin-material-styles": "24.9.7",
@@ -79,10 +76,9 @@
       "lit": "3.3.1",
       "moment": "2.29.4",
       "moment-timezone": "0.5.40",
-      "proj4": "2.15.0",
       "react": "18.3.1",
       "react-dom": "18.3.1",
-      "react-router": "7.6.3"
+      "react-router": "7.12.0"
     },
     "devDependencies": {
       "@babel/preset-react": "7.27.1",
@@ -105,7 +101,7 @@
       "workbox-core": "7.3.0",
       "workbox-precaching": "7.3.0"
     },
-    "hash": "f4a92751da82a2fdf3ce85a2503fc6c715ff70e50843eeca6f88d045a99621d2"
+    "hash": "9b55d9f4212821277c7b4bec512cc90541e85db7c1ebeb17515373d83deeb698"
   },
   "overrides": {
     "@vaadin/vaadin-development-mode-detector": "$@vaadin/vaadin-development-mode-detector",
@@ -129,8 +125,6 @@
     "@fullcalendar/moment": "$@fullcalendar/moment",
     "@fullcalendar/moment-timezone": "$@fullcalendar/moment-timezone",
     "@fullcalendar/daygrid": "$@fullcalendar/daygrid",
-    "@vaadin/react-components-pro": "$@vaadin/react-components-pro",
-    "proj4": "$proj4",
     "@vaadin/router": "2.0.1",
     "@vaadin/cookie-consent": "24.9.7",
     "@vaadin/a11y-base": "24.9.7",

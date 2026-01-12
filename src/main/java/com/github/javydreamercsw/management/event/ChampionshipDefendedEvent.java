@@ -28,11 +28,14 @@ public class ChampionshipDefendedEvent extends ApplicationEvent {
   private final Long titleId;
   private final String titleName;
   private final List<Wrestler> champions;
+  private final List<Wrestler> challengers;
 
-  public ChampionshipDefendedEvent(Object source, Title title, List<Wrestler> champions) {
+  public ChampionshipDefendedEvent(
+      Object source, Title title, List<Wrestler> champions, List<Wrestler> challengers) {
     super(source);
     this.titleId = title.getId();
     this.titleName = title.getName();
     this.champions = champions;
+    this.challengers = challengers;
   }
 }

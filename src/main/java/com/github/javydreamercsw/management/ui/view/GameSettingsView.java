@@ -22,13 +22,15 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 
 @PageTitle("Game Settings")
-@Route(value = "game-settings")
+@Component
 @RolesAllowed("ADMIN")
+@Lazy
 public class GameSettingsView extends VerticalLayout {
 
   private final GameSettingService gameSettingService;
