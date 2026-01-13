@@ -32,6 +32,9 @@ import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 @PageTitle("Data Transfer")
 @Route(value = "data-transfer", layout = MainLayout.class)
@@ -49,6 +52,7 @@ public class DataTransferView extends Div {
   private final IntegerField portField;
   private final TextField usernameField;
   private final PasswordField passwordField;
+  private final TextField urlField;
   private final Button testConnectionButton;
   private final NativeLabel statusLabel; // For connection status
   private final ProgressBar progressBar;
@@ -92,6 +96,11 @@ public class DataTransferView extends Div {
     passwordField.setId("password-field");
     passwordField.setRequiredIndicatorVisible(true);
 
+    urlField = new TextField("Database URL");
+    urlField.setId("url-field");
+    urlField.setRequiredIndicatorVisible(true);
+    urlField.setValue("jdbc:mysql://localhost:3306/atwrpg");
+
     testConnectionButton = new Button("Test Connection");
     testConnectionButton.setId("test-connection-button");
 
@@ -99,7 +108,13 @@ public class DataTransferView extends Div {
     statusLabel.setId("status-label");
 
     connectionConfigStep.add(
-        hostField, portField, usernameField, passwordField, testConnectionButton, statusLabel);
+        hostField,
+        portField,
+        usernameField,
+        passwordField,
+        urlField,
+        testConnectionButton,
+        statusLabel);
 
     // Data Selection Step
     dataSelectionStep = new VerticalLayout();
@@ -167,11 +182,43 @@ public class DataTransferView extends Div {
         .asRequired("Password cannot be empty")
         .bind(ConnectionParameters::getPassword, ConnectionParameters::setPassword);
 
+    binder
+        .forField(urlField)
+        .asRequired("URL cannot be empty")
+        .bind(ConnectionParameters::getUrl, ConnectionParameters::setUrl);
+
     // Set initial values to binder
     binder.readBean(connectionParameters);
 
     // Configure button visibility and click listeners
     previousButton.setEnabled(false); // First step has no previous
+
+    testConnectionButton.addClickListener(
+        event -> {
+          try {
+            binder.writeBean(connectionParameters);
+            // Try to connect to the database
+            try (Connection connection =
+                DriverManager.getConnection(
+                    connectionParameters.getUrl(),
+                    connectionParameters.getUsername(),
+                    connectionParameters.getPassword())) {
+              if (connection != null) {
+                Notification.show("Connection successful!");
+                statusLabel.setText("Connection successful.");
+                statusLabel.setVisible(true);
+              }
+            } catch (SQLException e) {
+              Notification.show("Connection failed: " + e.getMessage());
+              statusLabel.setText("Connection failed.");
+              statusLabel.setVisible(true);
+            }
+          } catch (ValidationException e) {
+            Notification.show("Validation failed: " + e.getMessage());
+            statusLabel.setText("Validation failed.");
+            statusLabel.setVisible(true);
+          }
+        });
 
     nextButton.addClickListener(
         event -> {
