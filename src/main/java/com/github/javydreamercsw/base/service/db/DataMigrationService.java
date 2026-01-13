@@ -24,8 +24,10 @@ import java.sql.Statement;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
+import org.springframework.stereotype.Service;
 
 @Slf4j
+@Service
 public class DataMigrationService {
 
   private final DatabaseManager source;

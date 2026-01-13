@@ -21,6 +21,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.NativeLabel;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
@@ -41,19 +42,11 @@ import java.sql.SQLException;
 @RolesAllowed("ADMIN")
 public class DataTransferView extends Div {
 
-  private final VerticalLayout contentLayout;
   private final VerticalLayout connectionConfigStep;
   private final VerticalLayout dataSelectionStep; // New step for data selection
   private final VerticalLayout dataTransferProcessStep; // New step for data transfer process
   private final Button previousButton;
   private final Button nextButton;
-  private final Button cancelButton;
-  private final TextField hostField;
-  private final IntegerField portField;
-  private final TextField usernameField;
-  private final PasswordField passwordField;
-  private final TextField urlField;
-  private final Button testConnectionButton;
   private final NativeLabel statusLabel; // For connection status
   private final ProgressBar progressBar;
   private final Button rollbackButton;
@@ -67,7 +60,7 @@ public class DataTransferView extends Div {
     setId("data-transfer-wizard");
     setSizeFull();
 
-    contentLayout = new VerticalLayout();
+    VerticalLayout contentLayout = new VerticalLayout();
     contentLayout.setSizeFull();
     contentLayout.setPadding(false);
     contentLayout.setSpacing(false);
@@ -77,31 +70,31 @@ public class DataTransferView extends Div {
     connectionConfigStep.setId("connection-config-step");
     connectionConfigStep.setSizeFull();
 
-    hostField = new TextField("Database Host");
+    TextField hostField = new TextField("Database Host");
     hostField.setId("host-field");
     hostField.setValue("localhost");
     hostField.setRequiredIndicatorVisible(true);
 
-    portField = new IntegerField("Port");
+    IntegerField portField = new IntegerField("Port");
     portField.setId("port-field");
     portField.setValue(3306); // Default MySQL port
     portField.setRequiredIndicatorVisible(true);
     portField.setErrorMessage("Port must be a number");
 
-    usernameField = new TextField("Username");
+    TextField usernameField = new TextField("Username");
     usernameField.setId("username-field");
     usernameField.setRequiredIndicatorVisible(true);
 
-    passwordField = new PasswordField("Password");
+    PasswordField passwordField = new PasswordField("Password");
     passwordField.setId("password-field");
     passwordField.setRequiredIndicatorVisible(true);
 
-    urlField = new TextField("Database URL");
+    TextField urlField = new TextField("Database URL");
     urlField.setId("url-field");
     urlField.setRequiredIndicatorVisible(true);
     urlField.setValue("jdbc:mysql://localhost:3306/atwrpg");
 
-    testConnectionButton = new Button("Test Connection");
+    Button testConnectionButton = new Button("Test Connection");
     testConnectionButton.setId("test-connection-button");
 
     statusLabel = new NativeLabel();
@@ -146,7 +139,7 @@ public class DataTransferView extends Div {
     previousButton.setId("previous-button");
     nextButton = new Button("Next");
     nextButton.setId("next-button");
-    cancelButton = new Button("Cancel");
+    Button cancelButton = new Button("Cancel");
     cancelButton.setId("cancel-button");
     HorizontalLayout buttonLayout = new HorizontalLayout(cancelButton, previousButton, nextButton);
     buttonLayout.setWidthFull();
@@ -169,7 +162,7 @@ public class DataTransferView extends Div {
         .forField(portField)
         .asRequired("Port cannot be empty")
         .withValidator(
-            port -> port != null && port >= 0 && port <= 65535, "Port must be between 0 and 65535")
+            port -> port != null && port >= 0 && port <= 65_535, "Port must be between 0 and 65535")
         .bind(ConnectionParameters::getPort, ConnectionParameters::setPort);
 
     binder
@@ -204,17 +197,24 @@ public class DataTransferView extends Div {
                     connectionParameters.getUsername(),
                     connectionParameters.getPassword())) {
               if (connection != null) {
-                Notification.show("Connection successful!");
+                Notification.show("Connection successful!", 3_000, Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 statusLabel.setText("Connection successful.");
                 statusLabel.setVisible(true);
               }
             } catch (SQLException e) {
-              Notification.show("Connection failed: " + e.getMessage());
+              Notification.show(
+                      "Connection failed: " + e.getMessage(),
+                      3_000,
+                      Notification.Position.BOTTOM_END)
+                  .addThemeVariants(NotificationVariant.LUMO_ERROR);
               statusLabel.setText("Connection failed.");
               statusLabel.setVisible(true);
             }
           } catch (ValidationException e) {
-            Notification.show("Validation failed: " + e.getMessage());
+            Notification.show(
+                    "Validation failed: " + e.getMessage(), 3_000, Notification.Position.BOTTOM_END)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
             statusLabel.setText("Validation failed.");
             statusLabel.setVisible(true);
           }
@@ -226,10 +226,13 @@ public class DataTransferView extends Div {
             try {
               binder.writeBean(connectionParameters);
               Notification.show(
-                  "Validation successful. Host: "
-                      + connectionParameters.getHost()
-                      + ", Port: "
-                      + connectionParameters.getPort());
+                      "Validation successful. Host: "
+                          + connectionParameters.getHost()
+                          + ", Port: "
+                          + connectionParameters.getPort(),
+                      3_000,
+                      Notification.Position.BOTTOM_END)
+                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
               statusLabel.setText("Validation successful.");
               statusLabel.setVisible(true);
 
@@ -237,7 +240,11 @@ public class DataTransferView extends Div {
               currentStep++;
               showStep(currentStep);
             } catch (ValidationException e) {
-              Notification.show("Validation failed: " + e.getMessage());
+              Notification.show(
+                      "Validation failed: " + e.getMessage(),
+                      3_000,
+                      Notification.Position.BOTTOM_END)
+                  .addThemeVariants(NotificationVariant.LUMO_ERROR);
               statusLabel.setText("Validation failed.");
               statusLabel.setVisible(true);
               // Explicitly mark fields as invalid and set error messages
@@ -275,7 +282,7 @@ public class DataTransferView extends Div {
             new Thread(
                     () -> {
                       try {
-                        Thread.sleep(3000); // Simulate 3 seconds of transfer
+                        Thread.sleep(3_000); // Simulate 3 seconds of transfer
                         boolean simulateFailure = Boolean.getBoolean("simulateFailure");
 
                         getUI()
@@ -293,7 +300,6 @@ public class DataTransferView extends Div {
                                             currentStep =
                                                 2; // Ensure currentStep reflects the process step
                                             showStep(currentStep); // Make process step visible
-
                                           } else {
                                             Notification.show("Data transfer complete!");
                                             statusLabel.setText("Data transfer complete.");
