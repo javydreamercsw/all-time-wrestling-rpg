@@ -41,7 +41,19 @@ public class H2FileDatabaseManager implements DatabaseManager {
   }
 
   @Override
+  public void testConnection() throws SQLException {
+    try (Connection conn = getConnection()) {
+      // Connection successful, do nothing
+    }
+  }
+
+  @Override
   public Connection getConnection() throws SQLException {
+    return getConnection(password);
+  }
+
+  @Override
+  public Connection getConnection(String password) throws SQLException {
     return DriverManager.getConnection(getURL(), user, password);
   }
 }

@@ -20,6 +20,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public interface DatabaseManager {
+  void testConnection() throws SQLException;
+
+  Connection getConnection(String password) throws SQLException;
+
   Connection getConnection() throws SQLException;
 
   String getURL();

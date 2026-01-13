@@ -66,16 +66,16 @@ class DataMigrationServiceTest {
 
   @Test
   void testMigrateData() throws SQLException {
+    DataMigrationService migrationService = new DataMigrationService();
+    migrationService.migrateData(
+        "H2_FILE",
+        "MySQL",
+        MYSQL_CONTAINER.getHost(),
+        MYSQL_CONTAINER.getFirstMappedPort(),
+        MYSQL_CONTAINER.getUsername(),
+        MYSQL_CONTAINER.getPassword());
+
     H2FileDatabaseManager h2Manager = new H2FileDatabaseManager(H2_URL, H2_USER, H2_PASSWORD);
-    MySQLDatabaseManager mySQLManager =
-        new MySQLDatabaseManager(
-            MYSQL_CONTAINER.getJdbcUrl(),
-            MYSQL_CONTAINER.getUsername(),
-            MYSQL_CONTAINER.getPassword());
-
-    DataMigrationService migrationService = new DataMigrationService(h2Manager, mySQLManager);
-    migrationService.migrateData("H2_FILE", "MySQL");
-
     // Verify the data in the target MySQL database
     try (Connection mySqlConnection =
             DriverManager.getConnection(

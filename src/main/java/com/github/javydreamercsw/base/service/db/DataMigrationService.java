@@ -30,30 +30,19 @@ import org.springframework.stereotype.Service;
 @Service
 public class DataMigrationService {
 
-  private final DatabaseManager source;
-  private final DatabaseManager target;
-
-  public DataMigrationService() {
-    this.source = null; // Will be initialized by migrateData
-    this.target = null; // Will be initialized by migrateData
-  }
-
-  public DataMigrationService(DatabaseManager source, DatabaseManager target) {
-    this.source = source;
-    this.target = target;
-  }
-
-  public void migrateData(String sourceDbType, String targetDbType) throws SQLException {
-    if (source == null || target == null) {
-      // Fallback for default constructor or non-injected managers
-      DatabaseManager sourceManager =
-          DatabaseManagerFactory.getDatabaseManager(sourceDbType, null, null, null);
-      DatabaseManager targetManager =
-          DatabaseManagerFactory.getDatabaseManager(targetDbType, null, null, null);
-      migrateDataInternal(sourceManager, targetManager);
-    } else {
-      migrateDataInternal(source, target);
-    }
+  public void migrateData(
+      String sourceDbType,
+      String targetDbType,
+      String host,
+      Integer port,
+      String user,
+      String password)
+      throws SQLException {
+    DatabaseManager sourceManager =
+        DatabaseManagerFactory.getDatabaseManager(sourceDbType, null, null, null, null);
+    DatabaseManager targetManager =
+        DatabaseManagerFactory.getDatabaseManager(targetDbType, host, port, user, password);
+    migrateDataInternal(sourceManager, targetManager, password);
   }
 
   public void setTargetFlywayMigration(
@@ -74,17 +63,19 @@ public class DataMigrationService {
   }
 
   private void migrateDataInternal(
-      @NonNull DatabaseManager sourceManager, @NonNull DatabaseManager targetManager)
+      @NonNull DatabaseManager sourceManager,
+      @NonNull DatabaseManager targetManager,
+      @NonNull String password)
       throws SQLException {
 
     try (Connection sourceConnection = sourceManager.getConnection();
-        Connection targetConnection = targetManager.getConnection()) {
+        Connection targetConnection = targetManager.getConnection(password)) {
       try {
         // Perform Flyway migration for the target database
         setTargetFlywayMigration(
-            target.getURL(),
-            target.getUser(),
-            target.getPassword(),
+            targetManager.getURL(),
+            targetManager.getUser(),
+            password,
             "filesystem:src/main/resources/db/migration/mysql");
 
         targetConnection.setAutoCommit(false);
