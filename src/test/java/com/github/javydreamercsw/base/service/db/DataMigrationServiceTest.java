@@ -27,17 +27,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mysql.MySQLContainer;
 
 @Testcontainers
 @Slf4j
 class DataMigrationServiceTest {
 
   @Container
-  private static final MySQLContainer<?> MYSQL_CONTAINER =
-      new MySQLContainer<>("mysql:8.0.26")
+  private static final MySQLContainer MYSQL_CONTAINER =
+      new MySQLContainer("mysql:8.0.26")
           .withDatabaseName("test")
           .withUsername("test")
           .withPassword("test");
