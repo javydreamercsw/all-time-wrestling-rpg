@@ -35,13 +35,41 @@ public class DataMigrationService {
       String targetDbType,
       String host,
       Integer port,
+      String database,
+      String user,
+      String password)
+      throws SQLException {
+    migrateData(
+        sourceDbType,
+        "jdbc:h2:mem:testdb",
+        "sa",
+        "",
+        targetDbType,
+        host,
+        port,
+        database,
+        user,
+        password);
+  }
+
+  public void migrateData(
+      String sourceDbType,
+      String sourceUrl,
+      String sourceUser,
+      String sourcePassword,
+      String targetDbType,
+      String host,
+      Integer port,
+      String database,
       String user,
       String password)
       throws SQLException {
     DatabaseManager sourceManager =
-        DatabaseManagerFactory.getDatabaseManager(sourceDbType, null, null, null, null);
+        DatabaseManagerFactory.getDatabaseManager(
+            sourceDbType, sourceUrl, sourceUser, sourcePassword);
     DatabaseManager targetManager =
-        DatabaseManagerFactory.getDatabaseManager(targetDbType, host, port, user, password);
+        DatabaseManagerFactory.getDatabaseManager(
+            targetDbType, host, port, database, user, password);
     migrateDataInternal(sourceManager, targetManager, password);
   }
 

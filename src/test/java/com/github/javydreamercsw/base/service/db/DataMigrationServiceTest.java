@@ -69,6 +69,9 @@ class DataMigrationServiceTest {
     DataMigrationService migrationService = new DataMigrationService();
     migrationService.migrateData(
         "H2_FILE",
+        H2_URL,
+        H2_USER,
+        H2_PASSWORD,
         "MySQL",
         MYSQL_CONTAINER.getHost(),
         MYSQL_CONTAINER.getFirstMappedPort(),

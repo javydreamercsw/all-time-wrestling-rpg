@@ -37,7 +37,7 @@ public class H2FileDatabaseManager implements DatabaseManager {
   }
 
   public String getURL() {
-    return dbFilePath + ";DB_CLOSE_DELAY=-1";
+    return "jdbc:h2:" + dbFilePath + ";DB_CLOSE_DELAY=-1";
   }
 
   @Override

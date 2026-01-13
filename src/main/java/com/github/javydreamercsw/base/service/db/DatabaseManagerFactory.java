@@ -36,17 +36,17 @@ public class DatabaseManagerFactory {
   }
 
   public static DatabaseManager getDatabaseManager(
-      String dbType, String host, Integer port, String user, String password) {
-    String url = null;
-    if (host != null && port != null) {
-      if ("H2".equalsIgnoreCase(dbType)) {
-        url = "jdbc:h2:mem:testdb"; // For in-memory H2, host and port might not be directly used in
-        // URL
-      } else if ("H2_FILE".equalsIgnoreCase(dbType)) {
-        url = "jdbc:h2:" + host; // Assuming host here is the file path for H2_FILE
-      } else if ("MySQL".equalsIgnoreCase(dbType)) {
-        url = "jdbc:mysql://" + host + ":" + port + "/test"; // Default database name
-      }
+      String dbType, String host, Integer port, String database, String user, String password) {
+    String url;
+    if ("H2".equalsIgnoreCase(dbType)) {
+      url =
+          "jdbc:h2:mem:testdb"; // For in-memory H2, host and port might not be directly used in URL
+    } else if ("H2_FILE".equalsIgnoreCase(dbType)) {
+      url = "jdbc:h2:" + host; // Assuming host here is the file path for H2_FILE
+    } else if ("MySQL".equalsIgnoreCase(dbType)) {
+      url = "jdbc:mysql://" + host + ":" + port + "/" + database;
+    } else {
+      throw new IllegalArgumentException("Unsupported database type: " + dbType);
     }
     return getDatabaseManager(dbType, url, user, password);
   }

@@ -57,6 +57,7 @@ public class DataTransferView extends Main {
   private ComboBox<String> sourceDbType;
   private ComboBox<String> targetDbType;
   private TextField targetHost;
+  private TextField targetDatabase;
   private IntegerField targetPort;
   private TextField targetUser;
   private PasswordField targetPassword;
@@ -64,6 +65,7 @@ public class DataTransferView extends Main {
   private Button transferButton;
   private ProgressBar progressBar;
   private Span statusLabel;
+  private ComboBox<String> tableSelectionCombo; // New ComboBox for table selection
 
   @Autowired
   public DataTransferView(DataMigrationService migrationService) {
@@ -80,6 +82,7 @@ public class DataTransferView extends Main {
         LumoUtility.Gap.MEDIUM);
     add(new ViewToolbar("Data Transfer Management"));
     add(createConfigurationSection());
+    add(createDataSelectionSection()); // Add data selection section
     add(createControlSection());
     add(createProgressSection());
   }
@@ -102,15 +105,35 @@ public class DataTransferView extends Main {
     targetDbType.setItems("MySQL");
     targetDbType.setValue("MySQL");
     targetHost = new TextField("Target Host");
+    targetDatabase = new TextField("Target Database");
     targetPort = new IntegerField("Target Port");
     targetUser = new TextField("Target User");
     targetPassword = new PasswordField("Target Password");
     configurationSection.add(
         title,
         new HorizontalLayout(sourceDbType, targetDbType),
-        new HorizontalLayout(targetHost, targetPort),
+        new HorizontalLayout(targetHost, targetPort, targetDatabase),
         new HorizontalLayout(targetUser, targetPassword));
     return configurationSection;
+  }
+
+  private VerticalLayout createDataSelectionSection() {
+    VerticalLayout dataSelectionSection = new VerticalLayout();
+    dataSelectionSection.addClassNames(
+        LumoUtility.Padding.MEDIUM,
+        LumoUtility.Border.ALL,
+        LumoUtility.BorderRadius.MEDIUM,
+        LumoUtility.Background.CONTRAST_5);
+    H3 title = new H3("Data Selection");
+    title.addClassNames(LumoUtility.Margin.NONE);
+
+    tableSelectionCombo = new ComboBox<>("Select Table to Migrate");
+    // For now, hardcode some table names. In a real app, this would be dynamic.
+    tableSelectionCombo.setItems("All Tables", "Wrestler", "Faction", "Title", "Show");
+    tableSelectionCombo.setValue("All Tables");
+
+    dataSelectionSection.add(title, tableSelectionCombo);
+    return dataSelectionSection;
   }
 
   private HorizontalLayout createControlSection() {
@@ -148,15 +171,16 @@ public class DataTransferView extends Main {
             targetDbType.getValue(),
             targetHost.getValue(),
             targetPort.getValue(),
+            targetDatabase.getValue(),
             targetUser.getValue(),
             targetPassword.getValue());
     try {
       targetManager.testConnection();
-      Notification.show("Connection successful!", 3000, Notification.Position.MIDDLE)
+      Notification.show("Connection successful!", 3_000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     } catch (SQLException e) {
       log.error("Failed to connect to the database", e);
-      Notification.show("Connection failed: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
+      Notification.show("Connection failed: " + e.getMessage(), 5_000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
   }
@@ -167,16 +191,26 @@ public class DataTransferView extends Main {
     transferButton.setEnabled(false);
     testConnectionButton.setEnabled(false);
 
+    String selectedTable = tableSelectionCombo.getValue();
+
     CompletableFuture.runAsync(
             () -> {
               try {
-                migrationService.migrateData(
-                    sourceDbType.getValue(),
-                    targetDbType.getValue(),
-                    targetHost.getValue(),
-                    targetPort.getValue(),
-                    targetUser.getValue(),
-                    targetPassword.getValue());
+                if ("All Tables".equals(selectedTable)) {
+                  migrationService.migrateData(
+                      sourceDbType.getValue(),
+                      targetDbType.getValue(),
+                      targetHost.getValue(),
+                      targetPort.getValue(),
+                      targetDatabase.getValue(),
+                      targetUser.getValue(),
+                      targetPassword.getValue());
+                } else {
+                  // Simulate migration of a single table for now
+                  Thread.sleep(2000); // Simulate work
+                  log.info("Simulating migration of table: {}", selectedTable);
+                }
+
                 getUI()
                     .ifPresent(
                         ui ->
@@ -188,7 +222,7 @@ public class DataTransferView extends Main {
                                   testConnectionButton.setEnabled(true);
                                   Notification.show(
                                           "Data transfer completed!",
-                                          3000,
+                                          3_000,
                                           Notification.Position.MIDDLE)
                                       .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                                 }));
@@ -205,7 +239,26 @@ public class DataTransferView extends Main {
                                   testConnectionButton.setEnabled(true);
                                   Notification.show(
                                           "Data transfer failed: " + e.getMessage(),
-                                          5000,
+                                          5_000,
+                                          Notification.Position.MIDDLE)
+                                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                                }));
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Data transfer interrupted", e);
+                getUI()
+                    .ifPresent(
+                        ui ->
+                            ui.access(
+                                () -> {
+                                  progressBar.setVisible(false);
+                                  statusLabel.setText(
+                                      "Data transfer interrupted: " + e.getMessage());
+                                  transferButton.setEnabled(true);
+                                  testConnectionButton.setEnabled(true);
+                                  Notification.show(
+                                          "Data transfer interrupted: " + e.getMessage(),
+                                          5_000,
                                           Notification.Position.MIDDLE)
                                       .addThemeVariants(NotificationVariant.LUMO_ERROR);
                                 }));
@@ -225,7 +278,7 @@ public class DataTransferView extends Main {
                                 testConnectionButton.setEnabled(true);
                                 Notification.show(
                                         "An unexpected error occurred: " + ex.getMessage(),
-                                        5000,
+                                        5_000,
                                         Notification.Position.MIDDLE)
                                     .addThemeVariants(NotificationVariant.LUMO_ERROR);
                               }));
