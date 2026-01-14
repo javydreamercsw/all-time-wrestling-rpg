@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
@@ -267,5 +268,65 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     WebElement managerName =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("manager-name")));
     assertEquals("Managed by: Test Manager", managerName.getText());
+  }
+
+  @Test
+  void testTitleHistoryIsVisible() {
+    // Given
+    Wrestler wrestler1 =
+        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Champion Wrestler"));
+
+    Title title =
+        titleService.createTitle(
+            "World Title", "The top title", WrestlerTier.MAIN_EVENTER, ChampionshipType.SINGLE);
+
+    Season season = seasonService.createSeason("History Season", "Season for history", 10);
+    Show show =
+        showService.createShow(
+            "SuperShow",
+            "Big Event",
+            showTypeRepository.findByName("Weekly").get().getId(),
+            null,
+            season.getId(),
+            null);
+
+    SegmentType matchType = segmentTypeService.findByName("One on One").get();
+    Segment segment =
+        segmentService.createSegment(show, matchType, Instant.now().minusSeconds(1000));
+    segment.addParticipant(wrestler1);
+    segment.setWinners(List.of(wrestler1));
+    segment = segmentRepository.saveAndFlush(segment);
+
+    // Award title at the segment
+    title.awardTitleTo(List.of(wrestler1), Instant.now().minusSeconds(500), segment);
+    titleRepository.saveAndFlush(title);
+
+    // When
+    driver.get(
+        "http://localhost:"
+            + serverPort
+            + getContextPath()
+            + "/wrestler-profile/"
+            + wrestler1.getId());
+
+    // Then
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    wait.until(
+        ExpectedConditions.visibilityOfElementLocated(By.xpath("//h3[text()='Title History']")));
+
+    // Verify timeline presence
+    assertNotNull(waitForVaadinElement(driver, By.xpath("//span[text()='CURRENT']")));
+
+    // Verify card presence
+    assertNotNull(waitForVaadinElement(driver, By.xpath("//span[text()='World Title']")));
+
+    // Verify match link
+    WebElement link =
+        waitForVaadinElement(driver, By.xpath("//a[contains(text(), 'Won at: SuperShow')]"));
+    assertNotNull(link);
+
+    // Click and verify navigation
+    clickElement(link);
+    wait.until(ExpectedConditions.urlContains("show-detail/" + show.getId()));
   }
 }
