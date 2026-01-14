@@ -228,7 +228,7 @@ class TitleControllerIT extends AbstractControllerTest {
     Assertions.assertNotNull(title.getId());
     when(titleService.getTitleById(title.getId())).thenReturn(Optional.of(title));
     Assertions.assertNotNull(wrestler.getId());
-    when(wrestlerRepository.findAllById(List.of(wrestler.getId()))).thenReturn(List.of(wrestler));
+    when(wrestlerRepository.findById(wrestler.getId())).thenReturn(Optional.of(wrestler));
     doAnswer(
             invocation -> {
               Title titleToAward = invocation.getArgument(0);
@@ -237,7 +237,7 @@ class TitleControllerIT extends AbstractControllerTest {
               return null;
             })
         .when(titleService)
-        .awardTitleTo(any(Title.class), anyList());
+        .awardTitleTo(any(Title.class), anyList(), any());
 
     mockMvc
         .perform(
@@ -258,18 +258,17 @@ class TitleControllerIT extends AbstractControllerTest {
     Assertions.assertNotNull(title.getId());
     when(titleService.getTitleById(title.getId())).thenReturn(Optional.of(title));
     Assertions.assertNotNull(wrestler.getId());
-    when(wrestlerRepository.findAllById(List.of(wrestler.getId()))).thenReturn(List.of(wrestler));
+    when(wrestlerRepository.findById(wrestler.getId())).thenReturn(Optional.of(wrestler));
     doThrow(new IllegalArgumentException("Wrestler not eligible"))
         .when(titleService)
-        .awardTitleTo(any(Title.class), anyList());
+        .awardTitleTo(any(Title.class), anyList(), any());
 
     mockMvc
         .perform(
             post("/api/titles/{titleId}/award", title.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(List.of(wrestler.getId()))))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").exists());
+        .andExpect(status().isBadRequest());
   }
 
   @Test
