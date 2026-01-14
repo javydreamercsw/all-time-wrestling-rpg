@@ -33,6 +33,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -142,12 +143,14 @@ public class TitleController {
     }
     Title title = titleOpt.get();
 
-    List<Wrestler> wrestlers = wrestlerRepository.findAllById(wrestlerIds);
-    if (wrestlers.size() != wrestlerIds.size()) {
-      return ResponseEntity.badRequest().body(new ErrorResponse("One or more wrestlers not found"));
-    }
+    List<Wrestler> wrestlers =
+        wrestlerIds.stream()
+            .map(wrestlerRepository::findById)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
 
-    titleService.awardTitleTo(title, wrestlers);
+    titleService.awardTitleTo(title, wrestlers, null);
     return ResponseEntity.ok(title);
   }
 

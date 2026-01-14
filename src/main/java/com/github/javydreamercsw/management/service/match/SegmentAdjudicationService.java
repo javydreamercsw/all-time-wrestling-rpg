@@ -152,7 +152,7 @@ public class SegmentAdjudicationService {
             eventPublisher.publishEvent(
                 new ChampionshipDefendedEvent(this, title, currentChampions, losers));
           } else {
-            titleService.awardTitleTo(title, winners);
+            titleService.awardTitleTo(title, winners, segment);
             eventPublisher.publishEvent(
                 new ChampionshipChangeEvent(this, title, currentChampions, winners));
           }

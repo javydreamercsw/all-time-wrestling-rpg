@@ -30,9 +30,13 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.time.LocalDate;
 import java.util.List;
@@ -51,6 +55,66 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
+  @Autowired private TitleRepository titleRepository;
+  @Autowired private TitleService titleService;
+
+  @Test
+  void testAdjudicateMatchWithTitleChangeLinksToSegment() {
+    // Given
+    Wrestler winner = Wrestler.builder().build();
+    winner.setName("New Champion");
+    winner.setFans(100_000L);
+    winner.setTier(WrestlerTier.MAIN_EVENTER);
+    wrestlerRepository.save(winner);
+
+    Wrestler loser = Wrestler.builder().build();
+    loser.setName("Former Champion");
+    loser.setFans(100_000L);
+    loser.setTier(WrestlerTier.MAIN_EVENTER);
+    wrestlerRepository.save(loser);
+
+    Title title =
+        titleService.createTitle(
+            "World Title", "The top title", WrestlerTier.MAIN_EVENTER, ChampionshipType.SINGLE);
+    title.awardTitleTo(List.of(loser), java.time.Instant.now());
+    titleRepository.save(title);
+
+    ShowType showType = new ShowType();
+    showType.setName("Title Test Show Type");
+    showType.setDescription("Title Test Description");
+    showTypeRepository.save(showType);
+
+    Show show = new Show();
+    show.setName("Title Test Show");
+    show.setDescription("Title Test Show Description");
+    show.setShowDate(LocalDate.now());
+    show.setType(showType);
+    showRepository.save(show);
+
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Title Match");
+    segmentTypeRepository.save(segmentType);
+
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(segmentType);
+    segment.setIsTitleSegment(true);
+    segment.getTitles().add(title);
+    segment.addParticipant(winner);
+    segment.addParticipant(loser);
+    segment.setWinners(List.of(winner));
+    segmentRepository.save(segment);
+
+    // When
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Then
+    Title updatedTitle = titleRepository.findById(title.getId()).get();
+    Assertions.assertTrue(updatedTitle.getCurrentChampions().contains(winner));
+    Assertions.assertTrue(updatedTitle.getCurrentReign().isPresent());
+    Assertions.assertEquals(
+        segment.getId(), updatedTitle.getCurrentReign().get().getWonAtSegment().getId());
+  }
 
   @Test
   void testAdjudicateMatch() {

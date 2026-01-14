@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -31,6 +32,7 @@ import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
+import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
@@ -63,6 +65,34 @@ public class RankingService {
         .filter(Title::getIncludeInRankings)
         .map(this::toChampionshipDTO)
         .collect(Collectors.toList());
+  }
+
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<TitleReignDTO> getTitleReignHistory(@NonNull Long championshipId) {
+    return titleRepository
+        .findById(championshipId)
+        .map(
+            title ->
+                title.getTitleReigns().stream()
+                    .map(this::toTitleReignDTO)
+                    .sorted(Comparator.comparing(TitleReignDTO::getStartDate).reversed())
+                    .collect(Collectors.toList()))
+        .orElse(Collections.emptyList());
+  }
+
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<TitleReignDTO> getWrestlerTitleHistory(@NonNull Long wrestlerId) {
+    return wrestlerRepository
+        .findById(wrestlerId)
+        .map(
+            wrestler ->
+                wrestler.getReigns().stream()
+                    .map(this::toTitleReignDTO)
+                    .sorted(Comparator.comparing(TitleReignDTO::getStartDate).reversed())
+                    .collect(Collectors.toList()))
+        .orElse(Collections.emptyList());
   }
 
   @Transactional(readOnly = true)
@@ -254,6 +284,26 @@ public class RankingService {
         .name(faction.getName())
         .fans(faction.getMembers().stream().mapToLong(Wrestler::getFans).sum())
         .rank(rank)
+        .build();
+  }
+
+  private TitleReignDTO toTitleReignDTO(@NonNull TitleReign reign) {
+    return TitleReignDTO.builder()
+        .id(reign.getId())
+        .championNames(
+            reign.getChampions().stream().map(Wrestler::getName).collect(Collectors.toList()))
+        .championIds(
+            reign.getChampions().stream().map(Wrestler::getId).collect(Collectors.toList()))
+        .startDate(reign.getStartDate())
+        .endDate(reign.getEndDate())
+        .durationDays(reign.getReignLengthDays(Instant.now()))
+        .isCurrent(reign.isCurrentReign())
+        .wonAtShowId(
+            reign.getWonAtSegment() != null ? reign.getWonAtSegment().getShow().getId() : null)
+        .wonAtShowName(
+            reign.getWonAtSegment() != null ? reign.getWonAtSegment().getShow().getName() : null)
+        .championshipName(reign.getTitle().getName())
+        .championshipTier(reign.getTitle().getTier().getDisplayWithEmoji())
         .build();
   }
 

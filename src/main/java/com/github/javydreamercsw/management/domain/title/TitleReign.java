@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.title;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -47,6 +48,10 @@ public class TitleReign extends AbstractEntity<Long> {
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "title_id", nullable = false)
   private Title title;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "won_at_segment_id")
+  private Segment wonAtSegment;
 
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
