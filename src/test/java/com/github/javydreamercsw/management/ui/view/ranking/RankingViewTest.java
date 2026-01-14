@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
@@ -52,18 +53,15 @@ class RankingViewTest extends AbstractViewTest {
 
   @BeforeEach
   void setUp() {
-    championshipDTO =
-        ChampionshipDTO.builder().id(1L).name("Test Title").imageName("test.png").build();
+    championshipDTO = new ChampionshipDTO(1L, "Test Title", "test.png", WrestlerTier.MIDCARDER);
     when(rankingService.getChampionships()).thenReturn(List.of(championshipDTO));
     when(rankingService.getCurrentChampions(championshipDTO.getId()))
         .thenReturn(
             List.of(
                 ChampionDTO.builder().id(1L).name("Champion").fans(1000L).reignDays(1L).build()));
     List<RankedWrestlerDTO> contenders = new ArrayList<>();
-    contenders.add(
-        RankedWrestlerDTO.builder().id(2L).name("Contender 2").fans(700L).rank(1).build());
-    contenders.add(
-        RankedWrestlerDTO.builder().id(3L).name("Contender 1").fans(500L).rank(2).build());
+    contenders.add(new RankedWrestlerDTO(2L, "Contender 2", 700L, 1, WrestlerTier.MIDCARDER));
+    contenders.add(new RankedWrestlerDTO(3L, "Contender 1", 500L, 2, WrestlerTier.ROOKIE));
     when(rankingService.getRankedContenders(championshipDTO.getId()))
         .thenAnswer(invocation -> contenders);
   }

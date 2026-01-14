@@ -45,6 +45,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.OutputType;
+import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -170,6 +171,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     if (driver != null) {
       driver.quit();
     }
+    // Clear the system property after each test to ensure isolation
+    System.clearProperty("simulateFailure");
   }
 
   protected boolean isHeadless() {
@@ -222,11 +225,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    * @param driver the WebDriver instance
    */
   protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
+    takeSequencedScreenshot("before-wait-for-element");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
@@ -314,6 +317,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     if (item != null) {
       clickElement(item);
     }
+    takeSequencedScreenshot("after-select");
+  }
+
+  protected void selectFromVaadinComboBox(@NonNull String comboBoxId, @NonNull String itemText) {
+    WebElement comboBox = waitForVaadinElement(driver, By.id(comboBoxId));
+    selectFromVaadinComboBox(comboBox, itemText);
   }
 
   /**
@@ -499,5 +508,32 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     field.sendKeys(selectAll);
     field.sendKeys(Keys.BACK_SPACE);
     takeSequencedScreenshot("after-clear");
+  }
+
+  protected String getVaadinTextFieldErrorMessage(@NonNull String textFieldId) {
+    WebElement textFieldElement = driver.findElement(By.id(textFieldId));
+
+    // Check if the field is invalid
+    Boolean isInvalid =
+        (Boolean)
+            ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].hasAttribute('invalid');", textFieldElement);
+
+    if (isInvalid) {
+      // Access the shadow root of the vaadin-text-field
+      SearchContext shadowRoot = textFieldElement.getShadowRoot();
+
+      // Find the error message element within the shadow root
+      List<WebElement> errorMessageElements =
+          shadowRoot.findElements(By.cssSelector("[part='error-message']"));
+
+      if (!errorMessageElements.isEmpty()) {
+        WebElement errorMessageElement = errorMessageElements.get(0);
+        if (errorMessageElement.isDisplayed()) {
+          return errorMessageElement.getText();
+        }
+      }
+    }
+    return null; // Or throw an exception if the field is not invalid
   }
 }

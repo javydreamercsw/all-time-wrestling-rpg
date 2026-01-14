@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDateTime;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -41,7 +42,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
   @Override
   @Transactional
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+  public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
     Account account =
         accountRepository
             .findByUsernameWithRoles(username)
@@ -66,7 +67,7 @@ public class CustomUserDetailsService implements UserDetailsService {
    * @param username the username
    */
   @Transactional
-  public void recordFailedLoginAttempt(String username) {
+  public void recordFailedLoginAttempt(@NonNull String username) {
     accountRepository
         .findByUsername(username)
         .ifPresent(
@@ -94,7 +95,7 @@ public class CustomUserDetailsService implements UserDetailsService {
    * @param username the username
    */
   @Transactional
-  public void recordSuccessfulLogin(String username) {
+  public void recordSuccessfulLogin(@NonNull String username) {
     accountRepository
         .findByUsername(username)
         .ifPresent(

@@ -65,6 +65,9 @@ public class Title extends AbstractEntity<Long> {
   @Enumerated(EnumType.STRING)
   private ChampionshipType championshipType;
 
+  @Column(name = "include_in_rankings", nullable = false)
+  private Boolean includeInRankings = true;
+
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 

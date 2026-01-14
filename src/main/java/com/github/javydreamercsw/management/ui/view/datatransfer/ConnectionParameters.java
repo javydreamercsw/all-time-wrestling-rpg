@@ -14,24 +14,15 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.dto.ranking;
+package com.github.javydreamercsw.management.ui.view.datatransfer;
 
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class RankedWrestlerDTO {
-  private Long id;
-  private String name;
-  private Long fans;
-  private int rank;
-  private WrestlerTier tier;
+@Data
+public class ConnectionParameters {
+  private String host;
+  private Integer port;
+  private String username;
+  private String password;
+  private String url;
 }

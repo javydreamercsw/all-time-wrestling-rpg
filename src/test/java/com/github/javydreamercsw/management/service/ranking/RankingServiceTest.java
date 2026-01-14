@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.service.ranking;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
@@ -57,7 +57,6 @@ class RankingServiceTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private FactionRepository factionRepository;
   @Mock private TeamRepository teamRepository;
-  @Mock private TierBoundaryService tierBoundaryService;
   @InjectMocks private RankingService rankingService;
 
   private Title title;
@@ -103,11 +102,6 @@ class RankingServiceTest {
     contender2.setFans(700L);
     contender2.setGender(Gender.MALE);
     contender2.setTier(WrestlerTier.fromFanCount(contender2.getFans()));
-
-    List<Wrestler> contenders = new ArrayList<>();
-    contenders.add(contender1);
-    contenders.add(contender2);
-    contenders.forEach(title::addChallenger);
   }
 
   @Test
@@ -122,60 +116,117 @@ class RankingServiceTest {
   }
 
   @Test
-  void testGetRankedContenders() {
-    title.setTier(WrestlerTier.MIDCARDER);
-    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    com.github.javydreamercsw.base.domain.wrestler.TierBoundary boundary =
-        new com.github.javydreamercsw.base.domain.wrestler.TierBoundary();
-    boundary.setTier(WrestlerTier.MIDCARDER);
-    boundary.setMinFans(WrestlerTier.MIDCARDER.getMinFans());
-    boundary.setMaxFans(WrestlerTier.MIDCARDER.getMaxFans());
-    when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
-        .thenReturn(Optional.of(boundary));
-    when(wrestlerRepository.findByFansBetween(anyLong(), anyLong()))
-        .thenReturn(new ArrayList<>(List.of(contender1, contender2)));
+  void testGetRankedContendersWithTierPrioritization() {
+    // Setup for a Midcard Championship
+    title.setName("Midcard Championship");
+    title.setTier(WrestlerTier.MIDCARDER); // Ordinal 2
+    title.setGender(Gender.MALE);
+    title.setChampionshipType(ChampionshipType.SINGLE);
+    title.setIncludeInRankings(true); // Explicitly include in rankings
 
-    List<?> contenders = rankingService.getRankedContenders(1L);
+    // Create diverse wrestlers with fan counts aligned with their tiers
+    Wrestler wrestlerA = new Wrestler();
+    wrestlerA.setId(10L);
+    wrestlerA.setName("Wrestler A");
+    wrestlerA.setFans(WrestlerTier.MAIN_EVENTER.getMinFans() + 5000L); // Fans for MAIN_EVENTER
+    wrestlerA.setGender(Gender.MALE);
+    wrestlerA.setTier(WrestlerTier.MAIN_EVENTER); // Ordinal 4
+    wrestlerA.setActive(true);
 
-    assertEquals(2, contenders.size());
-    assertTrue(contenders.get(0) instanceof RankedWrestlerDTO);
-    assertEquals("Contender 2", ((RankedWrestlerDTO) contenders.get(0)).getName());
-    assertEquals(1, ((RankedWrestlerDTO) contenders.get(0)).getRank());
-    assertEquals("Contender 1", ((RankedWrestlerDTO) contenders.get(1)).getName());
-    assertEquals(2, ((RankedWrestlerDTO) contenders.get(1)).getRank());
-  }
+    Wrestler wrestlerB = new Wrestler();
+    wrestlerB.setId(11L);
+    wrestlerB.setName("Wrestler B");
+    wrestlerB.setFans(WrestlerTier.MIDCARDER.getMinFans() + 5000L); // Fans for MIDCARDER
+    wrestlerB.setGender(Gender.MALE);
+    wrestlerB.setTier(WrestlerTier.MIDCARDER); // Ordinal 3 - Title tier, higher fans
+    wrestlerB.setActive(true);
 
-  @Test
-  void testGetRankedContendersWithWorldTitle() {
-    Wrestler icon = new Wrestler();
-    icon.setId(4L);
-    icon.setName("Icon");
-    icon.setGender(Gender.MALE);
-    icon.setFans(WrestlerTier.ICON.getMinFans() + 1000); // Above Main Eventer
-    icon.setTier(WrestlerTier.fromFanCount(icon.getFans()));
-    title.addChallenger(icon);
+    Wrestler wrestlerC = new Wrestler();
+    wrestlerC.setId(12L);
+    wrestlerC.setName("Wrestler C");
+    wrestlerC.setFans(WrestlerTier.ICON.getMinFans() + 5000L); // Fans for ICON
+    wrestlerC.setGender(Gender.MALE);
+    wrestlerC.setTier(WrestlerTier.ICON); // Ordinal 5 - Highest tier
+    wrestlerC.setActive(true);
 
-    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    com.github.javydreamercsw.base.domain.wrestler.TierBoundary boundary =
-        new com.github.javydreamercsw.base.domain.wrestler.TierBoundary();
-    boundary.setTier(WrestlerTier.MAIN_EVENTER);
-    boundary.setMinFans(WrestlerTier.MAIN_EVENTER.getMinFans());
-    boundary.setMaxFans(WrestlerTier.MAIN_EVENTER.getMaxFans());
-    when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
-        .thenReturn(Optional.of(boundary));
-    when(wrestlerRepository.findByFansGreaterThanEqual(anyLong()))
-        .thenReturn(new ArrayList<>(List.of(champion, contender1, contender2, icon)));
+    Wrestler wrestlerD = new Wrestler();
+    wrestlerD.setId(13L);
+    wrestlerD.setName("Wrestler D");
+    wrestlerD.setFans(WrestlerTier.MIDCARDER.getMinFans() + 2000L); // Fans for MIDCARDER
+    wrestlerD.setGender(Gender.MALE);
+    wrestlerD.setTier(WrestlerTier.MIDCARDER); // Ordinal 3 - Title tier, lower fans
+    wrestlerD.setActive(true);
 
-    List<?> contenders = rankingService.getRankedContenders(1L);
+    Wrestler wrestlerE = new Wrestler();
+    wrestlerE.setId(14L);
+    wrestlerE.setName("Wrestler E");
+    wrestlerE.setFans(WrestlerTier.ROOKIE.getMinFans() + 500L); // Fans for ROOKIE
+    wrestlerE.setGender(Gender.MALE);
+    wrestlerE.setTier(WrestlerTier.ROOKIE); // Ordinal 0 - Too low tier
+    wrestlerE.setActive(true);
 
-    assertEquals(3, contenders.size());
-    assertTrue(contenders.get(0) instanceof RankedWrestlerDTO);
-    assertEquals("Icon", ((RankedWrestlerDTO) contenders.get(0)).getName());
-    assertEquals(1, ((RankedWrestlerDTO) contenders.get(0)).getRank());
-    assertEquals("Contender 2", ((RankedWrestlerDTO) contenders.get(1)).getName());
-    assertEquals(2, ((RankedWrestlerDTO) contenders.get(1)).getRank());
-    assertEquals("Contender 1", ((RankedWrestlerDTO) contenders.get(2)).getName());
-    assertEquals(3, ((RankedWrestlerDTO) contenders.get(2)).getRank());
+    Wrestler wrestlerF = new Wrestler();
+    wrestlerF.setId(15L);
+    wrestlerF.setName("Wrestler F");
+    wrestlerF.setFans(WrestlerTier.MIDCARDER.getMinFans() + 3000L); // Fans for MIDCARDER
+    wrestlerF.setGender(Gender.MALE);
+    wrestlerF.setTier(WrestlerTier.MIDCARDER);
+    wrestlerF.setActive(false); // Inactive
+
+    Wrestler wrestlerG = new Wrestler();
+    wrestlerG.setId(16L);
+    wrestlerG.setName("Wrestler G");
+    wrestlerG.setFans(WrestlerTier.MIDCARDER.getMinFans() + 4000L); // Fans for MIDCARDER
+    wrestlerG.setGender(Gender.MALE);
+    wrestlerG.setTier(WrestlerTier.MIDCARDER);
+    wrestlerG.setActive(true); // Champion
+
+    // Set Wrestler G as the champion
+    TitleReign reign = new TitleReign();
+    reign.setChampions(List.of(wrestlerG));
+    reign.setStartDate(Instant.now());
+    title.getTitleReigns().clear(); // Clear existing champion from setup
+    title.getTitleReigns().add(reign);
+
+    // Explicitly define the list of active, eligible, non-champion contenders
+    List<Wrestler> activeEligibleNonChampionContenders =
+        List.of(wrestlerA, wrestlerB, wrestlerC, wrestlerD);
+
+    when(titleRepository.findById(title.getId())).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findAllByGenderAndActive(title.getGender(), true))
+        .thenReturn(activeEligibleNonChampionContenders);
+
+    List<RankedWrestlerDTO> contenders =
+        (List<RankedWrestlerDTO>) rankingService.getRankedContenders(title.getId());
+
+    // Assertions
+    // WrestlerE (ROOKIE) should be filtered out because tier is too low (5 > 2)
+    // WrestlerF (Inactive) should be filtered out
+    // WrestlerG (Champion) should be filtered out
+    // Expected remaining: WrestlerB, WrestlerD, WrestlerC, WrestlerA
+
+    assertEquals(4, contenders.size());
+    List<String> contenderList = contenders.stream().map(RankedWrestlerDTO::getName).toList();
+    assertEquals(
+        "Wrestler B",
+        contenders.get(0).getName(),
+        "Wrestler B should be ranked #1 (MIDCARDER, highest fans at title tier)\n" + contenderList);
+    assertEquals(1, contenders.get(0).getRank());
+    assertEquals(
+        "Wrestler D",
+        contenders.get(1).getName(),
+        "Wrestler D should be ranked #2 (MIDCARDER, lower fans at title tier)\n" + contenderList);
+    assertEquals(2, contenders.get(1).getRank());
+    assertEquals(
+        "Wrestler C",
+        contenders.get(2).getName(),
+        "Wrestler C should be ranked #3 (ICON, highest tier overall)\n" + contenderList);
+    assertEquals(3, contenders.get(2).getRank());
+    assertEquals(
+        "Wrestler A",
+        contenders.get(3).getName(),
+        "Wrestler A should be ranked #4 (MAIN_EVENTER, lower tier than ICON)\n" + contenderList);
+    assertEquals(4, contenders.get(3).getRank());
   }
 
   @Test
@@ -237,24 +288,25 @@ class RankingServiceTest {
 
   @Test
   void testGetRankedContendersExcludesInactive() {
+    contender1.setFans(70000L);
+    contender1.setTier(WrestlerTier.MIDCARDER);
+    contender1.setActive(true);
+
     Wrestler inactiveWrestler = new Wrestler();
     inactiveWrestler.setId(4L);
     inactiveWrestler.setName("Inactive Wrestler");
-    inactiveWrestler.setFans(600L);
+    inactiveWrestler.setFans(80000L);
     inactiveWrestler.setGender(Gender.MALE);
-    inactiveWrestler.setTier(WrestlerTier.fromFanCount(inactiveWrestler.getFans()));
+    inactiveWrestler.setTier(WrestlerTier.MIDCARDER);
     inactiveWrestler.setActive(false);
 
     title.setTier(WrestlerTier.MIDCARDER);
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    com.github.javydreamercsw.base.domain.wrestler.TierBoundary boundary =
-        new com.github.javydreamercsw.base.domain.wrestler.TierBoundary();
-    boundary.setTier(WrestlerTier.MIDCARDER);
-    boundary.setMinFans(WrestlerTier.MIDCARDER.getMinFans());
-    boundary.setMaxFans(WrestlerTier.MIDCARDER.getMaxFans());
-    when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
-        .thenReturn(Optional.of(boundary));
-    when(wrestlerRepository.findByFansBetween(anyLong(), anyLong()))
+
+    // Mock repository to return both, and let the service filter out the inactive one.
+    // Even though the service calls it with active=true, we return both to test the service's
+    // filter.
+    when(wrestlerRepository.findAllByGenderAndActive(any(Gender.class), eq(true)))
         .thenReturn(new ArrayList<>(List.of(contender1, inactiveWrestler)));
 
     List<?> contenders = rankingService.getRankedContenders(1L);

@@ -29,4 +29,5 @@ public class TitleDTO {
   private Gender gender;
   private String currentChampionName;
   private ChampionshipType championshipType;
+  private Boolean includeInRankings;
 }

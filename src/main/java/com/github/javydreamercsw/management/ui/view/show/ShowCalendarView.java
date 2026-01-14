@@ -44,6 +44,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
 import org.vaadin.stefan.fullcalendar.Entry;
 import org.vaadin.stefan.fullcalendar.FullCalendar;
@@ -63,20 +64,12 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
   private final GameSettingService gameSettingService;
   private final DateTimeFormatter monthYearFormatter = DateTimeFormatter.ofPattern("MMMM yyyy");
 
-  private FullCalendar calendar;
-  private VerticalLayout upcomingShowsPanel;
+  @Getter private FullCalendar calendar;
+  @Getter private VerticalLayout upcomingShowsPanel;
   private YearMonth currentYearMonth;
   private Select<Integer> yearSelect;
   private Select<String> monthSelect;
   private H5 currentDateLabel;
-
-  public FullCalendar getCalendar() {
-    return calendar;
-  }
-
-  public VerticalLayout getUpcomingShowsPanel() {
-    return upcomingShowsPanel;
-  }
 
   public ShowCalendarView(
       @NonNull ShowService showService, @NonNull GameSettingService gameSettingService) {
@@ -106,8 +99,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     if (dateParam != null) {
       try {
         LocalDate targetDate = LocalDate.parse(dateParam);
-        YearMonth targetYearMonth = YearMonth.from(targetDate);
-        currentYearMonth = targetYearMonth;
+        currentYearMonth = YearMonth.from(targetDate);
 
         // Schedule update after component is fully attached and rendered
         updateCalendarAndControls();
@@ -126,18 +118,21 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     calendar.setSizeFull();
     calendar.setHeight("600px");
 
+    // Navigate the calendar to the specific date
+    LocalDate targetDate = currentYearMonth.atDay(1);
+    calendar.gotoDate(targetDate);
+
     // Add click listener for calendar entries
     calendar.addEntryClickedListener(
         event -> {
           Entry entry = event.getEntry();
           if (entry.getCustomProperty("showId") != null) {
-            Long showId = Long.valueOf(entry.getCustomProperty("showId").toString());
+            long showId = Long.parseLong(entry.getCustomProperty("showId").toString());
 
             // Navigate to the show's date first
             if (entry.getStart() != null) {
               LocalDate showDate = entry.getStart().toLocalDate();
-              YearMonth showYearMonth = YearMonth.from(showDate);
-              currentYearMonth = showYearMonth;
+              currentYearMonth = YearMonth.from(showDate);
               updateCalendarAndControls();
             }
 
@@ -381,8 +376,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
         e -> {
           // Navigate to the show's date first if it has a date
           if (show.getShowDate() != null) {
-            YearMonth showYearMonth = YearMonth.from(show.getShowDate());
-            currentYearMonth = showYearMonth;
+            currentYearMonth = YearMonth.from(show.getShowDate());
             updateCalendarAndControls();
           }
 

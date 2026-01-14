@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.ranking;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
@@ -38,6 +39,8 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -68,6 +71,7 @@ public class RankingView extends Main {
   private final VerticalLayout historyLayout = new VerticalLayout();
   private final Grid<RankedWrestlerDTO> wrestlerContendersGrid = new Grid<>();
   private final Grid<RankedTeamDTO> teamContendersGrid = new Grid<>();
+  private ChampionshipDTO currentChampionship;
 
   public RankingView(
       @NonNull RankingService rankingService, @NonNull TierBoundaryService tierBoundaryService) {
@@ -81,25 +85,53 @@ public class RankingView extends Main {
             .sorted(Comparator.comparing(ChampionshipDTO::getName))
             .collect(Collectors.toList()));
     championshipComboBox.setItemLabelGenerator(ChampionshipDTO::getName);
-    championshipComboBox.addValueChangeListener(event -> updateView(event.getValue()));
+    championshipComboBox.addValueChangeListener(
+        event -> {
+          currentChampionship = event.getValue();
+          updateView(currentChampionship);
+        });
 
     // Select the first championship by default
     rankingService.getChampionships().stream()
         .min(Comparator.comparing(ChampionshipDTO::getName))
-        .ifPresent(championshipComboBox::setValue);
+        .ifPresent(
+            championship -> {
+              championshipComboBox.setValue(championship);
+              currentChampionship = championship;
+            });
 
     wrestlerContendersGrid
         .addColumn(
             new ComponentRenderer<>(
                 wrestler -> {
-                  Span span = new Span(String.valueOf(wrestler.getRank()));
-                  if (wrestler.getRank() == 1) {
-                    span.getStyle().set("font-weight", "bold");
+                  HorizontalLayout layout = new HorizontalLayout();
+                  layout.setAlignItems(Alignment.CENTER);
+                  layout.add(new Span(wrestler.getName()));
+
+                  if (currentChampionship != null) {
+                    WrestlerTier wrestlerTier = wrestler.getTier();
+                    WrestlerTier championshipTier = currentChampionship.getTier();
+
+                    if (!wrestlerTier.equals(championshipTier)) {
+                      Icon warningIcon = VaadinIcon.WARNING.create();
+                      warningIcon.setColor("orange"); // Or use a CSS class
+                      warningIcon
+                          .getElement()
+                          .setAttribute(
+                              "title",
+                              "Wrestler's tier ("
+                                  + wrestlerTier.getDisplayWithEmoji()
+                                  + ") does not match championship tier ("
+                                  + championshipTier.getDisplayWithEmoji()
+                                  + ")");
+                      layout.add(warningIcon);
+                    }
                   }
-                  return span;
+
+                  return layout;
                 }))
-        .setHeader("Rank");
-    wrestlerContendersGrid.addColumn(RankedWrestlerDTO::getName).setHeader("Name");
+        .setHeader("Name")
+        .setComparator(Comparator.comparing(RankedWrestlerDTO::getName));
     wrestlerContendersGrid.addColumn(RankedWrestlerDTO::getFans).setHeader("Fans");
     wrestlerContendersGrid.setId("wrestler-contenders-grid");
 
