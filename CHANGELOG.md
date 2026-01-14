@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.3.2](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.3.2) (2026-01-06)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.3.1...v1.3.2)
+
 ## [v1.3.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.3.1) (2026-01-05)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.3.0...v1.3.1)
@@ -28,10 +32,6 @@
 
 - Noticed the docker images were not pushed for 1.2.X [\#80](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/80) ([javydreamercsw](https://github.com/javydreamercsw))
 
-**Closed issues:**
-
-- Unable to assign some wrestlers as champions or contenders [\#69](https://github.com/javydreamercsw/all-time-wrestling-rpg/issues/69)
-
 **Merged pull requests:**
 
 - Release 1.2.0 [\#97](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/97) ([javydreamercsw](https://github.com/javydreamercsw))
@@ -50,14 +50,8 @@
 
 **Implemented enhancements:**
 
-- Inbox enhancements [\#55](https://github.com/javydreamercsw/all-time-wrestling-rpg/issues/55)
-- Create App-\> Notion sync [\#37](https://github.com/javydreamercsw/all-time-wrestling-rpg/issues/37)
 - Prepare for release [\#67](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/67) ([javydreamercsw](https://github.com/javydreamercsw))
 -  Bugfix: Handle incomplete AI responses and increase timeouts [\#66](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/66) ([javydreamercsw](https://github.com/javydreamercsw))
-
-**Fixed bugs:**
-
-- 500 Error planning a show on Gemini [\#65](https://github.com/javydreamercsw/all-time-wrestling-rpg/issues/65)
 
 ## [v1.1.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.1.0) (2025-12-12)
 
@@ -73,10 +67,6 @@
 ## [v1.0.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.0.0) (2025-11-19)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/8877c6db4531285d38ba8e8cfbda69158d29124c...v1.0.0)
-
-**Closed issues:**
-
-- MatchAdjudicationServiceTest fails in the pipeline for some reason [\#10](https://github.com/javydreamercsw/all-time-wrestling-rpg/issues/10)
 
 **Merged pull requests:**
 
