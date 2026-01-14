@@ -63,7 +63,7 @@ public class DataMigrationService {
           }
 
           @Override
-          public Connection getConnection(String password) throws SQLException {
+          public Connection getConnection(@NonNull String password) throws SQLException {
             return dataSource.getConnection();
           }
 
@@ -84,7 +84,7 @@ public class DataMigrationService {
 
           @Override
           public String getPassword() {
-            return "";
+            return env.getProperty("spring.datasource.password", "");
           }
         };
 

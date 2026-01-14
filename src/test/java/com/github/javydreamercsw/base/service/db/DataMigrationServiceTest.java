@@ -79,7 +79,8 @@ class DataMigrationServiceTest {
         MYSQL_CONTAINER.getUsername(),
         MYSQL_CONTAINER.getPassword());
 
-    H2FileDatabaseManager h2Manager = new H2FileDatabaseManager(H2_URL, H2_USER, H2_PASSWORD);
+    DatabaseManager h2Manager =
+        DatabaseManagerFactory.getDatabaseManager("H2_FILE", H2_URL, H2_USER, H2_PASSWORD);
     // Verify the data in the target MySQL database
     try (Connection mySqlConnection =
             DriverManager.getConnection(
