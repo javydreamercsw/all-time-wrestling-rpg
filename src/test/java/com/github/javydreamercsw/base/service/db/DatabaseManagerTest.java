@@ -22,15 +22,15 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.sql.Connection;
 import java.sql.SQLException;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mysql.MySQLContainer;
 
 @Testcontainers
 class DatabaseManagerTest {
 
   @Container
-  private static final MySQLContainer<?> mySQLContainer = new MySQLContainer<>("mysql:8.0.26");
+  private static final MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.26");
 
   @Test
   void testGetConnection() {

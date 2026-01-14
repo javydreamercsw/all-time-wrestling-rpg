@@ -19,6 +19,11 @@ package com.github.javydreamercsw;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Duration;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
@@ -27,8 +32,19 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.testcontainers.mysql.MySQLContainer;
 
 public class DataTransferE2ETest extends AbstractE2ETest {
+
+  private static final MySQLContainer MYSQL_CONTAINER =
+      new MySQLContainer("mysql:8.0.26")
+          .withDatabaseName("testdb")
+          .withUsername("testuser")
+          .withPassword("testpass");
+
+  static {
+    MYSQL_CONTAINER.start();
+  }
 
   @Test
   @WithMockUser(roles = "ADMIN")
@@ -84,7 +100,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
 
   @Test
   @WithMockUser(roles = "ADMIN")
-  public void testDataTransferProcessView() {
+  public void testDataTransferProcessView() throws SQLException {
     System.setProperty("simulateFailure", "false");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
@@ -93,13 +109,16 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     // Step 1: Connection Configuration
     // Fill in valid connection parameters
     WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
-    hostField.sendKeys("localhost");
+    hostField.sendKeys(MYSQL_CONTAINER.getHost());
     WebElement portField = waitForVaadinElement(driver, By.id("port-field"));
-    portField.sendKeys("3306");
+    portField.sendKeys(MYSQL_CONTAINER.getFirstMappedPort().toString());
+    WebElement targetDatabaseField = waitForVaadinElement(driver, By.id("target-database-field"));
+    clearField(targetDatabaseField); // Clear default "test"
+    targetDatabaseField.sendKeys(MYSQL_CONTAINER.getDatabaseName());
     WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
-    usernameField.sendKeys("testuser");
+    usernameField.sendKeys(MYSQL_CONTAINER.getUsername());
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
-    passwordField.sendKeys("testpassword");
+    passwordField.sendKeys(MYSQL_CONTAINER.getPassword());
 
     // Click the next button to advance to Data Selection step
     nextButton.click();
@@ -107,6 +126,8 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     // Assert that the data selection step is displayed
     WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
     assertNotNull(dataSelectionStep);
+    selectFromVaadinComboBox("table-selection-combo", "All Tables");
+
     // Click the next button again to advance to Data Transfer Process step
     nextButton = waitForVaadinElement(driver, By.id("next-button"));
     nextButton.click();
@@ -120,6 +141,25 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     // Assert that a progress indicator is present
     WebElement progressIndicator = waitForVaadinElement(driver, By.id("progress-indicator"));
     assertNotNull(progressIndicator);
+
+    // Wait for completion message
+    new WebDriverWait(driver, Duration.ofSeconds(60))
+        .until(
+            ExpectedConditions.textToBePresentInElementLocated(
+                By.id("status-label"), "Data transfer completed successfully."));
+
+    // Verify data in MySQL
+    try (Connection conn =
+            DriverManager.getConnection(
+                MYSQL_CONTAINER.getJdbcUrl(),
+                MYSQL_CONTAINER.getUsername(),
+                MYSQL_CONTAINER.getPassword());
+        Statement stmt = conn.createStatement()) {
+      ResultSet rs = stmt.executeQuery("SELECT count(*) FROM wrestler");
+      rs.next();
+      int count = rs.getInt(1);
+      assertTrue(count > 0, "Wrestlers should have been migrated to MySQL");
+    }
   }
 
   @Test
@@ -250,24 +290,27 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     nextButton.click(); // To Connection Config
 
     WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
-    hostField.sendKeys("localhost");
+    hostField.sendKeys(MYSQL_CONTAINER.getHost());
 
     WebElement portField = waitForVaadinElement(driver, By.id("port-field"));
-    portField.sendKeys("3306");
+    portField.sendKeys(MYSQL_CONTAINER.getFirstMappedPort().toString());
 
     WebElement targetDatabaseField = waitForVaadinElement(driver, By.id("target-database-field"));
-    targetDatabaseField.sendKeys("test_db");
+    clearField(targetDatabaseField);
+    targetDatabaseField.sendKeys(MYSQL_CONTAINER.getDatabaseName());
 
     WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
-    usernameField.sendKeys("admin");
+    usernameField.sendKeys(MYSQL_CONTAINER.getUsername());
 
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
-    passwordField.sendKeys("secret_password");
+    passwordField.sendKeys(MYSQL_CONTAINER.getPassword());
 
     nextButton.click(); // To Data Selection
 
     WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
     assertNotNull(dataSelectionStep);
+
+    selectFromVaadinComboBox("table-selection-combo", "Wrestler");
 
     // Verify next button is present and says "Transfer Data"
 
