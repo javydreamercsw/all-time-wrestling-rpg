@@ -1573,14 +1573,15 @@ public class DataMigrationService {
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT SET_ID, SET_CODE, DESCRIPTION, RELEASE_DATE, CREATION_DATE FROM card_set");
+                "SELECT SET_ID, SET_CODE, NAME, DESCRIPTION, RELEASE_DATE, CREATION_DATE FROM"
+                    + " card_set");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
       while (resultSet.next()) {
         targetStatement.setLong(1, resultSet.getLong("SET_ID"));
         targetStatement.setString(2, resultSet.getString("SET_CODE"));
-        targetStatement.setString(3, resultSet.getString("SET_CODE")); // Use set_code for name
+        targetStatement.setString(3, resultSet.getString("NAME"));
         targetStatement.setString(4, resultSet.getString("DESCRIPTION"));
         targetStatement.setDate(5, resultSet.getDate("RELEASE_DATE"));
         targetStatement.setTimestamp(6, resultSet.getTimestamp("CREATION_DATE"));

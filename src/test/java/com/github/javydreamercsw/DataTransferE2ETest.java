@@ -254,7 +254,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   public void testCancelButton() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement cancelButton = waitForVaadinElement(driver, By.id("cancel-button"));
-    cancelButton.click();
+    clickElement(cancelButton);
 
     // Verify redirection to home page (or context root)
     new WebDriverWait(driver, Duration.ofSeconds(10))
@@ -274,7 +274,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     WebElement backButton = waitForVaadinElement(driver, By.id("back-button"));
     assertTrue(backButton.isEnabled(), "Back button should be enabled on step 1");
 
-    backButton.click();
+    clickElement(backButton);
 
     // Should be back to intro step
     WebElement welcomeHeader =
@@ -326,7 +326,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
             || Objects.requireNonNull(transferButton.getAttribute("innerText"))
                 .contains("Transfer Data"));
 
-    transferButton.click();
+    clickElement(transferButton);
 
     // Assert that the data transfer process step is displayed via WebDriver
     WebElement dataTransferProcessStep =
