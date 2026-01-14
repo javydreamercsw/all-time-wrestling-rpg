@@ -226,7 +226,6 @@ You can also deploy the application to a standalone Tomcat server.
 
 	```bash
 	#!/bin/bash
-	export NOTION_TOKEN="<your_notion_token>"
 	# Use a file-based database for persistence
 	export SPRING_DATASOURCE_URL="jdbc:h2:file:/path/to/your/database/atwrpg;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
 	export SPRING_DATASOURCE_USERNAME="sa"
