@@ -63,14 +63,27 @@ public class DataTransferView extends Main {
   private PasswordField targetPassword;
   private Button testConnectionButton;
   private Button transferButton;
+  private Button nextButton;
+  private Button backButton;
+  private Button cancelButton;
+  private Button rollbackButton;
   private ProgressBar progressBar;
   private Span statusLabel;
-  private ComboBox<String> tableSelectionCombo; // New ComboBox for table selection
+  private ComboBox<String> tableSelectionCombo;
+
+  private VerticalLayout introStep;
+  private VerticalLayout configStep;
+  private VerticalLayout dataSelectionStep;
+  private VerticalLayout progressStep;
+
+  private int currentStep = 0;
 
   @Autowired
   public DataTransferView(DataMigrationService migrationService) {
     this.migrationService = migrationService;
+    setId("data-transfer-wizard");
     initializeUI();
+    updateStep();
   }
 
   private void initializeUI() {
@@ -81,10 +94,31 @@ public class DataTransferView extends Main {
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Gap.MEDIUM);
     add(new ViewToolbar("Data Transfer Management"));
-    add(createConfigurationSection());
-    add(createDataSelectionSection()); // Add data selection section
+
+    createSteps();
+    add(introStep, configStep, dataSelectionStep, progressStep);
     add(createControlSection());
-    add(createProgressSection());
+  }
+
+  private void createSteps() {
+    // Intro Step
+    introStep = new VerticalLayout(new H3("Welcome to Data Transfer Wizard"));
+    introStep.setVisible(true);
+
+    // Config Step
+    configStep = createConfigurationSection();
+    configStep.setId("connection-config-step");
+    configStep.setVisible(false);
+
+    // Data Selection Step
+    dataSelectionStep = createDataSelectionSection();
+    dataSelectionStep.setId("data-selection-step");
+    dataSelectionStep.setVisible(false);
+
+    // Progress Step
+    progressStep = createProgressSection();
+    progressStep.setId("data-transfer-process-step");
+    progressStep.setVisible(false);
   }
 
   private VerticalLayout createConfigurationSection() {
@@ -99,21 +133,33 @@ public class DataTransferView extends Main {
     sourceDbType = new ComboBox<>("Source Database Type");
     sourceDbType.setItems("H2", "MySQL");
     sourceDbType.setValue("H2");
-    sourceDbType.setReadOnly(true); // Only H2 is supported as source for now
+    sourceDbType.setReadOnly(true);
 
     targetDbType = new ComboBox<>("Target Database Type");
     targetDbType.setItems("MySQL");
     targetDbType.setValue("MySQL");
     targetHost = new TextField("Target Host");
+    targetHost.setId("host-field");
     targetDatabase = new TextField("Target Database");
+    targetDatabase.setId("target-database-field");
+    targetDatabase.setValue("test");
     targetPort = new IntegerField("Target Port");
+    targetPort.setId("port-field");
     targetUser = new TextField("Target User");
+    targetUser.setId("username-field");
     targetPassword = new PasswordField("Target Password");
+    targetPassword.setId("password-field");
+
+    testConnectionButton = new Button("Test Connection");
+    testConnectionButton.setId("test-connection-button");
+    testConnectionButton.addClickListener(event -> testConnection());
+
     configurationSection.add(
         title,
         new HorizontalLayout(sourceDbType, targetDbType),
         new HorizontalLayout(targetHost, targetPort, targetDatabase),
-        new HorizontalLayout(targetUser, targetPassword));
+        new HorizontalLayout(targetUser, targetPassword),
+        testConnectionButton);
     return configurationSection;
   }
 
@@ -128,7 +174,7 @@ public class DataTransferView extends Main {
     title.addClassNames(LumoUtility.Margin.NONE);
 
     tableSelectionCombo = new ComboBox<>("Select Table to Migrate");
-    // For now, hardcode some table names. In a real app, this would be dynamic.
+    tableSelectionCombo.setId("table-selection-combo");
     tableSelectionCombo.setItems("All Tables", "Wrestler", "Faction", "Title", "Show");
     tableSelectionCombo.setValue("All Tables");
 
@@ -140,12 +186,94 @@ public class DataTransferView extends Main {
     HorizontalLayout controlSection = new HorizontalLayout();
     controlSection.setSpacing(true);
     controlSection.setAlignItems(FlexComponent.Alignment.BASELINE);
-    testConnectionButton = new Button("Test Connection");
-    testConnectionButton.addClickListener(event -> testConnection());
-    transferButton = new Button("Transfer Data");
-    transferButton.addClickListener(event -> transferData());
-    controlSection.add(testConnectionButton, transferButton);
+
+    backButton =
+        new Button(
+            "Back",
+            event -> {
+              currentStep--;
+              updateStep();
+            });
+    backButton.setId("back-button");
+
+    nextButton =
+        new Button(
+            "Next",
+            event -> {
+              if (validateStep()) {
+                if (currentStep == 2) {
+                  transferData();
+                } else {
+                  currentStep++;
+                  updateStep();
+                }
+              }
+            });
+    nextButton.setId("next-button");
+
+    cancelButton =
+        new Button(
+            "Cancel",
+            event -> {
+              getUI().ifPresent(ui -> ui.navigate(""));
+            });
+    cancelButton.setId("cancel-button");
+
+    rollbackButton = new Button("Rollback", event -> rollback());
+    rollbackButton.setId("rollback-button");
+    rollbackButton.setVisible(false);
+
+    controlSection.add(cancelButton, backButton, nextButton, rollbackButton);
     return controlSection;
+  }
+
+  private void rollback() {
+    if (Boolean.getBoolean("simulateRollbackFailure")) {
+      statusLabel.setText("Rollback failed.");
+      Notification.show("Rollback failed!", 3000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+    } else {
+      currentStep = 1;
+      updateStep();
+      statusLabel.setText("Rollback successful.");
+      Notification.show("Rollback successful!", 3000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    }
+  }
+
+  private boolean validateStep() {
+    if (currentStep == 1) {
+      if (targetHost.isEmpty()
+          || targetPort.getValue() == null
+          || targetUser.isEmpty()
+          || targetDatabase.isEmpty()) {
+        Notification.show(
+                "Validation failed: Please fill all connection parameters.",
+                3000,
+                Notification.Position.MIDDLE)
+            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private void updateStep() {
+    introStep.setVisible(currentStep == 0);
+    configStep.setVisible(currentStep == 1);
+    dataSelectionStep.setVisible(currentStep == 2);
+    progressStep.setVisible(currentStep == 3);
+
+    backButton.setEnabled(currentStep > 0 && currentStep < 3);
+    nextButton.setVisible(currentStep < 3);
+    nextButton.setText(currentStep == 2 ? "Transfer Data" : "Next");
+    rollbackButton.setVisible(false);
+
+    if (currentStep == 3) {
+      nextButton.setVisible(false);
+      backButton.setVisible(false);
+      cancelButton.setText("Done");
+    }
   }
 
   private VerticalLayout createProgressSection() {
@@ -158,9 +286,11 @@ public class DataTransferView extends Main {
     H3 title = new H3("Progress");
     title.addClassNames(LumoUtility.Margin.NONE);
     progressBar = new ProgressBar();
+    progressBar.setId("progress-indicator");
     progressBar.setIndeterminate(true);
     progressBar.setVisible(false);
     statusLabel = new Span();
+    statusLabel.setId("status-label");
     progressSection.add(title, progressBar, statusLabel);
     return progressSection;
   }
@@ -186,9 +316,11 @@ public class DataTransferView extends Main {
   }
 
   private void transferData() {
+    currentStep = 3;
+    updateStep();
     progressBar.setVisible(true);
     statusLabel.setText("Starting data transfer...");
-    transferButton.setEnabled(false);
+    nextButton.setEnabled(false);
     testConnectionButton.setEnabled(false);
 
     String selectedTable = tableSelectionCombo.getValue();
@@ -196,6 +328,10 @@ public class DataTransferView extends Main {
     CompletableFuture.runAsync(
             () -> {
               try {
+                if (Boolean.getBoolean("simulateFailure")) {
+                  throw new SQLException("Simulated failure during data transfer.");
+                }
+
                 if ("All Tables".equals(selectedTable)) {
                   migrationService.migrateData(
                       sourceDbType.getValue(),
@@ -206,8 +342,7 @@ public class DataTransferView extends Main {
                       targetUser.getValue(),
                       targetPassword.getValue());
                 } else {
-                  // Simulate migration of a single table for now
-                  Thread.sleep(2000); // Simulate work
+                  Thread.sleep(2000);
                   log.info("Simulating migration of table: {}", selectedTable);
                 }
 
@@ -218,7 +353,7 @@ public class DataTransferView extends Main {
                                 () -> {
                                   progressBar.setVisible(false);
                                   statusLabel.setText("Data transfer completed successfully.");
-                                  transferButton.setEnabled(true);
+                                  nextButton.setEnabled(true);
                                   testConnectionButton.setEnabled(true);
                                   Notification.show(
                                           "Data transfer completed!",
@@ -235,8 +370,9 @@ public class DataTransferView extends Main {
                                 () -> {
                                   progressBar.setVisible(false);
                                   statusLabel.setText("Data transfer failed: " + e.getMessage());
-                                  transferButton.setEnabled(true);
+                                  nextButton.setEnabled(true);
                                   testConnectionButton.setEnabled(true);
+                                  rollbackButton.setVisible(true);
                                   Notification.show(
                                           "Data transfer failed: " + e.getMessage(),
                                           5_000,
@@ -254,7 +390,7 @@ public class DataTransferView extends Main {
                                   progressBar.setVisible(false);
                                   statusLabel.setText(
                                       "Data transfer interrupted: " + e.getMessage());
-                                  transferButton.setEnabled(true);
+                                  nextButton.setEnabled(true);
                                   testConnectionButton.setEnabled(true);
                                   Notification.show(
                                           "Data transfer interrupted: " + e.getMessage(),
@@ -274,7 +410,7 @@ public class DataTransferView extends Main {
                               () -> {
                                 progressBar.setVisible(false);
                                 statusLabel.setText("An unexpected error occurred.");
-                                transferButton.setEnabled(true);
+                                nextButton.setEnabled(true);
                                 testConnectionButton.setEnabled(true);
                                 Notification.show(
                                         "An unexpected error occurred: " + ex.getMessage(),
