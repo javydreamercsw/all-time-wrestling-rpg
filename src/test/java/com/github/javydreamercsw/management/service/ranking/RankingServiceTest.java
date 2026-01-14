@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.ranking;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
@@ -54,7 +56,6 @@ class RankingServiceTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private FactionRepository factionRepository;
   @Mock private TeamRepository teamRepository;
-  @Mock private TierBoundaryService tierBoundaryService;
   @InjectMocks private RankingService rankingService;
 
   private Title title;
@@ -284,24 +285,25 @@ class RankingServiceTest {
 
   @Test
   void testGetRankedContendersExcludesInactive() {
+    contender1.setFans(70000L);
+    contender1.setTier(WrestlerTier.MIDCARDER);
+    contender1.setActive(true);
+
     Wrestler inactiveWrestler = new Wrestler();
     inactiveWrestler.setId(4L);
     inactiveWrestler.setName("Inactive Wrestler");
-    inactiveWrestler.setFans(600L);
+    inactiveWrestler.setFans(80000L);
     inactiveWrestler.setGender(Gender.MALE);
-    inactiveWrestler.setTier(WrestlerTier.fromFanCount(inactiveWrestler.getFans()));
+    inactiveWrestler.setTier(WrestlerTier.MIDCARDER);
     inactiveWrestler.setActive(false);
 
     title.setTier(WrestlerTier.MIDCARDER);
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
-    com.github.javydreamercsw.base.domain.wrestler.TierBoundary boundary =
-        new com.github.javydreamercsw.base.domain.wrestler.TierBoundary();
-    boundary.setTier(WrestlerTier.MIDCARDER);
-    boundary.setMinFans(WrestlerTier.MIDCARDER.getMinFans());
-    boundary.setMaxFans(WrestlerTier.MIDCARDER.getMaxFans());
-    when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
-        .thenReturn(Optional.of(boundary));
-    when(wrestlerRepository.findByFansBetween(anyLong(), anyLong()))
+
+    // Mock repository to return both, and let the service filter out the inactive one.
+    // Even though the service calls it with active=true, we return both to test the service's
+    // filter.
+    when(wrestlerRepository.findAllByGenderAndActive(any(Gender.class), eq(true)))
         .thenReturn(new ArrayList<>(List.of(contender1, inactiveWrestler)));
 
     List<?> contenders = rankingService.getRankedContenders(1L);
