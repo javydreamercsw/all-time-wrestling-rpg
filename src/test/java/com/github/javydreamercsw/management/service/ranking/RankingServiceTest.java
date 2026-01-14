@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
+import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,11 +82,13 @@ class RankingServiceTest {
     champion.setTier(WrestlerTier.fromFanCount(champion.getFans()));
 
     TitleReign reign = new TitleReign();
+    reign.setTitle(title);
     List<Wrestler> champions = new ArrayList<>();
     champions.add(champion);
     reign.setChampions(champions);
     reign.setStartDate(Instant.now());
     title.getTitleReigns().add(reign);
+    champion.getReigns().add(reign);
 
     contender1 = new Wrestler();
     contender1.setId(2L);
@@ -258,6 +261,27 @@ class RankingServiceTest {
 
     assertEquals(1, contenders.size());
     assertEquals("Contender 1", ((RankedWrestlerDTO) contenders.get(0)).getName());
+  }
+
+  @Test
+  void testGetTitleReignHistory() {
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+
+    List<TitleReignDTO> history = rankingService.getTitleReignHistory(1L);
+
+    assertEquals(1, history.size());
+    assertEquals("Champion", history.get(0).getChampionNames().get(0));
+    assertTrue(history.get(0).isCurrent());
+  }
+
+  @Test
+  void testGetWrestlerTitleHistory() {
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(champion));
+
+    List<TitleReignDTO> history = rankingService.getWrestlerTitleHistory(1L);
+
+    assertEquals(1, history.size());
+    assertEquals("World Heavyweight Championship", history.get(0).getChampionshipName());
   }
 
   @Test
