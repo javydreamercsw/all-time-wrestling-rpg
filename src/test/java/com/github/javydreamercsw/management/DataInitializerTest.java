@@ -18,10 +18,13 @@ package com.github.javydreamercsw.management;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,23 +34,31 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAdditio
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
+import com.github.javydreamercsw.management.dto.FactionImportDTO;
+import com.github.javydreamercsw.management.dto.NpcDTO;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
+import com.github.javydreamercsw.management.dto.TeamImportDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
+import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
+import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
@@ -56,6 +67,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -75,6 +87,10 @@ class DataInitializerTest {
   @Mock private SegmentRuleService segmentRuleService;
   @Mock private SegmentTypeService segmentTypeService;
   @Mock private TitleService titleService;
+  @Mock private NpcService npcService;
+  @Mock private FactionService factionService;
+  @Mock private TeamService teamService;
+  @Mock private TeamRepository teamRepository;
 
   @Mock
   @Qualifier("baseAccountService") private AccountService accountService;
@@ -98,7 +114,11 @@ class DataInitializerTest {
             cardService,
             titleService,
             deckService,
-            gameSettingService);
+            gameSettingService,
+            npcService,
+            factionService,
+            teamService,
+            teamRepository);
 
     // Mock count methods to prevent issues during init()
     lenient().when(wrestlerService.count()).thenReturn(0L);
@@ -159,12 +179,11 @@ class DataInitializerTest {
         .when(wrestlerRepository.save(any(Wrestler.class)))
         .thenAnswer(i -> i.getArguments()[0]);
     lenient().doNothing().when(gameSettingService).saveCurrentGameDate(any());
-
-    dataInitializer.init();
   }
 
   @Test
   void testDeckImportIsIdempotentAndNoDuplicates() {
+    dataInitializer.init();
     long initialDeckCount = deckService.count();
     dataInitializer.init();
     assertEquals(initialDeckCount, deckService.count());
@@ -177,7 +196,7 @@ class DataInitializerTest {
           new ObjectMapper()
               .readValue(
                   new ClassPathResource("wrestlers.json").getInputStream(),
-                  new TypeReference<List<Wrestler>>() {});
+                  new TypeReference<List<WrestlerImportDTO>>() {});
         });
   }
 
@@ -267,5 +286,70 @@ class DataInitializerTest {
                   new ClassPathResource("segment_types.json").getInputStream(),
                   new TypeReference<List<SegmentTypeDTO>>() {});
         });
+  }
+
+  @Test
+  void validateNpcsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("npcs.json").getInputStream(),
+                  new TypeReference<List<NpcDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateFactionsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("factions.json").getInputStream(),
+                  new TypeReference<List<FactionImportDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateTeamsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("teams.json").getInputStream(),
+                  new TypeReference<List<TeamImportDTO>>() {});
+        });
+  }
+
+  @Test
+  void testSyncWrestlersFromFile_existingWrestler() {
+    // Given
+    Wrestler existingWrestler = new Wrestler();
+    existingWrestler.setName("Rob Van Dam");
+    existingWrestler.setFans(100L);
+    existingWrestler.setBumps(100);
+
+    lenient().when(wrestlerService.count()).thenReturn(1L);
+    lenient()
+        .when(wrestlerRepository.findByName("Rob Van Dam"))
+        .thenReturn(Optional.of(existingWrestler));
+    lenient().when(wrestlerRepository.findAll()).thenReturn(List.of(existingWrestler));
+
+    // When
+    dataInitializer.syncWrestlersFromFile();
+
+    // Then
+    ArgumentCaptor<Wrestler> wrestlerCaptor = ArgumentCaptor.forClass(Wrestler.class);
+    verify(wrestlerRepository, atLeastOnce()).save(wrestlerCaptor.capture());
+
+    Wrestler savedWrestler =
+        wrestlerCaptor.getAllValues().stream()
+            .filter(w -> w.getName().equals("Rob Van Dam"))
+            .findFirst()
+            .orElse(null);
+
+    assertNotNull(savedWrestler);
+    assertEquals(100, (long) savedWrestler.getFans());
+    assertEquals(100, (int) savedWrestler.getBumps());
   }
 }

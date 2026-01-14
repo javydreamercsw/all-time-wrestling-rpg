@@ -115,7 +115,7 @@ class FactionSyncIT extends ManagementIntegrationTest {
     assertTrue(faction1Opt.isPresent(), "Test Faction 1 should be in the database");
     Faction faction1 = faction1Opt.get();
     assertEquals(factionPage1.getId(), faction1.getExternalId());
-    assertTrue(faction1.getIsActive());
+    assertTrue(faction1.isActive());
     assertNotNull(faction1.getLeader());
     assertEquals(leaderName, faction1.getLeader().getName());
 
@@ -123,7 +123,7 @@ class FactionSyncIT extends ManagementIntegrationTest {
     assertTrue(faction2Opt.isPresent(), "Test Faction 2 should be in the database");
     Faction faction2 = faction2Opt.get();
     assertEquals(factionPage2.getId(), faction2.getExternalId());
-    assertFalse(faction2.getIsActive());
+    assertFalse(faction2.isActive());
     assertNull(faction2.getLeader());
   }
 

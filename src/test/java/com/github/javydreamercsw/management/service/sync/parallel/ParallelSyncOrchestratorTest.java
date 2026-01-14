@@ -24,7 +24,7 @@ import com.github.javydreamercsw.management.config.EntitySyncConfiguration;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.InjurySyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.InjuryTypeSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServicesManager;
 import com.github.javydreamercsw.management.service.sync.entity.notion.NpcSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonSyncService;
@@ -58,7 +58,7 @@ class ParallelSyncOrchestratorTest {
   @Mock private SeasonSyncService seasonSyncService;
   @Mock private ShowTypeSyncService showTypeSyncService;
   @Mock private ShowTemplateSyncService showTemplateSyncService;
-  @Mock private InjurySyncService injurySyncService;
+  @Mock private InjuryTypeSyncService injuryTypeSyncService;
   @Mock private EntitySyncConfiguration entityConfig;
   @Mock private NpcSyncService npcSyncService;
   @Mock private TitleSyncService titleSyncService;
@@ -100,7 +100,9 @@ class ParallelSyncOrchestratorTest {
     lenient()
         .when(notionSyncServicesManager.getShowTemplateSyncService())
         .thenReturn(showTemplateSyncService);
-    lenient().when(notionSyncServicesManager.getInjurySyncService()).thenReturn(injurySyncService);
+    lenient()
+        .when(notionSyncServicesManager.getInjuryTypeSyncService())
+        .thenReturn(injuryTypeSyncService);
     lenient().when(notionSyncServicesManager.getNpcSyncService()).thenReturn(npcSyncService);
     lenient().when(notionSyncServicesManager.getTitleSyncService()).thenReturn(titleSyncService);
     lenient()
@@ -133,7 +135,7 @@ class ParallelSyncOrchestratorTest {
     verify(seasonSyncService).syncSeasons(anyString());
     verify(showTypeSyncService).syncShowTypes(anyString());
     verify(showTemplateSyncService).syncShowTemplates(anyString());
-    verify(injurySyncService).syncInjuryTypes(anyString());
+    verify(injuryTypeSyncService).syncInjuryTypes(anyString());
     verify(npcSyncService).syncNpcs(anyString(), any());
     verify(titleSyncService).syncTitles(anyString());
     verify(titleReignSyncService).syncTitleReigns(anyString());
@@ -196,7 +198,7 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTypes", 4, 0, 0));
     when(showTemplateSyncService.syncShowTemplates(anyString()))
         .thenReturn(SyncResult.success("ShowTemplates", 6, 0, 0));
-    when(injurySyncService.syncInjuryTypes(anyString()))
+    when(injuryTypeSyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
     when(npcSyncService.syncNpcs(anyString(), any()))
         .thenReturn(SyncResult.success("NPCs", 5, 0, 0));
@@ -250,7 +252,7 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTypes", 1, 0, 0));
     when(showTemplateSyncService.syncShowTemplates(anyString()))
         .thenReturn(SyncResult.success("ShowTemplates", 1, 0, 0));
-    when(injurySyncService.syncInjuryTypes(anyString()))
+    when(injuryTypeSyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
     when(npcSyncService.syncNpcs(anyString(), any()))
         .thenReturn(SyncResult.success("NPCs", 1, 0, 0));
@@ -298,7 +300,7 @@ class ParallelSyncOrchestratorTest {
         .thenReturn(SyncResult.success("ShowTypes", 4, 0, 0));
     when(showTemplateSyncService.syncShowTemplates(anyString()))
         .thenReturn(SyncResult.success("ShowTemplates", 6, 0, 0));
-    when(injurySyncService.syncInjuryTypes(anyString()))
+    when(injuryTypeSyncService.syncInjuryTypes(anyString()))
         .thenReturn(SyncResult.success("Injuries", 1, 0, 0));
     when(npcSyncService.syncNpcs(anyString(), any()))
         .thenReturn(SyncResult.success("NPCs", 5, 0, 0));

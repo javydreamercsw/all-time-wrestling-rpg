@@ -16,14 +16,13 @@
 */
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
-import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
-
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
 import com.vaadin.flow.component.button.Button;
@@ -54,6 +53,7 @@ public class WrestlerListView extends Main {
 
   private final WrestlerService wrestlerService;
   private final InjuryService injuryService;
+  private final NpcService npcService;
   private final WrestlerRepository wrestlerRepository;
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
@@ -62,16 +62,18 @@ public class WrestlerListView extends Main {
   public WrestlerListView(
       @NonNull WrestlerService wrestlerService,
       @NonNull InjuryService injuryService,
+      @NonNull NpcService npcService,
       @NonNull WrestlerRepository wrestlerRepository,
       @NonNull @Qualifier("baseAccountService") AccountService accountService,
       @NonNull SecurityUtils securityUtils) {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
+    this.npcService = npcService;
     this.wrestlerRepository = wrestlerRepository;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
     wrestlerGrid = new Grid<>();
-    wrestlerGrid.setItems(query -> wrestlerRepository.findAll(toSpringPageRequest(query)).stream());
+    reloadGrid();
 
     Set<Long> injuredWrestlerIds =
         injuryService.getWrestlersWithActiveInjuries().stream()
@@ -83,6 +85,17 @@ public class WrestlerListView extends Main {
             wrestler -> {
               HorizontalLayout nameLayout = new HorizontalLayout();
               nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+              if (wrestler.getActive()) {
+                Icon activeIcon = new Icon(VaadinIcon.CHECK);
+                activeIcon.setColor("green");
+                activeIcon.getStyle().set("margin-right", "5px");
+                nameLayout.add(activeIcon);
+              } else {
+                Icon inactiveIcon = new Icon(VaadinIcon.MINUS_CIRCLE);
+                inactiveIcon.setColor("red");
+                inactiveIcon.getStyle().set("margin-right", "5px");
+                nameLayout.add(inactiveIcon);
+              }
               if (injuredWrestlerIds.contains(wrestler.getId())) {
                 Icon injuryIcon = new Icon(VaadinIcon.AMBULANCE);
                 injuryIcon.setColor("red");
@@ -118,7 +131,8 @@ public class WrestlerListView extends Main {
                       wrestler,
                       wrestlerService,
                       injuryService,
-                      wrestlerGrid.getDataProvider()::refreshAll,
+                      npcService,
+                      this::reloadGrid,
                       false,
                       securityUtils,
                       accountService);
@@ -154,15 +168,16 @@ public class WrestlerListView extends Main {
             e -> {
               WrestlerDialog dialog =
                   new WrestlerDialog(
-                      wrestlerService,
-                      accountService,
-                      wrestlerGrid.getDataProvider()::refreshAll,
-                      securityUtils);
+                      wrestlerService, accountService, npcService, this::reloadGrid, securityUtils);
               dialog.open();
             });
     button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     button.setId("create-wrestler-button");
     button.setVisible(securityUtils.canCreate());
     return button;
+  }
+
+  private void reloadGrid() {
+    wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
   }
 }

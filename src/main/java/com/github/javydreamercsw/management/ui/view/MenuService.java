@@ -97,9 +97,9 @@ public class MenuService {
     MenuItem configuration = new MenuItem("Configuration", VaadinIcon.COG, null, RoleName.ADMIN);
     configuration.addChild(
         new MenuItem("Sync Dashboard", VaadinIcon.REFRESH, "notion-sync", RoleName.ADMIN));
-    configuration.addChild(new MenuItem("Admin", VaadinIcon.TOOLS, "admin", RoleName.ADMIN));
     configuration.addChild(
-        new MenuItem("Game Settings", VaadinIcon.COGS, "game-settings", RoleName.ADMIN));
+        new MenuItem("Data Transfer", VaadinIcon.EXCHANGE, "data-transfer", RoleName.ADMIN));
+    configuration.addChild(new MenuItem("Admin", VaadinIcon.TOOLS, "admin", RoleName.ADMIN));
 
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);

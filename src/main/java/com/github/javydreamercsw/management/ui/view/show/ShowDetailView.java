@@ -18,9 +18,11 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
+import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.localai.LocalAIConfigProperties;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -44,7 +46,6 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
-import com.github.javydreamercsw.management.util.UrlUtil;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -90,7 +91,6 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
@@ -123,6 +123,8 @@ public class ShowDetailView extends Main
   private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   private final WebClient.Builder webClientBuilder;
   private final Environment env;
+  private final SegmentNarrationController segmentNarrationController;
+  private final ShowController showController;
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -150,6 +152,8 @@ public class ShowDetailView extends Main
       SegmentNarrationConfig segmentNarrationConfig,
       SegmentNarrationServiceFactory segmentNarrationServiceFactory,
       WebClient.Builder webClientBuilder,
+      SegmentNarrationController segmentNarrationController,
+      ShowController showController,
       Environment env) {
     this.showService = showService;
     this.segmentService = segmentService;
@@ -170,6 +174,8 @@ public class ShowDetailView extends Main
     this.segmentNarrationServiceFactory = segmentNarrationServiceFactory;
     this.webClientBuilder = webClientBuilder;
     this.env = env;
+    this.segmentNarrationController = segmentNarrationController;
+    this.showController = showController;
     initializeComponents();
   }
 
@@ -223,7 +229,7 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void updateBackButton(String referrer) {
+  private void updateBackButton(@NonNull String referrer) {
     String buttonText;
     String navigationTarget =
         switch (referrer) {
@@ -231,7 +237,10 @@ public class ShowDetailView extends Main
             buttonText = "Back to Calendar";
             yield "show-calendar";
           }
-
+          case "booker" -> {
+            buttonText = "Back to Booker View";
+            yield "booker";
+          }
           default -> {
             buttonText = "Back to Shows";
             yield "show-list";
@@ -247,7 +256,7 @@ public class ShowDetailView extends Main
         backButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(navigationTarget)));
   }
 
-  private void loadShow(Long showId) {
+  private void loadShow(@NonNull Long showId) {
     Optional<Show> showOpt = showService.getShowById(showId);
     if (showOpt.isPresent()) {
       currentShow = showOpt.get(); // Store the show object
@@ -280,7 +289,7 @@ public class ShowDetailView extends Main
     contentLayout.add(segmentsCard);
   }
 
-  private Div createHeaderCard(Show show) {
+  private Div createHeaderCard(@NonNull Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -604,7 +613,7 @@ public class ShowDetailView extends Main
     return card;
   }
 
-  private Grid<Segment> createSegmentsGrid(List<Segment> segments) {
+  private Grid<Segment> createSegmentsGrid(@NonNull List<Segment> segments) {
     Grid<Segment> grid = new Grid<>(Segment.class, false);
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.setItems(segments);
@@ -693,10 +702,6 @@ public class ShowDetailView extends Main
     return grid;
   }
 
-  Grid<Segment> getSegmentsGrid(List<Segment> segments) {
-    return createSegmentsGrid(segments);
-  }
-
   private Component createOrderButtons(@NonNull Segment segment) {
     List<Segment> segments = segmentRepository.findByShow(segment.getShow());
     int currentIndex = segments.indexOf(segment);
@@ -767,15 +772,13 @@ public class ShowDetailView extends Main
                   segment,
                   npcService,
                   wrestlerService,
-                  wrestlerRepository,
                   showService,
                   segmentService,
                   updatedSegment -> refreshSegmentsGrid(),
                   rivalryService,
                   localAIStatusService,
                   localAIConfigProperties,
-                  webClientBuilder,
-                  env); // Call refreshSegmentsGrid
+                  segmentNarrationController); // Call refreshSegmentsGrid
           dialog.open();
         });
 
@@ -846,7 +849,7 @@ public class ShowDetailView extends Main
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
     wrestlersCombo.setItems(
-        wrestlerRepository.findAll().stream()
+        wrestlerService.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
@@ -1012,7 +1015,7 @@ public class ShowDetailView extends Main
     // Wrestlers selection (multi-select)
     MultiSelectComboBox<Wrestler> wrestlersCombo = new MultiSelectComboBox<>("Wrestlers");
     wrestlersCombo.setItems(
-        wrestlerRepository.findAll().stream()
+        wrestlerService.findAll().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList()));
     wrestlersCombo.setItemLabelGenerator(Wrestler::getName);
@@ -1262,10 +1265,8 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void adjudicateShow(Show show) {
-    String baseUrl = UrlUtil.getBaseUrl();
-    new RestTemplate()
-        .postForObject(baseUrl + "/api/shows/" + show.getId() + "/adjudicate", null, Void.class);
+  private void adjudicateShow(@NonNull Show show) {
+    showController.adjudicateShow(show.getId());
     Notification.show("Fan adjudication completed!", 3000, Notification.Position.BOTTOM_START)
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
@@ -1321,7 +1322,7 @@ public class ShowDetailView extends Main
                       .anyMatch(
                           component ->
                               component instanceof HorizontalLayout
-                                  && ((HorizontalLayout) component)
+                                  && component
                                       .getChildren()
                                       .anyMatch(
                                           btn ->

@@ -35,7 +35,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("localai")
+@Profile("(!test & !e2e) or local-ai-it")
 public class LocalAISegmentNarrationService implements SegmentNarrationService {
 
   private final LocalAIConfigProperties config;

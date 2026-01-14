@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.openqa.selenium.OutputType;
@@ -34,6 +35,12 @@ public class UITestWatcher implements AfterTestExecutionCallback {
 
   @Override
   public void afterTestExecution(ExtensionContext context) throws Exception {
+    Path outputDir =
+        Paths.get(
+            "target",
+            "test-failures",
+            context.getTestClass().get().getSimpleName(),
+            context.getRequiredTestMethod().getName());
     if (context.getExecutionException().isPresent()) {
       context
           .getTestInstance()
@@ -50,12 +57,6 @@ public class UITestWatcher implements AfterTestExecutionCallback {
 
                     try {
                       // Create a directory for the test output
-                      Path outputDir =
-                          Paths.get(
-                              "target",
-                              "test-failures",
-                              context.getTestClass().get().getSimpleName(),
-                              context.getRequiredTestMethod().getName());
                       Files.createDirectories(outputDir);
 
                       String testName = context.getDisplayName().replaceAll("[^a-zA-Z0-9.-]", "_");
@@ -81,6 +82,16 @@ public class UITestWatcher implements AfterTestExecutionCallback {
                   }
                 }
               });
+    } else {
+      // Test was successful, clean up the directory for this test.
+      if (Files.exists(outputDir)) {
+        try {
+          log.debug("Test successful, cleaning up artifact directory: {}", outputDir);
+          FileUtils.deleteDirectory(outputDir.toFile());
+        } catch (IOException e) {
+          log.warn("Failed to clean up test artifact directory: {}", outputDir, e);
+        }
+      }
     }
   }
 }

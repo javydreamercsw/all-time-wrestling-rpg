@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>1.3.0-SNAPSHOT</version>
+  <version>1.5.0-SNAPSHOT</version>
 
   <packaging>war</packaging>
   <name>All Time Wrestling RPG</name>
@@ -24,11 +24,14 @@
     <jacoco.integration.coverage.minimum>0.80</jacoco.integration.coverage.minimum>
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.version>0.8.14</jacoco.version>
-    <java.version>25</java.version>
+    <java.version>${maven.compiler.release}</java.version>
     <jib.to.tags>${project.version}</jib.to.tags>
     <lombok.version>1.18.42</lombok.version>
+    <maven.compiler.release>25</maven.compiler.release>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
     <surefireArgLine/>
-    <testcontainers.version>1.21.4</testcontainers.version>
+    <testcontainers.version>2.0.3</testcontainers.version>
     <vaadin.version>25.0.2</vaadin.version>
   </properties>
 
@@ -40,6 +43,29 @@
         <version>${vaadin.version}</version>
         <type>pom</type>
         <scope>import</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>com.vaadin</groupId>
+            <artifactId>copilot</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>4.1.129.Final</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.20.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.squareup.okio</groupId>
+        <artifactId>okio</artifactId>
+        <version>3.16.4</version>
       </dependency>
       <dependency>
         <groupId>org.projectlombok</groupId>
@@ -56,6 +82,13 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-aop</artifactId>
         <version>4.0.0-M2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>2.0.3</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -80,11 +113,6 @@
       <artifactId>spring-data-rest-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-dev</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>com.github.seratch</groupId>
       <artifactId>notion-sdk-jvm-core</artifactId>
     </dependency>
@@ -106,29 +134,158 @@
     <!-- Vaadin -->
     <dependency>
       <groupId>com.vaadin</groupId>
-      <!-- Replace artifactId with vaadin-core to use only free components -->
-      <artifactId>vaadin</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>com.vaadin.external.google</groupId>
-          <artifactId>android-json</artifactId>
-        </exclusion>
-      </exclusions>
+      <artifactId>vaadin-notification-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-select-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>flow-data</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-menu-bar-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-side-nav-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-app-layout-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-spring</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-checkbox-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-flow-components-base</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>flow-html-components</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-form-layout-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-renderer-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-progress-bar-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-dialog-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-combo-box-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-details-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-split-layout-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-grid-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-login-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-text-field-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-ordered-layout-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>flow-server</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-icons-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-context-menu-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-button-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-confirm-dialog-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-date-picker-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-tabs-flow</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-lumo-theme</artifactId>
+      <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-avatar-flow</artifactId>
+      <version>${vaadin.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-tomcat</artifactId>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-spring-boot-starter</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>com.vaadin.external.google</groupId>
-          <artifactId>android-json</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.vaadin.stefan</groupId>
@@ -141,48 +298,172 @@
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
     <dependency>
+      <groupId>jakarta.transaction</groupId>
+      <artifactId>jakarta.transaction-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.inject</groupId>
+      <artifactId>jakarta.inject-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-mysql</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-mysql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+      <scope>test</scope>
+    </dependency>
     <!-- Additional Spring Dependencies -->
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-actuator</artifactId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-validation</artifactId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.data</groupId>
+      <artifactId>spring-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-jdbc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.data</groupId>
+      <artifactId>spring-data-commons</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-tx</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context-support</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-health</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webflux</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-data-jpa-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jpa-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jdbc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+      <version>2.4</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-annotations-api</artifactId>
+      <version>10.1.49</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.17</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>1.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <version>6.0.0</version>
+      <scope>test</scope>
     </dependency>
     <!-- Security -->
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-security</artifactId>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-oauth2-client</artifactId>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-config</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-webflux</artifactId>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-devtools</artifactId>
-      <optional>true</optional>
     </dependency>
     <!-- AspectJ for Performance Monitoring -->
     <dependency>
@@ -199,22 +480,92 @@
       <artifactId>json</artifactId>
       <version>20251224</version>
     </dependency>
-    <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
-      <version>1.3.2</version>
-    </dependency>
     <!-- Testing -->
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.vaadin.external.google</groupId>
-          <artifactId>android-json</artifactId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.github.mvysny.kaributesting</groupId>
+      <artifactId>karibu-testing-v10</artifactId>
+      <version>2.5.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.mvysny.kaributesting</groupId>
+      <artifactId>karibu-testing-v24</artifactId>
+      <version>2.5.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit</artifactId>
+      <version>${archunit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-api</artifactId>
+      <version>4.39.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-support</artifactId>
+      <version>4.39.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-chromium-driver</artifactId>
+      <version>4.39.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.20.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -223,28 +574,17 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <version>${testcontainers.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-testcontainers</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.tngtech.archunit</groupId>
-      <artifactId>archunit-junit5</artifactId>
-      <version>${archunit.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-testbench-junit5</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -255,20 +595,8 @@
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
-      <artifactId>selenium-java</artifactId>
-      <version>4.39.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-chrome-driver</artifactId>
       <version>4.39.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.github.mvysny.kaributesting</groupId>
-      <artifactId>karibu-testing-v24</artifactId>
-      <version>2.6.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -277,44 +605,65 @@
       <version>3.3.2</version>
     </dependency>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-cache</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.github.resilience4j</groupId>
-      <artifactId>resilience4j-spring-boot3</artifactId>
-      <version>2.3.0</version>
-    </dependency>
-    <dependency>
-      <groupId>io.github.resilience4j</groupId>
-      <artifactId>resilience4j-circuitbreaker</artifactId>
-      <version>2.3.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.github.resilience4j</groupId>
-      <artifactId>resilience4j-retry</artifactId>
-      <version>2.3.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.swagger.core.v3</groupId>
-      <artifactId>swagger-annotations</artifactId>
-      <version>2.2.41</version>
-    </dependency>
-    <dependency>
-      <groupId>io.swagger.core.v3</groupId>
-      <artifactId>swagger-models</artifactId>
-      <version>2.2.41</version>
     </dependency>
     <dependency>
       <groupId>org.passay</groupId>
       <artifactId>passay</artifactId>
       <version>1.6.6</version>
+    </dependency>
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations-jakarta</artifactId>
+      <version>2.2.32</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.persistence</groupId>
+      <artifactId>jakarta.persistence-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-core</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.aspectj</groupId>
+      <artifactId>aspectjweaver</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate.orm</groupId>
+      <artifactId>hibernate-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-models-jakarta</artifactId>
+      <version>2.2.32</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains</groupId>
+      <artifactId>annotations</artifactId>
+      <version>13.0</version>
     </dependency>
   </dependencies>
 
@@ -331,6 +680,10 @@
       <id>spring-milestones</id>
       <name>Spring Milestones</name>
       <url>https://repo.spring.io/milestone</url>
+    </repository>
+    <repository>
+      <id>central</id>
+      <url>https://repo.maven.apache.org/maven2</url>
     </repository>
   </repositories>
 
@@ -449,6 +802,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>
+        <version>2.20.1</version>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
@@ -481,7 +835,7 @@
             <cleanthat/>
             <!-- apply a specific flavor of google-java-format and reflow long strings -->
             <googleJavaFormat>
-              <version>1.28.0</version>
+              <version>1.33.0</version>
               <style>GOOGLE</style>
               <reflowLongStrings>true</reflowLongStrings>
             </googleJavaFormat>
@@ -615,12 +969,40 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <version>3.9.0</version>
+        <configuration>
+          <failOnWarning>true</failOnWarning>
+          <ignoredUnusedDeclaredDependencies>
+            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-tomcat</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-data-jpa</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>jakarta.transaction:jakarta.transaction-api</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>jakarta.inject:jakarta.inject-api</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.flywaydb:flyway-core</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.yaml:snakeyaml</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.json:json</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>com.github.mvysny.kaributesting:karibu-testing-v24</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.apache.tomcat.embed:tomcat-embed-core</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>jakarta.annotation:jakarta.annotation-api</ignoredUnusedDeclaredDependency>
+            <!--Only used with MySQL-->
+            <ignoredUnusedDeclaredDependency>com.mysql:mysql-connector-j</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.flywaydb:flyway-mysql</ignoredUnusedDeclaredDependency>
+            <!--Only used with H2-->
+            <ignoredUnusedDeclaredDependency>com.h2database:h2</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-core</ignoredUnusedDeclaredDependency>
+          </ignoredUnusedDeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <ignoredNonTestScopedDependency>ch.qos.logback:logback-classic</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>junit:junit</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>commons-io:commons-io</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.flywaydb:flyway-core</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
+        </configuration>
         <executions>
           <execution>
-            <id>getClasspathFilenames</id>
+            <id>dependency-analyze</id>
             <goals>
-              <goal>properties</goal>
+              <goal>analyze</goal>
             </goals>
+            <phase>package</phase>
           </execution>
         </executions>
       </plugin>
@@ -651,6 +1033,11 @@
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>2.4.240</version>
+          </dependency>
+          <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>9.5.0</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -891,7 +1278,6 @@
               </execution>
             </executions>
           </plugin>
-
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
@@ -1001,6 +1387,8 @@
             <version>12.1.9</version>
             <configuration>
               <failBuildOnCVSS>7</failBuildOnCVSS>
+              <skipTestScope>true</skipTestScope>
+              <skipProvidedScope>true</skipProvidedScope>
               <suppressionFiles>
                 <suppressionFile>${project.basedir}/owasp-dependency-check-suppressions.xml</suppressionFile>
               </suppressionFiles>
@@ -1010,6 +1398,7 @@
                 <goals>
                   <goal>check</goal>
                 </goals>
+                <phase>verify</phase>
               </execution>
             </executions>
           </plugin>
@@ -1130,7 +1519,7 @@
           <plugin>
             <groupId>org.codehaus.cargo</groupId>
             <artifactId>cargo-maven3-plugin</artifactId>
-            <version>1.10.25</version>
+            <version>1.10.26</version>
             <configuration>
               <container>
                 <containerId>tomcat11x</containerId>

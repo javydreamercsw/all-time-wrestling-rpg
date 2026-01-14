@@ -51,7 +51,7 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
   @Autowired private InjuryTypeRepository injuryTypeRepository;
-  @Autowired private InjurySyncService injurySyncService;
+  @Autowired private InjuryTypeSyncService injuryTypeSyncService;
   @Autowired private SyncSessionManager syncSessionManager;
   @MockitoBean private NotionHandler notionHandler;
 
@@ -132,7 +132,7 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
     // Then - Verify sync was successful
     assertThat(result).isNotNull();
     assertThat(result.isSuccess()).isTrue();
-    assertThat(result.getEntityType()).isEqualTo(SyncEntityType.INJURIES.getKey());
+    assertThat(result.getEntityType()).isEqualTo(SyncEntityType.INJURY_TYPES.getKey());
     assertThat(result.getSyncedCount()).isEqualTo(2);
     assertThat(result.getErrorCount()).isEqualTo(0);
     assertThat(result.getErrorMessage()).isNull();

@@ -21,6 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -28,11 +31,13 @@ import com.github.javydreamercsw.management.service.show.planning.ProposedSegmen
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.data.provider.Query;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -45,13 +50,15 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
   @MockitoBean private WrestlerService wrestlerService;
   @Mock private WrestlerRepository wrestlerRepository;
   @MockitoBean private TitleService titleService;
+  @MockitoBean private SegmentTypeRepository segmentTypeRepository;
   private ProposedSegment segment;
   private Runnable onSave;
 
   @BeforeEach
   void setUp() {
     segment = new ProposedSegment();
-    segment.setDescription("Old Description");
+    segment.setType("One on One");
+    segment.setNarration("Old Description");
     segment.setParticipants(new ArrayList<>(List.of("Wrestler 1")));
 
     Wrestler wrestler1 = new Wrestler();
@@ -85,20 +92,32 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
   void testSave() {
     EditSegmentDialog dialog =
         new EditSegmentDialog(
-            segment, wrestlerService, mock(WrestlerRepository.class), titleService, onSave);
+            segment,
+            mock(WrestlerRepository.class),
+            titleService,
+            mock(SegmentTypeRepository.class),
+            mock(SegmentRuleRepository.class),
+            onSave);
     dialog.open();
 
     // Simulate user input
-    dialog.getDescriptionArea().setValue("New Description");
-    segment.setDescription("New Description");
+    dialog.getNarrationArea().setValue("New Description");
+    segment.setNarration("New Description");
     Set<Wrestler> selectedParticipants = Set.of(wrestlerService.findByName("Wrestler 2").get());
-    dialog.getParticipantsCheckboxGroup().setValue(selectedParticipants);
+    dialog.getParticipantsCombo().setValue(selectedParticipants);
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName(segment.getType());
+    segmentType.setDescription("New Description");
+    segmentType.setCreationDate(Instant.now());
+    segmentType.setExternalId(UUID.randomUUID().toString());
+    segmentType.setLastSync(Instant.now());
+    dialog.getSegmentTypeCombo().setValue(segmentType);
     // Trigger save
     dialog.save();
 
     // Verify segment is updated
     ProposedSegment updatedSegment = dialog.getSegment();
-    assertEquals("New Description", updatedSegment.getDescription());
+    assertEquals("New Description", updatedSegment.getNarration());
     assertEquals(1, updatedSegment.getParticipants().size());
     assertEquals("Wrestler 2", updatedSegment.getParticipants().get(0));
     // Verify that no titles were selected if it's not a title segment
@@ -122,7 +141,12 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
 
     EditSegmentDialog dialog =
         new EditSegmentDialog(
-            segment, wrestlerService, mock(WrestlerRepository.class), titleService, onSave);
+            segment,
+            mock(WrestlerRepository.class),
+            titleService,
+            mock(SegmentTypeRepository.class),
+            mock(SegmentRuleRepository.class),
+            onSave);
     dialog.open();
 
     // Verify title MultiSelectComboBox is visible and populated
@@ -132,6 +156,14 @@ class EditSegmentDialogTest extends ManagementIntegrationTest {
     // Simulate user selecting only title1
     dialog.getTitleMultiSelectComboBox().setValue(Set.of(title1));
     segment.setTitles(Set.of(title1));
+
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName(segment.getType());
+    segmentType.setDescription("New Description");
+    segmentType.setCreationDate(Instant.now());
+    segmentType.setExternalId(UUID.randomUUID().toString());
+    segmentType.setLastSync(Instant.now());
+    dialog.getSegmentTypeCombo().setValue(segmentType);
 
     // Trigger save
     dialog.save();

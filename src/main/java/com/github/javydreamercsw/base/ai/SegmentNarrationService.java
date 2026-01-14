@@ -114,6 +114,7 @@ public interface SegmentNarrationService {
     private String team;
     private String gender;
     private String tier;
+    private String managerName;
     private MoveSet moveSet;
     private List<String> feudsAndHeat;
     private List<String> recentSegments;

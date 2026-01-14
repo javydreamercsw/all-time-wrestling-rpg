@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.TitleContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 
 /** Generates prompts for AI services. */
 public class PromptGenerator {
@@ -38,7 +39,7 @@ public class PromptGenerator {
    * @param segmentContext The context of the segment to narrate.
    * @return The generated prompt.
    */
-  public String generateMatchNarrationPrompt(SegmentNarrationContext segmentContext) {
+  public String generateMatchNarrationPrompt(@NonNull SegmentNarrationContext segmentContext) {
     StringBuilder prompt = new StringBuilder();
     prompt.append(
         "Narrate the following wrestling segment based on the provided JSON context.\n\n");
@@ -50,7 +51,13 @@ public class PromptGenerator {
     if (segmentContext.getWrestlers() != null && !segmentContext.getWrestlers().isEmpty()) {
       List<String> participantNames =
           segmentContext.getWrestlers().stream()
-              .map(WrestlerContext::getName)
+              .map(
+                  w -> {
+                    if (w.getManagerName() != null && !w.getManagerName().isEmpty()) {
+                      return w.getName() + " accompanied to the ring by " + w.getManagerName();
+                    }
+                    return w.getName();
+                  })
               .collect(Collectors.toList());
       prompt
           .append(
@@ -113,6 +120,9 @@ public class PromptGenerator {
       prompt.append("PARTICIPANTS:\n");
       for (WrestlerContext wrestler : segmentContext.getWrestlers()) {
         prompt.append("- ").append(wrestler.getName());
+        if (wrestler.getManagerName() != null && !wrestler.getManagerName().isEmpty()) {
+          prompt.append(" (with ").append(wrestler.getManagerName()).append(")");
+        }
         if (wrestler.getDescription() != null) {
           String desc = wrestler.getDescription();
           // Truncate description if it's too long, but try to keep it coherent

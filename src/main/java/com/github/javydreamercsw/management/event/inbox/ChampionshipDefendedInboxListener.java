@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.stream.Collectors;
@@ -50,16 +51,23 @@ public class ChampionshipDefendedInboxListener
 
   @Override
   public void onApplicationEvent(@NonNull ChampionshipDefendedEvent event) {
-    log.info("Received ChampionshipDefendedEvent for title ID: {}", event.getTitleId());
+    log.debug("Received ChampionshipDefendedEvent for title ID: {}", event.getTitleId());
 
     String champions =
-        event.getChampions().stream().map(w -> w.getName()).collect(Collectors.joining(", "));
+        event.getChampions().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
+
+    String challengers =
+        event.getChallengers().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
 
     String message =
         String.format(
-            "Champions %s successfully defended title ID %d", champions, event.getTitleId());
+            "Champion(s) %s successfully defended the %s title against %s!",
+            champions, event.getTitleName(), challengers);
 
-    inboxService.createInboxItem(championshipDefended, message, event.getTitleId().toString());
+    inboxService.createInboxItem(
+        championshipDefended,
+        message,
+        event.getChallengers().stream().map(w -> w.getId().toString()).toList());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

@@ -18,27 +18,36 @@ package com.github.javydreamercsw.management.ui.view.ranking;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
+import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
+import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
+import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.Comparator;
 import java.util.List;
@@ -59,8 +68,10 @@ public class RankingView extends Main {
 
   private final Image championshipImage = new Image();
   private final VerticalLayout championLayout = new VerticalLayout();
+  private final VerticalLayout historyLayout = new VerticalLayout();
   private final Grid<RankedWrestlerDTO> wrestlerContendersGrid = new Grid<>();
   private final Grid<RankedTeamDTO> teamContendersGrid = new Grid<>();
+  private ChampionshipDTO currentChampionship;
 
   public RankingView(
       @NonNull RankingService rankingService, @NonNull TierBoundaryService tierBoundaryService) {
@@ -68,30 +79,59 @@ public class RankingView extends Main {
     this.tierBoundaryService = tierBoundaryService;
 
     ComboBox<ChampionshipDTO> championshipComboBox = new ComboBox<>("Championship");
+    championshipComboBox.setId("championship-combo-box");
     championshipComboBox.setItems(
         rankingService.getChampionships().stream()
             .sorted(Comparator.comparing(ChampionshipDTO::getName))
             .collect(Collectors.toList()));
     championshipComboBox.setItemLabelGenerator(ChampionshipDTO::getName);
-    championshipComboBox.addValueChangeListener(event -> updateView(event.getValue()));
+    championshipComboBox.addValueChangeListener(
+        event -> {
+          currentChampionship = event.getValue();
+          updateView(currentChampionship);
+        });
 
     // Select the first championship by default
     rankingService.getChampionships().stream()
         .min(Comparator.comparing(ChampionshipDTO::getName))
-        .ifPresent(championshipComboBox::setValue);
+        .ifPresent(
+            championship -> {
+              championshipComboBox.setValue(championship);
+              currentChampionship = championship;
+            });
 
     wrestlerContendersGrid
         .addColumn(
             new ComponentRenderer<>(
                 wrestler -> {
-                  Span span = new Span(String.valueOf(wrestler.getRank()));
-                  if (wrestler.getRank() == 1) {
-                    span.getStyle().set("font-weight", "bold");
+                  HorizontalLayout layout = new HorizontalLayout();
+                  layout.setAlignItems(Alignment.CENTER);
+                  layout.add(new Span(wrestler.getName()));
+
+                  if (currentChampionship != null) {
+                    WrestlerTier wrestlerTier = wrestler.getTier();
+                    WrestlerTier championshipTier = currentChampionship.getTier();
+
+                    if (!wrestlerTier.equals(championshipTier)) {
+                      Icon warningIcon = VaadinIcon.WARNING.create();
+                      warningIcon.setColor("orange"); // Or use a CSS class
+                      warningIcon
+                          .getElement()
+                          .setAttribute(
+                              "title",
+                              "Wrestler's tier ("
+                                  + wrestlerTier.getDisplayWithEmoji()
+                                  + ") does not match championship tier ("
+                                  + championshipTier.getDisplayWithEmoji()
+                                  + ")");
+                      layout.add(warningIcon);
+                    }
                   }
-                  return span;
+
+                  return layout;
                 }))
-        .setHeader("Rank");
-    wrestlerContendersGrid.addColumn(RankedWrestlerDTO::getName).setHeader("Name");
+        .setHeader("Name")
+        .setComparator(Comparator.comparing(RankedWrestlerDTO::getName));
     wrestlerContendersGrid.addColumn(RankedWrestlerDTO::getFans).setHeader("Fans");
     wrestlerContendersGrid.setId("wrestler-contenders-grid");
 
@@ -123,7 +163,13 @@ public class RankingView extends Main {
         new HorizontalLayout(championshipComboBox, showTierBoundariesButton);
     topLayout.setAlignItems(Alignment.CENTER);
 
-    add(topLayout, championLayout, championshipImage, wrestlerContendersGrid, teamContendersGrid);
+    add(
+        topLayout,
+        championLayout,
+        championshipImage,
+        wrestlerContendersGrid,
+        teamContendersGrid,
+        historyLayout);
   }
 
   private void showTierBoundariesDialog() {
@@ -224,6 +270,21 @@ public class RankingView extends Main {
     } else {
       wrestlerContendersGrid.setVisible(false);
       teamContendersGrid.setVisible(false);
+    }
+
+    // Update history
+    historyLayout.removeAll();
+    historyLayout.add(new H3("Championship History"));
+    List<TitleReignDTO> history = rankingService.getTitleReignHistory(championship.getId());
+    if (history.isEmpty()) {
+      historyLayout.add("No history available.");
+    } else {
+      historyLayout.add(new HistoryTimelineComponent(history));
+      Div cardsContainer = new Div();
+      cardsContainer.addClassNames(
+          LumoUtility.Display.FLEX, LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.SMALL);
+      history.forEach(reign -> cardsContainer.add(new ReignCardComponent(reign)));
+      historyLayout.add(cardsContainer);
     }
   }
 }

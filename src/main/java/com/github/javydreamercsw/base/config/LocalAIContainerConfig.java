@@ -17,45 +17,71 @@
 package com.github.javydreamercsw.base.config;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.time.Duration;
-import javax.annotation.PreDestroy;
+import java.util.Collections;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 
 /**
  * Manages a LocalAI container for development using Testcontainers. This configuration is only
  * active when the non-test profile is enabled.
  */
 @Configuration
-@Profile("localai")
 @Slf4j
 @RequiredArgsConstructor
 public class LocalAIContainerConfig {
 
-  @Value("${ai.localai.model}")
-  private String modelName;
-
+  private final AiSettingsService aiSettingsService;
   private final LocalAIStatusService statusService;
   @Getter private GenericContainer<?> localAiContainer;
+  private boolean started = false;
 
   @EventListener(ApplicationReadyEvent.class)
+  public void onApplicationReady() {
+    startLocalAiContainer();
+  }
+
   public void startLocalAiContainer() {
-    if (modelName != null && !modelName.isEmpty()) {
-      new Thread(this::initializeAndStartContainer).start();
+    if (started) {
+      return;
+    }
+    // Temporarily grant system-level privileges to fetch the model name
+    Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
+    try {
+      UsernamePasswordAuthenticationToken systemAuth =
+          new UsernamePasswordAuthenticationToken(
+              "system", null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN")));
+      SecurityContextHolder.getContext().setAuthentication(systemAuth);
+
+      if (aiSettingsService.isLocalAIEnabled()) {
+        String modelName = aiSettingsService.getLocalAIModel();
+        if (modelName != null && !modelName.isEmpty()) {
+          new Thread(() -> initializeAndStartContainer(modelName)).start();
+        }
+        started = true;
+      }
+    } finally {
+      SecurityContextHolder.getContext().setAuthentication(originalAuth);
     }
   }
 
-  private void initializeAndStartContainer() {
+  private void initializeAndStartContainer(@NonNull String modelName) {
     try {
       statusService.setStatus(LocalAIStatusService.Status.STARTING);
       statusService.setMessage("LocalAI container is starting...");
@@ -65,17 +91,21 @@ public class LocalAIContainerConfig {
         modelsDir.mkdirs();
       }
 
+      // This tells the container to load the specified model config file at startup.
+      String preloadModelsJson =
+          String.format("[{\"path\": \"/build/models/%s.yaml\"}]", modelName);
+
       // Using the official LocalAI image
       localAiContainer =
           new GenericContainer<>("localai/localai:latest")
               .withExposedPorts(8080)
               .withFileSystemBind(modelsDir.getAbsolutePath(), "/build/models", BindMode.READ_WRITE)
-              .withCommand("run", modelName)
               .withEnv("MODELS_PATH", "/build/models")
+              .withCommand("run", modelName)
               .waitingFor(
-                  Wait.forHttp("/readyz")
-                      .forStatusCode(200)
-                      .withStartupTimeout(Duration.ofMinutes(15)));
+                  new WaitAllStrategy()
+                      .withStrategy(Wait.forHttp("/readyz").forStatusCode(200))
+                      .withStartupTimeout(Duration.ofMinutes(30)));
 
       log.info(
           "Starting LocalAI container. This may take a while for the initial model download...");

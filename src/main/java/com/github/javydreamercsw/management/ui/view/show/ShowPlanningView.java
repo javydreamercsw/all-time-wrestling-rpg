@@ -21,6 +21,8 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
@@ -29,7 +31,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
@@ -66,13 +68,11 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ShowService showService;
   private final ShowPlanningService showPlanningService;
   private final ShowPlanningAiService showPlanningAiService;
-  private final WrestlerService wrestlerService;
-  private final TitleService titleService;
-  private final WrestlerRepository wrestlerRepository;
   private final ObjectMapper objectMapper;
 
   private final ComboBox<Show> showComboBox;
   private final Button loadContextButton;
+  private final Button viewDetailsButton;
   private final TextArea contextArea;
   private final Grid<ProposedSegment> proposedSegmentsGrid;
   private final Button approveButton;
@@ -84,17 +84,15 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       ShowService showService,
       ShowPlanningService showPlanningService,
       ShowPlanningAiService showPlanningAiService,
-      WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       TitleService titleService,
+      SegmentTypeRepository segmentTypeRepository,
+      SegmentRuleRepository segmentRuleRepository,
       ObjectMapper objectMapper) {
 
     this.showService = showService;
     this.showPlanningService = showPlanningService;
     this.showPlanningAiService = showPlanningAiService;
-    this.wrestlerService = wrestlerService;
-    this.wrestlerRepository = wrestlerRepository;
-    this.titleService = titleService;
     this.objectMapper = objectMapper;
 
     showComboBox = new ComboBox<>("Select Show");
@@ -109,8 +107,15 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     loadContextButton.addClickListener(e -> loadContext());
     loadContextButton.setEnabled(false);
 
+    viewDetailsButton = new Button("View Details");
+    viewDetailsButton.addClickListener(e -> navigateToShowDetails());
+    viewDetailsButton.setEnabled(false);
+
     showComboBox.addValueChangeListener(
-        event -> loadContextButton.setEnabled(event.getValue() != null));
+        event -> {
+          loadContextButton.setEnabled(event.getValue() != null);
+          viewDetailsButton.setEnabled(event.getValue() != null);
+        });
 
     contextArea = new TextArea("Show Planning Context");
     contextArea.setWidthFull();
@@ -125,7 +130,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     proposedSegmentsGrid = new Grid<>(ProposedSegment.class, false);
     proposedSegmentsGrid.addColumn(ProposedSegment::getType).setHeader("Type");
     Grid.Column<ProposedSegment> descriptionColumn =
-        proposedSegmentsGrid.addColumn(ProposedSegment::getDescription).setHeader("Description");
+        proposedSegmentsGrid.addColumn(ProposedSegment::getNarration).setHeader("Description");
     proposedSegmentsGrid
         .addColumn(segment -> String.join(", ", segment.getParticipants()))
         .setHeader("Participants");
@@ -136,7 +141,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     editor.setBinder(binder);
 
     TextField descriptionField = new TextField();
-    binder.bind(descriptionField, "description");
+    binder.bind(descriptionField, "narration");
     descriptionColumn.setEditorComponent(descriptionField);
 
     proposedSegmentsGrid.addItemDoubleClickListener(
@@ -158,9 +163,10 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                 EditSegmentDialog dialog =
                     new EditSegmentDialog(
                         segment,
-                        wrestlerService,
                         wrestlerRepository,
                         titleService,
+                        segmentTypeRepository,
+                        segmentRuleRepository,
                         () -> proposedSegmentsGrid.getDataProvider().refreshAll());
                 dialog.open();
               });
@@ -186,11 +192,19 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
         new VerticalLayout(
             showComboBox,
             loadContextButton,
+            viewDetailsButton, // Added here
             proposeSegmentsButton,
             contextArea,
             proposedSegmentsGrid,
             approveButton);
     add(layout);
+  }
+
+  private void navigateToShowDetails() {
+    Show selectedShow = showComboBox.getValue();
+    if (selectedShow != null) {
+      UI.getCurrent().navigate(ShowDetailView.class, selectedShow.getId());
+    }
   }
 
   private void loadContext() {

@@ -22,6 +22,8 @@ import static com.github.javydreamercsw.management.config.CacheConfig.WRESTLER_S
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
+import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
@@ -66,6 +68,7 @@ public class WrestlerService {
   @Autowired private SegmentService segmentService;
   @Autowired private TitleService titleService;
   @Autowired private TierRecalculationService tierRecalculationService;
+  @Autowired private TierBoundaryRepository tierBoundaryRepository;
 
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public void createWrestler(@NonNull String name) {
@@ -203,10 +206,14 @@ public class WrestlerService {
     log.debug("Deleted wrestler: {}", wrestler.getName());
   }
 
-  // @Cacheable(value = WRESTLERS_CACHE, key = "'all'")
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> findAllIncludingInactive() {
+    return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans"));
+  }
+
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAll() {
-    return wrestlerRepository.findAll(Sort.by(Sort.Direction.DESC, "fans"));
+    return wrestlerRepository.findAllByActiveTrue();
   }
 
   /** Get wrestler by ID. */
@@ -233,7 +240,6 @@ public class WrestlerService {
     return findAll();
   }
 
-  @Cacheable(value = WRESTLERS_CACHE, key = "'name:' + #name")
   @PreAuthorize("isAuthenticated()")
   public Optional<Wrestler> findByName(String name) {
     return wrestlerRepository.findByName(name);
@@ -252,45 +258,38 @@ public class WrestlerService {
   // ==================== ATW RPG METHODS ====================
 
   @Transactional
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fans) {
-    return updateFans(wrestlerId, fans);
-  }
-
-  @Transactional
-  private Optional<Wrestler> updateFans(@NonNull Long wrestlerId, @NonNull Long fanChange) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
             wrestler -> {
-              if (fanChange < 0 && !wrestler.canAfford(-fanChange)) {
+              if (fans < 0 && !wrestler.canAfford(-fans)) {
                 return null; // Not enough fans
               }
-              long tempFans = fanChange;
-              if (fanChange > 0) {
-                switch (wrestler.getTier()) {
-                  case ICON:
-                    tempFans = tempFans * 90 / 100;
-                    break;
-                  case MAIN_EVENTER:
-                    tempFans = tempFans * 93 / 100;
-                    break;
-                  case MIDCARDER:
-                    tempFans = tempFans * 95 / 100;
-                    break;
-                  case CONTENDER:
-                    tempFans = tempFans * 97 / 100;
-                    break;
-                }
+              long tempFans = fans;
+              if (fans > 0) {
+                tempFans =
+                    switch (wrestler.getTier()) {
+                      case ICON -> tempFans * 90 / 100;
+                      case MAIN_EVENTER -> tempFans * 93 / 100;
+                      case MIDCARDER -> tempFans * 95 / 100;
+                      case CONTENDER -> tempFans * 97 / 100;
+                      default -> tempFans;
+                    };
                 tempFans = Math.round(tempFans / 1000.0) * 1000;
               }
               wrestler.addFans(tempFans);
               tierRecalculationService.recalculateTier(wrestler);
-              Wrestler savedWrestler = wrestlerRepository.saveAndFlush(wrestler);
+              Wrestler savedWrestler = wrestlerRepository.save(wrestler);
               eventPublisher.publishEvent(new FanAwardedEvent(this, savedWrestler, tempFans));
 
-              return wrestlerRepository.findById(savedWrestler.getId()).get();
-            });
+              return savedWrestler;
+            })
+        .filter(java.util.Objects::nonNull);
   }
 
   /**
@@ -299,6 +298,10 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
+  @Transactional
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Wrestler> addBump(@NonNull Long wrestlerId) {
     return wrestlerRepository
@@ -312,7 +315,7 @@ public class WrestlerService {
                 // Create injury using the injury service only if a new injury occurred
                 injuryService.createInjuryFromBumps(wrestlerId);
               }
-              return wrestlerRepository.saveAndFlush(wrestler);
+              return wrestlerRepository.save(wrestler);
             });
   }
 
@@ -322,6 +325,10 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
+  @Transactional
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public Optional<Wrestler> healBump(@NonNull Long wrestlerId) {
     return wrestlerRepository
@@ -337,7 +344,7 @@ public class WrestlerService {
                     wrestler.getBumps() + 1);
                 eventPublisher.publishEvent(new WrestlerBumpHealedEvent(this, wrestler));
               }
-              return wrestlerRepository.saveAndFlush(wrestler);
+              return wrestlerRepository.save(wrestler);
             });
   }
 
@@ -397,9 +404,7 @@ public class WrestlerService {
    */
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getWrestlersByTier(@NonNull WrestlerTier tier) {
-    return wrestlerRepository.findAll().stream()
-        .filter(wrestler -> wrestler.getTier() == tier)
-        .toList();
+    return findAll().stream().filter(wrestler -> wrestler.getTier() == tier).toList();
   }
 
   /**
@@ -409,7 +414,7 @@ public class WrestlerService {
    */
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getPlayerWrestlers() {
-    return wrestlerRepository.findAll().stream().filter(Wrestler::getIsPlayer).toList();
+    return findAll().stream().filter(Wrestler::getIsPlayer).toList();
   }
 
   /**
@@ -419,9 +424,7 @@ public class WrestlerService {
    */
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> getNpcWrestlers() {
-    return wrestlerRepository.findAll().stream()
-        .filter(wrestler -> !wrestler.getIsPlayer())
-        .toList();
+    return findAll().stream().filter(wrestler -> !wrestler.getIsPlayer()).toList();
   }
 
   /**
@@ -431,9 +434,10 @@ public class WrestlerService {
    * @param cost The fan cost
    * @return true if successful, false if wrestler not found or insufficient fans
    */
+  @Transactional
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public boolean spendFans(@NonNull Long wrestlerId, @NonNull Long cost) {
-    return updateFans(wrestlerId, -cost).isPresent();
+    return awardFans(wrestlerId, -cost).isPresent();
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -461,5 +465,51 @@ public class WrestlerService {
 
               return new WrestlerStats(wins, losses, titlesHeld);
             });
+  }
+
+  /** Recalibrates the fan counts of all wrestlers to the minimum of their respective tiers. */
+  @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
+  public void recalibrateFanCounts() {
+    List<Wrestler> wrestlers = wrestlerRepository.findAll();
+    List<TierBoundary> boundaries = tierBoundaryRepository.findAll();
+
+    for (Wrestler wrestler : wrestlers) {
+      if (wrestler.getTier() != null && wrestler.getGender() != null) {
+        WrestlerTier targetTier = wrestler.getTier();
+        if (targetTier == WrestlerTier.ICON) {
+          targetTier = WrestlerTier.MAIN_EVENTER;
+          wrestler.setTier(targetTier);
+        }
+
+        final WrestlerTier finalTargetTier = targetTier;
+        boundaries.stream()
+            .filter(b -> b.getTier() == finalTargetTier && b.getGender() == wrestler.getGender())
+            .findFirst()
+            .ifPresent(boundary -> wrestler.setFans(boundary.getMinFans()));
+      }
+    }
+    wrestlerRepository.saveAll(wrestlers);
+    log.info("Recalibrated fan counts for all wrestlers. Icons are reset to Main Eventer.");
+  }
+
+  /** Resets the fan counts of all wrestlers to 0 and their tier to ROOKIE. */
+  @Transactional
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @CacheEvict(
+      value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
+      allEntries = true)
+  public void resetAllFanCountsToZero() {
+    List<Wrestler> wrestlers = wrestlerRepository.findAll();
+
+    for (Wrestler wrestler : wrestlers) {
+      wrestler.setFans(0L);
+      wrestler.setTier(WrestlerTier.ROOKIE);
+    }
+    wrestlerRepository.saveAll(wrestlers);
+    log.info("Reset all wrestler fan counts to 0 and tier to ROOKIE.");
   }
 }

@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -38,23 +39,32 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.match.MatchView;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerProfileView;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.Tab;
+import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
-import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -90,6 +100,10 @@ public class PlayerView extends VerticalLayout {
     this.accountService = accountService;
     this.segmentService = segmentService;
 
+    setHeightFull();
+    setPadding(false);
+    setSpacing(false);
+
     add(new ViewToolbar("Player Dashboard"));
     init();
   }
@@ -98,13 +112,7 @@ public class PlayerView extends VerticalLayout {
     Optional<CustomUserDetails> maybeUserDetails = securityUtils.getAuthenticatedUser();
     if (maybeUserDetails.isPresent()) {
       Account account = maybeUserDetails.get().getAccount();
-      // Try to get wrestler directly from CustomUserDetails
-      Optional<Wrestler> maybeWrestler = Optional.ofNullable(maybeUserDetails.get().getWrestler());
-
-      // If not directly available, try finding by account
-      if (maybeWrestler.isEmpty()) {
-        maybeWrestler = wrestlerService.findByAccount(account);
-      }
+      Optional<Wrestler> maybeWrestler = wrestlerService.findByAccount(account);
 
       if (maybeWrestler.isPresent()) {
         playerWrestler = wrestlerService.findByIdWithInjuries(maybeWrestler.get().getId()).get();
@@ -118,78 +126,131 @@ public class PlayerView extends VerticalLayout {
   }
 
   private void buildDashboard() {
-    HorizontalLayout mainContent = new HorizontalLayout();
-    mainContent.setSizeFull();
+    Component profileCard = createProfileCard();
+    Component tabsComponent = createTabs();
 
-    VerticalLayout leftColumn = new VerticalLayout();
-    leftColumn.setWidth("50%");
-    VerticalLayout rightColumn = new VerticalLayout();
-    rightColumn.setWidth("50%");
-
-    leftColumn.add(createWrestlerProfileSummary());
-    leftColumn.add(createInjuriesSummary());
-    leftColumn.add(createInboxSummary());
-    rightColumn.add(createUpcomingMatches());
-    rightColumn.add(createActiveRivalries());
-
-    mainContent.add(leftColumn, rightColumn);
-    add(mainContent);
+    add(profileCard, tabsComponent);
+    setFlexGrow(0, profileCard); // Profile card doesn't grow
+    setFlexGrow(1, tabsComponent); // Tabs component grows to fill space
+    getStyle().set("padding", "1em");
   }
 
-  private VerticalLayout createWrestlerProfileSummary() {
-    VerticalLayout summary = new VerticalLayout();
-    summary.add(new H2("My Wrestler"));
-    if (playerWrestler != null) {
-      // Wrestler Image
-      Image wrestlerImage = new Image();
-      wrestlerImage.setId("wrestler-image");
-      if (playerWrestler.getImageUrl() != null && !playerWrestler.getImageUrl().isEmpty()) {
-        wrestlerImage.setSrc(playerWrestler.getImageUrl());
-      } else {
-        wrestlerImage.setSrc("https://via.placeholder.com/150");
-      }
-      wrestlerImage.setAlt("Wrestler Image");
-      wrestlerImage.setWidth("150px");
-      wrestlerImage.setHeight("150px");
-
-      summary.add(wrestlerImage);
-
-      Span nameSpan = new Span("Name: " + playerWrestler.getName());
-      nameSpan.setId("wrestler-name");
-      summary.add(nameSpan);
-
-      Span tierSpan = new Span("Tier: " + playerWrestler.getTier());
-      tierSpan.setId("wrestler-tier");
-      summary.add(tierSpan);
-
-      Optional<WrestlerStats> stats = wrestlerService.getWrestlerStats(playerWrestler.getId());
-      if (stats.isPresent()) {
-        WrestlerStats wrestlerStats = stats.get();
-        Span winsSpan = new Span("Wins: " + wrestlerStats.getWins());
-        winsSpan.setId("wrestler-wins");
-        summary.add(winsSpan);
-
-        Span lossesSpan = new Span("Losses: " + wrestlerStats.getLosses());
-        lossesSpan.setId("wrestler-losses");
-        summary.add(lossesSpan);
-      }
-
-      RouterLink profileLink =
-          new RouterLink(
-              "View Full Profile",
-              WrestlerProfileView.class,
-              new RouteParameters("wrestlerId", String.valueOf(playerWrestler.getId())));
-      profileLink.setId("view-full-profile-link");
-
-      summary.add(profileLink);
+  private Component createProfileCard() {
+    Avatar avatar = new Avatar(playerWrestler.getName());
+    if (playerWrestler.getImageUrl() != null && !playerWrestler.getImageUrl().isEmpty()) {
+      avatar.setImage(playerWrestler.getImageUrl());
     }
-    return summary;
+    avatar.setThemeName("xxlarge");
+    avatar.setId("wrestler-image");
+
+    H2 name = new H2(playerWrestler.getName());
+    name.setId("wrestler-name");
+    name.addClassNames(LumoUtility.FontSize.XLARGE, LumoUtility.Margin.Top.NONE);
+
+    Span tierBadge = createBadge(playerWrestler.getTier().getDisplayName(), "pill");
+    tierBadge.setId("wrestler-tier");
+
+    HorizontalLayout nameAndTier = new HorizontalLayout(name, tierBadge);
+    nameAndTier.setAlignItems(FlexComponent.Alignment.BASELINE);
+    nameAndTier.setSpacing(true);
+
+    Optional<WrestlerStats> statsOpt = wrestlerService.getWrestlerStats(playerWrestler.getId());
+    HorizontalLayout statsLayout = new HorizontalLayout();
+    if (statsOpt.isPresent()) {
+      WrestlerStats stats = statsOpt.get();
+      statsLayout.add(createStat("Wins", String.valueOf(stats.getWins()), "wrestler-wins"));
+      statsLayout.add(createStat("Losses", String.valueOf(stats.getLosses()), "wrestler-losses"));
+    }
+    statsLayout.add(
+        createStat("Bumps", String.valueOf(playerWrestler.getBumps()), "wrestler-bumps"));
+    statsLayout.setSpacing(true);
+
+    Button profileButton =
+        new Button(
+            "View Full Profile",
+            new Icon(VaadinIcon.ARROW_RIGHT),
+            e ->
+                getUI()
+                    .ifPresent(
+                        ui ->
+                            ui.navigate(
+                                WrestlerProfileView.class,
+                                new RouteParameters(
+                                    "wrestlerId", String.valueOf(playerWrestler.getId())))));
+    profileButton.setIconAfterText(true);
+    profileButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    profileButton.setId("view-full-profile-link");
+
+    Div injuries = createInjuriesSummary();
+
+    VerticalLayout infoLayout =
+        new VerticalLayout(nameAndTier, statsLayout, injuries, profileButton);
+    infoLayout.setPadding(false);
+    infoLayout.setSpacing(false);
+    infoLayout.getStyle().set("gap", "0.5em");
+
+    HorizontalLayout card = new HorizontalLayout(avatar, infoLayout);
+    card.addClassNames(
+        LumoUtility.Background.BASE,
+        LumoUtility.Padding.LARGE,
+        LumoUtility.BorderRadius.LARGE,
+        LumoUtility.BoxShadow.SMALL);
+    card.setAlignItems(FlexComponent.Alignment.CENTER);
+    card.setSpacing(true);
+    return card;
   }
 
-  private VerticalLayout createUpcomingMatches() {
-    VerticalLayout layout = new VerticalLayout();
-    layout.add(new H2("Upcoming Matches"));
+  private Component createStat(@NonNull String label, @NonNull String value, @NonNull String id) {
+    VerticalLayout stat = new VerticalLayout(new H4(label), new Span(value));
+    stat.setPadding(false);
+    stat.setSpacing(false);
+    stat.setAlignItems(FlexComponent.Alignment.CENTER);
+    stat.setId(id);
+    return stat;
+  }
 
+  private Component createTabs() {
+    Div pages = new Div();
+    pages.setSizeFull();
+
+    Grid<Segment> upcomingMatchesGrid = createUpcomingMatchesGrid();
+    Grid<Rivalry> rivalriesGrid = createActiveRivalriesGrid();
+    Grid<InboxItem> inboxGrid = createInboxGrid();
+
+    pages.add(upcomingMatchesGrid, rivalriesGrid, inboxGrid);
+    rivalriesGrid.setVisible(false);
+    inboxGrid.setVisible(false);
+
+    Tab matchesTab = new Tab("Upcoming Matches");
+    Tab rivalriesTab = new Tab("Rivalries");
+    Tab inboxTab = new Tab("Inbox");
+
+    Map<Tab, Component> tabsToPages =
+        Map.of(
+            matchesTab, upcomingMatchesGrid,
+            rivalriesTab, rivalriesGrid,
+            inboxTab, inboxGrid);
+
+    Tabs tabs = new Tabs(matchesTab, rivalriesTab, inboxTab);
+    tabs.addSelectedChangeListener(
+        event -> {
+          tabsToPages.values().forEach(page -> page.setVisible(false));
+          Component selectedPage = tabsToPages.get(tabs.getSelectedTab());
+          selectedPage.setVisible(true);
+        });
+    tabs.setOrientation(Tabs.Orientation.HORIZONTAL);
+    tabs.setWidthFull();
+
+    VerticalLayout layout = new VerticalLayout(tabs, pages);
+    layout.setPadding(false);
+    layout.setSpacing(false);
+    layout.setAlignItems(FlexComponent.Alignment.STRETCH);
+    layout.setSizeFull(); // Add this
+    layout.setFlexGrow(1, pages); // Make pages div grow inside this layout
+    return layout;
+  }
+
+  private Grid<Segment> createUpcomingMatchesGrid() {
     Grid<Segment> grid = new Grid<>();
     grid.setId("upcoming-matches-grid");
 
@@ -206,6 +267,7 @@ public class PlayerView extends VerticalLayout {
     grid.addComponentColumn(
             segment -> {
               Button button = new Button("Go to Match");
+              button.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
               button.addClickListener(
                   event ->
                       getUI()
@@ -225,14 +287,11 @@ public class PlayerView extends VerticalLayout {
     } else {
       grid.setItems(Collections.emptyList());
     }
-
-    layout.add(grid);
-    return layout;
+    grid.setSizeFull();
+    return grid;
   }
 
-  private VerticalLayout createActiveRivalries() {
-    VerticalLayout layout = new VerticalLayout();
-    layout.add(new H2("Active Rivalries"));
+  private Grid<Rivalry> createActiveRivalriesGrid() {
     Grid<Rivalry> grid = new Grid<>();
     grid.setId("active-rivalries-grid");
     grid.addColumn(rivalry -> rivalry.getOpponent(playerWrestler).getName())
@@ -243,49 +302,54 @@ public class PlayerView extends VerticalLayout {
     if (playerWrestler != null) {
       grid.setItems(rivalryService.getRivalriesForWrestler(playerWrestler.getId()));
     }
-
-    layout.add(grid);
-    return layout;
+    grid.setSizeFull();
+    return grid;
   }
 
-  private VerticalLayout createInboxSummary() {
-    VerticalLayout layout = new VerticalLayout();
-    layout.add(new H2("Inbox"));
-
+  private Grid<InboxItem> createInboxGrid() {
     Grid<InboxItem> grid = new Grid<>();
     grid.setId("inbox-grid");
     grid.addColumn(InboxItem::getDescription).setHeader("Message");
     grid.addColumn(InboxItem::getEventTimestamp).setHeader("Date");
 
     if (playerWrestler != null) {
-      grid.setItems(inboxService.getInboxItemsForWrestler(playerWrestler, 5));
+      grid.setItems(inboxService.getInboxItemsForWrestler(playerWrestler, 10));
     } else {
       grid.setItems(Collections.emptyList());
     }
-
-    layout.add(grid);
-    return layout;
+    grid.setSizeFull();
+    return grid;
   }
 
-  private VerticalLayout createInjuriesSummary() {
-    VerticalLayout layout = new VerticalLayout();
-    layout.add(new H3("Bumps & Injuries"));
-    if (playerWrestler != null) {
-      Paragraph bumps = new Paragraph("Bumps: " + playerWrestler.getBumps());
-      bumps.setId("wrestler-bumps");
-      layout.add(bumps);
-      if (playerWrestler.getInjuries().isEmpty()) {
-        layout.add(new Paragraph("No current injuries."));
-      } else {
-        playerWrestler
-            .getInjuries()
-            .forEach(
-                injury -> {
-                  layout.add(new Paragraph("- " + injury.getDisplayString()));
-                });
+  private Div createInjuriesSummary() {
+    Div layout = new Div();
+    if (playerWrestler != null && !playerWrestler.getActiveInjuries().isEmpty()) {
+      Span injuriesBadge = createBadge("Injured", "error", "pill");
+
+      VerticalLayout injuriesList = new VerticalLayout();
+      injuriesList.setSpacing(false);
+      injuriesList.setPadding(false);
+
+      for (Injury injury : playerWrestler.getActiveInjuries()) {
+        Span injurySpan = new Span(injury.getDisplayString());
+        injurySpan.getStyle().set("font-size", "var(--lumo-font-size-s)");
+        injuriesList.add(injurySpan);
       }
+      layout.add(new HorizontalLayout(injuriesBadge, injuriesList));
+    } else {
+      Span healthyBadge = createBadge("Healthy", "success", "pill");
+      layout.add(healthyBadge);
     }
     layout.setId("injuries-summary");
     return layout;
+  }
+
+  private Span createBadge(String text, String... themeNames) {
+    Span badge = new Span(text);
+    badge.getElement().getThemeList().add("badge");
+    for (String theme : themeNames) {
+      badge.getElement().getThemeList().add(theme);
+    }
+    return badge;
   }
 }

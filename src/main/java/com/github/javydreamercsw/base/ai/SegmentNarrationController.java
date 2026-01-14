@@ -72,7 +72,7 @@ public class SegmentNarrationController {
   }
 
   private boolean isTestProfile() {
-    return environment.matchesProfiles("test");
+    return environment.matchesProfiles("test", "e2e");
   }
 
   @GetMapping("/limits")

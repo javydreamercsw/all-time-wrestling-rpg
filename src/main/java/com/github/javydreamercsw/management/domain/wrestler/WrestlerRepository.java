@@ -47,6 +47,11 @@ public interface WrestlerRepository
 
   List<Wrestler> findByFansGreaterThanEqual(long minFans);
 
+  List<Wrestler> findAllByActiveTrue();
+
+  List<Wrestler> findAllByGenderAndActive(
+      com.github.javydreamercsw.base.domain.wrestler.Gender gender, boolean active);
+
   Optional<Wrestler> findByAccountUsername(String username);
 
   Optional<Wrestler> findByAccountId(Long accountId);

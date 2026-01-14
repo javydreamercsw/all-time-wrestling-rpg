@@ -268,27 +268,27 @@ public class InboxListenersIntegrationTest extends AbstractIntegrationTest {
     assertEquals(title.getId().toString(), referenceIdCaptor.getValue());
   }
 
-  @Test
   void testChampionshipDefendedEventCreatesInboxItem() {
     ChampionshipDefendedEvent event =
-        new ChampionshipDefendedEvent(this, title, List.of(wrestler1));
+        new ChampionshipDefendedEvent(this, title, List.of(wrestler1), List.of(wrestler2));
     eventPublisher.publishEvent(event);
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<List<String>> referenceIdsCaptor = ArgumentCaptor.forClass(List.class);
 
     verify(inboxService, times(1))
         .createInboxItem(
-            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdCaptor.capture());
+            eventTypeCaptor.capture(), messageCaptor.capture(), referenceIdsCaptor.capture());
 
     assertEquals(championshipDefended, eventTypeCaptor.getValue());
     String expectedMessage =
         String.format(
-            "Champions %s successfully defended title ID %d", wrestler1.getName(), title.getId());
+            "Champion(s) %s successfully defended the %s title against %s!",
+            wrestler1.getName(), title.getName(), wrestler2.getName());
     assertEquals(expectedMessage, messageCaptor.getValue());
-    Assertions.assertNotNull(title.getId());
-    assertEquals(title.getId().toString(), referenceIdCaptor.getValue());
+    Assertions.assertNotNull(wrestler2.getId());
+    assertEquals(List.of(wrestler2.getId().toString()), referenceIdsCaptor.getValue());
   }
 
   @Test

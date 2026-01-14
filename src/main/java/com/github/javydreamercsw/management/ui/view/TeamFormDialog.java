@@ -18,11 +18,14 @@ package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.TeamDTO;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.ModalityMode;
@@ -59,6 +62,7 @@ public class TeamFormDialog extends Dialog {
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final FactionService factionService;
+  private final NpcService npcService;
   private final SecurityUtils securityUtils;
 
   // Form fields
@@ -67,6 +71,7 @@ public class TeamFormDialog extends Dialog {
   private final ComboBox<Wrestler> wrestler1Field;
   private final ComboBox<Wrestler> wrestler2Field;
   private final ComboBox<Faction> factionField;
+  private final ComboBox<Npc> managerField;
   private final ComboBox<TeamStatus> statusField;
 
   // Form components
@@ -84,11 +89,13 @@ public class TeamFormDialog extends Dialog {
       WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       FactionService factionService,
+      NpcService npcService,
       SecurityUtils securityUtils) {
     this.teamService = teamService;
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.factionService = factionService;
+    this.npcService = npcService;
     this.securityUtils = securityUtils;
 
     // Initialize form fields
@@ -97,6 +104,7 @@ public class TeamFormDialog extends Dialog {
     this.wrestler1Field = new ComboBox<>("First Wrestler");
     this.wrestler2Field = new ComboBox<>("Second Wrestler");
     this.factionField = new ComboBox<>("Faction");
+    this.managerField = new ComboBox<>("Manager");
     this.statusField = new ComboBox<>("Status");
 
     // Initialize form components
@@ -124,29 +132,28 @@ public class TeamFormDialog extends Dialog {
     nameField.setRequired(true);
     nameField.setMaxLength(255);
     nameField.setWidthFull();
-    nameField.setReadOnly(!securityUtils.canEdit());
 
     // Configure description field
     descriptionField.setMaxLength(255);
     descriptionField.setWidthFull();
     descriptionField.setHeight("100px");
-    descriptionField.setReadOnly(!securityUtils.canEdit());
 
     // Configure wrestler fields
     wrestler1Field.setRequired(true);
     wrestler1Field.setItemLabelGenerator(Wrestler::getName);
     wrestler1Field.setWidthFull();
-    wrestler1Field.setReadOnly(!securityUtils.canEdit());
 
     wrestler2Field.setRequired(true);
     wrestler2Field.setItemLabelGenerator(Wrestler::getName);
     wrestler2Field.setWidthFull();
-    wrestler2Field.setReadOnly(!securityUtils.canEdit());
 
     // Configure faction field
     factionField.setItemLabelGenerator(Faction::getName);
     factionField.setWidthFull();
-    factionField.setReadOnly(!securityUtils.canEdit());
+
+    // Configure manager field
+    managerField.setItemLabelGenerator(Npc::getName);
+    managerField.setWidthFull();
 
     // Configure status field
     statusField.setItems(
@@ -155,7 +162,6 @@ public class TeamFormDialog extends Dialog {
             .collect(Collectors.toList()));
     statusField.setItemLabelGenerator(TeamStatus::getDisplayName);
     statusField.setWidthFull();
-    statusField.setReadOnly(!securityUtils.canEdit());
 
     // Add validation to prevent same wrestler selection
     wrestler1Field.addValueChangeListener(e -> validateWrestlerSelection());
@@ -163,7 +169,13 @@ public class TeamFormDialog extends Dialog {
 
     // Layout form fields
     formLayout.add(
-        nameField, descriptionField, wrestler1Field, wrestler2Field, factionField, statusField);
+        nameField,
+        descriptionField,
+        wrestler1Field,
+        wrestler2Field,
+        factionField,
+        managerField,
+        statusField);
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
     formLayout.setColspan(nameField, 2);
@@ -173,7 +185,6 @@ public class TeamFormDialog extends Dialog {
   private void configureButtons() {
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveButton.addClickListener(e -> saveTeam());
-    saveButton.setVisible(securityUtils.canEdit());
 
     cancelButton.addClickListener(e -> close());
 
@@ -238,6 +249,24 @@ public class TeamFormDialog extends Dialog {
               }
             });
 
+    // Bind manager field
+    binder
+        .forField(managerField)
+        .bind(
+            dto ->
+                dto.getManagerId() != null
+                    ? npcService.findById(dto.getManagerId()).orElse(null)
+                    : null,
+            (dto, manager) -> {
+              if (manager != null) {
+                dto.setManagerId(manager.getId());
+                dto.setManagerName(manager.getName());
+              } else {
+                dto.setManagerId(null);
+                dto.setManagerName(null);
+              }
+            });
+
     // Bind status field
     binder.forField(statusField).bind(TeamDTO::getStatus, TeamDTO::setStatus);
   }
@@ -267,6 +296,11 @@ public class TeamFormDialog extends Dialog {
         factionService.findAll().stream()
             .sorted(Comparator.comparing(Faction::getName))
             .collect(Collectors.toList()));
+    // Load managers
+    managerField.setItems(
+        npcService.findAllByType("Manager").stream()
+            .sorted(Comparator.comparing(Npc::getName))
+            .collect(Collectors.toList()));
   }
 
   public void setTeam(TeamDTO team) {
@@ -275,19 +309,33 @@ public class TeamFormDialog extends Dialog {
     // Load combo box data
     loadComboBoxData();
 
-    if (team == null) {
+    boolean isNew = team == null;
+    boolean canEdit;
+
+    if (isNew) {
       // New team
       setHeaderTitle("Create New Team");
       TeamDTO newTeam = new TeamDTO();
       newTeam.setStatus(TeamStatus.ACTIVE);
       binder.setBean(newTeam);
       statusField.setVisible(false); // Hide status for new teams
+      canEdit = securityUtils.canCreate();
     } else {
       // Edit existing team
       setHeaderTitle("Edit Team: " + team.getName());
       binder.setBean(team);
       statusField.setVisible(true); // Show status for existing teams
+      Optional<Team> teamEntity = teamService.getTeamById(team.getId());
+      canEdit = securityUtils.canEdit(teamEntity.orElse(null));
     }
+    nameField.setReadOnly(!canEdit);
+    descriptionField.setReadOnly(!canEdit);
+    wrestler1Field.setReadOnly(!canEdit);
+    wrestler2Field.setReadOnly(!canEdit);
+    factionField.setReadOnly(!canEdit);
+    managerField.setReadOnly(!canEdit);
+    statusField.setReadOnly(!canEdit);
+    saveButton.setVisible(canEdit);
   }
 
   private void saveTeam() {
@@ -316,7 +364,8 @@ public class TeamFormDialog extends Dialog {
                 teamToSave.getDescription(),
                 teamToSave.getWrestler1Id(),
                 teamToSave.getWrestler2Id(),
-                teamToSave.getFactionId());
+                teamToSave.getFactionId(),
+                teamToSave.getManagerId());
       } else {
         // Update existing team
         result =
@@ -325,7 +374,8 @@ public class TeamFormDialog extends Dialog {
                 teamToSave.getName(),
                 teamToSave.getDescription(),
                 teamToSave.getStatus(),
-                teamToSave.getFactionId());
+                teamToSave.getFactionId(),
+                teamToSave.getManagerId());
       }
 
       if (result.isPresent()) {

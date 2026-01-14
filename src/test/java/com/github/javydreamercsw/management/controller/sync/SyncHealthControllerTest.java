@@ -34,13 +34,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class SyncHealthControllerTest extends AbstractControllerTest {
 
-  @MockitoBean(name = "testUserInitializer")
-  private CommandLineRunner testUserInitializer;
+  @MockitoBean private ISyncHealthMonitor healthMonitor;
 
   @MockitoBean(name = "recalculateRanking")
   private CommandLineRunner recalculateRanking;
-
-  @MockitoBean private ISyncHealthMonitor healthMonitor;
 
   @Test
   void shouldReturnHealthStatus() throws Exception {

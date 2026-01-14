@@ -54,7 +54,7 @@ jobs:
         cache: maven
 
     - name: Run unit tests with coverage
-      run: mvn -B spotless:apply verify -Pcoverage
+      run: mvn -B verify -Pcoverage -DnvdApiKey=${{ secrets.NVD_API }}
 
     - name: Upload unit test coverage data
       uses: actions/upload-artifact@v4
@@ -125,6 +125,12 @@ jobs:
       uses: browser-actions/setup-chrome@v1
     - name: Run E2E Tests
       run: mvn -B verify -Pe2e
+    - name: Upload E2E test failure artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: e2e-test-failures
+        path: target/test-failures
     - name: Upload E2E test coverage data
       uses: actions/upload-artifact@v4
       with:
@@ -151,6 +157,12 @@ jobs:
       uses: browser-actions/setup-chrome@v1
     - name: Run Notion E2E Tests
       run: mvn -B verify -Pnotion-e2e-test
+    - name: Upload Notion E2E test failure artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: notion-e2e-test-failures
+        path: target/test-failures
     - name: Upload Notion E2E test coverage data
       uses: actions/upload-artifact@v4
       with:

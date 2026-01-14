@@ -25,6 +25,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -36,10 +39,13 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.OutputType;
+import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -71,6 +77,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   @Getter
   private String contextPath;
 
+  private int screenshotCounter = 0;
+  protected Path testArtifactsDir;
+
   protected String getUsername() {
     return "admin";
   }
@@ -80,11 +89,30 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   @BeforeEach
-  public void setup() {
+  public void setup(TestInfo testInfo) {
     WebDriverManager.chromedriver().setup();
     log.info("Waiting for application to be ready on port {}", serverPort);
     waitForAppToBeReady();
     log.info("Application is ready on port {}", serverPort);
+
+    // Create artifact directory
+    screenshotCounter = 0;
+    try {
+      String testClassName =
+          testInfo.getTestClass().map(Class::getSimpleName).orElse("unknown-class");
+      String testMethodName =
+          testInfo.getTestMethod().map(java.lang.reflect.Method::getName).orElse("unknown-method");
+      testArtifactsDir = Paths.get("target", "test-failures", testClassName, testMethodName);
+      // Clean up directory from previous runs
+      if (Files.exists(testArtifactsDir)) {
+        FileUtils.cleanDirectory(testArtifactsDir.toFile());
+      }
+      Files.createDirectories(testArtifactsDir);
+    } catch (IOException e) {
+      log.error("Unable to create test artifact directory", e);
+      testArtifactsDir = null; // So we don't try to use it
+    }
+
     ChromeOptions options = new ChromeOptions();
     if (isHeadless()) {
       options.addArguments("--headless=new");
@@ -96,12 +124,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     options.addArguments("--reduce-security-for-testing");
 
     driver = new ChromeDriver(options);
+    login();
+  }
+
+  protected void login() {
     login(getUsername(), getPassword());
   }
 
   protected void login(@NonNull String username, @NonNull String password) {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
     waitForAppToBeReady();
+    takeSequencedScreenshot("on-login-page");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement loginFormHost =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
@@ -109,15 +142,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     usernameField.sendKeys(username);
     WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
     passwordField.sendKeys(password);
+    takeSequencedScreenshot("after-filling-credentials");
     WebElement signInButton =
         loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
     clickElement(signInButton);
     waitForAppToBeReady();
     try {
       wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("login")));
+      takeSequencedScreenshot("after-successful-login");
     } catch (Exception e) {
       log.error("Login failed for user: {}", username);
       log.error("Current URL: {}", driver.getCurrentUrl());
+      takeSequencedScreenshot("on-login-failure");
       try {
         WebElement error = loginFormHost.findElement(By.cssSelector("div[part='error-message']"));
         if (error.isDisplayed()) {
@@ -135,6 +171,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     if (driver != null) {
       driver.quit();
     }
+    // Clear the system property after each test to ensure isolation
+    System.clearProperty("simulateFailure");
   }
 
   protected boolean isHeadless() {
@@ -187,11 +225,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    * @param driver the WebDriver instance
    */
   protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-grid")));
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
+    takeSequencedScreenshot("before-wait-for-element");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
@@ -228,11 +266,25 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    */
   protected void clickElement(@NonNull WebElement element) {
     scrollIntoView(element);
+    takeSequencedScreenshot("before-click");
     // First, wait for the element to be clickable.
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     wait.until(ExpectedConditions.elementToBeClickable(element));
     // Then, use JavaScript to click to bypass potential interception by other elements.
     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+    takeSequencedScreenshot("after-click");
+  }
+
+  protected void click(@NonNull String tagName, @NonNull String text) {
+    try {
+      WebElement element =
+          waitForVaadinElement(driver, By.xpath("//" + tagName + "[text()='" + text + "']"));
+      clickElement(element);
+    } catch (Exception e) {
+      WebElement element =
+          waitForVaadinElement(driver, By.xpath("//div[@role='tab'][text()='" + text + "']"));
+      clickElement(element);
+    }
   }
 
   /**
@@ -252,7 +304,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    */
   protected void selectFromVaadinComboBox(@NonNull WebElement comboBox, @NonNull String itemText) {
     // Click the combo box to open it
-    comboBox.click();
+    clickElement(comboBox);
 
     // Wait for the overlay to appear and the item to be clickable
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -263,8 +315,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
     // Click the item (item is guaranteed to be non-null by wait.until)
     if (item != null) {
-      item.click();
+      clickElement(item);
     }
+    takeSequencedScreenshot("after-select");
+  }
+
+  protected void selectFromVaadinComboBox(@NonNull String comboBoxId, @NonNull String itemText) {
+    WebElement comboBox = waitForVaadinElement(driver, By.id(comboBoxId));
+    selectFromVaadinComboBox(comboBox, itemText);
   }
 
   /**
@@ -312,6 +370,15 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected List<WebElement> getGridRows(@NonNull String gridId) {
     WebElement grid = waitForVaadinElement(driver, By.id(gridId));
     return getGridRows(grid);
+  }
+
+  protected void takeSequencedScreenshot(@NonNull String context) {
+    if (driver != null && testArtifactsDir != null) {
+      screenshotCounter++;
+      String screenshotName = String.format("%03d-%s.png", screenshotCounter, context);
+      Path destFile = testArtifactsDir.resolve(screenshotName);
+      takeScreenshot(destFile.toString());
+    }
   }
 
   protected void takeScreenshot(@NonNull String filePath) {
@@ -427,5 +494,46 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     waitForVaadinElement(driver, By.id("logout-button"));
     WebElement logoutButton = driver.findElement(By.id("logout-button"));
     clickElement(logoutButton);
+  }
+
+  protected void clearField(@NonNull WebElement field) {
+    takeSequencedScreenshot("before-clear");
+
+    // Determine the correct modifier key for the current OS
+    String os = System.getProperty("os.name").toLowerCase();
+    Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
+
+    // Use keyboard shortcuts to clear the field, as .clear() is unreliable with Vaadin
+    String selectAll = Keys.chord(modifier, "a");
+    field.sendKeys(selectAll);
+    field.sendKeys(Keys.BACK_SPACE);
+    takeSequencedScreenshot("after-clear");
+  }
+
+  protected String getVaadinTextFieldErrorMessage(@NonNull String textFieldId) {
+    WebElement textFieldElement = driver.findElement(By.id(textFieldId));
+
+    // Check if the field is invalid
+    Boolean isInvalid =
+        (Boolean)
+            ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].hasAttribute('invalid');", textFieldElement);
+
+    if (isInvalid) {
+      // Access the shadow root of the vaadin-text-field
+      SearchContext shadowRoot = textFieldElement.getShadowRoot();
+
+      // Find the error message element within the shadow root
+      List<WebElement> errorMessageElements =
+          shadowRoot.findElements(By.cssSelector("[part='error-message']"));
+
+      if (!errorMessageElements.isEmpty()) {
+        WebElement errorMessageElement = errorMessageElements.get(0);
+        if (errorMessageElement.isDisplayed()) {
+          return errorMessageElement.getText();
+        }
+      }
+    }
+    return null; // Or throw an exception if the field is not invalid
   }
 }

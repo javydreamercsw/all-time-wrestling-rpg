@@ -174,7 +174,7 @@ public class ShowPlanningDtoMapper {
     }
     dto.setMembers(
         faction.getMembers().stream().map(Wrestler::getName).collect(Collectors.toList()));
-    dto.setIsActive(faction.getIsActive());
+    dto.setIsActive(faction.isActive());
     if (faction.getFormedDate() != null) {
       dto.setFormedDate(faction.getFormedDate().toString());
     }

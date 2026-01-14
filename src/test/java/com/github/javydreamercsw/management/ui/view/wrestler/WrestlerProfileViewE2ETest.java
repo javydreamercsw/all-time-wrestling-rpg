@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
@@ -25,6 +26,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.feud.FeudRole;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -39,6 +41,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import java.time.Duration;
 import java.time.Instant;
@@ -62,6 +65,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
   @Autowired private ShowRepository showRepository;
   @Autowired private SegmentTypeService segmentTypeService;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
+  @Autowired private NpcService npcService;
 
   private Wrestler testWrestler;
 
@@ -129,6 +133,9 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     WebElement wrestlerDetails = driver.findElement(By.tagName("p"));
     assertTrue(wrestlerDetails.getText().contains("Gender: " + testWrestler.getGender()));
     assertTrue(wrestlerDetails.getText().contains("Fans: " + testWrestler.getFans()));
+
+    // Verify that manager is not displayed
+    assertTrue(driver.findElements(By.id("manager-name")).isEmpty());
   }
 
   @Test
@@ -234,5 +241,92 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     wait.until(
         ExpectedConditions.textToBePresentInElementLocated(
             By.xpath("//vaadin-grid-cell-content[text()='Test Title']"), "Test Title"));
+  }
+
+  @Test
+  void testManagerIsDisplayed() {
+    // Given
+    Npc manager = new Npc();
+    manager.setName("Test Manager");
+    manager.setNpcType("Manager");
+    manager = npcService.save(manager);
+
+    Wrestler wrestlerWithManager = TestUtils.createWrestler("Managed Wrestler");
+    wrestlerWithManager.setManager(manager);
+    wrestlerWithManager = wrestlerRepository.saveAndFlush(wrestlerWithManager);
+
+    // When
+    driver.get(
+        "http://localhost:"
+            + serverPort
+            + getContextPath()
+            + "/wrestler-profile/"
+            + wrestlerWithManager.getId());
+
+    // Then
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebElement managerName =
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("manager-name")));
+    assertEquals("Managed by: Test Manager", managerName.getText());
+  }
+
+  @Test
+  void testTitleHistoryIsVisible() {
+    // Given
+    Wrestler wrestler1 =
+        wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Champion Wrestler"));
+
+    Title title =
+        titleService.createTitle(
+            "World Title", "The top title", WrestlerTier.MAIN_EVENTER, ChampionshipType.SINGLE);
+
+    Season season = seasonService.createSeason("History Season", "Season for history", 10);
+    Show show =
+        showService.createShow(
+            "SuperShow",
+            "Big Event",
+            showTypeRepository.findByName("Weekly").get().getId(),
+            null,
+            season.getId(),
+            null);
+
+    SegmentType matchType = segmentTypeService.findByName("One on One").get();
+    Segment segment =
+        segmentService.createSegment(show, matchType, Instant.now().minusSeconds(1000));
+    segment.addParticipant(wrestler1);
+    segment.setWinners(List.of(wrestler1));
+    segment = segmentRepository.saveAndFlush(segment);
+
+    // Award title at the segment
+    title.awardTitleTo(List.of(wrestler1), Instant.now().minusSeconds(500), segment);
+    titleRepository.saveAndFlush(title);
+
+    // When
+    driver.get(
+        "http://localhost:"
+            + serverPort
+            + getContextPath()
+            + "/wrestler-profile/"
+            + wrestler1.getId());
+
+    // Then
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    wait.until(
+        ExpectedConditions.visibilityOfElementLocated(By.xpath("//h3[text()='Title History']")));
+
+    // Verify timeline presence
+    assertNotNull(waitForVaadinElement(driver, By.xpath("//span[text()='CURRENT']")));
+
+    // Verify card presence
+    assertNotNull(waitForVaadinElement(driver, By.xpath("//span[text()='World Title']")));
+
+    // Verify match link
+    WebElement link =
+        waitForVaadinElement(driver, By.xpath("//a[contains(text(), 'Won at: SuperShow')]"));
+    assertNotNull(link);
+
+    // Click and verify navigation
+    clickElement(link);
+    wait.until(ExpectedConditions.urlContains("show-detail/" + show.getId()));
   }
 }

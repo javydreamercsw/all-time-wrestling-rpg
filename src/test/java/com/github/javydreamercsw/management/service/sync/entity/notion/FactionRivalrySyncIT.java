@@ -90,7 +90,7 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
         createTestWrestler("Member 1 for Faction 1"); // This creates and saves managed wrestler
     Faction f1 = new Faction();
     f1.setName(faction1Name);
-    f1.setIsActive(true);
+    f1.setActive(true);
     f1.addMember(member1Faction1); // Add managed wrestler to faction
     factionRepository.saveAndFlush(f1); // Save or merge the faction with its managed members
 
@@ -98,7 +98,7 @@ class FactionRivalrySyncIT extends ManagementIntegrationTest {
     Wrestler member1Faction2 = createTestWrestler("Member 1 for Faction 2");
     Faction f2 = new Faction();
     f2.setName(faction2Name);
-    f2.setIsActive(true);
+    f2.setActive(true);
     f2.addMember(member1Faction2);
     factionRepository.saveAndFlush(f2);
 

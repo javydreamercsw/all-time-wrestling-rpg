@@ -45,7 +45,8 @@ You can also start the application from the command line by running:
 
 The application will be available at `http://localhost:8080/atw-rpg`.
 
-For more detailed instructions, see the [Vaadin Getting Started Guide](https://vaadin.com/docs/latest/getting-started).
+For project-specific startup instructions, see the [Application Startup Guide](./docs/STARTUP_GUIDE.md).
+For general Vaadin information, see the [Vaadin Getting Started Guide](https://vaadin.com/docs/latest/getting-started).
 
 ## Features
 
@@ -57,7 +58,7 @@ You can now reorder segments within a show and designate one segment as the main
 
 **How to use:**
 
-1.  **Navigate to the Show Details page:** From the "Show List" view, click on a show to open its details.
+1.  **Navigate to the Show Details page:** From the "ShowList" view, click on a show to open its details.
 2.  **Drag and drop to reorder:** In the "Segments" grid, you can now drag and drop segment rows to change their order.
 3.  **Set the main event:** Each segment row has a "Main Event" checkbox. Select the checkbox for the segment you want to mark as the main event.
 
@@ -76,6 +77,29 @@ Crucially, wrestlers who have surpassed the typical fan cap for a given title's 
 Fan acquisition and loss mechanics have been refined to ensure a more balanced and realistic progression for wrestlers:
 *   **Gaining Fans:** Wrestlers gain fans by winning matches and delivering successful promos. The amount of fans gained can be influenced by the wrestler's current tier, with higher tiers potentially experiencing diminishing returns to prevent runaway fan inflation.
 *   **Losing Fans:** A significant change is the introduction of fan loss for match losers. Previously, all participants would gain fans. Now, wrestlers who lose a match may experience a decrease in their fan count, or at best a minimal gain, depending on the match quality and their performance. This adds a layer of consequence to match outcomes and helps to naturally regulate fan numbers across the roster.
+
+### Season Management
+
+At the end of each season, you have the option to perform a "soft reset" of your roster's fan standings and tier definitions. This helps keep the game balanced and provides a fresh start for the new season. These actions are available in the **Season Settings** view.
+
+#### Fan Recalibration
+
+The fan recalibration process adjusts wrestler fan counts to prepare for the next season:
+
+*   **Icons Demoted:** Wrestlers in the "Icon" tier are demoted to the "Main Eventer" tier.
+*   **Fan Count Adjustment:** All wrestlers, including the demoted Icons, will have their fan counts recalibrated to the minimum fan count required for their new or existing tier. This ensures that wrestlers are appropriately positioned within their tiers at the start of a new season.
+
+This process helps to prevent fan counts from becoming excessively inflated over time and ensures that the top tiers of the roster remain competitive.
+
+#### Tier Boundary Reset
+
+You can reset the fan count boundaries for each wrestler tier back to their default values. This is useful if you have made adjustments to the tier boundaries during a season and want to revert to the standard configuration for the next season.
+
+This ensures that the progression through the tiers remains consistent from season to season, unless you choose to make specific adjustments.
+
+#### Full Fan Count Reset
+
+For a more drastic reset, you can use the "Full Fan Count Reset" option. This will reset all wrestler fan counts to 0 and their tier to ROOKIE. This is useful for starting a completely new game or when you want to level the playing field entirely.
 
 ### Segment Rules
 
@@ -122,6 +146,8 @@ notion.sync.backup.enabled=true
 
 To enable the feature, you need to provide a Notion API token via the `NOTION_TOKEN` environment variable.
 
+For troubleshooting assistance, please refer to the [Notion Sync Troubleshooting Guide](./docs/SYNC_TROUBLESHOOTING.md).
+
 ## Development
 
 This section contains information for developers contributing to the project.
@@ -165,15 +191,12 @@ To run the application using Docker, you need to provide the required environmen
 	```bash
 	docker run -p 9090:9090 \
 	-v /path/to/your/data:/data \
-	-e GEMINI_API_KEY="<your_gemini_key>" \
-	-e OPENAI_API_KEY="<your_openai_key>" \
 	-e NOTION_TOKEN="<your_notion_token>" \
-	all-time-wrestling-rpg
-	```
+	all-time-wrestling-rpg	```
 
 	*   `-p 9090:9090`: Maps the container's port 9090 to the host's port 9090.
 	*   `-v /path/to/your/data:/data`: Mounts a directory from your host machine to the `/data` directory inside the container. This is where the H2 database file will be stored, ensuring data persistence. Replace `/path/to/your/data` with the absolute path on your host machine.
-	*   `-e`: Sets the environment variables required for the AI and Notion integrations.
+	*   `-e`: Sets the environment variables required for Notion integration. AI API keys are configured in-application.
 
 	The application will be accessible at `http://localhost:9090/atw-rpg`.
 
@@ -203,16 +226,13 @@ You can also deploy the application to a standalone Tomcat server.
 
 	```bash
 	#!/bin/bash
-	export GEMINI_API_KEY="<your_gemini_key>"
-	export OPENAI_API_KEY="<your_openai_key>"
 	export NOTION_TOKEN="<your_notion_token>"
 	# Use a file-based database for persistence
 	export SPRING_DATASOURCE_URL="jdbc:h2:file:/path/to/your/database/atwrpg;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
 	export SPRING_DATASOURCE_USERNAME="sa"
 	export SPRING_DATASOURCE_PASSWORD=""
-	export SPRING_H2_CONSOLE_ENABLED="true"
-	```
-	Replace the placeholder values with your actual keys and desired database path.
+	export SPRING_H2_CONSOLE_ENABLED="true"	```
+	Replace the placeholder values with your actual Notion token and desired database path. AI API keys are configured in-application.
 
 4.  **Start Tomcat**:
 

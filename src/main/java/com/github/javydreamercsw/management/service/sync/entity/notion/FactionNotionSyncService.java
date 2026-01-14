@@ -17,23 +17,19 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.NonNull;
 import notion.api.v1.NotionClient;
-import notion.api.v1.model.common.PropertyType;
-import notion.api.v1.model.common.RichTextType;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageParent;
 import notion.api.v1.model.pages.PageProperty;
@@ -77,102 +73,22 @@ public class FactionNotionSyncService implements NotionSyncService {
                     operationId,
                     1,
                     String.format(
-                        "Saving %s to Notion... (%%d/%%d processedCount)",
+                        "Saving %s to Notion... (%d/%d processedCount)",
                         SyncEntityType.FACTIONS.getKey(), processedCount, entities.size()));
               }
               try {
                 Map<String, PageProperty> properties = new HashMap<>();
                 properties.put(
-                    "Name",
-                    new PageProperty(
-                        UUID.randomUUID().toString(),
-                        PropertyType.Title,
-                        Collections.singletonList(
-                            new PageProperty.RichText(
-                                RichTextType.Text,
-                                new PageProperty.RichText.Text(entity.getName()),
-                                null,
-                                null,
-                                null,
-                                null,
-                                null)),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
-                if (entity.getIsActive() != null) {
+                    "Name", NotionPropertyBuilder.createRichTextProperty(entity.getName()));
+                if (entity.isActive()) {
                   properties.put(
-                      "Active",
-                      new PageProperty(
-                          UUID.randomUUID().toString(),
-                          PropertyType.Checkbox,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          entity.getIsActive(),
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null));
+                      "Active", NotionPropertyBuilder.createCheckboxProperty(entity.isActive()));
                 }
                 if (entity.getLeader() != null && entity.getLeader().getExternalId() != null) {
-                  List<PageProperty.PageReference> relations = new ArrayList<>();
-                  relations.add(new PageProperty.PageReference(entity.getLeader().getExternalId()));
                   properties.put(
                       "Leader",
-                      new PageProperty(
-                          UUID.randomUUID().toString(),
-                          PropertyType.Relation,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          relations,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                          null));
+                      NotionPropertyBuilder.createRelationProperty(
+                          entity.getLeader().getExternalId()));
                 }
 
                 if (entity.getExternalId() != null && !entity.getExternalId().isBlank()) {

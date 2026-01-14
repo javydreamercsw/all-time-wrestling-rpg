@@ -38,7 +38,7 @@ public class SeasonPage extends NotionPage {
 
   @Data
   @EqualsAndHashCode(callSuper = false)
-  static class NotionParent extends NotionPage.NotionParent {
+  public static class NotionParent extends NotionPage.NotionParent {
     // Season-specific parent properties (if any)
   }
 }

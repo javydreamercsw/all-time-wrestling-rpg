@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto.rivalry;
 
-import com.github.javydreamercsw.management.dto.wrestler.WrestlerDTO;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import java.io.Serializable;
 import java.time.Instant;
 import lombok.Data;

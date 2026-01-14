@@ -45,11 +45,10 @@ class ShowTemplateControllerTest extends AbstractControllerTest {
   @MockitoBean private ShowTemplateService showTemplateService;
 
   private ShowTemplate testTemplate;
-  private ShowType testShowType;
 
   @BeforeEach
   void setUp() {
-    testShowType = new ShowType();
+    ShowType testShowType = new ShowType();
     testShowType.setName("PLE");
 
     testTemplate = new ShowTemplate();

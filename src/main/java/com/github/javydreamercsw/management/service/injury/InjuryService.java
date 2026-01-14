@@ -53,6 +53,9 @@ public class InjuryService {
 
   /** Create a new injury for a wrestler. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
+      allEntries = true)
   public Optional<Injury> createInjury(
       Long wrestlerId,
       String name,
@@ -86,6 +89,9 @@ public class InjuryService {
    * injury should be created (bumps already reset by Wrestler.addBump()).
    */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
+      allEntries = true)
   public Optional<Injury> createInjuryFromBumps(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -118,12 +124,18 @@ public class InjuryService {
 
   /** Attempt to heal an injury. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
+      allEntries = true)
   public HealingResult attemptHealing(@NonNull Long injuryId) {
     return attemptHealing(injuryId, null);
   }
 
   /** Attempt to heal an injury. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
+      allEntries = true)
   public HealingResult attemptHealing(@NonNull Long injuryId, Integer diceRoll) {
     Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
 
@@ -175,6 +187,9 @@ public class InjuryService {
   /** Get injury by ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
+      key = "#injuryId")
   public Optional<Injury> getInjuryById(@NonNull Long injuryId) {
     return injuryRepository.findById(injuryId);
   }
@@ -189,6 +204,9 @@ public class InjuryService {
   /** Get active injuries for a wrestler. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
+      key = "'activeForWrestler:' + #wrestlerId")
   public List<Injury> getActiveInjuriesForWrestler(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -199,6 +217,9 @@ public class InjuryService {
   /** Get all injuries for a wrestler. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
+      key = "'allForWrestler:' + #wrestlerId")
   public List<Injury> getAllInjuriesForWrestler(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -209,6 +230,9 @@ public class InjuryService {
   /** Get injuries by severity. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
+      key = "#severity")
   public List<Injury> getInjuriesBySeverity(@NonNull InjurySeverity severity) {
     return injuryRepository.findBySeverity(severity);
   }
@@ -216,6 +240,9 @@ public class InjuryService {
   /** Get all active injuries. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
+      key = "'allActive'")
   public List<Injury> getAllActiveInjuries() {
     return injuryRepository.findAllActiveInjuries();
   }
@@ -246,6 +273,9 @@ public class InjuryService {
 
   /** Update injury information. */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
+      allEntries = true)
   public Optional<Injury> updateInjury(
       @NonNull Long injuryId, String name, String description, String injuryNotes) {
     return injuryRepository
