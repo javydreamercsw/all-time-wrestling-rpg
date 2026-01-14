@@ -17,23 +17,28 @@
 package com.github.javydreamercsw.base.config.db;
 
 import javax.sql.DataSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 
 @Configuration
 @Profile("mysql")
 public class MySQLDataSourceConfig implements DataSourceConfig {
+
+  @Autowired private Environment env;
 
   @Bean
   @Override
   public DataSource dataSource() {
     DataSourceBuilder<?> dataSourceBuilder = DataSourceBuilder.create();
     dataSourceBuilder.driverClassName("com.mysql.cj.jdbc.Driver");
-    dataSourceBuilder.url("jdbc:mysql://localhost:3306/atw_rpg");
-    dataSourceBuilder.username("root");
-    dataSourceBuilder.password("password");
+    dataSourceBuilder.url(
+        env.getProperty("spring.datasource.url", "jdbc:mysql://localhost:3306/atw_rpg"));
+    dataSourceBuilder.username(env.getProperty("spring.datasource.username", "root"));
+    dataSourceBuilder.password(env.getProperty("spring.datasource.password", "password"));
     return dataSourceBuilder.build();
   }
 }
