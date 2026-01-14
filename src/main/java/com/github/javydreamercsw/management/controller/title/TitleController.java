@@ -33,6 +33,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -144,7 +145,7 @@ public class TitleController {
 
     List<Wrestler> wrestlers =
         wrestlerIds.stream()
-            .map(wrestlerService::findById)
+            .map(wrestlerRepository::findById)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toList());
