@@ -8,10 +8,10 @@
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Data Layer' (Protocol in workflow.md)
 
 ## Phase 2: Reusable UI Components
-- [ ] Task 2.1: Develop a `HistoryTimelineComponent` in Vaadin to provide a visual graphical sequence of holders/titles.
-- [ ] Task 2.2: Develop a `ReignCardComponent` for detailed, expandable display of individual reigns, including match references.
-- [ ] Task 2.3: Implement the Tooltip and Navigation logic to allow match references to show summaries on hover and redirect on click.
-- [ ] Task 2.4: Write Component Tests (using Karibu-Testing) to verify UI behavior and data binding.
+- [x] Task 2.1: Develop a `HistoryTimelineComponent` in Vaadin to provide a visual graphical sequence of holders/titles. [9164cb6]
+- [x] Task 2.2: Develop a `ReignCardComponent` for detailed, expandable display of individual reigns, including match references. [9164cb6]
+- [x] Task 2.3: Implement the Tooltip and Navigation logic to allow match references to show summaries on hover and redirect on click. [9164cb6]
+- [x] Task 2.4: Write Component Tests (using Karibu-Testing) to verify UI behavior and data binding. [9164cb6]
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Reusable UI Components' (Protocol in workflow.md)
 
 ## Phase 3: Wrestler Profile Integration
