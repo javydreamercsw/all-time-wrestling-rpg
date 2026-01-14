@@ -28,17 +28,22 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
+import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
@@ -78,6 +83,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final TitleService titleService;
+  private final RankingService rankingService;
   private final SegmentService segmentService;
   private final MultiWrestlerFeudService multiWrestlerFeudService;
   private final RivalryService rivalryService;
@@ -93,6 +99,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout statsLayout = new VerticalLayout();
   private final VerticalLayout biographyLayout = new VerticalLayout();
   private final VerticalLayout careerHighlightsLayout = new VerticalLayout();
+  private final VerticalLayout titleHistoryLayout = new VerticalLayout();
   private final VerticalLayout recentMatchesLayout = new VerticalLayout();
   private final VerticalLayout injuriesLayout = new VerticalLayout();
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
@@ -107,6 +114,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       WrestlerService wrestlerService,
       WrestlerRepository wrestlerRepository,
       TitleService titleService,
+      RankingService rankingService,
       SegmentService segmentService,
       MultiWrestlerFeudService multiWrestlerFeudService,
       RivalryService rivalryService,
@@ -117,6 +125,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
+    this.rankingService = rankingService;
     this.segmentService = segmentService;
     this.multiWrestlerFeudService = multiWrestlerFeudService;
     this.rivalryService = rivalryService;
@@ -196,6 +205,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         header,
         biographyLayout,
         careerHighlightsLayout,
+        titleHistoryLayout,
         injuriesLayout,
         seasonFilter,
         recentMatchesLayout,
@@ -285,6 +295,22 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         careerHighlightsLayout.add(new Paragraph("No titles won yet."));
       } else {
         titlesWon.forEach(title -> careerHighlightsLayout.add(new Paragraph(title.getName())));
+      }
+
+      // Title History
+      titleHistoryLayout.removeAll();
+      titleHistoryLayout.add(new H3("Title History"));
+      List<TitleReignDTO> history = rankingService.getWrestlerTitleHistory(wrestler.getId());
+      if (history.isEmpty()) {
+        titleHistoryLayout.add(new Paragraph("No title history available."));
+      } else {
+        titleHistoryLayout.add(new HistoryTimelineComponent(history));
+
+        Div cardsContainer = new Div();
+        cardsContainer.addClassNames(
+            LumoUtility.Display.FLEX, LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.SMALL);
+        history.forEach(reign -> cardsContainer.add(new ReignCardComponent(reign)));
+        titleHistoryLayout.add(cardsContainer);
       }
 
       // Bumps and Injuries

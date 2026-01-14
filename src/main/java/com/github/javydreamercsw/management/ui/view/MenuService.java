@@ -97,17 +97,9 @@ public class MenuService {
     MenuItem configuration = new MenuItem("Configuration", VaadinIcon.COG, null, RoleName.ADMIN);
     configuration.addChild(
         new MenuItem("Sync Dashboard", VaadinIcon.REFRESH, "notion-sync", RoleName.ADMIN));
+    configuration.addChild(
+        new MenuItem("Data Transfer", VaadinIcon.EXCHANGE, "data-transfer", RoleName.ADMIN));
     configuration.addChild(new MenuItem("Admin", VaadinIcon.TOOLS, "admin", RoleName.ADMIN));
-    configuration.addChild(
-        new MenuItem("Game Settings", VaadinIcon.COGS, "game-settings", RoleName.ADMIN));
-    configuration.addChild(
-        new MenuItem("AI Settings", VaadinIcon.TOOLS, "ai-settings", RoleName.ADMIN));
-    configuration.addChild(
-        new MenuItem(
-            "Season Settings", VaadinIcon.CALENDAR_CLOCK, "season/settings", RoleName.ADMIN));
-    configuration.addChild(
-        new MenuItem(
-            "Holiday Settings", VaadinIcon.CALENDAR_BRIEFCASE, "holidays", RoleName.ADMIN));
 
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);

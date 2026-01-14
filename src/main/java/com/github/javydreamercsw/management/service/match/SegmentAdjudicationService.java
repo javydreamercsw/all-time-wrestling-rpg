@@ -150,9 +150,9 @@ public class SegmentAdjudicationService {
           List<Wrestler> currentChampions = title.getCurrentChampions();
           if (new HashSet<>(winners).containsAll(currentChampions)) {
             eventPublisher.publishEvent(
-                new ChampionshipDefendedEvent(this, title, currentChampions));
+                new ChampionshipDefendedEvent(this, title, currentChampions, losers));
           } else {
-            titleService.awardTitleTo(title, winners);
+            titleService.awardTitleTo(title, winners, segment);
             eventPublisher.publishEvent(
                 new ChampionshipChangeEvent(this, title, currentChampions, winners));
           }

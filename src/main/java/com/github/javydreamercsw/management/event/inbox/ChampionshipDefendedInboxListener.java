@@ -56,11 +56,18 @@ public class ChampionshipDefendedInboxListener
     String champions =
         event.getChampions().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
 
+    String challengers =
+        event.getChallengers().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
+
     String message =
         String.format(
-            "Champion(s) %s successfully defended the %s title!", champions, event.getTitleName());
+            "Champion(s) %s successfully defended the %s title against %s!",
+            champions, event.getTitleName(), challengers);
 
-    inboxService.createInboxItem(championshipDefended, message, event.getTitleId().toString());
+    inboxService.createInboxItem(
+        championshipDefended,
+        message,
+        event.getChallengers().stream().map(w -> w.getId().toString()).toList());
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

@@ -21,18 +21,28 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.ui.view.AiSettingsView;
+import com.github.javydreamercsw.management.ui.view.GameSettingsView;
+import com.github.javydreamercsw.management.ui.view.holiday.HolidayListView;
+import com.github.javydreamercsw.management.ui.view.season.SeasonSettingsView;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.Tab;
+import com.vaadin.flow.component.tabs.Tabs;
+import com.vaadin.flow.di.Instantiator;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 @Route("admin")
@@ -40,7 +50,7 @@ import lombok.extern.slf4j.Slf4j;
 @Menu(order = 11, icon = "vaadin:tools", title = "Admin")
 @RolesAllowed(ADMIN_ROLE)
 @Slf4j
-public class AdminView extends Main {
+public class AdminView extends VerticalLayout {
 
   private final RankingService rankingService;
   private final WrestlerRepository wrestlerRepository;
@@ -58,9 +68,66 @@ public class AdminView extends Main {
         LumoUtility.FlexDirection.COLUMN,
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Gap.MEDIUM);
+    setSizeFull();
 
     add(new ViewToolbar("Admin Tools"));
 
+    Tabs tabs = createTabs();
+    Div pages = createPages(tabs);
+
+    add(tabs, pages);
+    setFlexGrow(1, pages);
+  }
+
+  private Tabs createTabs() {
+    return new Tabs(
+        new Tab("Admin Tools"),
+        new Tab("AI Settings"),
+        new Tab("Game Settings"),
+        new Tab("Holidays"),
+        new Tab("Season Settings"));
+  }
+
+  private Div createPages(Tabs tabs) {
+    Instantiator instantiator = VaadinService.getCurrent().getInstantiator();
+    VerticalLayout adminToolsPage = createAdminToolsPage();
+    adminToolsPage.setSizeFull();
+
+    AiSettingsView aiSettingsView = instantiator.getOrCreate(AiSettingsView.class);
+    GameSettingsView gameSettingsView = instantiator.getOrCreate(GameSettingsView.class);
+    HolidayListView holidayListView = instantiator.getOrCreate(HolidayListView.class);
+    SeasonSettingsView seasonSettingsView = instantiator.getOrCreate(SeasonSettingsView.class);
+
+    Div pages =
+        new Div(
+            adminToolsPage, aiSettingsView, gameSettingsView, holidayListView, seasonSettingsView);
+    pages.setSizeFull();
+
+    Map<Tab, Component> tabsToPages =
+        Map.of(
+            tabs.getTabAt(0), adminToolsPage,
+            tabs.getTabAt(1), aiSettingsView,
+            tabs.getTabAt(2), gameSettingsView,
+            tabs.getTabAt(3), holidayListView,
+            tabs.getTabAt(4), seasonSettingsView);
+
+    tabs.addSelectedChangeListener(
+        event -> {
+          tabsToPages.values().forEach(page -> page.setVisible(false));
+          Component selectedPage = tabsToPages.get(tabs.getSelectedTab());
+          selectedPage.setVisible(true);
+        });
+
+    // Hide all pages except the first one
+    tabsToPages.values().stream().skip(1).forEach(page -> page.setVisible(false));
+
+    // Show the first page initially.
+    tabsToPages.get(tabs.getTabAt(0)).setVisible(true);
+
+    return pages;
+  }
+
+  private VerticalLayout createAdminToolsPage() {
     VerticalLayout content = new VerticalLayout();
     content.addClassNames(
         LumoUtility.Padding.MEDIUM,
@@ -96,6 +163,6 @@ public class AdminView extends Main {
     manageAccountsButton.addClickListener(event -> UI.getCurrent().navigate("/account-list"));
 
     content.add(recalculateTiersButton, manageAccountsButton);
-    add(content);
+    return content;
   }
 }

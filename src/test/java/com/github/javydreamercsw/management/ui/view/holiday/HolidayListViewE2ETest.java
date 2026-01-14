@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.Holiday;
-import com.github.javydreamercsw.management.domain.HolidayRepository;
 import com.github.javydreamercsw.management.domain.HolidayType;
 import com.github.javydreamercsw.management.service.HolidayService;
 import java.time.Duration;
@@ -42,7 +41,6 @@ import org.springframework.transaction.annotation.Transactional;
 class HolidayListViewE2ETest extends AbstractE2ETest {
 
   @Autowired private HolidayService holidayService;
-  @Autowired private HolidayRepository holidayRepository;
 
   private WebDriverWait wait;
 
@@ -54,7 +52,9 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateFixedHoliday() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+
+    click("vaadin-tab", "Holidays");
 
     long initialSize = holidayService.findAll().size();
 
@@ -106,7 +106,9 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateFloatingHoliday() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+
+    click("vaadin-tab", "Holidays");
 
     long initialSize = holidayService.findAll().size();
 
@@ -168,7 +170,9 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     holiday.setDayOfMonth(1);
     holidayService.save(holiday);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+
+    click("vaadin-tab", "Holidays");
 
     // Find the edit button for the holiday
     WebElement editButton =
@@ -218,7 +222,9 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     holiday.setDayOfMonth(2);
     holidayService.save(holiday);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/holidays");
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+
+    click("vaadin-tab", "Holidays");
 
     long initialSize = holidayService.findAll().size();
 

@@ -76,6 +76,9 @@ public class ShowTemplateService {
    * @return The saved show template
    */
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      allEntries = true)
   public ShowTemplate save(@NonNull ShowTemplate showTemplate) {
     showTemplate.setCreationDate(clock.instant());
     return showTemplateRepository.saveAndFlush(showTemplate);
@@ -87,6 +90,9 @@ public class ShowTemplateService {
    * @return List of all show templates
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      key = "'all'")
   public List<ShowTemplate> findAll() {
     return showTemplateRepository.findAllWithShowType();
   }
@@ -98,6 +104,9 @@ public class ShowTemplateService {
    * @return Optional containing the show template if found
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      key = "#name")
   public Optional<ShowTemplate> findByName(@NonNull String name) {
     return showTemplateRepository.findByName(name);
   }
@@ -125,6 +134,9 @@ public class ShowTemplateService {
    * @return Optional containing the show template if found
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      key = "#id")
   public Optional<ShowTemplate> findById(@NonNull Long id) {
     return showTemplateRepository.findById(id);
   }
@@ -135,6 +147,9 @@ public class ShowTemplateService {
    * @return List of PLE templates
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      key = "'ple'")
   public List<ShowTemplate> getPremiumLiveEventTemplates() {
     return showTemplateRepository.findPremiumLiveEventTemplates();
   }
@@ -145,6 +160,9 @@ public class ShowTemplateService {
    * @return List of weekly show templates
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      key = "'weekly'")
   public List<ShowTemplate> getWeeklyShowTemplates() {
     return showTemplateRepository.findWeeklyShowTemplates();
   }
@@ -156,6 +174,9 @@ public class ShowTemplateService {
    * @return List of templates for the specified show type
    */
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      key = "#showTypeName")
   public List<ShowTemplate> findByShowTypeName(@NonNull String showTypeName) {
     return showTemplateRepository.findByShowTypeName(showTypeName);
   }
@@ -181,6 +202,9 @@ public class ShowTemplateService {
    */
   @Transactional
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
       @NonNull String name, String description, @NonNull String showTypeName, String notionUrl) {
 
@@ -257,6 +281,9 @@ public class ShowTemplateService {
    */
   @Transactional
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      allEntries = true)
   public Optional<ShowTemplate> updateTemplate(
       @NonNull Long id,
       @NonNull String name,
@@ -296,6 +323,9 @@ public class ShowTemplateService {
    */
   @Transactional
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      allEntries = true)
   public boolean deleteTemplate(@NonNull Long id) {
     if (showTemplateRepository.existsById(id)) {
       showTemplateRepository.deleteById(id);

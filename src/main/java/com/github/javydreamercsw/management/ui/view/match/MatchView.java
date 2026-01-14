@@ -100,9 +100,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     add(new H3("Participants"));
     List<Wrestler> opponents =
-        segment.getWrestlers().stream()
-            .filter(w -> !w.equals(playerWrestler))
-            .collect(Collectors.toList());
+        segment.getWrestlers().stream().filter(w -> !w.equals(playerWrestler)).toList();
 
     add(new Paragraph("Your Wrestler: " + playerWrestler.getName()));
     add(createPlayerSummary(playerWrestler));

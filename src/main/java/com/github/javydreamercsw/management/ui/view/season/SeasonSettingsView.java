@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.ui.view.season;
 
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
@@ -27,14 +26,18 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.security.RolesAllowed;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 
 @PageTitle("Season Settings")
-@Route(value = "season/settings", layout = MainLayout.class)
 @RolesAllowed({"ROLE_ADMIN"}) // Only admin should do this
 @Slf4j
+@Component
+@Lazy
+@UIScope
 public class SeasonSettingsView extends VerticalLayout {
   private final WrestlerService wrestlerService;
   private final TierBoundaryService tierBoundaryService;

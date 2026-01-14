@@ -55,13 +55,13 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   @BeforeEach
   @Transactional
   public void setupTestData() {
+    titleRepository.deleteAll();
     segmentRepository.deleteAll();
     wrestlerRepository.deleteAll();
-    titleRepository.deleteAll();
 
     maleWrestler = new Wrestler();
     maleWrestler.setName("Male Wrestler");
-    maleWrestler.setFans(100000L);
+    maleWrestler.setFans(WrestlerTier.MIDCARDER.getMaxFans());
     maleWrestler.setGender(Gender.MALE);
     maleWrestler.setTier(WrestlerTier.MIDCARDER);
     maleWrestler.setDeckSize(15);
@@ -75,7 +75,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
     femaleWrestler = new Wrestler();
     femaleWrestler.setName("Female Wrestler");
-    femaleWrestler.setFans(120000L);
+    femaleWrestler.setFans(WrestlerTier.MIDCARDER.getMinFans() + 5000);
     femaleWrestler.setGender(Gender.FEMALE);
     femaleWrestler.setTier(WrestlerTier.MIDCARDER);
     femaleWrestler.setDeckSize(15);
@@ -90,7 +90,7 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
     womensTitle = new Title();
     womensTitle.setName("Women's World Championship");
     womensTitle.setGender(Gender.FEMALE);
-    womensTitle.setTier(WrestlerTier.MIDCARDER);
+    womensTitle.setTier(WrestlerTier.ROOKIE);
     womensTitle.setChampionshipType(ChampionshipType.SINGLE);
     titleRepository.save(womensTitle);
 

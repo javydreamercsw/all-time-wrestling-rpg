@@ -30,15 +30,20 @@ import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.rivalry.RivalryListView;
 import com.github.javydreamercsw.management.ui.view.show.ShowListView;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerListView;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.Tab;
+import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "booker", layout = MainLayout.class)
@@ -57,55 +62,100 @@ public class BookerView extends VerticalLayout {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
 
+    setHeightFull();
+    setPadding(false);
+    setSpacing(false);
+
     add(new ViewToolbar("Booker Dashboard"));
     buildDashboard();
   }
 
   private void buildDashboard() {
-    HorizontalLayout mainContent = new HorizontalLayout();
-    mainContent.setSizeFull();
+    Component quickActions = createQuickActions();
+    Tabs tabs = createTabs();
+    Div pages = createPages(tabs);
 
-    VerticalLayout leftColumn = new VerticalLayout();
-    leftColumn.setWidth("50%");
-    VerticalLayout rightColumn = new VerticalLayout();
-    rightColumn.setWidth("50%");
+    VerticalLayout tabsComponent = new VerticalLayout(tabs, pages);
+    tabsComponent.setPadding(false);
+    tabsComponent.setSpacing(false);
+    tabsComponent.setAlignItems(Alignment.STRETCH);
+    tabsComponent.setSizeFull();
+    tabsComponent.setFlexGrow(1, pages);
 
-    leftColumn.add(createQuickActions());
-    leftColumn.add(createRosterOverview());
-    rightColumn.add(createUpcomingShows());
-    rightColumn.add(createActiveRivalries());
+    add(quickActions, tabsComponent);
 
-    mainContent.add(leftColumn, rightColumn);
-    add(mainContent);
+    setFlexGrow(0, quickActions);
+    setFlexGrow(1, tabsComponent);
+    getStyle().set("padding", "1em");
   }
 
-  private VerticalLayout createQuickActions() {
-    VerticalLayout layout = new VerticalLayout();
-    layout.add(new H2("Quick Actions"));
-    HorizontalLayout buttons = new HorizontalLayout();
+  private Component createQuickActions() {
+    H2 title = new H2("Quick Actions");
+    title.addClassNames(LumoUtility.FontSize.XLARGE, LumoUtility.Margin.Top.NONE);
 
     Button createShow = new Button("Create Show");
     createShow.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(ShowListView.class)));
-    buttons.add(createShow);
 
     Button createWrestler = new Button("Create Wrestler");
     createWrestler.addClickListener(
         e -> getUI().ifPresent(ui -> ui.navigate(WrestlerListView.class)));
-    buttons.add(createWrestler);
 
     Button createRivalry = new Button("Create Rivalry");
     createRivalry.addClickListener(
         e -> getUI().ifPresent(ui -> ui.navigate(RivalryListView.class)));
-    buttons.add(createRivalry);
 
-    layout.add(buttons);
-    return layout;
+    HorizontalLayout buttons = new HorizontalLayout(createShow, createWrestler, createRivalry);
+    buttons.setSpacing(true);
+
+    VerticalLayout card = new VerticalLayout(title, buttons);
+    card.addClassNames(
+        LumoUtility.Background.BASE,
+        LumoUtility.Padding.LARGE,
+        LumoUtility.BorderRadius.LARGE,
+        LumoUtility.BoxShadow.SMALL);
+    card.setSpacing(true);
+    return card;
   }
 
-  private VerticalLayout createRosterOverview() {
-    VerticalLayout layout = new VerticalLayout();
-    layout.add(new H2("Roster Overview"));
+  private Tabs createTabs() {
+    Tab rosterTab = new Tab("Roster Overview");
+    Tab showsTab = new Tab("Upcoming Shows");
+    Tab rivalriesTab = new Tab("Active Rivalries");
 
+    Tabs tabs = new Tabs(rosterTab, showsTab, rivalriesTab);
+    tabs.setWidthFull();
+    return tabs;
+  }
+
+  private Div createPages(Tabs tabs) {
+    Grid<Wrestler> rosterGrid = createRosterOverviewGrid();
+    Grid<Show> showsGrid = createUpcomingShowsGrid();
+    Grid<Rivalry> rivalriesGrid = createActiveRivalriesGrid();
+
+    Div pages = new Div(rosterGrid, showsGrid, rivalriesGrid);
+    pages.setSizeFull();
+    showsGrid.setVisible(false);
+    rivalriesGrid.setVisible(false);
+
+    Map<Tab, Component> tabsToPages =
+        Map.of(
+            tabs.getTabAt(0), rosterGrid,
+            tabs.getTabAt(1), showsGrid,
+            tabs.getTabAt(2), rivalriesGrid);
+
+    tabs.addSelectedChangeListener(
+        event -> {
+          tabsToPages.values().forEach(page -> page.setVisible(false));
+          Component selectedPage = tabsToPages.get(tabs.getSelectedTab());
+          if (selectedPage != null) {
+            selectedPage.setVisible(true);
+          }
+        });
+
+    return pages;
+  }
+
+  private Grid<Wrestler> createRosterOverviewGrid() {
     Grid<Wrestler> grid = new Grid<>();
     grid.setId("roster-overview-grid");
     grid.addColumn(Wrestler::getName).setHeader("Name");
@@ -114,18 +164,11 @@ public class BookerView extends VerticalLayout {
     grid.addColumn(Wrestler::getIsPlayer).setHeader("Is Player?");
 
     grid.setItems(wrestlerService.findAll());
-    layout.add(grid);
-
-    RouterLink rosterLink = new RouterLink("View Full Roster", WrestlerListView.class);
-    layout.add(rosterLink);
-
-    return layout;
+    grid.setSizeFull();
+    return grid;
   }
 
-  private VerticalLayout createUpcomingShows() {
-    VerticalLayout layout = new VerticalLayout();
-    layout.add(new H2("Upcoming Shows"));
-
+  private Grid<Show> createUpcomingShowsGrid() {
     Grid<Show> grid = new Grid<>();
     grid.setId("upcoming-shows-grid");
     grid.addColumn(Show::getName).setHeader("Show");
@@ -148,29 +191,18 @@ public class BookerView extends VerticalLayout {
               return viewDetailsButton;
             })
         .setHeader("Actions");
-
-    layout.add(grid);
-
-    RouterLink calendarLink = new RouterLink("View Full Calendar", ShowListView.class);
-    layout.add(calendarLink);
-    return layout;
+    grid.setSizeFull();
+    return grid;
   }
 
-  private VerticalLayout createActiveRivalries() {
-    VerticalLayout layout = new VerticalLayout();
-    layout.add(new H2("Active Rivalries"));
+  private Grid<Rivalry> createActiveRivalriesGrid() {
     Grid<Rivalry> grid = new Grid<>();
     grid.setId("active-rivalries-grid");
     grid.addColumn(Rivalry::getDisplayName).setHeader("Rivalry").setSortable(true);
     grid.addColumn(Rivalry::getHeat).setHeader("Heat").setSortable(true);
 
     grid.setItems(rivalryService.getActiveRivalries());
-
-    layout.add(grid);
-
-    RouterLink rivalryLink = new RouterLink("View All Rivalries", RivalryListView.class);
-    layout.add(rivalryLink);
-
-    return layout;
+    grid.setSizeFull();
+    return grid;
   }
 }

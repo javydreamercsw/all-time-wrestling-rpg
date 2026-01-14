@@ -259,6 +259,9 @@ public class NotionHandler {
    * @param databaseName The name of the database
    * @return List of page IDs
    */
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_QUERIES_CACHE,
+      key = "#databaseName")
   public List<String> getDatabasePageIds(@NonNull String databaseName) {
     log.debug("Loading all page IDs from database: '{}'", databaseName);
 
@@ -295,6 +298,9 @@ public class NotionHandler {
    *
    * @return List of WrestlerPage objects with basic properties populated
    */
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'wrestlers'")
   public List<WrestlerPage> loadAllWrestlers() {
     return wrestlerNotionHandler.loadAll();
   }
@@ -328,6 +334,9 @@ public class NotionHandler {
    *
    * @return List of ShowPage objects with basic properties populated
    */
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'shows'")
   public List<ShowPage> loadAllShowsForSync() {
     return showNotionHandler.loadAll();
   }
@@ -336,6 +345,9 @@ public class NotionHandler {
     return showTemplateNotionHandler.loadShowTemplate(templateName);
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'showTemplates'")
   public List<ShowTemplatePage> loadAllShowTemplates() {
     return showTemplateNotionHandler.loadAllShowTemplates();
   }
@@ -355,6 +367,9 @@ public class NotionHandler {
     return segmentNotionHandler.loadSegmentById(segment);
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'segments'")
   public List<SegmentPage> loadAllSegments() {
     return segmentNotionHandler.loadAllSegments();
   }
@@ -367,6 +382,9 @@ public class NotionHandler {
     return teamNotionHandler.loadTeam(teamName);
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'teams'")
   public List<TeamPage> loadAllTeams() {
     return teamNotionHandler.loadAllTeams();
   }
@@ -375,6 +393,9 @@ public class NotionHandler {
     return seasonNotionHandler.loadSeason(seasonName);
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'seasons'")
   public List<SeasonPage> loadAllSeasons() {
     return seasonNotionHandler.loadAllSeasons();
   }
@@ -383,18 +404,30 @@ public class NotionHandler {
     return factionNotionHandler.loadFaction(factionName);
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'factions'")
   public List<FactionPage> loadAllFactions() {
     return factionNotionHandler.loadAllFactions();
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'titles'")
   public List<TitlePage> loadAllTitles() {
     return titleNotionHandler.loadAllTitles();
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'npcs'")
   public List<NpcPage> loadAllNpcs() {
     return npcNotionHandler.loadAllNpcs();
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'injuries'")
   public List<InjuryPage> loadAllInjuries() {
     return injuryNotionHandler.loadAllInjuries();
   }
@@ -407,6 +440,9 @@ public class NotionHandler {
    * @param pageId The ID of the page to load.
    * @return Optional containing the Page object if found, empty otherwise.
    */
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_PAGES_CACHE,
+      key = "#pageId")
   public Optional<Page> loadPage(@NonNull String pageId) {
     log.debug("Loading page with ID: '{}'", pageId);
     try (NotionClient client = createNotionClient().orElse(null)) {
@@ -763,6 +799,9 @@ public class NotionHandler {
     return segmentNotionHandler.getSegmentIds();
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'titleReigns'")
   public List<TitleReignPage> loadAllTitleReigns() {
     return titleReignNotionHandler.loadAllTitleReigns();
   }
@@ -993,10 +1032,16 @@ public class NotionHandler {
    *
    * @return List of all RivalryPage objects from the Heat database
    */
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'rivalries'")
   public List<RivalryPage> loadAllRivalries() {
     return rivalryNotionHandler.loadAllRivalries();
   }
 
+  @org.springframework.cache.annotation.Cacheable(
+      value = com.github.javydreamercsw.management.config.CacheConfig.NOTION_SYNC_CACHE,
+      key = "'factionRivalries'")
   public List<FactionRivalryPage> loadAllFactionRivalries() {
     return factionRivalryNotionHandler.loadAllFactionRivalries();
   }

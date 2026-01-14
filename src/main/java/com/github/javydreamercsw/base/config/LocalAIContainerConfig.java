@@ -18,10 +18,10 @@ package com.github.javydreamercsw.base.config;
 
 import com.github.javydreamercsw.base.ai.LocalAIStatusService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.time.Duration;
 import java.util.Collections;
-import javax.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

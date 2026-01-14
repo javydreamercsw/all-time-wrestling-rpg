@@ -87,6 +87,8 @@ public class TitleFormDialog extends Dialog {
     championshipType.setReadOnly(!securityUtils.canEdit());
     Checkbox isActive = new Checkbox("Active");
     isActive.setReadOnly(!securityUtils.canEdit());
+    Checkbox includeInRankings = new Checkbox("Include in Rankings");
+    includeInRankings.setReadOnly(!securityUtils.canEdit());
     champion = new MultiSelectComboBox<>("Champion(s)");
     champion.setItemLabelGenerator(Wrestler::getName);
     champion.setReadOnly(!securityUtils.canEdit());
@@ -100,6 +102,7 @@ public class TitleFormDialog extends Dialog {
         .asRequired()
         .bind(Title::getChampionshipType, Title::setChampionshipType);
     binder.bind(isActive, Title::getIsActive, Title::setIsActive);
+    binder.bind(includeInRankings, Title::getIncludeInRankings, Title::setIncludeInRankings);
 
     Runnable populateChampions =
         () -> {
@@ -126,7 +129,15 @@ public class TitleFormDialog extends Dialog {
     gender.addValueChangeListener(event -> populateChampions.run());
 
     FormLayout formLayout =
-        new FormLayout(name, description, tier, gender, championshipType, isActive, champion);
+        new FormLayout(
+            name,
+            description,
+            tier,
+            gender,
+            championshipType,
+            isActive,
+            includeInRankings,
+            champion);
     add(formLayout);
 
     saveButton =

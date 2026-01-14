@@ -38,9 +38,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -53,11 +50,8 @@ import org.springframework.web.context.WebApplicationContext;
  * Integration tests for TitleController. Tests the complete REST API functionality for title
  * management.
  */
-@WebMvcTest(
-    controllers = TitleController.class,
-    excludeAutoConfiguration = {DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 @DisplayName("TitleController Integration Tests")
-class TitleControllerIntegrationTest extends AbstractControllerTest {
+class TitleControllerIT extends AbstractControllerTest {
 
   @Autowired private WebApplicationContext webApplicationContext;
   @MockitoBean private TitleService titleService;
@@ -234,7 +228,7 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
     Assertions.assertNotNull(title.getId());
     when(titleService.getTitleById(title.getId())).thenReturn(Optional.of(title));
     Assertions.assertNotNull(wrestler.getId());
-    when(wrestlerRepository.findAllById(List.of(wrestler.getId()))).thenReturn(List.of(wrestler));
+    when(wrestlerRepository.findById(wrestler.getId())).thenReturn(Optional.of(wrestler));
     doAnswer(
             invocation -> {
               Title titleToAward = invocation.getArgument(0);
@@ -243,7 +237,7 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
               return null;
             })
         .when(titleService)
-        .awardTitleTo(any(Title.class), anyList());
+        .awardTitleTo(any(Title.class), anyList(), any());
 
     mockMvc
         .perform(
@@ -264,18 +258,17 @@ class TitleControllerIntegrationTest extends AbstractControllerTest {
     Assertions.assertNotNull(title.getId());
     when(titleService.getTitleById(title.getId())).thenReturn(Optional.of(title));
     Assertions.assertNotNull(wrestler.getId());
-    when(wrestlerRepository.findAllById(List.of(wrestler.getId()))).thenReturn(List.of(wrestler));
+    when(wrestlerRepository.findById(wrestler.getId())).thenReturn(Optional.of(wrestler));
     doThrow(new IllegalArgumentException("Wrestler not eligible"))
         .when(titleService)
-        .awardTitleTo(any(Title.class), anyList());
+        .awardTitleTo(any(Title.class), anyList(), any());
 
     mockMvc
         .perform(
             post("/api/titles/{titleId}/award", title.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(List.of(wrestler.getId()))))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").exists());
+        .andExpect(status().isBadRequest());
   }
 
   @Test

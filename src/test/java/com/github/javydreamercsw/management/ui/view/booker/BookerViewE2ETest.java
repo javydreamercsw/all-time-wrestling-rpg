@@ -88,11 +88,15 @@ public class BookerViewE2ETest extends AbstractE2ETest {
           driver.get("http://localhost:" + serverPort + getContextPath() + "/booker");
           // Check that the grids have the correct number of rows
           assertFalse(getGridRows("roster-overview-grid").isEmpty());
-          assertFalse(getGridRows("upcoming-shows-grid").isEmpty());
-          assertFalse(getGridRows("active-rivalries-grid").isEmpty());
 
-          // Check the content of the grids
+          // Click on the "Upcoming Shows" tab
+          click("vaadin-tab", "Upcoming Shows");
+          assertFalse(getGridRows("upcoming-shows-grid").isEmpty());
           assertGridContains("upcoming-shows-grid", "Test Show");
+
+          // Click on the "Active Rivalries" tab
+          click("vaadin-tab", "Active Rivalries");
+          assertFalse(getGridRows("active-rivalries-grid").isEmpty());
           assertGridContains(
               "active-rivalries-grid", "Test Wrestler vs Opponent (0 heat - Simmering)");
         });
