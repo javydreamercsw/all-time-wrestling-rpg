@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto.ranking;
 
+import java.time.Instant;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,10 +29,16 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RankedWrestlerDTO {
+public class TitleReignDTO {
   private Long id;
-  private String name;
-  private Long fans;
-  private int rank;
-  private List<TitleReignDTO> titleHistory;
+  private List<String> championNames;
+  private List<Long> championIds;
+  private Instant startDate;
+  private Instant endDate;
+  private long durationDays;
+  private boolean isCurrent;
+  private Long wonAtShowId;
+  private String wonAtShowName;
+  private String championshipName;
+  private String championshipTier;
 }

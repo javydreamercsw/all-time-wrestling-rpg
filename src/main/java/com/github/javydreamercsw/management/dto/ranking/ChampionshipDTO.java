@@ -31,4 +31,5 @@ public class ChampionshipDTO {
   private Long id;
   private String name;
   private String imageName;
+  private String tier;
 }
