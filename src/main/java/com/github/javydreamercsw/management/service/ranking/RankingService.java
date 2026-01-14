@@ -55,7 +55,6 @@ public class RankingService {
   private final WrestlerRepository wrestlerRepository;
   private final FactionRepository factionRepository;
   private final TeamRepository teamRepository;
-  private final TierBoundaryService tierBoundaryService;
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
@@ -83,10 +82,11 @@ public class RankingService {
           teamRepository.findAll().stream()
               .filter(
                   team ->
-                      team.getWrestler1().getActive()
-                          && team.getWrestler2().getActive()
-                          && team.getWrestler1().getGender() == gender
-                          && team.getWrestler2().getGender() == gender)
+                      team.getWrestler1().getGender() == gender
+                          && team.getWrestler2().getGender() == gender
+                          && team.isActive()
+                          && Boolean.TRUE.equals(team.getWrestler1().getActive())
+                          && Boolean.TRUE.equals(team.getWrestler2().getActive()))
               .collect(Collectors.toList());
 
       // Remove champion team from the contender list
@@ -126,6 +126,7 @@ public class RankingService {
 
       List<Wrestler> contenders =
           initialContenders.stream()
+              .filter(wrestler -> Boolean.TRUE.equals(wrestler.getActive()))
               .filter(
                   wrestler -> {
                     boolean passesFilter = wrestler.getTier().ordinal() >= tier.ordinal();
@@ -179,10 +180,10 @@ public class RankingService {
                 }
 
                 // Secondary sort: if both are in title tier or both are not, sort by tier (highest
-                // first)
-                // WrestlerTier ordinal: ICON(0), MAIN_EVENTER(1), MIDCARDER(2), CONTENDER(3),
-                // RISER(4), ROOKIE(5)
-                // So, lower ordinal means higher tier.
+                // first).
+                // Actual WrestlerTier ordinals: ROOKIE(0), RISER(1), CONTENDER(2), MIDCARDER(3),
+                // MAIN_EVENTER(4), ICON(5).
+                // Higher ordinal means higher tier.
                 int tierComparison =
                     Integer.compare(w1.getTier().ordinal(), w2.getTier().ordinal());
                 if (tierComparison != 0) {

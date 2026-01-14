@@ -28,7 +28,22 @@
         <notes><![CDATA[
         CVE-2023-29827 is a vulnerability in ejs versions prior to 3.1.9. The project uses a newer version, so this is a false positive.
         ]]></notes>
-        <packageUrl regex="true">^pkg:npm/ejs@.*$</packageUrl>
+        <packageUrl>pkg:maven/com.github.seratch/notion-sdk-jvm-slf4j@1.11.1</packageUrl>
+        <cve>CVE-2024-23743</cve>
+    </suppress>
+    <suppress>
+        <notes><![CDATA[
+        CVE-2024-23743 is a vulnerability in the Notion Desktop application, not the notion-sdk-jvm library. 
+        This is a false positive from the dependency checker.
+        ]]></notes>
+        <packageUrl>pkg:maven/com.github.seratch/notion-sdk-jvm-okhttp4@1.11.1</packageUrl>
+        <cve>CVE-2024-23743</cve>
+    </suppress>
+    <suppress>
+        <notes><![CDATA[
+        The ejs vulnerability is in a transitive dependency and is not directly used in a way that would expose the vulnerability.
+        ]]></notes>
+        <packageUrl>pkg:npm/ejs@3.1.10</packageUrl>
         <cve>CVE-2023-29827</cve>
     </suppress>
     
