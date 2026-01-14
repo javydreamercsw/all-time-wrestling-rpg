@@ -178,27 +178,28 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
         () -> {
           driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
           assertEquals(
-              "Name: " + wrestler.getName(),
-              waitForVaadinElement(driver, By.id("wrestler-name")).getText());
+              wrestler.getName(), waitForVaadinElement(driver, By.id("wrestler-name")).getText());
           assertEquals(
-              "Tier: " + wrestler.getTier(),
+              wrestler.getTier().getDisplayName(),
               waitForVaadinElement(driver, By.id("wrestler-tier")).getText());
           assertEquals(
-              "Bumps: " + wrestler.getBumps(),
+              "Bumps\n" + wrestler.getBumps(),
               waitForVaadinElement(driver, By.id("wrestler-bumps")).getText());
-          assertEquals("Wins: 1", waitForVaadinElement(driver, By.id("wrestler-wins")).getText());
+          assertEquals("Wins\n1", waitForVaadinElement(driver, By.id("wrestler-wins")).getText());
           assertEquals(
-              "Losses: 1", waitForVaadinElement(driver, By.id("wrestler-losses")).getText());
+              "Losses\n1", waitForVaadinElement(driver, By.id("wrestler-losses")).getText());
 
           // Check that the grids have the correct number of rows
           assertEquals(2, getGridRows("upcoming-matches-grid").size());
-          assertEquals(1, getGridRows("active-rivalries-grid").size());
-          assertEquals(1, getGridRows("inbox-grid").size());
-
-          // Check the content of the grids
           assertGridContains("upcoming-matches-grid", "Test Show");
           assertGridContains("upcoming-matches-grid", "Test Show 2");
+
+          click("vaadin-tab", "Rivalries");
+          assertEquals(1, getGridRows("active-rivalries-grid").size());
           assertGridContains("active-rivalries-grid", "Opponent");
+
+          click("vaadin-tab", "Inbox");
+          assertEquals(1, getGridRows("inbox-grid").size());
           assertGridContains("inbox-grid", "Test Message");
         });
   }
