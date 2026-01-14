@@ -26,6 +26,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.security.RolesAllowed;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -36,6 +37,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @Lazy
+@UIScope
 public class SeasonSettingsView extends VerticalLayout {
   private final WrestlerService wrestlerService;
   private final TierBoundaryService tierBoundaryService;

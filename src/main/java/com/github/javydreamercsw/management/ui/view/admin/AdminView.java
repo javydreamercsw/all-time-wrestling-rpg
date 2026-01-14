@@ -35,9 +35,11 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
+import com.vaadin.flow.di.Instantiator;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.Map;
@@ -52,24 +54,10 @@ public class AdminView extends VerticalLayout {
 
   private final RankingService rankingService;
   private final WrestlerRepository wrestlerRepository;
-  private final AiSettingsView aiSettingsView;
-  private final GameSettingsView gameSettingsView;
-  private final HolidayListView holidayListView;
-  private final SeasonSettingsView seasonSettingsView;
 
-  public AdminView(
-      RankingService rankingService,
-      WrestlerRepository wrestlerRepository,
-      AiSettingsView aiSettingsView,
-      GameSettingsView gameSettingsView,
-      HolidayListView holidayListView,
-      SeasonSettingsView seasonSettingsView) {
+  public AdminView(RankingService rankingService, WrestlerRepository wrestlerRepository) {
     this.rankingService = rankingService;
     this.wrestlerRepository = wrestlerRepository;
-    this.aiSettingsView = aiSettingsView;
-    this.gameSettingsView = gameSettingsView;
-    this.holidayListView = holidayListView;
-    this.seasonSettingsView = seasonSettingsView;
     initializeUI();
   }
 
@@ -101,8 +89,14 @@ public class AdminView extends VerticalLayout {
   }
 
   private Div createPages(Tabs tabs) {
+    Instantiator instantiator = VaadinService.getCurrent().getInstantiator();
     VerticalLayout adminToolsPage = createAdminToolsPage();
     adminToolsPage.setSizeFull();
+
+    AiSettingsView aiSettingsView = instantiator.getOrCreate(AiSettingsView.class);
+    GameSettingsView gameSettingsView = instantiator.getOrCreate(GameSettingsView.class);
+    HolidayListView holidayListView = instantiator.getOrCreate(HolidayListView.class);
+    SeasonSettingsView seasonSettingsView = instantiator.getOrCreate(SeasonSettingsView.class);
 
     Div pages =
         new Div(

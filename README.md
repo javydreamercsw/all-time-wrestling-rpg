@@ -45,7 +45,8 @@ You can also start the application from the command line by running:
 
 The application will be available at `http://localhost:8080/atw-rpg`.
 
-For more detailed instructions, see the [Vaadin Getting Started Guide](https://vaadin.com/docs/latest/getting-started).
+For project-specific startup instructions, see the [Application Startup Guide](./docs/STARTUP_GUIDE.md).
+For general Vaadin information, see the [Vaadin Getting Started Guide](https://vaadin.com/docs/latest/getting-started).
 
 ## Features
 
@@ -145,6 +146,8 @@ notion.sync.backup.enabled=true
 
 To enable the feature, you need to provide a Notion API token via the `NOTION_TOKEN` environment variable.
 
+For troubleshooting assistance, please refer to the [Notion Sync Troubleshooting Guide](./docs/SYNC_TROUBLESHOOTING.md).
+
 ## Development
 
 This section contains information for developers contributing to the project.
@@ -188,15 +191,12 @@ To run the application using Docker, you need to provide the required environmen
 	```bash
 	docker run -p 9090:9090 \
 	-v /path/to/your/data:/data \
-	-e GEMINI_API_KEY="<your_gemini_key>" \
-	-e OPENAI_API_KEY="<your_openai_key>" \
 	-e NOTION_TOKEN="<your_notion_token>" \
-	all-time-wrestling-rpg
-	```
+	all-time-wrestling-rpg	```
 
 	*   `-p 9090:9090`: Maps the container's port 9090 to the host's port 9090.
 	*   `-v /path/to/your/data:/data`: Mounts a directory from your host machine to the `/data` directory inside the container. This is where the H2 database file will be stored, ensuring data persistence. Replace `/path/to/your/data` with the absolute path on your host machine.
-	*   `-e`: Sets the environment variables required for the AI and Notion integrations.
+	*   `-e`: Sets the environment variables required for Notion integration. AI API keys are configured in-application.
 
 	The application will be accessible at `http://localhost:9090/atw-rpg`.
 
@@ -226,16 +226,13 @@ You can also deploy the application to a standalone Tomcat server.
 
 	```bash
 	#!/bin/bash
-	export GEMINI_API_KEY="<your_gemini_key>"
-	export OPENAI_API_KEY="<your_openai_key>"
 	export NOTION_TOKEN="<your_notion_token>"
 	# Use a file-based database for persistence
 	export SPRING_DATASOURCE_URL="jdbc:h2:file:/path/to/your/database/atwrpg;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
 	export SPRING_DATASOURCE_USERNAME="sa"
 	export SPRING_DATASOURCE_PASSWORD=""
-	export SPRING_H2_CONSOLE_ENABLED="true"
-	```
-	Replace the placeholder values with your actual keys and desired database path.
+	export SPRING_H2_CONSOLE_ENABLED="true"	```
+	Replace the placeholder values with your actual Notion token and desired database path. AI API keys are configured in-application.
 
 4.  **Start Tomcat**:
 

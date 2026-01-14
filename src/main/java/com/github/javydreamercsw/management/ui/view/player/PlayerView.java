@@ -64,6 +64,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -199,7 +200,7 @@ public class PlayerView extends VerticalLayout {
     return card;
   }
 
-  private Component createStat(String label, String value, String id) {
+  private Component createStat(@NonNull String label, @NonNull String value, @NonNull String id) {
     VerticalLayout stat = new VerticalLayout(new H4(label), new Span(value));
     stat.setPadding(false);
     stat.setSpacing(false);
@@ -220,9 +221,9 @@ public class PlayerView extends VerticalLayout {
     rivalriesGrid.setVisible(false);
     inboxGrid.setVisible(false);
 
-    Tab matchesTab = new Tab(new Icon(VaadinIcon.CALENDAR_CLOCK), new Span("Upcoming Matches"));
-    Tab rivalriesTab = new Tab(new Icon(VaadinIcon.GROUP), new Span("Rivalries"));
-    Tab inboxTab = new Tab(new Icon(VaadinIcon.INBOX), new Span("Inbox"));
+    Tab matchesTab = new Tab("Upcoming Matches");
+    Tab rivalriesTab = new Tab("Rivalries");
+    Tab inboxTab = new Tab("Inbox");
 
     Map<Tab, Component> tabsToPages =
         Map.of(

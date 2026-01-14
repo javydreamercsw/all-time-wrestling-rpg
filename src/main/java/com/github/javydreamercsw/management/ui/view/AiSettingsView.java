@@ -30,6 +30,7 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RolesAllowed("ADMIN")
 @Lazy
+@UIScope
 public class AiSettingsView extends VerticalLayout {
 
   private final AiSettingsService aiSettingsService;
