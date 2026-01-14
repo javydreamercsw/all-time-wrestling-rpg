@@ -21,39 +21,98 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import javax.sql.DataSource;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
 public class DataMigrationService {
 
-  private final DatabaseManager source;
-  private final DatabaseManager target;
+  private final Environment env;
+  private final DataSource dataSource;
 
-  public DataMigrationService() {
-    this.source = null; // Will be initialized by migrateData
-    this.target = null; // Will be initialized by migrateData
+  @Autowired
+  public DataMigrationService(Environment env, DataSource dataSource) {
+    this.env = env;
+    this.dataSource = dataSource;
   }
 
-  public DataMigrationService(DatabaseManager source, DatabaseManager target) {
-    this.source = source;
-    this.target = target;
+  public void migrateData(
+      String sourceDbType,
+      String targetDbType,
+      String host,
+      Integer port,
+      String database,
+      String user,
+      String password)
+      throws SQLException {
+    DatabaseManager sourceManager =
+        new DatabaseManager() {
+          @Override
+          public void testConnection() throws SQLException {
+            try (Connection conn = getConnection()) {
+              if (conn == null || conn.isClosed()) {
+                throw new SQLException("Connection is closed or null");
+              }
+            }
+          }
+
+          @Override
+          public Connection getConnection(@NonNull String password) throws SQLException {
+            return dataSource.getConnection();
+          }
+
+          @Override
+          public Connection getConnection() throws SQLException {
+            return dataSource.getConnection();
+          }
+
+          @Override
+          public String getURL() {
+            return "jdbc:spring-datasource";
+          }
+
+          @Override
+          public String getUser() {
+            return "spring-datasource-user";
+          }
+
+          @Override
+          public String getPassword() {
+            return env.getProperty("spring.datasource.password", "");
+          }
+        };
+
+    DatabaseManager targetManager =
+        DatabaseManagerFactory.getDatabaseManager(
+            targetDbType, host, port, database, user, password);
+    migrateDataInternal(sourceManager, targetManager, password);
   }
 
-  public void migrateData(String sourceDbType, String targetDbType) throws SQLException {
-    if (source == null || target == null) {
-      // Fallback for default constructor or non-injected managers
-      DatabaseManager sourceManager =
-          DatabaseManagerFactory.getDatabaseManager(sourceDbType, null, null, null);
-      DatabaseManager targetManager =
-          DatabaseManagerFactory.getDatabaseManager(targetDbType, null, null, null);
-      migrateDataInternal(sourceManager, targetManager);
-    } else {
-      migrateDataInternal(source, target);
-    }
+  public void migrateData(
+      String sourceDbType,
+      String sourceUrl,
+      String sourceUser,
+      String sourcePassword,
+      String targetDbType,
+      String host,
+      Integer port,
+      String database,
+      String user,
+      String password)
+      throws SQLException {
+    DatabaseManager sourceManager =
+        DatabaseManagerFactory.getDatabaseManager(
+            sourceDbType, sourceUrl, sourceUser, sourcePassword);
+    DatabaseManager targetManager =
+        DatabaseManagerFactory.getDatabaseManager(
+            targetDbType, host, port, database, user, password);
+    migrateDataInternal(sourceManager, targetManager, password);
   }
 
   public void setTargetFlywayMigration(
@@ -74,17 +133,19 @@ public class DataMigrationService {
   }
 
   private void migrateDataInternal(
-      @NonNull DatabaseManager sourceManager, @NonNull DatabaseManager targetManager)
+      @NonNull DatabaseManager sourceManager,
+      @NonNull DatabaseManager targetManager,
+      @NonNull String password)
       throws SQLException {
 
     try (Connection sourceConnection = sourceManager.getConnection();
-        Connection targetConnection = targetManager.getConnection()) {
+        Connection targetConnection = targetManager.getConnection(password)) {
       try {
         // Perform Flyway migration for the target database
         setTargetFlywayMigration(
-            target.getURL(),
-            target.getUser(),
-            target.getPassword(),
+            targetManager.getURL(),
+            targetManager.getUser(),
+            password,
             "filesystem:src/main/resources/db/migration/mysql");
 
         targetConnection.setAutoCommit(false);
@@ -1151,6 +1212,7 @@ public class DataMigrationService {
   private void truncateAllTables(@NonNull Connection connection) throws SQLException {
     try (Statement showTablesStatement = connection.createStatement();
         Statement truncateStatement = connection.createStatement()) {
+      log.info("Truncating All Tables");
       // For MySQL, disable foreign key checks
       truncateStatement.execute("SET FOREIGN_KEY_CHECKS = 0");
 
@@ -1163,6 +1225,7 @@ public class DataMigrationService {
 
       // For MySQL, re-enable foreign key checks
       truncateStatement.execute("SET FOREIGN_KEY_CHECKS = 1");
+      log.info("Truncated All Tables");
     }
   }
 

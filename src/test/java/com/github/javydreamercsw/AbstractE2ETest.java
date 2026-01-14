@@ -320,6 +320,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     takeSequencedScreenshot("after-select");
   }
 
+  protected void selectFromVaadinComboBox(@NonNull String comboBoxId, @NonNull String itemText) {
+    WebElement comboBox = waitForVaadinElement(driver, By.id(comboBoxId));
+    selectFromVaadinComboBox(comboBox, itemText);
+  }
+
   /**
    * Returns all the data from a specific column in a Vaadin grid.
    *

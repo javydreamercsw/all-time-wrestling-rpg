@@ -16,6 +16,11 @@
 */
 package com.github.javydreamercsw.base.service.db;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -23,31 +28,31 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mysql.MySQLContainer;
 
 @Testcontainers
 @Slf4j
 class DataMigrationServiceTest {
 
   @Container
-  private static final MySQLContainer<?> MYSQL_CONTAINER =
-      new MySQLContainer<>("mysql:8.0.26")
+  private static final MySQLContainer MYSQL_CONTAINER =
+      new MySQLContainer("mysql:8.0.26")
           .withDatabaseName("test")
           .withUsername("test")
           .withPassword("test");
 
   private static final String H2_URL = "jdbc:h2:./src/test/resources/db/sample";
+  private static final String H2_PROTECTED_URL = "jdbc:h2:./src/test/resources/db/sample_protected";
   private static final String H2_USER = "sa";
   private static final String H2_PASSWORD = "";
 
   @BeforeEach
-  void setUp() throws SQLException {
+  void setUp() {
     // Configure and run Flyway for H2 in-memory database
     Flyway h2Flyway =
         Flyway.configure()
@@ -58,24 +63,59 @@ class DataMigrationServiceTest {
     h2Flyway.migrate(); // Migrate H2 schema
   }
 
-  @AfterEach
-  void tearDown() {
-    // No specific cleanup for in-memory H2 needed, it's destroyed with the connection.
-    // MySQL container is handled by Testcontainers.
+  @Test
+  void testMigrateData() throws SQLException {
+    DataMigrationService migrationService = new DataMigrationService(null, null);
+    migrationService.migrateData(
+        "H2_FILE",
+        H2_URL,
+        H2_USER,
+        H2_PASSWORD,
+        "MySQL",
+        MYSQL_CONTAINER.getHost(),
+        MYSQL_CONTAINER.getFirstMappedPort(),
+        MYSQL_CONTAINER.getDatabaseName(),
+        MYSQL_CONTAINER.getUsername(),
+        MYSQL_CONTAINER.getPassword());
+
+    verifyDataMigration(H2_URL, H2_USER, H2_PASSWORD);
   }
 
   @Test
-  void testMigrateData() throws SQLException {
-    H2FileDatabaseManager h2Manager = new H2FileDatabaseManager(H2_URL, H2_USER, H2_PASSWORD);
-    MySQLDatabaseManager mySQLManager =
-        new MySQLDatabaseManager(
-            MYSQL_CONTAINER.getJdbcUrl(),
-            MYSQL_CONTAINER.getUsername(),
-            MYSQL_CONTAINER.getPassword());
+  void testMigrateDataWithPassword() throws SQLException, IOException {
+    // 1. Copy sample DB to sample_protected
+    Path source = Paths.get("src/test/resources/db/sample.mv.db");
+    Path target = Paths.get("target/db/sample_protected.mv.db");
+    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
 
-    DataMigrationService migrationService = new DataMigrationService(h2Manager, mySQLManager);
-    migrationService.migrateData("H2_FILE", "MySQL");
+    // 2. Set password on the protected DB
+    try (Connection conn = DriverManager.getConnection(H2_PROTECTED_URL, H2_USER, H2_PASSWORD);
+        Statement stmt = conn.createStatement()) {
+      stmt.execute("ALTER USER " + H2_USER + " SET PASSWORD 'secret'");
+    }
 
+    // 3. Run migration with password
+    DataMigrationService migrationService = new DataMigrationService(null, null);
+    migrationService.migrateData(
+        "H2_FILE",
+        H2_PROTECTED_URL,
+        H2_USER,
+        "secret",
+        "MySQL",
+        MYSQL_CONTAINER.getHost(),
+        MYSQL_CONTAINER.getFirstMappedPort(),
+        MYSQL_CONTAINER.getDatabaseName(),
+        MYSQL_CONTAINER.getUsername(),
+        MYSQL_CONTAINER.getPassword());
+
+    // 4. Verify
+    verifyDataMigration(H2_PROTECTED_URL, H2_USER, "secret");
+  }
+
+  private void verifyDataMigration(String h2Url, String h2User, String h2Password)
+      throws SQLException {
+    DatabaseManager h2Manager =
+        DatabaseManagerFactory.getDatabaseManager("H2_FILE", h2Url, h2User, h2Password);
     // Verify the data in the target MySQL database
     try (Connection mySqlConnection =
             DriverManager.getConnection(

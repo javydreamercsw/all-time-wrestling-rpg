@@ -16,387 +16,409 @@
 */
 package com.github.javydreamercsw.management.ui.view.datatransfer;
 
-import com.github.javydreamercsw.management.ui.view.MainLayout;
+import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
+
+import com.github.javydreamercsw.base.service.db.DataMigrationService;
+import com.github.javydreamercsw.base.service.db.DatabaseManager;
+import com.github.javydreamercsw.base.service.db.DatabaseManagerFactory;
+import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.NativeLabel;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.Binder;
-import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.concurrent.CompletableFuture;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
+@Route("data-transfer")
 @PageTitle("Data Transfer")
-@Route(value = "data-transfer", layout = MainLayout.class)
-@RolesAllowed("ADMIN")
-public class DataTransferView extends Div {
+@Menu(order = 11, icon = "vaadin:exchange", title = "Data Transfer")
+@RolesAllowed(ADMIN_ROLE)
+@Slf4j
+public class DataTransferView extends Main {
 
-  private final VerticalLayout connectionConfigStep;
-  private final VerticalLayout dataSelectionStep; // New step for data selection
-  private final VerticalLayout dataTransferProcessStep; // New step for data transfer process
-  private final Button previousButton;
-  private final Button nextButton;
-  private final NativeLabel statusLabel; // For connection status
-  private final ProgressBar progressBar;
-  private final Button rollbackButton;
+  private final DataMigrationService migrationService;
+  private ComboBox<String> sourceDbType;
+  private ComboBox<String> targetDbType;
+  private TextField targetHost;
+  private TextField targetDatabase;
+  private IntegerField targetPort;
+  private TextField targetUser;
+  private PasswordField targetPassword;
+  private Button testConnectionButton;
+  private Button transferButton;
+  private Button nextButton;
+  private Button backButton;
+  private Button cancelButton;
+  private Button rollbackButton;
+  private ProgressBar progressBar;
+  private Span statusLabel;
+  private ComboBox<String> tableSelectionCombo;
 
-  private final Binder<ConnectionParameters> binder;
-  private final ConnectionParameters connectionParameters;
+  private VerticalLayout introStep;
+  private VerticalLayout configStep;
+  private VerticalLayout dataSelectionStep;
+  private VerticalLayout progressStep;
 
-  private int currentStep = 0; // 0: Connection Config, 1: Data Selection, 2: Data Transfer Process
+  private int currentStep = 0;
 
-  public DataTransferView() {
+  @Autowired
+  public DataTransferView(DataMigrationService migrationService) {
+    this.migrationService = migrationService;
     setId("data-transfer-wizard");
-    setSizeFull();
-
-    VerticalLayout contentLayout = new VerticalLayout();
-    contentLayout.setSizeFull();
-    contentLayout.setPadding(false);
-    contentLayout.setSpacing(false);
-
-    // Connection Configuration Step
-    connectionConfigStep = new VerticalLayout();
-    connectionConfigStep.setId("connection-config-step");
-    connectionConfigStep.setSizeFull();
-
-    TextField hostField = new TextField("Database Host");
-    hostField.setId("host-field");
-    hostField.setValue("localhost");
-    hostField.setRequiredIndicatorVisible(true);
-
-    IntegerField portField = new IntegerField("Port");
-    portField.setId("port-field");
-    portField.setValue(3306); // Default MySQL port
-    portField.setRequiredIndicatorVisible(true);
-    portField.setErrorMessage("Port must be a number");
-
-    TextField usernameField = new TextField("Username");
-    usernameField.setId("username-field");
-    usernameField.setRequiredIndicatorVisible(true);
-
-    PasswordField passwordField = new PasswordField("Password");
-    passwordField.setId("password-field");
-    passwordField.setRequiredIndicatorVisible(true);
-
-    TextField urlField = new TextField("Database URL");
-    urlField.setId("url-field");
-    urlField.setRequiredIndicatorVisible(true);
-    urlField.setValue("jdbc:mysql://localhost:3306/atwrpg");
-
-    Button testConnectionButton = new Button("Test Connection");
-    testConnectionButton.setId("test-connection-button");
-
-    statusLabel = new NativeLabel();
-    statusLabel.setId("status-label");
-
-    connectionConfigStep.add(
-        hostField,
-        portField,
-        usernameField,
-        passwordField,
-        urlField,
-        testConnectionButton,
-        statusLabel);
-
-    // Data Selection Step
-    dataSelectionStep = new VerticalLayout();
-    dataSelectionStep.setId("data-selection-step");
-    dataSelectionStep.setSizeFull();
-    dataSelectionStep.add(new Div(new NativeLabel("Data Selection options will go here.")));
-    Button startTransferButton = new Button("Start Transfer");
-    startTransferButton.setId("start-transfer-button");
-    dataSelectionStep.add(startTransferButton);
-    dataSelectionStep.setVisible(false); // Hidden initially
-
-    // Data Transfer Process Step
-    dataTransferProcessStep = new VerticalLayout();
-    dataTransferProcessStep.setId("data-transfer-process-step");
-    dataTransferProcessStep.setSizeFull();
-    // Placeholder for progress indicator
-    dataTransferProcessStep.add(new Div(new NativeLabel("Data transfer in progress...")));
-    progressBar = new ProgressBar();
-    progressBar.setId("progress-indicator");
-    progressBar.setIndeterminate(true); // Spinning indicator
-    dataTransferProcessStep.add(progressBar);
-    rollbackButton = new Button("Rollback");
-    rollbackButton.setId("rollback-button");
-    rollbackButton.setVisible(false); // Hidden initially
-    dataTransferProcessStep.add(rollbackButton);
-    dataTransferProcessStep.setVisible(false); // Hidden initially
-
-    previousButton = new Button("Previous");
-    previousButton.setId("previous-button");
-    nextButton = new Button("Next");
-    nextButton.setId("next-button");
-    Button cancelButton = new Button("Cancel");
-    cancelButton.setId("cancel-button");
-    HorizontalLayout buttonLayout = new HorizontalLayout(cancelButton, previousButton, nextButton);
-    buttonLayout.setWidthFull();
-    buttonLayout.setJustifyContentMode(HorizontalLayout.JustifyContentMode.END);
-
-    contentLayout.add(
-        connectionConfigStep, dataSelectionStep, dataTransferProcessStep, buttonLayout);
-    add(contentLayout);
-
-    // Initialize Binder
-    binder = new Binder<>(ConnectionParameters.class);
-    connectionParameters = new ConnectionParameters();
-
-    binder
-        .forField(hostField)
-        .asRequired("Host cannot be empty")
-        .bind(ConnectionParameters::getHost, ConnectionParameters::setHost);
-
-    binder
-        .forField(portField)
-        .asRequired("Port cannot be empty")
-        .withValidator(
-            port -> port != null && port >= 0 && port <= 65_535, "Port must be between 0 and 65535")
-        .bind(ConnectionParameters::getPort, ConnectionParameters::setPort);
-
-    binder
-        .forField(usernameField)
-        .asRequired("Username cannot be empty")
-        .bind(ConnectionParameters::getUsername, ConnectionParameters::setUsername);
-
-    binder
-        .forField(passwordField)
-        .asRequired("Password cannot be empty")
-        .bind(ConnectionParameters::getPassword, ConnectionParameters::setPassword);
-
-    binder
-        .forField(urlField)
-        .asRequired("URL cannot be empty")
-        .bind(ConnectionParameters::getUrl, ConnectionParameters::setUrl);
-
-    // Set initial values to binder
-    binder.readBean(connectionParameters);
-
-    // Configure button visibility and click listeners
-    previousButton.setEnabled(false); // First step has no previous
-
-    testConnectionButton.addClickListener(
-        event -> {
-          try {
-            binder.writeBean(connectionParameters);
-            // Try to connect to the database
-            try (Connection connection =
-                DriverManager.getConnection(
-                    connectionParameters.getUrl(),
-                    connectionParameters.getUsername(),
-                    connectionParameters.getPassword())) {
-              if (connection != null) {
-                Notification.show("Connection successful!", 3_000, Notification.Position.BOTTOM_END)
-                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                statusLabel.setText("Connection successful.");
-                statusLabel.setVisible(true);
-              }
-            } catch (SQLException e) {
-              Notification.show(
-                      "Connection failed: " + e.getMessage(),
-                      3_000,
-                      Notification.Position.BOTTOM_END)
-                  .addThemeVariants(NotificationVariant.LUMO_ERROR);
-              statusLabel.setText("Connection failed.");
-              statusLabel.setVisible(true);
-            }
-          } catch (ValidationException e) {
-            Notification.show(
-                    "Validation failed: " + e.getMessage(), 3_000, Notification.Position.BOTTOM_END)
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            statusLabel.setText("Validation failed.");
-            statusLabel.setVisible(true);
-          }
-        });
-
-    nextButton.addClickListener(
-        event -> {
-          if (currentStep == 0) { // Connection Configuration Step
-            try {
-              binder.writeBean(connectionParameters);
-              Notification.show(
-                      "Validation successful. Host: "
-                          + connectionParameters.getHost()
-                          + ", Port: "
-                          + connectionParameters.getPort(),
-                      3_000,
-                      Notification.Position.BOTTOM_END)
-                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-              statusLabel.setText("Validation successful.");
-              statusLabel.setVisible(true);
-
-              // Advance to the next step (Data Selection)
-              currentStep++;
-              showStep(currentStep);
-            } catch (ValidationException e) {
-              Notification.show(
-                      "Validation failed: " + e.getMessage(),
-                      3_000,
-                      Notification.Position.BOTTOM_END)
-                  .addThemeVariants(NotificationVariant.LUMO_ERROR);
-              statusLabel.setText("Validation failed.");
-              statusLabel.setVisible(true);
-              // Explicitly mark fields as invalid and set error messages
-              e.getFieldValidationErrors()
-                  .forEach(
-                      error -> {
-                        // Assuming the component is a HasValidation (e.g., TextField, IntegerField,
-                        // PasswordField)
-                        if (error.getField() instanceof TextField) {
-                          ((TextField) error.getField()).setInvalid(true);
-                          ((TextField) error.getField())
-                              .setErrorMessage(error.getMessage().orElse(""));
-                        } else if (error.getField() instanceof IntegerField) {
-                          ((IntegerField) error.getField()).setInvalid(true);
-                          ((IntegerField) error.getField())
-                              .setErrorMessage(error.getMessage().orElse(""));
-                        } else if (error.getField() instanceof PasswordField) {
-                          ((PasswordField) error.getField()).setInvalid(true);
-                          ((PasswordField) error.getField())
-                              .setErrorMessage(error.getMessage().orElse(""));
-                        }
-                      });
-            }
-          } else if (currentStep == 1) { // Data Selection Step - Start transfer
-            // Simulate data transfer process
-            Notification.show("Starting data transfer...");
-            statusLabel.setText("Data transfer in progress...");
-            statusLabel.setVisible(true);
-
-            // Disable next button during transfer
-            nextButton.setEnabled(false);
-            previousButton.setEnabled(false);
-
-            // Simulate a long-running task
-            new Thread(
-                    () -> {
-                      try {
-                        Thread.sleep(3_000); // Simulate 3 seconds of transfer
-                        boolean simulateFailure = Boolean.getBoolean("simulateFailure");
-
-                        getUI()
-                            .ifPresent(
-                                ui ->
-                                    ui.access(
-                                        () -> {
-                                          if (simulateFailure) {
-                                            Notification.show(
-                                                "Data transfer failed. Please rollback.");
-                                            statusLabel.setText("Data transfer failed.");
-                                            statusLabel.setVisible(true);
-                                            progressBar.setVisible(false);
-                                            rollbackButton.setVisible(true);
-                                            currentStep =
-                                                2; // Ensure currentStep reflects the process step
-                                            showStep(currentStep); // Make process step visible
-                                          } else {
-                                            Notification.show("Data transfer complete!");
-                                            statusLabel.setText("Data transfer complete.");
-                                            statusLabel.setVisible(true);
-                                            // Advance to the next step (or a completion step)
-                                            currentStep++;
-                                            showStep(currentStep);
-                                          }
-                                        }));
-                      } catch (InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-                        getUI()
-                            .ifPresent(
-                                ui ->
-                                    ui.access(
-                                        () -> {
-                                          Notification.show(
-                                              "Data transfer interrupted: " + ex.getMessage());
-                                          statusLabel.setText("Data transfer interrupted.");
-                                          statusLabel.setVisible(true);
-                                          nextButton.setEnabled(true);
-                                          previousButton.setEnabled(true);
-                                          progressBar.setVisible(false);
-                                          rollbackButton.setVisible(true);
-                                        }));
-                      }
-                    })
-                .start();
-          }
-        });
-
-    rollbackButton.addClickListener(
-        event -> {
-          // Simulate rollback failure
-          boolean simulateRollbackFailure = Boolean.getBoolean("simulateRollbackFailure");
-          if (simulateRollbackFailure) {
-            Notification.show("Rollback failed unexpectedly!");
-            statusLabel.setText("Rollback failed.");
-            // Keep on current step, perhaps show an error state
-            // For now, just show the message and leave on the dataTransferProcessStep
-          } else {
-            Notification.show("Rolling back data transfer...");
-            statusLabel.setText("Rolling back...");
-            statusLabel.setVisible(true);
-            // Reset to the first step (Connection Configuration)
-            currentStep = 0;
-            showStep(currentStep);
-            Notification.show("Rollback complete.");
-            statusLabel.setText("Rollback complete. Please reconfigure connection.");
-          }
-        });
-
-    previousButton.addClickListener(
-        event -> {
-          currentStep--;
-          showStep(currentStep);
-        });
-
-    cancelButton.addClickListener(
-        event -> {
-          Notification.show("Data transfer cancelled.");
-          // In a real application, you would navigate away or close the wizard
-          // For now, we'll just go back to the first step
-          currentStep = 0;
-          showStep(currentStep);
-        });
-
-    showStep(currentStep); // Initialize view to the first step
+    initializeUI();
+    updateStep();
   }
 
-  private void showStep(int stepIndex) {
-    connectionConfigStep.setVisible(false);
-    dataSelectionStep.setVisible(false);
-    dataTransferProcessStep.setVisible(false);
+  private void initializeUI() {
+    addClassNames(
+        LumoUtility.BoxSizing.BORDER,
+        LumoUtility.Display.FLEX,
+        LumoUtility.FlexDirection.COLUMN,
+        LumoUtility.Padding.MEDIUM,
+        LumoUtility.Gap.MEDIUM);
+    add(new ViewToolbar("Data Transfer Management"));
 
-    switch (stepIndex) {
-      case 0:
-        connectionConfigStep.setVisible(true);
-        previousButton.setEnabled(false);
-        nextButton.setEnabled(true);
-        break;
-      case 1:
-        dataSelectionStep.setVisible(true);
-        previousButton.setEnabled(true);
-        nextButton.setEnabled(true);
-        break;
-      case 2:
-        dataTransferProcessStep.setVisible(true);
-        previousButton.setEnabled(true); // Allow going back from process step
-        nextButton.setEnabled(false); // No next step after starting process
-        break;
-      default:
-        // Handle invalid step, maybe show an error or go back to first step
-        connectionConfigStep.setVisible(true);
-        previousButton.setEnabled(false);
-        nextButton.setEnabled(true);
-        currentStep = 0;
+    createSteps();
+    add(introStep, configStep, dataSelectionStep, progressStep);
+    add(createControlSection());
+  }
+
+  private void createSteps() {
+    // Intro Step
+    introStep = new VerticalLayout(new H3("Welcome to Data Transfer Wizard"));
+    introStep.setVisible(true);
+
+    // Config Step
+    configStep = createConfigurationSection();
+    configStep.setId("connection-config-step");
+    configStep.setVisible(false);
+
+    // Data Selection Step
+    dataSelectionStep = createDataSelectionSection();
+    dataSelectionStep.setId("data-selection-step");
+    dataSelectionStep.setVisible(false);
+
+    // Progress Step
+    progressStep = createProgressSection();
+    progressStep.setId("data-transfer-process-step");
+    progressStep.setVisible(false);
+  }
+
+  private VerticalLayout createConfigurationSection() {
+    VerticalLayout configurationSection = new VerticalLayout();
+    configurationSection.addClassNames(
+        LumoUtility.Padding.MEDIUM,
+        LumoUtility.Border.ALL,
+        LumoUtility.BorderRadius.MEDIUM,
+        LumoUtility.Background.CONTRAST_5);
+    H3 title = new H3("Configuration");
+    title.addClassNames(LumoUtility.Margin.NONE);
+    sourceDbType = new ComboBox<>("Source Database Type");
+    sourceDbType.setItems("H2", "MySQL");
+    sourceDbType.setValue("H2");
+    sourceDbType.setReadOnly(true);
+
+    targetDbType = new ComboBox<>("Target Database Type");
+    targetDbType.setItems("MySQL");
+    targetDbType.setValue("MySQL");
+    targetHost = new TextField("Target Host");
+    targetHost.setId("host-field");
+    targetDatabase = new TextField("Target Database");
+    targetDatabase.setId("target-database-field");
+    targetDatabase.setValue("test");
+    targetPort = new IntegerField("Target Port");
+    targetPort.setId("port-field");
+    targetUser = new TextField("Target User");
+    targetUser.setId("username-field");
+    targetPassword = new PasswordField("Target Password");
+    targetPassword.setId("password-field");
+
+    testConnectionButton = new Button("Test Connection");
+    testConnectionButton.setId("test-connection-button");
+    testConnectionButton.addClickListener(event -> testConnection());
+
+    configurationSection.add(
+        title,
+        new HorizontalLayout(sourceDbType, targetDbType),
+        new HorizontalLayout(targetHost, targetPort, targetDatabase),
+        new HorizontalLayout(targetUser, targetPassword),
+        testConnectionButton);
+    return configurationSection;
+  }
+
+  private VerticalLayout createDataSelectionSection() {
+    VerticalLayout dataSelectionSection = new VerticalLayout();
+    dataSelectionSection.addClassNames(
+        LumoUtility.Padding.MEDIUM,
+        LumoUtility.Border.ALL,
+        LumoUtility.BorderRadius.MEDIUM,
+        LumoUtility.Background.CONTRAST_5);
+    H3 title = new H3("Data Selection");
+    title.addClassNames(LumoUtility.Margin.NONE);
+
+    tableSelectionCombo = new ComboBox<>("Select Table to Migrate");
+    tableSelectionCombo.setId("table-selection-combo");
+    tableSelectionCombo.setItems("All Tables", "Wrestler", "Faction", "Title", "Show");
+    tableSelectionCombo.setValue("All Tables");
+
+    dataSelectionSection.add(title, tableSelectionCombo);
+    return dataSelectionSection;
+  }
+
+  private HorizontalLayout createControlSection() {
+    HorizontalLayout controlSection = new HorizontalLayout();
+    controlSection.setSpacing(true);
+    controlSection.setAlignItems(FlexComponent.Alignment.BASELINE);
+
+    backButton =
+        new Button(
+            "Back",
+            event -> {
+              currentStep--;
+              updateStep();
+            });
+    backButton.setId("back-button");
+
+    nextButton =
+        new Button(
+            "Next",
+            event -> {
+              if (validateStep()) {
+                if (currentStep == 2) {
+                  transferData();
+                } else {
+                  currentStep++;
+                  updateStep();
+                }
+              }
+            });
+    nextButton.setId("next-button");
+
+    cancelButton =
+        new Button(
+            "Cancel",
+            event -> {
+              getUI().ifPresent(ui -> ui.navigate(""));
+            });
+    cancelButton.setId("cancel-button");
+
+    rollbackButton = new Button("Rollback", event -> rollback());
+    rollbackButton.setId("rollback-button");
+    rollbackButton.setVisible(false);
+
+    controlSection.add(cancelButton, backButton, nextButton, rollbackButton);
+    return controlSection;
+  }
+
+  private void rollback() {
+    if (Boolean.getBoolean("simulateRollbackFailure")) {
+      statusLabel.setText("Rollback failed.");
+      Notification.show("Rollback failed!", 3000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+    } else {
+      currentStep = 1;
+      updateStep();
+      statusLabel.setText("Rollback successful.");
+      Notification.show("Rollback successful!", 3000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
+  }
+
+  private boolean validateStep() {
+    if (currentStep == 1) {
+      if (targetHost.isEmpty()
+          || targetPort.getValue() == null
+          || targetUser.isEmpty()
+          || targetDatabase.isEmpty()) {
+        Notification.show(
+                "Validation failed: Please fill all connection parameters.",
+                3000,
+                Notification.Position.MIDDLE)
+            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private void updateStep() {
+    introStep.setVisible(currentStep == 0);
+    configStep.setVisible(currentStep == 1);
+    dataSelectionStep.setVisible(currentStep == 2);
+    progressStep.setVisible(currentStep == 3);
+
+    backButton.setEnabled(currentStep > 0 && currentStep < 3);
+    nextButton.setVisible(currentStep < 3);
+    nextButton.setText(currentStep == 2 ? "Transfer Data" : "Next");
+    rollbackButton.setVisible(false);
+
+    if (currentStep == 3) {
+      nextButton.setVisible(false);
+      backButton.setVisible(false);
+      cancelButton.setText("Done");
+    }
+  }
+
+  private VerticalLayout createProgressSection() {
+    VerticalLayout progressSection = new VerticalLayout();
+    progressSection.addClassNames(
+        LumoUtility.Padding.MEDIUM,
+        LumoUtility.Border.ALL,
+        LumoUtility.BorderRadius.MEDIUM,
+        LumoUtility.Background.CONTRAST_5);
+    H3 title = new H3("Progress");
+    title.addClassNames(LumoUtility.Margin.NONE);
+    progressBar = new ProgressBar();
+    progressBar.setId("progress-indicator");
+    progressBar.setIndeterminate(true);
+    progressBar.setVisible(false);
+    statusLabel = new Span();
+    statusLabel.setId("status-label");
+    progressSection.add(title, progressBar, statusLabel);
+    return progressSection;
+  }
+
+  private void testConnection() {
+    DatabaseManager targetManager =
+        DatabaseManagerFactory.getDatabaseManager(
+            targetDbType.getValue(),
+            targetHost.getValue(),
+            targetPort.getValue(),
+            targetDatabase.getValue(),
+            targetUser.getValue(),
+            targetPassword.getValue());
+    try {
+      targetManager.testConnection();
+      Notification.show("Connection successful!", 3_000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    } catch (SQLException e) {
+      log.error("Failed to connect to the database", e);
+      Notification.show("Connection failed: " + e.getMessage(), 5_000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+    }
+  }
+
+  private void transferData() {
+    currentStep = 3;
+    updateStep();
+    progressBar.setVisible(true);
+    statusLabel.setText("Starting data transfer...");
+    nextButton.setEnabled(false);
+    testConnectionButton.setEnabled(false);
+
+    String selectedTable = tableSelectionCombo.getValue();
+
+    CompletableFuture.runAsync(
+            () -> {
+              try {
+                if (Boolean.getBoolean("simulateFailure")) {
+                  throw new SQLException("Simulated failure during data transfer.");
+                }
+
+                if ("All Tables".equals(selectedTable)) {
+                  migrationService.migrateData(
+                      sourceDbType.getValue(),
+                      targetDbType.getValue(),
+                      targetHost.getValue(),
+                      targetPort.getValue(),
+                      targetDatabase.getValue(),
+                      targetUser.getValue(),
+                      targetPassword.getValue());
+                } else {
+                  Thread.sleep(2000);
+                  log.info("Simulating migration of table: {}", selectedTable);
+                }
+
+                getUI()
+                    .ifPresent(
+                        ui ->
+                            ui.access(
+                                () -> {
+                                  progressBar.setVisible(false);
+                                  statusLabel.setText("Data transfer completed successfully.");
+                                  nextButton.setEnabled(true);
+                                  testConnectionButton.setEnabled(true);
+                                  Notification.show(
+                                          "Data transfer completed!",
+                                          3_000,
+                                          Notification.Position.MIDDLE)
+                                      .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                                }));
+              } catch (SQLException e) {
+                log.error("Data transfer failed", e);
+                getUI()
+                    .ifPresent(
+                        ui ->
+                            ui.access(
+                                () -> {
+                                  progressBar.setVisible(false);
+                                  statusLabel.setText("Data transfer failed: " + e.getMessage());
+                                  nextButton.setEnabled(true);
+                                  testConnectionButton.setEnabled(true);
+                                  rollbackButton.setVisible(true);
+                                  Notification.show(
+                                          "Data transfer failed: " + e.getMessage(),
+                                          5_000,
+                                          Notification.Position.MIDDLE)
+                                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                                }));
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Data transfer interrupted", e);
+                getUI()
+                    .ifPresent(
+                        ui ->
+                            ui.access(
+                                () -> {
+                                  progressBar.setVisible(false);
+                                  statusLabel.setText(
+                                      "Data transfer interrupted: " + e.getMessage());
+                                  nextButton.setEnabled(true);
+                                  testConnectionButton.setEnabled(true);
+                                  Notification.show(
+                                          "Data transfer interrupted: " + e.getMessage(),
+                                          5_000,
+                                          Notification.Position.MIDDLE)
+                                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                                }));
+              }
+            })
+        .exceptionally(
+            ex -> {
+              log.error("Unexpected error during data transfer", ex);
+              getUI()
+                  .ifPresent(
+                      ui ->
+                          ui.access(
+                              () -> {
+                                progressBar.setVisible(false);
+                                statusLabel.setText("An unexpected error occurred.");
+                                nextButton.setEnabled(true);
+                                testConnectionButton.setEnabled(true);
+                                Notification.show(
+                                        "An unexpected error occurred: " + ex.getMessage(),
+                                        5_000,
+                                        Notification.Position.MIDDLE)
+                                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                              }));
+              return null;
+            });
   }
 }
