@@ -28,6 +28,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Locale;
+import lombok.NonNull;
 
 public class ReignCardComponent extends Composite<Div> {
 
@@ -36,7 +37,7 @@ public class ReignCardComponent extends Composite<Div> {
           .withLocale(Locale.US)
           .withZone(ZoneId.systemDefault());
 
-  public ReignCardComponent(TitleReignDTO reign) {
+  public ReignCardComponent(@NonNull TitleReignDTO reign) {
     getContent()
         .addClassNames(
             Display.FLEX,
@@ -60,7 +61,7 @@ public class ReignCardComponent extends Composite<Div> {
     Span tier = new Span(reign.getChampionshipTier());
     tier.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
 
-    Span champions = new Span("Champions: " + String.join(" & ", reign.getChampionNames()));
+    Span champions = new Span("Champion(s): " + String.join(" & ", reign.getChampionNames()));
     champions.addClassNames(FontWeight.MEDIUM);
 
     Span duration =
@@ -82,7 +83,7 @@ public class ReignCardComponent extends Composite<Div> {
     }
   }
 
-  private String formatPeriod(TitleReignDTO reign) {
+  private String formatPeriod(@NonNull TitleReignDTO reign) {
     String start = DATE_FORMATTER.format(reign.getStartDate());
     String end = reign.getEndDate() != null ? DATE_FORMATTER.format(reign.getEndDate()) : "Present";
     return start + " - " + end;
