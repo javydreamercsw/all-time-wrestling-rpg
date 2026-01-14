@@ -66,7 +66,7 @@ class DataMigrationServiceTest {
 
   @Test
   void testMigrateData() throws SQLException {
-    DataMigrationService migrationService = new DataMigrationService();
+    DataMigrationService migrationService = new DataMigrationService(null, null);
     migrationService.migrateData(
         "H2_FILE",
         H2_URL,
@@ -75,6 +75,7 @@ class DataMigrationServiceTest {
         "MySQL",
         MYSQL_CONTAINER.getHost(),
         MYSQL_CONTAINER.getFirstMappedPort(),
+        MYSQL_CONTAINER.getDatabaseName(),
         MYSQL_CONTAINER.getUsername(),
         MYSQL_CONTAINER.getPassword());
 
