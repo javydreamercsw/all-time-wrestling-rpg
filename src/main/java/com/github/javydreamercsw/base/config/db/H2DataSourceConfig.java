@@ -17,23 +17,28 @@
 package com.github.javydreamercsw.base.config.db;
 
 import javax.sql.DataSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 
 @Configuration
 @Profile("h2")
 public class H2DataSourceConfig implements DataSourceConfig {
+
+  @Autowired private Environment env;
 
   @Bean
   @Override
   public DataSource dataSource() {
     DataSourceBuilder<?> dataSourceBuilder = DataSourceBuilder.create();
     dataSourceBuilder.driverClassName("org.h2.Driver");
-    dataSourceBuilder.url("jdbc:h2:file:./data/management-db;DB_CLOSE_DELAY=-1");
-    dataSourceBuilder.username("sa");
-    dataSourceBuilder.password("");
+    dataSourceBuilder.url(
+        env.getProperty("spring.datasource.url", "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1"));
+    dataSourceBuilder.username(env.getProperty("spring.datasource.username", "sa"));
+    dataSourceBuilder.password(env.getProperty("spring.datasource.password", ""));
     return dataSourceBuilder.build();
   }
 }
