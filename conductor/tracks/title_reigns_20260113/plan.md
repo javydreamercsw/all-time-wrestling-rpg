@@ -2,9 +2,9 @@
 
 ## Phase 1: Foundation & Data Layer
 - [x] Task 1.1: Enhance DTOs (`ChampionshipDTO`, `RankedWrestlerDTO`) and create `TitleReignDTO` to include historical data fields. [448295e]
-- [ ] Task 1.2: Update `RankingService` to implement logic for fetching full historical data and calculating durations (including dynamic updates for active reigns).
-- [ ] Task 1.3: Write Unit Tests for duration calculation logic, ensuring "Ongoing" status is correctly identified and timed relative to the game date.
-- [ ] Task 1.4: Write Unit Tests for service-layer history retrieval (filtering by wrestler and by championship).
+- [x] Task 1.2: Update `RankingService` to implement logic for fetching full historical data and calculating durations (including dynamic updates for active reigns). [c3611a3]
+- [x] Task 1.3: Write Unit Tests for duration calculation logic, ensuring "Ongoing" status is correctly identified and timed relative to the game date. [c3611a3]
+- [x] Task 1.4: Write Unit Tests for service-layer history retrieval (filtering by wrestler and by championship). [c3611a3]
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Data Layer' (Protocol in workflow.md)
 
 ## Phase 2: Reusable UI Components
