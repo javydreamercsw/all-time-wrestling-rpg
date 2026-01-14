@@ -283,6 +283,34 @@ class RankingServiceTest {
   }
 
   @Test
+  void testGetRankedContendersExcludesInactive() {
+    Wrestler inactiveWrestler = new Wrestler();
+    inactiveWrestler.setId(4L);
+    inactiveWrestler.setName("Inactive Wrestler");
+    inactiveWrestler.setFans(600L);
+    inactiveWrestler.setGender(Gender.MALE);
+    inactiveWrestler.setTier(WrestlerTier.fromFanCount(inactiveWrestler.getFans()));
+    inactiveWrestler.setActive(false);
+
+    title.setTier(WrestlerTier.MIDCARDER);
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    com.github.javydreamercsw.base.domain.wrestler.TierBoundary boundary =
+        new com.github.javydreamercsw.base.domain.wrestler.TierBoundary();
+    boundary.setTier(WrestlerTier.MIDCARDER);
+    boundary.setMinFans(WrestlerTier.MIDCARDER.getMinFans());
+    boundary.setMaxFans(WrestlerTier.MIDCARDER.getMaxFans());
+    when(tierBoundaryService.findByTierAndGender(any(WrestlerTier.class), any(Gender.class)))
+        .thenReturn(Optional.of(boundary));
+    when(wrestlerRepository.findByFansBetween(anyLong(), anyLong()))
+        .thenReturn(new ArrayList<>(List.of(contender1, inactiveWrestler)));
+
+    List<?> contenders = rankingService.getRankedContenders(1L);
+
+    assertEquals(1, contenders.size());
+    assertEquals("Contender 1", ((RankedWrestlerDTO) contenders.get(0)).getName());
+  }
+
+  @Test
   void testGetCurrentChampions() {
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
 

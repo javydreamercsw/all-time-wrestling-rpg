@@ -83,10 +83,11 @@ public class RankingService {
           teamRepository.findAll().stream()
               .filter(
                   team ->
-                      team.getWrestler1().getActive()
-                          && team.getWrestler2().getActive()
-                          && team.getWrestler1().getGender() == gender
-                          && team.getWrestler2().getGender() == gender)
+                      team.getWrestler1().getGender() == gender
+                          && team.getWrestler2().getGender() == gender
+                          && team.isActive()
+                          && Boolean.TRUE.equals(team.getWrestler1().getActive())
+                          && Boolean.TRUE.equals(team.getWrestler2().getActive()))
               .collect(Collectors.toList());
 
       // Remove champion team from the contender list
@@ -162,6 +163,10 @@ public class RankingService {
                     contenders.size(),
                     contenders.stream().map(Wrestler::getName).collect(Collectors.joining(", ")));
               });
+      
+      // Filter by gender and active status
+      contenders.removeIf(
+          wrestler -> wrestler.getGender() != gender || !Boolean.TRUE.equals(wrestler.getActive()));
 
       AtomicInteger rank = new AtomicInteger(1);
       return contenders.stream()
