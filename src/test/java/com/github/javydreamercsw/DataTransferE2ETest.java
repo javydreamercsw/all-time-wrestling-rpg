@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -59,7 +60,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   public void testConnectionConfigurationView() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    nextButton.click();
+    clickElement(nextButton);
 
     WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
     assertNotNull(hostField);
@@ -78,14 +79,14 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   public void testConnectionParametersValidation() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    nextButton.click();
+    clickElement(nextButton);
 
     // Clear the host field to trigger validation error
     WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
     clearField(hostField);
 
     // Attempt to click next button, should not proceed
-    nextButton.click();
+    clickElement(nextButton);
 
     // Assert that the wizard is still on the connection configuration step
     WebElement connectionConfigStep = waitForVaadinElement(driver, By.id("connection-config-step"));
@@ -104,7 +105,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     System.setProperty("simulateFailure", "false");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    nextButton.click(); // From Intro to Config
+    clickElement(nextButton); // From Intro to Config
 
     // Step 1: Connection Configuration
     // Fill in valid connection parameters
@@ -118,10 +119,10 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     WebElement usernameField = waitForVaadinElement(driver, By.id("username-field"));
     usernameField.sendKeys(MYSQL_CONTAINER.getUsername());
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
-    passwordField.sendKeys(MYSQL_CONTAINER.getPassword());
+    passwordField.sendKeys(MYSQL_CONTAINER.getPassword(), Keys.TAB);
 
     // Click the next button to advance to Data Selection step
-    nextButton.click();
+    clickElement(nextButton);
 
     // Assert that the data selection step is displayed
     WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
@@ -130,7 +131,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
 
     // Click the next button again to advance to Data Transfer Process step
     nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    nextButton.click();
+    clickElement(nextButton);
 
     // Assert that the data transfer process step is displayed via WebDriver
     WebElement dataTransferProcessStep =
@@ -168,7 +169,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     System.setProperty("simulateFailure", "true");
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    nextButton.click(); // From Intro to Config
+    clickElement(nextButton); // From Intro to Config
 
     // Step 1: Connection Configuration
     // Fill in valid connection parameters
@@ -185,14 +186,14 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     passwordField.sendKeys("testpassword");
 
     // Click the next button to advance to Data Selection step
-    nextButton.click();
+    clickElement(nextButton);
 
     // Assert that the data selection step is displayed
     WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
     assertNotNull(dataSelectionStep);
 
     // Click the next button again to advance to Data Transfer Process step
-    nextButton.click();
+    clickElement(nextButton);
 
     // Assert that the data transfer process step is displayed via WebDriver
     WebElement dataTransferProcessStep =
@@ -207,7 +208,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     System.setProperty("simulateRollbackFailure", "true"); // Simulate rollback failure
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    nextButton.click(); // From Intro to Config
+    clickElement(nextButton); // From Intro to Config
 
     // Step 1: Connection Configuration
     // Fill in valid connection parameters
@@ -225,7 +226,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     passwordField.sendKeys("testpassword");
 
     // Click the next button to advance to Data Selection step
-    nextButton.click();
+    clickElement(nextButton);
 
     // Assert that the data selection step is displayed
 
@@ -233,7 +234,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     assertNotNull(dataSelectionStep);
 
     // Click the next button again to advance to Data Transfer Process step (simulates failure)
-    nextButton.click();
+    clickElement(nextButton);
 
     // Assert that the data transfer process step is displayed
 
@@ -268,7 +269,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    nextButton.click(); // To Connection Config
+    clickElement(nextButton); // To Connection Config
 
     WebElement backButton = waitForVaadinElement(driver, By.id("back-button"));
     assertTrue(backButton.isEnabled(), "Back button should be enabled on step 1");
@@ -287,7 +288,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   public void testDataTransferWithNonBlankPassword() {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/data-transfer");
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    nextButton.click(); // To Connection Config
+    clickElement(nextButton); // To Connection Config
 
     WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
     hostField.sendKeys(MYSQL_CONTAINER.getHost());
@@ -305,7 +306,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
     passwordField.sendKeys(MYSQL_CONTAINER.getPassword());
 
-    nextButton.click(); // To Data Selection
+    clickElement(nextButton); // To Data Selection
 
     WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
     assertNotNull(dataSelectionStep);
