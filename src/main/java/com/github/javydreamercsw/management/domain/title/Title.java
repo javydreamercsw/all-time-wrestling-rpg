@@ -100,6 +100,13 @@ public class Title extends AbstractEntity<Long> {
   private List<Segment> segments = new ArrayList<>();
 
   public void awardTitleTo(@NonNull List<Wrestler> newChampions, @NonNull Instant awardDate) {
+    awardTitleTo(newChampions, awardDate, null);
+  }
+
+  public void awardTitleTo(
+      @NonNull List<Wrestler> newChampions,
+      @NonNull Instant awardDate,
+      @Nullable Segment wonAtSegment) {
     // End the current reign if one exists.
     getCurrentReign().ifPresent(reign -> reign.endReign(awardDate));
 
@@ -108,6 +115,7 @@ public class Title extends AbstractEntity<Long> {
     newReign.setTitle(this);
     newReign.getChampions().addAll(newChampions);
     newReign.setStartDate(awardDate);
+    newReign.setWonAtSegment(wonAtSegment);
     getTitleReigns().add(newReign);
 
     this.champion = new ArrayList<>(newChampions); // Ensure champion field is updated

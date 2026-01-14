@@ -56,7 +56,9 @@ class RankingViewTest extends AbstractViewTest {
     championshipDTO = new ChampionshipDTO(1L, "Test Title", "test.png", WrestlerTier.MIDCARDER);
     when(rankingService.getChampionships()).thenReturn(List.of(championshipDTO));
     when(rankingService.getCurrentChampions(championshipDTO.getId()))
-        .thenReturn(List.of(new ChampionDTO(1L, "Champion", 1000L, 1L)));
+        .thenReturn(
+            List.of(
+                ChampionDTO.builder().id(1L).name("Champion").fans(1000L).reignDays(1L).build()));
     List<RankedWrestlerDTO> contenders = new ArrayList<>();
     contenders.add(new RankedWrestlerDTO(2L, "Contender 2", 700L, 1, WrestlerTier.MIDCARDER));
     contenders.add(new RankedWrestlerDTO(3L, "Contender 1", 500L, 2, WrestlerTier.ROOKIE));
@@ -90,8 +92,8 @@ class RankingViewTest extends AbstractViewTest {
   @Test
   void testTeamRankings() {
     List<RankedTeamDTO> teamContenders = new ArrayList<>();
-    teamContenders.add(new RankedTeamDTO(1L, "Team 1", 1500L, 1));
-    teamContenders.add(new RankedTeamDTO(2L, "Team 2", 1200L, 2));
+    teamContenders.add(RankedTeamDTO.builder().id(1L).name("Team 1").fans(1500L).rank(1).build());
+    teamContenders.add(RankedTeamDTO.builder().id(2L).name("Team 2").fans(1200L).rank(2).build());
     when(rankingService.getRankedContenders(championshipDTO.getId()))
         .thenAnswer(invocation -> teamContenders);
 

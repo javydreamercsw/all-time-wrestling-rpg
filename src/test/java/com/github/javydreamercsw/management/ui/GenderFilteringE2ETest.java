@@ -55,9 +55,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   @BeforeEach
   @Transactional
   public void setupTestData() {
+    titleRepository.deleteAll();
     segmentRepository.deleteAll();
     wrestlerRepository.deleteAll();
-    titleRepository.deleteAll();
 
     maleWrestler = new Wrestler();
     maleWrestler.setName("Male Wrestler");

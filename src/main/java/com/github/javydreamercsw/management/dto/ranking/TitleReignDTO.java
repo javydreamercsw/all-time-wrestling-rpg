@@ -1,0 +1,44 @@
+/*
+* Copyright (C) 2026 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
+package com.github.javydreamercsw.management.dto.ranking;
+
+import java.time.Instant;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class TitleReignDTO {
+  private Long id;
+  private List<String> championNames;
+  private List<Long> championIds;
+  private Instant startDate;
+  private Instant endDate;
+  private long durationDays;
+  private boolean isCurrent;
+  private Long wonAtShowId;
+  private String wonAtShowName;
+  private String championshipName;
+  private String championshipTier;
+}
