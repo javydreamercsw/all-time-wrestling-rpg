@@ -142,12 +142,14 @@ public class TitleController {
     }
     Title title = titleOpt.get();
 
-    List<Wrestler> wrestlers = wrestlerRepository.findAllById(wrestlerIds);
-    if (wrestlers.size() != wrestlerIds.size()) {
-      return ResponseEntity.badRequest().body(new ErrorResponse("One or more wrestlers not found"));
-    }
+    List<Wrestler> wrestlers =
+        wrestlerIds.stream()
+            .map(wrestlerService::findById)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
 
-    titleService.awardTitleTo(title, wrestlers);
+    titleService.awardTitleTo(title, wrestlers, null);
     return ResponseEntity.ok(title);
   }
 

@@ -150,7 +150,18 @@ public class TitleService {
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
   public void awardTitleTo(@NonNull Title title, @NonNull List<Wrestler> newChampions) {
-    title.awardTitleTo(newChampions, Instant.now(clock));
+    awardTitleTo(title, newChampions, null);
+  }
+
+  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
+      allEntries = true)
+  public void awardTitleTo(
+      @NonNull Title title,
+      @NonNull List<Wrestler> newChampions,
+      com.github.javydreamercsw.management.domain.show.segment.Segment wonAtSegment) {
+    title.awardTitleTo(newChampions, Instant.now(clock), wonAtSegment);
     titleRepository.save(title);
   }
 
