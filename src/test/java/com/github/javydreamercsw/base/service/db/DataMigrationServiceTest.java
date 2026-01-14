@@ -47,7 +47,7 @@ class DataMigrationServiceTest {
           .withPassword("test");
 
   private static final String H2_URL = "jdbc:h2:./src/test/resources/db/sample";
-  private static final String H2_PROTECTED_URL = "jdbc:h2:./src/test/resources/db/sample_protected";
+  private static final String H2_PROTECTED_URL = "jdbc:h2:./target/db/sample_protected";
   private static final String H2_USER = "sa";
   private static final String H2_PASSWORD = "";
 
@@ -86,6 +86,9 @@ class DataMigrationServiceTest {
     // 1. Copy sample DB to sample_protected
     Path source = Paths.get("src/test/resources/db/sample.mv.db");
     Path target = Paths.get("target/db/sample_protected.mv.db");
+    if (!Files.exists(target)) {
+      Files.createDirectories(target);
+    }
     Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
 
     // 2. Set password on the protected DB
