@@ -227,14 +227,6 @@ class DataMigrationServiceTest {
             Assertions.assertTrue(count > 0, "No title_champions were migrated!");
           },
           () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM title_contender");
-            rs.next();
-            int count = rs.getInt(1);
-            if (count == 0) {
-              System.out.println("Warning: No title_contenders were migrated!");
-            }
-          },
-          () -> {
             ResultSet rs = stmt.executeQuery("SELECT count(*) FROM title_reign");
             rs.next();
             int count = rs.getInt(1);
@@ -269,38 +261,6 @@ class DataMigrationServiceTest {
             rs.next();
             int count = rs.getInt(1);
             Assertions.assertTrue(count > 0, "No faction_heat_events were migrated!");
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM drama_event");
-            rs.next();
-            int count = rs.getInt(1);
-            if (count == 0) {
-              log.warn("Warning: No drama_events were migrated!");
-            }
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM multi_wrestler_feud");
-            rs.next();
-            int count = rs.getInt(1);
-            if (count == 0) {
-              log.warn("Warning: No multi_wrestler_feuds were migrated!");
-            }
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM feud_participant");
-            rs.next();
-            int count = rs.getInt(1);
-            if (count == 0) {
-              log.warn("Warning: No feud_participants were migrated!");
-            }
-          },
-          () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM feud_heat_event");
-            rs.next();
-            int count = rs.getInt(1);
-            if (count == 0) {
-              log.warn("Warning: No feud_heat_events were migrated!");
-            }
           });
 
       ResultSet tables = sourceStatement.executeQuery("SHOW TABLES");

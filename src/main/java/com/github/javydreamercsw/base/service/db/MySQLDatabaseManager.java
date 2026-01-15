@@ -20,6 +20,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import lombok.Getter;
+import lombok.NonNull;
 
 @Getter
 public class MySQLDatabaseManager implements DatabaseManager {
@@ -28,10 +29,15 @@ public class MySQLDatabaseManager implements DatabaseManager {
   private final String user;
   private final String password;
 
-  public MySQLDatabaseManager(String url, String user, String password) {
+  public MySQLDatabaseManager(@NonNull String url, @NonNull String user, @NonNull String password) {
     this.url = url;
     this.user = user;
     this.password = password;
+    try {
+      Class.forName("com.mysql.cj.jdbc.Driver");
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException("MySQL JDBC Driver not found", e);
+    }
   }
 
   public String getURL() {

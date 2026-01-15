@@ -62,7 +62,6 @@ public class DataTransferView extends Main {
   private TextField targetUser;
   private PasswordField targetPassword;
   private Button testConnectionButton;
-  private Button transferButton;
   private Button nextButton;
   private Button backButton;
   private Button cancelButton;

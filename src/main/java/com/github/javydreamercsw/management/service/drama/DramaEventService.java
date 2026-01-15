@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.DramaEventCreatedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -34,6 +35,7 @@ import java.util.Random;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -57,6 +59,7 @@ public class DramaEventService {
   private final InjuryService injuryService;
   private final Clock clock;
   private final Random random;
+  private final ApplicationEventPublisher eventPublisher;
 
   /**
    * Create a new drama event.
@@ -112,6 +115,8 @@ public class DramaEventService {
     DramaEvent savedEvent = dramaEventRepository.save(event);
     log.info("Created drama event: {} ({})", savedEvent.getTitle(), savedEvent.getSeverity());
 
+    eventPublisher.publishEvent(new DramaEventCreatedEvent(this, savedEvent));
+
     return Optional.of(savedEvent);
   }
 
@@ -158,6 +163,8 @@ public class DramaEventService {
 
     DramaEvent savedEvent = dramaEventRepository.save(event);
     log.info("Generated random drama event: {} for {}", savedEvent.getTitle(), wrestler.getName());
+
+    eventPublisher.publishEvent(new DramaEventCreatedEvent(this, savedEvent));
 
     return Optional.of(savedEvent);
   }

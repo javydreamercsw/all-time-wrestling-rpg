@@ -97,4 +97,9 @@ public class InboxEventTypeConfig {
   public InboxEventType feudHeatChange() {
     return new InboxEventType("FEUD_HEAT_CHANGE", "Feud Heat Change");
   }
+
+  @Bean
+  public InboxEventType dramaEventCreated() {
+    return new InboxEventType("DRAMA_EVENT_CREATED", "Drama Event Created");
+  }
 }

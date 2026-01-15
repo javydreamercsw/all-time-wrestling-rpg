@@ -1,2 +1,0 @@
-ALTER TABLE title
-ADD COLUMN include_in_rankings BOOLEAN NOT NULL DEFAULT TRUE;
