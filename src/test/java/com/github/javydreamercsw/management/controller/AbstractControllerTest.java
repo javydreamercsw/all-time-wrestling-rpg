@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.controller;
 
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
@@ -31,6 +33,7 @@ import com.github.javydreamercsw.management.service.ranking.TierRecalculationSer
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import com.vaadin.flow.spring.security.RequestUtil;
 import com.vaadin.flow.spring.security.VaadinDefaultRequestCache;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Import;
@@ -39,6 +42,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 @Import({TestSecurityConfig.class, TestAIConfiguration.class})
 @ActiveProfiles("test")
@@ -46,8 +51,14 @@ import org.springframework.test.web.servlet.MockMvc;
 @TestPropertySource(properties = {"spring.main.allow-bean-definition-overriding=true"})
 public abstract class AbstractControllerTest extends AbstractIntegrationTest {
 
-  @Autowired protected MockMvc mockMvc;
+  protected MockMvc mockMvc;
   @Autowired protected ObjectMapper objectMapper;
+  @Autowired private WebApplicationContext context;
+
+  @BeforeEach
+  public void configureMockMvc() {
+    mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+  }
 
   // Infrastructure mocks likely needed by multiple controllers or security
   @MockitoBean protected CustomUserDetailsService customUserDetailsService;
