@@ -16,36 +16,47 @@
 */
 package com.github.javydreamercsw.management.controller.injury;
 
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 /**
  * Integration tests for InjuryController. Tests the complete REST API functionality for injury
  * management.
  */
 @SpringBootTest
+@WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN", "ROLE_BOOKER"})
 @DisplayName("InjuryController Integration Tests")
-class InjuryControllerIT extends AbstractControllerTest {
+class InjuryControllerIT extends AbstractIntegrationTest {
 
+  @Autowired private WebApplicationContext context;
+  private MockMvc mockMvc;
+  @Autowired private ObjectMapper objectMapper;
   @Autowired private InjuryRepository injuryRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private DeckRepository deckRepository;
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   void setUp() {
+    mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+
     // Delete in correct order to avoid foreign key constraint violations
     injuryRepository.deleteAll();
     deckRepository.deleteAll();
