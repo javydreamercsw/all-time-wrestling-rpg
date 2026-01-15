@@ -16,7 +16,11 @@
 */
 package com.github.javydreamercsw.base.service.db;
 
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -119,16 +124,45 @@ public class DataMigrationService {
       @NonNull String url,
       @NonNull String user,
       @NonNull String password,
-      @NonNull String migrationLocation) {
-    log.debug("Starting Flyway migration for target database at {}", url);
-    Flyway flyway =
-        Flyway.configure()
-            .dataSource(url, user, password)
-            .locations(migrationLocation)
-            .cleanDisabled(false)
-            .load();
+      @NonNull String migrationPath) {
+    String location = "";
+    // Try to resolve filesystem path for exploded WARs
+    try {
+      URL resource = this.getClass().getClassLoader().getResource("application.properties");
+      if (resource != null && "file".equals(resource.getProtocol())) {
+        Path path = Paths.get(resource.toURI()).getParent();
+        location = "filesystem:" + path.toString() + migrationPath;
+      }
+    } catch (Exception e) {
+      log.warn("Failed to resolve filesystem path for migrations, falling back to classpath", e);
+    }
+
+    log.debug(
+        "Starting Flyway migration for target database at {} using location: {}", url, location);
+
+    var configuration = Flyway.configure().locations(location).cleanDisabled(false);
+
+    if (url.startsWith("jdbc:mysql")) {
+      try {
+        Class<?> driverClass = Class.forName("com.mysql.cj.jdbc.Driver");
+        Driver driver = (Driver) driverClass.getDeclaredConstructor().newInstance();
+        SimpleDriverDataSource ds = new SimpleDriverDataSource(driver, url, user, password);
+        configuration.dataSource(ds);
+      } catch (Exception e) {
+        throw new RuntimeException("Failed to configure MySQL DataSource", e);
+      }
+    } else {
+      configuration.dataSource(url, user, password);
+    }
+
+    Flyway flyway = configuration.load();
     flyway.clean(); // Clean target before migration
-    flyway.migrate(); // Migrate target schema
+    var result = flyway.migrate(); // Migrate target schema
+
+    if (result.migrationsExecuted == 0) {
+      throw new RuntimeException("No migrations executed! Check migration location: " + location);
+    }
+
     log.debug("Finished Flyway migration for target database.");
   }
 
@@ -138,16 +172,13 @@ public class DataMigrationService {
       @NonNull String password)
       throws SQLException {
 
+    // Perform Flyway migration for the target database before opening data transfer connections
+    setTargetFlywayMigration(
+        targetManager.getURL(), targetManager.getUser(), password, "db/migration/mysql");
+
     try (Connection sourceConnection = sourceManager.getConnection();
         Connection targetConnection = targetManager.getConnection(password)) {
       try {
-        // Perform Flyway migration for the target database
-        setTargetFlywayMigration(
-            targetManager.getURL(),
-            targetManager.getUser(),
-            password,
-            "filesystem:src/main/resources/db/migration/mysql");
-
         targetConnection.setAutoCommit(false);
 
         // Truncate all tables in the target database before migration
