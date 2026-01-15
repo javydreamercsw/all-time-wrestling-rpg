@@ -43,7 +43,7 @@ public class JacksonConfig {
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     // Configure serialization behavior
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
     mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
