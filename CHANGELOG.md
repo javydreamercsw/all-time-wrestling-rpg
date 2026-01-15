@@ -1,5 +1,25 @@
 # Changelog
 
+## [v1.4.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.4.1) (2026-01-14)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.4.0...v1.4.1)
+
+**Implemented enhancements:**
+
+- Release 1.4.0 [\#114](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/114) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Fixed bugs:**
+
+- Fix cache issue with persistence of wrestler data [\#110](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/110) ([javydreamercsw](https://github.com/javydreamercsw))
+- Release 1.3.1 [\#109](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/109) ([javydreamercsw](https://github.com/javydreamercsw))
+- Release 1.2.3 [\#101](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/101) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Merged pull requests:**
+
+- Release Bug Fix 1.3.2 [\#112](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/112) ([javydreamercsw](https://github.com/javydreamercsw))
+- Build\(deps\): Bump org.codehaus.cargo:cargo-maven3-plugin from 1.10.25 to 1.10.26 [\#108](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/108) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Merge after release [\#106](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/106) ([javydreamercsw](https://github.com/javydreamercsw))
+
 ## [v1.4.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.4.0) (2026-01-14)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.3.2...v1.4.0)
