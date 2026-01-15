@@ -274,6 +274,10 @@
     </dependency>
     <dependency>
       <groupId>com.vaadin</groupId>
+      <artifactId>vaadin-dev</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.vaadin</groupId>
       <artifactId>vaadin-lumo-theme</artifactId>
       <version>${vaadin.version}</version>
     </dependency>
@@ -281,6 +285,14 @@
       <groupId>com.vaadin</groupId>
       <artifactId>vaadin-avatar-flow</artifactId>
       <version>${vaadin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -390,11 +402,7 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-actuator</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-health</artifactId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -565,7 +573,6 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -988,7 +995,18 @@
             <!--Only used with H2-->
             <ignoredUnusedDeclaredDependency>com.h2database:h2</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-core</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-dev</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-flyway</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-data-jpa-test</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-webmvc-test</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-aop</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-test-autoconfigure</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-actuator</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-web</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
+          <ignoredUsedUndeclaredDependencies>
+            <ignoredUsedUndeclaredDependency>org.springframework.boot:spring-boot-health</ignoredUsedUndeclaredDependency>
+          </ignoredUsedUndeclaredDependencies>
           <ignoredNonTestScopedDependencies>
             <ignoredNonTestScopedDependency>ch.qos.logback:logback-classic</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>junit:junit</ignoredNonTestScopedDependency>
