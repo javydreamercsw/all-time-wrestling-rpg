@@ -53,7 +53,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.129.Final</version>
+        <version>4.2.9.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -134,157 +134,20 @@
     <!-- Vaadin -->
     <dependency>
       <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-notification-flow</artifactId>
-      <version>${vaadin.version}</version>
+      <artifactId>vaadin-spring-boot-starter</artifactId>
     </dependency>
     <dependency>
       <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-select-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>flow-data</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-menu-bar-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-side-nav-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-app-layout-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-spring</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-checkbox-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-flow-components-base</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>flow-html-components</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-form-layout-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-renderer-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-progress-bar-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-dialog-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-combo-box-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-details-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-split-layout-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-grid-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-login-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-text-field-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-ordered-layout-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>flow-server</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-icons-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-context-menu-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-button-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-confirm-dialog-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-date-picker-flow</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-tabs-flow</artifactId>
-      <version>${vaadin.version}</version>
+      <artifactId>vaadin-core</artifactId>
     </dependency>
     <dependency>
       <groupId>com.vaadin</groupId>
       <artifactId>vaadin-dev</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-lumo-theme</artifactId>
-      <version>${vaadin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin</groupId>
-      <artifactId>vaadin-avatar-flow</artifactId>
-      <version>${vaadin.version}</version>
+      <groupId>com.github.oshi</groupId>
+      <artifactId>oshi-core</artifactId>
+      <version>6.7.0</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -302,7 +165,7 @@
     <dependency>
       <groupId>org.vaadin.stefan</groupId>
       <artifactId>fullcalendar2</artifactId>
-      <version>6.3.1</version>
+      <version>7.0.0</version>
     </dependency>
     <!-- Persistence -->
     <dependency>
@@ -426,7 +289,7 @@
     <dependency>
       <groupId>org.yaml</groupId>
       <artifactId>snakeyaml</artifactId>
-      <version>2.4</version>
+      <version>2.5</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -450,7 +313,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.0.0</version>
+      <version>6.1.0</version>
       <scope>test</scope>
     </dependency>
     <!-- Security -->
@@ -498,13 +361,13 @@
     <dependency>
       <groupId>com.github.mvysny.kaributesting</groupId>
       <artifactId>karibu-testing-v10</artifactId>
-      <version>2.5.0</version>
+      <version>2.6.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.github.mvysny.kaributesting</groupId>
       <artifactId>karibu-testing-v24</artifactId>
-      <version>2.5.0</version>
+      <version>2.6.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -559,7 +422,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.20.0</version>
+      <version>2.21.0</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -624,7 +487,7 @@
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations-jakarta</artifactId>
-      <version>2.2.32</version>
+      <version>2.2.41</version>
     </dependency>
     <dependency>
       <groupId>jakarta.persistence</groupId>
@@ -662,16 +525,11 @@
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-models-jakarta</artifactId>
-      <version>2.2.32</version>
+      <version>2.2.41</version>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jetbrains</groupId>
-      <artifactId>annotations</artifactId>
-      <version>13.0</version>
     </dependency>
   </dependencies>
 
@@ -980,6 +838,10 @@
         <configuration>
           <failOnWarning>true</failOnWarning>
           <ignoredUnusedDeclaredDependencies>
+            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-spring-boot-starter</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-core</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-dev</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>com.github.oshi:oshi-core</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-tomcat</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-data-jpa</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>jakarta.transaction:jakarta.transaction-api</ignoredUnusedDeclaredDependency>
@@ -995,8 +857,6 @@
             <ignoredUnusedDeclaredDependency>org.flywaydb:flyway-mysql</ignoredUnusedDeclaredDependency>
             <!--Only used with H2-->
             <ignoredUnusedDeclaredDependency>com.h2database:h2</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-core</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-dev</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-flyway</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-data-jpa-test</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-webmvc-test</ignoredUnusedDeclaredDependency>
@@ -1004,6 +864,7 @@
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-test-autoconfigure</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-actuator</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-web</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-validation</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
           <ignoredUsedUndeclaredDependencies>
             <ignoredUsedUndeclaredDependency>org.springframework.boot:spring-boot-health</ignoredUsedUndeclaredDependency>

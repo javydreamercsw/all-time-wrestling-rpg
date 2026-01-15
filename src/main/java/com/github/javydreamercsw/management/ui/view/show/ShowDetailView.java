@@ -87,7 +87,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
@@ -1349,7 +1348,7 @@ public class ShowDetailView extends Main
   }
 
   @Override
-  public void onApplicationEvent(@NotNull ApplicationEvent event) {
+  public void onApplicationEvent(@NonNull ApplicationEvent event) {
     if (event instanceof AdjudicationCompletedEvent adjudicationCompletedEvent) {
       // Check if the completed show is the one currently being viewed
       assert adjudicationCompletedEvent.getShow().getId() != null;
