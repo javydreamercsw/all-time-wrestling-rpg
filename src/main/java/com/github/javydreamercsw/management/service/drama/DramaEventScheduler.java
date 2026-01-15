@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.drama;
 
+import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
+
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
@@ -25,6 +27,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -53,6 +58,7 @@ public class DramaEventScheduler {
   @Scheduled(fixedRate = 3_600_000) // Every hour (3,600,000 milliseconds)
   public void generateRandomDramaEvents() {
     try {
+      setSystemAuthentication();
       log.debug("Starting scheduled drama event generation...");
 
       List<Wrestler> allWrestlers = wrestlerRepository.findAll();
@@ -79,6 +85,8 @@ public class DramaEventScheduler {
 
     } catch (Exception e) {
       log.error("Error during scheduled drama event generation", e);
+    } finally {
+      SecurityContextHolder.clearContext();
     }
   }
 
@@ -89,6 +97,7 @@ public class DramaEventScheduler {
   @Scheduled(fixedRate = 1_800_000) // Every 30 minutes (1,800,000 milliseconds)
   public void processUnprocessedEvents() {
     try {
+      setSystemAuthentication();
       log.debug("Starting scheduled drama event processing...");
 
       int processedCount = dramaEventService.processUnprocessedEvents();
@@ -101,6 +110,8 @@ public class DramaEventScheduler {
 
     } catch (Exception e) {
       log.error("Error during scheduled drama event processing", e);
+    } finally {
+      SecurityContextHolder.clearContext();
     }
   }
 
@@ -108,6 +119,7 @@ public class DramaEventScheduler {
   @Scheduled(cron = "0 0 9 * * MON") // Every Monday at 9 AM
   public void weeklyDramaEventSummary() {
     try {
+      setSystemAuthentication();
       log.info("=== WEEKLY DRAMA EVENTS SUMMARY ===");
 
       List<com.github.javydreamercsw.management.domain.drama.DramaEvent> recentEvents =
@@ -156,7 +168,20 @@ public class DramaEventScheduler {
 
     } catch (Exception e) {
       log.error("Error generating weekly drama event summary", e);
+    } finally {
+      SecurityContextHolder.clearContext();
     }
+  }
+
+  private void setSystemAuthentication() {
+    var auth =
+        new UsernamePasswordAuthenticationToken(
+            "system",
+            null,
+            List.of(
+                new SimpleGrantedAuthority("ROLE_" + ADMIN_ROLE),
+                new SimpleGrantedAuthority("ADMIN")));
+    SecurityContextHolder.getContext().setAuthentication(auth);
   }
 
   // ==================== PRIVATE HELPER METHODS ====================

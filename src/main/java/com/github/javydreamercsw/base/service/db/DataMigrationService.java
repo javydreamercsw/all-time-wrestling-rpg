@@ -212,13 +212,17 @@ public class DataMigrationService {
         migrateTitles(sourceConnection, targetConnection);
         migrateSegmentTitles(sourceConnection, targetConnection);
         migrateTitleChampions(sourceConnection, targetConnection);
-        // migrateTitleContenders(sourceConnection, targetConnection); // Remove
+        migrateTitleContenders(sourceConnection, targetConnection);
         migrateTitleReigns(sourceConnection, targetConnection);
         migrateTitleReignChampions(sourceConnection, targetConnection);
         migrateRivalries(sourceConnection, targetConnection);
         migrateHeatEvents(sourceConnection, targetConnection);
         migrateFactionRivalries(sourceConnection, targetConnection);
         migrateFactionHeatEvents(sourceConnection, targetConnection);
+        migrateDramaEvents(sourceConnection, targetConnection);
+        migrateMultiWrestlerFeuds(sourceConnection, targetConnection);
+        migrateFeudParticipants(sourceConnection, targetConnection);
+        migrateFeudHeatEvents(sourceConnection, targetConnection);
         migrateInboxItems(sourceConnection, targetConnection);
         migrateTierBoundaries(sourceConnection, targetConnection);
         migrateInboxItemTargets(sourceConnection, targetConnection);
@@ -232,6 +236,194 @@ public class DataMigrationService {
         throw new SQLException("Error during data migration: " + e.getMessage(), e);
       } finally {
         targetConnection.setAutoCommit(true);
+      }
+    }
+  }
+
+  private void migrateFeudHeatEvents(
+      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      throws SQLException {
+    String sql =
+        "INSERT INTO feud_heat_event (feud_heat_event_id, feud_id, "
+            + "heat_change, heat_after_event, reason, event_date, creation_date) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet =
+            sourceStatement.executeQuery(
+                "SELECT feud_heat_event_id, feud_id, heat_change, "
+                    + "heat_after_event, reason, event_date, creation_date FROM feud_heat_event");
+        PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
+
+      int count = 0;
+      while (resultSet.next()) {
+        targetStatement.setLong(1, resultSet.getLong("feud_heat_event_id"));
+        targetStatement.setLong(2, resultSet.getLong("feud_id"));
+        targetStatement.setInt(3, resultSet.getInt("heat_change"));
+        targetStatement.setInt(4, resultSet.getInt("heat_after_event"));
+        targetStatement.setString(5, resultSet.getString("reason"));
+        targetStatement.setTimestamp(6, resultSet.getTimestamp("event_date"));
+        targetStatement.setTimestamp(7, resultSet.getTimestamp("creation_date"));
+        targetStatement.addBatch();
+        count++;
+        if (count % 1000 == 0) {
+          targetStatement.executeBatch();
+        }
+      }
+      if (count > 0) {
+        targetStatement.executeBatch();
+        log.debug("Migrated {} Feud Heat Events", count);
+      }
+    }
+  }
+
+  private void migrateFeudParticipants(
+      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      throws SQLException {
+    String sql =
+        "INSERT INTO feud_participant (feud_participant_id, feud_id, wrestler_id, "
+            + "role, is_active, joined_date, left_date, left_reason, creation_date) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet =
+            sourceStatement.executeQuery(
+                "SELECT feud_participant_id, feud_id, wrestler_id, role, is_active, "
+                    + "joined_date, left_date, left_reason, creation_date FROM feud_participant");
+        PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
+
+      int count = 0;
+      while (resultSet.next()) {
+        targetStatement.setLong(1, resultSet.getLong("feud_participant_id"));
+        targetStatement.setLong(2, resultSet.getLong("feud_id"));
+        targetStatement.setLong(3, resultSet.getLong("wrestler_id"));
+        targetStatement.setString(4, resultSet.getString("role"));
+        targetStatement.setBoolean(5, resultSet.getBoolean("is_active"));
+        targetStatement.setTimestamp(6, resultSet.getTimestamp("joined_date"));
+        targetStatement.setTimestamp(7, resultSet.getTimestamp("left_date"));
+        targetStatement.setString(8, resultSet.getString("left_reason"));
+        targetStatement.setTimestamp(9, resultSet.getTimestamp("creation_date"));
+        targetStatement.addBatch();
+        count++;
+        if (count % 1000 == 0) {
+          targetStatement.executeBatch();
+        }
+      }
+      if (count > 0) {
+        targetStatement.executeBatch();
+        log.debug("Migrated {} Feud Participants", count);
+      }
+    }
+  }
+
+  private void migrateMultiWrestlerFeuds(
+      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      throws SQLException {
+    String sql =
+        "INSERT INTO multi_wrestler_feud (multi_wrestler_feud_id, name, description, "
+            + "heat, is_active, started_date, ended_date, storyline_notes, creation_date) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet =
+            sourceStatement.executeQuery(
+                "SELECT multi_wrestler_feud_id, name, description, heat, is_active, started_date,"
+                    + " ended_date, storyline_notes, creation_date FROM multi_wrestler_feud");
+        PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
+
+      int count = 0;
+      while (resultSet.next()) {
+        targetStatement.setLong(1, resultSet.getLong("multi_wrestler_feud_id"));
+        targetStatement.setString(2, resultSet.getString("name"));
+        targetStatement.setString(3, resultSet.getString("description"));
+        targetStatement.setInt(4, resultSet.getInt("heat"));
+        targetStatement.setBoolean(5, resultSet.getBoolean("is_active"));
+        targetStatement.setTimestamp(6, resultSet.getTimestamp("started_date"));
+        targetStatement.setTimestamp(7, resultSet.getTimestamp("ended_date"));
+        targetStatement.setString(8, resultSet.getString("storyline_notes"));
+        targetStatement.setTimestamp(9, resultSet.getTimestamp("creation_date"));
+        targetStatement.addBatch();
+        count++;
+        if (count % 1000 == 0) {
+          targetStatement.executeBatch();
+        }
+      }
+      if (count > 0) {
+        targetStatement.executeBatch();
+        log.debug("Migrated {} Multi-Wrestler Feuds", count);
+      }
+    }
+  }
+
+  private void migrateDramaEvents(
+      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      throws SQLException {
+    String sql =
+        "INSERT INTO drama_event (drama_event_id, title, description, event_type, "
+            + "severity, event_date, creation_date, heat_impact, fan_impact, "
+            + "injury_caused, rivalry_created, rivalry_ended, is_processed, "
+            + "processed_date, processing_notes, primary_wrestler_id, secondary_wrestler_id) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet =
+            sourceStatement.executeQuery(
+                "SELECT drama_event_id, title, description, event_type, severity, event_date,"
+                    + " creation_date, heat_impact, fan_impact, injury_caused, rivalry_created,"
+                    + " rivalry_ended, is_processed, processed_date, processing_notes,"
+                    + " primary_wrestler_id, secondary_wrestler_id FROM drama_event");
+        PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
+
+      int count = 0;
+      while (resultSet.next()) {
+        targetStatement.setLong(1, resultSet.getLong("drama_event_id"));
+        targetStatement.setString(2, resultSet.getString("title"));
+        targetStatement.setString(3, resultSet.getString("description"));
+        targetStatement.setString(4, resultSet.getString("event_type"));
+        targetStatement.setString(5, resultSet.getString("severity"));
+        targetStatement.setTimestamp(6, resultSet.getTimestamp("event_date"));
+        targetStatement.setTimestamp(7, resultSet.getTimestamp("creation_date"));
+        targetStatement.setInt(8, resultSet.getInt("heat_impact"));
+        targetStatement.setInt(9, resultSet.getInt("fan_impact"));
+        targetStatement.setBoolean(10, resultSet.getBoolean("injury_caused"));
+        targetStatement.setBoolean(11, resultSet.getBoolean("rivalry_created"));
+        targetStatement.setBoolean(12, resultSet.getBoolean("rivalry_ended"));
+        targetStatement.setBoolean(13, resultSet.getBoolean("is_processed"));
+        targetStatement.setTimestamp(14, resultSet.getTimestamp("processed_date"));
+        targetStatement.setString(15, resultSet.getString("processing_notes"));
+        targetStatement.setLong(16, resultSet.getLong("primary_wrestler_id"));
+        targetStatement.setLong(17, resultSet.getLong("secondary_wrestler_id"));
+        targetStatement.addBatch();
+        count++;
+        if (count % 1000 == 0) {
+          targetStatement.executeBatch();
+        }
+      }
+      if (count > 0) {
+        targetStatement.executeBatch();
+        log.debug("Migrated {} Drama Events", count);
+      }
+    }
+  }
+
+  private void migrateTitleContenders(
+      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      throws SQLException {
+    String sql = "INSERT INTO title_contender (title_id, wrestler_id) VALUES (?, ?)";
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet =
+            sourceStatement.executeQuery("SELECT title_id, wrestler_id FROM title_contender");
+        PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
+
+      int count = 0;
+      while (resultSet.next()) {
+        targetStatement.setLong(1, resultSet.getLong("title_id"));
+        targetStatement.setLong(2, resultSet.getLong("wrestler_id"));
+        targetStatement.addBatch();
+        count++;
+        if (count % 1000 == 0) {
+          targetStatement.executeBatch();
+        }
+      }
+      if (count > 0) {
+        targetStatement.executeBatch();
+        log.debug("Migrated {} Title Contenders", count);
       }
     }
   }
