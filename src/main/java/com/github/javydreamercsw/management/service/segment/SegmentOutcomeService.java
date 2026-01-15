@@ -35,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for determining match outcomes when none is provided. Uses the same logic as
@@ -52,6 +53,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
    * Determines the match outcome if none is provided in the context. Uses wrestler stats, tier
    * bonuses, and weighted random selection.
    */
+  @Transactional
   @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
   public SegmentNarrationService.SegmentNarrationContext determineOutcomeIfNeeded(
       @NonNull SegmentNarrationService.SegmentNarrationContext context) {

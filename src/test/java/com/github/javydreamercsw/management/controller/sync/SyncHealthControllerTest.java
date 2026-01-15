@@ -28,16 +28,12 @@ import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor.SyncM
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class SyncHealthControllerTest extends AbstractControllerTest {
 
   @MockitoBean private ISyncHealthMonitor healthMonitor;
-
-  @MockitoBean(name = "recalculateRanking")
-  private CommandLineRunner recalculateRanking;
 
   @Test
   void shouldReturnHealthStatus() throws Exception {
