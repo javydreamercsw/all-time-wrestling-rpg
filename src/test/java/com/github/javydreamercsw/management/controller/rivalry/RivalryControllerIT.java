@@ -16,18 +16,19 @@
 */
 package com.github.javydreamercsw.management.controller.rivalry;
 
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.controller.rivalry.RivalryController.AddHeatRequest;
 import com.github.javydreamercsw.management.controller.rivalry.RivalryController.CreateRivalryRequest;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +36,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 /**
  * Integration tests for RivalryController. Tests the complete REST API functionality for rivalry
@@ -42,14 +47,19 @@ import org.springframework.http.MediaType;
  */
 @SpringBootTest
 @DisplayName("RivalryController Integration Tests")
-class RivalryControllerIT extends AbstractControllerTest {
+@WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN", "ROLE_BOOKER"})
+class RivalryControllerIT extends AbstractIntegrationTest {
 
+  @Autowired private WebApplicationContext context;
+  private MockMvc mockMvc;
+  @Autowired private ObjectMapper objectMapper;
   @Autowired private RivalryRepository rivalryRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private DeckRepository deckRepository;
 
   @BeforeEach
   public void setUp() throws Exception {
+    mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+
     // Delete in correct order to avoid foreign key constraint violations
     rivalryRepository.deleteAll();
     deckRepository.deleteAll();
