@@ -23,6 +23,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
@@ -48,6 +49,7 @@ public class Holiday {
   @NotNull @Column(name = "theme", nullable = false)
   private String theme;
 
+  @Lob
   @Column(name = "decorations")
   private String decorations;
 

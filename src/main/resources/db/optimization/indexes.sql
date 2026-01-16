@@ -21,25 +21,25 @@ CREATE INDEX IF NOT EXISTS idx_wrestler_faction ON wrestler(faction_id);
 -- ==================== SHOW TABLE INDEXES ====================
 
 -- Index for show name searches
-CREATE INDEX IF NOT EXISTS idx_show_name ON show(name);
+CREATE INDEX IF NOT EXISTS idx_show_name ON wrestling_show(name);
 
 -- Index for show date queries (critical for calendar views and date-based filtering)
-CREATE INDEX IF NOT EXISTS idx_show_date ON show(show_date);
+CREATE INDEX IF NOT EXISTS idx_show_date ON wrestling_show(show_date);
 
 -- Index for show type filtering
-CREATE INDEX IF NOT EXISTS idx_show_type ON show(show_type_id);
+CREATE INDEX IF NOT EXISTS idx_show_type ON wrestling_show(show_type_id);
 
 -- Index for show season filtering
-CREATE INDEX IF NOT EXISTS idx_show_season ON show(season_id);
+CREATE INDEX IF NOT EXISTS idx_show_season ON wrestling_show(season_id);
 
 -- Index for show template relationships
-CREATE INDEX IF NOT EXISTS idx_show_template ON show(template_id);
+CREATE INDEX IF NOT EXISTS idx_show_template ON wrestling_show(template_id);
 
 -- Index for show external ID (Notion sync)
-CREATE INDEX IF NOT EXISTS idx_show_external_id ON show(external_id);
+CREATE INDEX IF NOT EXISTS idx_show_external_id ON wrestling_show(external_id);
 
 -- Composite index for date range queries (most common show query pattern)
-CREATE INDEX IF NOT EXISTS idx_show_date_type ON show(show_date, show_type_id);
+CREATE INDEX IF NOT EXISTS idx_show_date_type ON wrestling_show(show_date, show_type_id);
 
 -- ==================== RIVALRY TABLE INDEXES ====================
 
@@ -186,7 +186,7 @@ CREATE INDEX IF NOT EXISTS idx_segment_type_name ON segment_type(name);
 
 -- Index for tracking entity creation patterns (using creation_date for date-based queries)
 CREATE INDEX IF NOT EXISTS idx_wrestler_creation_month ON wrestler(creation_date);
-CREATE INDEX IF NOT EXISTS idx_show_creation_month ON show(creation_date);
+CREATE INDEX IF NOT EXISTS idx_show_creation_month ON wrestling_show(creation_date);
 CREATE INDEX IF NOT EXISTS idx_rivalry_creation_month ON rivalry(creation_date);
 
 -- ==================== COMPOSITE INDEXES FOR COMPLEX QUERIES ====================
@@ -196,7 +196,7 @@ CREATE INDEX IF NOT EXISTS idx_rivalry_creation_month ON rivalry(creation_date);
 CREATE INDEX IF NOT EXISTS idx_wrestler_availability ON wrestler(tier, faction_id, creation_date);
 
 -- Index for show calendar queries (date + type combinations)
-CREATE INDEX IF NOT EXISTS idx_show_calendar ON show(show_date DESC, show_type_id, season_id);
+CREATE INDEX IF NOT EXISTS idx_show_calendar ON wrestling_show(show_date DESC, show_type_id, season_id);
 
 -- Index for rivalry heat tracking (active rivalries by heat level)
 CREATE INDEX IF NOT EXISTS idx_rivalry_heat_tracking ON rivalry(is_active, heat DESC, creation_date);
@@ -207,7 +207,7 @@ CREATE INDEX IF NOT EXISTS idx_injury_recovery ON injury(is_active, severity, in
 -- ==================== FOREIGN KEY PERFORMANCE INDEXES ====================
 
 -- Additional indexes on foreign keys that might not be automatically indexed
-CREATE INDEX IF NOT EXISTS idx_show_fk_composite ON show(show_type_id, season_id, template_id);
+CREATE INDEX IF NOT EXISTS idx_show_fk_composite ON wrestling_show(show_type_id, season_id, template_id);
 CREATE INDEX IF NOT EXISTS idx_title_reign_fk_composite ON title_reign_champion(title_reign_id, wrestler_id);
 
 -- ==================== FULL TEXT SEARCH INDEXES (H2 Specific) ====================
@@ -215,7 +215,7 @@ CREATE INDEX IF NOT EXISTS idx_title_reign_fk_composite ON title_reign_champion(
 -- Full text search indexes for name-based searches
 -- Note: H2 supports full-text search with FULLTEXT indexes
 CREATE INDEX IF NOT EXISTS idx_wrestler_name_fulltext ON wrestler(name);
-CREATE INDEX IF NOT EXISTS idx_show_name_fulltext ON show(name);
+CREATE INDEX IF NOT EXISTS idx_show_name_fulltext ON wrestling_show(name);
 CREATE INDEX IF NOT EXISTS idx_title_name_fulltext ON title(name);
 
 -- ==================== STATISTICS UPDATE ====================

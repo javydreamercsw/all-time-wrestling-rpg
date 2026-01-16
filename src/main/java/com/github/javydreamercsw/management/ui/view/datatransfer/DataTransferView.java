@@ -174,7 +174,7 @@ public class DataTransferView extends Main {
 
     tableSelectionCombo = new ComboBox<>("Select Table to Migrate");
     tableSelectionCombo.setId("table-selection-combo");
-    tableSelectionCombo.setItems("All Tables", "Wrestler", "Faction", "Title", "Show");
+    tableSelectionCombo.setItems("All Tables", "Wrestler", "Faction", "Title", "Wrestling Show");
     tableSelectionCombo.setValue("All Tables");
 
     dataSelectionSection.add(title, tableSelectionCombo);
