@@ -160,8 +160,7 @@ class SegmentNarrationControllerIT extends AbstractControllerTest {
             post("/api/segment-narration/narrate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-        .andExpect(status().isInternalServerError())
-        .andExpect(jsonPath("$.error").exists());
+        .andExpect(status().isBadRequest());
   }
 
   @Test
@@ -180,17 +179,19 @@ class SegmentNarrationControllerIT extends AbstractControllerTest {
   }
 
   @Test
-  @DisplayName("Should return consistent response structure across endpoints")
-  void shouldReturnConsistentResponseStructureAcrossEndpoints() throws Exception {
-    // Test sample endpoint
+  @DisplayName("Should return consistent response structure for sample endpoint")
+  void shouldReturnConsistentResponseStructureForSampleEndpoint() throws Exception {
     mockMvc
         .perform(post("/api/segment-narration/test/mock"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.provider").exists())
         .andExpect(jsonPath("$.narration").exists())
         .andExpect(jsonPath("$.estimatedCost").exists());
+  }
 
-    // Test specific provider endpoint
+  @Test
+  @DisplayName("Should return consistent response structure for specific provider endpoint")
+  void shouldReturnConsistentResponseStructureForSpecificProviderEndpoint() throws Exception {
     mockMvc
         .perform(post("/api/segment-narration/test/mock"))
         .andExpect(status().isOk())

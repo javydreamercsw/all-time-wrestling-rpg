@@ -36,6 +36,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class SegmentNarrationControllerTest extends AbstractControllerTest {
 
   @MockitoBean private SegmentOutcomeProvider segmentOutcomeProvider;
+  @MockitoBean private SegmentNarrationServiceFactory serviceFactory;
 
   @Test
   void testNarrateMatch() throws Exception {
