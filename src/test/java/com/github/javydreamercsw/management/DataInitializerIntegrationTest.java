@@ -28,10 +28,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Transactional
+@WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN"})
 class DataInitializerIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private DataInitializer dataInitializer;

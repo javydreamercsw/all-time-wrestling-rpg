@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.service.drama;
 
 import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
 import java.util.Random;
@@ -61,8 +60,9 @@ public class DramaEventScheduler {
       setSystemAuthentication();
       log.debug("Starting scheduled drama event generation...");
 
-      List<Wrestler> allWrestlers = wrestlerRepository.findAll();
-      if (allWrestlers.isEmpty()) {
+      List<Long> wrestlerIds = wrestlerRepository.findAllIds();
+
+      if (wrestlerIds.isEmpty()) {
         log.debug("No wrestlers found, skipping drama event generation");
         return;
       }
@@ -78,7 +78,8 @@ public class DramaEventScheduler {
       log.info("Generating {} random drama events", eventsToGenerate);
 
       for (int i = 0; i < eventsToGenerate; i++) {
-        generateSingleRandomEvent(allWrestlers);
+        Long randomWrestlerId = wrestlerIds.get(random.nextInt(wrestlerIds.size()));
+        generateSingleRandomEvent(randomWrestlerId);
       }
 
       log.info("Completed scheduled drama event generation");
@@ -204,19 +205,16 @@ public class DramaEventScheduler {
   }
 
   /** Generate a single random drama event. */
-  private void generateSingleRandomEvent(@NonNull List<Wrestler> allWrestlers) {
+  private void generateSingleRandomEvent(@NonNull Long wrestlerId) {
     try {
-      // Select a random wrestler
-      Wrestler randomWrestler = allWrestlers.get(random.nextInt(allWrestlers.size()));
-
       // Generate the event
-      var eventOpt = dramaEventService.generateRandomDramaEvent(randomWrestler.getId());
+      var eventOpt = dramaEventService.generateRandomDramaEvent(wrestlerId);
 
       if (eventOpt.isPresent()) {
         var event = eventOpt.get();
         log.info("Generated drama event: {} ({})", event.getTitle(), event.getSeverity());
       } else {
-        log.warn("Failed to generate drama event for wrestler: {}", randomWrestler.getName());
+        log.warn("Failed to generate drama event for wrestler ID: {}", wrestlerId);
       }
 
     } catch (Exception e) {

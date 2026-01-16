@@ -83,8 +83,23 @@ public class PermissionService {
       if (collection.isEmpty()) {
         return true;
       }
+      // Create a copy to avoid ConcurrentModificationException if the collection is being modified
+      // elsewhere
+      java.util.List<?> copy = new java.util.ArrayList<>(collection);
       // Check if all items in the collection are owned by the user
-      return collection.stream().allMatch(this::isOwner);
+      return copy.stream().allMatch(this::isOwner);
+    }
+
+    return false;
+  }
+
+  public boolean isOwner(Long targetId, String targetType) {
+    if (targetId == null || targetType == null) {
+      return false;
+    }
+
+    if (targetType.equals("Wrestler")) {
+      return wrestlerRepository.findById(targetId).map(this::isOwner).orElse(false);
     }
 
     return false;

@@ -16,7 +16,12 @@
 */
 package com.github.javydreamercsw.base.security;
 
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Supplier;
 import lombok.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -58,11 +63,25 @@ public final class GeneralSecurityUtils {
     SecurityContext originalContext = SecurityContextHolder.getContext();
     try {
       SecurityContext context = SecurityContextHolder.createEmptyContext();
+
+      // Create a mock account and role for the principal
+      Account account = new Account(username, password, username + "@example.com");
+      try {
+        RoleName roleName = RoleName.valueOf(role);
+        Role r = new Role(roleName, roleName.name() + " role");
+        account.setRoles(Collections.singleton(r));
+      } catch (IllegalArgumentException e) {
+        // Fallback for custom roles not in enum if needed, or just skip
+      }
+
+      CustomUserDetails userDetails = new CustomUserDetails(account, null);
+
+      List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+      authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+      authorities.add(new SimpleGrantedAuthority(role));
+
       Authentication authentication =
-          new UsernamePasswordAuthenticationToken(
-              username,
-              password,
-              Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)));
+          new UsernamePasswordAuthenticationToken(userDetails, password, authorities);
       context.setAuthentication(authentication);
       SecurityContextHolder.setContext(context);
       return supplier.get();

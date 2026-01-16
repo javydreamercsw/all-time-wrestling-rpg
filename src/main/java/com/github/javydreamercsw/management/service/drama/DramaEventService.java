@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.drama;
 
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
@@ -57,6 +59,7 @@ public class DramaEventService {
   private final WrestlerService wrestlerService;
   private final RivalryService rivalryService;
   private final InjuryService injuryService;
+  private final com.github.javydreamercsw.base.security.PermissionService permissionService;
   private final Clock clock;
   private final Random random;
   private final ApplicationEventPublisher eventPublisher;
@@ -248,7 +251,8 @@ public class DramaEventService {
    * @param wrestlerId ID of the wrestler
    * @return List of drama events involving the wrestler
    */
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestlerId, 'Wrestler')")
   public List<DramaEvent> getEventsForWrestler(Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     if (wrestlerOpt.isEmpty()) {
@@ -264,7 +268,8 @@ public class DramaEventService {
    * @param pageable Pagination information
    * @return Page of drama events
    */
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestlerId, 'Wrestler')")
   public Page<DramaEvent> getEventsForWrestler(Long wrestlerId, Pageable pageable) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     if (wrestlerOpt.isEmpty()) {
@@ -278,10 +283,34 @@ public class DramaEventService {
    *
    * @return List of recent drama events
    */
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'PLAYER')")
   public List<DramaEvent> getRecentEvents() {
     Instant thirtyDaysAgo = clock.instant().minus(30, ChronoUnit.DAYS);
-    return dramaEventRepository.findRecentEvents(thirtyDaysAgo);
+    List<DramaEvent> events = dramaEventRepository.findRecentEvents(thirtyDaysAgo);
+
+    // Filter for players - they should only see events involving their own wrestlers
+    boolean isAdminOrBooker =
+        SecurityUtils.getAuthentication()
+            .map(
+                auth ->
+                    auth.getAuthorities().stream()
+                        .anyMatch(
+                            a ->
+                                a.getAuthority().equals("ROLE_" + RoleName.ADMIN.name())
+                                    || a.getAuthority().equals("ROLE_" + RoleName.BOOKER.name())))
+            .orElse(false);
+
+    if (!isAdminOrBooker) {
+      return events.stream()
+          .filter(
+              e ->
+                  permissionService.isOwner(e.getPrimaryWrestler())
+                      || (e.getSecondaryWrestler() != null
+                          && permissionService.isOwner(e.getSecondaryWrestler())))
+          .toList();
+    }
+
+    return events;
   }
 
   /**
@@ -291,7 +320,9 @@ public class DramaEventService {
    * @param wrestler2Id ID of second wrestler
    * @return List of drama events between the wrestlers
    */
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'BOOKER') or (@permissionService.isOwner(#wrestler1Id, 'Wrestler') and"
+          + " @permissionService.isOwner(#wrestler2Id, 'Wrestler'))")
   public List<DramaEvent> getEventsBetweenWrestlers(Long wrestler1Id, Long wrestler2Id) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
@@ -430,14 +461,16 @@ public class DramaEventService {
 
   /** Get a random opponent for multi-wrestler events. */
   private Wrestler getRandomOpponent(@NonNull Wrestler wrestler) {
-    List<Wrestler> allWrestlers = wrestlerRepository.findAll();
-    allWrestlers.removeIf(w -> w.getId().equals(wrestler.getId()));
+    List<Long> allWrestlerIds = wrestlerRepository.findAllIds();
+    List<Long> eligibleIds =
+        allWrestlerIds.stream().filter(id -> !id.equals(wrestler.getId())).toList();
 
-    if (allWrestlers.isEmpty()) {
+    if (eligibleIds.isEmpty()) {
       return null;
     }
 
-    return allWrestlers.get(random.nextInt(allWrestlers.size()));
+    Long randomId = eligibleIds.get(random.nextInt(eligibleIds.size()));
+    return wrestlerRepository.findById(randomId).orElse(null);
   }
 
   /** Generate event template with title and description. */

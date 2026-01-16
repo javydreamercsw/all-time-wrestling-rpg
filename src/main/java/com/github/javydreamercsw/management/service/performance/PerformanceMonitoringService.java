@@ -84,21 +84,21 @@ public class PerformanceMonitoringService {
   }
 
   /** Gets the current value of a counter. */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public long getCounter(String counterName) {
     AtomicLong counter = counters.get(counterName);
     return counter != null ? counter.get() : 0;
   }
 
   /** Gets the current value of a timer. */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public long getTimer(String timerName) {
     AtomicLong timer = timers.get(timerName);
     return timer != null ? timer.get() : 0;
   }
 
   /** Gets comprehensive performance metrics. */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public Map<String, Object> getPerformanceMetrics() {
     Map<String, Object> metrics = new HashMap<>();
 
@@ -209,7 +209,7 @@ public class PerformanceMonitoringService {
   }
 
   /** Gets health status information as a map. */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public Map<String, Object> getHealthStatus() {
     var heapMemory = memoryBean.getHeapMemoryUsage();
     double memoryUsagePercent = (double) heapMemory.getUsed() / heapMemory.getMax() * 100;
@@ -228,7 +228,7 @@ public class PerformanceMonitoringService {
   }
 
   /** Resets all performance metrics - useful for testing. */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public void resetMetrics() {
     counters.clear();
     timers.clear();
@@ -237,7 +237,7 @@ public class PerformanceMonitoringService {
   }
 
   /** Gets performance recommendations based on current metrics. */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public Map<String, String> getPerformanceRecommendations() {
     Map<String, String> recommendations = new HashMap<>();
 

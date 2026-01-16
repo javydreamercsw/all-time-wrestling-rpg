@@ -36,8 +36,10 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Component
 public class WithCustomMockUserSecurityContextFactory
     implements WithSecurityContextFactory<WithCustomMockUser> {
 
@@ -106,10 +108,11 @@ public class WithCustomMockUserSecurityContextFactory
     CustomUserDetails principal = new CustomUserDetails(account, wrestler);
 
     // Ensure all roles are correctly mapped to authorities
-    Set<SimpleGrantedAuthority> authorities =
-        Arrays.stream(roles)
-            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-            .collect(Collectors.toSet());
+    java.util.List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+    for (String role : roles) {
+      authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+      authorities.add(new SimpleGrantedAuthority(role));
+    }
 
     Authentication authentication =
         new UsernamePasswordAuthenticationToken(principal, "ValidPassword1!", authorities);

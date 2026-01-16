@@ -89,12 +89,19 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @BeforeEach
   public void setupKaribu() {
     mocks = MockitoAnnotations.openMocks(this);
-    MockVaadin.setup(routes); // Set up Karibu with your discovered routes
+    // Only setup MockVaadin for UI view tests to avoid interfering with service-layer security
+    String packageName = this.getClass().getPackageName();
+    if (packageName.contains(".ui.view") && !packageName.contains(".security")) {
+      MockVaadin.setup(routes);
+    }
   }
 
   @AfterEach
   public void tearDown() throws Exception {
-    MockVaadin.tearDown();
+    String packageName = this.getClass().getPackageName();
+    if (packageName.contains(".ui.view") && !packageName.contains(".security")) {
+      MockVaadin.tearDown();
+    }
     if (mocks != null) {
       mocks.close();
     }

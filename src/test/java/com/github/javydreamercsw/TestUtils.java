@@ -23,12 +23,15 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import lombok.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -79,9 +82,13 @@ public class TestUtils {
       account.setRoles(Collections.singleton(adminRole));
       CustomUserDetails userDetails = new CustomUserDetails(account, null);
 
+      List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+      authorities.add(new SimpleGrantedAuthority("ROLE_" + RoleName.ADMIN.name()));
+      authorities.add(new SimpleGrantedAuthority(RoleName.ADMIN.name()));
+
       // Create an authentication token
       Authentication authentication =
-          new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+          new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
 
       // Set the authentication in the security context
       SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
@@ -103,8 +110,13 @@ public class TestUtils {
       Role adminRole = new Role(RoleName.ADMIN, "Admin role");
       account.setRoles(Collections.singleton(adminRole));
       CustomUserDetails userDetails = new CustomUserDetails(account, null);
+
+      List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+      authorities.add(new SimpleGrantedAuthority("ROLE_" + RoleName.ADMIN.name()));
+      authorities.add(new SimpleGrantedAuthority(RoleName.ADMIN.name()));
+
       Authentication authentication =
-          new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+          new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
       SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
       securityContext.setAuthentication(authentication);
       SecurityContextHolder.setContext(securityContext);
