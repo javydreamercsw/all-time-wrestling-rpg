@@ -146,17 +146,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
     WebElement readStatusComboBox =
         toolbar.findElement(By.cssSelector("vaadin-combo-box:nth-of-type(2)"));
 
-    readStatusComboBox.click();
-
-    // Wait for the "All" option to be visible and clickable within the combo box overlay
-
-    WebElement allOption =
-        wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.xpath(
-                    "//vaadin-combo-box-overlay//vaadin-combo-box-item[normalize-space(.)='All']")));
-
-    allOption.click();
+    selectFromVaadinComboBox(readStatusComboBox, "All");
 
     waitForVaadinToLoad(driver); // Wait for Vaadin to load after combo box selection
 

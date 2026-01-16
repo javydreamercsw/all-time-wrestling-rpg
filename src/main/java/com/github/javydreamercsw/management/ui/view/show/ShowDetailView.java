@@ -817,6 +817,7 @@ public class ShowDetailView extends Main
     dialog.setHeaderTitle("Add Segment to " + show.getName());
     dialog.setWidth("600px");
     dialog.setMaxWidth("90vw");
+    dialog.setId("add-segment-dialog");
 
     // Form layout
     FormLayout formLayout = new FormLayout();
@@ -971,6 +972,7 @@ public class ShowDetailView extends Main
     VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
     dialogLayout.setSpacing(true);
     dialogLayout.setPadding(false);
+    dialogLayout.setId("add-segment-dialog-layout");
 
     dialog.add(dialogLayout);
     dialog.open();
@@ -981,6 +983,7 @@ public class ShowDetailView extends Main
     dialog.setHeaderTitle("Edit Segment for " + segment.getShow().getName());
     dialog.setWidth("600px");
     dialog.setMaxWidth("90vw");
+    dialog.setId("edit-segment-dialog");
 
     // Form layout
     FormLayout formLayout = new FormLayout();
@@ -1132,6 +1135,7 @@ public class ShowDetailView extends Main
     VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
     dialogLayout.setSpacing(true);
     dialogLayout.setPadding(false);
+    dialogLayout.setId("edit-segment-dialog-layout");
 
     dialog.add(dialogLayout);
     dialog.open();
