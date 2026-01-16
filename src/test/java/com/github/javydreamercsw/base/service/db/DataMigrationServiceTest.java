@@ -264,16 +264,19 @@ class DataMigrationServiceTest {
           });
 
       ResultSet tables = sourceStatement.executeQuery("SHOW TABLES");
-      Assertions.assertAll(
-          "Verify row counts for all tables",
-          () -> {
-            while (tables.next()) {
-              String tableName = tables.getString(1);
-              if (tableName.equalsIgnoreCase("flyway_schema_history")) {
-                continue;
-              }
+      java.util.List<org.junit.jupiter.api.function.Executable> assertions =
+          new java.util.ArrayList<>();
+
+      while (tables.next()) {
+        String tableName = tables.getString(1);
+        if (tableName.equalsIgnoreCase("flyway_schema_history")) {
+          continue;
+        }
+        assertions.add(
+            () -> {
               try (Statement innerSourceStatement = sourceConnection.createStatement();
                   Statement innerTargetStatement = mySqlConnection.createStatement()) {
+                // Verify Row Count
                 final ResultSet sourceRs =
                     innerSourceStatement.executeQuery("SELECT count(*) FROM " + tableName);
                 sourceRs.next();
@@ -289,9 +292,42 @@ class DataMigrationServiceTest {
                     sourceCount,
                     targetCount,
                     "Row count for table " + tableName + " should match!");
+
+                // Verify Column Non-Null Counts
+                ResultSet columns =
+                    sourceConnection.getMetaData().getColumns(null, null, tableName, null);
+                while (columns.next()) {
+                  String columnName = columns.getString("COLUMN_NAME");
+                  final ResultSet sourceColRs =
+                      innerSourceStatement.executeQuery(
+                          "SELECT count(" + columnName + ") FROM " + tableName);
+                  sourceColRs.next();
+                  final int sourceColCount = sourceColRs.getInt(1);
+
+                  final ResultSet targetColRs =
+                      innerTargetStatement.executeQuery(
+                          "SELECT count("
+                              + columnName
+                              + ") FROM `"
+                              + tableName.toLowerCase()
+                              + "`");
+                  targetColRs.next();
+                  final int targetColCount = targetColRs.getInt(1);
+
+                  Assertions.assertEquals(
+                      sourceColCount,
+                      targetColCount,
+                      "Non-null count for column "
+                          + columnName
+                          + " in table "
+                          + tableName
+                          + " should match!");
+                }
               }
-            }
-          });
+            });
+      }
+      Assertions.assertAll(
+          "Verify row counts and non-null column counts for all tables", assertions);
     }
   }
 }

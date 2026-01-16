@@ -178,8 +178,15 @@ public class DataMigrationService {
 
     try (Connection sourceConnection = sourceManager.getConnection();
         Connection targetConnection = targetManager.getConnection(password)) {
+      boolean isMySQL = targetManager.getURL().startsWith("jdbc:mysql");
       try {
         targetConnection.setAutoCommit(false);
+
+        if (isMySQL) {
+          try (Statement s = targetConnection.createStatement()) {
+            s.execute("SET FOREIGN_KEY_CHECKS = 0");
+          }
+        }
 
         // Truncate all tables in the target database before migration
         truncateAllTables(targetConnection);
@@ -235,6 +242,13 @@ public class DataMigrationService {
         targetConnection.rollback();
         throw new SQLException("Error during data migration: " + e.getMessage(), e);
       } finally {
+        if (isMySQL) {
+          try (Statement s = targetConnection.createStatement()) {
+            s.execute("SET FOREIGN_KEY_CHECKS = 1");
+          } catch (SQLException e) {
+            log.warn("Failed to re-enable foreign key checks", e);
+          }
+        }
         targetConnection.setAutoCommit(true);
       }
     }
@@ -379,8 +393,16 @@ public class DataMigrationService {
         targetStatement.setString(5, resultSet.getString("severity"));
         targetStatement.setTimestamp(6, resultSet.getTimestamp("event_date"));
         targetStatement.setTimestamp(7, resultSet.getTimestamp("creation_date"));
-        targetStatement.setInt(8, resultSet.getInt("heat_impact"));
-        targetStatement.setInt(9, resultSet.getInt("fan_impact"));
+        if (resultSet.getObject("heat_impact") != null) {
+          targetStatement.setInt(8, resultSet.getInt("heat_impact"));
+        } else {
+          targetStatement.setObject(8, null);
+        }
+        if (resultSet.getObject("fan_impact") != null) {
+          targetStatement.setInt(9, resultSet.getInt("fan_impact"));
+        } else {
+          targetStatement.setObject(9, null);
+        }
         targetStatement.setBoolean(10, resultSet.getBoolean("injury_caused"));
         targetStatement.setBoolean(11, resultSet.getBoolean("rivalry_created"));
         targetStatement.setBoolean(12, resultSet.getBoolean("rivalry_ended"));
@@ -456,10 +478,18 @@ public class DataMigrationService {
         targetStatement.setString(2, resultSet.getString("description"));
         targetStatement.setString(3, resultSet.getString("theme"));
         targetStatement.setString(4, resultSet.getString("decorations"));
-        targetStatement.setInt(5, resultSet.getInt("day_of_month"));
+        if (resultSet.getObject("day_of_month") != null) {
+          targetStatement.setInt(5, resultSet.getInt("day_of_month"));
+        } else {
+          targetStatement.setObject(5, null);
+        }
         targetStatement.setString(6, resultSet.getString("holiday_month"));
         targetStatement.setString(7, resultSet.getString("day_of_week"));
-        targetStatement.setInt(8, resultSet.getInt("week_of_month"));
+        if (resultSet.getObject("week_of_month") != null) {
+          targetStatement.setInt(8, resultSet.getInt("week_of_month"));
+        } else {
+          targetStatement.setObject(8, null);
+        }
         targetStatement.setString(9, resultSet.getString("type"));
         targetStatement.setTimestamp(10, resultSet.getTimestamp("creation_date"));
         targetStatement.setString(11, resultSet.getString("external_id"));
@@ -1003,14 +1033,14 @@ public class DataMigrationService {
     String sql =
         "INSERT INTO segment (segment_id, show_id, segment_type_id, winner_id, "
             + "segment_date, duration_minutes, segment_rating, status, narration, "
-            + "summary, is_title_segment, is_npc_generated, external_id) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "summary, is_title_segment, is_npc_generated, external_id, LAST_SYNC) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT segment_id, show_id, segment_type_id, winner_id, "
-                    + "segment_date, duration_minutes, segment_rating, status, narration, "
-                    + "summary, is_title_segment, is_npc_generated, external_id FROM segment");
+                "SELECT segment_id, show_id, segment_type_id, winner_id, segment_date,"
+                    + " duration_minutes, segment_rating, status, narration, summary,"
+                    + " is_title_segment, is_npc_generated, external_id, LAST_SYNC FROM segment");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1024,14 +1054,23 @@ public class DataMigrationService {
           targetStatement.setObject(4, null);
         }
         targetStatement.setTimestamp(5, resultSet.getTimestamp("segment_date"));
-        targetStatement.setInt(6, resultSet.getInt("duration_minutes"));
-        targetStatement.setInt(7, resultSet.getInt("segment_rating"));
+        if (resultSet.getObject("duration_minutes") != null) {
+          targetStatement.setInt(6, resultSet.getInt("duration_minutes"));
+        } else {
+          targetStatement.setObject(6, null);
+        }
+        if (resultSet.getObject("segment_rating") != null) {
+          targetStatement.setInt(7, resultSet.getInt("segment_rating"));
+        } else {
+          targetStatement.setObject(7, null);
+        }
         targetStatement.setString(8, resultSet.getString("status"));
         targetStatement.setString(9, resultSet.getString("narration"));
         targetStatement.setString(10, resultSet.getString("summary"));
         targetStatement.setBoolean(11, resultSet.getBoolean("is_title_segment"));
         targetStatement.setBoolean(12, resultSet.getBoolean("is_npc_generated"));
         targetStatement.setString(13, resultSet.getString("external_id"));
+        targetStatement.setTimestamp(14, resultSet.getTimestamp("LAST_SYNC"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1160,12 +1199,12 @@ public class DataMigrationService {
       throws SQLException {
     String sql =
         "INSERT INTO show_template (template_id, name, description, show_type_id, "
-            + "notion_url, external_id, creation_date) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            + "notion_url, external_id, creation_date, LAST_SYNC) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 "SELECT template_id, name, description, show_type_id, "
-                    + "notion_url, external_id, creation_date FROM show_template");
+                    + "notion_url, external_id, creation_date, LAST_SYNC FROM show_template");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1177,6 +1216,7 @@ public class DataMigrationService {
         targetStatement.setString(5, resultSet.getString("notion_url"));
         targetStatement.setString(6, resultSet.getString("external_id"));
         targetStatement.setTimestamp(7, resultSet.getTimestamp("creation_date"));
+        targetStatement.setTimestamp(8, resultSet.getTimestamp("LAST_SYNC"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1264,18 +1304,19 @@ public class DataMigrationService {
     try (Statement showTablesStatement = connection.createStatement();
         Statement truncateStatement = connection.createStatement()) {
       log.info("Truncating All Tables");
-      // For MySQL, disable foreign key checks
-      truncateStatement.execute("SET FOREIGN_KEY_CHECKS = 0");
 
       ResultSet resultSet = showTablesStatement.executeQuery("SHOW TABLES");
       while (resultSet.next()) {
         String tableName = resultSet.getString(1);
-        truncateStatement.executeUpdate("TRUNCATE TABLE `" + tableName + "`");
+        if (!"flyway_schema_history".equalsIgnoreCase(tableName)
+            && !"hibernate_sequence".equalsIgnoreCase(tableName)) {
+          truncateStatement.executeUpdate("TRUNCATE TABLE `" + tableName + "`");
+        } else {
+          log.warn("Skipping table {}", tableName);
+        }
       }
       resultSet.close();
 
-      // For MySQL, re-enable foreign key checks
-      truncateStatement.execute("SET FOREIGN_KEY_CHECKS = 1");
       log.info("Truncated All Tables");
     }
   }
@@ -1378,10 +1419,13 @@ public class DataMigrationService {
   private void migrateNpcs(
       @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
       throws SQLException {
-    String sql = "INSERT INTO npc (ID, NAME, NPC_TYPE, EXTERNAL_ID) VALUES (?, ?, ?, ?)";
+    String sql =
+        "INSERT INTO npc (ID, NAME, NPC_TYPE, EXTERNAL_ID, DESCRIPTION, LAST_SYNC) "
+            + "VALUES (?, ?, ?, ?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
-            sourceStatement.executeQuery("SELECT ID, NAME, NPC_TYPE, EXTERNAL_ID FROM npc");
+            sourceStatement.executeQuery(
+                "SELECT ID, NAME, NPC_TYPE, EXTERNAL_ID, DESCRIPTION, LAST_SYNC FROM npc");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1390,6 +1434,8 @@ public class DataMigrationService {
         targetStatement.setString(2, resultSet.getString("NAME"));
         targetStatement.setString(3, resultSet.getString("NPC_TYPE"));
         targetStatement.setString(4, resultSet.getString("EXTERNAL_ID"));
+        targetStatement.setString(5, resultSet.getString("DESCRIPTION"));
+        targetStatement.setTimestamp(6, resultSet.getTimestamp("LAST_SYNC"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1408,13 +1454,13 @@ public class DataMigrationService {
       throws SQLException {
     String sql =
         "INSERT INTO faction (FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, "
-            + "FORMED_DATE, DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID) "
-            + "VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?)";
+            + "FORMED_DATE, DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 "SELECT FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, FORMED_DATE,"
-                    + " DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID FROM faction");
+                    + " DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID FROM faction");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1423,10 +1469,20 @@ public class DataMigrationService {
         targetStatement.setString(2, resultSet.getString("NAME"));
         targetStatement.setString(3, resultSet.getString("DESCRIPTION"));
         targetStatement.setBoolean(4, resultSet.getBoolean("IS_ACTIVE"));
-        targetStatement.setTimestamp(5, resultSet.getTimestamp("FORMED_DATE"));
-        targetStatement.setTimestamp(6, resultSet.getTimestamp("DISBANDED_DATE"));
-        targetStatement.setTimestamp(7, resultSet.getTimestamp("CREATION_DATE"));
-        targetStatement.setString(8, resultSet.getString("EXTERNAL_ID"));
+        if (resultSet.getObject("LEADER_ID") != null) {
+          targetStatement.setLong(5, resultSet.getLong("LEADER_ID"));
+        } else {
+          targetStatement.setObject(5, null);
+        }
+        targetStatement.setTimestamp(6, resultSet.getTimestamp("FORMED_DATE"));
+        targetStatement.setTimestamp(7, resultSet.getTimestamp("DISBANDED_DATE"));
+        targetStatement.setTimestamp(8, resultSet.getTimestamp("CREATION_DATE"));
+        targetStatement.setString(9, resultSet.getString("EXTERNAL_ID"));
+        if (resultSet.getObject("MANAGER_ID") != null) {
+          targetStatement.setLong(10, resultSet.getLong("MANAGER_ID"));
+        } else {
+          targetStatement.setObject(10, null);
+        }
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1446,14 +1502,16 @@ public class DataMigrationService {
     String sql =
         "INSERT INTO wrestler (wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, "
             + "STARTING_HEALTH, LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, "
-            + "FANS, TIER, BUMPS, CURRENT_HEALTH, IS_PLAYER, GENDER, DESCRIPTION, FACTION_ID) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "FANS, TIER, BUMPS, CURRENT_HEALTH, IS_PLAYER, GENDER, DESCRIPTION, FACTION_ID, "
+            + "IMAGE_URL, ACTIVE, ACCOUNT_ID, MANAGER_ID, LAST_SYNC) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 "SELECT wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, STARTING_HEALTH,"
                     + " LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, FANS, TIER, BUMPS,"
-                    + " CURRENT_HEALTH, IS_PLAYER, GENDER, DESCRIPTION, FACTION_ID FROM wrestler");
+                    + " CURRENT_HEALTH, IS_PLAYER, GENDER, DESCRIPTION, FACTION_ID, IMAGE_URL,"
+                    + " ACTIVE, ACCOUNT_ID, MANAGER_ID, LAST_SYNC FROM wrestler");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1469,8 +1527,16 @@ public class DataMigrationService {
         targetStatement.setString(9, resultSet.getString("EXTERNAL_ID"));
         targetStatement.setLong(10, resultSet.getLong("FANS"));
         targetStatement.setString(11, resultSet.getString("TIER"));
-        targetStatement.setInt(12, resultSet.getInt("BUMPS"));
-        targetStatement.setInt(13, resultSet.getInt("CURRENT_HEALTH"));
+        if (resultSet.getObject("BUMPS") != null) {
+          targetStatement.setInt(12, resultSet.getInt("BUMPS"));
+        } else {
+          targetStatement.setObject(12, null);
+        }
+        if (resultSet.getObject("CURRENT_HEALTH") != null) {
+          targetStatement.setInt(13, resultSet.getInt("CURRENT_HEALTH"));
+        } else {
+          targetStatement.setObject(13, null);
+        }
         targetStatement.setBoolean(14, resultSet.getBoolean("IS_PLAYER"));
         targetStatement.setString(15, resultSet.getString("GENDER"));
         targetStatement.setString(16, resultSet.getString("DESCRIPTION"));
@@ -1479,6 +1545,19 @@ public class DataMigrationService {
         } else {
           targetStatement.setObject(17, null);
         }
+        targetStatement.setString(18, resultSet.getString("IMAGE_URL"));
+        targetStatement.setBoolean(19, resultSet.getBoolean("ACTIVE"));
+        if (resultSet.getObject("ACCOUNT_ID") != null) {
+          targetStatement.setLong(20, resultSet.getLong("ACCOUNT_ID"));
+        } else {
+          targetStatement.setObject(20, null);
+        }
+        if (resultSet.getObject("MANAGER_ID") != null) {
+          targetStatement.setLong(21, resultSet.getLong("MANAGER_ID"));
+        } else {
+          targetStatement.setObject(21, null);
+        }
+        targetStatement.setTimestamp(22, resultSet.getTimestamp("LAST_SYNC"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1510,9 +1589,21 @@ public class DataMigrationService {
       while (resultSet.next()) {
         targetStatement.setLong(1, resultSet.getLong("INJURY_TYPE_ID"));
         targetStatement.setString(2, resultSet.getString("INJURY_NAME"));
-        targetStatement.setInt(3, resultSet.getInt("HEALTH_EFFECT"));
-        targetStatement.setInt(4, resultSet.getInt("STAMINA_EFFECT"));
-        targetStatement.setInt(5, resultSet.getInt("CARD_EFFECT"));
+        if (resultSet.getObject("HEALTH_EFFECT") != null) {
+          targetStatement.setInt(3, resultSet.getInt("HEALTH_EFFECT"));
+        } else {
+          targetStatement.setObject(3, null);
+        }
+        if (resultSet.getObject("STAMINA_EFFECT") != null) {
+          targetStatement.setInt(4, resultSet.getInt("STAMINA_EFFECT"));
+        } else {
+          targetStatement.setObject(4, null);
+        }
+        if (resultSet.getObject("CARD_EFFECT") != null) {
+          targetStatement.setInt(5, resultSet.getInt("CARD_EFFECT"));
+        } else {
+          targetStatement.setObject(5, null);
+        }
         targetStatement.setString(6, resultSet.getString("SPECIAL_EFFECTS"));
         targetStatement.setString(7, resultSet.getString("EXTERNAL_ID"));
         targetStatement.addBatch();
@@ -1576,14 +1667,14 @@ public class DataMigrationService {
       @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO team (TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, "
-            + "FACTION_ID, STATUS, FORMED_DATE, DISBANDED_DATE, EXTERNAL_ID) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        "INSERT INTO team (TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, FACTION_ID,"
+            + " STATUS, FORMED_DATE, DISBANDED_DATE, EXTERNAL_ID, MANAGER_ID, LAST_SYNC) VALUES (?,"
+            + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 "SELECT TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, FACTION_ID, STATUS,"
-                    + " FORMED_DATE, DISBANDED_DATE, EXTERNAL_ID FROM team");
+                    + " FORMED_DATE, DISBANDED_DATE, EXTERNAL_ID, MANAGER_ID, LAST_SYNC FROM team");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1602,6 +1693,12 @@ public class DataMigrationService {
         targetStatement.setTimestamp(8, resultSet.getTimestamp("FORMED_DATE"));
         targetStatement.setTimestamp(9, resultSet.getTimestamp("DISBANDED_DATE"));
         targetStatement.setString(10, resultSet.getString("EXTERNAL_ID"));
+        if (resultSet.getObject("MANAGER_ID") != null) {
+          targetStatement.setLong(11, resultSet.getLong("MANAGER_ID"));
+        } else {
+          targetStatement.setObject(11, null);
+        }
+        targetStatement.setTimestamp(12, resultSet.getTimestamp("LAST_SYNC"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
