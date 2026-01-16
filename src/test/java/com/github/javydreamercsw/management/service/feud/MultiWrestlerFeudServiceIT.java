@@ -52,6 +52,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
 
     // Create test-specific accounts
     createTestAccount("feud_admin", RoleName.ADMIN);
+    createTestAccount("feud_viewer", RoleName.VIEWER);
     Account bookerAccount = createTestAccount("feud_booker", RoleName.BOOKER);
     Account playerAccount1 = createTestAccount("feud_player1", RoleName.PLAYER);
     Account playerAccount2 = createTestAccount("feud_player2", RoleName.PLAYER);
@@ -267,7 +268,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  @WithCustomMockUser(username = "feud_viewer", roles = "VIEWER")
   void testAuthenticatedCanGetFeudById() {
     final Long[] feudId = new Long[1];
     TestUtils.runAsAdmin(
@@ -293,7 +294,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  @WithCustomMockUser(username = "feud_viewer", roles = "VIEWER")
   void testAuthenticatedCanGetActiveFeuds() {
     TestUtils.runAsAdmin(
         () ->

@@ -51,7 +51,6 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
   private com.github.javydreamercsw.management.service.sync.NotionSyncService notionSyncService;
 
   @Autowired private InjuryTypeRepository injuryTypeRepository;
-  @Autowired private InjuryTypeSyncService injuryTypeSyncService;
   @Autowired private SyncSessionManager syncSessionManager;
   @MockitoBean private NotionHandler notionHandler;
 

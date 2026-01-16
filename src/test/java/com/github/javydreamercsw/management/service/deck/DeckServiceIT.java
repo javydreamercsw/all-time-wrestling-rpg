@@ -46,6 +46,8 @@ class DeckServiceIT extends ManagementIntegrationTest {
     // Create test-specific accounts to avoid conflicts with global accounts
     Account booker = createTestAccount("deck_booker", RoleName.BOOKER);
     Account player = createTestAccount("deck_player", RoleName.PLAYER);
+    createTestAccount("deck_viewer", RoleName.VIEWER);
+    createTestAccount("deck_admin", RoleName.ADMIN);
 
     // Check if wrestler already exists for this account and reuse it or delete it
     bookerWrestler = wrestlerRepository.findByAccount(booker).orElse(null);
@@ -76,7 +78,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "admin",
+      username = "deck_admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanCreateDeck() {
     Deck deck = deckService.createDeck(bookerWrestler);
@@ -117,7 +119,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
+  @WithCustomMockUser(username = "deck_viewer", roles = "VIEWER")
   void testAuthenticatedCanCountDecks() {
     deckService.count();
     // No exception means success
