@@ -52,7 +52,7 @@ public class RivalryService {
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   /** Create a new rivalry between two wrestlers. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
@@ -89,7 +89,7 @@ public class RivalryService {
   }
 
   /** Add heat to a rivalry. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
@@ -115,7 +115,7 @@ public class RivalryService {
   }
 
   /** Add heat between two specific wrestlers. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
@@ -141,7 +141,7 @@ public class RivalryService {
   }
 
   /** Attempt to resolve a rivalry with dice rolls. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
@@ -193,7 +193,7 @@ public class RivalryService {
   }
 
   /** End a rivalry manually. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
@@ -303,7 +303,7 @@ public class RivalryService {
   }
 
   /** Update rivalry storyline notes. */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)
@@ -347,7 +347,7 @@ public class RivalryService {
     return rivalryRepository.findByExternalId(externalId);
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
       allEntries = true)

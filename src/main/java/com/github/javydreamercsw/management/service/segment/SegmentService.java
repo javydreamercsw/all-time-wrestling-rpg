@@ -134,7 +134,7 @@ public class SegmentService {
    * @param matchDate The date/time of the match
    * @return The created Segment
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Segment createSegment(
       @NonNull Show show, @NonNull SegmentType matchType, @NonNull Instant matchDate) {
     return createSegment(show, matchType, matchDate, new HashSet<>());
@@ -149,7 +149,7 @@ public class SegmentService {
    * @param titles The titles contested in this segment
    * @return The created Segment
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Segment createSegment(
       @NonNull Show show,
       @NonNull SegmentType matchType,
@@ -176,7 +176,7 @@ public class SegmentService {
    * @return The updated Segment.
    * @throws IllegalArgumentException if the segment with the given ID is not found.
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Segment updateSegment(@NonNull Long id, @NonNull SegmentDTO dto) {
     return segmentRepository
         .findById(id)
@@ -208,7 +208,7 @@ public class SegmentService {
    * @param segment The segment to update
    * @return The updated Segment
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Segment updateSegment(@NonNull Segment segment) {
     return segmentRepository.save(segment);
   }
@@ -368,7 +368,7 @@ public class SegmentService {
    *
    * @param id The ID of the match to delete
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void deleteSegment(@NonNull Long id) {
     segmentRepository.deleteById(id);
     log.info("Deleted match with ID: {}", id);

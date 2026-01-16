@@ -105,7 +105,7 @@ public class ShowService {
     return showRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Show save(@NonNull Show show) {
     show.setCreationDate(clock.instant());
     return showRepository.saveAndFlush(show);
@@ -264,7 +264,7 @@ public class ShowService {
    * @param templateId Template ID (optional)
    * @return Created show
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
@@ -325,7 +325,7 @@ public class ShowService {
    * @param templateId Template ID (optional)
    * @return Updated show if found
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
@@ -392,7 +392,7 @@ public class ShowService {
    * @param id Show ID
    * @return true if deleted, false if not found
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
@@ -407,7 +407,7 @@ public class ShowService {
     return false;
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,

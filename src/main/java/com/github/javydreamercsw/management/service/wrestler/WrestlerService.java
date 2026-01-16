@@ -70,12 +70,12 @@ public class WrestlerService {
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void createWrestler(@NonNull String name) {
     createWrestler(name, false, "", WrestlerTier.ROOKIE, null);
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Wrestler createWrestler(@NonNull String name, boolean isPlayer, String description) {
     return createWrestler(name, isPlayer, description, WrestlerTier.ROOKIE, null);
   }
@@ -88,7 +88,7 @@ public class WrestlerService {
    * @param description Character description
    * @return The created wrestler
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Wrestler createWrestler(
       @NonNull String name, boolean isPlayer, String description, @NonNull WrestlerTier tier) {
     return createWrestler(name, isPlayer, description, tier, null);
@@ -104,7 +104,7 @@ public class WrestlerService {
    * @param account The account to link to this wrestler (optional)
    * @return The created wrestler
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Wrestler createWrestler(
       @NonNull String name,
       boolean isPlayer,
@@ -138,7 +138,7 @@ public class WrestlerService {
    * @param accountId The ID of the account to assign, or null to unassign.
    * @return The updated wrestler, or empty if wrestler not found.
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> setAccountForWrestler(
       @NonNull Long wrestlerId, @Nullable Long accountId) {
     return wrestlerRepository
@@ -189,7 +189,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER') or @permissionService.isOwner(#wrestler)")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestler)")
   public Wrestler save(@NonNull Wrestler wrestler) {
     wrestler.setCreationDate(clock.instant());
     return wrestlerRepository.saveAndFlush(wrestler);
@@ -199,7 +199,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public void delete(@NonNull Wrestler wrestler) {
     dramaEventRepository.deleteByPrimaryWrestlerOrSecondaryWrestler(wrestler, wrestler);
     wrestlerRepository.delete(wrestler);
@@ -261,7 +261,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> awardFans(@NonNull Long wrestlerId, @NonNull Long fans) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -302,7 +302,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> addBump(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -329,7 +329,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> healBump(@NonNull Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -354,7 +354,7 @@ public class WrestlerService {
    * @param wrestlerId The wrestler's ID
    * @return The updated wrestler, or empty if not found
    */
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> healChance(@NonNull Long wrestlerId, @NonNull DiceBag diceBag) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -391,7 +391,7 @@ public class WrestlerService {
             });
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Wrestler> healChance(@NonNull Long wrestlerId) {
     return healChance(wrestlerId, new DiceBag(6));
   }
@@ -435,7 +435,7 @@ public class WrestlerService {
    * @return true if successful, false if wrestler not found or insufficient fans
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public boolean spendFans(@NonNull Long wrestlerId, @NonNull Long cost) {
     return awardFans(wrestlerId, -cost).isPresent();
   }
@@ -469,7 +469,7 @@ public class WrestlerService {
 
   /** Recalibrates the fan counts of all wrestlers to the minimum of their respective tiers. */
   @Transactional
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)
@@ -498,7 +498,7 @@ public class WrestlerService {
 
   /** Resets the fan counts of all wrestlers to 0 and their tier to ROOKIE. */
   @Transactional
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @CacheEvict(
       value = {WRESTLERS_CACHE, WRESTLER_STATS_CACHE},
       allEntries = true)

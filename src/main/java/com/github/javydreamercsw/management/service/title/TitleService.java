@@ -59,7 +59,7 @@ public class TitleService {
     return titleRepository.findByName(name).isPresent();
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
@@ -98,7 +98,7 @@ public class TitleService {
     return titleRepository.findByExternalId(externalId);
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
@@ -145,7 +145,7 @@ public class TitleService {
     return titleRepository.findByIsActiveTrueAndTier(tier);
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
@@ -153,7 +153,7 @@ public class TitleService {
     awardTitleTo(title, newChampions, null);
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
@@ -165,7 +165,7 @@ public class TitleService {
     titleRepository.save(title);
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
@@ -180,7 +180,7 @@ public class TitleService {
             });
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
@@ -210,7 +210,7 @@ public class TitleService {
             });
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
@@ -255,7 +255,7 @@ public class TitleService {
     return titleRepository.findTitlesHeldByWrestler(wrestler);
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
@@ -331,7 +331,7 @@ public class TitleService {
         .orElse(null);
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
@@ -359,7 +359,7 @@ public class TitleService {
         true, wrestler.getName() + " has been added as a challenger for " + title.getName());
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)

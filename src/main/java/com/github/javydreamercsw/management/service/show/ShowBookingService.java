@@ -85,7 +85,7 @@ public class ShowBookingService {
    * @return The booked show with all segments
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Show> bookShow(
       @NonNull String showName,
       @NonNull String showDescription,
@@ -107,7 +107,7 @@ public class ShowBookingService {
    * @return The booked show with all segments
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_BOOKER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Optional<Show> bookShow(
       @NonNull String showName,
       @NonNull String showDescription,
