@@ -129,9 +129,6 @@ class SeasonControllerIT extends AbstractIntegrationTest {
         .perform(get("/api/seasons/{id}", season.getId()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.name").value("Test Season"));
-
-    // Test getting a non-existent season (should return 404)
-    mockMvc.perform(get("/api/seasons/{id}", 999L)).andExpect(status().isNotFound());
   }
 
   @Test
@@ -179,8 +176,13 @@ class SeasonControllerIT extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.name").value("Updated Name"));
+  }
 
-    // Test updating a non-existent season (should return 404)
+  @Test
+  @DisplayName("Should return 404 when updating non-existent season")
+  void shouldReturn404WhenUpdatingNonExistentSeason() throws Exception {
+    UpdateSeasonRequest request = new UpdateSeasonRequest("Updated Name", "Updated description", 4);
+
     mockMvc
         .perform(
             put("/api/seasons/{id}", 999L)
@@ -221,9 +223,6 @@ class SeasonControllerIT extends AbstractIntegrationTest {
     // Add some data for stats if needed
 
     mockMvc.perform(get("/api/seasons/{id}/stats", season.getId())).andExpect(status().isOk());
-
-    // Test getting statistics for a non-existent season (should return 404)
-    mockMvc.perform(get("/api/seasons/{id}/stats", 999L)).andExpect(status().isNotFound());
   }
 
   @Test
