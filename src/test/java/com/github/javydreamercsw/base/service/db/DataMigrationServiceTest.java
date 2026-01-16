@@ -173,7 +173,7 @@ class DataMigrationServiceTest {
             Assertions.assertTrue(count > 0, "No show_templates were migrated!");
           },
           () -> {
-            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM `show`");
+            ResultSet rs = stmt.executeQuery("SELECT count(*) FROM wrestling_show");
             rs.next();
             int count = rs.getInt(1);
             Assertions.assertTrue(count > 0, "No shows were migrated!");

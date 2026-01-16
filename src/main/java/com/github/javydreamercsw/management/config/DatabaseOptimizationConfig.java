@@ -83,7 +83,8 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
       // Get table counts for key entities
       Integer wrestlerCount =
           jdbcTemplate.queryForObject("SELECT COUNT(*) FROM wrestler", Integer.class);
-      Integer showCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM show", Integer.class);
+      Integer showCount =
+          jdbcTemplate.queryForObject("SELECT COUNT(*) FROM wrestling_show", Integer.class);
       Integer rivalryCount =
           jdbcTemplate.queryForObject("SELECT COUNT(*) FROM rivalry", Integer.class);
       Integer injuryTypeCount =
@@ -147,7 +148,9 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
   private void checkLargeTablePerformance() {
     try {
       // Check tables that might benefit from additional indexes
-      String[] largeTables = {"wrestler", "show", "rivalry", "injury", "multi_wrestler_feud"};
+      String[] largeTables = {
+        "wrestler", "wrestling_show", "rivalry", "injury", "multi_wrestler_feud"
+      };
 
       for (String table : largeTables) {
         try {

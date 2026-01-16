@@ -1,0 +1,1 @@
+ALTER TABLE "SHOW" RENAME TO wrestling_show;

@@ -1152,14 +1152,14 @@ public class DataMigrationService {
       @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO `show` (show_id, name, description, show_date, show_type_id, "
+        "INSERT INTO wrestling_show (show_id, name, description, show_date, show_type_id, "
             + "season_id, template_id, external_id, creation_date) "
             + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 "SELECT show_id, name, description, show_date, show_type_id, "
-                    + "season_id, template_id, external_id, creation_date FROM `show`");
+                    + "season_id, template_id, external_id, creation_date FROM wrestling_show");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
