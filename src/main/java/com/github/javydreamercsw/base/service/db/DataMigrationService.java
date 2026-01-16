@@ -387,8 +387,16 @@ public class DataMigrationService {
         targetStatement.setBoolean(13, resultSet.getBoolean("is_processed"));
         targetStatement.setTimestamp(14, resultSet.getTimestamp("processed_date"));
         targetStatement.setString(15, resultSet.getString("processing_notes"));
-        targetStatement.setLong(16, resultSet.getLong("primary_wrestler_id"));
-        targetStatement.setLong(17, resultSet.getLong("secondary_wrestler_id"));
+        if (resultSet.getObject("primary_wrestler_id") != null) {
+          targetStatement.setLong(16, resultSet.getLong("primary_wrestler_id"));
+        } else {
+          targetStatement.setObject(16, null);
+        }
+        if (resultSet.getObject("secondary_wrestler_id") != null) {
+          targetStatement.setLong(17, resultSet.getLong("secondary_wrestler_id"));
+        } else {
+          targetStatement.setObject(17, null);
+        }
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -541,7 +549,11 @@ public class DataMigrationService {
       int count = 0;
       while (resultSet.next()) {
         targetStatement.setLong(1, resultSet.getLong("inbox_item_target_id"));
-        targetStatement.setLong(2, resultSet.getLong("inbox_item_id"));
+        if (resultSet.getObject("inbox_item_id") != null) {
+          targetStatement.setLong(2, resultSet.getLong("inbox_item_id"));
+        } else {
+          targetStatement.setObject(2, null);
+        }
         targetStatement.setString(3, resultSet.getString("target_id"));
         targetStatement.setString(4, resultSet.getString("external_id"));
         targetStatement.addBatch();
@@ -1118,8 +1130,16 @@ public class DataMigrationService {
         targetStatement.setString(3, resultSet.getString("description"));
         targetStatement.setTimestamp(4, resultSet.getTimestamp("show_date"));
         targetStatement.setLong(5, resultSet.getLong("show_type_id"));
-        targetStatement.setLong(6, resultSet.getLong("season_id"));
-        targetStatement.setLong(7, resultSet.getLong("template_id"));
+        if (resultSet.getObject("season_id") != null) {
+          targetStatement.setLong(6, resultSet.getLong("season_id"));
+        } else {
+          targetStatement.setObject(6, null);
+        }
+        if (resultSet.getObject("template_id") != null) {
+          targetStatement.setLong(7, resultSet.getLong("template_id"));
+        } else {
+          targetStatement.setObject(7, null);
+        }
         targetStatement.setString(8, resultSet.getString("external_id"));
         targetStatement.setTimestamp(9, resultSet.getTimestamp("creation_date"));
         targetStatement.addBatch();
