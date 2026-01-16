@@ -154,7 +154,9 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     Segment segment = new Segment();
     segment.setShow(show);
     segment.setSegmentType(segmentType);
-    segment.setSegmentDate(Instant.now()); // Reverted reflection hack
+    segment.setSegmentDate(
+        Instant.now()
+            .truncatedTo(java.time.temporal.ChronoUnit.MILLIS)); // Reverted reflection hack
     segment.setStatus(SegmentStatus.BOOKED);
     segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
     segment.addSegmentRule(segmentRule);

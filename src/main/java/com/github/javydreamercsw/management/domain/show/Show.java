@@ -41,7 +41,7 @@ import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
-@Table(name = "show")
+@Table(name = "wrestling_show")
 @Getter
 @Setter
 public class Show extends AbstractEntity<Long> {
