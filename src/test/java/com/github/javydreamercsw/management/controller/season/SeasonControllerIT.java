@@ -16,30 +16,44 @@
 */
 package com.github.javydreamercsw.management.controller.season;
 
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.github.javydreamercsw.management.controller.AbstractControllerTest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.controller.season.SeasonController.CreateSeasonRequest;
 import com.github.javydreamercsw.management.controller.season.SeasonController.UpdateSeasonRequest;
 import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 /**
  * Integration tests for SeasonController. Tests the complete REST API functionality for season
  * management.
  */
+@SpringBootTest
 @DisplayName("SeasonController Integration Tests")
-@WithMockUser(roles = "ADMIN")
-class SeasonControllerIT extends AbstractControllerTest {
+@WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN", "ROLE_BOOKER"})
+class SeasonControllerIT extends AbstractIntegrationTest {
+
+  private MockMvc mockMvc;
+  @Autowired private ObjectMapper objectMapper;
+  @Autowired private WebApplicationContext context;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     seasonRepository.deleteAll();
+    mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
   }
 
   @Test
@@ -223,19 +237,16 @@ class SeasonControllerIT extends AbstractControllerTest {
         .andExpect(jsonPath("$.showsPerPpv").value(5));
   }
 
-  private Season createTestSeason(String name) throws Exception {
-    CreateSeasonRequest request = new CreateSeasonRequest(name, "Test description", 5);
-    String responseContent =
-        mockMvc
-            .perform(
-                post("/api/seasons")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
+  private Season createTestSeason(@NonNull String name) {
+    return createTestSeason(name, true);
+  }
 
-    return objectMapper.readValue(responseContent, Season.class);
+  private Season createTestSeason(@NonNull String name, boolean active) {
+    Season season = new Season();
+    season.setName(name);
+    season.setDescription("Test description");
+    season.setShowsPerPpv(5);
+    season.setIsActive(active);
+    return seasonRepository.save(season);
   }
 }
