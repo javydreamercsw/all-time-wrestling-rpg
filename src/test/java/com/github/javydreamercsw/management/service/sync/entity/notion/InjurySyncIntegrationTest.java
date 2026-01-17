@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.InjuryPage;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
@@ -32,6 +33,7 @@ import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -129,8 +131,13 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
     when(notionHandler.loadAllInjuries()).thenReturn(List.of(injuryPage1, injuryPage2));
 
     // When - Sync injury types from Notion
+    // Run as admin to ensure permissions are available in async threads
     BaseSyncService.SyncResult result =
-        notionSyncService.syncInjuryTypes("integration-test-operation", SyncDirection.INBOUND);
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<BaseSyncService.SyncResult>)
+                () ->
+                    notionSyncService.syncInjuryTypes(
+                        "integration-test-operation", SyncDirection.INBOUND));
 
     // Then - Verify sync was successful
     assertThat(result).isNotNull();
@@ -175,7 +182,11 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
     when(notionHandler.loadAllInjuries()).thenReturn(List.of(injuryPage1, injuryPage2));
 
     BaseSyncService.SyncResult secondResult =
-        notionSyncService.syncInjuryTypes("second-sync-operation", SyncDirection.INBOUND);
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<BaseSyncService.SyncResult>)
+                () ->
+                    notionSyncService.syncInjuryTypes(
+                        "second-sync-operation", SyncDirection.INBOUND));
     assertThat(secondResult.isSuccess()).isTrue();
     assertThat(injuryTypeRepository.findAll()).hasSize(2); // No new injuries
 

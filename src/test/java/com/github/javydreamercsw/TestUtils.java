@@ -16,9 +16,10 @@
 */
 package com.github.javydreamercsw;
 
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import java.time.Instant;
 import java.util.UUID;
 import lombok.NonNull;
 
@@ -42,19 +43,40 @@ public class TestUtils {
    * @return Created wrestler.
    */
   public static Wrestler createWrestler(@NonNull String name) {
-    Wrestler wrestler = Wrestler.builder().build();
-    wrestler.setName(name);
+    Wrestler wrestler =
+        createWrestler(name, UUID.randomUUID().toString(), WrestlerTier.ROOKIE, null);
     wrestler.setExternalId(UUID.randomUUID().toString());
     wrestler.setDescription("Test Wrestler");
-    wrestler.setDeckSize(15);
-    wrestler.setStartingHealth(15);
-    wrestler.setStartingStamina(15);
-    wrestler.setLowHealth(4);
-    wrestler.setLowStamina(2);
-    wrestler.setTier(WrestlerTier.ROOKIE);
-    wrestler.setCreationDate(Instant.now());
-    wrestler.setFans(10_00L); // Default fan count
-    wrestler.setActive(true);
+    wrestler.setFans(1_000L); // Default fan count
     return wrestler;
+  }
+
+  public static Wrestler createWrestler(
+      @NonNull String name,
+      @NonNull String description,
+      @NonNull WrestlerTier tier,
+      Account account) {
+    TestUtils.createWrestler(name);
+    Wrestler w = new Wrestler();
+    w.setName(name);
+    if (account != null) {
+      w.setAccount(account);
+    }
+    w.setDescription(description);
+    w.setIsPlayer(account != null);
+    w.setTier(tier);
+    w.setIsPlayer(true);
+    w.setDescription(description);
+    // Defaults
+    w.setDeckSize(15);
+    w.setStartingHealth(15);
+    w.setLowHealth(4);
+    w.setStartingStamina(15);
+    w.setLowStamina(2);
+    w.setFans(0L);
+    w.setGender(Gender.MALE);
+    w.setBumps(0);
+    w.setActive(true);
+    return w;
   }
 }

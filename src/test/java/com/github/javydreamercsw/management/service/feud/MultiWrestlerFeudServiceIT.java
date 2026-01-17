@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.feud;
 
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
@@ -30,6 +31,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.NonNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,25 +60,19 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
     Account playerAccount2 = createTestAccount("feud_player2", RoleName.PLAYER);
     Account playerAccount3 = createTestAccount("feud_player3", RoleName.PLAYER);
 
-    // Create wrestlers using the service with admin privileges and distinct accounts
-    // We need to run this as admin to bypass security checks in createWrestler if any
-    GeneralSecurityUtils.runAs(
-        () -> {
-          wrestler1 =
-              wrestlerService.createWrestler(
-                  "Wrestler One", true, "Desc1", WrestlerTier.ROOKIE, playerAccount1);
-          wrestler2 =
-              wrestlerService.createWrestler(
-                  "Wrestler Two", true, "Desc2", WrestlerTier.ROOKIE, playerAccount2);
-          wrestlerService.createWrestler(
-              "Wrestler Three", true, "Desc3", WrestlerTier.ROOKIE, playerAccount3);
-          wrestlerService.createWrestler(
-              "Booker Wrestler", false, "DescB", WrestlerTier.ROOKIE, bookerAccount);
-          return null;
-        },
-        "feud_admin",
-        "password",
-        "ADMIN");
+    // Create wrestlers using the repository directly to bypass service security checks
+    wrestler1 = createWrestler("Wrestler One", "Desc1", WrestlerTier.ROOKIE, playerAccount1);
+    wrestler2 = createWrestler("Wrestler Two", "Desc2", WrestlerTier.ROOKIE, playerAccount2);
+    createWrestler("Wrestler Three", "Desc3", WrestlerTier.ROOKIE, playerAccount3);
+    createWrestler("Booker Wrestler", "DescB", WrestlerTier.ROOKIE, bookerAccount);
+  }
+
+  private Wrestler createWrestler(
+      @NonNull String name,
+      @NonNull String description,
+      @NonNull WrestlerTier tier,
+      Account account) {
+    return wrestlerRepository.save(TestUtils.createWrestler(name, description, tier, account));
   }
 
   @Test

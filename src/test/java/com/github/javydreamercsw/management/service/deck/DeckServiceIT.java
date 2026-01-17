@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.time.Instant;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -144,6 +145,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
     // Actually, we can just use the repository directly to bypass service security
     Deck deck = new Deck();
     deck.setWrestler(playerWrestler);
+    deck.setCreationDate(Instant.now());
     deck = deckRepository.save(deck);
 
     Assertions.assertNotNull(deck.getId());
@@ -164,6 +166,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
     // Use repository to create initial deck
     Deck deck = new Deck();
     deck.setWrestler(playerWrestler);
+    deck.setCreationDate(Instant.now());
     deck = deckRepository.save(deck);
 
     deckService.save(deck);
@@ -184,6 +187,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
     // Use repository to create initial deck
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
+    deck.setCreationDate(Instant.now());
     deck = deckRepository.save(deck);
 
     deckService.delete(deck);
@@ -196,6 +200,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
     // Use repository to create initial deck
     Deck deck = new Deck();
     deck.setWrestler(playerWrestler);
+    deck.setCreationDate(Instant.now());
     deck = deckRepository.save(deck);
 
     deckService.delete(deck);
