@@ -56,7 +56,6 @@ public class TestUtils {
       @NonNull String description,
       @NonNull WrestlerTier tier,
       Account account) {
-    TestUtils.createWrestler(name);
     Wrestler w = new Wrestler();
     w.setName(name);
     if (account != null) {
