@@ -135,7 +135,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
   void testAuthenticatedCanFindById() {
-    Deck deck = GeneralSecurityUtils.runAsAdmin(() -> deckService.createDeck(playerWrestler));
+    Deck deck =
+        GeneralSecurityUtils.runAs(
+            () -> deckService.createDeck(playerWrestler), "deck_admin", "password", "ADMIN");
     Assertions.assertNotNull(deck.getId());
     deckService.findById(deck.getId());
     // No exception means success
@@ -151,7 +153,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "deck_booker", roles = "BOOKER")
   void testPlayerCanSaveTheirOwnDeck() {
-    Deck deck = GeneralSecurityUtils.runAsAdmin(() -> deckService.createDeck(playerWrestler));
+    Deck deck =
+        GeneralSecurityUtils.runAs(
+            () -> deckService.createDeck(playerWrestler), "deck_admin", "password", "ADMIN");
     deckService.save(deck);
     // No exception means success
   }
@@ -175,7 +179,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
   void testPlayerCanDeleteTheirOwnDeckPlayer() {
-    Deck deck = GeneralSecurityUtils.runAsAdmin(() -> deckService.createDeck(playerWrestler));
+    Deck deck =
+        GeneralSecurityUtils.runAs(
+            () -> deckService.createDeck(playerWrestler), "deck_admin", "password", "ADMIN");
     deckService.delete(deck);
     // No exception means success
   }

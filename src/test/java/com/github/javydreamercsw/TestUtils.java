@@ -16,24 +16,11 @@
 */
 package com.github.javydreamercsw;
 
-import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.Role;
-import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import lombok.NonNull;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 public class TestUtils {
   /**
@@ -69,62 +56,5 @@ public class TestUtils {
     wrestler.setFans(10_00L); // Default fan count
     wrestler.setActive(true);
     return wrestler;
-  }
-
-  public static void runAsAdmin(@NonNull Runnable runnable) {
-    // Save the current security context
-    SecurityContext originalContext = SecurityContextHolder.getContext();
-
-    try {
-      // Create a mock admin user
-      Account account = new Account("admin", "admin", "admin@localhost.com");
-      Role adminRole = new Role(RoleName.ADMIN, "Admin role");
-      account.setRoles(Collections.singleton(adminRole));
-      CustomUserDetails userDetails = new CustomUserDetails(account, null);
-
-      List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-      authorities.add(new SimpleGrantedAuthority("ROLE_" + RoleName.ADMIN.name()));
-      authorities.add(new SimpleGrantedAuthority(RoleName.ADMIN.name()));
-
-      // Create an authentication token
-      Authentication authentication =
-          new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
-
-      // Set the authentication in the security context
-      SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-      securityContext.setAuthentication(authentication);
-      SecurityContextHolder.setContext(securityContext);
-
-      // Run the code as the admin user
-      runnable.run();
-    } finally {
-      // Restore the original security context
-      SecurityContextHolder.setContext(originalContext);
-    }
-  }
-
-  public static <T> T runAsAdmin(@NonNull Callable<T> callable) {
-    SecurityContext originalContext = SecurityContextHolder.getContext();
-    try {
-      Account account = new Account("admin", "admin", "admin@localhost.com");
-      Role adminRole = new Role(RoleName.ADMIN, "Admin role");
-      account.setRoles(Collections.singleton(adminRole));
-      CustomUserDetails userDetails = new CustomUserDetails(account, null);
-
-      List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-      authorities.add(new SimpleGrantedAuthority("ROLE_" + RoleName.ADMIN.name()));
-      authorities.add(new SimpleGrantedAuthority(RoleName.ADMIN.name()));
-
-      Authentication authentication =
-          new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
-      SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-      securityContext.setAuthentication(authentication);
-      SecurityContextHolder.setContext(securityContext);
-      return callable.call();
-    } catch (Exception e) {
-      throw new RuntimeException("Error running callable as admin", e);
-    } finally {
-      SecurityContextHolder.setContext(originalContext);
-    }
   }
 }

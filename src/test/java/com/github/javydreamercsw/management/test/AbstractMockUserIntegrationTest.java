@@ -20,6 +20,6 @@ import com.github.javydreamercsw.base.config.TestSecurityConfig;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 
-@WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN"})
+@WithMockUser(username = "admin", roles = "ADMIN")
 @Import(TestSecurityConfig.class)
 public abstract class AbstractMockUserIntegrationTest extends AbstractIntegrationTest {}

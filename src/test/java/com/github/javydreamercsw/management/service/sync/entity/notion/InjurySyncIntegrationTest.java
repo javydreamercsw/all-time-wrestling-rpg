@@ -41,10 +41,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
 @DisplayName("Injury Sync Integration Tests")
+@WithMockUser(
+    username = "injury-user",
+    roles = {"ADMIN"})
 class InjurySyncIntegrationTest extends ManagementIntegrationTest {
 
   @Autowired
@@ -146,7 +150,7 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
         allInjuryTypes.stream()
             .filter(it -> it.getInjuryName().equals("Head Injury"))
             .findFirst()
-            .get();
+            .orElseThrow(() -> new AssertionError("Head Injury not found"));
     assertThat(headInjury.getExternalId()).isEqualTo(injury1Id);
     assertThat(headInjury.getHealthEffect()).isEqualTo(-1);
     assertThat(headInjury.getSpecialEffects()).isEqualTo("Cannot use headbutts.");
@@ -175,7 +179,10 @@ class InjurySyncIntegrationTest extends ManagementIntegrationTest {
     assertThat(secondResult.isSuccess()).isTrue();
     assertThat(injuryTypeRepository.findAll()).hasSize(2); // No new injuries
 
-    InjuryType updatedHeadInjury = injuryTypeRepository.findByExternalId(injury1Id).get();
+    InjuryType updatedHeadInjury =
+        injuryTypeRepository
+            .findByExternalId(injury1Id)
+            .orElseThrow(() -> new AssertionError("Updated Head Injury not found"));
     assertThat(updatedHeadInjury.getHealthEffect()).isEqualTo(-2);
     assertThat(updatedHeadInjury.getSpecialEffects()).isEqualTo("Cannot use headbutts. Dizzy.");
   }

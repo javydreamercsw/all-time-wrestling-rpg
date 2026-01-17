@@ -25,7 +25,6 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.management.DatabaseCleanup;
 import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
@@ -84,7 +83,6 @@ public abstract class AbstractIntegrationTest {
   @Autowired protected ShowTemplateRepository showTemplateRepository;
   @Autowired protected AccountRepository accountRepository;
   @Autowired protected RoleRepository roleRepository;
-  @Autowired protected DatabaseCleanup databaseCleaner;
   @Autowired protected PasswordEncoder passwordEncoder;
 
   protected Wrestler createTestWrestler(@NonNull String name) {

@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 import lombok.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -46,6 +47,19 @@ public final class GeneralSecurityUtils {
    */
   public static <T> T runAsAdmin(Supplier<T> supplier) {
     return runAs(supplier, "admin", "password", "ADMIN");
+  }
+
+  public static void runAsAdmin(@NonNull Runnable runnable) {
+    runAsAdmin(
+        (Supplier<Object>)
+            () -> {
+              runnable.run();
+              return null;
+            });
+  }
+
+  public static <T> T runAsAdmin(@NonNull Callable<T> callable) {
+    return runAsAdmin((Callable<T>) () -> callable.call());
   }
 
   /**
