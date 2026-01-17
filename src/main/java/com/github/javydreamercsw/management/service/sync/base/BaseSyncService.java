@@ -241,25 +241,36 @@ public abstract class BaseSyncService {
                   item ->
                       CompletableFuture.supplyAsync(
                           () -> {
-                            // Set the security context in the async thread
-                            SecurityContextHolder.setContext(securityContext);
-                            try {
-                              syncServiceDependencies.getRateLimitService().acquirePermit();
-                              return processor.apply(item);
-                            } catch (InterruptedException e) {
-                              Thread.currentThread().interrupt();
-                              String msg = "Interrupted while processing item";
-                              log.error(msg);
-                              if (messageConsumer != null) messageConsumer.accept(msg);
-                              throw new RuntimeException("Processing interrupted", e);
-                            } catch (Exception e) {
-                              String msg = "Error processing item: " + e.getMessage();
-                              log.error(msg);
-                              if (messageConsumer != null) messageConsumer.accept(msg);
-                              throw new RuntimeException("Processing failed", e);
-                            } finally {
-                              // Clear the security context to prevent leaks
-                              SecurityContextHolder.clearContext();
+                            java.util.function.Supplier<R> task =
+                                () -> {
+                                  try {
+                                    syncServiceDependencies.getRateLimitService().acquirePermit();
+                                    return processor.apply(item);
+                                  } catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                    String msg = "Interrupted while processing item";
+                                    log.error(msg);
+                                    if (messageConsumer != null) messageConsumer.accept(msg);
+                                    throw new RuntimeException("Processing interrupted", e);
+                                  } catch (Exception e) {
+                                    String msg = "Error processing item: " + e.getMessage();
+                                    log.error(msg);
+                                    if (messageConsumer != null) messageConsumer.accept(msg);
+                                    throw new RuntimeException("Processing failed", e);
+                                  }
+                                };
+
+                            if (securityContext != null
+                                && securityContext.getAuthentication() != null) {
+                              SecurityContextHolder.setContext(securityContext);
+                              try {
+                                return task.get();
+                              } finally {
+                                SecurityContextHolder.clearContext();
+                              }
+                            } else {
+                              return com.github.javydreamercsw.base.security.GeneralSecurityUtils
+                                  .runAsAdmin(task);
                             }
                           },
                           notionApiExecutor.getSyncExecutorService()))
