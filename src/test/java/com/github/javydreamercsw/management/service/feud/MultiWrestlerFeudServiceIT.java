@@ -59,16 +59,24 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
     Account playerAccount3 = createTestAccount("feud_player3", RoleName.PLAYER);
 
     // Create wrestlers using the service with admin privileges and distinct accounts
-    wrestler1 =
-        wrestlerService.createWrestler(
-            "Wrestler One", true, "Desc1", WrestlerTier.ROOKIE, playerAccount1);
-    wrestler2 =
-        wrestlerService.createWrestler(
-            "Wrestler Two", true, "Desc2", WrestlerTier.ROOKIE, playerAccount2);
-    wrestlerService.createWrestler(
-        "Wrestler Three", true, "Desc3", WrestlerTier.ROOKIE, playerAccount3);
-    wrestlerService.createWrestler(
-        "Booker Wrestler", false, "DescB", WrestlerTier.ROOKIE, bookerAccount);
+    // We need to run this as admin to bypass security checks in createWrestler if any
+    GeneralSecurityUtils.runAs(
+        () -> {
+          wrestler1 =
+              wrestlerService.createWrestler(
+                  "Wrestler One", true, "Desc1", WrestlerTier.ROOKIE, playerAccount1);
+          wrestler2 =
+              wrestlerService.createWrestler(
+                  "Wrestler Two", true, "Desc2", WrestlerTier.ROOKIE, playerAccount2);
+          wrestlerService.createWrestler(
+              "Wrestler Three", true, "Desc3", WrestlerTier.ROOKIE, playerAccount3);
+          wrestlerService.createWrestler(
+              "Booker Wrestler", false, "DescB", WrestlerTier.ROOKIE, bookerAccount);
+          return null;
+        },
+        "feud_admin",
+        "password",
+        "ADMIN");
   }
 
   @Test
