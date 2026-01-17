@@ -46,7 +46,6 @@
     "workbox-build": "7.4.0"
   },
   "overrides": {
-    "react-router": "7.12.0",
     "@vaadin/router": "2.0.1",
     "@vaadin/cookie-consent": "24.9.7",
     "@vaadin/board": "25.0.1",
@@ -134,7 +133,8 @@
     "@vaadin/vaadin-lumo-styles": "$@vaadin/vaadin-lumo-styles",
     "@vaadin/react-components": "25.0.1",
     "react": "$react",
-    "react-dom": "$react-dom"
+    "react-dom": "$react-dom",
+    "react-router": "$react-router"
   },
   "vaadin": {
     "dependencies": {
@@ -159,7 +159,7 @@
       "moment-timezone": "0.6.0",
       "react": "19.2.3",
       "react-dom": "19.2.3",
-      "react-router": "7.12.0"
+      "react-router": "7.10.1"
     },
     "devDependencies": {
       "@babel/preset-react": "7.28.5",
@@ -180,6 +180,6 @@
       "vite-plugin-checker": "0.12.0",
       "workbox-build": "7.4.0"
     },
-    "hash": "596866c3680e2eb1e8dcd66e13424fa14cb61eff8310b830ec22f18997b3cbcb"
+    "hash": "baf307771551f582881ebc7fbde5aa4dfdf00dff72654631cac749bc692809d2"
   }
 }
