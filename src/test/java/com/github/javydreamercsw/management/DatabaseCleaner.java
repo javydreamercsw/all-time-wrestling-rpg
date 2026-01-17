@@ -125,6 +125,13 @@ public class DatabaseCleaner implements DatabaseCleanup {
       // This might fail if the table doesn't exist yet on first run, which is fine.
       log.warn("Could not nullify faction.leader_id: {}", e.getMessage());
     }
+    try {
+      entityManager.createNativeQuery("UPDATE wrestler SET account_id = NULL").executeUpdate();
+      log.debug("✅ Nullified wrestler.account_id");
+    } catch (Exception e) {
+      // This might fail if the table doesn't exist yet on first run, which is fine.
+      log.warn("Could not nullify wrestler.account_id: {}", e.getMessage());
+    }
   }
 
   /**

@@ -53,6 +53,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
 
   @BeforeEach
   void setUp() {
+    clearAllRepositories();
     // Roles should be present in the DB from migrations or a general test data setup.
     Role playerRole =
         roleRepository
@@ -63,6 +64,15 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
     createTestAccount("drama_admin", RoleName.ADMIN);
     createTestAccount("drama_booker", RoleName.BOOKER);
     Account playerAccount = createTestAccount("drama_player", RoleName.PLAYER);
+
+    // Ensure no wrestler is associated with this account from previous tests
+    wrestlerRepository
+        .findByAccount(playerAccount)
+        .ifPresent(
+            w -> {
+              wrestlerRepository.delete(w);
+              wrestlerRepository.flush();
+            });
 
     String uuid1 = UUID.randomUUID().toString();
     Account testAccount1 =
