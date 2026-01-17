@@ -65,6 +65,9 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
     createTestAccount("drama_booker", RoleName.BOOKER);
     Account playerAccount = createTestAccount("drama_player", RoleName.PLAYER);
 
+    // Ensure accounts are flushed to DB so PermissionService can find them
+    accountRepository.flush();
+
     // Ensure no wrestler is associated with this account from previous tests
     wrestlerRepository
         .findByAccount(playerAccount)

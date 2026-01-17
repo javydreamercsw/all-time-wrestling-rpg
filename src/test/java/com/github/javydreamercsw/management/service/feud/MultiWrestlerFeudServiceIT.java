@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.NonNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,13 +133,11 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotAddParticipant() {
     Optional<MultiWrestlerFeud> feud =
-        GeneralSecurityUtils.runAs(
-            () ->
-                multiWrestlerFeudService.createFeud(
-                    "Test Feud", "Description", "", List.of(wrestler1.getId())),
-            "feud_admin",
-            "password",
-            "ADMIN");
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<Optional<MultiWrestlerFeud>>)
+                () ->
+                    multiWrestlerFeudService.createFeud(
+                        "Test Feud", "Description", "", List.of(wrestler1.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
         AccessDeniedException.class,
@@ -167,13 +166,14 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotRemoveParticipant() {
     Optional<MultiWrestlerFeud> feud =
-        GeneralSecurityUtils.runAs(
-            () ->
-                multiWrestlerFeudService.createFeud(
-                    "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId())),
-            "feud_admin",
-            "password",
-            "ADMIN");
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<Optional<MultiWrestlerFeud>>)
+                () ->
+                    multiWrestlerFeudService.createFeud(
+                        "Test Feud",
+                        "Description",
+                        "",
+                        List.of(wrestler1.getId(), wrestler2.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
         AccessDeniedException.class,
@@ -187,16 +187,14 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   void testPlayerCannotRemoveOwnWrestlerFromFeud() {
     // Create a feud as admin with player1's wrestler (wrestler1) and another wrestler (wrestler2)
     Optional<MultiWrestlerFeud> feud =
-        GeneralSecurityUtils.runAs(
-            () ->
-                multiWrestlerFeudService.createFeud(
-                    "Player Feud",
-                    "Description",
-                    "",
-                    List.of(wrestler1.getId(), wrestler2.getId())),
-            "feud_admin",
-            "password",
-            "ADMIN");
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<Optional<MultiWrestlerFeud>>)
+                () ->
+                    multiWrestlerFeudService.createFeud(
+                        "Player Feud",
+                        "Description",
+                        "",
+                        List.of(wrestler1.getId(), wrestler2.getId())));
     Assertions.assertTrue(feud.isPresent());
 
     // Attempt to remove wrestler1 (owned by player1) from the feud as player1
@@ -226,13 +224,11 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotEndFeud() {
     Optional<MultiWrestlerFeud> feud =
-        GeneralSecurityUtils.runAs(
-            () ->
-                multiWrestlerFeudService.createFeud(
-                    "Test Feud", "Description", "", List.of(wrestler1.getId())),
-            "feud_admin",
-            "password",
-            "ADMIN");
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<Optional<MultiWrestlerFeud>>)
+                () ->
+                    multiWrestlerFeudService.createFeud(
+                        "Test Feud", "Description", "", List.of(wrestler1.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
         AccessDeniedException.class,
@@ -243,17 +239,14 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_admin", roles = "ADMIN")
   void testAdminCanDeleteFeud() {
     final Long[] feudId = new Long[1];
-    GeneralSecurityUtils.runAs(
-        () -> {
-          Optional<MultiWrestlerFeud> createdFeud =
-              multiWrestlerFeudService.createFeud(
-                  "Test Feud", "Description", "", List.of(wrestler1.getId()));
-          createdFeud.ifPresent(f -> feudId[0] = f.getId());
-          return null;
-        },
-        "feud_admin",
-        "password",
-        "ADMIN");
+    GeneralSecurityUtils.runAsAdmin(
+        (Runnable)
+            () -> {
+              Optional<MultiWrestlerFeud> createdFeud =
+                  multiWrestlerFeudService.createFeud(
+                      "Test Feud", "Description", "", List.of(wrestler1.getId()));
+              createdFeud.ifPresent(f -> feudId[0] = f.getId());
+            });
     multiWrestlerFeudService.deleteFeud(feudId[0]);
     Assertions.assertTrue(feudRepository.findById(feudId[0]).isEmpty());
   }
@@ -262,17 +255,14 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotDeleteFeud() {
     final Long[] feudId = new Long[1];
-    GeneralSecurityUtils.runAs(
-        () -> {
-          Optional<MultiWrestlerFeud> createdFeud =
-              multiWrestlerFeudService.createFeud(
-                  "Test Feud", "Description", "", List.of(wrestler1.getId()));
-          createdFeud.ifPresent(f -> feudId[0] = f.getId());
-          return null;
-        },
-        "feud_admin",
-        "password",
-        "ADMIN");
+    GeneralSecurityUtils.runAsAdmin(
+        (Runnable)
+            () -> {
+              Optional<MultiWrestlerFeud> createdFeud =
+                  multiWrestlerFeudService.createFeud(
+                      "Test Feud", "Description", "", List.of(wrestler1.getId()));
+              createdFeud.ifPresent(f -> feudId[0] = f.getId());
+            });
     Assertions.assertThrows(
         AccessDeniedException.class, () -> multiWrestlerFeudService.deleteFeud(feudId[0]));
   }
@@ -280,13 +270,11 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testAuthenticatedCanGetAllFeuds() {
-    GeneralSecurityUtils.runAs(
-        () ->
-            multiWrestlerFeudService.createFeud(
-                "Test Feud", "Description", "", List.of(wrestler1.getId())),
-        "feud_admin",
-        "password",
-        "ADMIN");
+    GeneralSecurityUtils.runAsAdmin(
+        (Supplier<Optional<MultiWrestlerFeud>>)
+            () ->
+                multiWrestlerFeudService.createFeud(
+                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
     multiWrestlerFeudService.getAllFeuds(Pageable.unpaged());
     // No exception means success
   }
@@ -295,17 +283,14 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_viewer", roles = "VIEWER")
   void testAuthenticatedCanGetFeudById() {
     final Long[] feudId = new Long[1];
-    GeneralSecurityUtils.runAs(
-        () -> {
-          Optional<MultiWrestlerFeud> createdFeud =
-              multiWrestlerFeudService.createFeud(
-                  "Test Feud", "Description", "", List.of(wrestler1.getId()));
-          createdFeud.ifPresent(f -> feudId[0] = f.getId());
-          return null;
-        },
-        "feud_admin",
-        "password",
-        "ADMIN");
+    GeneralSecurityUtils.runAsAdmin(
+        (Runnable)
+            () -> {
+              Optional<MultiWrestlerFeud> createdFeud =
+                  multiWrestlerFeudService.createFeud(
+                      "Test Feud", "Description", "", List.of(wrestler1.getId()));
+              createdFeud.ifPresent(f -> feudId[0] = f.getId());
+            });
     multiWrestlerFeudService.getFeudById(feudId[0]);
     // No exception means success
   }
@@ -313,13 +298,11 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testAuthenticatedCanGetFeudsForWrestler() {
-    GeneralSecurityUtils.runAs(
-        () ->
-            multiWrestlerFeudService.createFeud(
-                "Test Feud", "Description", "", List.of(wrestler1.getId())),
-        "feud_admin",
-        "password",
-        "ADMIN");
+    GeneralSecurityUtils.runAsAdmin(
+        (Supplier<Optional<MultiWrestlerFeud>>)
+            () ->
+                multiWrestlerFeudService.createFeud(
+                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
     multiWrestlerFeudService.getActiveFeudsForWrestler(wrestler1.getId());
     // No exception means success
   }
@@ -327,13 +310,11 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "feud_viewer", roles = "VIEWER")
   void testAuthenticatedCanGetActiveFeuds() {
-    GeneralSecurityUtils.runAs(
-        () ->
-            multiWrestlerFeudService.createFeud(
-                "Test Feud", "Description", "", List.of(wrestler1.getId())),
-        "feud_admin",
-        "password",
-        "ADMIN");
+    GeneralSecurityUtils.runAsAdmin(
+        (Supplier<Optional<MultiWrestlerFeud>>)
+            () ->
+                multiWrestlerFeudService.createFeud(
+                    "Test Feud", "Description", "", List.of(wrestler1.getId())));
     multiWrestlerFeudService.getActiveFeuds();
     // No exception means success
   }
@@ -357,13 +338,11 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotAddHeat() {
     Optional<MultiWrestlerFeud> feud =
-        GeneralSecurityUtils.runAs(
-            () ->
-                multiWrestlerFeudService.createFeud(
-                    "Test Feud", "Description", "", List.of(wrestler1.getId())),
-            "feud_admin",
-            "password",
-            "ADMIN");
+        GeneralSecurityUtils.runAsAdmin(
+            (Supplier<Optional<MultiWrestlerFeud>>)
+                () ->
+                    multiWrestlerFeudService.createFeud(
+                        "Test Feud", "Description", "", List.of(wrestler1.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
         AccessDeniedException.class,

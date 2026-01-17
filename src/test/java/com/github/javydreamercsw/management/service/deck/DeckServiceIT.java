@@ -49,6 +49,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
     createTestAccount("deck_viewer", RoleName.VIEWER);
     createTestAccount("deck_admin", RoleName.ADMIN);
 
+    // Ensure accounts are flushed to DB so PermissionService can find them
+    accountRepository.flush();
+
     // Check if wrestler already exists for this account and reuse it or delete it
     bookerWrestler = wrestlerRepository.findByAccount(booker).orElse(null);
     if (bookerWrestler != null) {
