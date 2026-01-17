@@ -49,6 +49,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
 
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;
+  private Wrestler playerWrestler;
 
   @BeforeEach
   void setUp() {
@@ -61,6 +62,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
     createTestAccount("drama_viewer", RoleName.VIEWER);
     createTestAccount("drama_admin", RoleName.ADMIN);
     createTestAccount("drama_booker", RoleName.BOOKER);
+    Account playerAccount = createTestAccount("drama_player", RoleName.PLAYER);
 
     String uuid1 = UUID.randomUUID().toString();
     Account testAccount1 =
@@ -85,6 +87,11 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
     testWrestler2.setName("Test Wrestler 2");
     testWrestler2.setAccount(testAccount2);
     wrestlerRepository.save(testWrestler2);
+
+    playerWrestler = new Wrestler();
+    playerWrestler.setName("Drama Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+    wrestlerRepository.save(playerWrestler);
   }
 
   /*
@@ -226,7 +233,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "drama_player", roles = "PLAYER")
   void testAuthenticatedCanGetEventsForWrestler() {
-    dramaEventService.getEventsForWrestler(testWrestler1.getId());
+    dramaEventService.getEventsForWrestler(playerWrestler.getId());
     // No exception means success
   }
 

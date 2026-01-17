@@ -252,7 +252,7 @@ public class DramaEventService {
    * @return List of drama events involving the wrestler
    */
   @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestlerId, 'Wrestler')")
+      "hasAnyRole('ADMIN', 'BOOKER', 'VIEWER') or @permissionService.isOwner(#wrestlerId, 'Wrestler')")
   public List<DramaEvent> getEventsForWrestler(Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     if (wrestlerOpt.isEmpty()) {
@@ -269,7 +269,7 @@ public class DramaEventService {
    * @return Page of drama events
    */
   @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#wrestlerId, 'Wrestler')")
+      "hasAnyRole('ADMIN', 'BOOKER', 'VIEWER') or @permissionService.isOwner(#wrestlerId, 'Wrestler')")
   public Page<DramaEvent> getEventsForWrestler(Long wrestlerId, Pageable pageable) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     if (wrestlerOpt.isEmpty()) {
@@ -283,7 +283,7 @@ public class DramaEventService {
    *
    * @return List of recent drama events
    */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'PLAYER')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'PLAYER', 'VIEWER')")
   public List<DramaEvent> getRecentEvents() {
     Instant thirtyDaysAgo = clock.instant().minus(30, ChronoUnit.DAYS);
     List<DramaEvent> events = dramaEventRepository.findRecentEvents(thirtyDaysAgo);
@@ -321,7 +321,7 @@ public class DramaEventService {
    * @return List of drama events between the wrestlers
    */
   @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or (@permissionService.isOwner(#wrestler1Id, 'Wrestler') and"
+      "hasAnyRole('ADMIN', 'BOOKER', 'VIEWER') or (@permissionService.isOwner(#wrestler1Id, 'Wrestler') and"
           + " @permissionService.isOwner(#wrestler2Id, 'Wrestler'))")
   public List<DramaEvent> getEventsBetweenWrestlers(Long wrestler1Id, Long wrestler2Id) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
