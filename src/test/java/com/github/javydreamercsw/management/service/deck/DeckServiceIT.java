@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -111,7 +111,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
   void testPlayerCannotCreateDeckForSomeoneElse() {
     Assertions.assertThrows(
-        AccessDeniedException.class, () -> deckService.createDeck(bookerWrestler));
+        AuthorizationDeniedException.class, () -> deckService.createDeck(bookerWrestler));
   }
 
   @Test
@@ -181,7 +181,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   void testPlayerCannotSaveSomeoneElsesDeck() {
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
-    Assertions.assertThrows(AccessDeniedException.class, () -> deckService.save(deck));
+    Assertions.assertThrows(AuthorizationDeniedException.class, () -> deckService.save(deck));
   }
 
   @Test
@@ -215,6 +215,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   void testPlayerCannotDeleteSomeoneElsesDeck() {
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
-    Assertions.assertThrows(AccessDeniedException.class, () -> deckService.delete(deck));
+    Assertions.assertThrows(AuthorizationDeniedException.class, () -> deckService.delete(deck));
   }
 }

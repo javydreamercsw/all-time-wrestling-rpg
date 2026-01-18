@@ -17,12 +17,9 @@
 package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
@@ -37,73 +34,52 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class WithCustomMockUserSecurityContextFactory
     implements WithSecurityContextFactory<WithCustomMockUser> {
 
-  @Autowired private AccountRepository accountRepository;
-  @Autowired private RoleRepository roleRepository;
   @Autowired private PasswordEncoder passwordEncoder;
-  @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private Clock clock;
 
   @Override
-  @Transactional
   public SecurityContext createSecurityContext(WithCustomMockUser customUser) {
     String username = customUser.username();
     String[] roles = customUser.roles();
 
-    // Find or create account
-    Account account =
-        accountRepository
-            .findByUsername(username)
-            .orElseGet(
-                () -> {
-                  Account newAccount = new Account();
-                  newAccount.setUsername(username);
-                  newAccount.setPassword(
-                      passwordEncoder.encode("ValidPassword1!")); // Dummy password
-                  newAccount.setEmail(username + "@test.com");
-                  newAccount.setEnabled(true);
-                  newAccount.setAccountNonExpired(true);
-                  newAccount.setAccountNonLocked(true);
-                  newAccount.setCredentialsNonExpired(true);
+    // Create transient account (don't save to DB)
+    Account account = new Account();
+    account.setId(1L); // Mock ID
+    account.setUsername(username);
+    account.setPassword(passwordEncoder.encode("ValidPassword1!"));
+    account.setEmail(username + "@test.com");
+    account.setEnabled(true);
+    account.setAccountNonExpired(true);
+    account.setAccountNonLocked(true);
+    account.setCredentialsNonExpired(true);
 
-                  Set<Role> assignedRoles =
-                      Arrays.stream(roles)
-                          .map(RoleName::valueOf)
-                          .map(
-                              roleName ->
-                                  roleRepository
-                                      .findByName(roleName)
-                                      .orElseGet(
-                                          () -> {
-                                            Role newRole = new Role();
-                                            newRole.setName(roleName);
-                                            newRole.setDescription(roleName + " role");
-                                            return roleRepository.save(newRole);
-                                          }))
-                          .collect(Collectors.toSet());
-                  newAccount.setRoles(assignedRoles);
-                  return accountRepository.save(newAccount);
-                });
+    Set<Role> assignedRoles =
+        Arrays.stream(roles)
+            .map(RoleName::valueOf)
+            .map(
+                roleName -> {
+                  Role newRole = new Role();
+                  newRole.setId((long) roleName.ordinal()); // Mock ID
+                  newRole.setName(roleName);
+                  newRole.setDescription(roleName + " role");
+                  return newRole;
+                })
+            .collect(Collectors.toSet());
+    account.setRoles(assignedRoles);
 
-    // Create or update wrestler for the account
-    Wrestler wrestler =
-        wrestlerRepository
-            .findByAccount(account)
-            .orElseGet(
-                () -> {
-                  Wrestler newWrestler = new Wrestler();
-                  newWrestler.setName(account.getUsername() + " Wrestler");
-                  newWrestler.setIsPlayer(true);
-                  newWrestler.setAccount(account);
-                  newWrestler.setCreationDate(Instant.now(clock));
-                  newWrestler.setExternalId("wrestler-" + account.getUsername());
-                  return wrestlerRepository.save(newWrestler);
-                });
+    // Create transient wrestler (don't save to DB)
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L); // Mock ID
+    wrestler.setName(account.getUsername() + " Wrestler");
+    wrestler.setIsPlayer(true);
+    wrestler.setAccount(account);
+    wrestler.setCreationDate(Instant.now(clock));
+    wrestler.setExternalId("wrestler-" + account.getUsername());
 
     CustomUserDetails principal = new CustomUserDetails(account, wrestler);
 

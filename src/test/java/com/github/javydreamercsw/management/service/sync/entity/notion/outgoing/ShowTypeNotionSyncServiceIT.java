@@ -69,7 +69,7 @@ class ShowTypeNotionSyncServiceIT extends ManagementIntegrationTest {
 
     when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
     when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);
-    when(notionHandler.getDatabaseId("Show Types")).thenReturn("test-db-id");
+    when(notionHandler.getDatabaseId("Show Type")).thenReturn("test-db-id");
     when(notionHandler.executeWithRetry(any()))
         .thenAnswer(
             (Answer<Page>)

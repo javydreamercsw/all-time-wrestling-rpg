@@ -36,7 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 class DramaEventServiceIT extends ManagementIntegrationTest {
@@ -104,7 +104,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
     playerWrestler = new Wrestler();
     playerWrestler.setName("Drama Player Wrestler");
     playerWrestler.setAccount(playerAccount);
-    wrestlerRepository.save(playerWrestler);
+    wrestlerRepository.saveAndFlush(playerWrestler);
   }
 
   /*
@@ -151,7 +151,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "drama_player", roles = "PLAYER")
   void testPlayerCannotCreateDramaEvent() {
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             dramaEventService.createDramaEvent(
                 testWrestler1.getId(),
@@ -166,7 +166,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "drama_viewer", roles = "VIEWER")
   void testViewerCannotCreateDramaEvent() {
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             dramaEventService.createDramaEvent(
                 testWrestler1.getId(),
@@ -190,7 +190,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "drama_player", roles = "PLAYER")
   void testPlayerCannotGenerateRandomDramaEvent() {
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () -> dramaEventService.generateRandomDramaEvent(testWrestler1.getId()));
   }
 
@@ -214,7 +214,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "drama_player", roles = "PLAYER")
   void testPlayerCannotProcessUnprocessedEvents() {
     Assertions.assertThrows(
-        AccessDeniedException.class, () -> dramaEventService.processUnprocessedEvents());
+        AuthorizationDeniedException.class, () -> dramaEventService.processUnprocessedEvents());
   }
 
   @Test
@@ -240,7 +240,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   void testPlayerCannotProcessEvent() {
     DramaEvent event = new DramaEvent();
     Assertions.assertThrows(
-        AccessDeniedException.class, () -> dramaEventService.processEvent(event));
+        AuthorizationDeniedException.class, () -> dramaEventService.processEvent(event));
   }
 
   @Test

@@ -38,7 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 
 class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @Autowired private MultiWrestlerFeudService multiWrestlerFeudService;
@@ -107,7 +107,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "feud_player1", roles = "PLAYER")
   void testPlayerCannotCreateFeud() {
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             multiWrestlerFeudService.createFeud(
                 "Test Feud", "Description", "", List.of(wrestler1.getId(), wrestler2.getId())));
@@ -140,7 +140,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
                         "Test Feud", "Description", "", List.of(wrestler1.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             multiWrestlerFeudService.addParticipant(
                 feud.get().getId(), wrestler2.getId(), FeudRole.PROTAGONIST));
@@ -176,7 +176,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
                         List.of(wrestler1.getId(), wrestler2.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             multiWrestlerFeudService.removeParticipant(
                 feud.get().getId(), wrestler2.getId(), "Reason"));
@@ -199,7 +199,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
 
     // Attempt to remove wrestler1 (owned by player1) from the feud as player1
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () ->
             multiWrestlerFeudService.removeParticipant(
                 feud.get().getId(), wrestler1.getId(), "Player trying to remove own wrestler"));
@@ -231,7 +231,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
                         "Test Feud", "Description", "", List.of(wrestler1.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () -> multiWrestlerFeudService.endFeud(feud.get().getId(), "Ended for testing"));
   }
 
@@ -264,7 +264,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
               createdFeud.ifPresent(f -> feudId[0] = f.getId());
             });
     Assertions.assertThrows(
-        AccessDeniedException.class, () -> multiWrestlerFeudService.deleteFeud(feudId[0]));
+        AuthorizationDeniedException.class, () -> multiWrestlerFeudService.deleteFeud(feudId[0]));
   }
 
   @Test
@@ -345,7 +345,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
                         "Test Feud", "Description", "", List.of(wrestler1.getId())));
     Assertions.assertTrue(feud.isPresent());
     Assertions.assertThrows(
-        AccessDeniedException.class,
+        AuthorizationDeniedException.class,
         () -> multiWrestlerFeudService.addHeat(feud.get().getId(), 10, "Heated rivalry"));
   }
 }
