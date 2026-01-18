@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.RivalryNotionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
 import dev.failsafe.FailsafeException;
 import java.time.Instant;
 import java.util.Collections;
@@ -33,23 +34,33 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
+@TestPropertySource(properties = "test.mock.notion-handler=false")
 class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private RivalryNotionSyncService rivalryNotionSyncService;
+  @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private NotionHandler notionHandler;
+
+  @BeforeEach
+  void setUp() {
+    clearAllRepositories();
+  }
 
   @Test
   @Transactional
@@ -63,11 +74,14 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
     }
     try (NotionClient client = clientOptional.get()) {
       // Create a new wrestler
-      wrestler1 = createTestWrestler("Test Wrestler 1");
+      wrestler1 = createTestWrestler("Test Wrestler 1 " + UUID.randomUUID());
       wrestlerRepository.save(wrestler1);
       // Create a new wrestler
-      wrestler2 = createTestWrestler("Test Wrestler 2");
+      wrestler2 = createTestWrestler("Test Wrestler 2 " + UUID.randomUUID());
       wrestlerRepository.save(wrestler2);
+
+      // Sync wrestlers to Notion to get external IDs
+      wrestlerNotionSyncService.syncToNotion("test-prep-wrestlers");
 
       // Create a new rivalry
       rivalry = new Rivalry();
@@ -91,7 +105,7 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
               () -> client.retrievePage(updatedRivalry.getExternalId(), Collections.emptyList()));
       Map<String, PageProperty> props = page.getProperties();
       assertEquals(
-          rivalry.getDisplayName(),
+          updatedRivalry.getDisplayName(),
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());

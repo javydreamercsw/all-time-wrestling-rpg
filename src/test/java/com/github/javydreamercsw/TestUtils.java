@@ -45,7 +45,6 @@ public class TestUtils {
   public static Wrestler createWrestler(@NonNull String name) {
     Wrestler wrestler =
         createWrestler(name, UUID.randomUUID().toString(), WrestlerTier.ROOKIE, null);
-    wrestler.setExternalId(UUID.randomUUID().toString());
     wrestler.setDescription("Test Wrestler");
     wrestler.setFans(1_000L); // Default fan count
     return wrestler;

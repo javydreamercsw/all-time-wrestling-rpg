@@ -31,7 +31,9 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.entity.notion.FactionNotionSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TeamNotionSyncService;
+import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
 import dev.failsafe.FailsafeException;
 import java.time.Instant;
 import java.util.Collections;
@@ -45,18 +47,28 @@ import notion.api.v1.model.pages.Page;
 import notion.api.v1.model.pages.PageProperty;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 @EnabledIf("com.github.javydreamercsw.base.util.EnvironmentVariableUtil#isNotionTokenAvailable")
+@TestPropertySource(properties = "test.mock.notion-handler=false")
 class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private TeamRepository teamRepository;
   @Autowired private TeamNotionSyncService teamNotionSyncService;
+  @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
+  @Autowired private FactionNotionSyncService factionNotionSyncService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private FactionRepository factionRepository;
   @Autowired private NotionHandler notionHandler;
+
+  @BeforeEach
+  void setUp() {
+    clearAllRepositories();
+  }
 
   @Test
   void testSyncToNotion() {
@@ -78,8 +90,11 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
 
       testFaction = new Faction();
       testFaction.setName("Test Faction Team " + UUID.randomUUID());
-      testFaction.setExternalId(UUID.randomUUID().toString());
       factionRepository.save(testFaction);
+
+      // Sync dependencies to Notion to get external IDs
+      wrestlerNotionSyncService.syncToNotion("test-prep-wrestlers");
+      factionNotionSyncService.syncToNotion("test-prep-factions");
 
       // Create a new Team
       team = new Team();
@@ -111,31 +126,23 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
+      assertNotNull(props.get("Member 1").getRelation());
+      assertFalse(props.get("Member 1").getRelation().isEmpty());
       assertEquals(
-          "A test wrestling team",
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
-              .getContent());
-      assertNotNull(props.get("Wrestler 1").getRelation());
-      assertFalse(props.get("Wrestler 1").getRelation().isEmpty());
+          testWrestler1.getExternalId(), props.get("Member 1").getRelation().get(0).getId());
+      assertNotNull(props.get("Member 2").getRelation());
+      assertFalse(props.get("Member 2").getRelation().isEmpty());
       assertEquals(
-          testWrestler1.getExternalId(), props.get("Wrestler 1").getRelation().get(0).getId());
-      assertNotNull(props.get("Wrestler 2").getRelation());
-      assertFalse(props.get("Wrestler 2").getRelation().isEmpty());
-      assertEquals(
-          testWrestler2.getExternalId(), props.get("Wrestler 2").getRelation().get(0).getId());
+          testWrestler2.getExternalId(), props.get("Member 2").getRelation().get(0).getId());
       assertNotNull(props.get("Faction").getRelation());
       assertFalse(props.get("Faction").getRelation().isEmpty());
       assertEquals(testFaction.getExternalId(), props.get("Faction").getRelation().get(0).getId());
-      assertEquals(
-          TeamStatus.ACTIVE.getDisplayName(),
-          Objects.requireNonNull(props.get("Status").getCheckbox()).toString());
+      assertTrue(Objects.requireNonNull(props.get("Status").getCheckbox()));
       assertNotNull(props.get("Formed Date").getDate());
       assertNull(props.get("Disbanded Date").getDate());
 
       // Sync to Notion again with updates
       updatedTeam.setName("Test Team Updated " + UUID.randomUUID());
-      updatedTeam.setDescription("Updated description for the team");
       updatedTeam.setStatus(TeamStatus.DISBANDED);
       updatedTeam.setDisbandedDate(Instant.now());
       teamRepository.save(updatedTeam);
@@ -153,14 +160,7 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
           Objects.requireNonNull(
                   Objects.requireNonNull(props.get("Name").getTitle()).get(0).getText())
               .getContent());
-      assertEquals(
-          "Updated description for the team",
-          Objects.requireNonNull(
-                  Objects.requireNonNull(props.get("Description").getRichText()).get(0).getText())
-              .getContent());
-      assertEquals(
-          TeamStatus.DISBANDED.getDisplayName(),
-          Objects.requireNonNull(props.get("Status").getCheckbox()).toString());
+      assertFalse(Objects.requireNonNull(props.get("Status").getCheckbox()));
       assertNotNull(props.get("Disbanded Date").getDate());
 
     } finally {

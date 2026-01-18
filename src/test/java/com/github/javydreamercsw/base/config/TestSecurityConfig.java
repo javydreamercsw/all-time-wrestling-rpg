@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.TestCustomUserDetailsService;
+import com.github.javydreamercsw.base.security.WithCustomMockUserSecurityContextFactory;
 import com.github.javydreamercsw.management.config.InboxEventTypeConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -54,6 +55,11 @@ public class TestSecurityConfig {
   @Primary
   public TestCustomUserDetailsService testCustomUserDetailsService() {
     return new TestCustomUserDetailsService();
+  }
+
+  @Bean
+  public WithCustomMockUserSecurityContextFactory withCustomMockUserSecurityContextFactory() {
+    return new WithCustomMockUserSecurityContextFactory();
   }
 
   @Bean
