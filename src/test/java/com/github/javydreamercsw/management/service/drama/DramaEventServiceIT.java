@@ -60,10 +60,10 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
             .findByName(RoleName.PLAYER)
             .orElseGet(() -> roleRepository.save(new Role(RoleName.PLAYER, "Player role")));
 
-    createTestAccount("drama_viewer", RoleName.VIEWER);
-    createTestAccount("drama_admin", RoleName.ADMIN);
-    createTestAccount("drama_booker", RoleName.BOOKER);
-    Account dramaPlayerAccount = createTestAccount("drama_player", RoleName.PLAYER);
+    createTestAccount("viewer", RoleName.VIEWER);
+    createTestAccount("admin", RoleName.ADMIN);
+    createTestAccount("booker", RoleName.BOOKER);
+    Account dramaPlayerAccount = createTestAccount("player", RoleName.PLAYER);
 
     // Ensure accounts are flushed to DB so PermissionService can find them
     accountRepository.flush();
@@ -117,7 +117,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "drama_admin",
+      username = "admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanCreateDramaEvent() {
     Optional<DramaEvent> event =
@@ -133,7 +133,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "drama_booker",
+      username = "booker",
       roles = {"BOOKER", "PLAYER"})
   void testBookerCanCreateDramaEvent() {
     Optional<DramaEvent> event =
@@ -148,7 +148,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "drama_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotCreateDramaEvent() {
     Assertions.assertThrows(
         AuthorizationDeniedException.class,
@@ -163,7 +163,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "drama_viewer", roles = "VIEWER")
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
   void testViewerCannotCreateDramaEvent() {
     Assertions.assertThrows(
         AuthorizationDeniedException.class,
@@ -179,7 +179,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "drama_admin",
+      username = "admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanGenerateRandomDramaEvent() {
     Optional<DramaEvent> event = dramaEventService.generateRandomDramaEvent(testWrestler1.getId());
@@ -187,7 +187,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "drama_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotGenerateRandomDramaEvent() {
     Assertions.assertThrows(
         AuthorizationDeniedException.class,
@@ -196,7 +196,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "drama_admin",
+      username = "admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanProcessUnprocessedEvents() {
     dramaEventService.createDramaEvent(
@@ -211,7 +211,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "drama_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotProcessUnprocessedEvents() {
     Assertions.assertThrows(
         AuthorizationDeniedException.class, () -> dramaEventService.processUnprocessedEvents());
@@ -219,7 +219,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "drama_admin",
+      username = "admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanProcessEvent() {
     Optional<DramaEvent> event =
@@ -236,7 +236,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "drama_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotProcessEvent() {
     DramaEvent event = new DramaEvent();
     Assertions.assertThrows(
@@ -244,28 +244,28 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "drama_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanGetEventsForWrestler() {
     dramaEventService.getEventsForWrestler(playerWrestler.getId());
     // No exception means success
   }
 
   @Test
-  @WithCustomMockUser(username = "drama_viewer", roles = "VIEWER")
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
   void testAuthenticatedCanGetEventsForWrestlerWithPageable() {
     dramaEventService.getEventsForWrestler(testWrestler1.getId(), Pageable.unpaged());
     // No exception means success
   }
 
   @Test
-  @WithCustomMockUser(username = "drama_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanGetRecentEvents() {
     dramaEventService.getRecentEvents();
     // No exception means success
   }
 
   @Test
-  @WithCustomMockUser(username = "drama_viewer", roles = "VIEWER")
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
   void testAuthenticatedCanGetEventsBetweenWrestlers() {
     dramaEventService.getEventsBetweenWrestlers(testWrestler1.getId(), testWrestler2.getId());
     // No exception means success

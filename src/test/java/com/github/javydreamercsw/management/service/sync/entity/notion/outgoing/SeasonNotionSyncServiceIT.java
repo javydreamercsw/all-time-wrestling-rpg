@@ -55,7 +55,7 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
   @Autowired private NotionHandler notionHandler;
 
   @BeforeEach
-  void setUp() throws Exception {
+  void setUp() {
     clearAllRepositories();
   }
 
@@ -129,8 +129,6 @@ class SeasonNotionSyncServiceIT extends ManagementIntegrationTest {
         } catch (FailsafeException e) {
           // Ignore timeout on cleanup
         }
-        seasonRepository.delete(season);
-      } else if (season != null && season.getId() != null) {
         seasonRepository.delete(season);
       }
     }

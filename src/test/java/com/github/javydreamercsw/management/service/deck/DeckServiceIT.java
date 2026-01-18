@@ -43,11 +43,13 @@ class DeckServiceIT extends ManagementIntegrationTest {
   void setUp() {
     clearAllRepositories();
 
-    // Create test-specific accounts to avoid conflicts with global accounts
-    Account booker = createTestAccount("deck_booker", RoleName.BOOKER);
-    Account player = createTestAccount("deck_player", RoleName.PLAYER);
-    createTestAccount("deck_viewer", RoleName.VIEWER);
-    createTestAccount("deck_admin", RoleName.ADMIN);
+    // Use standard accounts that exist via Flyway V21 migration and are preserved by
+    // DatabaseCleaner
+    Account booker = createTestAccount("booker", RoleName.BOOKER);
+    Account player = createTestAccount("player", RoleName.PLAYER);
+    // Ensure other standard accounts exist if needed
+    createTestAccount("viewer", RoleName.VIEWER);
+    createTestAccount("admin", RoleName.ADMIN);
 
     // Ensure accounts are flushed to DB so PermissionService can find them
     accountRepository.flush();
@@ -81,7 +83,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "deck_admin",
+      username = "admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanCreateDeck() {
     Deck deck = deckService.createDeck(bookerWrestler);
@@ -91,7 +93,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithCustomMockUser(
-      username = "deck_booker",
+      username = "booker",
       roles = {"BOOKER", "PLAYER"})
   void testBookerCanCreateDeck() {
     Deck deck = deckService.createDeck(bookerWrestler);
@@ -100,7 +102,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_booker", roles = "BOOKER")
+  @WithCustomMockUser(username = "booker", roles = "BOOKER")
   void testPlayerCanCreateTheirOwnDeck() {
     Deck deck = deckService.createDeck(playerWrestler);
     Assertions.assertNotNull(deck);
@@ -108,35 +110,35 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotCreateDeckForSomeoneElse() {
     Assertions.assertThrows(
         AuthorizationDeniedException.class, () -> deckService.createDeck(bookerWrestler));
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanListDecks() {
     deckService.list(Pageable.unpaged());
     // No exception means success
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_viewer", roles = "VIEWER")
+  @WithCustomMockUser(username = "viewer", roles = "VIEWER")
   void testAuthenticatedCanCountDecks() {
     deckService.count();
     // No exception means success
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanFindAllDecks() {
     deckService.findAll();
     // No exception means success
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanFindById() {
     // Create deck as admin first to bypass security check during creation
     // or use a different user context for creation
@@ -157,14 +159,14 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanFindByWrestler() {
     deckService.findByWrestler(playerWrestler);
     // No exception means success
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_booker", roles = "BOOKER")
+  @WithCustomMockUser(username = "booker", roles = "BOOKER")
   void testPlayerCanSaveTheirOwnDeck() {
     // Use repository to create initial deck
     Deck deck = new Deck();
@@ -177,7 +179,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotSaveSomeoneElsesDeck() {
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
@@ -185,7 +187,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_booker", roles = "BOOKER")
+  @WithCustomMockUser(username = "booker", roles = "BOOKER")
   void testPlayerCanDeleteTheirOwnDeck() {
     // Use repository to create initial deck
     Deck deck = new Deck();
@@ -198,7 +200,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCanDeleteTheirOwnDeckPlayer() {
     // Use repository to create initial deck
     Deck deck = new Deck();
@@ -211,7 +213,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "deck_player", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotDeleteSomeoneElsesDeck() {
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
