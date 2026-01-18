@@ -225,8 +225,11 @@ public abstract class BaseSyncService {
         batchSize);
     List<R> allResults = new java.util.ArrayList<>();
 
-    // Capture the current security context to propagate to async threads
-    SecurityContext securityContext = SecurityContextHolder.getContext();
+    // Capture the current authentication to propagate to async threads
+    // We capture Authentication instead of SecurityContext to avoid issues with context clearing
+    // or thread-local storage differences in different environments.
+    org.springframework.security.core.Authentication authentication =
+        SecurityContextHolder.getContext().getAuthentication();
 
     for (int i = 0; i < items.size(); i += batchSize) {
       int endIndex = Math.min(i + batchSize, items.size());
@@ -260,9 +263,10 @@ public abstract class BaseSyncService {
                                   }
                                 };
 
-                            if (securityContext != null
-                                && securityContext.getAuthentication() != null) {
-                              SecurityContextHolder.setContext(securityContext);
+                            if (authentication != null) {
+                              SecurityContext context = SecurityContextHolder.createEmptyContext();
+                              context.setAuthentication(authentication);
+                              SecurityContextHolder.setContext(context);
                               try {
                                 return task.get();
                               } finally {
