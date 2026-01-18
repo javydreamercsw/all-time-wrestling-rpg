@@ -147,8 +147,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
       for (Attribute<?, ?> attribute : entity.getAttributes()) {
         if (attribute.isCollection()) {
           Member member = attribute.getJavaMember();
-          if (member instanceof AnnotatedElement) {
-            AnnotatedElement annotatedElement = (AnnotatedElement) member;
+          if (member instanceof AnnotatedElement annotatedElement) {
             JoinTable joinTable = annotatedElement.getAnnotation(JoinTable.class);
             if (joinTable != null) {
               joinTableNames.add(joinTable.name());

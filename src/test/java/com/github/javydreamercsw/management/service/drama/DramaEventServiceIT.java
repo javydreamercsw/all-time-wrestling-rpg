@@ -63,14 +63,14 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
     createTestAccount("drama_viewer", RoleName.VIEWER);
     createTestAccount("drama_admin", RoleName.ADMIN);
     createTestAccount("drama_booker", RoleName.BOOKER);
-    Account playerAccount = createTestAccount("drama_player", RoleName.PLAYER);
+    Account dramaPlayerAccount = createTestAccount("drama_player", RoleName.PLAYER);
 
     // Ensure accounts are flushed to DB so PermissionService can find them
     accountRepository.flush();
 
     // Ensure no wrestler is associated with this account from previous tests
     wrestlerRepository
-        .findByAccount(playerAccount)
+        .findByAccount(dramaPlayerAccount)
         .ifPresent(
             w -> {
               wrestlerRepository.delete(w);
@@ -103,8 +103,8 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
 
     playerWrestler = new Wrestler();
     playerWrestler.setName("Drama Player Wrestler");
-    playerWrestler.setAccount(playerAccount);
-    wrestlerRepository.saveAndFlush(playerWrestler);
+    playerWrestler.setAccount(dramaPlayerAccount);
+    wrestlerRepository.save(playerWrestler);
   }
 
   /*
