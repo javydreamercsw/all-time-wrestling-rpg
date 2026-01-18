@@ -52,10 +52,10 @@ public class DramaEventScheduler {
   private final Random random = new Random();
 
   /**
-   * Generate random drama events every hour. This keeps the storylines dynamic by introducing
-   * unexpected events that can affect rivalries, fan counts, and wrestler development.
+   * Generate random drama events every 6 hours by default. This keeps the storylines dynamic by
+   * introducing unexpected events that can affect rivalries, fan counts, and wrestler development.
    */
-  @Scheduled(fixedRate = 3_600_000) // Every hour (3,600,000 milliseconds)
+  @Scheduled(fixedRateString = "${drama.events.scheduler.rate:21600000}") // Every 6 hours default
   public void generateRandomDramaEvents() {
     try {
       setSystemAuthentication();
@@ -67,11 +67,11 @@ public class DramaEventScheduler {
         return;
       }
 
-      // Generate 0-3 drama events per hour (weighted toward fewer events)
+      // Generate 0-2 drama events per run (weighted toward fewer events)
       int eventsToGenerate = getRandomEventCount();
 
       if (eventsToGenerate == 0) {
-        log.debug("No drama events scheduled for this hour");
+        log.debug("No drama events scheduled for this run");
         return;
       }
 
@@ -190,17 +190,14 @@ public class DramaEventScheduler {
   private int getRandomEventCount() {
     double roll = random.nextDouble();
 
-    // 40% chance of no events
-    if (roll < 0.4) return 0;
+    // 50% chance of no events
+    if (roll < 0.5) return 0;
 
-    // 35% chance of 1 event
-    if (roll < 0.75) return 1;
+    // 40% chance of 1 event
+    if (roll < 0.9) return 1;
 
-    // 20% chance of 2 events
-    if (roll < 0.95) return 2;
-
-    // 5% chance of 3 events (rare busy hour)
-    return 3;
+    // 10% chance of 2 events
+    return 2;
   }
 
   /** Generate a single random drama event. */
