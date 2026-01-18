@@ -18,17 +18,13 @@ package com.github.javydreamercsw.management.service.injury;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
-import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
@@ -43,23 +39,19 @@ import org.springframework.transaction.annotation.Transactional;
  * and health calculations.
  */
 @DisplayName("Injury System Integration Tests")
-class InjurySystemIntegrationTest extends AbstractMockUserIntegrationTest {
+class InjurySystemIntegrationTest extends ManagementIntegrationTest {
   @Autowired private InjuryService injuryService;
-  @Autowired private WrestlerService wrestlerService;
   @Autowired private NPCSegmentResolutionService npcSegmentResolutionService;
-  @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private InjuryRepository injuryRepository;
   @Autowired private DeckRepository deckRepository;
 
   @PersistenceContext private EntityManager entityManager;
 
   private Wrestler wrestler1;
-  private Wrestler wrestler2;
-  private Show testShow;
-  private SegmentType singlesSegmentType;
 
   @org.junit.jupiter.api.BeforeEach
   void setUp() {
+    refreshSecurityContext();
     wrestler1 = createTestWrestler("Test Wrestler 1");
     wrestler1.setFans(10000L);
     wrestler1 = wrestlerRepository.save(wrestler1);
@@ -69,6 +61,7 @@ class InjurySystemIntegrationTest extends AbstractMockUserIntegrationTest {
   @Transactional
   @DisplayName("Should convert 3 bumps to injury and reset bumps")
   void shouldConvert3BumpsToInjuryAndResetBumps() {
+    refreshSecurityContext();
     // Given - Add 2 bumps first
     Optional<Wrestler> afterFirstBump = wrestlerService.addBump(wrestler1.getId());
     assertThat(afterFirstBump).isPresent();
@@ -97,6 +90,7 @@ class InjurySystemIntegrationTest extends AbstractMockUserIntegrationTest {
   @Test
   @DisplayName("Should apply injury penalties to health calculations")
   void shouldApplyInjuryPenaltiesToHealthCalculations() {
+    refreshSecurityContext();
     // Given - Create injury for wrestler
     Optional<Injury> createdInjury =
         injuryService.createInjury(
@@ -122,6 +116,7 @@ class InjurySystemIntegrationTest extends AbstractMockUserIntegrationTest {
   @Test
   @DisplayName("Should calculate injury statistics correctly")
   void shouldCalculateInjuryStatisticsCorrectly() {
+    refreshSecurityContext();
     // Given - Create multiple injuries for wrestler
     injuryService.createInjury(
         wrestler1.getId(), "Active Injury 1", "First active injury", InjurySeverity.MINOR, "Test");
@@ -163,6 +158,7 @@ class InjurySystemIntegrationTest extends AbstractMockUserIntegrationTest {
   @Test
   @DisplayName("Should handle injury healing with fan cost")
   void shouldHandleInjuryHealingWithFanCost() {
+    refreshSecurityContext();
     // Given - Create injury and ensure wrestler has enough fans
     wrestler1.setFans(50000L); // Plenty of fans
     wrestler1 = wrestlerRepository.save(wrestler1);
@@ -197,6 +193,7 @@ class InjurySystemIntegrationTest extends AbstractMockUserIntegrationTest {
   @Test
   @DisplayName("Should prevent healing when wrestler cannot afford cost")
   void shouldPreventHealingWhenWrestlerCannotAffordCost() {
+    refreshSecurityContext();
     // Given - Create injury and ensure wrestler has insufficient fans
     wrestler1.setFans(1000L); // Not enough fans
     wrestler1 = wrestlerRepository.save(wrestler1);
