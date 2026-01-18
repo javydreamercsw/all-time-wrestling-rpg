@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
@@ -37,6 +38,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 class DramaEventServiceIT extends ManagementIntegrationTest {
@@ -105,6 +108,13 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
     playerWrestler.setName("Drama Player Wrestler");
     playerWrestler.setAccount(dramaPlayerAccount);
     wrestlerRepository.save(playerWrestler);
+
+    // Refresh security context to ensure the principal has the correct wrestler (created above)
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth != null && auth.getPrincipal() instanceof CustomUserDetails details) {
+      String username = details.getUsername();
+      accountRepository.findByUsername(username).ifPresent(this::login);
+    }
   }
 
   /*

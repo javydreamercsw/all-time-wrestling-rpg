@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.deck;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -29,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -79,6 +82,13 @@ class DeckServiceIT extends ManagementIntegrationTest {
     playerWrestler.setAccount(player);
     playerWrestler.setIsPlayer(true);
     wrestlerRepository.saveAndFlush(playerWrestler);
+
+    // Refresh security context to ensure the principal has the correct wrestler (created above)
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth != null && auth.getPrincipal() instanceof CustomUserDetails details) {
+      String username = details.getUsername();
+      accountRepository.findByUsername(username).ifPresent(this::login);
+    }
   }
 
   @Test

@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management;
 
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
@@ -29,6 +32,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -41,12 +45,18 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrationTest {
@@ -109,5 +119,22 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
 
   protected void clearAllRepositories() {
     databaseCleaner.clearRepositories();
+  }
+
+  protected void login(Account account) {
+    Wrestler wrestler = wrestlerRepository.findByAccount(account).orElse(null);
+    CustomUserDetails principal = new CustomUserDetails(account, wrestler);
+
+    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+    for (Role role : account.getRoles()) {
+      String roleName = role.getName().name();
+      authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+      authorities.add(new SimpleGrantedAuthority(roleName));
+    }
+
+    Authentication authentication =
+        new UsernamePasswordAuthenticationToken(principal, account.getPassword(), authorities);
+
+    SecurityContextHolder.getContext().setAuthentication(authentication);
   }
 }

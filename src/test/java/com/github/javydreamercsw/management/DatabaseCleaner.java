@@ -150,7 +150,10 @@ public class DatabaseCleaner implements DatabaseCleanup {
           if (member instanceof AnnotatedElement annotatedElement) {
             JoinTable joinTable = annotatedElement.getAnnotation(JoinTable.class);
             if (joinTable != null) {
-              joinTableNames.add(joinTable.name());
+              // Skip account_roles to prevent deleting user roles
+              if (!"account_roles".equalsIgnoreCase(joinTable.name())) {
+                joinTableNames.add(joinTable.name());
+              }
             }
           }
         }
