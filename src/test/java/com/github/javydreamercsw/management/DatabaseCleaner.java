@@ -101,6 +101,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
     }
 
     accountInitializer.init();
+    entityManager.flush();
+    entityManager.clear();
     log.info("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
   }
 

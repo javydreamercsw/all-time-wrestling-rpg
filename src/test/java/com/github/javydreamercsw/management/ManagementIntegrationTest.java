@@ -16,8 +16,8 @@
 */
 package com.github.javydreamercsw.management;
 
-import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -32,7 +32,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -45,21 +44,28 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.TestSecurityContextHolder;
 
 public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrationTest {
+  private static final Logger log = LoggerFactory.getLogger(ManagementIntegrationTest.class);
+
+  static {
+    SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+  }
+
+  @Autowired protected AccountRepository accountRepository;
+  @Autowired protected RoleRepository roleRepository;
   @Autowired protected FactionRivalryRepository factionRivalryRepository;
   @Autowired protected RivalryRepository rivalryRepository;
   @Autowired protected SegmentRepository segmentRepository;
@@ -99,6 +105,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   @BeforeEach
   public void setupKaribu() {
     mocks = MockitoAnnotations.openMocks(this);
+
     // Only setup MockVaadin for UI view tests to avoid interfering with service-layer security
     String packageName = this.getClass().getPackageName();
     if (packageName.contains(".ui.view") && !packageName.contains(".security")) {
@@ -121,20 +128,31 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     databaseCleaner.clearRepositories();
   }
 
-  protected void login(Account account) {
-    Wrestler wrestler = wrestlerRepository.findByAccount(account).orElse(null);
-    CustomUserDetails principal = new CustomUserDetails(account, wrestler);
-
-    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-    for (Role role : account.getRoles()) {
-      String roleName = role.getName().name();
-      authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
-      authorities.add(new SimpleGrantedAuthority(roleName));
+  protected void refreshSecurityContext() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null) {
+      auth = TestSecurityContextHolder.getContext().getAuthentication();
     }
 
-    Authentication authentication =
-        new UsernamePasswordAuthenticationToken(principal, account.getPassword(), authorities);
+    if (auth != null && auth.getPrincipal() instanceof CustomUserDetails details) {
+      log.info("Refreshing security context for user: {}", details.getUsername());
+      accountRepository
+          .findByUsername(details.getUsername())
+          .ifPresent(
+              account -> {
+                log.info("Found persistent account for {}, logging in...", details.getUsername());
+                this.login(account);
+              });
+    } else if (auth != null
+        && auth.getPrincipal()
+            instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+      log.info(
+          "Refreshing security context for standard UserDetails: {}", userDetails.getUsername());
+      accountRepository.findByUsername(userDetails.getUsername()).ifPresent(this::login);
+    }
+  }
 
-    SecurityContextHolder.getContext().setAuthentication(authentication);
+  protected void loginAs(String username) {
+    accountRepository.findByUsername(username).ifPresent(this::login);
   }
 }

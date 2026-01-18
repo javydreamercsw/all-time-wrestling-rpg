@@ -24,6 +24,8 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collection;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -33,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service("permissionService")
 @Transactional(readOnly = true)
 public class PermissionService {
+  private static final Logger log = LoggerFactory.getLogger(PermissionService.class);
 
   private final WrestlerRepository wrestlerRepository;
   private final AccountRepository accountRepository;
@@ -46,13 +49,19 @@ public class PermissionService {
   public boolean isOwner(Object targetDomainObject) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null) {
+      log.warn("isOwner: Authentication is null");
       return false;
     }
 
     Object principal = authentication.getPrincipal();
     if (!(principal instanceof UserDetails userDetails)) {
+      log.warn(
+          "isOwner: Principal is not UserDetails: {}",
+          principal != null ? principal.getClass().getName() : "null");
       return false; // Or handle anonymous user differently
     }
+
+    log.info("isOwner: Checking ownership for user: {}", userDetails.getUsername());
 
     // Fetch the wrestler directly using the username from the security context
     Optional<Wrestler> userWrestlerOpt =
@@ -61,15 +70,33 @@ public class PermissionService {
             .flatMap(wrestlerRepository::findByAccount);
 
     if (userWrestlerOpt.isEmpty()) {
+      log.warn("isOwner: No wrestler found for user: {}", userDetails.getUsername());
       return false; // User does not have a wrestler assigned
     }
     Wrestler userWrestler = userWrestlerOpt.get();
+    log.info(
+        "isOwner: User {} has wrestler: {} (ID: {})",
+        userDetails.getUsername(),
+        userWrestler.getName(),
+        userWrestler.getId());
 
     if (targetDomainObject instanceof Wrestler targetWrestler) {
-      return userWrestler.getId().equals(targetWrestler.getId());
+      boolean match = userWrestler.getId().equals(targetWrestler.getId());
+      if (!match)
+        log.warn(
+            "isOwner: Wrestler mismatch. User wrestler ID: {}, Target wrestler ID: {}",
+            userWrestler.getId(),
+            targetWrestler.getId());
+      return match;
     } else if (targetDomainObject instanceof Deck deck) {
       Wrestler deckWrestler = deck.getWrestler();
-      return deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
+      boolean match = deckWrestler != null && userWrestler.getId().equals(deckWrestler.getId());
+      if (!match)
+        log.warn(
+            "isOwner: Deck wrestler mismatch. User wrestler ID: {}, Deck wrestler: {}",
+            userWrestler.getId(),
+            deckWrestler != null ? deckWrestler.getId() : "null");
+      return match;
     } else if (targetDomainObject instanceof DeckCard deckCard) {
       Deck deck = deckCard.getDeck();
       if (deck != null) {
@@ -90,6 +117,9 @@ public class PermissionService {
       return copy.stream().allMatch(this::isOwner);
     }
 
+    log.warn(
+        "isOwner: Unsupported target domain object: {}",
+        targetDomainObject != null ? targetDomainObject.getClass().getName() : "null");
     return false;
   }
 

@@ -30,6 +30,7 @@ import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
@@ -38,7 +39,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.test.annotation.DirtiesContext;
 
+@DirtiesContext
 class SecurityServiceIT extends ManagementIntegrationTest {
 
   @Autowired private AccountService accountService;
@@ -47,6 +50,12 @@ class SecurityServiceIT extends ManagementIntegrationTest {
   @Autowired private PasswordEncoder passwordEncoder;
   @Autowired private AccountRepository accountRepository;
   @Autowired private RoleRepository roleRepository;
+
+  @BeforeEach
+  void setUp() {
+    clearAllRepositories();
+    refreshSecurityContext();
+  }
 
   private static final String TEST_PASSWORD = "ValidPassword1!";
 
@@ -162,7 +171,7 @@ class SecurityServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player_update", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCanUpdateOwnAccount() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     Assertions.assertNotNull(authentication, "Authentication should not be null");
@@ -181,7 +190,7 @@ class SecurityServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player_update_other", roles = "PLAYER")
+  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotUpdateOtherAccount() {
     // Create an account for another player directly (not acting as this player for creation)
     Account otherAccount =
