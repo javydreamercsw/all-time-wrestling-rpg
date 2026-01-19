@@ -16,11 +16,10 @@
 */
 package com.github.javydreamercsw.management.domain.inbox;
 
-import com.github.javydreamercsw.base.config.ApplicationContextProvider;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -28,13 +27,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class InboxEventTypeConverter implements AttributeConverter<InboxEventType, String> {
 
-  private InboxEventTypeRegistry getRegistry() {
-    ApplicationContext context = ApplicationContextProvider.getApplicationContext();
-    if (context == null) {
-      log.error("Application context is null in InboxEventTypeConverter!");
-      throw new IllegalStateException("Application context not initialized");
-    }
-    return context.getBean(InboxEventTypeRegistry.class);
+  private static InboxEventTypeRegistry registry;
+
+  @Autowired
+  public void setRegistry(InboxEventTypeRegistry registry) {
+    InboxEventTypeConverter.registry = registry;
   }
 
   @Override
@@ -50,7 +47,11 @@ public class InboxEventTypeConverter implements AttributeConverter<InboxEventTyp
     if (eventType == null) {
       return null;
     }
-    return getRegistry().getEventTypes().stream()
+    if (registry == null) {
+      log.error("Registry is null in InboxEventTypeConverter!");
+      throw new IllegalStateException("InboxEventTypeRegistry not initialized");
+    }
+    return registry.getEventTypes().stream()
         .filter(type -> type.getName().equals(eventType))
         .findFirst()
         .orElseThrow(() -> new IllegalArgumentException("Unknown event type: " + eventType));
