@@ -62,7 +62,7 @@
 
 - [x] Task 6.1: Write E2E tests for a full Chapter 1 run (Login -> Action -> Match -> Result). [d6e4c55]
 
-- [x] Task 6.2: Perform a UI/UX polish pass to ensure the "Gritty & Realistic" wrestling theme is consistent. [d6e4c55]
+- [x] Task 6.2: Perform a UI/UX polish pass to ensure the "Gritty & Realistic" wrestling theme is consistent. [d6e4c55, 29d3396]
 
 - [x] Task 6.3: Final verification of the Medical Limit and VP cost logic. [d6e4c55]
 
