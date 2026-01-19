@@ -23,6 +23,8 @@ import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import lombok.NonNull;
 
@@ -89,7 +91,14 @@ public class InjuryDialog extends Dialog {
               healButton.setEnabled(injury.getIsActive());
               healButton.addClickListener(
                   e -> {
-                    injuryService.attemptHealing(injury.getId());
+                    var result = injuryService.attemptHealing(injury.getId());
+                    if (result.success()) {
+                      Notification.show(result.message())
+                          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                    } else {
+                      Notification.show(result.message())
+                          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    }
                     updateGrid();
                     onSave.run();
                   });

@@ -176,12 +176,14 @@ public class InjuryService {
           new WrestlerInjuryHealedEvent(this, injury.getWrestler(), injury));
     }
 
-    return new HealingResult(
-        success,
-        success ? "Injury healed successfully" : "Healing attempt failed",
-        injury,
-        roll,
-        true);
+    String message =
+        success
+            ? "Injury healed successfully"
+            : String.format(
+                "Healing attempt failed (Rolled: %d, Needed: %d+)",
+                roll, injury.getSeverity().getHealingSuccessThreshold());
+
+    return new HealingResult(success, message, injury, roll, true);
   }
 
   /** Get injury by ID. */
