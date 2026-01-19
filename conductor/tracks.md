@@ -8,8 +8,8 @@
 
 *Link: [./conductor/archive/upgrade_vaadin_25_20260114/](./conductor/archive/upgrade_vaadin_25_20260114/)*
 
+### [x] Track: ATW Solo Campaign "All or Nothing"
+
+*Link: [./conductor/archive/atw_solo_campaign_20260119/](./conductor/archive/atw_solo_campaign_20260119/)*
+
 ---
-
-- [x] **Track: ATW Solo Campaign "All or Nothing"**
-
-*Link: [./conductor/tracks/atw_solo_campaign_20260119/](./conductor/tracks/atw_solo_campaign_20260119/)*
