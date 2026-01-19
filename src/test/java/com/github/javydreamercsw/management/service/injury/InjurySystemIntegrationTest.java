@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.injury;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
@@ -39,6 +40,9 @@ import org.springframework.transaction.annotation.Transactional;
  * and health calculations.
  */
 @DisplayName("Injury System Integration Tests")
+@WithCustomMockUser(
+    username = "admin",
+    roles = {"ADMIN", "BOOKER"})
 @DirtiesContext
 class InjurySystemIntegrationTest extends ManagementIntegrationTest {
   @Autowired private InjuryService injuryService;
