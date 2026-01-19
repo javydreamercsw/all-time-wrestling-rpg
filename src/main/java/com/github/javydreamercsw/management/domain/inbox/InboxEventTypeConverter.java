@@ -16,31 +16,20 @@
 */
 package com.github.javydreamercsw.management.domain.inbox;
 
+import com.github.javydreamercsw.base.config.ApplicationContextProvider;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.NonNull;
-import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 @Component
 @Converter(autoApply = true)
 @Slf4j
-public class InboxEventTypeConverter
-    implements AttributeConverter<InboxEventType, String>, ApplicationContextAware {
-
-  private static ApplicationContext context;
-
-  @Override
-  public void setApplicationContext(@NonNull ApplicationContext applicationContext)
-      throws BeansException {
-    log.info("Setting application context in InboxEventTypeConverter");
-    context = applicationContext;
-  }
+public class InboxEventTypeConverter implements AttributeConverter<InboxEventType, String> {
 
   private InboxEventTypeRegistry getRegistry() {
+    ApplicationContext context = ApplicationContextProvider.getApplicationContext();
     if (context == null) {
       log.error("Application context is null in InboxEventTypeConverter!");
       throw new IllegalStateException("Application context not initialized");
