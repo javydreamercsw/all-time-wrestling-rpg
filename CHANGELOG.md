@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.4.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.4.3) (2026-01-15)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.4.2...v1.4.3)
+
+**Fixed bugs:**
+
+- Release Bug Fix 1.4.2: Fix Database Migration and Driver Loading in Deployed Tomcat Environment [\#124](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/124) ([javydreamercsw](https://github.com/javydreamercsw))
+
 ## [v1.4.2](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.4.2) (2026-01-14)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.4.1...v1.4.2)
