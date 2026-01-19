@@ -30,9 +30,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -43,7 +40,6 @@ import org.springframework.web.context.WebApplicationContext;
  * Integration tests for SeasonController. Tests the complete REST API functionality for season
  * management.
  */
-@SpringBootTest
 @DisplayName("SeasonController Integration Tests")
 @WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN", "ROLE_BOOKER"})
 class SeasonControllerIT extends AbstractIntegrationTest {
@@ -51,22 +47,10 @@ class SeasonControllerIT extends AbstractIntegrationTest {
   private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private WebApplicationContext context;
-  @Autowired private CacheManager cacheManager;
 
   @BeforeEach
   public void setUp() {
     seasonRepository.deleteAll();
-    if (cacheManager != null) {
-      cacheManager
-          .getCacheNames()
-          .forEach(
-              name -> {
-                Cache cache = cacheManager.getCache(name);
-                if (cache != null) {
-                  cache.clear();
-                }
-              });
-    }
     mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
   }
 

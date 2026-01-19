@@ -34,7 +34,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -45,7 +44,6 @@ import org.springframework.web.context.WebApplicationContext;
  * Integration tests for RivalryController. Tests the complete REST API functionality for rivalry
  * management.
  */
-@SpringBootTest
 @DisplayName("RivalryController Integration Tests")
 @WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN", "ROLE_BOOKER"})
 class RivalryControllerIT extends AbstractIntegrationTest {

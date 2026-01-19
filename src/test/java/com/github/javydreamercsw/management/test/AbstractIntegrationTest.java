@@ -52,11 +52,13 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(classes = Application.class)
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import({TestSecurityConfig.class, TestNotionConfiguration.class})
 @Slf4j

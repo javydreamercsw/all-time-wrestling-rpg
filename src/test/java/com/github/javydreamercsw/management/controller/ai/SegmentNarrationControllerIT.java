@@ -26,7 +26,6 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarratio
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 
@@ -34,7 +33,6 @@ import org.springframework.test.context.TestPropertySource;
  * Integration tests for MatchNarrationController. Tests the complete flow from REST endpoints to AI
  * services using the mock provider.
  */
-@SpringBootTest
 @DisplayName("Segment Narration Controller Integration Tests")
 @TestPropertySource(properties = "notion.sync.enabled=true")
 class SegmentNarrationControllerIT extends AbstractControllerTest {
