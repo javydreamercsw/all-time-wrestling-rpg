@@ -103,6 +103,14 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   }
 
   @BeforeEach
+  public void prepareTestEnvironment() {
+    // Clean up database and re-initialize default accounts
+    databaseCleaner.clearRepositories();
+    // Refresh security context to ensure the principal has persistent entities
+    refreshSecurityContext();
+  }
+
+  @BeforeEach
   public void setupKaribu() {
     mocks = MockitoAnnotations.openMocks(this);
 
