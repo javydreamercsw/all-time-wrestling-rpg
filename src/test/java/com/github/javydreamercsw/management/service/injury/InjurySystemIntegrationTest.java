@@ -19,19 +19,19 @@ package com.github.javydreamercsw.management.service.injury;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -39,17 +39,16 @@ import org.springframework.transaction.annotation.Transactional;
  * and health calculations.
  */
 @DisplayName("Injury System Integration Tests")
+@DirtiesContext
 class InjurySystemIntegrationTest extends ManagementIntegrationTest {
   @Autowired private InjuryService injuryService;
-  @Autowired private NPCSegmentResolutionService npcSegmentResolutionService;
   @Autowired private InjuryRepository injuryRepository;
-  @Autowired private DeckRepository deckRepository;
 
   @PersistenceContext private EntityManager entityManager;
 
   private Wrestler wrestler1;
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   void setUp() {
     wrestler1 = createTestWrestler("Test Wrestler 1");
     wrestler1.setFans(10_000L);
@@ -173,6 +172,7 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
     Long healingCost = injury.getHealingCost();
 
     // When - Attempt healing with good dice roll
+    assert injury.getId() != null;
     InjuryService.HealingResult result = injuryService.attemptHealing(injury.getId(), 6);
 
     // Then - Healing should succeed and fans should be spent
