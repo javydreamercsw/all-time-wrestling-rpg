@@ -147,7 +147,7 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @JoinColumn(name = "account_id")
   private Account account;
 
-  @OneToOne(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @OneToOne(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
   @JsonIgnore
   private WrestlerAlignment alignment;
 
@@ -156,7 +156,7 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Builder.Default
   private List<TitleReign> reigns = new ArrayList<>();
 
-  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
   @JsonIgnore
   @Builder.Default
   private List<Injury> injuries = new ArrayList<>();

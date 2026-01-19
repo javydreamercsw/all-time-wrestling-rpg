@@ -54,7 +54,7 @@ class CampaignServiceTest {
     assertThat(campaign.getState()).isNotNull();
     assertThat(campaign.getState().getCurrentChapter()).isEqualTo(1);
 
-    verify(campaignRepository).save(any(Campaign.class)); // Called twice actually
+    verify(campaignRepository, org.mockito.Mockito.times(2)).save(any(Campaign.class));
     verify(campaignStateRepository).save(any(CampaignState.class));
   }
 

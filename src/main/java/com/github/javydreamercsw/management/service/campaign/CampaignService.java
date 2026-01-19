@@ -48,6 +48,8 @@ public class CampaignService {
             .startedAt(LocalDateTime.now())
             .build();
 
+    campaign = campaignRepository.save(campaign);
+
     CampaignState state =
         CampaignState.builder()
             .campaign(campaign)
