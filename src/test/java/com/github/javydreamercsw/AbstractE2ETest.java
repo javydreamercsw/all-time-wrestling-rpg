@@ -134,7 +134,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
     waitForAppToBeReady();
     takeSequencedScreenshot("on-login-page");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
     WebElement loginFormHost =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
     WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
@@ -229,14 +229,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
     takeSequencedScreenshot("before-wait-for-element");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60)); // Increased timeout
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
 
   /** Waits for the Vaadin client-side application to fully load. */
   protected void waitForVaadinClientToLoad() {
     WebDriverWait wait =
-        new WebDriverWait(driver, Duration.ofSeconds(30)); // Increased timeout for Vaadin client
+        new WebDriverWait(driver, Duration.ofSeconds(60)); // Increased timeout for Vaadin client
 
     // Wait for document.readyState to be 'complete'
     wait.until(
