@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckCardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
@@ -44,6 +45,7 @@ import com.github.javydreamercsw.management.dto.TeamImportDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
@@ -94,6 +96,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
   private final FactionService factionService;
   private final TeamService teamService;
   private final TeamRepository teamRepository;
+  private final CampaignAbilityCardService campaignAbilityCardService;
 
   @Autowired
   public DataInitializer(
@@ -112,7 +115,8 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       NpcService npcService,
       FactionService factionService,
       TeamService teamService,
-      TeamRepository teamRepository) {
+      TeamRepository teamRepository,
+      CampaignAbilityCardService campaignAbilityCardService) {
     this.enabled = enabled;
     this.showTemplateService = showTemplateService;
     this.wrestlerService = wrestlerService;
@@ -129,6 +133,7 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
     this.factionService = factionService;
     this.teamService = teamService;
     this.teamRepository = teamRepository;
+    this.campaignAbilityCardService = campaignAbilityCardService;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -147,6 +152,36 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
       syncNpcsFromFile();
       syncFactionsFromFile();
       syncTeamsFromFile();
+      syncCampaignAbilityCardsFromFile();
+    }
+  }
+
+  private void syncCampaignAbilityCardsFromFile() {
+    ClassPathResource resource = new ClassPathResource("campaign_ability_cards.json");
+    if (resource.exists()) {
+      log.info("Loading campaign ability cards from file: {}", resource.getPath());
+      ObjectMapper mapper = new ObjectMapper();
+      try (var is = resource.getInputStream()) {
+        var cardsFromFile =
+            mapper.readValue(is, new TypeReference<List<CampaignAbilityCardDTO>>() {});
+        for (CampaignAbilityCardDTO dto : cardsFromFile) {
+          campaignAbilityCardService.createOrUpdateCard(
+              dto.getName(),
+              dto.getDescription(),
+              dto.getAlignmentType(),
+              dto.getLevel(),
+              dto.isOneTimeUse(),
+              dto.getTiming(),
+              dto.getTrackRequirement(),
+              dto.getEffectScript());
+          log.debug("Loaded campaign ability card: {}", dto.getName());
+        }
+        log.info("Campaign ability card loading completed - {} cards loaded", cardsFromFile.size());
+      } catch (IOException e) {
+        log.error("Error loading campaign ability cards from file", e);
+      }
+    } else {
+      log.warn("Campaign ability cards file not found: {}", resource.getPath());
     }
   }
 

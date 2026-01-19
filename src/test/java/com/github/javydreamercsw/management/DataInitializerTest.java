@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.FactionImportDTO;
@@ -49,6 +50,7 @@ import com.github.javydreamercsw.management.dto.TeamImportDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
@@ -91,6 +93,7 @@ class DataInitializerTest {
   @Mock private FactionService factionService;
   @Mock private TeamService teamService;
   @Mock private TeamRepository teamRepository;
+  @Mock private CampaignAbilityCardService campaignAbilityCardService;
 
   @Mock
   @Qualifier("baseAccountService") private AccountService accountService;
@@ -118,7 +121,8 @@ class DataInitializerTest {
             npcService,
             factionService,
             teamService,
-            teamRepository);
+            teamRepository,
+            campaignAbilityCardService);
 
     // Mock count methods to prevent issues during init()
     lenient().when(wrestlerService.count()).thenReturn(0L);
@@ -318,6 +322,17 @@ class DataInitializerTest {
               .readValue(
                   new ClassPathResource("teams.json").getInputStream(),
                   new TypeReference<List<TeamImportDTO>>() {});
+        });
+  }
+
+  @Test
+  void validateCampaignAbilityCardsJson() {
+    assertDoesNotThrow(
+        () -> {
+          new ObjectMapper()
+              .readValue(
+                  new ClassPathResource("campaign_ability_cards.json").getInputStream(),
+                  new TypeReference<List<CampaignAbilityCardDTO>>() {});
         });
   }
 

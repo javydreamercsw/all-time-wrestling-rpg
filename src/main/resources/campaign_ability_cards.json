@@ -1,0 +1,28 @@
+[ {
+  "name": "Poke Eye",
+  "description": "Gain Initiative",
+  "alignmentType": "HEEL",
+  "level": 1,
+  "oneTimeUse": true,
+  "timing": "D",
+  "trackRequirement": 1,
+  "effectScript": "damage(2)"
+}, {
+  "name": "Distraction",
+  "description": "Opponent misses their next attack.",
+  "alignmentType": "HEEL",
+  "level": 1,
+  "oneTimeUse": true,
+  "timing": "DEFENSE",
+  "trackRequirement": 1,
+  "effectScript": "negateAttack()"
+}, {
+  "name": "Resilient Comeback",
+  "description": "Recover from a pin attempt automatically.",
+  "alignmentType": "FACE",
+  "level": 2,
+  "oneTimeUse": true,
+  "timing": "PINNED",
+  "trackRequirement": 5,
+  "effectScript": "breakPin()"
+} ]
