@@ -58,10 +58,13 @@
 
 - [x] Task: Conductor - User Manual Verification 'Phase 5: Campaign User Interface' (Protocol in workflow.md) [12a1d1c]
 
-## Phase 6: E2E Verification & Polish
+## Phase 6: E2E Verification & Polish [checkpoint: d6e4c55]
 
-- [ ] Task 6.1: Write E2E tests for a full Chapter 1 run (Login -> Action -> Match -> Result).
-- [ ] Task 6.2: Perform a UI/UX polish pass to ensure the "Gritty & Realistic" wrestling theme is consistent.
-- [ ] Task 6.3: Final verification of the Medical Limit and VP cost logic.
-- [ ] Task: Conductor - User Manual Verification 'Phase 6: E2E Verification & Polish' (Protocol in workflow.md)
+- [x] Task 6.1: Write E2E tests for a full Chapter 1 run (Login -> Action -> Match -> Result). [d6e4c55]
+
+- [x] Task 6.2: Perform a UI/UX polish pass to ensure the "Gritty & Realistic" wrestling theme is consistent. [d6e4c55]
+
+- [x] Task 6.3: Final verification of the Medical Limit and VP cost logic. [d6e4c55]
+
+- [x] Task: Conductor - User Manual Verification 'Phase 6: E2E Verification & Polish' (Protocol in workflow.md) [d6e4c55]
 
