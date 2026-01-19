@@ -69,6 +69,11 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     prompt.append(
         "If the match is a championship match, the context will include the current champion. Make"
             + " sure to acknowledge the current champion in your narration.\n\n");
+    prompt.append(
+        "If campaignContext is present, incorporate the wrestler's alignment (FACE/HEEL), "
+            + "current chapter, and any injuries into the narrative tone. "
+            + "A high HEEL alignment should result in more aggressive behavior. "
+            + "Injuries should be mentioned if they might affect performance.\n\n");
     prompt.append("Here is the JSON context:\n\n");
     prompt.append(jsonContext);
 

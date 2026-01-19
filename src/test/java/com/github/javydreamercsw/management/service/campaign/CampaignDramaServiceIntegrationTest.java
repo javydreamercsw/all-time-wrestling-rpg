@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -47,16 +48,9 @@ class CampaignDramaServiceIntegrationTest extends AbstractIntegrationTest {
     Wrestler rival = createTestWrestler("Rival One");
     rival = wrestlerRepository.save(rival);
 
-    // We need to ensure findRival picks 'rival'.
-    // findRival logic: findAllIds -> filter -> random index.
-    // This is hard to deterministicly mock without knowing exact IDs.
-
-    // Instead, let's just assert that *some* rival was picked and it's not the player.
-    // And that the event is correct type.
-
     // Mock random to just return 0 (first available opponent)
     when(random.nextInt(org.mockito.ArgumentMatchers.anyInt())).thenReturn(0);
-    when(random.nextDouble()).thenReturn(0.5); // For other internal logic if needed
+    when(random.nextDouble()).thenReturn(0.5);
 
     Campaign campaign = Campaign.builder().wrestler(player).build();
 
@@ -67,5 +61,26 @@ class CampaignDramaServiceIntegrationTest extends AbstractIntegrationTest {
     assertThat(event.get().getPrimaryWrestler()).isEqualTo(player);
     assertThat(event.get().getSecondaryWrestler()).isNotNull();
     assertThat(event.get().getSecondaryWrestler()).isNotEqualTo(player);
+  }
+
+  @Test
+  @Transactional
+  void testCheckForStoryEvents_Chapter2() {
+    Wrestler player = createTestWrestler("Chapter Two Player");
+    player = wrestlerRepository.save(player);
+
+    Wrestler rival = createTestWrestler("Rival Two");
+    wrestlerRepository.save(rival);
+
+    Campaign campaign = Campaign.builder().wrestler(player).build();
+    CampaignState state = CampaignState.builder().campaign(campaign).currentChapter(2).build();
+    campaign.setState(state);
+
+    when(random.nextInt(org.mockito.ArgumentMatchers.anyInt())).thenReturn(0);
+
+    Optional<DramaEvent> event = campaignDramaService.checkForStoryEvents(campaign);
+
+    assertThat(event).isPresent();
+    assertThat(event.get().getEventType()).isEqualTo(DramaEventType.CAMPAIGN_RIVAL);
   }
 }

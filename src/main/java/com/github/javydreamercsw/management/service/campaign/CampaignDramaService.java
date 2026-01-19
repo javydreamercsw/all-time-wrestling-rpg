@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.campaign;
 
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
@@ -40,6 +41,43 @@ public class CampaignDramaService {
   private final DramaEventService dramaEventService;
   private final WrestlerRepository wrestlerRepository;
   private final Random random;
+
+  /**
+   * Check for and trigger story events based on campaign state.
+   *
+   * @param campaign The campaign to check.
+   * @return Optional triggered event.
+   */
+  public Optional<DramaEvent> checkForStoryEvents(Campaign campaign) {
+    CampaignState state = campaign.getState();
+    Wrestler player = campaign.getWrestler();
+
+    // Chapter 2: Rivalry
+    if (state.getCurrentChapter() == 2) {
+      // Check if player has active rivalry.
+      // For now, if no active rivalry, trigger one.
+      if (player.getActiveRivalries().isEmpty()) {
+        log.info("Triggering Chapter 2 Rival Event for campaign {}", campaign.getId());
+        return triggerRivalEvent(campaign);
+      }
+    }
+
+    // Chapter 3: Outsider
+    if (state.getCurrentChapter() == 3) {
+      // Check if player has active outsider feud (we'll use Rivalry for now with special flag or
+      // just check event history?)
+      // Simpler: Trigger it if not triggered yet?
+      // We don't have a flag for "Outsider Event Triggered".
+      // Let's assume we trigger it if no active rivalries (or a specific one).
+      // For MVP, randomly trigger if chance hits.
+      if (random.nextDouble() < 0.2) { // 20% chance per check (e.g. per week)
+        log.info("Triggering Chapter 3 Outsider Event for campaign {}", campaign.getId());
+        return triggerOutsiderEvent(campaign);
+      }
+    }
+
+    return Optional.empty();
+  }
 
   /**
    * Trigger a Rival event for Chapter 2.
