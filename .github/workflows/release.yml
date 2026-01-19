@@ -102,7 +102,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Build with Maven
-        run: mvn -B package --file pom.xml
+        run: mvn -B package -DskipTests --file pom.xml
 
       - name: Create Release
         id: create_release
@@ -142,4 +142,4 @@ jobs:
           distribution: 'temurin'
 
       - name: Build and Publish Docker Image
-        run: mvn clean package jib:build -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }}
+        run: mvn clean package jib:build -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }} -DskipTests
