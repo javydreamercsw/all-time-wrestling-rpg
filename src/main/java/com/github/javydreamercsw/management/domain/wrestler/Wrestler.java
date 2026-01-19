@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.WrestlerData;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -128,6 +129,10 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @OneToOne
   @JoinColumn(name = "account_id")
   private Account account;
+
+  @OneToOne(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @JsonIgnore
+  private WrestlerAlignment alignment;
 
   @ManyToMany(mappedBy = "champions", fetch = FetchType.LAZY)
   @JsonIgnore

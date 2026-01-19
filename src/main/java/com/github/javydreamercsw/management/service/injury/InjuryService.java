@@ -72,6 +72,8 @@ public class InjuryService {
               injury.setDescription(description);
               injury.setSeverity(severity);
               injury.setHealthPenalty(severity.getRandomHealthPenalty(random));
+              injury.setStaminaPenalty(severity.getRandomStaminaPenalty(random));
+              injury.setHandSizePenalty(severity.getRandomHandSizePenalty(random));
               injury.setHealingCost(severity.getBaseHealingCost());
               injury.setIsActive(true);
               injury.setInjuryDate(Instant.now(clock));
@@ -107,6 +109,8 @@ public class InjuryService {
               injury.setDescription(description);
               injury.setSeverity(severity);
               injury.setHealthPenalty(severity.getRandomHealthPenalty(random));
+              injury.setStaminaPenalty(severity.getRandomStaminaPenalty(random));
+              injury.setHandSizePenalty(severity.getRandomHandSizePenalty(random));
               injury.setHealingCost(severity.getBaseHealingCost());
               injury.setIsActive(true);
               injury.setInjuryDate(Instant.now(clock));
