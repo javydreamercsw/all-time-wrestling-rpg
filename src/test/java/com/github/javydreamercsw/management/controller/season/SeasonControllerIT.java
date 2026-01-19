@@ -21,15 +21,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.controller.season.SeasonController.CreateSeasonRequest;
 import com.github.javydreamercsw.management.controller.season.SeasonController.UpdateSeasonRequest;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import java.util.Objects;
 import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -47,10 +50,12 @@ class SeasonControllerIT extends AbstractIntegrationTest {
   private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private WebApplicationContext context;
+  @Autowired private CacheManager cacheManager;
 
   @BeforeEach
   public void setUp() {
     seasonRepository.deleteAll();
+    Objects.requireNonNull(cacheManager.getCache(CacheConfig.SEASONS_CACHE)).clear();
     mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
   }
 
