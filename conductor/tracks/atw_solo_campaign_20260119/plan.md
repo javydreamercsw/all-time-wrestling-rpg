@@ -36,12 +36,15 @@
 
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Backstage Actions & Chapter Logic' (Protocol in workflow.md) [44fb9e0]
 
-## Phase 4: AI Storyteller Integration
+## Phase 4: AI Storyteller Integration [checkpoint: a027f05]
 
-- [ ] Task 4.1: Extend AI services to accept `CampaignState` as context for narration and promo generation.
-- [ ] Task 4.2: Implement "Story Branching" logic where the AI suggests the next `Rival` or `Outsider` event based on alignment.
-- [ ] Task 4.3: Verify AI-generated content correctly reflects current wrestler injuries and momentum.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: AI Storyteller Integration' (Protocol in workflow.md)
+- [x] Task 4.1: Extend AI services to accept `CampaignState` as context for narration and promo generation. [80e60e3]
+
+- [x] Task 4.2: Implement "Story Branching" logic where the AI suggests the next `Rival` or `Outsider` event based on alignment. [cac08f6]
+
+- [x] Task 4.3: Verify AI-generated content correctly reflects current wrestler injuries and momentum. [cac08f6]
+
+- [x] Task: Conductor - User Manual Verification 'Phase 4: AI Storyteller Integration' (Protocol in workflow.md) [a027f05]
 
 ## Phase 5: Campaign User Interface
 
