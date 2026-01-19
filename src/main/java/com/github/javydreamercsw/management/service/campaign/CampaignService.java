@@ -46,6 +46,7 @@ public class CampaignService {
   private final CampaignStateRepository campaignStateRepository;
   private final CampaignAbilityCardRepository campaignAbilityCardRepository;
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  private final CampaignScriptService campaignScriptService;
 
   public Campaign startCampaign(Wrestler wrestler) {
     // Check if wrestler already has active campaign?
@@ -198,15 +199,30 @@ public class CampaignService {
             .findById(cardId)
             .orElseThrow(() -> new IllegalArgumentException("Card not found"));
 
-    if (state.getActiveCards().contains(card) && card.isOneTimeUse()) {
-      state.getActiveCards().remove(card);
-      campaignStateRepository.save(state);
-      log.info(
-          "Used ability card: {} for wrestler: {}",
-          card.getName(),
-          campaign.getWrestler().getName());
-      // TODO: Execute card effect logic (effectScript) here or return it to be executed by
-      // UI/Engine
+    if (state.getActiveCards().contains(card)) {
+      boolean anyEffectTriggered = false;
+
+      if (card.isOneTimeUse()) {
+        campaignScriptService.executeEffect(card.getEffectScript(), campaign);
+        anyEffectTriggered = true;
+      }
+
+      if (card.isSecondaryOneTimeUse()) {
+        campaignScriptService.executeEffect(card.getSecondaryEffectScript(), campaign);
+        anyEffectTriggered = true;
+      }
+
+      if (anyEffectTriggered) {
+        // TODO: For cards with both passive and one-time effects, we might want to keep the card
+        // in activeCards but mark the one-time effect as spent.
+        // For now, we remove the card entirely when a one-time effect is used.
+        state.getActiveCards().remove(card);
+        campaignStateRepository.save(state);
+        log.info(
+            "Used ability card: {} for wrestler: {}",
+            card.getName(),
+            campaign.getWrestler().getName());
+      }
     }
   }
 

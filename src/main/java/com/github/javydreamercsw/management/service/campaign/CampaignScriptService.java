@@ -16,12 +16,14 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,26 @@ public class CampaignScriptService {
 
   private final Map<String, groovy.lang.Script> scriptCache = new ConcurrentHashMap<>();
 
+  /**
+   * Executes an effect script (e.g. from an ability card) within the context of a campaign.
+   *
+   * @param script The Groovy snippet to execute.
+   * @param campaign The campaign context.
+   */
+  public void executeEffect(String script, Campaign campaign) {
+    if (script == null || script.isBlank()) {
+      return;
+    }
+
+    Map<String, Object> variables = new HashMap<>();
+    CampaignEffectContext context = new CampaignEffectContext(campaign);
+    variables.put("ctx", context);
+
+    // Using Groovy's 'with' to allow calling methods on the context directly
+    // e.g. "spendStamina(1)" instead of "ctx.spendStamina(1)"
+    evaluateSnippet("ctx.with { " + script + " }", variables);
+  }
+
   public Object executeScript(String scriptPath, Map<String, Object> variables) {
     try {
       Binding binding = new Binding(variables);
@@ -43,6 +65,27 @@ public class CampaignScriptService {
     } catch (Exception e) {
       log.error("Error executing campaign script: {}", scriptPath, e);
       throw new RuntimeException("Failed to execute campaign script: " + scriptPath, e);
+    }
+  }
+
+  /**
+   * Evaluates a Groovy snippet string with the given variables.
+   *
+   * @param snippet The script content to execute.
+   * @param variables The variables to bind.
+   * @return The result of the execution.
+   */
+  public Object evaluateSnippet(String snippet, Map<String, Object> variables) {
+    if (snippet == null || snippet.isBlank()) {
+      return null;
+    }
+    try {
+      Binding binding = new Binding(variables);
+      GroovyShell shell = new GroovyShell(binding);
+      return shell.evaluate(snippet);
+    } catch (Exception e) {
+      log.error("Error evaluating Groovy snippet: {}", snippet, e);
+      throw new RuntimeException("Failed to evaluate Groovy snippet", e);
     }
   }
 
