@@ -46,13 +46,17 @@
 
 - [x] Task: Conductor - User Manual Verification 'Phase 4: AI Storyteller Integration' (Protocol in workflow.md) [a027f05]
 
-## Phase 5: Campaign User Interface
+## Phase 5: Campaign User Interface [checkpoint: 12a1d1c]
 
-- [ ] Task 5.1: Create the `CampaignDashboardView` (Vaadin) showing overview stats and current chapter.
-- [ ] Task 5.2: Create the `BackstageActionView` with interactive dice-roll visualizations.
-- [ ] Task 5.3: Implement the `AbilityTreeView` for skill token exchanges and card unlocks.
-- [ ] Task 5.4: Implement the `NarrativeStoryView` for immersive chapter intros and match summaries.
-- [ ] Task: Conductor - User Manual Verification 'Phase 5: Campaign User Interface' (Protocol in workflow.md)
+- [x] Task 5.1: Create the `CampaignDashboardView` (Vaadin) showing overview stats and current chapter. [fc50432]
+
+- [x] Task 5.2: Create the `BackstageActionView` with interactive dice-roll visualizations. [fc50432]
+
+- [x] Task 5.3: Implement the `AbilityTreeView` for skill token exchanges and card unlocks. [e5cac2b]
+
+- [x] Task 5.4: Implement the `NarrativeStoryView` for immersive chapter intros and match summaries. [e5cac2b]
+
+- [x] Task: Conductor - User Manual Verification 'Phase 5: Campaign User Interface' (Protocol in workflow.md) [12a1d1c]
 
 ## Phase 6: E2E Verification & Polish
 
