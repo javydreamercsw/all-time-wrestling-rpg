@@ -120,6 +120,23 @@ public class Wrestler extends AbstractEntity<Long> implements WrestlerData {
   @Column(name = "image_url")
   private String imageUrl;
 
+  // ==================== CAMPAIGN ATTRIBUTES ====================
+  @Column(name = "drive")
+  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  private Integer drive = 1;
+
+  @Column(name = "resilience")
+  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  private Integer resilience = 1;
+
+  @Column(name = "charisma")
+  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  private Integer charisma = 1;
+
+  @Column(name = "brawl")
+  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  private Integer brawl = 1;
+
   // ==================== ATW RPG RELATIONSHIPS ====================
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "manager_id")

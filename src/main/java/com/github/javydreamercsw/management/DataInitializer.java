@@ -421,6 +421,11 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
               }
             }
 
+            if (w.getDrive() != null) existingWrestler.setDrive(w.getDrive());
+            if (w.getResilience() != null) existingWrestler.setResilience(w.getResilience());
+            if (w.getCharisma() != null) existingWrestler.setCharisma(w.getCharisma());
+            if (w.getBrawl() != null) existingWrestler.setBrawl(w.getBrawl());
+
             wrestlerRepository.save(existingWrestler);
             log.debug("Updated existing wrestler: {}", existingWrestler.getName());
           } else {
@@ -446,6 +451,11 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
                 newWrestler.setManager(manager);
               }
             }
+            if (w.getDrive() != null) newWrestler.setDrive(w.getDrive());
+            if (w.getResilience() != null) newWrestler.setResilience(w.getResilience());
+            if (w.getCharisma() != null) newWrestler.setCharisma(w.getCharisma());
+            if (w.getBrawl() != null) newWrestler.setBrawl(w.getBrawl());
+
             wrestlerRepository.save(newWrestler);
             log.debug("Saved new wrestler: {}", newWrestler.getName());
           }
