@@ -52,7 +52,7 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
   @org.junit.jupiter.api.BeforeEach
   void setUp() {
     wrestler1 = createTestWrestler("Test Wrestler 1");
-    wrestler1.setFans(10000L);
+    wrestler1.setFans(10_000L);
     wrestler1 = wrestlerRepository.save(wrestler1);
   }
 
@@ -61,6 +61,7 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
   @DisplayName("Should convert 3 bumps to injury and reset bumps")
   void shouldConvert3BumpsToInjuryAndResetBumps() {
     // Given - Add 2 bumps first
+    assert wrestler1.getId() != null;
     Optional<Wrestler> afterFirstBump = wrestlerService.addBump(wrestler1.getId());
     assertThat(afterFirstBump).isPresent();
     assertThat(afterFirstBump.get().getBumps()).isEqualTo(1);
@@ -178,6 +179,7 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
     assertThat(result.success()).isTrue();
     assertThat(result.fansSpent()).isTrue();
 
+    assert wrestler1.getId() != null;
     wrestler1 = wrestlerRepository.findById(wrestler1.getId()).orElseThrow();
     assertThat(wrestler1.getFans()).isEqualTo(originalFans - healingCost);
 
@@ -205,6 +207,7 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
     Long originalFans = wrestler1.getFans();
 
     // When - Attempt healing
+    assert injury.getId() != null;
     InjuryService.HealingResult result = injuryService.attemptHealing(injury.getId(), 6);
 
     // Then - Healing should fail and no fans should be spent
@@ -212,6 +215,7 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
     assertThat(result.fansSpent()).isFalse();
     assertThat(result.message()).contains("cannot afford");
 
+    assert wrestler1.getId() != null;
     wrestler1 = wrestlerRepository.findById(wrestler1.getId()).orElseThrow();
     assertThat(wrestler1.getFans()).isEqualTo(originalFans);
 

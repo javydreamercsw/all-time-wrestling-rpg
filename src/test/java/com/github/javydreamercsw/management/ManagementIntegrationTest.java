@@ -108,6 +108,12 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     databaseCleaner.clearRepositories();
     // Refresh security context to ensure the principal has persistent entities
     refreshSecurityContext();
+
+    // If no authentication was established (e.g. first run with empty DB), default to admin
+    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+      log.info("No authentication found after cleanup. logging in as 'admin'.");
+      loginAs("admin");
+    }
   }
 
   @BeforeEach
