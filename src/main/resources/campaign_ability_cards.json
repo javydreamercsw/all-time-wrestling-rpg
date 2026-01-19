@@ -43,4 +43,16 @@
   "timing": "DEFENSE",
   "trackRequirement": 1,
   "effectScript": "damage(2); gainInitiative()"
+}, {
+  "name": "Ally",
+  "description": "Your ally helps you win by any means. Provides extra dice for backstage actions and a one-time offensive interference.",
+  "alignmentType": "HEEL",
+  "level": 1,
+  "oneTimeUse": false,
+  "timing": "BACKSTAGE",
+  "trackRequirement": 1,
+  "effectScript": "modifyBackstageDice(1)",
+  "secondaryEffectScript": "damage(2)",
+  "secondaryOneTimeUse": true,
+  "secondaryTiming": "OFFENSE"
 } ]
