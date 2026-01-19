@@ -58,6 +58,12 @@ public class MenuService {
             RoleName.BOOKER,
             RoleName.PLAYER);
 
+    // Campaign: Only PLAYER, BOOKER, and ADMIN
+    MenuItem campaignMenu =
+        new MenuItem(
+            "Campaign", VaadinIcon.GAMEPAD, null, RoleName.ADMIN, RoleName.BOOKER, RoleName.PLAYER);
+    campaignMenu.addChild(new MenuItem("Dashboard", VaadinIcon.DASHBOARD, "campaign"));
+
     // Entities menu: Only ADMIN can access
     // BOOKER, PLAYER, and VIEWER have their own dedicated views
     MenuItem entities = new MenuItem("Entities", VaadinIcon.DATABASE, null, RoleName.ADMIN);
@@ -104,6 +110,7 @@ public class MenuService {
     menuItems.add(dashboards);
     menuItems.add(bookerDashboard);
     menuItems.add(playerDashboard);
+    menuItems.add(campaignMenu);
     menuItems.add(entities);
     menuItems.add(contentGeneration);
     menuItems.add(cardGame);
