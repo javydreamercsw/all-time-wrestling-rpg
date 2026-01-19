@@ -60,7 +60,13 @@ public enum DramaEventType {
   PERSONAL_ISSUE("Personal Issue", "Private life matters affecting wrestling career"),
 
   /** Press conferences gone wrong, interview incidents, media scandals */
-  MEDIA_CONTROVERSY("Media Controversy", "Public relations incidents and scandals");
+  MEDIA_CONTROVERSY("Media Controversy", "Public relations incidents and scandals"),
+
+  /** Campaign specific: Rival encounter */
+  CAMPAIGN_RIVAL("Campaign Rival", "A rival encounter in the solo campaign"),
+
+  /** Campaign specific: Outsider encounter */
+  CAMPAIGN_OUTSIDER("Campaign Outsider", "An outsider encounter in the solo campaign");
 
   private final String displayName;
   private final String description;
@@ -91,7 +97,13 @@ public enum DramaEventType {
   /** Check if this event type typically involves multiple wrestlers. */
   public boolean isMultiWrestlerType() {
     return switch (this) {
-      case BACKSTAGE_INCIDENT, BETRAYAL, ALLIANCE_FORMED, CHAMPIONSHIP_CHALLENGE -> true;
+      case BACKSTAGE_INCIDENT,
+          BETRAYAL,
+          ALLIANCE_FORMED,
+          CHAMPIONSHIP_CHALLENGE,
+          CAMPAIGN_RIVAL,
+          CAMPAIGN_OUTSIDER ->
+          true;
       case SOCIAL_MEDIA_DRAMA,
           INJURY_INCIDENT,
           FAN_INTERACTION,
@@ -111,7 +123,9 @@ public enum DramaEventType {
           SOCIAL_MEDIA_DRAMA,
           BETRAYAL,
           CHAMPIONSHIP_CHALLENGE,
-          MEDIA_CONTROVERSY ->
+          MEDIA_CONTROVERSY,
+          CAMPAIGN_RIVAL,
+          CAMPAIGN_OUTSIDER ->
           true;
       case INJURY_INCIDENT,
           FAN_INTERACTION,
@@ -127,14 +141,21 @@ public enum DramaEventType {
   /** Check if this event type typically affects fan count. */
   public boolean affectsFans() {
     return switch (this) {
-      case FAN_INTERACTION, SURPRISE_RETURN, BETRAYAL, ALLIANCE_FORMED, MEDIA_CONTROVERSY -> true;
+      case FAN_INTERACTION,
+          SURPRISE_RETURN,
+          BETRAYAL,
+          ALLIANCE_FORMED,
+          MEDIA_CONTROVERSY,
+          CAMPAIGN_OUTSIDER ->
+          true;
       case BACKSTAGE_INCIDENT,
           SOCIAL_MEDIA_DRAMA,
           INJURY_INCIDENT,
           CONTRACT_DISPUTE,
           RETIREMENT_TEASE,
           CHAMPIONSHIP_CHALLENGE,
-          PERSONAL_ISSUE ->
+          PERSONAL_ISSUE,
+          CAMPAIGN_RIVAL ->
           false;
     };
   }
@@ -142,7 +163,7 @@ public enum DramaEventType {
   /** Check if this event type can cause injuries. */
   public boolean canCauseInjury() {
     return switch (this) {
-      case BACKSTAGE_INCIDENT, INJURY_INCIDENT -> true;
+      case BACKSTAGE_INCIDENT, INJURY_INCIDENT, CAMPAIGN_OUTSIDER -> true;
       case SOCIAL_MEDIA_DRAMA,
           FAN_INTERACTION,
           CONTRACT_DISPUTE,
@@ -152,7 +173,8 @@ public enum DramaEventType {
           RETIREMENT_TEASE,
           CHAMPIONSHIP_CHALLENGE,
           PERSONAL_ISSUE,
-          MEDIA_CONTROVERSY ->
+          MEDIA_CONTROVERSY,
+          CAMPAIGN_RIVAL ->
           false;
     };
   }
