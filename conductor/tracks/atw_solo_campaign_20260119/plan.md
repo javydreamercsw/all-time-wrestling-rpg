@@ -24,13 +24,17 @@
 
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Scriptable Campaign Engine' (Protocol in workflow.md) [bef7857]
 
-## Phase 3: Backstage Actions & Chapter Logic
+## Phase 3: Backstage Actions & Chapter Logic [checkpoint: 44fb9e0]
 
-- [ ] Task 3.1: Implement the dice-roll logic (1d6, success on 4+) for backstage actions.
-- [ ] Task 3.2: Implement `BackstageActionService` handling Training, Recovery, Promo, and Attack outcomes.
-- [ ] Task 3.3: Implement Chapter management logic (VP rewards/penalties, difficulty scaling, Chapter transitions).
-- [ ] Task 3.4: Integrate with existing `DramaEvent` system to trigger campaign story beats.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Backstage Actions & Chapter Logic' (Protocol in workflow.md)
+- [x] Task 3.1: Implement the dice-roll logic (1d6, success on 4+) for backstage actions. [cc75ffe]
+
+- [x] Task 3.2: Implement `BackstageActionService` handling Training, Recovery, Promo, and Attack outcomes. [ccc7f9f]
+
+- [x] Task 3.3: Implement Chapter management logic (VP rewards/penalties, difficulty scaling, Chapter transitions). [ccc7f9f]
+
+- [x] Task 3.4: Integrate with existing `DramaEvent` system to trigger campaign story beats. [86fd530]
+
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Backstage Actions & Chapter Logic' (Protocol in workflow.md) [44fb9e0]
 
 ## Phase 4: AI Storyteller Integration
 
