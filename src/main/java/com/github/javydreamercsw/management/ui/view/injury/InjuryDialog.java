@@ -21,10 +21,12 @@ import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import lombok.NonNull;
 
@@ -86,6 +88,8 @@ public class InjuryDialog extends Dialog {
     injuryGrid
         .addComponentColumn(
             injury -> {
+              HorizontalLayout actions = new HorizontalLayout();
+
               Button healButton = new Button("Heal");
               healButton.setId("heal-injury-" + injury.getId());
               healButton.setEnabled(injury.getIsActive());
@@ -103,7 +107,30 @@ public class InjuryDialog extends Dialog {
                     onSave.run();
                   });
               healButton.setVisible(securityUtils.canEdit(injury));
-              return healButton;
+              actions.add(healButton);
+
+              if (securityUtils.isAdmin()) {
+                Button forceHealButton = new Button("Force Heal");
+                forceHealButton.setId("force-heal-injury-" + injury.getId());
+                forceHealButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+                forceHealButton.setEnabled(injury.getIsActive());
+                forceHealButton.addClickListener(
+                    e -> {
+                      var result = injuryService.forceHeal(injury.getId());
+                      if (result.success()) {
+                        Notification.show(result.message())
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                      } else {
+                        Notification.show(result.message())
+                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                      }
+                      updateGrid();
+                      onSave.run();
+                    });
+                actions.add(forceHealButton);
+              }
+
+              return actions;
             })
         .setHeader("Actions");
   }

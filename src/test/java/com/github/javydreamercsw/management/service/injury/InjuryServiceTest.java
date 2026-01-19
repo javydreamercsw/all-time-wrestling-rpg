@@ -262,6 +262,30 @@ class InjuryServiceTest {
   }
 
   @Test
+  @DisplayName("Should force heal injury as admin")
+  void shouldForceHealInjuryAsAdmin() {
+    // Given
+    Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
+    Injury injury = createInjury(wrestler, InjurySeverity.CRITICAL); // Requires 6 to heal
+
+    when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
+    when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(wrestler);
+    when(injuryRepository.saveAndFlush(any(Injury.class))).thenReturn(injury);
+
+    // When
+    InjuryService.HealingResult result = injuryService.forceHeal(1L);
+
+    // Then
+    assertThat(result.success()).isTrue();
+    assertThat(result.message()).isEqualTo("Injury healed successfully");
+    assertThat(result.diceRoll()).isEqualTo(6);
+    assertThat(result.fansSpent()).isTrue();
+    assertThat(injury.getIsActive()).isFalse();
+    verify(wrestlerRepository).saveAndFlush(wrestler);
+    verify(injuryRepository).saveAndFlush(injury);
+  }
+
+  @Test
   void testCreateInjuryFromBumps_PublishesEvent() {
     // Given
     Wrestler wrestler = new Wrestler();

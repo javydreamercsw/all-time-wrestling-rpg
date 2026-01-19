@@ -186,6 +186,16 @@ public class InjuryService {
     return new HealingResult(success, message, injury, roll, true);
   }
 
+  /** Force heal an injury (Admin only). Bypasses dice roll check by ensuring a successful roll. */
+  @PreAuthorize("hasRole('ROLE_ADMIN')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
+      allEntries = true)
+  public HealingResult forceHeal(@NonNull Long injuryId) {
+    // 6 is sufficient to heal even CRITICAL injuries (threshold 6)
+    return attemptHealing(injuryId, 6);
+  }
+
   /** Get injury by ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
