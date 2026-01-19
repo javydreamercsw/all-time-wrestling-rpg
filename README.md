@@ -101,6 +101,24 @@ This ensures that the progression through the tiers remains consistent from seas
 
 For a more drastic reset, you can use the "Full Fan Count Reset" option. This will reset all wrestler fan counts to 0 and their tier to ROOKIE. This is useful for starting a completely new game or when you want to level the playing field entirely.
 
+### Drama Event Management
+
+The application features a drama event system that periodically generates random events affecting wrestlers (e.g., backstage incidents, social media drama, injuries).
+
+**Configuration:**
+
+The drama event scheduler is configured in the `application.properties` file.
+
+```properties
+# Enable or disable the drama event scheduler
+drama.events.scheduler.enabled=true
+
+# Frequency of event generation in milliseconds (default: 7 days)
+drama.events.scheduler.rate=604800000
+```
+
+When enabled, the system will periodically select a random number of wrestlers and generate drama events based on weighted probabilities.
+
 ### Segment Rules
 
 #### Bump Addition

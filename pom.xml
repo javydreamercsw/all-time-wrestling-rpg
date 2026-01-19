@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>1.4.3</version>
+  <version>1.4.4</version>
 
   <packaging>war</packaging>
   <name>All Time Wrestling RPG</name>
