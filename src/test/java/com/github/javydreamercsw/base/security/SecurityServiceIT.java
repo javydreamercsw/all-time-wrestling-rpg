@@ -51,12 +51,6 @@ class SecurityServiceIT extends ManagementIntegrationTest {
   @Autowired private AccountRepository accountRepository;
   @Autowired private RoleRepository roleRepository;
 
-  @BeforeEach
-  void setUp() {
-    clearAllRepositories();
-    refreshSecurityContext();
-  }
-
   private static final String TEST_PASSWORD = "ValidPassword1!";
 
   private Account createAccountDirectly(
