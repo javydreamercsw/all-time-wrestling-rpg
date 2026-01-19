@@ -1,2 +1,0 @@
-ALTER TABLE injury ADD COLUMN stamina_penalty INT DEFAULT 0 NOT NULL;
-ALTER TABLE injury ADD COLUMN hand_size_penalty INT DEFAULT 0 NOT NULL;

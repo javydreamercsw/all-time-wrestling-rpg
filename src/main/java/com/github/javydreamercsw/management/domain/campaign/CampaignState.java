@@ -18,13 +18,20 @@ package com.github.javydreamercsw.management.domain.campaign;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -69,4 +76,39 @@ public class CampaignState {
 
   @Column(name = "last_sync")
   private LocalDateTime lastSync;
+
+  // ==================== NEW FIELDS ====================
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "current_phase", nullable = false)
+  @Builder.Default
+  private CampaignPhase currentPhase = CampaignPhase.BACKSTAGE;
+
+  @Column(name = "actions_taken", nullable = false)
+  @Builder.Default
+  private int actionsTaken = 0;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "last_action_type")
+  private BackstageActionType lastActionType;
+
+  @Column(name = "last_action_success")
+  @Builder.Default
+  private Boolean lastActionSuccess = true;
+
+  @Column(name = "promo_unlocked", nullable = false)
+  @Builder.Default
+  private boolean promoUnlocked = false;
+
+  @Column(name = "attack_unlocked", nullable = false)
+  @Builder.Default
+  private boolean attackUnlocked = false;
+
+  @ManyToMany(fetch = FetchType.EAGER)
+  @JoinTable(
+      name = "campaign_state_cards",
+      joinColumns = @JoinColumn(name = "campaign_state_id"),
+      inverseJoinColumns = @JoinColumn(name = "card_id"))
+  @Builder.Default
+  private List<CampaignAbilityCard> activeCards = new ArrayList<>();
 }

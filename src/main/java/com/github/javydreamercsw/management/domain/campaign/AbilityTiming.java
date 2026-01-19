@@ -16,12 +16,9 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import java.util.Optional;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface WrestlerAlignmentRepository extends JpaRepository<WrestlerAlignment, Long> {
-  Optional<WrestlerAlignment> findByWrestler(Wrestler wrestler);
+public enum AbilityTiming {
+  OFFENSE,
+  DEFENSE,
+  PINNED,
+  BACKSTAGE
 }

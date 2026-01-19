@@ -16,13 +16,21 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
+import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +44,8 @@ public class CampaignService {
 
   private final CampaignRepository campaignRepository;
   private final CampaignStateRepository campaignStateRepository;
+  private final CampaignAbilityCardRepository campaignAbilityCardRepository;
+  private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
   public Campaign startCampaign(Wrestler wrestler) {
     // Check if wrestler already has active campaign?
@@ -65,6 +75,8 @@ public class CampaignService {
 
     campaignStateRepository.save(state);
     campaign.setState(state);
+
+    updateAbilityCards(campaign);
 
     return campaignRepository.save(campaign);
   }
@@ -115,5 +127,112 @@ public class CampaignService {
     campaign.setStatus(CampaignStatus.COMPLETED);
     campaign.setEndedAt(LocalDateTime.now());
     campaignRepository.save(campaign);
+  }
+
+  /**
+   * Updates the wrestler's available ability cards based on their alignment and level. If the
+   * wrestler has turned (changed alignment), old cards are removed and new ones are added.
+   *
+   * @param campaign The campaign to update.
+   */
+  public void updateAbilityCards(Campaign campaign) {
+    Wrestler wrestler = campaign.getWrestler();
+    Optional<WrestlerAlignment> alignmentOpt = wrestlerAlignmentRepository.findByWrestler(wrestler);
+
+    if (alignmentOpt.isEmpty()) {
+      return; // No alignment tracking yet
+    }
+
+    WrestlerAlignment alignment = alignmentOpt.get();
+    CampaignState state = campaign.getState();
+    List<CampaignAbilityCard> currentCards = state.getActiveCards();
+
+    // Check for alignment mismatch (Turn happened)
+    boolean alignmentChanged =
+        currentCards.stream().anyMatch(c -> c.getAlignmentType() != alignment.getAlignmentType());
+
+    if (alignmentChanged) {
+      // Discard all cards of wrong alignment
+      currentCards.removeIf(c -> c.getAlignmentType() != alignment.getAlignmentType());
+    }
+
+    // Determine unlocked levels based on track position (Space)
+    int trackSpace = alignment.getLevel();
+    List<Integer> unlockedLevels = new ArrayList<>();
+    if (trackSpace >= 1) unlockedLevels.add(1);
+    if (trackSpace >= 5) {
+      unlockedLevels.add(2);
+      unlockedLevels.add(3);
+    }
+
+    // Fetch potential cards
+    // This simple logic adds ALL available cards for the level.
+    // In a real game, the player might "choose" them.
+    // For MVP, we grant access to all unlocked cards.
+    for (Integer level : unlockedLevels) {
+      List<CampaignAbilityCard> availableCards =
+          campaignAbilityCardRepository.findByAlignmentTypeAndLevel(
+              alignment.getAlignmentType(), level);
+
+      for (CampaignAbilityCard card : availableCards) {
+        if (!currentCards.contains(card)) {
+          currentCards.add(card);
+        }
+      }
+    }
+
+    state.setActiveCards(currentCards);
+    campaignStateRepository.save(state);
+  }
+
+  /**
+   * Uses a one-time ability card, removing it from the active inventory.
+   *
+   * @param campaign The campaign.
+   * @param cardId The ID of the card to use.
+   */
+  public void useAbilityCard(Campaign campaign, Long cardId) {
+    CampaignState state = campaign.getState();
+    CampaignAbilityCard card =
+        campaignAbilityCardRepository
+            .findById(cardId)
+            .orElseThrow(() -> new IllegalArgumentException("Card not found"));
+
+    if (state.getActiveCards().contains(card) && card.isOneTimeUse()) {
+      state.getActiveCards().remove(card);
+      campaignStateRepository.save(state);
+      log.info(
+          "Used ability card: {} for wrestler: {}",
+          card.getName(),
+          campaign.getWrestler().getName());
+      // TODO: Execute card effect logic (effectScript) here or return it to be executed by
+      // UI/Engine
+    }
+  }
+
+  /**
+   * Switches the wrestler's alignment (Turn).
+   *
+   * @param campaign The campaign.
+   */
+  public void turnWrestler(Campaign campaign) {
+    Wrestler wrestler = campaign.getWrestler();
+    WrestlerAlignment alignment =
+        wrestlerAlignmentRepository
+            .findByWrestler(wrestler)
+            .orElseThrow(() -> new IllegalStateException("Wrestler has no alignment set"));
+
+    AlignmentType newType =
+        alignment.getAlignmentType() == AlignmentType.FACE
+            ? AlignmentType.HEEL
+            : AlignmentType.FACE;
+    alignment.setAlignmentType(newType);
+    // Keep level? Rules say "based on their current position on the track".
+    // Usually a turn might reset or keep progress. Assuming keep level for now based on "based on
+    // their current position".
+    wrestlerAlignmentRepository.save(alignment);
+
+    updateAbilityCards(campaign);
+    log.info("Wrestler {} turned to {}", wrestler.getName(), newType);
   }
 }
