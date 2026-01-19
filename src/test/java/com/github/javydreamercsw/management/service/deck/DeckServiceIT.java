@@ -43,8 +43,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    clearAllRepositories();
-
     // Use standard accounts that exist via Flyway V21 migration and are preserved by
     // DatabaseCleaner
     Account booker = createTestAccount("booker", RoleName.BOOKER);
@@ -88,7 +86,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
       username = "admin",
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanCreateDeck() {
-    refreshSecurityContext();
     Deck deck = deckService.createDeck(bookerWrestler);
     Assertions.assertNotNull(deck);
     Assertions.assertNotNull(deck.getId());
@@ -99,7 +96,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
       username = "booker",
       roles = {"BOOKER", "PLAYER"})
   void testBookerCanCreateDeck() {
-    refreshSecurityContext();
     Deck deck = deckService.createDeck(bookerWrestler);
     Assertions.assertNotNull(deck);
     Assertions.assertNotNull(deck.getId());
@@ -108,7 +104,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "booker", roles = "BOOKER")
   void testPlayerCanCreateTheirOwnDeck() {
-    refreshSecurityContext();
     Deck deck = deckService.createDeck(playerWrestler);
     Assertions.assertNotNull(deck);
     Assertions.assertNotNull(deck.getId());
@@ -117,7 +112,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotCreateDeckForSomeoneElse() {
-    refreshSecurityContext();
     Assertions.assertThrows(
         AuthorizationDeniedException.class, () -> deckService.createDeck(bookerWrestler));
   }
@@ -125,7 +119,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanListDecks() {
-    refreshSecurityContext();
     deckService.list(Pageable.unpaged());
     // No exception means success
   }
@@ -133,7 +126,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "viewer", roles = "VIEWER")
   void testAuthenticatedCanCountDecks() {
-    refreshSecurityContext();
     deckService.count();
     // No exception means success
   }
@@ -141,7 +133,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanFindAllDecks() {
-    refreshSecurityContext();
     deckService.findAll();
     // No exception means success
   }
@@ -149,7 +140,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanFindById() {
-    refreshSecurityContext();
     // Create deck as admin first to bypass security check during creation
     // or use a different user context for creation
     // But here we want to test if player can find their own deck.
@@ -171,7 +161,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanFindByWrestler() {
-    refreshSecurityContext();
     deckService.findByWrestler(playerWrestler);
     // No exception means success
   }
@@ -179,7 +168,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "booker", roles = "BOOKER")
   void testPlayerCanSaveTheirOwnDeck() {
-    refreshSecurityContext();
     // Use repository to create initial deck
     Deck deck = new Deck();
     deck.setWrestler(playerWrestler);
@@ -193,7 +181,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotSaveSomeoneElsesDeck() {
-    refreshSecurityContext();
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
     Assertions.assertThrows(AuthorizationDeniedException.class, () -> deckService.save(deck));
@@ -202,7 +189,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "booker", roles = "BOOKER")
   void testPlayerCanDeleteTheirOwnDeck() {
-    refreshSecurityContext();
     // Use repository to create initial deck
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
@@ -216,7 +202,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCanDeleteTheirOwnDeckPlayer() {
-    refreshSecurityContext();
     // Use repository to create initial deck
     Deck deck = new Deck();
     deck.setWrestler(playerWrestler);
@@ -230,7 +215,6 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @Test
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotDeleteSomeoneElsesDeck() {
-    refreshSecurityContext();
     Deck deck = new Deck();
     deck.setWrestler(bookerWrestler);
     Assertions.assertThrows(AuthorizationDeniedException.class, () -> deckService.delete(deck));
