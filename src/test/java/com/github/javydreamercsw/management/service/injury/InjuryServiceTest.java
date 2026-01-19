@@ -235,7 +235,7 @@ class InjuryServiceTest {
 
     // Then
     assertThat(result.success()).isFalse();
-    assertThat(result.message()).isEqualTo("Healing attempt failed");
+    assertThat(result.message()).isEqualTo("Healing attempt failed (Rolled: 2, Needed: 3+)");
     assertThat(result.diceRoll()).isEqualTo(2);
     assertThat(result.fansSpent()).isTrue();
     assertThat(injury.getIsActive()).isTrue(); // Still active
