@@ -51,7 +51,6 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
 
   @org.junit.jupiter.api.BeforeEach
   void setUp() {
-    refreshSecurityContext();
     wrestler1 = createTestWrestler("Test Wrestler 1");
     wrestler1.setFans(10000L);
     wrestler1 = wrestlerRepository.save(wrestler1);
@@ -61,7 +60,6 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
   @Transactional
   @DisplayName("Should convert 3 bumps to injury and reset bumps")
   void shouldConvert3BumpsToInjuryAndResetBumps() {
-    refreshSecurityContext();
     // Given - Add 2 bumps first
     Optional<Wrestler> afterFirstBump = wrestlerService.addBump(wrestler1.getId());
     assertThat(afterFirstBump).isPresent();
@@ -90,7 +88,6 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
   @Test
   @DisplayName("Should apply injury penalties to health calculations")
   void shouldApplyInjuryPenaltiesToHealthCalculations() {
-    refreshSecurityContext();
     // Given - Create injury for wrestler
     Optional<Injury> createdInjury =
         injuryService.createInjury(
@@ -116,7 +113,6 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
   @Test
   @DisplayName("Should calculate injury statistics correctly")
   void shouldCalculateInjuryStatisticsCorrectly() {
-    refreshSecurityContext();
     // Given - Create multiple injuries for wrestler
     injuryService.createInjury(
         wrestler1.getId(), "Active Injury 1", "First active injury", InjurySeverity.MINOR, "Test");
@@ -158,7 +154,6 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
   @Test
   @DisplayName("Should handle injury healing with fan cost")
   void shouldHandleInjuryHealingWithFanCost() {
-    refreshSecurityContext();
     // Given - Create injury and ensure wrestler has enough fans
     wrestler1.setFans(50000L); // Plenty of fans
     wrestler1 = wrestlerRepository.save(wrestler1);
@@ -193,7 +188,6 @@ class InjurySystemIntegrationTest extends ManagementIntegrationTest {
   @Test
   @DisplayName("Should prevent healing when wrestler cannot afford cost")
   void shouldPreventHealingWhenWrestlerCannotAffordCost() {
-    refreshSecurityContext();
     // Given - Create injury and ensure wrestler has insufficient fans
     wrestler1.setFans(1000L); // Not enough fans
     wrestler1 = wrestlerRepository.save(wrestler1);
