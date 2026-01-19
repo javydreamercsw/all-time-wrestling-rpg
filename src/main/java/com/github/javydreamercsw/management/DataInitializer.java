@@ -173,7 +173,10 @@ public class DataInitializer implements com.github.javydreamercsw.base.Initializ
               dto.isOneTimeUse(),
               dto.getTiming(),
               dto.getTrackRequirement(),
-              dto.getEffectScript());
+              dto.getEffectScript(),
+              dto.getSecondaryEffectScript(),
+              dto.isSecondaryOneTimeUse(),
+              dto.getSecondaryTiming());
           log.debug("Loaded campaign ability card: {}", dto.getName());
         }
         log.info("Campaign ability card loading completed - {} cards loaded", cardsFromFile.size());

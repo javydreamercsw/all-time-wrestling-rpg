@@ -53,7 +53,10 @@ public class CampaignAbilityCardService {
       boolean oneTimeUse,
       AbilityTiming timing,
       int trackRequirement,
-      String effectScript) {
+      String effectScript,
+      String secondaryEffectScript,
+      boolean secondaryOneTimeUse,
+      AbilityTiming secondaryTiming) {
 
     Optional<CampaignAbilityCard> existingOpt =
         findByNameAndAlignmentAndLevel(name, alignmentType, level);
@@ -75,6 +78,9 @@ public class CampaignAbilityCardService {
     card.setTiming(timing);
     card.setTrackRequirement(trackRequirement);
     card.setEffectScript(effectScript);
+    card.setSecondaryEffectScript(secondaryEffectScript);
+    card.setSecondaryOneTimeUse(secondaryOneTimeUse);
+    card.setSecondaryTiming(secondaryTiming);
 
     return campaignAbilityCardRepository.save(card);
   }

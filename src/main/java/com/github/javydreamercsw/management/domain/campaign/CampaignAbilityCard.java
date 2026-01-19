@@ -67,4 +67,15 @@ public class CampaignAbilityCard {
 
   @Column(name = "track_requirement", nullable = false)
   private int trackRequirement;
+
+  @Column(name = "secondary_effect_script")
+  private String secondaryEffectScript;
+
+  @Column(name = "secondary_one_time_use")
+  @Builder.Default
+  private boolean secondaryOneTimeUse = false;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "secondary_timing")
+  private AbilityTiming secondaryTiming;
 }

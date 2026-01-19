@@ -1,28 +1,46 @@
 [ {
   "name": "Poke Eye",
-  "description": "Gain Initiative",
-  "alignmentType": "HEEL",
-  "level": 1,
-  "oneTimeUse": true,
-  "timing": "D",
-  "trackRequirement": 1,
-  "effectScript": "damage(2)"
-}, {
-  "name": "Distraction",
-  "description": "Opponent misses their next attack.",
+  "description": "Gain Initiative.",
   "alignmentType": "HEEL",
   "level": 1,
   "oneTimeUse": true,
   "timing": "DEFENSE",
   "trackRequirement": 1,
-  "effectScript": "negateAttack()"
+  "effectScript": "gainInitiative()"
 }, {
-  "name": "Resilient Comeback",
-  "description": "Recover from a pin attempt automatically.",
-  "alignmentType": "FACE",
+  "name": "Feigned Retreat",
+  "description": "Spend 1 Stamina to gain Initiative and 2 Momentum.",
+  "alignmentType": "HEEL",
+  "level": 1,
+  "oneTimeUse": true,
+  "timing": "DEFENSE",
+  "trackRequirement": 1,
+  "effectScript": "spendStamina(1); gainInitiative(); gainMomentum(2)"
+}, {
+  "name": "Pull Tights",
+  "description": "Opponent suffers -1 dice roll on kickout attempt.",
+  "alignmentType": "HEEL",
+  "level": 1,
+  "oneTimeUse": true,
+  "timing": "OFFENSE",
+  "trackRequirement": 1,
+  "effectScript": "modifyOpponentRoll(-1)"
+}, {
+  "name": "Exposed Turnbuckle",
+  "description": "Deal 3 damage and gain 2 momentum.",
+  "alignmentType": "HEEL",
   "level": 2,
   "oneTimeUse": true,
-  "timing": "PINNED",
+  "timing": "OFFENSE",
   "trackRequirement": 5,
-  "effectScript": "breakPin()"
+  "effectScript": "damage(3); gainMomentum(2)"
+}, {
+  "name": "Low Blow",
+  "description": "Deal 2 damage and gain the initiative.",
+  "alignmentType": "HEEL",
+  "level": 1,
+  "oneTimeUse": true,
+  "timing": "DEFENSE",
+  "trackRequirement": 1,
+  "effectScript": "damage(2); gainInitiative()"
 } ]
