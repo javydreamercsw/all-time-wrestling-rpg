@@ -12,13 +12,17 @@
 
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Domain Refinement & Persistence' (Protocol in workflow.md) [c5891ff]
 
-## Phase 2: Scriptable Campaign Engine
+## Phase 2: Scriptable Campaign Engine [checkpoint: bef7857]
 
-- [ ] Task 2.1: Integrate Groovy scripting engine into the Spring Boot backend.
-- [ ] Task 2.2: Implement `CampaignScriptService` to load and execute scripts for alignment progression and ability unlocks.
-- [ ] Task 2.3: Create initial Groovy script templates for Chapter 1 progression rules.
-- [ ] Task 2.4: Write unit tests verifying that Groovy scripts correctly update `CampaignState`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Scriptable Campaign Engine' (Protocol in workflow.md)
+- [x] Task 2.1: Integrate Groovy scripting engine into the Spring Boot backend. [4df3e9d]
+
+- [x] Task 2.2: Implement `CampaignScriptService` to load and execute scripts for alignment progression and ability unlocks. [d4659e5]
+
+- [x] Task 2.3: Create initial Groovy script templates for Chapter 1 progression rules. [d4659e5]
+
+- [x] Task 2.4: Write unit tests verifying that Groovy scripts correctly update `CampaignState`. [d4659e5]
+
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Scriptable Campaign Engine' (Protocol in workflow.md) [bef7857]
 
 ## Phase 3: Backstage Actions & Chapter Logic
 
